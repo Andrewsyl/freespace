@@ -147,12 +147,14 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: 22,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginTop: 6,
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: 13,
+    fontFamily: "Poppins-Regular",
     marginTop: 6,
     lineHeight: 20,
   },
@@ -178,6 +180,7 @@ const styles = StyleSheet.create({
   webFallbackText: {
     color: colors.textMuted,
     fontSize: 13,
+    fontFamily: "Poppins-Regular",
     textAlign: "center",
     lineHeight: 20,
   },
@@ -198,6 +201,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.cardBg,
     fontSize: 15,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   secondaryButton: {
@@ -209,6 +213,7 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: colors.textMuted,
     fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
 });

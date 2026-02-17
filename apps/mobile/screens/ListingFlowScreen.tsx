@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { ListingAvailabilityScreen } from "./listingFlow/ListingAvailabilityScreen";
 import { ListingDetailsScreen } from "./listingFlow/ListingDetailsScreen";
 import { ListingLocationScreen } from "./listingFlow/ListingLocationScreen";
-import { ListingPhotosScreen } from "./listingFlow/ListingPhotosScreen";
+import { ListingPhotosScreen } from "./listingFlow/ListingPhotosScreen.tsx";
 import { ListingPriceScreen } from "./listingFlow/ListingPriceScreen";
 import { ListingReviewScreen } from "./listingFlow/ListingReviewScreen";
 import { ListingStreetViewScreen } from "./listingFlow/ListingStreetViewScreen";
@@ -14,7 +14,7 @@ import { getListing, listAvailability } from "../api";
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
 import { colors } from "../styles/theme";
-import { Ionicons } from "@expo/vector-icons";
+import { ArrowLeft } from "lucide-react-native";
 
 type FlowStackParamList = {
   ListingLocation: undefined;
@@ -38,6 +38,7 @@ const defaultDraft: ListingDraft = {
   coverPitch: null,
   spaceType: "",
   accessOptions: [],
+  requiresAccessCode: null,
   accessCode: "",
   permissionDeclared: false,
   availability: {
@@ -48,6 +49,7 @@ const defaultDraft: ListingDraft = {
     dateStart: new Date().toISOString(),
     dateEnd: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    dayTimeRanges: {},
   },
   pricePerDay: "",
   photos: [],
@@ -102,6 +104,13 @@ export function ListingFlowScreen({ route }: Props) {
             (listing as { access_code?: string; accessCode?: string }).access_code ??
             (listing as { access_code?: string; accessCode?: string }).accessCode ??
             "",
+          requiresAccessCode: Boolean(
+            (
+              (listing as { access_code?: string; accessCode?: string }).access_code ??
+              (listing as { access_code?: string; accessCode?: string }).accessCode ??
+              ""
+            ).trim()
+          ),
           permissionDeclared:
             (listing as { permission_declared?: boolean; permissionDeclared?: boolean })
               .permission_declared ??
@@ -126,6 +135,33 @@ export function ListingFlowScreen({ route }: Props) {
               Array.isArray(openEntry.repeatWeekdays) && openEntry.repeatWeekdays.length > 0;
             const isDaily = hasRepeat && openEntry.repeatWeekdays.length === 7;
             const mode = isDaily ? "daily" : hasRepeat ? "recurring" : "dates";
+            const weekdaysFromEntries = Array.from(
+              new Set(
+                availability
+                  .filter((entry) => entry.kind === "open")
+                  .flatMap((entry) => entry.repeatWeekdays ?? [])
+                  .map((idx) => weekdayMap[idx] ?? "Mon")
+              )
+            );
+            const dayTimeRanges: Record<string, { start: string; end: string }> = {};
+            availability.forEach((entry) => {
+              if (entry.kind !== "open") return;
+              if (!Array.isArray(entry.repeatWeekdays) || !entry.repeatWeekdays.length) return;
+              const start = new Date(entry.startsAt);
+              const end = new Date(entry.endsAt);
+              entry.repeatWeekdays.forEach((idx) => {
+                const day = weekdayMap[idx] ?? "Mon";
+                const dayBase = new Date();
+                const startForDay = new Date(dayBase);
+                startForDay.setHours(start.getHours(), start.getMinutes(), 0, 0);
+                const endForDay = new Date(dayBase);
+                endForDay.setHours(end.getHours(), end.getMinutes(), 0, 0);
+                dayTimeRanges[day] = {
+                  start: startForDay.toISOString(),
+                  end: endForDay.toISOString(),
+                };
+              });
+            });
             setDraft((prev) => ({
               ...prev,
               availability: {
@@ -135,9 +171,10 @@ export function ListingFlowScreen({ route }: Props) {
                 timeEnd: openEntry.endsAt,
                 dateStart: openEntry.startsAt,
                 dateEnd: openEntry.endsAt,
-                weekdays: hasRepeat
-                  ? openEntry.repeatWeekdays.map((idx) => weekdayMap[idx] ?? "Mon")
-                  : prev.availability.weekdays,
+                weekdays: weekdaysFromEntries.length ? weekdaysFromEntries : prev.availability.weekdays,
+                dayTimeRanges: Object.keys(dayTimeRanges).length
+                  ? dayTimeRanges
+                  : prev.availability.dayTimeRanges ?? {},
               },
             }));
           } catch {
@@ -181,6 +218,7 @@ export function ListingFlowScreen({ route }: Props) {
             headerTitleStyle: {
               color: colors.text,
               fontSize: 17,
+              fontFamily: "Poppins-SemiBold",
               fontWeight: "600",
             },
             headerLeft: () => (
@@ -197,7 +235,7 @@ export function ListingFlowScreen({ route }: Props) {
                 }}
                 style={styles.headerBack}
               >
-                <Ionicons name="arrow-back" size={24} color={colors.text} />
+                <ArrowLeft size={22} color={colors.text} strokeWidth={2} />
               </Pressable>
             ),
           })}
@@ -255,12 +293,14 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.textMuted,
     fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginTop: 12,
   },
   errorText: {
     color: colors.danger,
     fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     textAlign: "center",
   },

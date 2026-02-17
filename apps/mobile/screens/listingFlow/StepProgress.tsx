@@ -36,12 +36,14 @@ const styles = StyleSheet.create({
   label: {
     color: colors.textMuted,
     fontSize: 12,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     letterSpacing: 0.6,
   },
   percent: {
     color: colors.textSoft,
     fontSize: 11,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   bar: {

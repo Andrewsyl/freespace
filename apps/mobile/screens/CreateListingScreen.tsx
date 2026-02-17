@@ -15,7 +15,7 @@ import { createListing } from "../api";
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
-import { Ionicons } from "@expo/vector-icons";
+import { ArrowLeft } from "lucide-react-native";
 
 type Props = NativeStackScreenProps<RootStackParamList, "CreateListing">;
 
@@ -76,7 +76,7 @@ export function CreateListingScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.topBar}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <ArrowLeft size={22} color={colors.text} strokeWidth={2} />
         </Pressable>
         <Text style={styles.topTitle}>List a space</Text>
         <View style={styles.backButton} />
@@ -228,6 +228,7 @@ const styles = StyleSheet.create({
   topTitle: {
     color: colors.text,
     fontSize: 16,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   content: {
@@ -246,6 +247,7 @@ const styles = StyleSheet.create({
   subtitle: {
     color: colors.textMuted,
     fontSize: 13,
+    fontFamily: "Poppins-Regular",
     marginTop: 6,
   },
   notice: {
@@ -255,6 +257,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.text,
     fontSize: 12,
+    fontFamily: "Poppins-Regular",
     marginTop: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -266,6 +269,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.danger,
     fontSize: 12,
+    fontFamily: "Poppins-Regular",
     marginTop: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -279,6 +283,7 @@ const styles = StyleSheet.create({
   label: {
     color: colors.textMuted,
     fontSize: 12,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginBottom: 6,
   },
@@ -288,6 +293,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.text,
     fontSize: 14,
+    fontFamily: "Poppins-Regular",
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -310,6 +316,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.cardBg,
     fontSize: 15,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
 });

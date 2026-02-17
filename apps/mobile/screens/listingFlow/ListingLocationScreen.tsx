@@ -4,7 +4,7 @@ import { Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View } from
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import * as Location from "expo-location";
-import { Ionicons } from "@expo/vector-icons";
+import { MapPinned, Search, X } from "lucide-react-native";
 import { MapPin } from "../../components/MapPin";
 import { LIGHT_MAP_STYLE } from "../../components/mapStyles";
 import { useListingFlow } from "./context";
@@ -233,7 +233,7 @@ export function ListingLocationScreen({ navigation }: Props) {
       </View>
       <View style={styles.searchShell}>
         <View style={styles.searchField}>
-          <Ionicons name="search" size={20} color={colors.accent} style={styles.searchIcon} />
+          <Search size={18} color={colors.accent} style={styles.searchIcon} strokeWidth={2.2} />
           <TextInput
             style={styles.searchInput}
             value={query}
@@ -249,7 +249,7 @@ export function ListingLocationScreen({ navigation }: Props) {
                 setSuggestions([]);
               }}
             >
-              <Text style={styles.clearButtonText}>×</Text>
+              <X size={16} color={colors.textSoft} strokeWidth={2.4} />
             </Pressable>
           ) : null}
         </View>
@@ -380,7 +380,7 @@ export function ListingLocationScreen({ navigation }: Props) {
         ) : (
           <View style={styles.mapPlaceholder}>
             <View style={styles.mapPlaceholderIconCircle}>
-              <Ionicons name="map-outline" size={48} color={colors.accent} />
+              <MapPinned size={42} color={colors.accent} strokeWidth={2} />
             </View>
             <View style={styles.mapPlaceholderContent}>
               <Text style={styles.mapPlaceholderTitle}>No location selected</Text>
@@ -419,12 +419,14 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: 22,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginTop: 6,
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: 13,
+    fontFamily: "Poppins-Regular",
     marginTop: 6,
     lineHeight: 20,
   },
@@ -454,6 +456,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 15,
+    fontFamily: "Poppins-Medium",
     fontWeight: "500",
   },
   clearButton: {
@@ -488,10 +491,12 @@ const styles = StyleSheet.create({
   suggestionText: {
     color: colors.text,
     fontSize: 13,
+    fontFamily: "Poppins-Regular",
   },
   suggestionMuted: {
     color: colors.textSoft,
     fontSize: 12,
+    fontFamily: "Poppins-Regular",
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -532,12 +537,14 @@ const styles = StyleSheet.create({
   mapPlaceholderTitle: {
     color: colors.text,
     fontSize: 16,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     textAlign: "center",
   },
   mapPlaceholderText: {
     color: colors.textMuted,
     fontSize: 13,
+    fontFamily: "Poppins-Regular",
     lineHeight: 19,
     textAlign: "center",
   },
@@ -566,6 +573,7 @@ const styles = StyleSheet.create({
   movePinToggleText: {
     color: "#ffffff",
     fontSize: 12,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     letterSpacing: 0.8,
   },
@@ -579,6 +587,7 @@ const styles = StyleSheet.create({
   movePinHintText: {
     color: colors.text,
     fontSize: 12,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   addressPrompt: {
@@ -595,16 +604,19 @@ const styles = StyleSheet.create({
   addressPromptTitle: {
     color: colors.text,
     fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   addressPromptBody: {
     color: colors.textMuted,
     fontSize: 12,
+    fontFamily: "Poppins-Regular",
     marginTop: 6,
   },
   addressPromptValue: {
     color: colors.text,
     fontSize: 13,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginTop: 4,
   },
@@ -623,6 +635,7 @@ const styles = StyleSheet.create({
   addressPromptGhostText: {
     color: colors.text,
     fontSize: 12,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     textAlign: "center",
   },
@@ -635,6 +648,7 @@ const styles = StyleSheet.create({
   addressPromptPrimaryText: {
     color: colors.cardBg,
     fontSize: 12,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     textAlign: "center",
   },
@@ -656,6 +670,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.cardBg,
     fontSize: 15,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
 });

@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import LottieView from "lottie-react-native";
+import { Check, ChevronRight } from "lucide-react-native";
 import {
   createAvailabilityEntry,
   createListing,
@@ -47,7 +48,7 @@ export function ListingReviewScreen({ navigation }: Props) {
     draft.location.address.trim().length > 0 &&
     draft.permissionDeclared;
 
-  const buildAvailabilityPayload = () => {
+  const buildAvailabilityPayloads = () => {
     const weekdayIndex: Record<string, number> = {
       Sun: 0,
       Mon: 1,
@@ -70,39 +71,51 @@ export function ListingReviewScreen({ navigation }: Props) {
       const startsAt = withTime(baseDate, timeStart);
       const endsAt = withTime(baseDate, timeEnd);
       if (endsAt <= startsAt) endsAt.setDate(endsAt.getDate() + 1);
-      return {
-        startsAt: startsAt.toISOString(),
-        endsAt: endsAt.toISOString(),
-        repeatWeekdays: [0, 1, 2, 3, 4, 5, 6],
-        repeatUntil: null,
-      };
+      return [
+        {
+          startsAt: startsAt.toISOString(),
+          endsAt: endsAt.toISOString(),
+          repeatWeekdays: [0, 1, 2, 3, 4, 5, 6],
+          repeatUntil: null,
+        },
+      ];
     }
     if (mode === "recurring") {
       const repeatWeekdays = draft.availability.weekdays
         .map((day) => weekdayIndex[day])
         .filter((value) => typeof value === "number");
-      if (!repeatWeekdays.length) return null;
-      const startsAt = withTime(baseDate, timeStart);
-      const endsAt = withTime(baseDate, timeEnd);
-      if (endsAt <= startsAt) endsAt.setDate(endsAt.getDate() + 1);
-      return {
-        startsAt: startsAt.toISOString(),
-        endsAt: endsAt.toISOString(),
-        repeatWeekdays,
-        repeatUntil: null,
-      };
+      if (!repeatWeekdays.length) return [];
+      const dayTimeRanges = draft.availability.dayTimeRanges ?? {};
+      const payloads = repeatWeekdays.map((weekdayIdx) => {
+        const dayCode = Object.entries(weekdayIndex).find(([, idx]) => idx === weekdayIdx)?.[0] ?? "Mon";
+        const range = dayTimeRanges[dayCode];
+        const startRef = range?.start ? new Date(range.start) : timeStart;
+        const endRef = range?.end ? new Date(range.end) : timeEnd;
+        const startsAt = withTime(baseDate, startRef);
+        const endsAt = withTime(baseDate, endRef);
+        if (endsAt <= startsAt) endsAt.setDate(endsAt.getDate() + 1);
+        return {
+          startsAt: startsAt.toISOString(),
+          endsAt: endsAt.toISOString(),
+          repeatWeekdays: [weekdayIdx],
+          repeatUntil: null,
+        };
+      });
+      return payloads;
     }
     const dateStart = new Date(draft.availability.dateStart);
     const dateEnd = new Date(draft.availability.dateEnd);
     const startsAt = withTime(dateStart, timeStart);
     const endsAt = withTime(dateEnd, timeEnd);
     if (endsAt <= startsAt) endsAt.setDate(endsAt.getDate() + 1);
-    return {
-      startsAt: startsAt.toISOString(),
-      endsAt: endsAt.toISOString(),
-      repeatWeekdays: null,
-      repeatUntil: null,
-    };
+    return [
+      {
+        startsAt: startsAt.toISOString(),
+        endsAt: endsAt.toISOString(),
+        repeatWeekdays: null,
+        repeatUntil: null,
+      },
+    ];
   };
 
   const syncAvailability = async (targetListingId: string) => {
@@ -113,17 +126,21 @@ export function ListingReviewScreen({ navigation }: Props) {
         deleteAvailabilityEntry({ token, availabilityId: entry.id })
       )
     );
-    const payload = buildAvailabilityPayload();
-    if (!payload) return;
-    await createAvailabilityEntry({
-      token,
-      listingId: targetListingId,
-      kind: "open",
-      startsAt: payload.startsAt,
-      endsAt: payload.endsAt,
-      repeatWeekdays: payload.repeatWeekdays,
-      repeatUntil: payload.repeatUntil,
-    });
+    const payloads = buildAvailabilityPayloads();
+    if (!payloads.length) return;
+    await Promise.all(
+      payloads.map((payload) =>
+        createAvailabilityEntry({
+          token,
+          listingId: targetListingId,
+          kind: "open",
+          startsAt: payload.startsAt,
+          endsAt: payload.endsAt,
+          repeatWeekdays: payload.repeatWeekdays,
+          repeatUntil: payload.repeatUntil,
+        })
+      )
+    );
   };
 
   useEffect(() => {
@@ -243,7 +260,9 @@ export function ListingReviewScreen({ navigation }: Props) {
               draft.permissionDeclared && styles.confirmBoxActive,
             ]}
           >
-            {draft.permissionDeclared ? <Text style={styles.confirmCheck}>✓</Text> : null}
+            {draft.permissionDeclared ? (
+              <Check size={14} color={colors.cardBg} strokeWidth={3} />
+            ) : null}
           </View>
           <View style={styles.confirmTextWrap}>
             <Text style={styles.confirmTitle}>I have permission to rent this space</Text>
@@ -300,39 +319,39 @@ export function ListingReviewScreen({ navigation }: Props) {
             onPress={() => navigation.navigate("ListingLocation")}
           >
             <Text style={styles.editLabel}>Location</Text>
-            <Text style={styles.editChevron}>›</Text>
+            <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />
           </Pressable>
           <Pressable
             style={styles.editRow}
             onPress={() => navigation.navigate("ListingStreetView")}
           >
             <Text style={styles.editLabel}>Street view</Text>
-            <Text style={styles.editChevron}>›</Text>
+            <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />
           </Pressable>
           <Pressable
             style={styles.editRow}
             onPress={() => navigation.navigate("ListingDetails")}
           >
             <Text style={styles.editLabel}>Space details</Text>
-            <Text style={styles.editChevron}>›</Text>
+            <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />
           </Pressable>
           <Pressable
             style={styles.editRow}
             onPress={() => navigation.navigate("ListingAvailability")}
           >
             <Text style={styles.editLabel}>Availability</Text>
-            <Text style={styles.editChevron}>›</Text>
+            <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />
           </Pressable>
           <Pressable style={styles.editRow} onPress={() => navigation.navigate("ListingPrice")}>
             <Text style={styles.editLabel}>Price</Text>
-            <Text style={styles.editChevron}>›</Text>
+            <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />
           </Pressable>
           <Pressable
             style={[styles.editRow, styles.editRowLast]}
             onPress={() => navigation.navigate("ListingPhotos")}
           >
             <Text style={styles.editLabel}>Photos</Text>
-            <Text style={styles.editChevron}>›</Text>
+            <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />
           </Pressable>
         </View>
       </ScrollView>
@@ -389,12 +408,14 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: 22,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginTop: 6,
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: 13,
+    fontFamily: "Poppins-Regular",
     marginTop: 6,
     lineHeight: 20,
   },
@@ -405,6 +426,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.danger,
     fontSize: 12,
+    fontFamily: "Poppins-Regular",
     marginTop: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -428,6 +450,7 @@ const styles = StyleSheet.create({
   editTitle: {
     color: colors.text,
     fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     paddingHorizontal: 16,
     paddingTop: 14,
@@ -449,11 +472,7 @@ const styles = StyleSheet.create({
   editLabel: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "600",
-  },
-  editChevron: {
-    color: colors.textSoft,
-    fontSize: 18,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   mapPreview: {
@@ -496,33 +515,32 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     borderColor: colors.accent,
   },
-  confirmCheck: {
-    color: colors.cardBg,
-    fontSize: 14,
-    fontWeight: "600",
-  },
   confirmTextWrap: {
     flex: 1,
   },
   confirmTitle: {
     color: colors.text,
     fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   confirmSubtitle: {
     color: colors.textMuted,
     fontSize: 12,
+    fontFamily: "Poppins-Regular",
     marginTop: 4,
   },
   label: {
     color: colors.textMuted,
     fontSize: 12,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     letterSpacing: 0.5,
   },
   value: {
     color: colors.text,
     fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginTop: 6,
   },
@@ -558,12 +576,14 @@ const styles = StyleSheet.create({
   successTitle: {
     color: colors.text,
     fontSize: 18,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginTop: 6,
   },
   successBody: {
     color: colors.textMuted,
     fontSize: 13,
+    fontFamily: "Poppins-Regular",
     marginTop: 4,
     textAlign: "center",
   },
@@ -579,6 +599,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.cardBg,
     fontSize: 15,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   secondaryButton: {
@@ -590,6 +611,7 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: colors.textMuted,
     fontSize: 13,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
 });

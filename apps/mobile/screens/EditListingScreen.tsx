@@ -17,7 +17,7 @@ import { useAuth } from "../auth";
 import { Toast } from "../components/Toast";
 import type { RootStackParamList } from "../types";
 import { colors, radius, spacing } from "../styles/theme";
-import { Ionicons } from "@expo/vector-icons";
+import { ArrowLeft } from "lucide-react-native";
 
 type Props = NativeStackScreenProps<RootStackParamList, "EditListing">;
 
@@ -118,7 +118,7 @@ export function EditListingScreen({ navigation, route }: Props) {
       <Toast message={toast ?? ""} variant="success" visible={!!toast} />
       <View style={styles.topBar}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <ArrowLeft size={22} color={colors.text} strokeWidth={2} />
         </Pressable>
         <Text style={styles.topTitle}>Edit listing</Text>
         <View style={styles.backButton} />
@@ -221,6 +221,7 @@ const styles = StyleSheet.create({
   topTitle: {
     color: colors.text,
     fontSize: 16,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   content: {
@@ -239,6 +240,7 @@ const styles = StyleSheet.create({
   label: {
     color: colors.textMuted,
     fontSize: 12,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginBottom: 6,
   },
@@ -248,6 +250,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.text,
     fontSize: 14,
+    fontFamily: "Poppins-Regular",
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -261,6 +264,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.cardBg,
     fontSize: 15,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   deleteButton: {
@@ -272,6 +276,7 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: colors.danger,
     fontSize: 13,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   centered: {
@@ -286,6 +291,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.danger,
     fontSize: 12,
+    fontFamily: "Poppins-Regular",
     marginBottom: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,

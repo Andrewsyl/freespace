@@ -8,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,6 +17,7 @@ import { useAuth } from "../../auth";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
 import { colors, spacing, textStyles } from "../../styles/theme";
+import { Plus, X } from "lucide-react-native";
 
 type FlowStackParamList = {
   ListingPhotos: undefined;
@@ -29,27 +29,37 @@ type Props = NativeStackScreenProps<FlowStackParamList, "ListingPhotos">;
 export function ListingPhotosScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
   const { token } = useAuth();
-  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadLabel, setUploadLabel] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const hasPhoto = draft.photos.some((photo) => photo?.trim());
+  const photos = draft.photos.filter((photo) => photo?.trim());
+  const hasPhoto = photos.length > 0;
 
-  const updatePhoto = (index: number, value: string) => {
-    setDraft((prev) => {
-      const next = [...prev.photos];
-      next[index] = value;
-      return { ...prev, photos: next };
-    });
+  const removePhoto = (url: string) => {
+    setDraft((prev) => ({
+      ...prev,
+      photos: prev.photos.filter((photo) => photo !== url),
+    }));
   };
 
-  const removePhoto = (index: number) => {
-    setDraft((prev) => {
-      const next = [...prev.photos];
-      next[index] = "";
-      return { ...prev, photos: next };
+  const uploadAsset = async (asset: ImagePicker.ImagePickerAsset) => {
+    if (!token) throw new Error("Sign in to upload photos.");
+    const contentType = asset.mimeType ?? "image/jpeg";
+    const upload = await getListingImageUploadUrl({ token, contentType });
+    const fileResponse = await fetch(asset.uri);
+    const blob = await fileResponse.blob();
+    const putResult = await fetch(upload.signedUrl, {
+      method: "PUT",
+      headers: { "Content-Type": contentType },
+      body: blob,
     });
+    if (!putResult.ok) {
+      throw new Error("Upload failed. Try again.");
+    }
+    return upload.publicUrl;
   };
 
-  const uploadPhoto = async (index: number) => {
+  const uploadPhotos = async () => {
     if (!token) {
       Alert.alert("Sign in required", "Please sign in to upload photos.");
       return;
@@ -60,34 +70,34 @@ export function ListingPhotosScreen({ navigation }: Props) {
       Alert.alert("Permission needed", "Enable photo access to upload images.");
       return;
     }
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      selectionLimit: 0,
       quality: 0.85,
+      orderedSelection: true,
     });
-    if (result.canceled) return;
-    const asset = result.assets?.[0];
-    if (!asset?.uri) return;
-    const contentType = asset.mimeType ?? "image/jpeg";
-    setUploadingIndex(index);
+    if (result.canceled || !result.assets?.length) return;
+
+    setUploading(true);
     try {
-      const upload = await getListingImageUploadUrl({ token, contentType });
-      const fileResponse = await fetch(asset.uri);
-      const blob = await fileResponse.blob();
-      const putResult = await fetch(upload.signedUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": contentType,
-        },
-        body: blob,
-      });
-      if (!putResult.ok) {
-        throw new Error("Upload failed. Try again.");
+      const nextUrls: string[] = [];
+      for (let i = 0; i < result.assets.length; i += 1) {
+        setUploadLabel(`Uploading ${i + 1} of ${result.assets.length}...`);
+        const url = await uploadAsset(result.assets[i]);
+        nextUrls.push(url);
       }
-      updatePhoto(index, upload.publicUrl);
+      setDraft((prev) => {
+        const merged = [...prev.photos, ...nextUrls];
+        const deduped = Array.from(new Set(merged.filter((value) => value?.trim())));
+        return { ...prev, photos: deduped };
+      });
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : "Upload failed.");
     } finally {
-      setUploadingIndex(null);
+      setUploading(false);
+      setUploadLabel(null);
     }
   };
 
@@ -98,69 +108,56 @@ export function ListingPhotosScreen({ navigation }: Props) {
         <StepProgress current={6} total={7} />
         <Text style={styles.title}>Show off your space</Text>
         <Text style={styles.subtitle}>
-          Photos help drivers trust your listing, but you can add them later.
+          Add multiple photos in one go. Better photos improve trust and booking conversion.
         </Text>
 
         {uploadError ? <Text style={styles.errorText}>{uploadError}</Text> : null}
-        {[0, 1, 2].map((index) => {
-          const uri = draft.photos[index];
-          const isUploading = uploadingIndex === index;
-          return (
-            <View key={index} style={styles.field}>
-              <Text style={styles.label}>Photo {index + 1}</Text>
-              {uri ? (
-                <View style={styles.previewRow}>
-                  <Image source={{ uri }} style={styles.previewImage} />
-                  <View style={styles.previewActions}>
-                    <Pressable
-                      style={styles.secondaryButton}
-                      onPress={() => uploadPhoto(index)}
-                      disabled={isUploading}
-                    >
-                      {isUploading ? (
-                        <ActivityIndicator size="small" color="#00d4aa" />
-                      ) : (
-                        <Text style={styles.secondaryButtonText}>Replace</Text>
-                      )}
-                    </Pressable>
-                    <Pressable style={styles.removeButton} onPress={() => removePhoto(index)}>
-                      <Text style={styles.removeButtonText}>Remove</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              ) : (
-                <Pressable
-                  style={styles.uploadButton}
-                  onPress={() => uploadPhoto(index)}
-                  disabled={isUploading}
-                >
-                  {isUploading ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
-                  ) : (
-                    <Text style={styles.uploadButtonText}>Upload from phone</Text>
-                  )}
-                </Pressable>
-              )}
-              <TextInput
-                style={styles.input}
-                value={uri ?? ""}
-                onChangeText={(value) => updatePhoto(index, value)}
-                placeholder="Or paste a URL"
-                placeholderTextColor="#94a3b8"
-                autoCapitalize="none"
-              />
+
+        <Pressable
+          style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]}
+          onPress={uploadPhotos}
+          disabled={uploading}
+        >
+          {uploading ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <View style={styles.uploadButtonInner}>
+              <Plus size={18} color="#ffffff" strokeWidth={2.6} />
+              <Text style={styles.uploadButtonText}>
+                {hasPhoto ? "Add more photos" : "Upload photos"}
+              </Text>
             </View>
-          );
-        })}
+          )}
+        </Pressable>
+        <Text style={styles.uploadHint}>
+          {uploadLabel ?? "You can select multiple images from your gallery."}
+        </Text>
+
+        {hasPhoto ? (
+          <View style={styles.grid}>
+            {photos.map((uri) => (
+              <View key={uri} style={styles.photoCard}>
+                <Image source={{ uri }} style={styles.photoImage} />
+                <Pressable
+                  style={styles.removeChip}
+                  onPress={() => removePhoto(uri)}
+                  hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                >
+                  <X size={14} color="#ffffff" strokeWidth={2.8} />
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
       <View style={styles.footer}>
         <Pressable
           style={[
             styles.primaryButton,
-            (!hasPhoto || uploadingIndex !== null) && styles.primaryButtonDisabled,
+            (!hasPhoto || uploading) && styles.primaryButtonDisabled,
           ]}
           onPress={() => navigation.navigate("ListingReview")}
-          disabled={!hasPhoto || uploadingIndex !== null}
+          disabled={!hasPhoto || uploading}
         >
           <Text style={styles.primaryButtonText}>Continue</Text>
         </Pressable>
@@ -186,73 +183,73 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: 22,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginTop: 6,
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: 13,
+    fontFamily: "Poppins-Regular",
     marginTop: 6,
     lineHeight: 20,
-  },
-  field: {
-    marginTop: 16,
-  },
-  label: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
-    marginBottom: 6,
-    letterSpacing: 0.5,
-  },
-  input: {
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    color: colors.text,
-    fontSize: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  previewRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 10,
-  },
-  previewImage: {
-    borderRadius: 12,
-    height: 70,
-    width: 100,
-  },
-  previewActions: {
-    flex: 1,
-    gap: 8,
   },
   uploadButton: {
     alignItems: "center",
     backgroundColor: colors.accent,
-    borderRadius: 12,
-    marginBottom: 10,
-    minHeight: 44,
+    borderRadius: 14,
+    marginTop: 18,
+    minHeight: 50,
     justifyContent: "center",
+  },
+  uploadButtonDisabled: {
+    opacity: 0.85,
+  },
+  uploadButtonInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   uploadButtonText: {
     color: colors.cardBg,
-    fontSize: 14,
+    fontSize: 15,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
-  removeButton: {
-    alignItems: "center",
-    borderColor: "#fecaca",
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingVertical: 8,
-  },
-  removeButtonText: {
-    color: colors.danger,
+  uploadHint: {
+    color: colors.textSoft,
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: "Poppins-Regular",
+    marginTop: 8,
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 14,
+  },
+  photoCard: {
+    width: "48%",
+    aspectRatio: 1.2,
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#e5e7eb",
+    position: "relative",
+  },
+  photoImage: {
+    width: "100%",
+    height: "100%",
+  },
+  removeChip: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(15, 23, 42, 0.75)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   footer: {
     backgroundColor: colors.cardBg,
@@ -272,6 +269,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.cardBg,
     fontSize: 15,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   secondaryButton: {
@@ -285,11 +283,13 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: colors.accent,
     fontSize: 13,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   errorText: {
     color: colors.danger,
     fontSize: 12,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginTop: 10,
   },

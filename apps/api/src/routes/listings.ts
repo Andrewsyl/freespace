@@ -13,7 +13,7 @@ import {
   updateListingForHost,
   getListingHostId,
 } from "../lib/db.js";
-import { getPresignedUploadUrl } from "../lib/s3.js";
+import { getPresignedUploadUrl, S3UploadConfigError } from "../lib/s3.js";
 import { geocodeAddress } from "../lib/geocode.js";
 import { requireAuth } from "../middleware/auth.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
@@ -44,6 +44,9 @@ router.post("/image-upload-url", requireAuth, listingWriteLimiter, async (req, r
     const { signedUrl, publicUrl } = await getPresignedUploadUrl({ contentType, userId });
     res.json({ signedUrl, publicUrl });
   } catch (error) {
+    if (error instanceof S3UploadConfigError) {
+      return res.status(503).json({ message: error.message });
+    }
     next(error);
   }
 });

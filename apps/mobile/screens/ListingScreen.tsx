@@ -52,10 +52,11 @@ import {
 import {
   ArrowDownUp,
   Cctv,
-  Hash,
+  EvCharger,
   Home,
-  Info,
   Fence,
+  IdCard,
+  KeyRound,
   Star,
   User,
   Image as ImageIcon,
@@ -66,11 +67,24 @@ type Props = NativeStackScreenProps<RootStackParamList, "Listing">;
 const getFeatureIconType = (label: string) => {
   const normalized = label.toLowerCase();
   if (normalized.includes("low") || normalized.includes("clearance")) return "low";
+  if (normalized.includes("permit")) return "permit";
+  if (normalized.includes("ev") || normalized.includes("charger") || normalized.includes("charging")) return "ev";
   if (normalized.includes("cctv") || normalized.includes("camera")) return "cctv";
   if (normalized.includes("shelter") || normalized.includes("covered") || normalized.includes("roof")) return "sheltered";
   if (normalized.includes("gate") || normalized.includes("gated") || normalized.includes("barrier")) return "gated";
   if (normalized.includes("code") || normalized.includes("keypad") || normalized.includes("entry")) return "code";
-  return "cctv";
+  return "sheltered";
+};
+
+const getAddressWithoutHouseNumber = (address: string) => {
+  const parts = address
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (!parts.length) return address;
+  const firstPart = parts[0].replace(/^\d+[A-Za-z0-9\-\/]*\s+/, "").trim();
+  const normalizedParts = [firstPart || parts[0], ...parts.slice(1)];
+  return normalizedParts.join(", ");
 };
 
 const FeatureIcon = ({ type }: { type: string }) => {
@@ -82,14 +96,18 @@ const FeatureIcon = ({ type }: { type: string }) => {
       return <ArrowDownUp size={size} color={stroke} strokeWidth={sw} />;
     case "cctv":
       return <Cctv size={size} color={stroke} strokeWidth={sw} />;
+    case "permit":
+      return <IdCard size={size} color={stroke} strokeWidth={sw} />;
+    case "ev":
+      return <EvCharger size={size} color={stroke} strokeWidth={sw} />;
     case "sheltered":
       return <Home size={size} color={stroke} strokeWidth={sw} />;
     case "gated":
       return <Fence size={size} color={stroke} strokeWidth={sw} />;
     case "code":
-      return <Hash size={size} color={stroke} strokeWidth={sw} />;
+      return <KeyRound size={size} color={stroke} strokeWidth={sw} />;
     default:
-      return <Cctv size={size} color={stroke} strokeWidth={sw} />;
+      return <Home size={size} color={stroke} strokeWidth={sw} />;
   }
 };
 
@@ -125,6 +143,7 @@ export function ListingScreen({ navigation, route }: Props) {
     listing?.latitude && listing?.longitude
       ? `${listing.latitude},${listing.longitude}`
       : "53.3498,-6.2603";
+  const areaLabel = listing?.address ? getAddressWithoutHouseNumber(listing.address) : "";
 
   // Check if current times match the booking times
   const isBookingTimes = booking &&
@@ -329,6 +348,7 @@ export function ListingScreen({ navigation, route }: Props) {
   const hostRating = hasReviews && listing?.rating ? listing.rating.toFixed(1) : null;
   const hostReviews = hasReviews ? listing?.rating_count ?? 0 : 0;
   const heroHeight = Math.round(width * 0.72);
+  const heroTapHeight = Math.max(0, heroHeight - 40);
   const distanceLabel = listing?.distance_m
     ? `${(listing.distance_m / 1000).toFixed(1)} km`
     : "0.8 km";
@@ -460,7 +480,7 @@ export function ListingScreen({ navigation, route }: Props) {
             <Pressable
               style={[
                 styles.heroTapOverlay,
-                { height: Math.max(0, heroHeight), top: 0 },
+                { height: heroTapHeight, top: 0 },
               ]}
               onPress={() => {
                 setViewerIndex(0);
@@ -481,7 +501,7 @@ export function ListingScreen({ navigation, route }: Props) {
                 <Text style={styles.cardTitle}>{listing.title}</Text>
                 <View style={styles.locationRow}>
                   <Ionicons name="location-outline" size={16} color="#6B7280" />
-                  <Text style={styles.location}>{listing.address}</Text>
+                  <Text style={styles.location}>{areaLabel}</Text>
                 </View>
                 <View style={styles.ratingRow}>
                   <Ionicons name="star" size={16} color="#F59E0B" />
@@ -1601,7 +1621,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingTop: 12,
+    paddingTop: 16,
     paddingBottom: 120, // Extra padding for fixed bottom bar
   },
   contentWrap: {
@@ -1618,7 +1638,7 @@ const styles = StyleSheet.create({
   },
   titleSection: {
     paddingHorizontal: 16,
-    paddingBottom: 14,
+    paddingBottom: 18,
   },
   category: {
     fontFamily: "Poppins-Medium",
@@ -1634,13 +1654,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#111827',
     lineHeight: 33,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 2,
+    marginBottom: 6,
   },
   location: {
     fontFamily: "Poppins-Regular",
@@ -1652,7 +1672,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 4,
+    marginTop: 2,
+    marginBottom: 6,
   },
   summaryStrip: {
     flexDirection: "row",
@@ -1661,8 +1682,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.border,
-    marginTop: 10,
-    paddingVertical: 10,
+    marginTop: 12,
+    paddingVertical: 12,
   },
   summaryCell: {
     flex: 1,
@@ -1719,7 +1740,7 @@ const styles = StyleSheet.create({
   },
   timePickerSection: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
   },
   timePickerWrapper: {
     overflow: "hidden",
@@ -1801,24 +1822,25 @@ const styles = StyleSheet.create({
     paddingTop: 6,
   },
   sectionBlock: {
-    paddingTop: 12,
+    paddingTop: 16,
+    paddingBottom: 14,
   },
   sectionDivider: {
     height: 1,
     backgroundColor: "#E5E7EB",
-    marginTop: 8,
+    marginHorizontal: 16,
   },
   finalAddressRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    marginTop: 2,
+    marginTop: 6,
     alignSelf: "center",
     backgroundColor: "#F3F4F6",
     borderRadius: 999,
     paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingVertical: 5,
   },
   finalAddressText: {
     fontFamily: "Poppins-Regular",
@@ -1837,7 +1859,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 6,
+    marginBottom: 10,
   },
   hoursToggleText: {
     fontFamily: "Poppins-Medium",
@@ -1885,12 +1907,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   sectionBody: {
     fontFamily: "Poppins-Regular",
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 24,
     color: '#6B7280',
     fontWeight: '400',
   },
@@ -1899,7 +1921,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#10B981',
-    marginTop: 6,
+    marginTop: 10,
   },
   featuresGrid: {
     flexDirection: "row",
@@ -1973,8 +1995,8 @@ const styles = StyleSheet.create({
     color: '#EF4444',
   },
   reviewList: {
-    gap: 16,
-    marginTop: 10,
+    gap: 18,
+    marginTop: 12,
   },
   reviewHeaderRow: {
     flexDirection: "row",

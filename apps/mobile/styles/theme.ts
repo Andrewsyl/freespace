@@ -48,18 +48,21 @@ export const textStyles = {
   kicker: {
     color: colors.accent,
     fontSize: 12,
+    fontFamily: "Poppins-Medium",
     fontWeight: "500" as const,
     letterSpacing: 0,
   },
   title: {
     color: colors.text,
     fontSize: 24,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600" as const,
     letterSpacing: -0.3,
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: 14,
+    fontFamily: "Poppins-Regular",
     fontWeight: "400" as const,
   },
 };

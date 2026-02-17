@@ -10,6 +10,7 @@ export type ListingDraft = {
   coverPitch?: number | null;
   spaceType: string;
   accessOptions: string[];
+  requiresAccessCode: boolean | null;
   accessCode: string;
   permissionDeclared: boolean;
   availability: {
@@ -20,6 +21,7 @@ export type ListingDraft = {
     dateStart: string;
     dateEnd: string;
     weekdays: string[];
+    dayTimeRanges?: Record<string, { start: string; end: string }>;
   };
   pricePerDay: string;
   photos: string[];

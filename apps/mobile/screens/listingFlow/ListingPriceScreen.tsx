@@ -2,7 +2,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { CalendarDays, Info } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
 import { colors, radius, spacing, textStyles } from "../../styles/theme";
@@ -76,7 +76,7 @@ export function ListingPriceScreen({ navigation }: Props) {
 
         <View style={styles.estimateCard}>
           <View style={styles.estimateRow}>
-            <Ionicons name="calendar-outline" size={20} color={colors.accent} />
+            <CalendarDays size={18} color={colors.accent} strokeWidth={2.2} />
             <Text style={styles.estimateLabel}>Monthly estimate</Text>
           </View>
           <Text style={styles.estimateValue}>€{monthlyEstimate}</Text>
@@ -85,7 +85,7 @@ export function ListingPriceScreen({ navigation }: Props) {
 
         <View style={styles.infoCard}>
           <View style={styles.infoIconCircle}>
-            <Ionicons name="information" size={20} color={colors.accent} />
+            <Info size={18} color={colors.accent} strokeWidth={2.2} />
           </View>
           <View style={styles.infoContent}>
             <Text style={styles.infoTitle}>Recommended: €{recommendedPrice}/day</Text>
@@ -125,12 +125,14 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: 22,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginTop: 6,
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: 13,
+    fontFamily: "Poppins-Regular",
     marginTop: 6,
     lineHeight: 20,
   },
@@ -145,6 +147,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     color: colors.text,
     fontSize: 16,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginBottom: 14,
   },
@@ -161,6 +164,7 @@ const styles = StyleSheet.create({
   currencySymbol: {
     color: colors.text,
     fontSize: 28,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginRight: 8,
   },
@@ -168,12 +172,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 36,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     padding: 0,
   },
   perDayText: {
     color: colors.textMuted,
     fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   estimateCard: {
@@ -193,16 +199,19 @@ const styles = StyleSheet.create({
   estimateLabel: {
     color: colors.text,
     fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   estimateValue: {
     color: colors.text,
     fontSize: 28,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   estimateHint: {
     color: colors.textMuted,
     fontSize: 12,
+    fontFamily: "Poppins-Regular",
     marginTop: 4,
   },
   infoCard: {
@@ -230,11 +239,13 @@ const styles = StyleSheet.create({
   infoTitle: {
     color: colors.text,
     fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   infoText: {
     color: colors.textMuted,
     fontSize: 13,
+    fontFamily: "Poppins-Regular",
     lineHeight: 19,
   },
   footer: {
@@ -255,6 +266,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.cardBg,
     fontSize: 16,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
 });

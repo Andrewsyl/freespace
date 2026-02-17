@@ -1,8 +1,17 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import Svg, { Path, Rect, Circle } from "react-native-svg";
+import {
+  CarFront,
+  CircleCheck,
+  Cctv,
+  Fence,
+  Home,
+  Route,
+  SquareParking,
+  Zap,
+  IdCard,
+} from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
 import { colors, radius, spacing, textStyles } from "../../styles/theme";
@@ -19,42 +28,44 @@ const accessOptions = ["Gated", "Permit required", "EV charging", "CCTV", "Cover
 
 const SpaceTypeIcon = ({ type, active }: { type: string; active: boolean }) => {
   const stroke = active ? colors.accent : colors.textSoft;
-  const fill = active ? "#e6f9f5" : "#f1f5f9";
+  const size = 22;
+  const strokeWidth = 2.2;
   switch (type) {
     case "Private Driveway":
-      return (
-        <Svg width={26} height={26} viewBox="0 0 26 26">
-          <Rect x={1} y={7} width={10} height={14} rx={2} stroke={stroke} strokeWidth={2} />
-          <Path d="M13 22V4l8 4v14z" fill={fill} stroke={stroke} strokeWidth={2} />
-        </Svg>
-      );
+      return <Home size={size} color={stroke} strokeWidth={strokeWidth} />;
     case "Garage":
-      return (
-        <Svg width={26} height={26} viewBox="0 0 26 26">
-          <Path d="M3 12l10-7 10 7v9H3z" fill={fill} stroke={stroke} strokeWidth={2} />
-          <Rect x={7} y={13} width={12} height={8} rx={2} stroke={stroke} strokeWidth={2} />
-        </Svg>
-      );
+      return <CarFront size={size} color={stroke} strokeWidth={strokeWidth} />;
     case "Car park":
-      return (
-        <Svg width={26} height={26} viewBox="0 0 26 26">
-          <Rect x={3} y={3} width={20} height={20} rx={4} fill={fill} stroke={stroke} strokeWidth={2} />
-          <Path d="M10 18V8h4.5a3.5 3.5 0 0 1 0 7H10" stroke={stroke} strokeWidth={2} fill="none" />
-        </Svg>
-      );
+      return <SquareParking size={size} color={stroke} strokeWidth={strokeWidth} />;
     case "Private road":
     default:
-      return (
-        <Svg width={26} height={26} viewBox="0 0 26 26">
-          <Path d="M8 3h10l4 20H4z" fill={fill} stroke={stroke} strokeWidth={2} />
-          <Path d="M13 7v12" stroke={stroke} strokeWidth={2} />
-        </Svg>
-      );
+      return <Route size={size} color={stroke} strokeWidth={strokeWidth} />;
+  }
+};
+
+const FeatureIcon = ({ option, active }: { option: string; active: boolean }) => {
+  const color = active ? colors.accent : colors.textSoft;
+  const size = 15;
+  const strokeWidth = 2.2;
+  switch (option) {
+    case "Gated":
+      return <Fence size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Permit required":
+      return <IdCard size={size} color={color} strokeWidth={strokeWidth} />;
+    case "EV charging":
+      return <Zap size={size} color={color} strokeWidth={strokeWidth} />;
+    case "CCTV":
+      return <Cctv size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Covered":
+      return <Home size={size} color={color} strokeWidth={strokeWidth} />;
+    default:
+      return <Cctv size={size} color={color} strokeWidth={strokeWidth} />;
   }
 };
 
 export function ListingDetailsScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
+  const canContinue = Boolean(draft.spaceType) && draft.requiresAccessCode !== null;
 
   const toggleAccess = (option: string) => {
     setDraft((prev) => {
@@ -107,11 +118,12 @@ export function ListingDetailsScreen({ navigation }: Props) {
                 style={[styles.chip, isSelected && styles.chipActive]}
                 onPress={() => toggleAccess(option)}
               >
+                <FeatureIcon option={option} active={isSelected} />
                 <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
                   {option}
                 </Text>
                 {isSelected && (
-                  <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
+                  <CircleCheck size={16} color={colors.accent} strokeWidth={2.2} />
                 )}
               </Pressable>
             );
@@ -119,29 +131,83 @@ export function ListingDetailsScreen({ navigation }: Props) {
         </View>
 
         <Text style={styles.sectionTitle}>Access notes (optional)</Text>
-        <Text style={styles.subtitle}>Gate code or special instructions</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. Gate code is 2468"
-          placeholderTextColor="#9ca3af"
-          value={draft.accessCode}
-          onChangeText={(value) =>
-            setDraft((prev) => ({
-              ...prev,
-              accessCode: value,
-            }))
-          }
-          multiline
-          numberOfLines={3}
-          textAlignVertical="top"
-          maxLength={150}
-        />
+        <Text style={styles.subtitle}>Does this space require a code to access?</Text>
+        <View style={styles.binaryRow}>
+          <Pressable
+            style={[
+              styles.binaryOption,
+              draft.requiresAccessCode === true && styles.binaryOptionActive,
+            ]}
+            onPress={() =>
+              setDraft((prev) => ({
+                ...prev,
+                requiresAccessCode: true,
+              }))
+            }
+          >
+            <Text
+              style={[
+                styles.binaryOptionText,
+                draft.requiresAccessCode === true && styles.binaryOptionTextActive,
+              ]}
+            >
+              Yes
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.binaryOption,
+              draft.requiresAccessCode === false && styles.binaryOptionActive,
+            ]}
+            onPress={() =>
+              setDraft((prev) => ({
+                ...prev,
+                requiresAccessCode: false,
+                accessCode: "",
+              }))
+            }
+          >
+            <Text
+              style={[
+                styles.binaryOptionText,
+                draft.requiresAccessCode === false && styles.binaryOptionTextActive,
+              ]}
+            >
+              No
+            </Text>
+          </Pressable>
+        </View>
+
+        {draft.requiresAccessCode ? (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter access code or instructions"
+              placeholderTextColor="#9ca3af"
+              value={draft.accessCode}
+              onChangeText={(value) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  accessCode: value,
+                }))
+              }
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              maxLength={150}
+            />
+            <Text style={styles.privacyNote}>
+              This code is hidden until a booking is confirmed. It is only shown to the booked
+              driver and is removed after the booking ends.
+            </Text>
+          </>
+        ) : null}
       </ScrollView>
       <View style={styles.footer}>
         <Pressable
-          style={[styles.primaryButton, !draft.spaceType && styles.primaryButtonDisabled]}
+          style={[styles.primaryButton, !canContinue && styles.primaryButtonDisabled]}
           onPress={() => navigation.navigate("ListingAvailability")}
-          disabled={!draft.spaceType}
+          disabled={!canContinue}
         >
           <Text style={styles.primaryButtonText}>Continue</Text>
         </Pressable>
@@ -164,12 +230,14 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: 22,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginTop: 6,
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: 13,
+    fontFamily: "Poppins-Regular",
     marginTop: 6,
     lineHeight: 20,
   },
@@ -211,11 +279,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   sectionTitle: {
     color: colors.text,
     fontSize: 16,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginTop: 24,
   },
@@ -243,10 +313,12 @@ const styles = StyleSheet.create({
   chipText: {
     color: colors.textMuted,
     fontSize: 13,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   chipTextActive: {
     color: colors.text,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
   input: {
@@ -256,12 +328,47 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     color: colors.text,
     fontSize: 14,
+    fontFamily: "Poppins-Regular",
     lineHeight: 20,
     marginTop: 12,
     minHeight: 80,
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 12,
+  },
+  privacyNote: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontFamily: "Poppins-Regular",
+    lineHeight: 18,
+    marginTop: 8,
+  },
+  binaryRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+  },
+  binaryOption: {
+    alignItems: "center",
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    flex: 1,
+    paddingVertical: 12,
+  },
+  binaryOptionActive: {
+    backgroundColor: "#e9fbf6",
+    borderColor: colors.accent,
+  },
+  binaryOptionText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
+    fontWeight: "600",
+  },
+  binaryOptionTextActive: {
+    color: colors.text,
   },
   footer: {
     backgroundColor: colors.cardBg,
@@ -281,6 +388,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.cardBg,
     fontSize: 16,
+    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
   },
 });
