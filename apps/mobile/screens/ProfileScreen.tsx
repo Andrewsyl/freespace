@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     borderColor: "#a7f3d0",
     borderRadius: 12,
     borderWidth: 1,
-    color: "#047857",
+    color: "#2ECC8F",
     fontSize: 12,
     marginBottom: 12,
     paddingHorizontal: 12,
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   inlineStatus: {
-    color: "#059669",
+    color: "#2ECC8F",
     fontSize: 12,
     fontWeight: "600",
   },

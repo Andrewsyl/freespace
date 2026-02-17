@@ -2065,7 +2065,7 @@ const styles = StyleSheet.create({
     width: 40,
   },
   resultIconDot: {
-    backgroundColor: "#00d4aa",
+    backgroundColor: "#2ECC8F",
     borderRadius: 6,
     height: 12,
     width: 12,
@@ -2366,7 +2366,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   overlappingItemPrice: {
-    color: "#10b981",
+    color: "#2ECC8F",
     fontSize: 18,
     fontWeight: "600",
   },

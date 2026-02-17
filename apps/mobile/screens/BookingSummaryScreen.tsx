@@ -440,7 +440,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       </View>
       {loadingListing ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="small" color="#247881" />
+          <ActivityIndicator size="small" color="#2ECC8F" />
           <Text style={styles.muted}>Loading booking…</Text>
         </View>
       ) : !user ? (

@@ -270,7 +270,7 @@ function SubmitButton({ disabled, isSubmitted, loading, label, onPress }: Submit
   return (
     <AnimatedPressable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} style={animatedStyle}>
       <LinearGradient
-        colors={["#14b8a6", "#10b981"]}
+        colors={["#2ECC8F", "#2ECC8F"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.submitButton}
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   },
   positiveText: {
     fontSize: 12,
-    color: "#14b8a6",
+    color: "#2ECC8F",
     fontWeight: "500",
   },
   submitButton: {

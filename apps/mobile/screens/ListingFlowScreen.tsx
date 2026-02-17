@@ -213,7 +213,7 @@ export function ListingFlowScreen({ route }: Props) {
             headerBackTitleVisible: false,
             headerTitleAlign: "center",
             headerTintColor: colors.text,
-            headerStyle: { backgroundColor: colors.appBg },
+            headerStyle: { backgroundColor: colors.headerTint },
             headerShadowVisible: false,
             headerTitleStyle: {
               color: colors.text,

@@ -9,7 +9,7 @@ export function PricePin({ label, selected }: { label?: string; selected?: boole
         {/* Main pin container */}
         {selected ? (
           <LinearGradient
-            colors={["#10b981", "#14b8a6"]} // emerald-500 to teal-600
+            colors={["#2ECC8F", "#2ECC8F"]} // emerald-500 to teal-600
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={[styles.pinContainer, styles.selectedContainer]}
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     minWidth: 50,
   },
   selectedContainer: {
-    shadowColor: "#10b981",
+    shadowColor: "#2ECC8F",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   unselectedText: {
-    color: "#047857", // emerald-700
+    color: "#2ECC8F", // emerald-700
     fontSize: 13,
     fontWeight: "600",
   },
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     borderRightColor: "transparent",
   },
   triangleSelected: {
-    borderTopColor: "#14b8a6", // teal-600
+    borderTopColor: "#2ECC8F", // teal-600
   },
   triangleUnselected: {
     borderTopColor: "#ffffff",

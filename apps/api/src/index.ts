@@ -83,6 +83,27 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
   }
 
   if (err instanceof Error) {
+    const maybeStripeError = err as Error & {
+      type?: string;
+      message?: string;
+      code?: string;
+      param?: string;
+      requestId?: string;
+      statusCode?: number;
+      rawType?: string;
+    };
+    if (
+      maybeStripeError.type?.startsWith("Stripe") ||
+      maybeStripeError.rawType === "invalid_request_error" ||
+      maybeStripeError.statusCode === 400
+    ) {
+      return res.status(400).json({
+        message: maybeStripeError.message ?? "Stripe request failed",
+        code: maybeStripeError.code,
+        param: maybeStripeError.param,
+        requestId: maybeStripeError.requestId,
+      });
+    }
     return res.status(500).json({ message: "Internal server error" });
   }
 

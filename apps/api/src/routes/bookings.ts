@@ -44,7 +44,7 @@ const bookingSchemaBase = z.object({
   from: z.string().datetime(),
   to: z.string().datetime(),
   amountCents: z.number().int().positive().max(10000000),
-  currency: z.string().trim().length(3).default("eur"),
+  currency: z.string().trim().length(3).transform((value) => value.toLowerCase()).default("eur"),
   platformFeePercent: z.number().min(0).max(0.3).default(0.1),
   vehiclePlate: z
     .string()
@@ -478,7 +478,7 @@ router.post("/:id/extend-intent", requireAuth, bookingLimiter, async (req, res, 
 
     const intent = await stripe.paymentIntents.create({
       amount: additionalAmountCents,
-      currency: booking.currency ?? "eur",
+      currency: (booking.currency ?? "eur").toLowerCase(),
       customer: customerId,
       automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       metadata: {
@@ -660,7 +660,7 @@ router.post("/:id/change-intent", requireAuth, bookingLimiter, async (req, res, 
 
     const intent = await stripe.paymentIntents.create({
       amount: additionalAmountCents,
-      currency: booking.currency ?? "eur",
+      currency: (booking.currency ?? "eur").toLowerCase(),
       customer: customerId,
       automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       metadata: {

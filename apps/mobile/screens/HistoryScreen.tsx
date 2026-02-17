@@ -624,7 +624,7 @@ const styles = StyleSheet.create({
     flex: 0,
   },
   header: {
-    backgroundColor: colors.appBg,
+    backgroundColor: colors.headerTint,
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 6,
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: "600",
-    color: colors.text,
+    color: "#ffffff",
     letterSpacing: 0,
   },
   mapCtaBanner: {
@@ -695,11 +695,11 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: "row",
-    backgroundColor: colors.appBg,
+    backgroundColor: colors.headerTint,
     paddingHorizontal: 20,
     paddingTop: 4,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: "rgba(255,255,255,0.35)",
   },
   tab: {
     flex: 1,
@@ -708,13 +708,13 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   tabText: {
-    color: colors.textMuted,
+    color: "rgba(255,255,255,0.8)",
     fontSize: 12,
     fontWeight: "600",
     letterSpacing: 0.2,
   },
   tabTextActive: {
-    color: colors.text,
+    color: "#ffffff",
     fontWeight: "700",
   },
   tabIndicator: {
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: "33.33%",
     height: 2,
-    backgroundColor: colors.accent,
+    backgroundColor: "#ffffff",
     borderTopLeftRadius: 2,
     borderTopRightRadius: 2,
   },

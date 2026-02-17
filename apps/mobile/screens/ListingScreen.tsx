@@ -1609,7 +1609,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   favoriteIconActive: {
-    color: '#10B981',
+    color: '#2ECC8F',
   },
   favAnimOverlay: {
     position: 'absolute',
@@ -1920,7 +1920,7 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-SemiBold",
     fontSize: 15,
     fontWeight: '600',
-    color: '#10B981',
+    color: '#2ECC8F',
     marginTop: 10,
   },
   featuresGrid: {
@@ -2162,7 +2162,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#10B981',
+    borderColor: '#2ECC8F',
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
@@ -2171,11 +2171,11 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-SemiBold",
     fontSize: 13,
     fontWeight: '600',
-    color: '#10B981',
+    color: '#2ECC8F',
   },
   authButtonPrimary: {
     flex: 1,
-    backgroundColor: '#10B981',
+    backgroundColor: '#2ECC8F',
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',

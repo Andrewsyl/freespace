@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fee2e2",
   },
   cardActionText: {
-    color: "#047857",
+    color: "#2ECC8F",
     fontSize: 12,
     fontWeight: "600",
   },

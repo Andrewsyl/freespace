@@ -21,6 +21,7 @@ export type PaymentInput = {
 
 export async function createCheckoutSession(input: PaymentInput) {
   const { amount, currency, listingId, hostStripeAccountId, platformFeePercent, successUrl, cancelUrl } = input;
+  const normalizedCurrency = currency.toLowerCase();
   const feeAmount = Math.round(amount * platformFeePercent);
 
   const mockResponse = () => {
@@ -43,7 +44,7 @@ export async function createCheckoutSession(input: PaymentInput) {
       line_items: [
         {
           price_data: {
-            currency,
+            currency: normalizedCurrency,
             product_data: {
               name: `Parking booking ${listingId}`,
             },

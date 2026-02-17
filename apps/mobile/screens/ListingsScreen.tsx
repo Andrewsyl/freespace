@@ -138,6 +138,7 @@ export function ListingsScreen({ navigation }: Props) {
           style={styles.actionButton}
           onPress={() => navigation.navigate("CreateListingFlow")}
         >
+          <Ionicons name="add" size={16} color={colors.text} />
           <Text style={styles.actionText}>Add</Text>
         </Pressable>
       </View>
@@ -272,19 +273,27 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: spacing.screenX,
     paddingTop: 8,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.35)",
   },
   backButton: {
     alignItems: "center",
     justifyContent: "center",
     borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    width: 36,
+    height: 36,
   },
   actionButton: {
     alignItems: "center",
+    flexDirection: "row",
+    gap: 4,
     borderRadius: radius.pill,
+    backgroundColor: "rgba(255,255,255,0.9)",
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    height: 36,
+    justifyContent: "center",
   },
   backCircle: {
     alignItems: "center",
@@ -304,12 +313,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   topTitle: {
-    color: colors.text,
+    color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
   },
   content: {
-    padding: spacing.screenX,
+    paddingHorizontal: spacing.screenX,
+    paddingTop: 14,
+    paddingBottom: spacing.screenX,
+    gap: 14,
   },
   card: {
     backgroundColor: colors.cardBg,
@@ -350,7 +362,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.card,
     borderWidth: 1,
-    marginBottom: 16,
     padding: spacing.card,
     ...cardShadow,
   },
@@ -398,8 +409,9 @@ const styles = StyleSheet.create({
   },
   payoutCard: {
     backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderWidth: 1,
     borderRadius: radius.card,
-    marginTop: 16,
     padding: spacing.card,
     ...cardShadow,
   },
@@ -420,22 +432,23 @@ const styles = StyleSheet.create({
   listCard: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: radius.card,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: "row",
     gap: 12,
     padding: 12,
+    ...cardShadow,
   },
   listImage: {
-    borderRadius: 12,
-    height: 72,
+    borderRadius: 10,
+    height: 80,
     width: 96,
   },
   listPlaceholder: {
     alignItems: "center",
     backgroundColor: colors.border,
-    borderRadius: 12,
-    height: 72,
+    borderRadius: 10,
+    height: 80,
     justifyContent: "center",
     width: 96,
   },
@@ -446,7 +459,7 @@ const styles = StyleSheet.create({
   },
   listBody: {
     flex: 1,
-    gap: 4,
+    gap: 6,
   },
   listFooter: {
     alignItems: "center",
@@ -480,6 +493,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     borderRadius: 12,
     marginTop: 14,
+    minHeight: 48,
+    justifyContent: "center",
+    paddingHorizontal: 16,
     paddingVertical: 10,
   },
   primaryButtonDisabled: {
@@ -487,12 +503,12 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: colors.cardBg,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600",
   },
   actionText: {
     color: colors.text,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
   },
 });

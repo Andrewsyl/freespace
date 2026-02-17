@@ -2,9 +2,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   Alert,
-  Image,
   Linking,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,9 +21,9 @@ import { useAuth } from "../auth";
 import { getNotificationImageAttachment } from "../notifications";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import { format, formatDateTimeLabel } from "../utils/dateFormat";
+import { formatTimeLabel } from "../utils/dateFormat";
 import { formatBookingReference } from "../utils/bookingFormat";
+import { ParkingTicket } from "../components/ParkingTicket";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingDetail">;
 
@@ -50,8 +48,6 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   const isUpcoming = end.getTime() > now && start.getTime() > now;
   const isInProgress = start.getTime() <= now && end.getTime() > now && localStatus === "confirmed";
   const isCanceled = localStatus === "canceled";
-  const isRefunded = booking.refundStatus === "succeeded";
-  const refundedAt = booking.refundedAt ? new Date(booking.refundedAt) : null;
   const canReview = end.getTime() <= now && booking.status === "confirmed";
   const [reviewed, setReviewed] = useState(false);
   const [reviewedRating, setReviewedRating] = useState<number | null>(null);
@@ -91,20 +87,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     }, [booking.id])
   );
 
-  const statusLabel = isRefunded
-    ? "Refunded"
-    : isCanceled
-    ? "Cancelled"
-    : isInProgress
-    ? "In Progress"
-    : isUpcoming
-    ? "Upcoming"
-    : "Completed";
-
   const receiptUrl = booking.receiptUrl ?? null;
-  const vehiclePlate = booking.vehiclePlate?.trim();
-  const accessCode = booking.accessCode?.trim();
-  const showAccessCode = accessCode && localStatus === "confirmed";
   const minExtendTime = new Date(end.getTime() + 5 * 60 * 1000);
   const canCheckIn =
     localStatus === "confirmed" &&
@@ -112,20 +95,16 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     Date.now() >= start.getTime() - 15 * 60 * 1000 &&
     Date.now() <= end.getTime();
   const canBookAgain = !isUpcoming && !isInProgress;
-  const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-  const mapCoords =
-    typeof booking.latitude === "number" && typeof booking.longitude === "number"
-      ? { latitude: booking.latitude, longitude: booking.longitude }
-      : null;
-  const mapCenter = mapCoords ? `${mapCoords.latitude},${mapCoords.longitude}` : null;
-  const staticMapUrl =
-    mapsKey && mapCenter
-      ? `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(
-          mapCenter
-        )}&zoom=16&size=640x280&scale=2&format=png&maptype=roadmap&markers=color:0x10B981|${encodeURIComponent(
-          mapCenter
-        )}&key=${mapsKey}&v=${encodeURIComponent(booking.id)}`
-      : null;
+  const bookingDateLabel = `${start.toLocaleDateString(undefined, {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+  })} · ${formatTimeLabel(start)} - ${formatTimeLabel(end)}`;
+  const barcodeRaw = booking.id.replace(/-/g, "").slice(0, 12).toUpperCase();
+  const barcodeText =
+    barcodeRaw.length >= 12
+      ? `${barcodeRaw.slice(0, 4)} ${barcodeRaw.slice(4, 8)} ${barcodeRaw.slice(8, 12)}`
+      : barcodeRaw;
 
   const performCancel = async () => {
     if (!token || canceling || localStatus === "canceled") return;
@@ -241,67 +220,17 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     });
   };
 
-  const handleOpenMaps = () => {
-    Alert.alert("Open Navigation", "Navigate to this parking spot in Google Maps?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Open Maps",
-        onPress: () => {
-          const destination =
-            booking.latitude && booking.longitude
-              ? `${booking.latitude},${booking.longitude}`
-              : encodeURIComponent(booking.address);
-          const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
-          Linking.openURL(url);
-        },
-      },
-    ]);
-  };
-
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={28} color="#111827" />
+        <Pressable style={styles.backCircleButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={18} color="#111827" />
         </Pressable>
-        <Text style={styles.headerTitle}>Booking Details</Text>
-        <View style={{ width: 40 }} />
+        <Text style={styles.headerTitle}>Receipt</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} ref={scrollRef}>
-        {/* Map Section - for upcoming/active bookings */}
-        {(isUpcoming || isInProgress) && localStatus !== "canceled" ? (
-          <View style={styles.mapSection}>
-            <Pressable style={styles.mapImageButton} onPress={handleOpenMaps}>
-              {Platform.OS !== "ios" && staticMapUrl ? (
-                <Image source={{ uri: staticMapUrl }} style={styles.mapImage} />
-              ) : mapCoords ? (
-                <MapView
-                  provider={PROVIDER_GOOGLE}
-                  style={styles.mapImage}
-                  region={{
-                    latitude: mapCoords.latitude,
-                    longitude: mapCoords.longitude,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }}
-                  pointerEvents="none"
-                >
-                  <Marker coordinate={mapCoords} />
-                </MapView>
-              ) : (
-                <View style={styles.mapPlaceholder}>
-                  <Text style={styles.mapPlaceholderText}>Map preview unavailable</Text>
-                </View>
-              )}
-            </Pressable>
-            <TouchableOpacity style={styles.mapButton} onPress={handleOpenMaps}>
-              <Ionicons name="navigate" size={20} color="#247881" />
-              <Text style={styles.mapButtonText}>Get directions</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
-
         {/* Review Card */}
         {canReview ? (
           reviewed ? (
@@ -325,114 +254,23 @@ export function BookingDetailScreen({ navigation, route }: Props) {
               style={[styles.reviewButton, styles.reviewButtonTopSpacing]}
               onPress={() => navigation.navigate("Review", { booking })}
             >
-              <Ionicons name="star-outline" size={20} color="#247881" />
+              <Ionicons name="star-outline" size={20} color="#2ECC8F" />
               <Text style={styles.reviewButtonText}>Leave a review</Text>
             </TouchableOpacity>
           )
         ) : null}
 
-        {/* Outer Green Card - creates the "frame" */}
-        <View style={[
-          styles.outerGreenCard,
-          isCanceled && styles.outerGreenCardCanceled,
-          isRefunded && styles.outerGreenCardRefunded,
-          isInProgress && styles.outerGreenCardInProgress,
-          isUpcoming && styles.outerGreenCardUpcoming
-        ]}>
-          {/* Status Header */}
-          <View style={styles.statusHeader}>
-            <Ionicons
-              name={
-                isCanceled ? "close-circle"
-                : isRefunded ? "arrow-undo"
-                : isInProgress ? "time"
-                : isUpcoming ? "calendar"
-                : "checkmark-circle"
-              }
-              size={14}
-              color="#FFFFFF"
-            />
-            <Text style={styles.statusHeaderText}>{statusLabel}</Text>
-          </View>
-
-          {/* Inner White Content with rounded corners */}
-          <View style={styles.innerWhiteContent}>
-            {/* Listing Header */}
-            <View style={styles.listingRow}>
-            <View style={styles.carIcon}>
-              <Ionicons name="location" size={36} color="#247881" />
-            </View>
-              <View style={styles.listingText}>
-                <Text style={styles.listingName} numberOfLines={2}>{booking.title}</Text>
-                <Text style={styles.listingSubtitle} numberOfLines={2}>{booking.address}</Text>
-              </View>
-            </View>
-
-            {/* Details Rows - Mixed Vertical/Horizontal Layout */}
-            {checkedInAt ? (
-              <>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>CHECKED IN</Text>
-                  <Text style={styles.detailValue}>{format(checkedInAt)}</Text>
-                </View>
-              </>
-            ) : null}
-
-            {isRefunded && refundedAt ? (
-              <>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>REFUNDED</Text>
-                  <Text style={styles.detailValue}>{format(refundedAt)}</Text>
-                </View>
-              </>
-            ) : null}
-
-          {/* Start and End Time - Side by Side */}
-          <View style={styles.detailRowDouble}>
-            <View style={styles.detailRowDoubleItem}>
-              <Text style={styles.detailLabel}>START TIME</Text>
-              <Text style={styles.detailValue}>{format(start)}</Text>
-            </View>
-            <View style={styles.detailRowDoubleItem}>
-              <Text style={styles.detailLabel}>END TIME</Text>
-              <Text style={styles.detailValue}>{formatDateTimeLabel(end)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.detailRowHorizontal}>
-            <Text style={styles.detailLabel}>ORDER ID</Text>
-            <Text style={styles.detailValue}>{formatBookingReference(booking.id)}</Text>
-          </View>
-
-          {vehiclePlate ? (
-            <View style={styles.detailRowHorizontal}>
-              <Text style={styles.detailLabel}>VEHICLE</Text>
-              <Text style={styles.detailValue}>{vehiclePlate}</Text>
-            </View>
-          ) : null}
-
-          {showAccessCode ? (
-            <View style={styles.detailRowHorizontal}>
-              <Text style={styles.detailLabel}>ACCESS CODE</Text>
-              <Text style={styles.detailValue}>{accessCode}</Text>
-            </View>
-          ) : null}
-
-          <View style={styles.divider} />
-
-          <View style={styles.detailRowHorizontal}>
-            <Text style={styles.detailLabel}>PARKING SPOT</Text>
-            <Text style={styles.detailValue}>1 x Parking Space</Text>
-          </View>
-
-          <View style={styles.detailRowHorizontal}>
-            <Text style={styles.detailLabel}>TOTAL</Text>
-            <Text style={[styles.detailValue, styles.totalValue]}>
-              €{Math.round(localAmountCents / 100)}
-            </Text>
-          </View>
-          </View>
-        </View>
+        <ParkingTicket
+          companyName="PARKEASY"
+          companySubtitle="DUBLIN CITY"
+          title="PARKING RECEIPT"
+          date={bookingDateLabel}
+          location={booking.address}
+          orderId={formatBookingReference(booking.id)}
+          spot="1 Parking Space"
+          paidAmount={`€${(localAmountCents / 100).toFixed(2)}`}
+          barcodeText={barcodeText}
+        />
 
         {/* Action Buttons */}
         {isUpcoming && localStatus !== "canceled" ? (
@@ -479,7 +317,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 
         {/* Help Button */}
         <TouchableOpacity style={styles.helpButton}>
-          <Ionicons name="help-circle-outline" size={28} color="#247881" />
+          <Ionicons name="help-circle-outline" size={28} color="#2ECC8F" />
           <Text style={styles.helpText}>Need help?</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -506,41 +344,216 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB', // Match ListingScreen
+    backgroundColor: '#2ECC8F',
   },
 
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16, // Slightly more breathing room
+    paddingHorizontal: 24,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF', // White header
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    backgroundColor: 'transparent',
   },
 
-  backButton: {
-    width: 40,
-    height: 40,
+  backCircleButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerSpacer: {
+    width: 34,
+    height: 34,
+  },
 
   headerTitle: {
-    fontSize: 20, // Slightly larger
-    fontWeight: '700', // Bolder to match ListingScreen
-    color: '#111827',
-    letterSpacing: -0.3,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: 0,
   },
 
   scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
     paddingBottom: 40,
+  },
+  receiptCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  ticketPerforationTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    zIndex: 3,
+  },
+  ticketPerforationBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    zIndex: 3,
+  },
+  perfCircle: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#2ECC8F',
+  },
+  receiptSection: {
+    paddingVertical: 12,
+  },
+  receiptTitle: {
+    color: '#1A1A2E',
+    fontSize: 26,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  receiptSubtitle: {
+    color: '#888888',
+    fontSize: 13,
+    fontWeight: '400',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  slotsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
+  },
+  slotCard: {
+    width: '42%',
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: '#EEF2F4',
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  slotDivider: {
+    width: 1,
+    height: 90,
+    borderRightWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#D9DEE2',
+  },
+  entryLabel: {
+    color: '#2ECC8F',
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 6,
+  },
+  exitLabel: {
+    color: '#E74C3C',
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 6,
+  },
+  slotTimeText: {
+    color: '#999999',
+    fontSize: 11,
+    marginTop: 3,
+  },
+  receiptDashLine: {
+    borderTopWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#E0E0E0',
+    marginVertical: 4,
+  },
+  ticketDividerWrap: {
+    position: 'relative',
+    justifyContent: 'center',
+    marginVertical: 2,
+  },
+  ticketNotchLeft: {
+    position: 'absolute',
+    left: -36,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#2ECC8F',
+    zIndex: 2,
+  },
+  ticketNotchRight: {
+    position: 'absolute',
+    right: -36,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#2ECC8F',
+    zIndex: 2,
+  },
+  barcodeWrap: {
+    marginTop: 14,
+    marginBottom: 14,
+    alignSelf: 'center',
+    height: 24,
+    width: 150,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    justifyContent: 'space-between',
+  },
+  barcodeBar: {
+    backgroundColor: '#111827',
+    height: '100%',
+    borderRadius: 1,
+  },
+  durationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  durationText: {
+    color: '#999999',
+    fontSize: 13,
+  },
+  billAmount: {
+    color: '#1A1A2E',
+    fontSize: 36,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  payButton: {
+    backgroundColor: '#3B9DDD',
+    height: 52,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  payButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 2,
   },
 
   // Review card
   reviewCard: {
-    backgroundColor: '#247881',
+    backgroundColor: '#2ECC8F',
     paddingVertical: 24,
     paddingHorizontal: 24,
     borderBottomLeftRadius: 24,
@@ -604,7 +617,7 @@ const styles = StyleSheet.create({
 
   // Outer Green Card - creates the "frame" effect
   outerGreenCard: {
-    backgroundColor: '#247881', // Dark green
+    backgroundColor: '#2ECC8F', // Dark green
     marginHorizontal: 20,
     borderRadius: 28, // Outer corner radius
     paddingHorizontal: 4, // Thin green "border" on sides
@@ -826,7 +839,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#247881',
+    borderColor: '#2ECC8F',
     borderRadius: 16,
     justifyContent: 'center',
     alignSelf: 'stretch',
@@ -842,7 +855,7 @@ const styles = StyleSheet.create({
 
   // Action buttons
   actionBtn: {
-    backgroundColor: '#247881',
+    backgroundColor: '#2ECC8F',
     paddingVertical: 16,
     borderRadius: 16,
     marginHorizontal: 20,
@@ -862,7 +875,7 @@ const styles = StyleSheet.create({
   bookAgainButton: {
     marginTop: 12,
     marginHorizontal: 20,
-    backgroundColor: '#0F4C5C',
+    backgroundColor: '#2ECC8F',
     borderRadius: 999,
     paddingVertical: 14,
     alignItems: 'center',
@@ -916,6 +929,6 @@ const styles = StyleSheet.create({
   helpText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#247881',
+    color: '#2ECC8F',
   },
 });

@@ -8,13 +8,13 @@ export const colors = {
   },
   surface: "#FFFFFF",
   primary: {
-    main: "#10B981",
-    light: "#34D399",
-    dark: "#059669",
+    main: "#2ECC8F",
+    light: "#2ECC8F",
+    dark: "#2ECC8F",
     subtle: "#D1FAE5",
   },
   brand: {
-    teal: "#00D4AA",
+    teal: "#2ECC8F",
     tealSoft: "#CBD5F5",
   },
   secondary: {
@@ -39,7 +39,7 @@ export const colors = {
     main: "#EF4444",
     strong: "#DC2626",
   },
-  success: "#10B981",
+  success: "#2ECC8F",
   warning: "#F59E0B",
   info: "#3B82F6",
   border: "#E5E7EB",

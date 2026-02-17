@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   },
   
   favoriteIconActive: {
-    color: "#047857",
+    color: "#2ECC8F",
   },
   
   // Content section
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   currentPrice: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#047857",
+    color: "#2ECC8F",
     letterSpacing: -0.5,
   },
   
