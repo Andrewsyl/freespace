@@ -129,7 +129,6 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
       $3
     )
-    AND status <> 'archived'
     AND ($6::text IS NULL OR lower(title) LIKE $6)
     AND NOT EXISTS (
       SELECT 1 FROM bookings b
@@ -286,7 +285,6 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
       ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
       $3
     )
-    AND status <> 'archived'
     AND ($6::text IS NULL OR lower(title) LIKE $6)
     ORDER BY distance_m ASC
     LIMIT 200;

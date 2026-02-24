@@ -18,6 +18,20 @@ import {
 import { stripe } from "../lib/stripe.js";
 
 const router = Router();
+const connectEnabled = process.env.STRIPE_CONNECT_ENABLED === "true";
+
+function isStripeConnectDisabled(error: unknown) {
+  const maybe = error as {
+    type?: string;
+    raw?: { message?: string };
+    message?: string;
+  };
+  const text = maybe.raw?.message ?? maybe.message ?? "";
+  return (
+    maybe.type === "StripeInvalidRequestError" &&
+    text.includes("signed up for Connect")
+  );
+}
 
 router.get("/payout", requireAuth, async (req, res, next) => {
   try {
@@ -25,7 +39,7 @@ router.get("/payout", requireAuth, async (req, res, next) => {
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
     const user = await findUserById(userId);
     const accountId = user?.host_stripe_account_id ?? null;
-    if (!stripe || !accountId) {
+    if (!connectEnabled || !stripe || !accountId || accountId.startsWith("acct_mock_")) {
       return res.json({
         accountId,
         chargesEnabled: false,
@@ -34,14 +48,27 @@ router.get("/payout", requireAuth, async (req, res, next) => {
         requirementsDue: [],
       });
     }
-    const account = await stripe.accounts.retrieve(accountId);
-    res.json({
-      accountId,
-      chargesEnabled: account.charges_enabled ?? false,
-      payoutsEnabled: account.payouts_enabled ?? false,
-      detailsSubmitted: account.details_submitted ?? false,
-      requirementsDue: account.requirements?.currently_due ?? [],
-    });
+    try {
+      const account = await stripe.accounts.retrieve(accountId);
+      res.json({
+        accountId,
+        chargesEnabled: account.charges_enabled ?? false,
+        payoutsEnabled: account.payouts_enabled ?? false,
+        detailsSubmitted: account.details_submitted ?? false,
+        requirementsDue: account.requirements?.currently_due ?? [],
+      });
+    } catch (error) {
+      if (isStripeConnectDisabled(error)) {
+        return res.json({
+          accountId: `acct_mock_${userId.slice(0, 8)}`,
+          chargesEnabled: false,
+          payoutsEnabled: false,
+          detailsSubmitted: false,
+          requirementsDue: [],
+        });
+      }
+      throw error;
+    }
   } catch (error) {
     next(error);
   }
@@ -62,20 +89,28 @@ router.post("/payout", requireAuth, async (req, res, next) => {
     let accountId = payload.accountId;
 
     if (!accountId) {
-      if (stripe) {
-        const account = await stripe.accounts.create({
-          type: "express",
-          capabilities: {
-            card_payments: { requested: true },
-            transfers: { requested: true },
-          },
-          settings: {
-            payouts: {
-              schedule: { interval: "daily" },
+      if (connectEnabled && stripe) {
+        try {
+          const account = await stripe.accounts.create({
+            type: "express",
+            capabilities: {
+              card_payments: { requested: true },
+              transfers: { requested: true },
             },
-          },
-        });
-        accountId = account.id;
+            settings: {
+              payouts: {
+                schedule: { interval: "daily" },
+              },
+            },
+          });
+          accountId = account.id;
+        } catch (error) {
+          if (isStripeConnectDisabled(error)) {
+            accountId = `acct_mock_${userId.slice(0, 8)}`;
+          } else {
+            throw error;
+          }
+        }
       } else {
         accountId = `acct_mock_${userId.slice(0, 8)}`;
       }
@@ -83,20 +118,26 @@ router.post("/payout", requireAuth, async (req, res, next) => {
 
     await setHostStripeAccountId(userId, accountId);
     let onboardingUrl: string | null = null;
-    if (stripe) {
+    if (connectEnabled && stripe && !accountId.startsWith("acct_mock_")) {
       const baseUrl = process.env.WEB_BASE_URL ?? "http://localhost:3000";
       const refreshUrl = payload.refreshUrl ?? `${baseUrl}/host/payouts`;
       const returnUrl = payload.returnUrl ?? `${baseUrl}/host/payouts`;
-      const link = await stripe.accountLinks.create({
-        account: accountId,
-        refresh_url: refreshUrl,
-        return_url: returnUrl,
-        type: "account_onboarding",
-      });
-      onboardingUrl = link.url;
+      try {
+        const link = await stripe.accountLinks.create({
+          account: accountId,
+          refresh_url: refreshUrl,
+          return_url: returnUrl,
+          type: "account_onboarding",
+        });
+        onboardingUrl = link.url;
+      } catch (error) {
+        if (!isStripeConnectDisabled(error)) {
+          throw error;
+        }
+      }
     }
 
-    res.json({ accountId, onboardingUrl });
+    res.json({ accountId, onboardingUrl, mock: accountId.startsWith("acct_mock_") });
   } catch (error) {
     next(error);
   }
@@ -119,7 +160,7 @@ router.post("/payouts/run", requireAuth, async (req, res, next) => {
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
     const user = await findUserById(userId);
     const accountId = user?.host_stripe_account_id ?? null;
-    if (!stripe || !accountId) {
+    if (!connectEnabled || !stripe || !accountId || accountId.startsWith("acct_mock_")) {
       return res.json({ processed: 0, skipped: true });
     }
 
@@ -136,7 +177,7 @@ router.post("/payouts/run", requireAuth, async (req, res, next) => {
       try {
         const transfer = await stripe.transfers.create({
           amount: net,
-          currency: booking.currency ?? "eur",
+          currency: (booking.currency ?? "eur").toLowerCase(),
           destination: accountId,
           metadata: { booking_id: booking.id },
         });

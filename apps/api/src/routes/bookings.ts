@@ -437,12 +437,12 @@ router.post("/:id/extend-intent", requireAuth, bookingLimiter, async (req, res, 
       1,
       Math.ceil((currentEnd.getTime() - startTime.getTime()) / (1000 * 60 * 60))
     );
-    const newDays = Math.max(1, Math.ceil(durationHours / 24));
-    const currentDays = Math.max(1, Math.ceil(currentHours / 24));
-    const newTotalCents = booking.price_per_day * newDays * 100;
+    const hourlyRateCents = (booking.price_per_day * 100) / 24;
+    const newTotalCents = Math.max(0, Math.round(hourlyRateCents * durationHours));
     const currentTotalCents =
-      booking.amount_cents ?? booking.price_per_day * currentDays * 100;
-    const additionalAmountCents = newTotalCents - currentTotalCents;
+      booking.amount_cents ?? Math.max(0, Math.round(hourlyRateCents * currentHours));
+    const effectiveTotalCents = Math.max(currentTotalCents, newTotalCents);
+    const additionalAmountCents = effectiveTotalCents - currentTotalCents;
 
     if (additionalAmountCents <= 0) {
       try {
@@ -450,7 +450,7 @@ router.post("/:id/extend-intent", requireAuth, bookingLimiter, async (req, res, 
           bookingId,
           driverId,
           newEndTime: requestedEnd.toISOString(),
-          newAmountCents: newTotalCents,
+          newAmountCents: effectiveTotalCents,
         });
         if (!updated) {
           return res.status(400).json({ message: "Booking cannot be extended" });
@@ -458,7 +458,7 @@ router.post("/:id/extend-intent", requireAuth, bookingLimiter, async (req, res, 
         return res.json({
           noCharge: true,
           newEndTime: requestedEnd.toISOString(),
-          newTotalCents,
+          newTotalCents: effectiveTotalCents,
         });
       } catch (error: any) {
         if (error?.code === "23P01") {
@@ -493,7 +493,7 @@ router.post("/:id/extend-intent", requireAuth, bookingLimiter, async (req, res, 
       customerId,
       ephemeralKeySecret: ephemeralKey.secret,
       additionalAmountCents,
-      newTotalCents,
+      newTotalCents: effectiveTotalCents,
       newEndTime: requestedEnd.toISOString(),
     });
   } catch (error) {
@@ -616,11 +616,10 @@ router.post("/:id/change-intent", requireAuth, bookingLimiter, async (req, res, 
       1,
       Math.ceil((currentEnd.getTime() - new Date(booking.start_time).getTime()) / (1000 * 60 * 60))
     );
-    const newDays = Math.max(1, Math.ceil(durationHours / 24));
-    const currentDays = Math.max(1, Math.ceil(currentHours / 24));
-    const newTotalCents = booking.price_per_day * newDays * 100;
+    const hourlyRateCents = (booking.price_per_day * 100) / 24;
+    const newTotalCents = Math.max(0, Math.round(hourlyRateCents * durationHours));
     const currentTotalCents =
-      booking.amount_cents ?? booking.price_per_day * currentDays * 100;
+      booking.amount_cents ?? Math.max(0, Math.round(hourlyRateCents * currentHours));
     const effectiveTotalCents = Math.max(currentTotalCents, newTotalCents);
     const additionalAmountCents = effectiveTotalCents - currentTotalCents;
 

@@ -19,7 +19,7 @@ const app = express();
 // Trust proxy so req.secure works behind load balancers.
 app.set("trust proxy", 1);
 
-if (process.env.ENFORCE_HTTPS === "true" || process.env.NODE_ENV === "production") {
+if (process.env.ENFORCE_HTTPS === "true") {
   app.use((req, res, next) => {
     if (req.secure || req.headers["x-forwarded-proto"] === "https") {
       if (process.env.NODE_ENV === "production") {
@@ -61,6 +61,10 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
+app.get("/", (_req, res) => {
+  res.json({ ok: true, service: "freespace-api" });
+});
+
 app.use("/api/auth", authRouter);
 app.use("/api/listings", listingsRouter);
 app.use("/api/favorites", favoritesRouter);
@@ -91,17 +95,31 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
       requestId?: string;
       statusCode?: number;
       rawType?: string;
+      raw?: {
+        message?: string;
+        code?: string;
+        param?: string;
+        requestId?: string;
+        type?: string;
+      };
     };
+    const stripeMessage = maybeStripeError.raw?.message ?? maybeStripeError.message;
+    const stripeCode = maybeStripeError.raw?.code ?? maybeStripeError.code;
+    const stripeParam = maybeStripeError.raw?.param ?? maybeStripeError.param;
+    const stripeRequestId = maybeStripeError.raw?.requestId ?? maybeStripeError.requestId;
+    const stripeType = maybeStripeError.raw?.type ?? maybeStripeError.rawType ?? maybeStripeError.type;
     if (
       maybeStripeError.type?.startsWith("Stripe") ||
       maybeStripeError.rawType === "invalid_request_error" ||
+      maybeStripeError.raw?.type === "invalid_request_error" ||
       maybeStripeError.statusCode === 400
     ) {
       return res.status(400).json({
-        message: maybeStripeError.message ?? "Stripe request failed",
-        code: maybeStripeError.code,
-        param: maybeStripeError.param,
-        requestId: maybeStripeError.requestId,
+        message: stripeMessage ?? "Stripe request failed",
+        code: stripeCode,
+        param: stripeParam,
+        type: stripeType,
+        requestId: stripeRequestId,
       });
     }
     return res.status(500).json({ message: "Internal server error" });
@@ -110,7 +128,7 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
   res.status(500).json({ message: "An unexpected error occurred" });
 });
 
-const port = process.env.PORT ?? 4000;
+const port = process.env.PORT ?? 8080;
 app.listen(port, () => {
   console.log(`API listening on http://localhost:${port}`);
 });
