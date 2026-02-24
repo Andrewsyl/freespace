@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  Image,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -18,6 +19,7 @@ import { useAuth } from "../auth";
 import { requestEmailVerification } from "../api";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
+import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
 
@@ -158,6 +160,11 @@ export function SignInScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.card}>
+            <Image
+              source={freeSpaceLogo}
+              style={styles.brandLogo}
+              resizeMode="contain"
+            />
             <Text style={styles.cardTitle}>Sign In</Text>
             <Text style={styles.cardSubtitle}>Access your bookings and host dashboard.</Text>
 
@@ -346,12 +353,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
-    padding: 32,
+    padding: 24,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
+  },
+  brandLogo: {
+    width: "100%",
+    height: 46,
+    marginBottom: 4,
   },
   cardTitle: {
     fontSize: 32,

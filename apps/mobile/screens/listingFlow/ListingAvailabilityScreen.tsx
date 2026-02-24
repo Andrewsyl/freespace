@@ -1,6 +1,15 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Animated,
+  Easing,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import DatePicker from "react-native-date-picker";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronRight, X } from "lucide-react-native";
@@ -20,6 +29,44 @@ type DayCode = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
 type DayTimeRanges = Record<DayCode, { start: string; end: string }>;
 
 type AvailabilityPreset = "always" | "working" | "custom";
+
+function DayTimeReveal({ visible, children }: { visible: boolean; children: React.ReactNode }) {
+  const progress = useState(() => new Animated.Value(visible ? 1 : 0))[0];
+  const previousVisible = useRef(visible);
+
+  useEffect(() => {
+    if (previousVisible.current === visible) return;
+    previousVisible.current = visible;
+    progress.stopAnimation();
+    progress.setValue(visible ? 0 : 1);
+    Animated.timing(progress, {
+      toValue: visible ? 1 : 0,
+      duration: 360,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [progress, visible]);
+
+  return (
+    <Animated.View
+      pointerEvents={visible ? "auto" : "none"}
+      style={{
+        overflow: "hidden",
+        opacity: progress,
+        height: progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, 76],
+        }),
+        marginTop: progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, 8],
+        }),
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+}
 
 export function ListingAvailabilityScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
@@ -309,14 +356,16 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
                             Sun: "Sunday",
                           }[day]}
                         </Text>
-                        <Switch
-                          value={enabled}
-                          onValueChange={() => toggleWeekday(day)}
-                          trackColor={{ false: "#E5E7EB", true: "#9FE3B0" }}
-                          thumbColor="#FFFFFF"
-                        />
+                        <Pressable
+                          accessibilityRole="switch"
+                          accessibilityState={{ checked: enabled }}
+                          onPress={() => toggleWeekday(day)}
+                          style={[styles.dayToggleTrack, enabled && styles.dayToggleTrackActive]}
+                        >
+                          <View style={[styles.dayToggleKnob, enabled && styles.dayToggleKnobActive]} />
+                        </Pressable>
                       </View>
-                      {enabled ? (
+                      <DayTimeReveal visible={enabled}>
                         <View style={styles.dayTimeRow}>
                           <Pressable style={styles.timePill} onPress={() => openPicker("timeStart", day)}>
                             <Text style={styles.timePillLabel}>Start</Text>
@@ -331,7 +380,7 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
                             </Text>
                           </Pressable>
                         </View>
-                      ) : null}
+                      </DayTimeReveal>
                     </View>
                   );
                 })}
@@ -564,12 +613,30 @@ const styles = StyleSheet.create({
   dayTimeRow: {
     flexDirection: "row",
     gap: 10,
-    marginTop: 8,
     paddingHorizontal: 4,
   },
   dayLabel: {
     color: colors.text,
     fontSize: 15,
     fontFamily: "Poppins-Regular",
+  },
+  dayToggleTrack: {
+    backgroundColor: colors.border,
+    borderRadius: radius.pill,
+    height: 26,
+    padding: 3,
+    width: 48,
+  },
+  dayToggleTrackActive: {
+    backgroundColor: colors.accent,
+  },
+  dayToggleKnob: {
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.pill,
+    height: 20,
+    width: 20,
+  },
+  dayToggleKnobActive: {
+    marginLeft: 22,
   },
 });

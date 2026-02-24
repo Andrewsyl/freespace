@@ -41,6 +41,7 @@
     "android": {
       "userInterfaceStyle": "light",
       "package": "com.andrewsyl.carparking",
+      "usesCleartextTraffic": true,
       "compileSdkVersion": 35,
       "targetSdkVersion": 35,
       "buildToolsVersion": "35.0.0",

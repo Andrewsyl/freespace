@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
+import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Register">;
 
@@ -118,6 +120,11 @@ export function RegisterScreen({ navigation }: Props) {
             </View>
 
             <View style={styles.card}>
+              <Image
+                source={freeSpaceLogo}
+                style={styles.brandLogo}
+                resizeMode="contain"
+              />
               <Text style={styles.cardTitle}>Sign Up</Text>
 
               <View style={styles.inputGroup}>
@@ -242,6 +249,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
+  },
+  brandLogo: {
+    width: "100%",
+    height: 72,
+    marginBottom: 10,
   },
   cardTitle: {
     fontSize: 32,

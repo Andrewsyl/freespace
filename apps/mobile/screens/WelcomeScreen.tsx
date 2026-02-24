@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
+import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Welcome">;
 
@@ -20,8 +21,13 @@ export function WelcomeScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Welcome to</Text>
-        <Text style={styles.appName}>ParkEasy</Text>
+        <View style={styles.logoWrap}>
+          <Image
+            source={freeSpaceLogo}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
 
         <Image
           source={require("../assets/car-illustration.png")}
@@ -56,23 +62,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   content: {
+    width: "100%",
     alignItems: "center",
+    justifyContent: "center",
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "400",
-    color: "#4A4A4A",
-    marginBottom: 4,
+  logoWrap: {
+    width: "100%",
+    height: 170,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+    overflow: "visible",
   },
-  appName: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    marginBottom: 32,
+  logo: {
+    width: 430,
+    height: 190,
+    transform: [{ scale: 2.1 }],
   },
   illustration: {
-    width: 440,
-    height: 310,
+    width: 408,
+    height: 268,
     marginBottom: 28,
   },
   getStartedButton: {

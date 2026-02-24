@@ -52,8 +52,8 @@ function FieldRow({
 }
 
 export const ParkingTicket = memo(function ParkingTicket({
-  companyName = "COMPANY",
-  companySubtitle = "NAME ADDRESS",
+  companyName = "FREESPACE",
+  companySubtitle = "PARKING MARKETPLACE",
   title = "PARKING RECEIPT",
   date = "Wed, 11 Feb · 11:14 - 13:14",
   location = "College Green, Dublin 2",
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   },
   headerBand: {
     backgroundColor: "#FAFAFA",
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",

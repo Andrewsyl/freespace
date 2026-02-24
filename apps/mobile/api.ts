@@ -1,6 +1,7 @@
 import type { ListingDetail, ListingSummary, SearchParams } from "./types";
 
 const baseUrl = process.env.EXPO_PUBLIC_API_BASE ?? "http://localhost:4000";
+const REQUEST_TIMEOUT_MS = 15000;
 
 type AuthResponse = {
   token: string;
@@ -34,6 +35,21 @@ async function readErrorMessage(response: Response, fallback: string) {
   return `${fallback} (${response.status})`;
 }
 
+async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function searchListings(params: SearchParams) {
   const query = new URLSearchParams();
   query.set("lat", params.lat);
@@ -50,7 +66,7 @@ export async function searchListings(params: SearchParams) {
   if (params.securityLevel) query.set("securityLevel", params.securityLevel);
   if (params.vehicleSize) query.set("vehicleSize", params.vehicleSize);
   if (params.instantBook) query.set("instantBook", "true");
-  const response = await fetch(`${baseUrl}/api/listings/search?${query.toString()}`);
+  const response = await fetchWithTimeout(`${baseUrl}/api/listings/search?${query.toString()}`);
   if (!response.ok) {
     throw new Error(`Search failed (${response.status})`);
   }
@@ -90,7 +106,7 @@ export async function getListing(
   const url = queryString
     ? `${baseUrl}/api/listings/${id}?${queryString}`
     : `${baseUrl}/api/listings/${id}`;
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url);
   if (!response.ok) {
     throw new Error(`Listing failed (${response.status})`);
   }

@@ -55,3 +55,6 @@ npm run dev:web   # Web on :3000
 - Config: set `EXPO_PUBLIC_API_BASE` (falls back to `http://localhost:4000`). Shares the same API contract as web.
 - Run from repo root: `npm install` then `npm run dev:mobile` (or `cd apps/mobile && npm start`) and choose iOS/Android/web in Expo.
 - Notes: search form is simplified (manual date/time/radius inputs, no geocoding), checkout opens the returned `checkoutUrl` in the system browser. Replace placeholder icons under `apps/mobile/assets` as needed.
+
+## Deployment
+- See `DEPLOYMENT.md` for staging/production deployment using Render (API/Web) and EAS (mobile).

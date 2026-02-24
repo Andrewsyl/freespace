@@ -2,6 +2,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   Alert,
+  Image,
   Linking,
   Pressable,
   ScrollView,
@@ -21,9 +22,11 @@ import { useAuth } from "../auth";
 import { getNotificationImageAttachment } from "../notifications";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
 import { formatTimeLabel } from "../utils/dateFormat";
 import { formatBookingReference } from "../utils/bookingFormat";
 import { ParkingTicket } from "../components/ParkingTicket";
+import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingDetail">;
 
@@ -88,6 +91,13 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   );
 
   const receiptUrl = booking.receiptUrl ?? null;
+  const destination =
+    typeof booking.latitude === "number" && typeof booking.longitude === "number"
+      ? `${booking.latitude},${booking.longitude}`
+      : booking.address;
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+    destination
+  )}`;
   const minExtendTime = new Date(end.getTime() + 5 * 60 * 1000);
   const canCheckIn =
     localStatus === "confirmed" &&
@@ -220,13 +230,25 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     });
   };
 
+  const handleOpenMaps = () => {
+    Alert.alert("Open Google Maps", "Open directions to this space?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Open", onPress: () => Linking.openURL(mapsUrl) },
+    ]);
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      <StatusBar style="light" translucent={false} backgroundColor="#2ECC8F" />
       <View style={styles.header}>
         <Pressable style={styles.backCircleButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={18} color="#111827" />
         </Pressable>
-        <Text style={styles.headerTitle}>Receipt</Text>
+        <Image
+          source={freeSpaceLogo}
+          style={styles.headerLogo}
+          resizeMode="contain"
+        />
         <View style={styles.headerSpacer} />
       </View>
 
@@ -261,8 +283,8 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         ) : null}
 
         <ParkingTicket
-          companyName="PARKEASY"
-          companySubtitle="DUBLIN CITY"
+          companyName="FREESPACE"
+          companySubtitle="PARKING MARKETPLACE"
           title="PARKING RECEIPT"
           date={bookingDateLabel}
           location={booking.address}
@@ -271,6 +293,12 @@ export function BookingDetailScreen({ navigation, route }: Props) {
           paidAmount={`€${(localAmountCents / 100).toFixed(2)}`}
           barcodeText={barcodeText}
         />
+
+        {(isUpcoming || isInProgress) && !isCanceled ? (
+          <TouchableOpacity style={styles.actionBtn} onPress={handleOpenMaps}>
+            <Text style={styles.actionBtnText}>Get Directions</Text>
+          </TouchableOpacity>
+        ) : null}
 
         {/* Action Buttons */}
         {isUpcoming && localStatus !== "canceled" ? (
@@ -282,16 +310,6 @@ export function BookingDetailScreen({ navigation, route }: Props) {
             ) : null}
 
             <TouchableOpacity
-              style={[styles.actionBtn, extendBusy && styles.actionBtnDisabled]}
-              onPress={() => setExtendOpen(true)}
-              disabled={extendBusy}
-            >
-              <Text style={styles.actionBtnText}>
-                {extendBusy ? "Extending..." : "Extend Booking"}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
               style={[styles.dangerButton, canceling && styles.dangerButtonDisabled]}
               onPress={handleCancel}
               disabled={canceling}
@@ -300,14 +318,26 @@ export function BookingDetailScreen({ navigation, route }: Props) {
                 {canceling ? "Canceling..." : "Cancel Booking"}
               </Text>
             </TouchableOpacity>
-
-            {extendError ? <Text style={styles.errorText}>{extendError}</Text> : null}
           </>
         ) : receiptUrl ? (
           <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(receiptUrl)}>
             <Text style={styles.actionBtnText}>View Receipt</Text>
           </TouchableOpacity>
         ) : null}
+
+        {isInProgress && localStatus !== "canceled" ? (
+          <TouchableOpacity
+            style={[styles.actionBtn, extendBusy && styles.actionBtnDisabled]}
+            onPress={() => setExtendOpen(true)}
+            disabled={extendBusy}
+          >
+            <Text style={styles.actionBtnText}>
+              {extendBusy ? "Extending..." : "Extend Booking"}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {extendError ? <Text style={styles.errorText}>{extendError}</Text> : null}
 
         {canBookAgain ? (
           <TouchableOpacity style={styles.bookAgainButton} onPress={handleBookAgain}>
@@ -369,11 +399,9 @@ const styles = StyleSheet.create({
     height: 34,
   },
 
-  headerTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    letterSpacing: 0,
+  headerLogo: {
+    width: 130,
+    height: 34,
   },
 
   scrollContent: {
