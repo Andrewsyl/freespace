@@ -1,0 +1,16 @@
+package-lock.json
+node_modules
+**/node_modules
+.git
+.github
+.next
+dist
+build
+coverage
+.expo
+*.log
+apps/mobile/android/.gradle
+apps/mobile/android/app/build
+apps/mobile/android/build
+apps/mobile/ios/build
+apps/mobile/.expo

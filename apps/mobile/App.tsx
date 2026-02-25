@@ -7,14 +7,14 @@ import {
   View,
 } from "react-native";
 import * as Notifications from "expo-notifications";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
 import { useFonts } from "expo-font";
 import { StripeProvider } from "@stripe/stripe-react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { enableScreens } from "react-native-screens";
 import { AuthProvider, useAuth } from "./auth";
 import { AppLaunchContext } from "./appLaunch";
@@ -51,6 +51,7 @@ import { colors } from "./theme/colors";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 enableScreens(false);
 
@@ -101,51 +102,21 @@ export default function App() {
   }
 
   return (
-    <View style={styles.app}>
-      <StripeProvider publishableKey={stripeKey} urlScheme="carparking">
-        <AuthProvider>
-          <FavoritesProvider>
-            <GlobalLoadingProvider>
-              <AppLaunchContext.Provider value={appLaunchValue}>
-                <NavigationContainer>
-                  <Stack.Navigator
-                    screenOptions={{ headerShown: false }}
-                    initialRouteName="Tabs"
-                    detachInactiveScreens={false}
-                  >
-                    <Stack.Screen name="Tabs" component={MainTabs} />
-                    <Stack.Screen name="Listing" component={ListingScreen} />
-                    <Stack.Screen name="Listings" component={ListingsScreen} />
-                    <Stack.Screen name="BookingSummary" component={BookingSummaryScreen} />
-                    <Stack.Screen name="VehicleType" component={VehicleTypeScreen} />
-                    <Stack.Screen name="Welcome" component={WelcomeScreen} />
-                    <Stack.Screen name="SignIn" component={SignInScreen} />
-                    <Stack.Screen name="Register" component={RegisterScreen} />
-                    <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-                    <Stack.Screen name="Legal" component={LegalScreen} />
-                    <Stack.Screen name="History" component={HistoryScreen} />
-                    <Stack.Screen name="Favorites" component={FavoritesScreen} />
-                    <Stack.Screen name="Payments" component={PaymentsScreen} />
-                    <Stack.Screen name="Settings" component={SettingsScreen} />
-                    <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
-                    <Stack.Screen name="Review" component={ReviewScreen} />
-                    <Stack.Screen name="ListingReviews" component={ListingReviewsScreen} />
-                    <Stack.Screen name="Support" component={SupportScreen} />
-                    <Stack.Screen name="Admin" component={AdminScreen} />
-                    <Stack.Screen name="CreateListingFlow" component={ListingFlowScreen} />
-                    <Stack.Screen name="EditListing" component={EditListingScreen} />
-                  </Stack.Navigator>
-                </NavigationContainer>
-                <GlobalLoadingOverlay />
-                <PushRegistration />
-                <LegalGate />
-                <StatusBar style="dark" translucent backgroundColor="transparent" />
-              </AppLaunchContext.Provider>
-            </GlobalLoadingProvider>
-          </FavoritesProvider>
-        </AuthProvider>
-      </StripeProvider>
-    </View>
+    <SafeAreaProvider>
+      <View style={styles.app}>
+        <StripeProvider publishableKey={stripeKey} urlScheme="carparking">
+          <AuthProvider>
+            <FavoritesProvider>
+              <GlobalLoadingProvider>
+                <AppLaunchContext.Provider value={appLaunchValue}>
+                  <AppShell />
+                </AppLaunchContext.Provider>
+              </GlobalLoadingProvider>
+            </FavoritesProvider>
+          </AuthProvider>
+        </StripeProvider>
+      </View>
+    </SafeAreaProvider>
   );
 }
 
@@ -155,6 +126,83 @@ function GlobalLoadingOverlay() {
   const visible = loading || state.visible;
   const message = loading ? "Signing in..." : state.message;
   return <LoadingOverlay visible={visible} message={message} />;
+}
+
+function AppShell() {
+  const { user, legalPromptRequired } = useAuth();
+  const requiresLegal = !!user && (!user.termsVersion || !user.privacyVersion);
+  const shouldShowLegalGate = requiresLegal && legalPromptRequired;
+  const runtimeAppEnv =
+    (Constants.expoConfig as { extra?: { appEnv?: string } } | null)?.extra?.appEnv ??
+    process.env.APP_ENV ??
+    (__DEV__ ? "local" : "production");
+  const normalizedAppEnv = runtimeAppEnv.trim().toLowerCase();
+  const showEnvBadge = normalizedAppEnv !== "production";
+
+  useEffect(() => {
+    if (!shouldShowLegalGate || !navigationRef.isReady()) return;
+    const current = navigationRef.getCurrentRoute()?.name;
+    if (current !== "SignIn") {
+      navigationRef.navigate("SignIn");
+    }
+  }, [shouldShowLegalGate]);
+
+  return (
+    <>
+      <AppNavigator />
+      {showEnvBadge ? <EnvironmentBadge env={normalizedAppEnv} /> : null}
+      {shouldShowLegalGate ? <LegalGate /> : null}
+      <GlobalLoadingOverlay />
+      <StatusBar style="dark" translucent backgroundColor="transparent" />
+    </>
+  );
+}
+
+function EnvironmentBadge({ env }: { env: string }) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={[styles.envBadge, { top: Math.max(8, insets.top + 6) }]}>
+      <Text style={styles.envBadgeText}>{env.toUpperCase()}</Text>
+    </View>
+  );
+}
+
+function AppNavigator() {
+  return (
+    <>
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator
+          screenOptions={{ headerShown: false }}
+          initialRouteName="Tabs"
+          detachInactiveScreens={false}
+        >
+          <Stack.Screen name="Tabs" component={MainTabs} />
+          <Stack.Screen name="Listing" component={ListingScreen} />
+          <Stack.Screen name="Listings" component={ListingsScreen} />
+          <Stack.Screen name="BookingSummary" component={BookingSummaryScreen} />
+          <Stack.Screen name="VehicleType" component={VehicleTypeScreen} />
+          <Stack.Screen name="Welcome" component={WelcomeScreen} />
+          <Stack.Screen name="SignIn" component={SignInScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          <Stack.Screen name="Legal" component={LegalScreen} />
+          <Stack.Screen name="History" component={HistoryScreen} />
+          <Stack.Screen name="Favorites" component={FavoritesScreen} />
+          <Stack.Screen name="Payments" component={PaymentsScreen} />
+          <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
+          <Stack.Screen name="Review" component={ReviewScreen} />
+          <Stack.Screen name="ListingReviews" component={ListingReviewsScreen} />
+          <Stack.Screen name="Support" component={SupportScreen} />
+          <Stack.Screen name="Admin" component={AdminScreen} />
+          <Stack.Screen name="CreateListingFlow" component={ListingFlowScreen} />
+          <Stack.Screen name="EditListing" component={EditListingScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+      <PushRegistration />
+    </>
+  );
 }
 
 function MainTabs() {
@@ -243,14 +291,15 @@ function MainTabs() {
 }
 
 function LegalGate() {
-  const { user, acceptLegal, logout } = useAuth();
+  const { user, acceptLegal, logout, legalPromptRequired } = useAuth();
   const [accepted, setAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const legalVersion = "2026-01-10";
   const requiresLegal = !!user && (!user.termsVersion || !user.privacyVersion);
+  const shouldShowLegalGate = requiresLegal && legalPromptRequired;
 
-  if (!requiresLegal) return null;
+  if (!shouldShowLegalGate) return null;
 
   const handleContinue = async () => {
     if (!accepted) {
@@ -363,6 +412,22 @@ const styles = StyleSheet.create({
   app: {
     flex: 1,
   },
+  envBadge: {
+    backgroundColor: "#111827",
+    borderRadius: 10,
+    opacity: 0.9,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    position: "absolute",
+    right: 10,
+    zIndex: 999,
+  },
+  envBadgeText: {
+    color: colors.text.inverse,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
   legalActions: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -376,6 +441,8 @@ const styles = StyleSheet.create({
   },
   legalCard: {
     backgroundColor: colors.surface,
+    borderColor: "#D1D5DB",
+    borderWidth: 1,
     borderRadius: 20,
     padding: 20,
     width: "100%",

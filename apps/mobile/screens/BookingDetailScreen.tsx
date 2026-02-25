@@ -170,7 +170,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
       }
 
       const initResult = await initPaymentSheet({
-        merchantDisplayName: "CarParking",
+        merchantDisplayName: "FreeSpace",
         customerId: result.customerId,
         customerEphemeralKeySecret: result.ephemeralKeySecret,
         paymentIntentClientSecret: result.paymentIntentClientSecret,

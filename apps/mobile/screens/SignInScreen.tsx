@@ -38,6 +38,8 @@ export function SignInScreen({ navigation }: Props) {
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
   const legalVersion = "2026-01-10";
+  const needsLegalAcceptance = (candidate: { termsVersion?: string | null; privacyVersion?: string | null }) =>
+    !candidate.termsVersion || !candidate.privacyVersion;
 
 
   useEffect(() => {
@@ -75,8 +77,12 @@ export function SignInScreen({ navigation }: Props) {
     setError(null);
     setNotice(null);
     try {
-      await login(trimmed, password);
-      navigation.replace("Tabs", { screen: "Search" });
+      const authUser = await login(trimmed, password);
+      if (needsLegalAcceptance(authUser)) {
+        setNotice("Please accept Terms & Privacy to continue.");
+        return;
+      }
+      setNotice("Signed in successfully.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -102,17 +108,20 @@ export function SignInScreen({ navigation }: Props) {
     setError(null);
     setNotice(null);
     try {
-      const url = await register(trimmed, password, {
+      const { previewUrl, user } = await register(trimmed, password, {
         termsVersion: legalVersion,
         privacyVersion: legalVersion,
       });
-      setPreviewUrl(url);
+      setPreviewUrl(previewUrl);
       setNotice(
-        url
+        previewUrl
           ? "Account created. Verify your email to continue."
           : "Account created. Check your email to verify."
       );
-      navigation.replace("Tabs", { screen: "Search" });
+      if (needsLegalAcceptance(user)) {
+        return;
+      }
+      setNotice("Account created successfully.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign up failed");
     } finally {
@@ -261,11 +270,12 @@ export function SignInScreen({ navigation }: Props) {
                   if (!idToken) {
                     throw new Error("Missing Google idToken");
                   }
-                  await loginWithOAuth("google", idToken);
+                  const authUser = await loginWithOAuth("google", idToken);
+                  if (needsLegalAcceptance(authUser)) {
+                    setNotice("Please accept Terms & Privacy to continue.");
+                    return;
+                  }
                   setAuthSuccess("Signed in with Google");
-                  successTimerRef.current = setTimeout(() => {
-                    navigation.replace("Tabs", { screen: "Search" });
-                  }, 900);
                 } catch (err) {
                   const errorCode =
                     err && typeof err === "object" && "code" in err ? String(err.code) : "";

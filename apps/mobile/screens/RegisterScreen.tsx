@@ -31,6 +31,8 @@ export function RegisterScreen({ navigation }: Props) {
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
   const legalVersion = "2026-01-10";
+  const needsLegalAcceptance = (candidate: { termsVersion?: string | null; privacyVersion?: string | null }) =>
+    !candidate.termsVersion || !candidate.privacyVersion;
 
   useEffect(() => {
     GoogleSignin.configure({
@@ -60,11 +62,13 @@ export function RegisterScreen({ navigation }: Props) {
     setSubmitting(true);
     setError(null);
     try {
-      await register(trimmed, password, {
+      const result = await register(trimmed, password, {
         termsVersion: legalVersion,
         privacyVersion: legalVersion,
       });
-      navigation.replace("Tabs", { screen: "Search" });
+      if (needsLegalAcceptance(result.user)) {
+        return;
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign up failed");
     } finally {
@@ -89,8 +93,11 @@ export function RegisterScreen({ navigation }: Props) {
       if (!idToken) {
         return;
       }
-      await loginWithOAuth("google", idToken);
-      navigation.replace("Tabs", { screen: "Search" });
+      const authUser = await loginWithOAuth("google", idToken);
+      if (needsLegalAcceptance(authUser)) {
+        setError("Please accept Terms & Privacy to continue.");
+        return;
+      }
     } catch (err) {
       const errorCode = err && typeof err === "object" && "code" in err ? String(err.code) : "";
       if (errorCode === statusCodes.SIGN_IN_CANCELLED) {

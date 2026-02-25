@@ -3,6 +3,11 @@ import type { ListingDetail, ListingSummary, SearchParams } from "./types";
 const baseUrl = process.env.EXPO_PUBLIC_API_BASE ?? "http://localhost:4000";
 const REQUEST_TIMEOUT_MS = 15000;
 
+if (__DEV__) {
+  // Make active API target explicit in Metro logs when switching environments.
+  console.log("[mobile:info] API base", baseUrl);
+}
+
 type AuthResponse = {
   token: string;
   refreshToken?: string;

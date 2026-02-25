@@ -4,6 +4,17 @@ apps/api/.env
 .env.local
 .env.development
 .env.production
+apps/mobile/.env
+apps/mobile/.env.local
+apps/mobile/.env.local.source
+apps/mobile/.env.dev
+apps/mobile/.env.qa
+apps/mobile/.env.production
+apps/api/.env
+apps/api/.env.local
+apps/api/.env.dev
+apps/api/.env.qa
+apps/api/.env.production
 dist
 build
 coverage
@@ -11,7 +22,6 @@ coverage
 .DS_Store
 *.log
 pnpm-lock.yaml
-yarn.lock
 npm-debug.log
 .idea
 .vscode

@@ -26,8 +26,13 @@ type AuthContextValue = {
   token: string | null;
   user: AuthUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, legal: { termsVersion: string; privacyVersion: string }) => Promise<string | null>;
+  legalPromptRequired: boolean;
+  login: (email: string, password: string) => Promise<AuthUser>;
+  register: (
+    email: string,
+    password: string,
+    legal: { termsVersion: string; privacyVersion: string }
+  ) => Promise<{ previewUrl: string | null; user: AuthUser }>;
   loginWithOAuth: (provider: "google" | "facebook", token: string) => Promise<AuthUser>;
   acceptLegal: (payload: { termsVersion: string; privacyVersion: string }) => Promise<AuthUser>;
   logout: () => Promise<void>;
@@ -62,10 +67,14 @@ const decodeJwtPayload = (token: string): JwtPayload | null => {
   }
 };
 
+const needsLegalAcceptance = (candidate: AuthUser | null) =>
+  !!candidate && (!candidate.termsVersion || !candidate.privacyVersion);
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [legalPromptRequired, setLegalPromptRequired] = useState(false);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -84,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const refreshed = await refreshSession(storedRefreshToken);
               setToken(refreshed.token);
               setUser(refreshed.user);
+              setLegalPromptRequired(false);
               const nextRefreshToken = refreshed.refreshToken ?? storedRefreshToken;
               setRefreshToken(nextRefreshToken);
               await AsyncStorage.setItem(TOKEN_KEY, refreshed.token);
@@ -97,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
               setToken(null);
               setUser(null);
+              setLegalPromptRequired(false);
               setRefreshToken(null);
               setLoading(false);
               return;
@@ -107,6 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
           setToken(null);
           setUser(null);
+          setLegalPromptRequired(false);
           setRefreshToken(null);
           setLoading(false);
           return;
@@ -114,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setToken(storedToken);
       setUser(storedUser ? (JSON.parse(storedUser) as AuthUser) : null);
+      setLegalPromptRequired(false);
       setRefreshToken(storedRefreshToken);
       setLoading(false);
     };
@@ -124,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response = await apiLogin(email, password);
     setToken(response.token);
     setUser(response.user);
+    setLegalPromptRequired(needsLegalAcceptance(response.user));
     const nextRefreshToken = response.refreshToken ?? null;
     setRefreshToken(nextRefreshToken);
     await AsyncStorage.setItem(TOKEN_KEY, response.token);
@@ -131,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (nextRefreshToken) {
       await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
     }
+    return response.user;
   }, []);
 
   const register = useCallback(
@@ -138,6 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await apiRegister(email, password, legal);
       setToken(response.token);
       setUser(response.user);
+      setLegalPromptRequired(needsLegalAcceptance(response.user));
       const nextRefreshToken = response.refreshToken ?? null;
       setRefreshToken(nextRefreshToken);
       await AsyncStorage.setItem(TOKEN_KEY, response.token);
@@ -145,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (nextRefreshToken) {
         await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
       }
-      return response.previewUrl ?? null;
+      return { previewUrl: response.previewUrl ?? null, user: response.user };
     },
     []
   );
@@ -154,6 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const currentToken = token;
     setToken(null);
     setUser(null);
+    setLegalPromptRequired(false);
     setRefreshToken(null);
     await AsyncStorage.removeItem(TOKEN_KEY);
     await AsyncStorage.removeItem(USER_KEY);
@@ -188,6 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         : await oauthLoginFacebook(tokenValue);
     setToken(response.token);
     setUser(response.user);
+    setLegalPromptRequired(needsLegalAcceptance(response.user));
     const nextRefreshToken = response.refreshToken ?? null;
     setRefreshToken(nextRefreshToken);
     await AsyncStorage.setItem(TOKEN_KEY, response.token);
@@ -205,6 +223,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       const response = await apiAcceptLegal(token, payload);
       setUser(response.user);
+      setLegalPromptRequired(false);
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(response.user));
       return response.user;
     },
@@ -236,6 +255,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const refreshed = await refreshSession(refreshToken);
           setToken(refreshed.token);
           setUser(refreshed.user);
+          setLegalPromptRequired(false);
           const nextRefreshToken = refreshed.refreshToken ?? refreshToken;
           setRefreshToken(nextRefreshToken);
           await AsyncStorage.setItem(TOKEN_KEY, refreshed.token);
@@ -266,13 +286,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       token,
       user,
       loading,
+      legalPromptRequired,
       login,
       register,
       loginWithOAuth,
       acceptLegal,
       logout,
     }),
-    [token, user, loading, login, register, loginWithOAuth, acceptLegal, logout]
+    [token, user, loading, legalPromptRequired, login, register, loginWithOAuth, acceptLegal, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

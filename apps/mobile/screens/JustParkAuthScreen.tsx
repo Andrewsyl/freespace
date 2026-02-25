@@ -42,6 +42,8 @@ export function JustParkAuthScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
+  const needsLegalAcceptance = (candidate: { termsVersion?: string | null; privacyVersion?: string | null }) =>
+    !candidate.termsVersion || !candidate.privacyVersion;
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: googleWebClientId || undefined,
@@ -103,8 +105,11 @@ export function JustParkAuthScreen() {
                   if (!idToken) {
                     throw new Error("Missing Google idToken");
                   }
-                  await loginWithOAuth("google", idToken);
-                  navigation.replace("Tabs", { screen: "Search" });
+                  const authUser = await loginWithOAuth("google", idToken);
+                  if (needsLegalAcceptance(authUser)) {
+                    setAuthError("Please accept Terms & Privacy to continue.");
+                    return;
+                  }
                 } catch (err) {
                   const errorCode =
                     err && typeof err === "object" && "code" in err ? String(err.code) : "";

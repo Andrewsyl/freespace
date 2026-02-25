@@ -114,7 +114,7 @@ export function ListingReviewsScreen({ navigation, route }: Props) {
                       />
                     ))}
                     <Text style={styles.reviewMeta}>
-                      • {formatReviewDate(new Date(createdAt))} • Posted on Carparking
+                      • {formatReviewDate(new Date(createdAt))} • Posted on FreeSpace
                     </Text>
                   </View>
                   <Text style={styles.reviewBody}>{review.comment}</Text>

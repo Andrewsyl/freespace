@@ -305,7 +305,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       });
       const paymentIntentId = payment.paymentIntentId ?? "";
       const initResult = await initPaymentSheet({
-        merchantDisplayName: "CarParking",
+        merchantDisplayName: "FreeSpace",
         customerId: payment.customerId,
         customerEphemeralKeySecret: payment.ephemeralKeySecret,
         paymentIntentClientSecret: payment.paymentIntentClientSecret,
