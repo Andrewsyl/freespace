@@ -69,10 +69,17 @@ subprojects {
 const withGoogleServicesPlugin = (config) =>
   withAppBuildGradle(config, (configMod) => {
     if (configMod.modResults.language !== "groovy") return configMod;
-    if (!configMod.modResults.contents.includes("com.google.gms.google-services")) {
+    const googleServicesGuard = `def isDebugTask = gradle.startParameter.taskNames.any { task ->
+    task.toLowerCase().contains("debug")
+}
+
+if (!isDebugTask) {
+    apply plugin: "com.google.gms.google-services"
+}`;
+    if (!configMod.modResults.contents.includes("def isDebugTask = gradle.startParameter.taskNames.any")) {
       configMod.modResults.contents = configMod.modResults.contents.replace(
         /apply plugin: "com.facebook.react"/,
-        'apply plugin: "com.facebook.react"\napply plugin: "com.google.gms.google-services"'
+        `apply plugin: "com.facebook.react"\n${googleServicesGuard}`
       );
     }
     return configMod;
