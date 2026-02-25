@@ -1,0 +1,33 @@
+# Dependencies
+node_modules
+**/node_modules
+package-lock.json
+yarn-error.log
+
+# Local Expo / Metro artifacts
+.expo
+.expo-shared
+.expo-settings
+
+# Android build artifacts (massive and not needed in cloud builds)
+android/.gradle
+android/build
+android/app/build
+android/app/.cxx
+
+# iOS build artifacts (not needed for Android builds, and safe to regenerate)
+ios/build
+ios/Pods
+ios/.symlinks
+
+# Generic outputs
+dist
+build
+coverage
+*.log
+
+# VCS and editor files
+.git
+.github
+.idea
+.DS_Store

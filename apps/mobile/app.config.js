@@ -7,9 +7,16 @@ const {
   withInfoPlist,
 } = require("@expo/config-plugins");
 const fs = require("fs");
-const os = require("os");
 const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, ".env") });
+const dotenv = require("dotenv");
+
+const appEnvRaw = process.env.APP_ENV || process.env.EAS_BUILD_PROFILE || "local";
+const appEnv = String(appEnvRaw).trim().toLowerCase();
+dotenv.config({ path: path.join(__dirname, ".env") });
+const scopedEnvPath = path.join(__dirname, `.env.${appEnv}`);
+if (fs.existsSync(scopedEnvPath)) {
+  dotenv.config({ path: scopedEnvPath, override: true });
+}
 
 const appJson = require("./app.json");
 
@@ -71,7 +78,7 @@ const withGoogleServicesPlugin = (config) =>
     return configMod;
   });
 
-const withAapt2Override = (config) =>
+const withGradleTuning = (config) =>
   withGradleProperties(config, (configMod) => {
     const props = configMod.modResults;
     const setProp = (key, value) => {
@@ -89,18 +96,11 @@ const withAapt2Override = (config) =>
       }
     };
 
-    const sdkRoot =
-      process.env.ANDROID_SDK_ROOT ||
-      process.env.ANDROID_HOME ||
-      path.join(os.homedir(), "Library", "Android", "sdk");
-    const aapt2Path34 = path.join(sdkRoot, "build-tools", "34.0.0", "aapt2");
+    // Remove local-machine-only and deprecated flags that can break cloud builds.
     removeProp("android.aapt2FromMavenOverride");
-    if (fs.existsSync(aapt2Path34)) {
-      setProp("android.aapt2FromMavenOverride", aapt2Path34);
-    }
-    setProp("android.disableResourceValidation", "true");
-    setProp("android.enableResourceOptimizations", "false");
-    setProp("android.enableR8.fullMode", "false");
+    removeProp("android.disableResourceValidation");
+    removeProp("android.enableResourceOptimizations");
+    removeProp("android.enableR8.fullMode");
     setProp("org.gradle.jvmargs", "-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError");
     setProp("org.gradle.parallel", "true");
     setProp("org.gradle.configureondemand", "true");
@@ -216,6 +216,7 @@ module.exports = ({ config }) => {
     base.extra?.eas?.projectId || process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
   const extra = {
     ...(base.extra ?? {}),
+    appEnv,
     ...(easProjectId ? { eas: { ...(base.extra?.eas ?? {}), projectId: easProjectId } } : {}),
   };
   const plugins = base.plugins ?? [];
@@ -236,7 +237,7 @@ module.exports = ({ config }) => {
       withForceDarkDisabled(
         withForceDarkAllowedInManifest(
           withGradleWrapperVersion(
-            withAapt2Override(
+            withGradleTuning(
               withCoreKtxFix({
                 ...base,
                 extra,
