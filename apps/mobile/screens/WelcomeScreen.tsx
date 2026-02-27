@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   getStartedButton: {
-    backgroundColor: "#4A9EFF",
+    backgroundColor: "#2ECC8F",
     borderRadius: 28,
     paddingVertical: 16,
     paddingHorizontal: 40,
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     marginBottom: 24,
-    shadowColor: "#4A9EFF",
+    shadowColor: "#2ECC8F",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -115,6 +115,6 @@ const styles = StyleSheet.create({
   loginLink: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#4A9EFF",
+    color: "#2ECC8F",
   },
 });

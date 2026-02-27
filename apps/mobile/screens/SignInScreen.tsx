@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   signInButton: {
-    backgroundColor: "#4A9EFF",
+    backgroundColor: "#2ECC8F",
     borderRadius: 28,
     paddingVertical: 16,
     flexDirection: "row",
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 12,
     marginBottom: 16,
-    shadowColor: "#4A9EFF",
+    shadowColor: "#2ECC8F",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

@@ -9,11 +9,13 @@ import {
   Platform,
   UIManager,
   Image,
+  KeyboardAvoidingView,
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
   Switch,
@@ -46,6 +48,28 @@ const formatDateTimeLabel = (date: Date) => `${formatDateLabel(date)} · ${forma
 
 const VEHICLE_MAKE_KEY = "vehicle.make";
 const VEHICLE_COLOR_KEY = "vehicle.color";
+const VEHICLE_PLATE_KEY = "vehicle.plate";
+
+function formatIrishPlateInput(raw: string) {
+  const compact = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!compact) return "";
+
+  const firstLetterIndex = compact.search(/[A-Z]/);
+  if (firstLetterIndex === -1) {
+    return compact.slice(0, 11);
+  }
+
+  const yearDigits = compact.slice(0, firstLetterIndex).replace(/\D/g, "");
+  const year = yearDigits.slice(0, 3);
+  const afterYear = compact.slice(firstLetterIndex);
+  const county = (afterYear.match(/[A-Z]/g) ?? []).join("").slice(0, 2);
+  const serial = afterYear.replace(/[A-Z]/g, "").replace(/\D/g, "").slice(0, 6);
+
+  if (!year) return compact.slice(0, 11);
+  if (!county) return year;
+  if (!serial) return `${year}-${county}`;
+  return `${year}-${county}-${serial}`;
+}
 
 export function BookingSummaryScreen({ navigation, route }: Props) {
   const { id, from, to } = route.params;
@@ -62,6 +86,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const [paymentFailureMessage, setPaymentFailureMessage] = useState<string | null>(null);
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleColor, setVehicleColor] = useState("");
+  const [vehiclePlate, setVehiclePlate] = useState("");
   const [staticMapFailed, setStaticMapFailed] = useState(false);
   const [startAt, setStartAt] = useState(() => new Date(from));
   const [endAt, setEndAt] = useState(() => new Date(to));
@@ -130,13 +155,15 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     let active = true;
     const load = async () => {
       try {
-        const [savedMake, savedColor] = await Promise.all([
+        const [savedMake, savedColor, savedPlate] = await Promise.all([
           AsyncStorage.getItem(VEHICLE_MAKE_KEY),
           AsyncStorage.getItem(VEHICLE_COLOR_KEY),
+          AsyncStorage.getItem(VEHICLE_PLATE_KEY),
         ]);
         if (!active) return;
         if (savedMake) setVehicleMake(savedMake);
         if (savedColor) setVehicleColor(savedColor);
+        if (savedPlate) setVehiclePlate(savedPlate);
       } catch {
         // Ignore lookup failures.
       }
@@ -146,6 +173,11 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    const value = vehiclePlate.trim().toUpperCase();
+    void AsyncStorage.setItem(VEHICLE_PLATE_KEY, value).catch(() => {});
+  }, [vehiclePlate]);
 
   const start = useMemo(() => startAt, [startAt]);
   const end = useMemo(() => endAt, [endAt]);
@@ -300,7 +332,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         from: startAt.toISOString(),
         to: endAt.toISOString(),
         amountCents: pricing.finalCents,
-        vehiclePlate: undefined,
+        vehiclePlate: vehiclePlate.trim().toUpperCase() || undefined,
         token,
       });
       const paymentIntentId = payment.paymentIntentId ?? "";
@@ -425,6 +457,11 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoid}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
+      >
       <View style={styles.progressHeader}>
         <BookingProgressBar currentStep={bookingBusy || confirmingBooking ? 3 : 2} />
         <TouchableOpacity
@@ -446,13 +483,18 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       ) : !user ? (
         <View style={styles.centered}>
           <Text style={styles.title}>Sign in to continue</Text>
-          <Text style={styles.subtitle}>Log in to confirm your booking.</Text>
-          <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("SignIn")}>
-            <Text style={styles.primaryButtonText}>Sign in</Text>
-          </Pressable>
+          <Text style={styles.subtitle}>Log in or create an account to confirm your booking.</Text>
+          <View style={styles.authButtons}>
+            <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("SignIn")}>
+              <Text style={styles.primaryButtonText}>Sign in</Text>
+            </Pressable>
+            <Pressable style={styles.secondaryButton} onPress={() => navigation.navigate("Register")}>
+              <Text style={styles.secondaryButtonText}>Create account</Text>
+            </Pressable>
+          </View>
         </View>
       ) : listing ? (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <View style={styles.summaryMapWrap}>
@@ -512,6 +554,25 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             <View style={styles.sessionRow}>
               <Text style={styles.sessionLabel}>End time</Text>
               <Text style={styles.sessionValue}>{formatDateTimeLabel(end)}</Text>
+            </View>
+          </View>
+
+          <View style={styles.sectionCard}>
+            <Text style={styles.fieldLabel}>Vehicle registration</Text>
+            <View style={styles.regRow}>
+              <View style={styles.plateCountry} />
+              <View style={styles.regDetails}>
+                <TextInput
+                  value={vehiclePlate}
+                  onChangeText={(value) => setVehiclePlate(formatIrishPlateInput(value))}
+                  placeholder="Enter reg plate"
+                  placeholderTextColor="#94a3b8"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  textAlign="center"
+                  style={styles.regInput}
+                />
+              </View>
             </View>
           </View>
 
@@ -617,6 +678,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         </Modal>
       ) : null}
       {bookingConfirmed ? <View style={styles.successOverlay} pointerEvents="none" /> : null}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -625,6 +687,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F9FAFB",
+  },
+  keyboardAvoid: {
+    flex: 1,
   },
   topBar: {
     alignItems: "center",
@@ -976,30 +1041,25 @@ const styles = StyleSheet.create({
   },
   regRow: {
     flexDirection: "row",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: "#111827",
     overflow: "hidden",
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#ffffff",
     alignItems: "center",
   },
   regDetails: {
     flex: 1,
     paddingHorizontal: 10,
-    paddingVertical: 10,
+    paddingVertical: 12,
     justifyContent: "center",
   },
   plateCountry: {
-    width: 48,
-    backgroundColor: "#1e3a8a",
+    width: 34,
+    alignSelf: "stretch",
+    backgroundColor: "#003399",
     alignItems: "center",
     justifyContent: "center",
-  },
-  plateCountryText: {
-    color: "#ffffff",
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1.2,
   },
   regPlaceholder: {
     color: colors.text,
@@ -1007,6 +1067,15 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontFamily: "Poppins-SemiBold",
     letterSpacing: 0.2,
+  },
+  regInput: {
+    color: "#6b7280",
+    fontSize: 28,
+    fontFamily: "UKNumberPlate",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    paddingVertical: 0,
+    includeFontPadding: false,
   },
   regHint: {
     color: "#94a3b8",
@@ -1171,6 +1240,27 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "600",
+    fontFamily: "Poppins-SemiBold",
+  },
+  authButtons: {
+    marginTop: 16,
+    width: "100%",
+    maxWidth: 320,
+    gap: 10,
+  },
+  secondaryButton: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  secondaryButtonText: {
+    color: colors.text,
     fontSize: 14,
     fontWeight: "600",
     fontFamily: "Poppins-SemiBold",

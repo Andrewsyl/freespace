@@ -129,6 +129,7 @@ export function ListingScreen({ navigation, route }: Props) {
   const [showFullAbout, setShowFullAbout] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [heroTapEnabled, setHeroTapEnabled] = useState(true);
   const [showFavAnim, setShowFavAnim] = useState(false);
   const [reviews, setReviews] = useState<ListingReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -482,7 +483,9 @@ export function ListingScreen({ navigation, route }: Props) {
                 styles.heroTapOverlay,
                 { height: heroTapHeight, top: 0 },
               ]}
+              pointerEvents={heroTapEnabled ? "auto" : "none"}
               onPress={() => {
+                if (!heroTapEnabled) return;
                 setViewerIndex(0);
                 setShowImageViewer(true);
               }}
@@ -492,6 +495,14 @@ export function ListingScreen({ navigation, route }: Props) {
               style={styles.scrollContainer}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingTop: heroHeight - 40 }}
+              scrollEventThrottle={16}
+              onScroll={(event) => {
+                const y = event.nativeEvent.contentOffset.y;
+                const shouldEnable = y < 12;
+                if (shouldEnable !== heroTapEnabled) {
+                  setHeroTapEnabled(shouldEnable);
+                }
+              }}
             >
               <View style={styles.contentWrap}>
                 <View style={styles.contentCard}>

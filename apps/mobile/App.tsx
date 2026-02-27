@@ -66,6 +66,7 @@ export default function App() {
     "Poppins-Medium": require("./assets/fonts/Poppins-Medium.ttf"),
     "Poppins-SemiBold": require("./assets/fonts/Poppins-SemiBold.ttf"),
     "Poppins-Bold": require("./assets/fonts/Poppins-Bold.ttf"),
+    "UKNumberPlate": require("./assets/fonts/UKNumberPlate.ttf"),
   });
 
   useEffect(() => {

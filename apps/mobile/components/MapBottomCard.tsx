@@ -169,32 +169,24 @@ export function MapBottomCard({
                 <Text style={styles.starText}>★</Text> {rating.toFixed(1)} • New listing
               </Text>
             )}
+            {features.length ? (
+              <View style={styles.featuresRow}>
+                {features.map((feature) => (
+                  <View key={feature} style={styles.featureIconWrap}>
+                    {feature === "CCTV" ? <Cctv size={14} color="#111111" strokeWidth={2} /> : null}
+                    {feature === "EV charging" ? (
+                      <EvCharger size={14} color="#111111" strokeWidth={2} />
+                    ) : null}
+                    {feature === "Gated" ? <Fence size={14} color="#111111" strokeWidth={2} /> : null}
+                    {feature === "Code access" ? (
+                      <KeyRound size={14} color="#111111" strokeWidth={2} />
+                    ) : null}
+                    {feature === "Covered" ? <Home size={14} color="#111111" strokeWidth={2} /> : null}
+                  </View>
+                ))}
+              </View>
+            ) : null}
           </View>
-
-          {features.length ? (
-            <View style={styles.featuresRow}>
-              {features.map((feature) => (
-                <View key={feature} style={styles.featureChip}>
-                  {feature === "CCTV" ? (
-                    <Cctv size={12} color="#059669" strokeWidth={2} />
-                  ) : null}
-                  {feature === "EV charging" ? (
-                    <EvCharger size={12} color="#059669" strokeWidth={2} />
-                  ) : null}
-                  {feature === "Gated" ? (
-                    <Fence size={12} color="#059669" strokeWidth={2} />
-                  ) : null}
-                  {feature === "Code access" ? (
-                    <KeyRound size={12} color="#059669" strokeWidth={2} />
-                  ) : null}
-                  {feature === "Covered" ? (
-                    <Home size={12} color="#059669" strokeWidth={2} />
-                  ) : null}
-                  <Text style={styles.featureText}>{feature}</Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
           
           {/* Dashed divider */}
           <View style={styles.dashedDivider} />
@@ -320,7 +312,7 @@ const styles = StyleSheet.create({
   detailsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    justifyContent: "space-between",
     marginBottom: 6,
   },
   
@@ -333,27 +325,20 @@ const styles = StyleSheet.create({
   featuresRow: {
     flexDirection: "row",
     alignItems: "center",
-    flexWrap: "wrap",
     gap: 6,
-    marginBottom: 8,
+    marginLeft: 8,
+    flexShrink: 0,
   },
 
-  featureChip: {
-    flexDirection: "row",
+  featureIconWrap: {
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "#ECFDF5",
-    borderColor: "#A7F3D0",
+    justifyContent: "center",
+    width: 22,
+    height: 22,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#E5E7EB",
     borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-  },
-
-  featureText: {
-    fontSize: 10,
-    color: "#065F46",
-    fontWeight: "600",
+    borderRadius: 11,
   },
 
   starText: {
