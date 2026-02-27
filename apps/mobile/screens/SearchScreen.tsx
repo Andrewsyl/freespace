@@ -30,7 +30,7 @@ import MapSection from "../components/MapSection";
 import { MapBottomCard } from "../components/MapBottomCard";
 import { LIGHT_MAP_STYLE } from "../components/mapStyles";
 import { useGlobalLoading } from "../components/GlobalLoading";
-import { searchListings } from "../api";
+import { getListing, searchListings } from "../api";
 import { cardShadow, colors, radius, spacing } from "../styles/theme";
 import { logError, logInfo } from "../logger";
 import type {
@@ -151,6 +151,7 @@ export function SearchScreen({ navigation }: Props) {
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  const [selectedCardAmenities, setSelectedCardAmenities] = useState<string[] | null>(null);
   const [startAt, setStartAt] = useState(new Date(today.from));
   const [endAt, setEndAt] = useState(new Date(today.to));
   const [pickerField, setPickerField] = useState<"start" | "end">("start");
@@ -687,6 +688,34 @@ export function SearchScreen({ navigation }: Props) {
       ? `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${selectedListing.latitude},${selectedListing.longitude}&key=${mapsKey}`
       : null);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedListing) {
+      setSelectedCardAmenities(null);
+      return;
+    }
+    const summaryAmenities = selectedListing.amenities ?? [];
+    if (summaryAmenities.length > 0) {
+      setSelectedCardAmenities(summaryAmenities);
+      return;
+    }
+    void (async () => {
+      try {
+        const detail = await getListing(selectedListing.id, { from, to });
+        if (!cancelled) {
+          setSelectedCardAmenities(detail.amenities ?? []);
+        }
+      } catch {
+        if (!cancelled) {
+          setSelectedCardAmenities([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedListing?.id, selectedListing?.amenities, from, to]);
+
   const handleSelectListing = useCallback((id: string | null) => {
     ignoreNextRegionChangeRef.current = true;
     if (id === null && selectedId !== null) {
@@ -1102,6 +1131,7 @@ export function SearchScreen({ navigation }: Props) {
             rating={selectedListing.rating ?? 0}
             reviewCount={selectedListing.rating_count ?? 0}
             price={`€${priceForListing(selectedListing)}`}
+            amenities={selectedCardAmenities ?? selectedListing.amenities ?? []}
             isAvailable={selectedListing.is_available !== false}
             isFavorite={isFavorite(selectedListing.id)}
             onToggleFavorite={() => toggle(selectedListing)}

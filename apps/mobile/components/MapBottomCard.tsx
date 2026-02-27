@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { Cctv, EvCharger, Fence, Home, KeyRound } from "lucide-react-native";
 
 type MapBottomCardProps = {
   title: string;
@@ -15,6 +16,7 @@ type MapBottomCardProps = {
   rating: number;
   reviewCount: number;
   price: string;
+  amenities?: string[] | null;
   isAvailable?: boolean;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
@@ -31,6 +33,7 @@ export function MapBottomCard({
   rating,
   reviewCount,
   price,
+  amenities,
   isAvailable = true,
   isFavorite,
   onToggleFavorite,
@@ -50,6 +53,20 @@ export function MapBottomCard({
       }),
     [translateAnim]
   );
+  const features = useMemo(() => {
+    const source = amenities ?? [];
+    const normalizeAmenity = (value: string) => {
+      const normalized = value.toLowerCase();
+      if (normalized.includes("cctv") || normalized.includes("camera")) return "CCTV";
+      if (normalized.includes("ev") || normalized.includes("charg")) return "EV charging";
+      if (normalized.includes("gate") || normalized.includes("barrier")) return "Gated";
+      if (normalized.includes("cover") || normalized.includes("shelter") || normalized.includes("roof")) return "Covered";
+      if (normalized.includes("code") || normalized.includes("keypad")) return "Code access";
+      return value.trim();
+    };
+    const unique = Array.from(new Set(source.map(normalizeAmenity).filter(Boolean)));
+    return unique.slice(0, 3);
+  }, [amenities]);
 
   useEffect(() => {
     if (dismissing) {
@@ -153,6 +170,31 @@ export function MapBottomCard({
               </Text>
             )}
           </View>
+
+          {features.length ? (
+            <View style={styles.featuresRow}>
+              {features.map((feature) => (
+                <View key={feature} style={styles.featureChip}>
+                  {feature === "CCTV" ? (
+                    <Cctv size={12} color="#059669" strokeWidth={2} />
+                  ) : null}
+                  {feature === "EV charging" ? (
+                    <EvCharger size={12} color="#059669" strokeWidth={2} />
+                  ) : null}
+                  {feature === "Gated" ? (
+                    <Fence size={12} color="#059669" strokeWidth={2} />
+                  ) : null}
+                  {feature === "Code access" ? (
+                    <KeyRound size={12} color="#059669" strokeWidth={2} />
+                  ) : null}
+                  {feature === "Covered" ? (
+                    <Home size={12} color="#059669" strokeWidth={2} />
+                  ) : null}
+                  <Text style={styles.featureText}>{feature}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
           
           {/* Dashed divider */}
           <View style={styles.dashedDivider} />
@@ -286,6 +328,32 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#6B7280",
     fontWeight: "500",
+  },
+
+  featuresRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 8,
+  },
+
+  featureChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#ECFDF5",
+    borderColor: "#A7F3D0",
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+
+  featureText: {
+    fontSize: 10,
+    color: "#065F46",
+    fontWeight: "600",
   },
 
   starText: {

@@ -12,7 +12,20 @@
           "package_name": "com.andrewsyl.carparking"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "427792130041-s1j3gasjcgj40tpmqp4mmijm9e5c91cj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.andrewsyl.carparking",
+            "certificate_hash": "156b5bde81ff7175cf3432efc5f7ae7184317445"
+          }
+        },
+        {
+          "client_id": "427792130041-s3dlgu4vsq0t7oujuhbev0tgqhvt0dk7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDAq8ji3FUrq2nq7aUgsVkm_pWnrYD3wfk"
@@ -20,18 +33,36 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "427792130041-s3dlgu4vsq0t7oujuhbev0tgqhvt0dk7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:427792130041:android:a4c1da9c82c6c7aff96728",
+        "mobilesdk_app_id": "1:427792130041:android:4cf447f896fe9bfdf96728",
         "android_client_info": {
-          "package_name": "com.andrewsyl.carparking"
+          "package_name": "com.andrewsyl.carparking.dev"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "427792130041-1b2qaua0mhg5biorjuiupf4q2lqj13ec.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.andrewsyl.carparking.dev",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "427792130041-s3dlgu4vsq0t7oujuhbev0tgqhvt0dk7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDAq8ji3FUrq2nq7aUgsVkm_pWnrYD3wfk"
@@ -39,7 +70,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "427792130041-s3dlgu4vsq0t7oujuhbev0tgqhvt0dk7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

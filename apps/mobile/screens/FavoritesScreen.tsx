@@ -16,12 +16,14 @@ export function FavoritesScreen({ navigation }: Props) {
   if (!user) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-        <View style={styles.emptyState}>
-          <Text style={styles.title}>Favourites</Text>
-          <Text style={styles.subtitle}>Sign in to view your saved spaces.</Text>
-          <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
-            <Text style={styles.primaryButtonText}>Sign in</Text>
-          </Pressable>
+        <View style={styles.contentWrapper}>
+          <View style={styles.emptyState}>
+            <Text style={styles.title}>Favourites</Text>
+            <Text style={styles.subtitle}>Sign in to view your saved spaces.</Text>
+            <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
+              <Text style={styles.primaryButtonText}>Sign in</Text>
+            </Pressable>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -36,42 +38,48 @@ export function FavoritesScreen({ navigation }: Props) {
         <Text style={styles.title}>Favourites</Text>
         <View style={styles.backButton} />
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        {loading ? <Text style={styles.muted}>Loading favourites…</Text> : null}
-        {favorites.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.subtitle}>No favourites yet.</Text>
-            <Text style={styles.helper}>Tap the heart on a listing to save it.</Text>
-          </View>
-        ) : (
-          favorites.map((item) => (
-            <Pressable
-              key={item.id}
-              style={styles.row}
-              onPress={() =>
-                navigation.navigate("Listing", {
-                  id: item.id,
-                  from: new Date().toISOString(),
-                  to: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-                })
-              }
-            >
-              <View style={styles.icon} />
-              <View style={styles.rowCopy}>
-                <Text style={styles.rowTitle}>{item.title}</Text>
-                <Text style={styles.rowSubtitle}>{item.address}</Text>
-              </View>
-            </Pressable>
-          ))
-        )}
-      </ScrollView>
+      <View style={styles.contentWrapper}>
+        <ScrollView contentContainerStyle={styles.content}>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {loading ? <Text style={styles.muted}>Loading favourites…</Text> : null}
+          {favorites.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.subtitle}>No favourites yet.</Text>
+              <Text style={styles.helper}>Tap the heart on a listing to save it.</Text>
+            </View>
+          ) : (
+            favorites.map((item) => (
+              <Pressable
+                key={item.id}
+                style={styles.row}
+                onPress={() =>
+                  navigation.navigate("Listing", {
+                    id: item.id,
+                    from: new Date().toISOString(),
+                    to: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+                  })
+                }
+              >
+                <View style={styles.icon} />
+                <View style={styles.rowCopy}>
+                  <Text style={styles.rowTitle}>{item.title}</Text>
+                  <Text style={styles.rowSubtitle}>{item.address}</Text>
+                </View>
+              </Pressable>
+            ))
+          )}
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: colors.headerTint,
+  },
+  contentWrapper: {
     flex: 1,
     backgroundColor: colors.appBg,
   },

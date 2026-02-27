@@ -1,6 +1,10 @@
 import "@testing-library/jest-native/extend-expect";
 
-jest.mock("react-native/Libraries/Animated/NativeAnimatedHelper");
+jest.mock(
+  "react-native/Libraries/Animated/NativeAnimatedHelper",
+  () => require("react-native/src/private/animated/NativeAnimatedHelper"),
+  { virtual: true }
+);
 
 jest.mock("@react-navigation/native", () => {
   const React = require("react");

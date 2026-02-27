@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Platform,
   Pressable,
+  StatusBar,
   StyleSheet,
   Text,
   View,
@@ -10,7 +11,6 @@ import * as Notifications from "expo-notifications";
 import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
 import { useFonts } from "expo-font";
 import { StripeProvider } from "@stripe/stripe-react-native";
@@ -153,7 +153,7 @@ function AppShell() {
       {showEnvBadge ? <EnvironmentBadge env={normalizedAppEnv} /> : null}
       {shouldShowLegalGate ? <LegalGate /> : null}
       <GlobalLoadingOverlay />
-      <StatusBar style="dark" translucent backgroundColor="transparent" />
+      <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#FFFFFF" />
     </>
   );
 }

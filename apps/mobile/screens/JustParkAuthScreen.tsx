@@ -11,6 +11,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
+import { Platform } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
@@ -47,7 +48,7 @@ export function JustParkAuthScreen() {
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: googleWebClientId || undefined,
-      iosClientId: googleIosClientId || undefined,
+      iosClientId: Platform.OS === "ios" ? googleIosClientId || undefined : undefined,
     });
   }, [googleWebClientId, googleIosClientId]);
 

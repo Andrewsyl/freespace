@@ -59,7 +59,7 @@ export function SignInScreen({ navigation }: Props) {
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: googleWebClientId || undefined,
-      iosClientId: googleIosClientId || undefined,
+      iosClientId: Platform.OS === "ios" ? googleIosClientId || undefined : undefined,
     });
   }, [googleWebClientId, googleIosClientId]);
 

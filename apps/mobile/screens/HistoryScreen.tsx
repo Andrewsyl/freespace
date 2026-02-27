@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
-import { Animated, BackHandler, Easing, FlatList, InteractionManager, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Animated, BackHandler, Easing, FlatList, InteractionManager, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import LottieView from "lottie-react-native";
@@ -47,6 +47,17 @@ export function HistoryScreen({ navigation, route }: Props) {
   const skipNextFocusReload = useRef(false);
   const [revealBookings, setRevealBookings] = useState(true);
   const [bookingTransitioning, setBookingTransitioning] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle("light-content");
+      StatusBar.setBackgroundColor("#34C38F");
+      return () => {
+        StatusBar.setBarStyle("dark-content");
+        StatusBar.setBackgroundColor("#FFFFFF");
+      };
+    }, [])
+  );
 
   const loadBookings = useCallback(async (options?: { silent?: boolean }) => {
     if (!token) return;
@@ -446,28 +457,29 @@ export function HistoryScreen({ navigation, route }: Props) {
           ]}
         />
       </View>
-      {loading ? (
-        <View style={styles.inlineLoading}>
-          <Spinner size={32} />
-          <Text style={styles.inlineLoadingText}>Loading bookings…</Text>
-        </View>
-      ) : null}
-      <Animated.View
-        style={{
-          flex: 1,
-          flexDirection: "row",
-          width: screenWidth * 3,
-          transform: [
-            {
-              translateX: segmentAnim.interpolate({
-                inputRange: [0, 1, 2],
-                outputRange: [0, -screenWidth, -screenWidth * 2],
-              }),
-            },
-          ],
-        }}
-      >
-        {["upcoming", "active", "past"].map((pane) => {
+      <View style={styles.contentWrapper}>
+        {loading ? (
+          <View style={styles.inlineLoading}>
+            <Spinner size={32} />
+            <Text style={styles.inlineLoadingText}>Loading bookings…</Text>
+          </View>
+        ) : null}
+        <Animated.View
+          style={{
+            flex: 1,
+            flexDirection: "row",
+            width: screenWidth * 3,
+            transform: [
+              {
+                translateX: segmentAnim.interpolate({
+                  inputRange: [0, 1, 2],
+                  outputRange: [0, -screenWidth, -screenWidth * 2],
+                }),
+              },
+            ],
+          }}
+        >
+          {["upcoming", "active", "past"].map((pane) => {
           const paneTab = pane as "upcoming" | "active" | "past";
           const paneData =
             paneTab === "upcoming" ? upcoming : paneTab === "active" ? active : visiblePast;
@@ -495,9 +507,9 @@ export function HistoryScreen({ navigation, route }: Props) {
           const showPaneEmpty =
             !loading && !isSwitchingTab && paneTab === displayTab && paneData.length === 0;
 
-          return (
-            <View key={pane} style={{ width: screenWidth }}>
-              <FlatList
+            return (
+              <View key={pane} style={{ width: screenWidth }}>
+                <FlatList
                 data={!user || !revealBookings ? [] : paneItems}
                 renderItem={({ item }) => {
                   if (item.type === "header") {
@@ -590,11 +602,12 @@ export function HistoryScreen({ navigation, route }: Props) {
                 updateCellsBatchingPeriod={50}
                 initialNumToRender={15}
                 windowSize={10}
-              />
-            </View>
-          );
-        })}
-      </Animated.View>
+                />
+              </View>
+            );
+          })}
+        </Animated.View>
+      </View>
       {showSuccess ? (
         <Pressable style={styles.successOverlay} onPress={() => setShowSuccess(false)}>
           <View style={styles.successCard}>
@@ -617,8 +630,12 @@ export function HistoryScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.headerTint,
     flex: 1,
+  },
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
   },
   gradientWrapper: {
     flex: 0,

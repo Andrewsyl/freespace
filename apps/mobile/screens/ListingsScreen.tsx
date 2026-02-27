@@ -142,19 +142,20 @@ export function ListingsScreen({ navigation }: Props) {
           <Text style={styles.actionText}>Add</Text>
         </Pressable>
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
-        {!user ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Sign in to host</Text>
-            <Text style={styles.cardBody}>
-              Log in to manage listings and start earning from your space.
-            </Text>
-            <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
-              <Text style={styles.primaryButtonText}>Sign in</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <>
+      <View style={styles.contentWrapper}>
+        <ScrollView contentContainerStyle={styles.content}>
+          {!user ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Sign in to host</Text>
+              <Text style={styles.cardBody}>
+                Log in to manage listings and start earning from your space.
+              </Text>
+              <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
+                <Text style={styles.primaryButtonText}>Sign in</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <>
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {loading && listings.length === 0 ? (
               <Text style={styles.muted}>Loading listings…</Text>
@@ -254,17 +255,22 @@ export function ListingsScreen({ navigation }: Props) {
                 ))}
               </View>
             )}
-          </>
-        )}
-      </ScrollView>
+            </>
+          )}
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.appBg,
+    backgroundColor: colors.headerTint,
     flex: 1,
+  },
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: colors.appBg,
   },
   topBar: {
     alignItems: "center",

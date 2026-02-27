@@ -17,26 +17,32 @@ export function SettingsScreen({ navigation }: Props) {
         <Text style={styles.topTitle}>Settings</Text>
         <View style={styles.backButton} />
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Preferences</Text>
-          <Text style={styles.cardBody}>
-            Configure notifications, privacy, and payment preferences here.
-          </Text>
-        </View>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Support</Text>
-          <Text style={styles.cardBody}>Need help? Contact support@freespace.app.</Text>
-        </View>
-      </ScrollView>
+      <View style={styles.contentWrapper}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Preferences</Text>
+            <Text style={styles.cardBody}>
+              Configure notifications, privacy, and payment preferences here.
+            </Text>
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Support</Text>
+            <Text style={styles.cardBody}>Need help? Contact support@freespace.app.</Text>
+          </View>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.appBg,
+    backgroundColor: colors.headerTint,
     flex: 1,
+  },
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: colors.appBg,
   },
   topBar: {
     alignItems: "center",

@@ -117,68 +117,69 @@ export function VehicleTypeScreen({ navigation }: Props) {
         <Text style={styles.title}>Vehicle make</Text>
         <View style={styles.backButton} />
       </View>
+      <View style={styles.contentWrapper}>
+        <View style={styles.searchCard}>
+          <Ionicons name="search-outline" size={18} color={colors.textMuted} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search vehicle make"
+            placeholderTextColor={colors.textMuted}
+            style={styles.searchInput}
+          />
+        </View>
 
-      <View style={styles.searchCard}>
-        <Ionicons name="search-outline" size={18} color={colors.textMuted} />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search vehicle make"
-          placeholderTextColor={colors.textMuted}
-          style={styles.searchInput}
-        />
-      </View>
-
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item}
-        contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <Pressable
-            style={({ pressed }) => [
-              styles.optionRow,
-              selected === item && styles.optionRowSelected,
-              pressed && styles.optionRowPressed,
-            ]}
-            onPress={() => handleSelect(item)}
-          >
-            <Text style={styles.optionText}>{item}</Text>
-            {selected === item ? (
-              <Ionicons name="checkmark" size={18} color={colors.accent} />
-            ) : null}
-          </Pressable>
-        )}
-        ListFooterComponent={
-          <View style={styles.colorSection}>
-            <Text style={styles.colorTitle}>Color</Text>
-            <View style={styles.colorGrid}>
-              {VEHICLE_COLORS.map((color) => {
-                const active = selectedColor === color;
-                return (
-                  <Pressable
-                    key={color}
-                    onPress={() => setSelectedColor(color)}
-                    style={[styles.colorChip, active && styles.colorChipActive]}
-                  >
-                    <Text style={[styles.colorText, active && styles.colorTextActive]}>
-                      {color}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <Pressable
+              style={({ pressed }) => [
+                styles.optionRow,
+                selected === item && styles.optionRowSelected,
+                pressed && styles.optionRowPressed,
+              ]}
+              onPress={() => handleSelect(item)}
+            >
+              <Text style={styles.optionText}>{item}</Text>
+              {selected === item ? (
+                <Ionicons name="checkmark" size={18} color={colors.accent} />
+              ) : null}
+            </Pressable>
+          )}
+          ListFooterComponent={
+            <View style={styles.colorSection}>
+              <Text style={styles.colorTitle}>Color</Text>
+              <View style={styles.colorGrid}>
+                {VEHICLE_COLORS.map((color) => {
+                  const active = selectedColor === color;
+                  return (
+                    <Pressable
+                      key={color}
+                      onPress={() => setSelectedColor(color)}
+                      style={[styles.colorChip, active && styles.colorChipActive]}
+                    >
+                      <Text style={[styles.colorText, active && styles.colorTextActive]}>
+                        {color}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
-          </View>
-        }
-      />
+          }
+        />
 
-      <View style={styles.footer}>
-        <Pressable
-          style={[styles.saveButton, !selected && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={!selected}
-        >
-          <Text style={styles.saveButtonText}>Save vehicle</Text>
-        </Pressable>
+        <View style={styles.footer}>
+          <Pressable
+            style={[styles.saveButton, !selected && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={!selected}
+          >
+            <Text style={styles.saveButtonText}>Save vehicle</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -186,6 +187,10 @@ export function VehicleTypeScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: colors.headerTint,
+  },
+  contentWrapper: {
     flex: 1,
     backgroundColor: colors.appBg,
   },

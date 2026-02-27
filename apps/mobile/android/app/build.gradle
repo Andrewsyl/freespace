@@ -183,10 +183,4 @@ dependencies {
     }
 }
 
-def isDebugTask = gradle.startParameter.taskNames.any { task ->
-    task.toLowerCase().contains("debug")
-}
-
-if (!isDebugTask) {
-    apply plugin: "com.google.gms.google-services"
-}
+apply plugin: "com.google.gms.google-services"
