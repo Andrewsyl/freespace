@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import { CardField, useStripe } from "@stripe/stripe-react-native";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import {
@@ -25,6 +26,7 @@ import {
 import { useAuth } from "../auth";
 
 export function PaymentsScreen() {
+  const navigation = useNavigation();
   const { token, user } = useAuth();
   const { confirmSetupIntent } = useStripe();
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
@@ -164,6 +166,10 @@ export function PaymentsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <ScrollView contentContainerStyle={styles.content}>
+        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+          <MaterialIcons name="arrow-back" size={20} color="#111827" />
+          <Text style={styles.backText}>Back</Text>
+        </Pressable>
         <View style={styles.header}>
           <Text style={styles.title}>Payments</Text>
           <Text style={styles.subtitle}>Manage cards and review your booking charges.</Text>
@@ -293,7 +299,19 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.screenX,
     paddingBottom: 32,
-    paddingTop: 24,
+    paddingTop: 16,
+  },
+  backButton: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    gap: 6,
+    marginBottom: 16,
+  },
+  backText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "500",
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,

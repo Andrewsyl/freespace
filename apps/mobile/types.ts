@@ -23,6 +23,8 @@ export type RootStackParamList = {
   Register: undefined;
   ResetPassword: undefined;
   Profile: undefined;
+  PersonalInfo: undefined;
+  LoginSecurity: undefined;
   Legal: undefined;
   History: { showSuccess?: boolean; refreshToken?: number; showMapCTA?: boolean; initialTab?: "upcoming" | "active" | "past" } | undefined;
   Settings: undefined;

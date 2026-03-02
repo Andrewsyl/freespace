@@ -66,6 +66,10 @@ export function SupportScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={20} color={colors.text} />
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
           <View style={styles.header}>
             <Text style={styles.title}>Contact us</Text>
             <Text style={styles.subtitle}>
@@ -120,9 +124,6 @@ export function SupportScreen({ navigation }: Props) {
             {success ? <Text style={styles.success}>{success}</Text> : null}
           </View>
 
-          <Pressable style={styles.ghostButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </Pressable>
         </ScrollView>
         <Modal transparent visible={subjectOpen} animationType="fade" onRequestClose={() => setSubjectOpen(false)}>
           <View style={styles.modalBackdrop}>
@@ -160,7 +161,19 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.screenX,
     paddingBottom: 32,
-    paddingTop: 24,
+    paddingTop: 16,
+  },
+  backButton: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    gap: 6,
+    marginBottom: 16,
+  },
+  backText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "500",
   },
   header: {
     marginBottom: 18,
@@ -287,26 +300,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 12,
     textAlign: "center",
-  },
-  ghostButton: {
-    alignItems: "center",
-    marginTop: 18,
-  },
-  backCircle: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 32,
-    width: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.cardBg,
-  },
-  backIcon: {
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 14,
-    textAlign: "center",
-    fontWeight: "600",
   },
 });

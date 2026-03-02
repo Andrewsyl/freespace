@@ -25,6 +25,12 @@ dist
 build
 coverage
 *.log
+*.apk
+*.aab
+*.keystore
+*.jks
+tmp
+.tmp
 
 # VCS and editor files
 .git

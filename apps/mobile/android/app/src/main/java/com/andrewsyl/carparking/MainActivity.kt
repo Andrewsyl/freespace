@@ -2,6 +2,7 @@ package com.andrewsyl.carparking
 
 import android.os.Build
 import android.os.Bundle
+import androidx.core.view.WindowInsetsControllerCompat
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -17,6 +18,8 @@ class MainActivity : ReactActivity() {
     // This is required for expo-splash-screen.
     setTheme(R.style.AppTheme);
     super.onCreate(null)
+    // Force dark Android nav buttons (back/home/recents) on light nav bar backgrounds.
+    WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightNavigationBars = true
   }
 
   /**

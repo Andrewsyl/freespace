@@ -14,6 +14,8 @@ import {
 type AuthUser = {
   id: string;
   email: string;
+  name?: string | null;
+  phone?: string | null;
   role?: string;
   emailVerified?: boolean;
   termsVersion?: string | null;
@@ -35,6 +37,7 @@ type AuthContextValue = {
   ) => Promise<{ previewUrl: string | null; user: AuthUser }>;
   loginWithOAuth: (provider: "google" | "facebook", token: string) => Promise<AuthUser>;
   acceptLegal: (payload: { termsVersion: string; privacyVersion: string }) => Promise<AuthUser>;
+  setAuthUser: (user: AuthUser) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -230,6 +233,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [token]
   );
 
+  const setAuthUser = useCallback(async (nextUser: AuthUser) => {
+    setUser(nextUser);
+    await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+  }, []);
+
   useEffect(() => {
     if (logoutTimerRef.current) {
       clearTimeout(logoutTimerRef.current);
@@ -291,9 +299,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       register,
       loginWithOAuth,
       acceptLegal,
+      setAuthUser,
       logout,
     }),
-    [token, user, loading, legalPromptRequired, login, register, loginWithOAuth, acceptLegal, logout]
+    [token, user, loading, legalPromptRequired, login, register, loginWithOAuth, acceptLegal, setAuthUser, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

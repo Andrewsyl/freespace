@@ -7,6 +7,8 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "node": "20.19.4",
+      "yarn": "1.22.22",
       "env": {
         "APP_ENV": "dev"
       }
@@ -14,6 +16,8 @@
     "qa": {
       "autoIncrement": true,
       "distribution": "internal",
+      "node": "20.19.4",
+      "yarn": "1.22.22",
       "android": {
         "buildType": "apk"
       },
@@ -24,6 +28,8 @@
     "preview": {
       "autoIncrement": true,
       "distribution": "internal",
+      "node": "20.19.4",
+      "yarn": "1.22.22",
       "android": {
         "buildType": "apk"
       },
@@ -33,6 +39,8 @@
     },
     "production": {
       "autoIncrement": true,
+      "node": "20.19.4",
+      "yarn": "1.22.22",
       "env": {
         "APP_ENV": "production"
       }

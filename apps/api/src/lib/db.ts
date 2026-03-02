@@ -14,12 +14,20 @@ type ReviewRole = "driver_review" | "host_review";
 export type UserRecord = {
   id: string;
   email: string;
+  full_name?: string | null;
+  phone?: string | null;
   password_hash: string;
   role?: "driver" | "host" | "admin";
   host_stripe_account_id?: string | null;
   email_verified?: boolean;
   verification_token?: string | null;
   verification_expires?: Date | null;
+  refresh_token_hash?: string | null;
+  refresh_expires?: Date | null;
+  terms_version?: string | null;
+  terms_accepted_at?: Date | null;
+  privacy_version?: string | null;
+  privacy_accepted_at?: Date | null;
 };
 
 export type SpaceSearchInput = {
@@ -459,22 +467,10 @@ export async function createBooking({
   }
 }
 
-export type UserRecord = {
-  id: string;
-  email: string;
-  password_hash: string;
-  host_stripe_account_id?: string | null;
-  role?: "driver" | "host" | "admin";
-  refresh_token_hash?: string | null;
-  refresh_expires?: Date | null;
-  terms_version?: string | null;
-  terms_accepted_at?: Date | null;
-  privacy_version?: string | null;
-  privacy_accepted_at?: Date | null;
-};
-
 export async function createUser({
   email,
+  fullName,
+  phone,
   passwordHash,
   role = "driver",
   verificationToken,
@@ -483,6 +479,8 @@ export async function createUser({
   privacyVersion,
 }: {
   email: string;
+  fullName?: string | null;
+  phone?: string | null;
   passwordHash: string;
   role?: UserRecord["role"];
   verificationToken?: string | null;
@@ -494,6 +492,8 @@ export async function createUser({
   const query = `
     INSERT INTO users (
       email,
+      full_name,
+      phone,
       password_hash,
       role,
       verification_token,
@@ -503,13 +503,15 @@ export async function createUser({
       privacy_version,
       privacy_accepted_at
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     ON CONFLICT (email) DO NOTHING
-    RETURNING id, email, role, password_hash, host_stripe_account_id, email_verified,
+    RETURNING id, email, full_name, phone, role, password_hash, host_stripe_account_id, email_verified,
       verification_token, verification_expires, terms_version, terms_accepted_at, privacy_version, privacy_accepted_at;
   `;
   const result = await pool.query(query, [
     email.toLowerCase(),
+    fullName ?? null,
+    phone ?? null,
     passwordHash,
     role,
     verificationToken ?? null,
@@ -524,7 +526,7 @@ export async function createUser({
 
 export async function findUserByEmail(email: string) {
   const result = await pool.query(
-    `SELECT id, email, password_hash, role, host_stripe_account_id, email_verified, verification_token,
+    `SELECT id, email, full_name, phone, password_hash, role, host_stripe_account_id, email_verified, verification_token,
       verification_expires, refresh_token_hash, refresh_expires, terms_version, terms_accepted_at,
       privacy_version, privacy_accepted_at
      FROM users WHERE email = $1 LIMIT 1`,
@@ -535,7 +537,7 @@ export async function findUserByEmail(email: string) {
 
 export async function findUserById(userId: string) {
   const result = await pool.query(
-    `SELECT id, email, password_hash, role, host_stripe_account_id, email_verified, verification_token,
+    `SELECT id, email, full_name, phone, password_hash, role, host_stripe_account_id, email_verified, verification_token,
       verification_expires, refresh_token_hash, refresh_expires, terms_version, terms_accepted_at,
       privacy_version, privacy_accepted_at
      FROM users WHERE id = $1 LIMIT 1`,
@@ -617,7 +619,7 @@ export async function clearRefreshToken(userId: string) {
 export async function findUserByRefreshTokenHash(tokenHash: string) {
   const result = await pool.query(
     `
-    SELECT id, email, role, host_stripe_account_id, email_verified, refresh_token_hash, refresh_expires,
+    SELECT id, email, full_name, phone, role, host_stripe_account_id, email_verified, refresh_token_hash, refresh_expires,
       terms_version, terms_accepted_at, privacy_version, privacy_accepted_at
     FROM users
     WHERE refresh_token_hash = $1
@@ -647,7 +649,7 @@ export async function setLegalAcceptance({
         privacy_version = COALESCE($3, privacy_version),
         privacy_accepted_at = CASE WHEN $3 IS NOT NULL THEN $4 ELSE privacy_accepted_at END
     WHERE id = $1
-    RETURNING id, email, role, host_stripe_account_id, email_verified, terms_version, terms_accepted_at,
+    RETURNING id, email, full_name, phone, role, host_stripe_account_id, email_verified, terms_version, terms_accepted_at,
       privacy_version, privacy_accepted_at;
     `,
     [userId, termsVersion ?? null, privacyVersion ?? null, now]
@@ -674,12 +676,50 @@ export async function setEmailVerified(userId: string, verified: boolean) {
     UPDATE users
     SET email_verified = $1, verification_token = null, verification_expires = null
     WHERE id = $2
-    RETURNING id, email, role, host_stripe_account_id, email_verified;
+    RETURNING id, email, full_name, phone, role, host_stripe_account_id, email_verified;
     `,
     [verified, userId]
   );
-  return result.rows[0] as Pick<UserRecord, "id" | "email" | "role" | "host_stripe_account_id"> &
+  return result.rows[0] as Pick<UserRecord, "id" | "email" | "full_name" | "phone" | "role" | "host_stripe_account_id"> &
     { email_verified: boolean };
+}
+
+export async function updateUserProfile({
+  userId,
+  fullName,
+  phone,
+}: {
+  userId: string;
+  fullName?: string | null;
+  phone?: string | null;
+}) {
+  const fields: string[] = [];
+  const values: any[] = [];
+  let idx = 1;
+
+  if (fullName !== undefined) {
+    fields.push(`full_name = $${idx++}`);
+    values.push(fullName);
+  }
+  if (phone !== undefined) {
+    fields.push(`phone = $${idx++}`);
+    values.push(phone);
+  }
+  if (!fields.length) return undefined;
+
+  values.push(userId);
+  const result = await pool.query(
+    `
+    UPDATE users
+    SET ${fields.join(", ")}
+    WHERE id = $${idx}
+    RETURNING id, email, full_name, phone, password_hash, role, host_stripe_account_id, email_verified,
+      verification_token, verification_expires, refresh_token_hash, refresh_expires,
+      terms_version, terms_accepted_at, privacy_version, privacy_accepted_at
+    `,
+    values
+  );
+  return result.rows[0] as UserRecord | undefined;
 }
 
 export async function listListingsByHost(hostId: string) {

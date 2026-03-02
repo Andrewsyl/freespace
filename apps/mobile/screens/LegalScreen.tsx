@@ -17,13 +17,14 @@ export function LegalScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <View style={styles.header}>
+      <ScrollView contentContainerStyle={styles.content}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Ionicons name="arrow-back" size={20} color={colors.text} />
+          <Text style={styles.backText}>Back</Text>
         </Pressable>
         <Text style={styles.title}>Terms & privacy</Text>
-      </View>
-      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.subtitle}>Legal and data rights</Text>
+
         <Text style={styles.sectionKicker}>Legal</Text>
         <Text style={styles.sectionTitle}>How we use your data</Text>
         <Text style={styles.body}>
@@ -96,41 +97,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.appBg,
   },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 12,
-  },
   backButton: {
     alignItems: "center",
-    justifyContent: "center",
-
-    paddingVertical: 6,
-    width: 60,
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    gap: 6,
+    marginBottom: 16,
   },
-  backCircle: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 32,
-    width: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.cardBg,
-  },
-  backIcon: {
+  backText: {
     color: colors.text,
-    fontSize: 14,
-    lineHeight: 14,
-    textAlign: "center",
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "500",
   },
   title: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 30,
     fontWeight: "600",
+  },
+  subtitle: {
+    color: colors.textMuted,
+    fontSize: 15,
+    marginTop: 4,
+    marginBottom: 8,
   },
   content: {
     paddingHorizontal: spacing.screenX,

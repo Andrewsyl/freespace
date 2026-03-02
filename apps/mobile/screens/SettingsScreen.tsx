@@ -10,79 +10,61 @@ type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 export function SettingsScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <View style={styles.topBar}>
+      <ScrollView contentContainerStyle={styles.content}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Ionicons name="arrow-back" size={20} color={colors.text} />
+          <Text style={styles.backText}>Back</Text>
         </Pressable>
-        <Text style={styles.topTitle}>Settings</Text>
-        <View style={styles.backButton} />
-      </View>
-      <View style={styles.contentWrapper}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Preferences</Text>
-            <Text style={styles.cardBody}>
-              Configure notifications, privacy, and payment preferences here.
-            </Text>
-          </View>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Support</Text>
-            <Text style={styles.cardBody}>Need help? Contact support@freespace.app.</Text>
-          </View>
-        </ScrollView>
-      </View>
+        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.subtitle}>Preferences and defaults</Text>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Preferences</Text>
+          <Text style={styles.cardBody}>
+            Configure notifications, privacy, and payment preferences here.
+          </Text>
+        </View>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Support</Text>
+          <Text style={styles.cardBody}>Need help? Contact support@freespace.app.</Text>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.headerTint,
-    flex: 1,
-  },
-  contentWrapper: {
-    flex: 1,
     backgroundColor: colors.appBg,
-  },
-  topBar: {
-    alignItems: "center",
-    backgroundColor: colors.headerTint,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 8,
+    flex: 1,
   },
   backButton: {
     alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    gap: 6,
+    marginBottom: 16,
   },
-  backCircle: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 32,
-    width: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.cardBg,
-  },
-  backIcon: {
+  backText: {
     color: colors.text,
-    fontSize: 14,
-    lineHeight: 14,
-    textAlign: "center",
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  title: {
+    color: colors.text,
+    fontSize: 30,
     fontWeight: "600",
   },
-  topTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
+  subtitle: {
+    color: colors.textMuted,
+    fontSize: 15,
+    marginTop: 4,
+    marginBottom: 16,
   },
   content: {
-    padding: spacing.screenX,
+    paddingHorizontal: spacing.screenX,
+    paddingTop: 16,
+    paddingBottom: spacing.screenX,
     gap: spacing.gap,
   },
   card: {

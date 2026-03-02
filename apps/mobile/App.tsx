@@ -27,6 +27,8 @@ import { ListingScreen } from "./screens/ListingScreen";
 import { ListingsScreen } from "./screens/ListingsScreen";
 import { PaymentsScreen } from "./screens/PaymentsScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
+import { PersonalInfoScreen } from "./screens/PersonalInfoScreen";
+import { LoginSecurityScreen } from "./screens/LoginSecurityScreen";
 import { LegalScreen } from "./screens/LegalScreen";
 import { BookingDetailScreen } from "./screens/BookingDetailScreen";
 import { ReviewScreen } from "./screens/ReviewScreen";
@@ -191,6 +193,8 @@ function AppNavigator() {
           <Stack.Screen name="History" component={HistoryScreen} />
           <Stack.Screen name="Favorites" component={FavoritesScreen} />
           <Stack.Screen name="Payments" component={PaymentsScreen} />
+          <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
+          <Stack.Screen name="LoginSecurity" component={LoginSecurityScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
           <Stack.Screen name="Review" component={ReviewScreen} />

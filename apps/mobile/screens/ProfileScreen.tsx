@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
-import { deleteAccount, requestEmailVerification } from "../api";
+import { requestEmailVerification } from "../api";
 import { useAuth } from "../auth";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import type { RootStackParamList } from "../types";
@@ -13,10 +13,9 @@ import { Ionicons } from "@expo/vector-icons";
 type Props = NativeStackScreenProps<RootStackParamList, "Profile">;
 
 export function ProfileScreen({ navigation }: Props) {
-  const { user, token, logout } = useAuth();
+  const { user, logout } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [sending, setSending] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -95,37 +94,6 @@ export function ProfileScreen({ navigation }: Props) {
     void syncNotificationStatus();
   }, []);
 
-  const confirmDelete = () => {
-    if (!token) {
-      setError("Authentication required");
-      return;
-    }
-    Alert.alert(
-      "Delete account",
-      "This will permanently remove your account, listings, and bookings.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            setDeleting(true);
-            setError(null);
-            try {
-              await deleteAccount(token);
-              await logout();
-              navigation.navigate("Tabs", { screen: "Search" });
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Could not delete account");
-            } finally {
-              setDeleting(false);
-            }
-          },
-        },
-      ]
-    );
-  };
-
   const showPlaceholder = (title: string) => {
     Alert.alert(title, "This section is coming soon.");
   };
@@ -170,17 +138,6 @@ export function ProfileScreen({ navigation }: Props) {
         <View style={styles.section}>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("History")}
-          >
-            <MaterialIcons name="history" size={24} color="#111827" />
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>History</Text>
-              <Text style={styles.rowSubtitle}>Past bookings</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("Favorites")}
           >
             <MaterialIcons name="favorite-border" size={24} color="#111827" />
@@ -207,12 +164,12 @@ export function ProfileScreen({ navigation }: Props) {
         <View style={styles.section}>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => showPlaceholder("Personal information")}
+            onPress={() => navigation.navigate("PersonalInfo")}
           >
             <MaterialIcons name="person-outline" size={24} color="#111827" />
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>Personal information</Text>
-              <Text style={styles.rowSubtitle}>{user.email}</Text>
+              <Text style={styles.rowSubtitle}>Name, phone number, email</Text>
             </View>
             <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
           </Pressable>
@@ -252,7 +209,7 @@ export function ProfileScreen({ navigation }: Props) {
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => showPlaceholder("Login & security")}
+            onPress={() => navigation.navigate("LoginSecurity")}
           >
             <MaterialIcons name="lock-outline" size={24} color="#111827" />
             <View style={styles.rowText}>
@@ -397,19 +354,6 @@ export function ProfileScreen({ navigation }: Props) {
           ) : null}
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={confirmDelete}
-          >
-            <MaterialIcons name="delete-outline" size={24} color="#b42318" />
-            <View style={styles.rowText}>
-              <Text style={[styles.rowTitle, styles.rowTitleDanger]}>Delete account</Text>
-              <Text style={styles.rowSubtitle}>
-                Remove your data and listings permanently.
-              </Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#fca5a5" />
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => logout()}
           >
             <MaterialIcons name="logout" size={24} color="#111827" />
@@ -534,9 +478,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: "600",
-  },
-  rowTitleDanger: {
-    color: "#b42318",
   },
   rowSubtitle: {
     color: colors.textMuted,

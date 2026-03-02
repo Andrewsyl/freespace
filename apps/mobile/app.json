@@ -23,12 +23,6 @@
         }
       ],
       [
-        "react-native-maps",
-        {
-          "googleMapsApiKey": "AIzaSyC1h1NFLFz7SPauw85Udh0O1CBlN5bqOek"
-        }
-      ],
-      [
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.742052774291-7ebm33putsqqjjb8h5kebok0214hp38h"

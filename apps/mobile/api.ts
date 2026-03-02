@@ -14,6 +14,8 @@ type AuthResponse = {
   user: {
     id: string;
     email: string;
+    name?: string | null;
+    phone?: string | null;
     role?: string;
     emailVerified?: boolean;
     termsVersion?: string | null;
@@ -436,6 +438,45 @@ export async function revokeSession(token: string) {
     throw new Error(await readErrorMessage(response, "Logout failed"));
   }
   return (await response.json()) as { ok: boolean };
+}
+
+export async function logoutAllSessions(token: string) {
+  const response = await fetch(`${baseUrl}/api/auth/logout-all`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "Log out all devices failed"));
+  }
+  return (await response.json()) as { ok: boolean };
+}
+
+export async function getMe(token: string) {
+  const response = await fetch(`${baseUrl}/api/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "Failed to load profile"));
+  }
+  return (await response.json()) as { user: AuthResponse["user"] };
+}
+
+export async function updateMe(
+  token: string,
+  payload: { name?: string | null; phone?: string | null }
+) {
+  const response = await fetch(`${baseUrl}/api/auth/me`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "Failed to update profile"));
+  }
+  return (await response.json()) as { user: AuthResponse["user"] };
 }
 
 export async function requestPasswordReset(email: string) {

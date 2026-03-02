@@ -26,8 +26,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "verify:lanes": "./scripts/check-lanes.sh",
-    "eas:qa": "npx eas build --platform android --profile qa --clear-cache",
-    "eas:prod": "npx eas build --platform android --profile production --clear-cache"
+    "eas:qa": "npx -y eas-cli@18.0.4 build --platform android --profile qa --clear-cache",
+    "eas:prod": "npx -y eas-cli@18.0.4 build --platform android --profile production --clear-cache"
   },
   "dependencies": {
     "@babel/runtime": "^7.28.4",

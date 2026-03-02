@@ -13,12 +13,15 @@ import {
   createUser,
   deleteUserAccount,
   findUserByEmail,
+  findUserById,
   findUserByResetToken,
   findUserByRefreshTokenHash,
   setEmailVerified,
   setLegalAcceptance,
   setPasswordResetToken,
   setRefreshToken,
+  updateUserProfile,
+  type UserRecord,
   setVerificationToken,
   updateUserPassword,
   verifyUserEmail,
@@ -34,6 +37,19 @@ const resetLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 3, keyPr
 const verifyLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 3, keyPrefix: "verify" });
 const oauthLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 10, keyPrefix: "oauth" });
 const refreshLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyPrefix: "refresh" });
+
+const toPublicUser = (user: UserRecord) => ({
+  id: user.id,
+  email: user.email,
+  name: user.full_name ?? null,
+  phone: user.phone ?? null,
+  role: user.role,
+  emailVerified: user.email_verified ?? false,
+  termsVersion: user.terms_version ?? null,
+  termsAcceptedAt: user.terms_accepted_at ?? null,
+  privacyVersion: user.privacy_version ?? null,
+  privacyAcceptedAt: user.privacy_accepted_at ?? null,
+});
 
 const registerSchema = z.object({
   email: z.string().trim().email(),
@@ -80,16 +96,7 @@ router.post("/register", registerLimiter, async (req, res, next) => {
     res.status(201).json({
       token: jwt,
       refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        emailVerified: user.email_verified ?? false,
-        termsVersion: user.terms_version ?? null,
-        termsAcceptedAt: user.terms_accepted_at ?? null,
-        privacyVersion: user.privacy_version ?? null,
-        privacyAcceptedAt: user.privacy_accepted_at ?? null,
-      },
+      user: toPublicUser(user),
       previewUrl,
     });
   } catch (error) {
@@ -120,16 +127,7 @@ router.post("/login", loginLimiter, async (req, res, next) => {
     res.json({
       token,
       refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        emailVerified: user.email_verified ?? false,
-        termsVersion: user.terms_version ?? null,
-        termsAcceptedAt: user.terms_accepted_at ?? null,
-        privacyVersion: user.privacy_version ?? null,
-        privacyAcceptedAt: user.privacy_accepted_at ?? null,
-      },
+      user: toPublicUser(user),
     });
   } catch (error) {
     next(error);
@@ -153,6 +151,7 @@ router.post("/oauth/google", oauthLimiter, async (req, res, next) => {
       aud?: string;
       email?: string;
       email_verified?: string;
+      name?: string;
     };
     if (!payload.email) {
       return res.status(400).json({ message: "Google account missing email" });
@@ -166,10 +165,17 @@ router.post("/oauth/google", oauthLimiter, async (req, res, next) => {
       const passwordHash = await hashPassword(generateVerificationToken());
       user = await createUser({
         email: payload.email,
+        fullName: payload.name?.trim() || null,
         passwordHash,
         verificationToken: null,
         verificationExpires: null,
       });
+    } else if (payload.name && !user.full_name) {
+      user =
+        (await updateUserProfile({
+          userId: user.id,
+          fullName: payload.name.trim(),
+        })) ?? user;
     }
     if (!user) {
       return res.status(500).json({ message: "Could not create user" });
@@ -183,14 +189,8 @@ router.post("/oauth/google", oauthLimiter, async (req, res, next) => {
       token,
       refreshToken,
       user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
+        ...toPublicUser(user),
         emailVerified: true,
-        termsVersion: user.terms_version ?? null,
-        termsAcceptedAt: user.terms_accepted_at ?? null,
-        privacyVersion: user.privacy_version ?? null,
-        privacyAcceptedAt: user.privacy_accepted_at ?? null,
       },
     });
   } catch (error) {
@@ -231,7 +231,7 @@ router.post("/oauth/facebook", oauthLimiter, async (req, res, next) => {
     if (!meRes.ok) {
       return res.status(401).json({ message: "Facebook profile lookup failed" });
     }
-    const me = (await meRes.json()) as { email?: string };
+    const me = (await meRes.json()) as { email?: string; name?: string };
     if (!me.email) {
       return res.status(400).json({ message: "Facebook account missing email" });
     }
@@ -240,10 +240,17 @@ router.post("/oauth/facebook", oauthLimiter, async (req, res, next) => {
       const passwordHash = await hashPassword(generateVerificationToken());
       user = await createUser({
         email: me.email,
+        fullName: me.name?.trim() || null,
         passwordHash,
         verificationToken: null,
         verificationExpires: null,
       });
+    } else if (me.name && !user.full_name) {
+      user =
+        (await updateUserProfile({
+          userId: user.id,
+          fullName: me.name.trim(),
+        })) ?? user;
     }
     if (!user) {
       return res.status(500).json({ message: "Could not create user" });
@@ -257,14 +264,8 @@ router.post("/oauth/facebook", oauthLimiter, async (req, res, next) => {
       token,
       refreshToken,
       user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
+        ...toPublicUser(user),
         emailVerified: true,
-        termsVersion: user.terms_version ?? null,
-        termsAcceptedAt: user.terms_accepted_at ?? null,
-        privacyVersion: user.privacy_version ?? null,
-        privacyAcceptedAt: user.privacy_accepted_at ?? null,
       },
     });
   } catch (error) {
@@ -374,16 +375,7 @@ router.post("/refresh", refreshLimiter, async (req, res, next) => {
     res.json({
       token,
       refreshToken: nextRefreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        emailVerified: user.email_verified ?? false,
-        termsVersion: user.terms_version ?? null,
-        termsAcceptedAt: user.terms_accepted_at ?? null,
-        privacyVersion: user.privacy_version ?? null,
-        privacyAcceptedAt: user.privacy_accepted_at ?? null,
-      },
+      user: toPublicUser(user),
     });
   } catch (error) {
     next(error);
@@ -407,17 +399,53 @@ router.post("/legal", requireAuth, async (req, res, next) => {
     });
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        emailVerified: user.email_verified ?? false,
-        termsVersion: user.terms_version ?? null,
-        termsAcceptedAt: user.terms_accepted_at ?? null,
-        privacyVersion: user.privacy_version ?? null,
-        privacyAcceptedAt: user.privacy_accepted_at ?? null,
-      },
+      user: toPublicUser(user),
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/me", requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const user = await findUserById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ user: toPublicUser(user) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put("/me", requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const payload = z
+      .object({
+        name: z.string().trim().min(1).max(120).nullable().optional(),
+        phone: z.string().trim().min(6).max(32).nullable().optional(),
+      })
+      .parse(req.body);
+    const user = await updateUserProfile({
+      userId,
+      fullName: payload.name,
+      phone: payload.phone,
+    });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ user: toPublicUser(user) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/logout-all", requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    await clearRefreshToken(userId);
+    res.json({ ok: true });
   } catch (error) {
     next(error);
   }
