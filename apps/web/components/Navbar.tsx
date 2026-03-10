@@ -35,21 +35,24 @@ export function Navbar() {
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-20 border-b border-slate-100 bg-white/80 backdrop-blur">
+    <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/85 backdrop-blur">
       {isLoading && <div className="h-1 animate-pulse bg-brand-500" />}
       {error && (
-        <div className="bg-rose-500 p-2 text-center text-sm text-white">
+        <div className="bg-rose-500 p-2 text-center text-sm font-semibold text-white">
           {error}
           <button onClick={() => setError(null)} className="ml-4 font-semibold">
             ✕
           </button>
         </div>
       )}
-      <div className="flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/" className="text-lg font-semibold text-brand-700">
-          ParkShare Dublin
+      <div className="flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-10">
+        <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-500 text-sm font-bold text-white shadow-sm">
+            FS
+          </span>
+          FreeSpace
         </Link>
-        <nav className="hidden items-center gap-6 text-sm font-semibold text-slate-700 sm:flex">
+        <nav className="hidden items-center gap-6 text-sm font-semibold text-slate-600 sm:flex">
           {links
             .filter((link) => {
               if (!link.roles) return true;
@@ -58,7 +61,7 @@ export function Navbar() {
               return link.roles.includes(user.role);
             })
             .map((link) => (
-              <Link key={link.href} href={link.href} className="hover:text-brand-700">
+              <Link key={link.href} href={link.href} className="transition hover:text-brand-600">
                 {link.label}
               </Link>
             ))}

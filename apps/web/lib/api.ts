@@ -242,6 +242,19 @@ export async function createBooking(input: CreateBookingInput, token?: string) {
   return data!;
 }
 
+export async function createPortalBooking(input: { listingId: string; until: string; vehiclePlate: string }) {
+  const res = await fetch(`${API_BASE}/api/bookings/portal`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const { data, error } = await handleResponse<{ checkoutUrl: string; sessionId: string }>(res);
+  if (error) {
+    throw new Error(error);
+  }
+  return data!;
+}
+
 export type BookingSummary = {
   id: string;
   startTime: string;

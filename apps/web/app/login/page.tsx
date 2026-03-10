@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../components/AuthProvider";
 import { requestVerification } from "../../lib/api";
@@ -9,6 +9,7 @@ import { requestVerification } from "../../lib/api";
 export default function LoginPage() {
   const { signIn, loading, error } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [debug, setDebug] = useState<string | null>(null);
@@ -19,7 +20,8 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
       setDebug(`Login success for ${email}`);
-      router.push("/dashboard");
+      const next = searchParams.get("next");
+      router.push(next || "/dashboard");
     } catch {
       setDebug("Login failed; check console for details.");
     }
@@ -27,12 +29,13 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto max-w-md space-y-6">
-      <div className="space-y-2 text-center">
+      <div className="space-y-3 text-center">
+        <img src="/freespace-logo.png" alt="FreeSpace" className="mx-auto h-20 w-auto" />
         <p className="text-sm font-semibold tracking-wide text-brand-700">Welcome back</p>
         <h1 className="text-3xl tracking-tight font-semibold text-slate-900">Sign in</h1>
         <p className="text-sm text-slate-600">Access your bookings and host dashboard.</p>
       </div>
-      <form onSubmit={handleSubmit} className="card space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
           Email
           <input

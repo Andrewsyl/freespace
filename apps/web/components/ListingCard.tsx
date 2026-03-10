@@ -51,12 +51,12 @@ export function ListingCard({
   return (
     <article
       className={clsx(
-        "flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3 shadow-sm transition duration-150",
-        selected && "ring-2 ring-brand-500 ring-offset-1 ring-offset-white"
+        "flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-150",
+        selected && "ring-2 ring-brand-500 ring-offset-2 ring-offset-white"
       )}
       style={{ animation: "slideUp 160ms ease-out" }}
     >
-      <div className="relative h-20 w-28 overflow-hidden rounded-lg">
+      <div className="relative h-24 w-32 overflow-hidden rounded-xl">
         <Image
           src={imageSrc}
           alt={listing.title}
@@ -64,9 +64,9 @@ export function ListingCard({
           className="object-cover"
           sizes="112px"
         />
-        <div className="absolute inset-x-1 bottom-1 flex items-center justify-between text-[10px] font-semibold text-white drop-shadow">
-          <span className="rounded-full bg-black/60 px-2 py-0.5">€{listing.pricePerDay}/d</span>
-          <span className="rounded-full bg-black/60 px-2 py-0.5">{listing.distanceKm} km</span>
+        <div className="absolute inset-x-2 bottom-2 flex items-center justify-between text-[10px] font-semibold text-white drop-shadow">
+          <span className="rounded-full bg-black/65 px-2 py-0.5">€{listing.pricePerDay}/d</span>
+          <span className="rounded-full bg-black/65 px-2 py-0.5">{listing.distanceKm} km</span>
         </div>
       </div>
 
@@ -76,7 +76,7 @@ export function ListingCard({
             <Link
               href={`/listing/${listing.id}`}
               onClick={suppressNavigation ? (e) => e.preventDefault() : undefined}
-              className="line-clamp-1 text-sm font-semibold text-slate-900 hover:text-brand-700"
+              className="line-clamp-1 text-sm font-semibold text-slate-900 hover:text-brand-600"
             >
               {listing.title}
             </Link>

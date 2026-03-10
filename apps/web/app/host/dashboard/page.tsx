@@ -22,6 +22,7 @@ export default function HostDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [payoutAccount, setPayoutAccount] = useState<string | null>(null);
   const [payoutStatus, setPayoutStatus] = useState<"idle" | "loading" | "error" | "ready">("idle");
+  const [origin, setOrigin] = useState("");
 
   const loadListings = async () => {
     if (!token) return;
@@ -38,6 +39,9 @@ export default function HostDashboardPage() {
   };
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin);
+    }
     loadListings();
     const loadPayout = async () => {
       if (!token) return;
@@ -152,6 +156,18 @@ export default function HostDashboardPage() {
               </p>
             </a>
             <div className="flex flex-col items-start gap-2 sm:items-end">
+              <a
+                href={`/qa/${listing.id}`}
+                className="rounded-lg border border-emerald-200 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+              >
+                Open QR portal
+              </a>
+              <a
+                href={`/qa/${listing.id}/qr`}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Printable QR
+              </a>
               <button
                 onClick={() => handleDelete(listing.id)}
                 className="rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
@@ -159,6 +175,17 @@ export default function HostDashboardPage() {
                 Delete
               </button>
             </div>
+            {origin ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:w-52">
+                <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500">QR check-in</p>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`${origin}/qa/${listing.id}`)}`}
+                  alt={`QR code for ${listing.title}`}
+                  className="h-40 w-40 rounded-lg border border-slate-200 bg-white p-1"
+                />
+                <p className="mt-2 break-all text-[11px] text-slate-500">{`${origin}/qa/${listing.id}`}</p>
+              </div>
+            ) : null}
           </div>
         ))}
         {status === "idle" && listings.length === 0 && (

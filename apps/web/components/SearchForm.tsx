@@ -221,7 +221,7 @@ export function SearchForm({
     <div className="w-full">
       <form
         onSubmit={handleSubmit}
-        className="flex w-full flex-col gap-3 rounded-3xl border border-slate-200 bg-white/95 p-3 shadow-xl ring-1 ring-slate-100 sm:flex-row sm:items-stretch sm:gap-2"
+        className="flex w-full flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-lg sm:flex-row sm:items-stretch sm:gap-2"
       >
         <div className="flex min-w-[220px] flex-1 flex-col gap-1 text-sm font-semibold text-slate-800">
           <span className="text-[11px] tracking-wide text-slate-500">Location</span>
@@ -255,7 +255,7 @@ export function SearchForm({
           )}
           <button
             type="submit"
-            className="rounded-full bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-brand-700"
+            className="rounded-full bg-brand-500 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-brand-600"
           >
             Search
           </button>

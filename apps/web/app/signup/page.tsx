@@ -25,12 +25,13 @@ export default function SignupPage() {
 
   return (
     <div className="mx-auto max-w-md space-y-6">
-      <div className="space-y-2 text-center">
+      <div className="space-y-3 text-center">
+        <img src="/freespace-logo.png" alt="FreeSpace" className="mx-auto h-20 w-auto" />
         <p className="text-sm font-semibold tracking-wide text-brand-700">Host or driver</p>
         <h1 className="text-3xl tracking-tight font-semibold text-slate-900">Create account</h1>
         <p className="text-sm text-slate-600">Book spaces or start earning from your driveway.</p>
       </div>
-      <form onSubmit={handleSubmit} className="card space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
           Email
           <input
