@@ -43,10 +43,12 @@ const allowedOrigins = new Set(
     "http://localhost:19006",
   ].filter(Boolean)
 );
+const allowAllOriginsInDev = process.env.NODE_ENV !== "production";
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
+      if (allowAllOriginsInDev) return callback(null, true);
       if (allowedOrigins.has(origin)) return callback(null, true);
       return callback(new Error("CORS blocked"));
     },

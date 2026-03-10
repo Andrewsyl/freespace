@@ -23,6 +23,8 @@ import {
   updateBookingExtension,
   checkInBooking,
   updateBookingWindow,
+  findUserByEmail,
+  createUser,
 } from "../lib/db.js";
 import { createCheckoutSession, stripe } from "../lib/stripe.js";
 import { sendBookingEmail } from "../lib/email.js";
@@ -30,6 +32,7 @@ import { sendPushNotification } from "../lib/notifications.js";
 import { requireAuth } from "../middleware/auth.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
 import "../loadEnv.js";
+import { generateVerificationToken, hashPassword } from "../lib/auth.js";
 
 const router = Router();
 const bookingLimiter = createRateLimiter({
@@ -37,6 +40,12 @@ const bookingLimiter = createRateLimiter({
   max: 10,
   keyPrefix: "booking",
   keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
+});
+const portalBookingLimiter = createRateLimiter({
+  windowMs: 5 * 60 * 1000,
+  max: 20,
+  keyPrefix: "portal-booking",
+  keyGenerator: (req) => req.ip ?? "unknown",
 });
 
 const bookingSchemaBase = z.object({
@@ -77,6 +86,17 @@ const paymentIntentSchema = bookingSchemaBase.pick({
   currency: true,
   platformFeePercent: true,
   vehiclePlate: true,
+});
+
+const portalBookingSchema = z.object({
+  listingId: z.string().uuid(),
+  until: z.string().datetime(),
+  vehiclePlate: z
+    .string()
+    .trim()
+    .min(2)
+    .max(12)
+    .regex(/^[A-Za-z0-9 ]+$/, "Only letters, numbers, and spaces"),
 });
 
 function formatBookingWindow(start: Date, end: Date) {
@@ -247,6 +267,21 @@ async function getOrCreateCustomer(email: string) {
   return customer.id;
 }
 
+async function getOrCreatePortalGuestUserId() {
+  const portalEmail = process.env.PORTAL_GUEST_EMAIL ?? "qr-portal@freespace.local";
+  const existing = await findUserByEmail(portalEmail);
+  if (existing) return existing.id;
+  const passwordHash = await hashPassword(generateVerificationToken());
+  const created = await createUser({
+    email: portalEmail,
+    passwordHash,
+    verificationToken: null,
+    verificationExpires: null,
+  });
+  if (!created) throw new Error("Could not provision portal guest user");
+  return created.id;
+}
+
 router.post("/", requireAuth, bookingLimiter, async (req, res, next) => {
   try {
     const payload = bookingSchema.parse(req.body);
@@ -381,6 +416,99 @@ router.post("/payment-intent", requireAuth, bookingLimiter, async (req, res, nex
       customerId,
       ephemeralKeySecret: ephemeralKey.secret,
     });
+  } catch (error: any) {
+    if (error?.code === "23P01") {
+      return res.status(409).json({ message: "Time slot already booked" });
+    }
+    next(error);
+  }
+});
+
+router.post("/portal", portalBookingLimiter, async (req, res, next) => {
+  try {
+    const payload = portalBookingSchema.parse(req.body);
+    const startAt = new Date();
+    const endAt = new Date(payload.until);
+    if (Number.isNaN(endAt.getTime()) || endAt.getTime() <= startAt.getTime()) {
+      return res.status(400).json({ message: "End time must be in the future" });
+    }
+
+    const existingPortal = await pool.query(
+      `SELECT checkout_session_id
+       FROM bookings
+       WHERE listing_id = $1
+         AND (status IS NULL OR status <> 'canceled')
+         AND checkout_session_id IS NOT NULL
+         AND tstzrange(start_time, end_time, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [payload.listingId, startAt.toISOString(), endAt.toISOString()]
+    );
+    const existingSessionId = existingPortal.rows[0]?.checkout_session_id as string | undefined;
+    if (existingSessionId && stripe) {
+      try {
+        const existingSession = await stripe.checkout.sessions.retrieve(existingSessionId);
+        if (existingSession?.url) {
+          return res.status(200).json({ checkoutUrl: existingSession.url, sessionId: existingSessionId });
+        }
+      } catch (err) {
+        // If the session no longer exists in Stripe, fall through to create a new one.
+      }
+    }
+
+    const overlapCheck = await pool.query(
+      `SELECT 1 FROM bookings
+       WHERE listing_id = $1
+         AND (status IS NULL OR status <> 'canceled')
+         AND tstzrange(start_time, end_time, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+       LIMIT 1`,
+      [payload.listingId, startAt.toISOString(), endAt.toISOString()]
+    );
+    if (overlapCheck.rowCount && overlapCheck.rowCount > 0) {
+      return res.status(409).json({ message: "Time slot already booked" });
+    }
+
+    const listingWithHost = await getListingWithHostAccount(payload.listingId);
+    if (!listingWithHost) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
+
+    const durationHours = Math.max(
+      1,
+      Math.ceil((endAt.getTime() - startAt.getTime()) / (1000 * 60 * 60))
+    );
+    const billingDays = Math.max(1, Math.ceil(durationHours / 24));
+    const amountCents = Math.max(1, Math.round(listingWithHost.pricePerDay * billingDays * 100));
+    const platformFeePercent = 0.1;
+    const platformFeeCents = Math.round(amountCents * platformFeePercent);
+    const payoutAvailableAt = new Date(startAt.getTime() + 24 * 60 * 60 * 1000);
+
+    const session = await createCheckoutSession({
+      amount: amountCents,
+      currency: "eur",
+      listingId: payload.listingId,
+      hostStripeAccountId: listingWithHost.hostStripeAccountId ?? null,
+      platformFeePercent,
+      successUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/booking/cancel?session_id={CHECKOUT_SESSION_ID}`,
+    });
+
+    const driverId = await getOrCreatePortalGuestUserId();
+    await createBooking({
+      listingId: payload.listingId,
+      driverId,
+      from: startAt.toISOString(),
+      to: endAt.toISOString(),
+      stripePaymentIntentId: session.payment_intent as string,
+      checkoutSessionId: session.id,
+      amountCents,
+      currency: "eur",
+      platformFeeCents,
+      payoutAvailableAt,
+      vehiclePlate: payload.vehiclePlate.toUpperCase(),
+    });
+
+    res.status(201).json({ checkoutUrl: session.url, sessionId: session.id });
   } catch (error: any) {
     if (error?.code === "23P01") {
       return res.status(409).json({ message: "Time slot already booked" });
