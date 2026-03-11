@@ -30,7 +30,7 @@ export default function LoginPage() {
   return (
     <div className="mx-auto max-w-md space-y-6">
       <div className="space-y-3 text-center">
-        <img src="/freespace-logo.png" alt="FreeSpace" className="mx-auto h-20 w-auto" />
+        <img src="/freespace-logo.png" alt="FreeSpace" className="mx-auto h-20 w-auto mix-blend-multiply" />
         <p className="text-sm font-semibold tracking-wide text-brand-700">Welcome back</p>
         <h1 className="text-3xl tracking-tight font-semibold text-slate-900">Sign in</h1>
         <p className="text-sm text-slate-600">Access your bookings and host dashboard.</p>

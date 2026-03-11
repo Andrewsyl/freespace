@@ -39,75 +39,54 @@ export default async function ListingDetailPage({
       : undefined);
 
   return (
-    <div className="space-y-8">
-      <div className="grid gap-6 lg:grid-cols-[2fr,1fr] lg:items-start">
-        <div className="space-y-4">
-          <div className="relative aspect-[16/9] w-full max-h-64 overflow-hidden rounded-2xl bg-slate-200 shadow-lg">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={image ?? fallbackImage(listing.title)}
-              alt={listing.title}
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <div className="card space-y-3">
-            <p className="text-sm font-semibold tracking-wide text-brand-700">Parking space</p>
-            <h1 className="text-3xl tracking-tight font-semibold text-slate-900">{listing.title}</h1>
-            {searchParams.created && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                Listing published successfully.
-              </div>
-            )}
-            <p className="text-sm text-slate-600">{listing.address}</p>
-            <div className="flex flex-wrap gap-2 text-sm text-slate-700">
-              <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold">
-                €{listing.pricePerDay} / day
-              </span>
-              <span className="rounded-full bg-brand-50 px-3 py-1 font-semibold text-brand-700">
-                {listing.rating ?? 5}★ rated
-              </span>
-              <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold">{listing.availability}</span>
-            </div>
-            {listing.amenities && listing.amenities.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-slate-800">Amenities</p>
-                <div className="flex flex-wrap gap-2">
-                  {listing.amenities.map((amenity) => (
-                    <span key={amenity} className="rounded-lg bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
-                      {amenity}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="card space-y-3">
-            <p className="text-sm font-semibold text-slate-800">Booking info</p>
-            <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
-              <li>Instant confirmation and no double bookings.</li>
-              <li>Secure payout to the host via Stripe Connect.</li>
-              <li>Provide arrival window when booking; hosts get notified.</li>
-            </ul>
-          </div>
-          <WalkTime origin={{ lat: listing.latitude ?? 53.3498, lng: listing.longitude ?? -6.2603 }} />
+    <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
+      <header className="space-y-2 text-center">
+        <img src="/freespace-logo.png" alt="FreeSpace" className="mx-auto h-16 w-auto mix-blend-multiply" />
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Listing</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{listing.title}</h1>
+        <p className="text-sm text-slate-600">{listing.address}</p>
+      </header>
+
+      {searchParams.created && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          Listing published successfully.
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="text-sm text-slate-500">Price</div>
+          <div className="text-2xl font-semibold text-slate-900">€{listing.pricePerDay}</div>
+          <div className="text-xs text-slate-500">per day</div>
         </div>
 
-          <div className="space-y-4">
-            <BookingSelector listingId={listing.id} pricePerDay={listing.pricePerDay} />
-            {!listing.hostStripeAccountId && (
-              <div className="card text-xs text-amber-800 border border-amber-200 bg-amber-50">
-                Host payouts are not set up yet. You can still proceed for demo, but live payments require host onboarding.
-              </div>
-            )}
-            <div className="card h-64 rounded-xl bg-slate-100">
-              <ListingMap
-                listing={listingForMap}
-                center={{ lat: listing.latitude ?? 53.3498, lng: listing.longitude ?? -6.2603 }}
-                zoom={12}
-              />
+        <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm font-semibold text-slate-800">Choose your time</p>
+          <BookingSelector listingId={listing.id} pricePerDay={listing.pricePerDay} />
+          {!listing.hostStripeAccountId && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              Host payouts are not set up yet. You can still proceed for demo, but live payments require host onboarding.
             </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="text-sm font-semibold text-slate-800">Details</div>
+          <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+            <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold">Availability: {listing.availability}</span>
+            <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold">{listing.rating ?? 5}★ rated</span>
           </div>
+          {listing.amenities && listing.amenities.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {listing.amenities.map((amenity) => (
+                <span key={amenity} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                  {amenity}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+    </div>
   );
 }

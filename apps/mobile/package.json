@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "main": "index.js",
   "scripts": {
-    "dev:mobile": "expo start",
+    "dev:mobile": "./scripts/run-with-env.sh dev expo start -c",
     "start": "expo start",
     "start:local": "./scripts/run-with-env.sh local expo start -c",
     "start:dev": "./scripts/run-with-env.sh dev expo start -c",

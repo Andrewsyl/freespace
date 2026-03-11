@@ -151,6 +151,8 @@ export function ListingScreen({ navigation, route }: Props) {
     startAt.toISOString() === booking.startTime &&
     endAt.toISOString() === booking.endTime;
   const showBookingMode = booking && isBookingTimes;
+  const showBottomBar = !!(priceSummary && user);
+  const bottomBarSpacer = showBottomBar ? 140 + insets.bottom : 24;
 
   useEffect(() => {
     const load = async () => {
@@ -494,7 +496,10 @@ export function ListingScreen({ navigation, route }: Props) {
             <ScrollView
               style={styles.scrollContainer}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingTop: heroHeight - 40 }}
+              contentContainerStyle={{
+                paddingTop: heroHeight - 40,
+                paddingBottom: 24,
+              }}
               scrollEventThrottle={16}
               onScroll={(event) => {
                 const y = event.nativeEvent.contentOffset.y;
@@ -780,8 +785,7 @@ export function ListingScreen({ navigation, route }: Props) {
                   </>
                 )}
 
-                {/* Extra padding for bottom button */}
-                <View style={{ height: 200 }} />
+                <View style={styles.contentCardSpacer} />
               </View>
                 </View>
               </View>
@@ -1633,7 +1637,11 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 16,
-    paddingBottom: 120, // Extra padding for fixed bottom bar
+    paddingBottom: 16,
+    paddingHorizontal: 0,
+  },
+  contentCardSpacer: {
+    height: 120,
   },
   contentWrap: {
     marginTop: -25,

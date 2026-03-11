@@ -91,7 +91,7 @@ export default function QaPortalPage() {
   return (
     <div className="mx-auto max-w-xl space-y-6 px-4 py-8">
       <header className="space-y-4 text-center">
-        <img src="/freespace-logo.png" alt="FreeSpace" className="mx-auto h-20 w-auto sm:h-24" />
+        <img src="/freespace-logo.png" alt="FreeSpace" className="mx-auto h-20 w-auto mix-blend-multiply sm:h-24" />
         <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
           QR check-in
         </span>

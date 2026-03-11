@@ -162,7 +162,10 @@ export function ListingsScreen({ navigation }: Props) {
             ) : null}
             {earnings ? (
               <View style={styles.earningsCard}>
+                <View style={styles.earningsTitleRow}>
+                <Ionicons name="wallet-outline" size={16} color={colors.accent} />
                 <Text style={styles.earningsTitle}>Earnings summary</Text>
+              </View>
                 <View style={styles.earningsRow}>
                   <Text style={styles.earningsLabel}>Total earned</Text>
                   <Text style={styles.earningsValue}>{formatAmount(earnings.totalCents)}</Text>
@@ -182,7 +185,10 @@ export function ListingsScreen({ navigation }: Props) {
             ) : null}
             {payoutStatus ? (
               <View style={styles.payoutCard}>
-                <Text style={styles.payoutTitle}>Payouts</Text>
+                <View style={styles.payoutTitleRow}>
+                  <Ionicons name="card-outline" size={16} color={colors.accent} />
+                  <Text style={styles.payoutTitle}>Payouts</Text>
+                </View>
                 <Text style={styles.payoutBody}>
                   {payoutStatus.payoutsEnabled
                     ? "Payouts are active. Transfers will arrive automatically."
@@ -232,14 +238,17 @@ export function ListingsScreen({ navigation }: Props) {
                       </View>
                     )}
                     <View style={styles.listBody}>
-                      <Text style={styles.listTitle} numberOfLines={1}>
-                        {listing.title}
-                      </Text>
+                      <View style={styles.listTitleRow}>
+                        <Text style={styles.listTitle} numberOfLines={1}>
+                          {listing.title}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={14} color={colors.textSoft} />
+                      </View>
                       <Text style={styles.listMeta} numberOfLines={1}>
                         {listing.address}
                       </Text>
                       <View style={styles.listFooter}>
-                        <Text style={styles.listMeta}>€{listing.price_per_day} / day</Text>
+                        <Text style={styles.listPrice}>€{listing.price_per_day} / day</Text>
                         <Pressable
                           style={styles.deleteButton}
                           onPress={() => handleDelete(listing.id)}
@@ -301,23 +310,6 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: "center",
   },
-  backCircle: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 32,
-    width: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.cardBg,
-  },
-  backIcon: {
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 14,
-    textAlign: "center",
-    fontWeight: "600",
-  },
   topTitle: {
     color: "#ffffff",
     fontSize: 16,
@@ -325,9 +317,9 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.screenX,
-    paddingTop: 14,
+    paddingTop: 16,
     paddingBottom: spacing.screenX,
-    gap: 14,
+    gap: 16,
   },
   card: {
     backgroundColor: colors.cardBg,
@@ -371,11 +363,16 @@ const styles = StyleSheet.create({
     padding: spacing.card,
     ...cardShadow,
   },
+  earningsTitleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
+    marginBottom: 10,
+  },
   earningsTitle: {
     color: colors.text,
     fontSize: 16,
     fontWeight: "600",
-    marginBottom: 10,
   },
   earningsRow: {
     flexDirection: "row",
@@ -410,8 +407,8 @@ const styles = StyleSheet.create({
   },
   earningsValueStrong: {
     color: colors.accent,
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 18,
+    fontWeight: "700",
   },
   payoutCard: {
     backgroundColor: colors.cardBg,
@@ -420,6 +417,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     padding: spacing.card,
     ...cardShadow,
+  },
+  payoutTitleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
   },
   payoutTitle: {
     color: colors.text,
@@ -442,21 +444,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     gap: 12,
-    padding: 12,
+    padding: 14,
     ...cardShadow,
   },
   listImage: {
-    borderRadius: 10,
-    height: 80,
-    width: 96,
+    borderRadius: 12,
+    height: 88,
+    width: 108,
   },
   listPlaceholder: {
     alignItems: "center",
     backgroundColor: colors.border,
-    borderRadius: 10,
-    height: 80,
+    borderRadius: 12,
+    height: 88,
     justifyContent: "center",
-    width: 96,
+    width: 108,
   },
   listPlaceholderText: {
     color: colors.textSoft,
@@ -465,7 +467,14 @@ const styles = StyleSheet.create({
   },
   listBody: {
     flex: 1,
-    gap: 6,
+    gap: 4,
+    justifyContent: "space-between",
+  },
+  listTitleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 4,
+    justifyContent: "space-between",
   },
   listFooter: {
     alignItems: "center",
@@ -474,12 +483,18 @@ const styles = StyleSheet.create({
   },
   listTitle: {
     color: colors.text,
+    flex: 1,
     fontSize: 14,
     fontWeight: "600",
   },
   listMeta: {
     color: colors.textMuted,
     fontSize: 12,
+  },
+  listPrice: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "700",
   },
   deleteButton: {
     backgroundColor: "#fef2f2",
