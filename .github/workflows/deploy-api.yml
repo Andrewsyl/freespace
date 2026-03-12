@@ -1,0 +1,46 @@
+name: Deploy API to Elastic Beanstalk
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'db/**'
+      - '.github/workflows/deploy-api.yml'
+
+jobs:
+  deploy:
+    name: Deploy to FreeSpace-env-1
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Create deployment package
+        run: |
+          zip -r deploy.zip \
+            apps/api \
+            db \
+            package.json \
+            yarn.lock \
+            -x "apps/api/node_modules/*" \
+            -x "apps/api/.env*" \
+            -x "**/.DS_Store"
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v22
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: FreeSpace
+          environment_name: FreeSpace-env-1
+          region: eu-west-1
+          version_label: ${{ github.sha }}
+          deployment_package: deploy.zip
+          wait_for_environment_recovery: 60
