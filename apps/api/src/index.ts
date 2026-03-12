@@ -204,3 +204,4 @@ async function logRuntimeHealthChecks() {
     console.error("[startup] Runtime schema check failed:", error);
   }
 }
+
