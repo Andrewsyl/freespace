@@ -60,7 +60,12 @@ const bookingSchemaBase = z.object({
     .trim()
     .min(2)
     .max(12)
-    .regex(/^[A-Za-z0-9 \-]+$/, "Only letters, numbers, spaces, and dashes").superRefine((value, ctx) => {
+    .regex(/^[A-Za-z0-9 \-]+$/, "Only letters, numbers, spaces, and dashes")
+    .optional()
+    .nullable(),
+});
+
+const bookingSchema = bookingSchemaBase.superRefine((value, ctx) => {
   const start = Date.parse(value.from);
   const end = Date.parse(value.to);
   if (Number.isNaN(start) || Number.isNaN(end)) return;
