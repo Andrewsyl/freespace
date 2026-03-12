@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { verifyEmail } from "../../lib/api";
 
 export default function VerifyPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-md px-4 py-10 text-sm text-slate-600">Loading…</div>}>
+      <VerifyPageContent />
+    </Suspense>
+  );
+}
+
+function VerifyPageContent() {
   const params = useSearchParams();
   const router = useRouter();
   const token = params.get("token");

@@ -37,7 +37,14 @@ const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: num
   return 2 * R * Math.asin(Math.sqrt(h));
 };
 
-const radiusFromBounds = (bounds: google.maps.LatLngBoundsLiteral, center: { lat: number; lng: number }) => {
+type LatLngBoundsLiteral = {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+};
+
+const radiusFromBounds = (bounds: LatLngBoundsLiteral, center: { lat: number; lng: number }) => {
   const corners = [
     { lat: bounds.north, lng: bounds.east },
     { lat: bounds.north, lng: bounds.west },

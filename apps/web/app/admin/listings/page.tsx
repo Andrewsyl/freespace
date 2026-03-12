@@ -248,7 +248,7 @@ export default function AdminListingsPage() {
                 className={`rounded-lg px-4 py-2 text-sm font-semibold text-white ${
                   confirm.action === "approve"
                     ? "bg-emerald-600 hover:bg-emerald-500"
-                    : confirm.action === "reject"
+                    : confirm.action === "rejected"
                     ? "bg-rose-600 hover:bg-rose-500"
                     : "bg-slate-700 hover:bg-slate-600"
                 }`}

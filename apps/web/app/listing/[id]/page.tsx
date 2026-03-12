@@ -15,10 +15,11 @@ export default async function ListingDetailPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: { created?: string };
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ created?: string }>;
 }) {
-  const { id } = params;
+  const { id } = await params;
+  const resolvedSearchParams = (await searchParams) ?? {};
   const listing = await getListing(id).catch(() => null);
   if (!listing) notFound();
 
@@ -47,7 +48,7 @@ export default async function ListingDetailPage({
         <p className="text-sm text-slate-600">{listing.address}</p>
       </header>
 
-      {searchParams.created && (
+      {resolvedSearchParams.created && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           Listing published successfully.
         </div>

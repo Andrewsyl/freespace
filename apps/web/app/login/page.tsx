@@ -1,12 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { type Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../components/AuthProvider";
 import { requestVerification } from "../../lib/api";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-md px-4 py-10 text-sm text-slate-600">Loading…</div>}>
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageContent() {
   const { signIn, loading, error } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -21,7 +30,7 @@ export default function LoginPage() {
       await signIn(email, password);
       setDebug(`Login success for ${email}`);
       const next = searchParams.get("next");
-      router.push(next || "/dashboard");
+      router.push((next || "/dashboard") as Route);
     } catch {
       setDebug("Login failed; check console for details.");
     }

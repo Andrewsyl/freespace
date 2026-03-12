@@ -330,7 +330,7 @@ export default function PaymentsPage() {
                 });
               }}
               setError={setError}
-              token={token}
+              token={token ?? undefined}
             />
           ) : (
             <AddCardModalFallback
@@ -404,6 +404,10 @@ function AddCardModalStripe({
 
   const handleSubmit = async () => {
     if (!token) return;
+    if (!stripe || !elements) {
+      setMessage("Stripe is still loading. Please try again.");
+      return;
+    }
     setSubmitting(true);
     setMessage(null);
     setError(null);
