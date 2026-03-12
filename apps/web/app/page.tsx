@@ -5,7 +5,7 @@ export default function HomePage() {
       <p className="mt-6 text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Coming soon</p>
       <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">FreeSpace</h1>
       <p className="mt-3 max-w-lg text-base text-slate-600">
-        We’re building a simpler12234 way to find and book parking. Check back soon.
+        We’re building a simpler1224 way to find and book parking. Check back soon.
       </p>
     </div>
   );
