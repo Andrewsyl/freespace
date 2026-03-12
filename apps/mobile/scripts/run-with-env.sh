@@ -36,14 +36,14 @@ echo "[env] APP_ENV=$APP_ENV"
 echo "[env] EXPO_PUBLIC_API_BASE=${EXPO_PUBLIC_API_BASE:-}"
 echo "[env] synced .env.local from $ENV_FILE"
 
-if [ "$ENV_NAME" = "local" ] && [[ "$*" == *"expo run:android"* ]]; then
+if [[ "$*" == *"expo run:android"* ]]; then
   if command -v adb >/dev/null 2>&1; then
     adb reverse tcp:8081 tcp:8081 >/dev/null 2>&1 || true
     adb reverse tcp:4000 tcp:4000 >/dev/null 2>&1 || true
     echo "[env] adb reverse tcp:8081 -> tcp:8081"
     echo "[env] adb reverse tcp:4000 -> tcp:4000"
   fi
-  if command -v curl >/dev/null 2>&1; then
+  if [ "$ENV_NAME" = "local" ] && command -v curl >/dev/null 2>&1; then
     if ! curl -fsS --max-time 2 "http://127.0.0.1:4000/health" >/dev/null 2>&1; then
       echo "[env][warn] Local API is not responding at http://127.0.0.1:4000/health"
       echo "[env][warn] Start it in another terminal: cd apps/api && npm run dev"
