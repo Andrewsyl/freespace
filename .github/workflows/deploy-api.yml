@@ -6,11 +6,12 @@ on:
     paths:
       - 'apps/api/**'
       - 'db/**'
+      - 'Procfile'
       - '.github/workflows/deploy-api.yml'
 
 jobs:
   deploy:
-    name: Deploy to FreeSpace-env-1
+    name: Deploy to FreeSpace-env-api
     runs-on: ubuntu-latest
 
     steps:
@@ -29,6 +30,7 @@ jobs:
             db \
             package.json \
             yarn.lock \
+            Procfile \
             -x "apps/api/node_modules/*" \
             -x "apps/api/.env*" \
             -x "**/.DS_Store"
@@ -39,7 +41,7 @@ jobs:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           application_name: FreeSpace
-          environment_name: FreeSpace-env-1
+          environment_name: FreeSpace-env-api
           region: eu-west-1
           version_label: ${{ github.sha }}
           deployment_package: deploy.zip
