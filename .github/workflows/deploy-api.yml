@@ -1,27 +1,44 @@
-name: Deploy API to Elastic Beanstalk
+name: Deploy to Elastic Beanstalk
 
 on:
   push:
     branches: [main]
     paths:
       - 'apps/api/**'
+      - 'apps/web/**'
       - 'db/**'
       - 'Procfile'
       - '.github/workflows/deploy-api.yml'
 
 jobs:
-  deploy:
-    name: Deploy to FreeSpace-env-api
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'db/**'
+              - 'Procfile'
+            web:
+              - 'apps/web/**'
+
+  deploy-api:
+    name: Deploy API to FreeSpace-env-api
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
 
       - name: Create deployment package
         run: |
@@ -43,6 +60,51 @@ jobs:
           application_name: FreeSpace
           environment_name: FreeSpace-env-api
           region: eu-west-1
-          version_label: ${{ github.sha }}
+          version_label: api-${{ github.sha }}
           deployment_package: deploy.zip
+          wait_for_environment_recovery: 60
+
+  deploy-web:
+    name: Deploy Web to FreeSpace-env-web
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm --workspace apps/web install
+
+      - name: Build Next.js
+        env:
+          NEXT_PUBLIC_API_BASE: https://api.freespace.ie
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
+        run: npm --workspace apps/web run build
+
+      - name: Package standalone output
+        run: |
+          cp -r apps/web/public apps/web/.next/standalone/public
+          cp -r apps/web/.next/static apps/web/.next/standalone/.next/static
+          echo "web: node apps/web/server.js" > apps/web/.next/standalone/Procfile
+          cd apps/web/.next/standalone
+          zip -r ../../../../deploy-web.zip . -x "**/.DS_Store"
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v22
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: FreeSpace
+          environment_name: FreeSpace-env-web
+          region: eu-west-1
+          version_label: web-${{ github.sha }}
+          deployment_package: deploy-web.zip
           wait_for_environment_recovery: 60
