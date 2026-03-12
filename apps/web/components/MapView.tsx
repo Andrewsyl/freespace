@@ -78,9 +78,9 @@ export function MapView({
   showCenterPin = false,
 }: MapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<any>();
+  const mapInstance = useRef<any>(undefined);
   const markersRef = useRef<Map<string, { marker: any; listing: Listing }>>(new Map());
-  const centerMarkerRef = useRef<any>();
+  const centerMarkerRef = useRef<any>(undefined);
   const markerSignatureRef = useRef<string>("");
   const [mapsReady, setMapsReady] = useState(false);
   const hasUserDraggedRef = useRef(false);
