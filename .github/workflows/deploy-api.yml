@@ -80,20 +80,20 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: npm --workspace apps/web install
+        run: yarn install --frozen-lockfile
 
       - name: Build Next.js
         env:
           NEXT_PUBLIC_API_BASE: https://api.freespace.ie
           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
           NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
-        run: npm --workspace apps/web run build
+        run: yarn build:web
 
       - name: Package standalone output
         run: |
           cp -r apps/web/public apps/web/.next/standalone/public
           cp -r apps/web/.next/static apps/web/.next/standalone/.next/static
-          echo "web: node apps/web/server.js" > apps/web/.next/standalone/Procfile
+          echo "web: node server.js" > apps/web/.next/standalone/Procfile
           cd apps/web/.next/standalone
           zip -r ../../../../deploy-web.zip . -x "**/.DS_Store"
 
