@@ -109,4 +109,5 @@ jobs:
           region: eu-west-1
           version_label: web-${{ github.sha }}-${{ github.run_number }}
           deployment_package: deploy-web.zip
+          use_existing_version_if_available: true
           wait_for_environment_recovery: 60
