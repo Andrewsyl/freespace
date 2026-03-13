@@ -6,16 +6,6 @@ declare namespace google {
       east: number;
       west: number;
     };
-    const Geocoder: any;
-    const InfoWindow: any;
-    const Map: any;
-    const Marker: {
-      new (...args: any[]): any;
-      MAX_ZINDEX: number;
-    };
-    const OverlayView: any;
-    const Point: any;
-    const LatLng: any;
     namespace places {
       const Autocomplete: any;
     }

@@ -13,11 +13,13 @@ export function AddressAutocomplete({
   placeholder,
   onPlace,
   name,
+  inputClassName,
 }: {
   defaultValue?: string;
   placeholder?: string;
   onPlace: (place: PlaceResult) => void;
   name?: string;
+  inputClassName?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -51,7 +53,7 @@ export function AddressAutocomplete({
         name={name}
         defaultValue={defaultValue}
         placeholder={placeholder ?? "Search address"}
-        className="w-full rounded-2xl border border-slate-200 bg-white px-9 py-3 text-sm font-semibold text-slate-800 shadow-sm transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none hover:border-brand-200"
+        className={inputClassName ?? "w-full rounded-2xl border border-slate-200 bg-white px-9 py-3 text-sm font-semibold text-slate-800 shadow-sm transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none hover:border-brand-200"}
         style={{ fontFamily: '"Poppins","Inter",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif', fontWeight: 600 }}
         onBlur={(e) => {
           if ((window as any).google?.maps?.places) return;
