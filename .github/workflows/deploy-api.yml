@@ -60,7 +60,7 @@ jobs:
           application_name: FreeSpace
           environment_name: FreeSpace-env-api
           region: eu-west-1
-          version_label: api-${{ github.sha }}
+          version_label: api-${{ github.sha }}-${{ github.run_number }}
           deployment_package: deploy.zip
           wait_for_environment_recovery: 60
 
@@ -107,6 +107,6 @@ jobs:
           application_name: FreeSpace
           environment_name: FreeSpace-env-web
           region: eu-west-1
-          version_label: web-${{ github.sha }}
+          version_label: web-${{ github.sha }}-${{ github.run_number }}
           deployment_package: deploy-web.zip
           wait_for_environment_recovery: 60
