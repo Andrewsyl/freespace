@@ -89,7 +89,7 @@ export function MobileSearchLanding({
       {/* ── Hero ── */}
       <div className="pb-8 pt-4">
         <h1 className="text-[30px] font-extrabold leading-tight tracking-tight text-[#0f172a]">
-          Find parking,<br />instantly.
+          Find parking,<br />book instantly.
         </h1>
         <p className="mt-2 text-[15px] text-[#6B7280]">
           Search thousands of spaces near you.
