@@ -20,7 +20,10 @@ function isOriginAllowed(origin: string | undefined, allowedOrigins: Set<string>
 
 export function csrfProtection(req: Request, res: Response, next: NextFunction) {
   if (SAFE_METHODS.has(req.method)) return next();
-  if (process.env.CSRF_PROTECT !== "true") return next();
+  const enforce =
+    process.env.CSRF_PROTECT === "true" ||
+    (process.env.NODE_ENV === "production" && process.env.CSRF_PROTECT !== "false");
+  if (!enforce) return next();
 
   const allowedOrigins = new Set(
     [process.env.WEB_BASE_URL, process.env.CSRF_ALLOWED_ORIGINS]
