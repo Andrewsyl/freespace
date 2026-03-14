@@ -7,6 +7,7 @@ on:
       - 'apps/api/**'
       - 'apps/web/**'
       - 'db/**'
+      - '.platform/**'
       - 'Procfile'
       - '.github/workflows/deploy-api.yml'
 
@@ -26,6 +27,7 @@ jobs:
             api:
               - 'apps/api/**'
               - 'db/**'
+              - '.platform/**'
               - 'Procfile'
             web:
               - 'apps/web/**'
@@ -45,6 +47,7 @@ jobs:
           zip -r deploy.zip \
             apps/api \
             db \
+            .platform \
             package.json \
             yarn.lock \
             Procfile \
