@@ -33,7 +33,7 @@ jobs:
               - 'apps/web/**'
 
   deploy-api:
-    name: Deploy API to FreeSpace-env-api
+    name: Deploy API to FreeSpace-env-apii
     needs: changes
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
@@ -61,14 +61,14 @@ jobs:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           application_name: FreeSpace
-          environment_name: FreeSpace-env-api
+          environment_name: FreeSpace-env-apii
           region: eu-west-1
           version_label: api-${{ github.sha }}-${{ github.run_number }}
           deployment_package: deploy.zip
           wait_for_environment_recovery: 60
 
   deploy-web:
-    name: Deploy Web to FreeSpace-env-web
+    name: Deploy Web to FreeSpace-env-webb
     needs: changes
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
@@ -108,7 +108,7 @@ jobs:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           application_name: FreeSpace
-          environment_name: FreeSpace-env-web
+          environment_name: FreeSpace-env-webb
           region: eu-west-1
           version_label: web-${{ github.sha }}-${{ github.run_number }}
           deployment_package: deploy-web.zip
