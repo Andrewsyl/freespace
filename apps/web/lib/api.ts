@@ -11,6 +11,13 @@ const API_BASE =
 
 async function handleResponse<T>(res: Response): Promise<{ data: T | null; error: string | null }> {
   const body = await res.json().catch(() => ({}));
+  if (body === null) {
+    if (!res.ok) {
+      const message = res.statusText || "Request failed";
+      return { data: null, error: message };
+    }
+    return { data: null, error: "Unexpected server response" };
+  }
   if (!res.ok) {
     const message = body.message ?? res.statusText;
     return { data: null, error: message };
@@ -518,6 +525,9 @@ export async function register(email: string, password: string) {
   if (error) {
     throw new Error(error);
   }
+  if (!data?.user || !data?.token) {
+    throw new Error("Signup failed. Please try again.");
+  }
   return data!;
 }
 
@@ -530,6 +540,9 @@ export async function login(email: string, password: string) {
   const { data, error } = await handleResponse<AuthResponse>(res);
   if (error) {
     throw new Error(error);
+  }
+  if (!data?.user || !data?.token) {
+    throw new Error("Login failed. Please try again.");
   }
   return data!;
 }
