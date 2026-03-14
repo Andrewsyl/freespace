@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ListingCard } from "./ListingCard";
 import { SearchForm } from "./SearchForm";
@@ -8,6 +8,7 @@ import { MapView } from "./MapView";
 import { FiltersPanel } from "./FiltersPanel";
 import type { SharedLayoutProps } from "./searchLayoutTypes";
 import type { Listing } from "./ListingCard";
+import { SlimNav } from "./SlimNav";
 
 export function DesktopSearchLayout({
   filters,
@@ -35,16 +36,28 @@ export function DesktopSearchLayout({
   const router = useRouter();
   const [showFilters, setShowFilters] = useState(false);
   const [showListingOverlay, setShowListingOverlay] = useState(false);
+  const [sortMode, setSortMode] = useState<"recommended" | "cheapest" | "closest">("recommended");
   const selectedListing = selectedListingId ? results.find((l) => l.id === selectedListingId) ?? null : null;
 
   useEffect(() => {
     if (!selectedListingId) setShowListingOverlay(false);
   }, [selectedListingId]);
 
+  const listResults = useMemo(() => {
+    if (sortMode === "cheapest") {
+      return [...results].sort((a, b) => a.pricePerDay - b.pricePerDay);
+    }
+    if (sortMode === "closest") {
+      return [...results].sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
+    }
+    return results;
+  }, [results, sortMode]);
+
   return (
-    <div className="grid h-[100dvh] min-w-0 grid-cols-[520px,1fr] grid-rows-[auto,1fr] gap-3 overflow-hidden px-2 pb-2 pt-3">
-      {/* Top search bar — spans both columns */}
-      <div className="card col-span-2 min-w-0 shadow-lg">
+    <div className="flex h-[100dvh] min-w-0 flex-col bg-slate-50">
+      <SlimNav />
+
+      <div className="px-6 pt-4">
         <SearchForm
           initialValues={filters}
           onSearch={(f) => onSearch(f, true)}
@@ -54,9 +67,10 @@ export function DesktopSearchLayout({
         />
       </div>
 
-      {/* Left sidebar */}
-      <div className="row-start-2 flex h-full min-w-0 flex-col overflow-hidden">
-        <div className="flex-1 space-y-3 overflow-y-auto pr-2">
+      <div className="grid h-full min-w-0 grid-cols-[440px,1fr] gap-4 overflow-hidden px-6 pb-5 pt-4">
+        {/* Left sidebar */}
+        <div className="flex h-full min-w-0 flex-col overflow-hidden">
+          <div className="flex-1 space-y-3 overflow-y-auto pr-2">
           {showFilters ? (
             <FiltersPanel
               initialFilters={filters}
@@ -75,7 +89,7 @@ export function DesktopSearchLayout({
             <>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold tracking-wide text-brand-700">Parking spaces</p>
+                  <p className="text-xs font-semibold tracking-wide text-emerald-600">Parking spaces</p>
                   <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{results.length} spaces</h1>
                   <p className="text-sm text-slate-600">
                     {filters.mode === "monthly"
@@ -89,18 +103,36 @@ export function DesktopSearchLayout({
                       type="checkbox"
                       checked={searchAsMove}
                       onChange={(e) => onSearchAsMove(e.target.checked)}
-                      className="h-4 w-4 accent-brand-600"
+                      className="h-4 w-4 accent-emerald-600"
                     />
                     Search as I move
                   </label>
                   <button
                     type="button"
                     onClick={() => setShowFilters(true)}
-                    className="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-brand-200 hover:text-brand-700"
+                    className="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-emerald-200 hover:text-emerald-700"
                   >
                     Filters
                   </button>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+                {[
+                  { key: "recommended", label: "Recommended" },
+                  { key: "cheapest", label: "Cheapest" },
+                  { key: "closest", label: "Closest" },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setSortMode(tab.key as any)}
+                    className={`rounded-full px-3 py-1 ${
+                      sortMode === tab.key ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
 
               {error && (
@@ -109,7 +141,7 @@ export function DesktopSearchLayout({
               {status === "loading" && <p className="text-sm text-slate-600">Searching…</p>}
 
               <div className="grid grid-cols-1 gap-2 pb-3">
-                {results.map((listing) => (
+                {listResults.map((listing) => (
                   <div
                     key={listing.id}
                     onClick={() => { onSelectListing(listing); setShowListingOverlay(true); }}
@@ -132,8 +164,8 @@ export function DesktopSearchLayout({
       </div>
 
       {/* Right pane — map */}
-      <div className="col-start-2 row-start-2 h-full min-w-0">
-        <div className="relative h-full rounded-2xl border border-slate-200 bg-white shadow-lg">
+      <div className="h-full min-w-0">
+        <div className="relative h-full overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <MapView
             listings={results}
             center={center}
@@ -155,7 +187,7 @@ export function DesktopSearchLayout({
                 type="button"
                 disabled={areaSearching}
                 onClick={onSearchArea}
-                className="pointer-events-auto rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-lg ring-1 ring-brand-200 transition hover:bg-brand-50 disabled:opacity-60"
+                className="pointer-events-auto rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-slate-800 disabled:opacity-60"
               >
                 {areaSearching ? "Searching…" : "Search this area"}
               </button>
@@ -163,6 +195,7 @@ export function DesktopSearchLayout({
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }

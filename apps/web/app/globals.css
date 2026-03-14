@@ -11,9 +11,31 @@
   display: none !important;
 }
 
+/* Keep map controls visible above mobile search overlays */
+.mobile-search .mapboxgl-ctrl-top-right,
+.mobile-search .mapboxgl-ctrl-top-left {
+  z-index: 15;
+}
+@media (max-width: 640px) {
+  .mobile-search .mapboxgl-ctrl-top-right,
+  .mobile-search .mapboxgl-ctrl-top-left {
+    top: 140px;
+  }
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap");
+
+body {
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.font-display {
+  font-family: "Poppins", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
 
 :root {
   color-scheme: light;

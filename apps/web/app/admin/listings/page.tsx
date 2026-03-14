@@ -141,7 +141,16 @@ export default function AdminListingsPage() {
             {listings.map((listing) => (
               <tr key={listing.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3">
-                  <div className="font-semibold text-slate-900">{listing.title}</div>
+                  <div className="font-semibold text-slate-900">
+                    <a
+                      href={`/listing/${listing.id}`}
+                      className="hover:underline"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {listing.title}
+                    </a>
+                  </div>
                   <div className="text-xs text-slate-500">{listing.address}</div>
                 </td>
                 <td className="px-4 py-3">

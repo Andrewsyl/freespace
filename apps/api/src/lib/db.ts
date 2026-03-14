@@ -2070,6 +2070,405 @@ export async function deleteUserAccount(userId: string) {
 }
 
 // Admin utilities
+export async function getAdminDashboardMetrics() {
+  const res = await pool.query(
+    `
+    SELECT
+      (SELECT COUNT(*) FROM users) AS user_count,
+      (SELECT COUNT(*) FROM listings) AS listing_count,
+      (SELECT COUNT(*) FROM listings WHERE status = 'approved') AS active_listing_count,
+      (SELECT COUNT(*) FROM bookings WHERE created_at >= NOW() - interval '30 days') AS bookings_30d,
+      (
+        SELECT COALESCE(SUM(amount_cents), 0)
+        FROM bookings
+        WHERE created_at >= NOW() - interval '30 days'
+          AND status = 'confirmed'
+      ) AS gmv_30d_cents,
+      (
+        SELECT COUNT(*)
+        FROM bookings
+        WHERE payout_status IN ('pending', 'processing')
+          AND payout_available_at IS NOT NULL
+          AND payout_available_at <= NOW()
+      ) AS payout_backlog
+    `
+  );
+  const row = res.rows[0] ?? {};
+  return {
+    userCount: Number(row.user_count ?? 0),
+    listingCount: Number(row.listing_count ?? 0),
+    activeListingCount: Number(row.active_listing_count ?? 0),
+    bookings30d: Number(row.bookings_30d ?? 0),
+    gmv30dCents: Number(row.gmv_30d_cents ?? 0),
+    payoutBacklog: Number(row.payout_backlog ?? 0),
+  };
+}
+
+export async function listBookingsForAdmin({
+  limit = 50,
+  offset = 0,
+  status,
+  from,
+  to,
+  listingId,
+  userId,
+}: {
+  limit?: number;
+  offset?: number;
+  status?: string;
+  from?: string;
+  to?: string;
+  listingId?: string;
+  userId?: string;
+}) {
+  const params: any[] = [limit, offset];
+  const filters: string[] = [];
+  if (status) {
+    params.push(status);
+    filters.push(`b.status = $${params.length}`);
+  }
+  if (from) {
+    params.push(from);
+    filters.push(`b.start_time >= $${params.length}::timestamptz`);
+  }
+  if (to) {
+    params.push(to);
+    filters.push(`b.end_time <= $${params.length}::timestamptz`);
+  }
+  if (listingId) {
+    params.push(listingId);
+    filters.push(`b.listing_id = $${params.length}`);
+  }
+  if (userId) {
+    params.push(userId);
+    filters.push(`b.driver_id = $${params.length}`);
+  }
+
+  const where = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+  const res = await pool.query(
+    `
+    SELECT
+      b.id,
+      b.listing_id,
+      b.driver_id,
+      b.start_time,
+      b.end_time,
+      b.status,
+      b.amount_cents,
+      b.currency,
+      b.payment_intent_id,
+      b.checkout_session_id,
+      b.refund_status,
+      b.refunded_at,
+      b.payout_status,
+      b.payout_available_at,
+      b.created_at,
+      l.title AS listing_title,
+      l.address AS listing_address,
+      l.host_id,
+      driver.email AS driver_email,
+      host.email AS host_email
+    FROM bookings b
+    JOIN listings l ON l.id = b.listing_id
+    LEFT JOIN users driver ON driver.id = b.driver_id
+    LEFT JOIN users host ON host.id = l.host_id
+    ${where}
+    ORDER BY b.created_at DESC
+    LIMIT $1 OFFSET $2;
+    `,
+    params
+  );
+  return res.rows;
+}
+
+export async function getBookingForAdmin(bookingId: string) {
+  const res = await pool.query(
+    `
+    SELECT
+      b.*,
+      l.title AS listing_title,
+      l.address AS listing_address,
+      l.host_id,
+      driver.email AS driver_email,
+      host.email AS host_email
+    FROM bookings b
+    JOIN listings l ON l.id = b.listing_id
+    LEFT JOIN users driver ON driver.id = b.driver_id
+    LEFT JOIN users host ON host.id = l.host_id
+    WHERE b.id = $1
+    LIMIT 1;
+    `,
+    [bookingId]
+  );
+  return res.rows[0];
+}
+
+export async function updateBookingAsAdmin({
+  bookingId,
+  status,
+  refundId,
+  markNoShow,
+}: {
+  bookingId: string;
+  status?: string;
+  refundId?: string | null;
+  markNoShow?: boolean;
+}) {
+  const res = await pool.query(
+    `
+    UPDATE bookings
+    SET status = COALESCE($2, status),
+        payout_status = CASE
+          WHEN $2 = 'canceled' THEN 'canceled'
+          ELSE payout_status
+        END,
+        refund_status = CASE
+          WHEN $3::text IS NOT NULL THEN 'succeeded'
+          ELSE refund_status
+        END,
+        refund_id = COALESCE($3::text, refund_id),
+        refunded_at = CASE
+          WHEN $3::text IS NOT NULL THEN NOW()
+          ELSE refunded_at
+        END,
+        no_show_at = CASE
+          WHEN $4::boolean IS TRUE THEN COALESCE(no_show_at, NOW())
+          ELSE no_show_at
+        END
+    WHERE id = $1
+    RETURNING id, status, refund_status, refunded_at, no_show_at;
+    `,
+    [bookingId, status ?? null, refundId ?? null, markNoShow ?? null]
+  );
+  return res.rows[0];
+}
+
+export async function listPaymentsForAdmin({
+  limit = 50,
+  offset = 0,
+  status,
+}: {
+  limit?: number;
+  offset?: number;
+  status?: string;
+}) {
+  const params: any[] = [limit, offset];
+  let where = "WHERE b.payment_intent_id IS NOT NULL";
+  if (status) {
+    params.push(status);
+    where += ` AND b.status = $${params.length}`;
+  }
+  const res = await pool.query(
+    `
+    SELECT
+      b.id,
+      b.payment_intent_id,
+      b.checkout_session_id,
+      b.amount_cents,
+      b.currency,
+      b.status,
+      b.receipt_url,
+      b.created_at,
+      driver.email AS driver_email,
+      l.title AS listing_title
+    FROM bookings b
+    JOIN listings l ON l.id = b.listing_id
+    LEFT JOIN users driver ON driver.id = b.driver_id
+    ${where}
+    ORDER BY b.created_at DESC
+    LIMIT $1 OFFSET $2;
+    `,
+    params
+  );
+  return res.rows;
+}
+
+export async function listPayoutsForAdmin({
+  limit = 50,
+  offset = 0,
+  status,
+}: {
+  limit?: number;
+  offset?: number;
+  status?: string;
+}) {
+  const params: any[] = [limit, offset];
+  let where = "WHERE b.payout_status IS NOT NULL";
+  if (status) {
+    params.push(status);
+    where += ` AND b.payout_status = $${params.length}`;
+  }
+  const res = await pool.query(
+    `
+    SELECT
+      b.id,
+      b.amount_cents,
+      b.platform_fee_cents,
+      b.currency,
+      b.payout_status,
+      b.payout_available_at,
+      b.stripe_transfer_id,
+      b.created_at,
+      l.title AS listing_title,
+      host.email AS host_email
+    FROM bookings b
+    JOIN listings l ON l.id = b.listing_id
+    LEFT JOIN users host ON host.id = l.host_id
+    ${where}
+    ORDER BY b.payout_available_at DESC NULLS LAST
+    LIMIT $1 OFFSET $2;
+    `,
+    params
+  );
+  return res.rows;
+}
+
+export async function createSupportTicket({
+  userId,
+  subject,
+  message,
+}: {
+  userId?: string | null;
+  subject: string;
+  message: string;
+}) {
+  const res = await pool.query(
+    `
+    INSERT INTO support_tickets (user_id, subject, message)
+    VALUES ($1, $2, $3)
+    RETURNING id, created_at;
+    `,
+    [userId ?? null, subject, message]
+  );
+  return res.rows[0];
+}
+
+export async function listSupportTickets({
+  limit = 50,
+  offset = 0,
+  status,
+  priority,
+  search,
+}: {
+  limit?: number;
+  offset?: number;
+  status?: string;
+  priority?: string;
+  search?: string;
+}) {
+  const params: any[] = [limit, offset];
+  const filters: string[] = [];
+  if (status) {
+    params.push(status);
+    filters.push(`t.status = $${params.length}`);
+  }
+  if (priority) {
+    params.push(priority);
+    filters.push(`t.priority = $${params.length}`);
+  }
+  if (search) {
+    params.push(`%${search.toLowerCase()}%`);
+    filters.push(`(LOWER(t.subject) LIKE $${params.length} OR LOWER(u.email) LIKE $${params.length})`);
+  }
+  const where = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+  const res = await pool.query(
+    `
+    SELECT
+      t.id,
+      t.subject,
+      t.message,
+      t.status,
+      t.priority,
+      t.admin_note,
+      t.assigned_admin_id,
+      t.created_at,
+      t.updated_at,
+      u.email AS user_email
+    FROM support_tickets t
+    LEFT JOIN users u ON u.id = t.user_id
+    ${where}
+    ORDER BY t.updated_at DESC
+    LIMIT $1 OFFSET $2;
+    `,
+    params
+  );
+  return res.rows;
+}
+
+export async function updateSupportTicket({
+  ticketId,
+  status,
+  priority,
+  assignedAdminId,
+  adminNote,
+}: {
+  ticketId: string;
+  status?: string;
+  priority?: string;
+  assignedAdminId?: string | null;
+  adminNote?: string | null;
+}) {
+  const fields: string[] = [];
+  const values: any[] = [];
+  let idx = 1;
+  if (status) {
+    fields.push(`status = $${idx++}`);
+    values.push(status);
+  }
+  if (priority) {
+    fields.push(`priority = $${idx++}`);
+    values.push(priority);
+  }
+  if (assignedAdminId !== undefined) {
+    fields.push(`assigned_admin_id = $${idx++}`);
+    values.push(assignedAdminId ?? null);
+  }
+  if (adminNote !== undefined) {
+    fields.push(`admin_note = $${idx++}`);
+    values.push(adminNote ?? null);
+  }
+  if (!fields.length) return null;
+  fields.push(`updated_at = NOW()`);
+  values.push(ticketId);
+  const res = await pool.query(
+    `
+    UPDATE support_tickets
+    SET ${fields.join(", ")}
+    WHERE id = $${idx}
+    RETURNING id, status, priority, admin_note, assigned_admin_id, updated_at;
+    `,
+    values
+  );
+  return res.rows[0];
+}
+
+export async function listAdminSettings() {
+  const res = await pool.query(`SELECT key, value, updated_by, updated_at FROM admin_settings ORDER BY key ASC;`);
+  return res.rows;
+}
+
+export async function upsertAdminSetting({
+  key,
+  value,
+  updatedBy,
+}: {
+  key: string;
+  value: any;
+  updatedBy?: string | null;
+}) {
+  const res = await pool.query(
+    `
+    INSERT INTO admin_settings (key, value, updated_by, updated_at)
+    VALUES ($1, $2::jsonb, $3, NOW())
+    ON CONFLICT (key)
+    DO UPDATE SET value = EXCLUDED.value, updated_by = EXCLUDED.updated_by, updated_at = NOW()
+    RETURNING key, value, updated_by, updated_at;
+    `,
+    [key, JSON.stringify(value ?? null), updatedBy ?? null]
+  );
+  return res.rows[0];
+}
+
 export async function listUsers({ limit = 50, offset = 0, search }: { limit?: number; offset?: number; search?: string }) {
   const params: any[] = [limit, offset];
   let where = "";

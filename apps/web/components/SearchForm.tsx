@@ -221,13 +221,13 @@ export function SearchForm({
     <div className="w-full">
       <form
         onSubmit={handleSubmit}
-        className="flex w-full flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-lg sm:flex-row sm:items-stretch sm:gap-2"
+        className="flex w-full flex-col gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm lg:flex-row lg:items-center lg:gap-3"
       >
-        <div className="flex min-w-[220px] flex-1 flex-col gap-1 text-sm font-semibold text-slate-800">
-          <span className="text-[11px] tracking-wide text-slate-500">Location</span>
+        <div className="flex min-w-[520px] flex-[2] flex-col gap-1 text-sm font-semibold text-slate-800">
           <AddressAutocomplete
             defaultValue={state.location}
             placeholder="Enter area or landmark"
+            inputClassName="w-full h-12 rounded-lg border border-emerald-400 bg-white px-9 text-sm font-semibold text-slate-800 transition focus:border-emerald-500 focus:outline-none"
             onPlace={(place) => {
               setState((prev) => ({
                 ...prev,
@@ -240,22 +240,24 @@ export function SearchForm({
           />
         </div>
 
-        <DateTimePicker label="From" value={state.startAt} onChange={setStart} />
-        <DateTimePicker label="Until" value={state.endAt} onChange={setEnd} />
+        <div className="flex items-center gap-2">
+          <DateTimePicker label="From" value={state.startAt} onChange={setStart} compact />
+          <DateTimePicker label="Until" value={state.endAt} onChange={setEnd} compact />
+        </div>
 
         <div className="flex items-center gap-2">
           {onOpenFilters && (
             <button
               type="button"
               onClick={onOpenFilters}
-              className="hidden rounded-full border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-200 hover:text-brand-700 lg:inline-flex"
+              className="hidden h-12 rounded-full border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 lg:inline-flex"
             >
               Filters
             </button>
           )}
           <button
             type="submit"
-            className="rounded-full bg-brand-500 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-brand-600"
+            className="h-12 rounded-full bg-slate-900 px-5 text-sm font-semibold text-white shadow-md transition hover:bg-slate-800"
           >
             Search
           </button>
@@ -265,7 +267,13 @@ export function SearchForm({
   );
 }
 
-function DateTimePicker({ label, value, onChange, minGapMinutes = 120 }: DateTimePickerProps) {
+function DateTimePicker({
+  label,
+  value,
+  onChange,
+  minGapMinutes = 120,
+  compact = false,
+}: DateTimePickerProps & { compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState(startOfMonth(value));
   const containerRef = useRef<HTMLDivElement>(null);
@@ -321,10 +329,12 @@ function DateTimePicker({ label, value, onChange, minGapMinutes = 120 }: DateTim
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-brand-200 hover:shadow-md"
+        className={`flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white text-left shadow-sm transition hover:border-slate-300 ${
+          compact ? "h-12 px-3 py-2" : "px-3.5 py-2.5"
+        }`}
       >
-        <div className="flex min-w-[210px] flex-col text-sm font-semibold text-slate-800">
-          <span className="text-[11px] tracking-wide text-slate-500">{label}</span>
+        <div className={`flex flex-col text-sm font-semibold text-slate-800 ${compact ? "min-w-[180px]" : "min-w-[210px]"}`}>
+          <span className="text-[10px] font-semibold text-emerald-600">{label}</span>
           <span className="tabular-nums">{formatTrigger(value)}</span>
         </div>
         <span className="text-slate-400">▾</span>
@@ -374,7 +384,7 @@ function DateTimePicker({ label, value, onChange, minGapMinutes = 120 }: DateTim
                   onClick={() => handleDateSelect(day)}
                   className={`h-10 rounded-xl text-sm font-semibold transition ${
                     isSelected
-                      ? "bg-[#4CAF50] text-white shadow ring-1 ring-emerald-300"
+                      ? "bg-slate-900 text-white shadow ring-1 ring-slate-300"
                       : inMonth
                         ? "text-slate-800 hover:bg-slate-100"
                         : "text-slate-400 hover:bg-slate-50"

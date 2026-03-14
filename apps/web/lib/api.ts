@@ -200,6 +200,169 @@ export async function requestEmailVerification(email: string) {
   }
 }
 
+// Admin API
+export type AdminMetrics = {
+  userCount: number;
+  listingCount: number;
+  activeListingCount: number;
+  bookings30d: number;
+  gmv30dCents: number;
+  payoutBacklog: number;
+};
+
+export async function getAdminDashboard(token?: string) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${API_BASE}/api/admin/dashboard`, {
+    headers: { ...authHeaders(token) },
+    cache: "no-store",
+  });
+  const { data, error } = await handleResponse<{ metrics: AdminMetrics }>(res);
+  if (error) throw new Error(error);
+  return data!.metrics;
+}
+
+export async function listAdminBookings(
+  params: {
+    status?: string;
+    from?: string;
+    to?: string;
+    listingId?: string;
+    userId?: string;
+    limit?: number;
+    offset?: number;
+  },
+  token?: string
+) {
+  if (!token) throw new Error("Authentication required");
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    query.set(key, String(value));
+  });
+  const res = await fetch(`${API_BASE}/api/admin/bookings?${query.toString()}`, {
+    headers: { ...authHeaders(token) },
+    cache: "no-store",
+  });
+  const { data, error } = await handleResponse<{ bookings: any[] }>(res);
+  if (error) throw new Error(error);
+  return data!.bookings ?? [];
+}
+
+export async function getAdminBooking(id: string, token?: string) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${API_BASE}/api/admin/bookings/${id}`, {
+    headers: { ...authHeaders(token) },
+    cache: "no-store",
+  });
+  const { data, error } = await handleResponse<{ booking: any }>(res);
+  if (error) throw new Error(error);
+  return data!.booking;
+}
+
+export async function updateAdminBooking(id: string, payload: Record<string, any>, token?: string) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${API_BASE}/api/admin/bookings/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(payload),
+  });
+  const { data, error } = await handleResponse<{ booking: any }>(res);
+  if (error) throw new Error(error);
+  return data!.booking;
+}
+
+export async function listAdminPayments(
+  params: { status?: string; limit?: number; offset?: number },
+  token?: string
+) {
+  if (!token) throw new Error("Authentication required");
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    query.set(key, String(value));
+  });
+  const res = await fetch(`${API_BASE}/api/admin/payments?${query.toString()}`, {
+    headers: { ...authHeaders(token) },
+    cache: "no-store",
+  });
+  const { data, error } = await handleResponse<{ payments: any[] }>(res);
+  if (error) throw new Error(error);
+  return data!.payments ?? [];
+}
+
+export async function listAdminPayouts(
+  params: { status?: string; limit?: number; offset?: number },
+  token?: string
+) {
+  if (!token) throw new Error("Authentication required");
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    query.set(key, String(value));
+  });
+  const res = await fetch(`${API_BASE}/api/admin/payouts?${query.toString()}`, {
+    headers: { ...authHeaders(token) },
+    cache: "no-store",
+  });
+  const { data, error } = await handleResponse<{ payouts: any[] }>(res);
+  if (error) throw new Error(error);
+  return data!.payouts ?? [];
+}
+
+export async function listAdminSupportTickets(
+  params: { status?: string; priority?: string; search?: string; limit?: number; offset?: number },
+  token?: string
+) {
+  if (!token) throw new Error("Authentication required");
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    query.set(key, String(value));
+  });
+  const res = await fetch(`${API_BASE}/api/admin/support?${query.toString()}`, {
+    headers: { ...authHeaders(token) },
+    cache: "no-store",
+  });
+  const { data, error } = await handleResponse<{ tickets: any[] }>(res);
+  if (error) throw new Error(error);
+  return data!.tickets ?? [];
+}
+
+export async function updateAdminSupportTicket(id: string, payload: Record<string, any>, token?: string) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${API_BASE}/api/admin/support/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(payload),
+  });
+  const { data, error } = await handleResponse<{ ticket: any }>(res);
+  if (error) throw new Error(error);
+  return data!.ticket;
+}
+
+export async function listAdminSettings(token?: string) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${API_BASE}/api/admin/settings`, {
+    headers: { ...authHeaders(token) },
+    cache: "no-store",
+  });
+  const { data, error } = await handleResponse<{ settings: any[] }>(res);
+  if (error) throw new Error(error);
+  return data!.settings ?? [];
+}
+
+export async function updateAdminSetting(key: string, payload: Record<string, any>, token?: string) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${API_BASE}/api/admin/settings/${encodeURIComponent(key)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(payload),
+  });
+  const { data, error } = await handleResponse<{ setting: any }>(res);
+  if (error) throw new Error(error);
+  return data!.setting;
+}
+
 export type ListingDetail = {
   id: string;
   title: string;
@@ -209,10 +372,13 @@ export type ListingDetail = {
   amenities?: string[];
   imageUrls?: string[];
   rating?: number;
+  ratingCount?: number;
   latitude?: number;
   longitude?: number;
   hostId?: string;
   hostStripeAccountId?: string | null;
+  accessCode?: string | null;
+  permissionDeclared?: boolean;
 };
 
 export async function getListing(id: string): Promise<ListingDetail> {
@@ -222,6 +388,24 @@ export async function getListing(id: string): Promise<ListingDetail> {
     throw new Error(error);
   }
   return data!.listing;
+}
+
+export type ListingReview = {
+  id: string;
+  rating: number;
+  comment?: string | null;
+  createdAt: string;
+  authorName?: string | null;
+};
+
+export async function listListingReviews(listingId: string, params?: { limit?: number; offset?: number }) {
+  const query = new URLSearchParams();
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.offset) query.set("offset", String(params.offset));
+  const res = await fetch(`${API_BASE}/api/reviews/listing/${listingId}?${query.toString()}`, { cache: "no-store" });
+  const { data, error } = await handleResponse<{ reviews: any[] }>(res);
+  if (error) throw new Error(error);
+  return (data?.reviews ?? []) as ListingReview[];
 }
 
 export type CreateBookingInput = {

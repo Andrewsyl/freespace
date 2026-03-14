@@ -76,7 +76,7 @@ export function MobileSearchLayout({
   const dismissCard = () => onMarkerSelect("");
 
   return (
-    <div className="relative h-[100dvh] overflow-hidden">
+    <div className="mobile-search relative h-[100dvh] overflow-hidden">
       {/* ── Full-screen map ── */}
       <div className="absolute inset-0">
         <MapView
