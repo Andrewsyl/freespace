@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../../components/AuthProvider";
 
 export default function SignupPage() {
-  const { signUp, loading, error } = useAuth();
+  const { signUp, signInWithGoogle, loading, error } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -55,6 +56,29 @@ export default function SignupPage() {
         <button type="submit" className="btn-primary w-full" disabled={loading}>
           {loading ? "Creating..." : "Create account"}
         </button>
+        <div className="flex items-center gap-3 text-xs font-semibold text-slate-400">
+          <span className="h-px flex-1 bg-slate-200" />
+          or
+          <span className="h-px flex-1 bg-slate-200" />
+        </div>
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={async (credentialResponse) => {
+              if (!credentialResponse.credential) {
+                setNotice("Google sign-in failed. Try again.");
+                return;
+              }
+              try {
+                await signInWithGoogle(credentialResponse.credential);
+                router.push("/dashboard");
+              } catch (err) {
+                const msg = err instanceof Error ? err.message : "Google sign-in failed.";
+                setNotice(msg);
+              }
+            }}
+            onError={() => setNotice("Google sign-in failed. Try again.")}
+          />
+        </div>
         {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
         {notice && <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{notice}</div>}
         <p className="text-center text-sm text-slate-600">

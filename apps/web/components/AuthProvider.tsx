@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { login, refreshSession, register, revokeSession, type AuthResponse } from "../lib/api";
+import { login, refreshSession, register, revokeSession, oauthLoginGoogle, type AuthResponse } from "../lib/api";
 import { useAppStatus } from "./AppStatusProvider";
 
 type User = AuthResponse["user"];
@@ -11,6 +11,7 @@ type AuthContextValue = {
   token: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: (idToken: string) => Promise<void>;
   signOut: () => void;
   error: string | null;
   loading: boolean;
@@ -163,6 +164,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async (idToken: string) => {
+    setLoading(true);
+    setAuthLoading(true);
+    setError(null);
+    setGlobalError(null);
+    try {
+      const res = await oauthLoginGoogle(idToken);
+      console.debug("auth: google oauth response", res);
+      setUser(res.user);
+      setToken(res.token);
+      const nextRefreshToken = res.refreshToken ?? null;
+      setRefreshToken(nextRefreshToken);
+      persistSession(res);
+      if (nextRefreshToken) {
+        localStorage.setItem("auth_refresh", nextRefreshToken);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Google sign-in failed";
+      setError(msg);
+      setGlobalError(msg);
+      throw err;
+    } finally {
+      setLoading(false);
+      setAuthLoading(false);
+    }
+  };
+
   const signOut = () => {
     const currentToken = token;
     setUser(null);
@@ -261,7 +289,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token]);
 
   const value = useMemo(
-    () => ({ user, token, signIn, signUp, signOut, error, loading: loading, emailVerified, setUser, setToken }),
+    () => ({
+      user,
+      token,
+      signIn,
+      signUp,
+      signInWithGoogle,
+      signOut,
+      error,
+      loading: loading,
+      emailVerified,
+      setUser,
+      setToken,
+    }),
     [user, token, error, loading, emailVerified]
   );
 

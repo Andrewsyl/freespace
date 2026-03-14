@@ -19,6 +19,7 @@
     "mapbox-gl": "^3.20.0",
     "moment": "^2.30.1",
     "next": "15.0.3",
+    "@react-oauth/google": "^0.12.1",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },

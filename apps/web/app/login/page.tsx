@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { type Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../../components/AuthProvider";
 import { requestVerification } from "../../lib/api";
 
@@ -16,7 +17,7 @@ export default function LoginPage() {
 }
 
 function LoginPageContent() {
-  const { signIn, loading, error } = useAuth();
+  const { signIn, signInWithGoogle, loading, error } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -68,6 +69,30 @@ function LoginPageContent() {
         <button type="submit" className="btn-primary w-full" disabled={loading}>
           {loading ? "Signing in..." : "Sign in"}
         </button>
+        <div className="flex items-center gap-3 text-xs font-semibold text-slate-400">
+          <span className="h-px flex-1 bg-slate-200" />
+          or
+          <span className="h-px flex-1 bg-slate-200" />
+        </div>
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={async (credentialResponse) => {
+              if (!credentialResponse.credential) {
+                setNotice("Google sign-in failed. Try again.");
+                return;
+              }
+              try {
+                await signInWithGoogle(credentialResponse.credential);
+                const next = searchParams.get("next");
+                router.push((next || "/dashboard") as Route);
+              } catch (err) {
+                const msg = err instanceof Error ? err.message : "Google sign-in failed.";
+                setNotice(msg);
+              }
+            }}
+            onError={() => setNotice("Google sign-in failed. Try again.")}
+          />
+        </div>
         {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
         {notice && <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{notice}</div>}
         {debug && <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">{debug}</div>}

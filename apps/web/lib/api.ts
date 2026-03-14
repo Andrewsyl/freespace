@@ -547,6 +547,22 @@ export async function login(email: string, password: string) {
   return data!;
 }
 
+export async function oauthLoginGoogle(idToken: string) {
+  const res = await fetch(`${API_BASE}/api/auth/oauth/google`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken }),
+  });
+  const { data, error } = await handleResponse<AuthResponse>(res);
+  if (error) {
+    throw new Error(error);
+  }
+  if (!data?.user || !data?.token) {
+    throw new Error("Google sign-in failed. Please try again.");
+  }
+  return data!;
+}
+
 export async function refreshSession(refreshToken: string) {
   const res = await fetch(`${API_BASE}/api/auth/refresh`, {
     method: "POST",
