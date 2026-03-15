@@ -34,7 +34,14 @@ const listingWriteLimiter = createRateLimiter({
 });
 
 const imageUploadSchema = z.object({
-  contentType: z.string().trim().min(3).max(100),
+  contentType: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .refine(
+      (value) => ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"].includes(value),
+      "Unsupported file type"
+    ),
 });
 
 router.post("/image-upload-url", requireAuth, listingWriteLimiter, async (req, res, next) => {

@@ -2,6 +2,7 @@ import "../loadEnv.js";
 import Stripe from "stripe";
 
 const secret = process.env.STRIPE_SECRET_KEY;
+const isProduction = process.env.NODE_ENV === "production";
 
 if (!secret || secret === "sk_test_placeholder" || secret === "sk_test_replace") {
   console.warn("STRIPE_SECRET_KEY not set; using mock Stripe responses for local development.");
@@ -34,6 +35,9 @@ export async function createCheckoutSession(input: PaymentInput) {
   };
 
   if (!stripe) {
+    if (isProduction) {
+      throw new Error("Stripe not configured");
+    }
     return mockResponse();
   }
 
@@ -66,6 +70,7 @@ export async function createCheckoutSession(input: PaymentInput) {
   } catch (err: any) {
     if (err?.statusCode === 401 || err?.code === "authentication_required" || err?.type === "StripeAuthenticationError") {
       console.warn("Stripe auth failed; returning mock checkout session. Set a valid STRIPE_SECRET_KEY to enable live calls.");
+      if (isProduction) throw err;
       return mockResponse();
     }
     throw err;
