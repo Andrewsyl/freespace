@@ -220,84 +220,89 @@ function DateTimeSheet({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col bg-white"
+      className="fixed inset-0 z-50 flex flex-col bg-[#F8FAFC]"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4">
-        <h2 className="text-[22px] font-bold text-[#0f172a]">
+      <div className="flex flex-col gap-3 px-5 pb-4 pt-3">
+        <div className="mx-auto h-1.5 w-10 rounded-full bg-[#E2E8F0]" />
+        <div className="flex items-center justify-between">
+          <h2 className="text-[20px] font-semibold text-[#0f172a]">
           {field === "start" ? "Park from" : "Park until"}
-        </h2>
-        <button type="button" onClick={onClose} className="text-[15px] font-semibold text-brand-500">
-          Cancel
-        </button>
-      </div>
-
-      {/* Month navigation */}
-      <div className="flex items-center justify-between px-5 pb-4">
-        <span className="text-[17px] font-bold text-[#0f172a]">
-          {MONTHS_LONG[viewMonth]} {viewYear}
-        </span>
-        <div className="flex gap-5">
-          <button type="button" onClick={prevMonth} className="text-brand-500">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button type="button" onClick={nextMonth} className="text-brand-500">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
+          </h2>
+          <button type="button" onClick={onClose} className="text-[14px] font-semibold text-brand-600">
+            Cancel
           </button>
         </div>
       </div>
 
-      {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 border-b border-[#F3F4F6] pb-2">
-        {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((d) => (
-          <div key={d} className="text-center text-[11px] font-semibold text-[#9CA3AF]">{d}</div>
-        ))}
-      </div>
-
-      {/* Calendar grid */}
-      <div className="flex-1 grid grid-cols-7 content-start gap-y-1 px-2 py-2">
-        {calDays.map((day, i) => {
-          if (!day) return <div key={`e${i}`} />;
-          const dayStart = new Date(day); dayStart.setHours(0, 0, 0, 0);
-          const isPast = dayStart < today;
-          const isBeforeMin = dayStart < minDay;
-          const isDisabled = isBeforeMin;
-          const isToday = dayStart.getTime() === today.getTime();
-          const isSelected = draft.toDateString() === day.toDateString();
-          return (
-            <button
-              key={day.getTime()}
-              type="button"
-              disabled={isDisabled}
-              onClick={() => {
-                const next = new Date(day);
-                next.setHours(draft.getHours(), draft.getMinutes(), 0, 0);
-                setDraft(next);
-              }}
-              className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full text-[15px] transition
-                ${isSelected ? "bg-brand-500 font-bold text-white" :
-                  isToday ? "bg-brand-500 font-bold text-white" :
-                  isPast || isDisabled ? "text-[#CBD5E1] line-through" :
-                  "font-medium text-[#0f172a] active:bg-[#F3F4F6]"}
-              `}
-            >
-              {day.getDate()}
+      <div className="mx-4 rounded-3xl border border-[#E5E7EB] bg-white px-4 pb-4 pt-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+        {/* Month navigation */}
+        <div className="flex items-center justify-between pb-4">
+          <span className="text-[16px] font-semibold text-[#0f172a]">
+            {MONTHS_LONG[viewMonth]} {viewYear}
+          </span>
+          <div className="flex gap-2">
+            <button type="button" onClick={prevMonth} className="rounded-full border border-[#E2E8F0] p-1.5 text-brand-600">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
             </button>
-          );
-        })}
+            <button type="button" onClick={nextMonth} className="rounded-full border border-[#E2E8F0] p-1.5 text-brand-600">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Day-of-week headers */}
+        <div className="grid grid-cols-7 border-b border-[#F1F5F9] pb-2">
+          {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((d) => (
+            <div key={d} className="text-center text-[11px] font-semibold text-[#94A3B8]">{d}</div>
+          ))}
+        </div>
+
+        {/* Calendar grid */}
+        <div className="grid grid-cols-7 content-start gap-y-2 px-1 py-3">
+          {calDays.map((day, i) => {
+            if (!day) return <div key={`e${i}`} />;
+            const dayStart = new Date(day); dayStart.setHours(0, 0, 0, 0);
+            const isPast = dayStart < today;
+            const isBeforeMin = dayStart < minDay;
+            const isDisabled = isBeforeMin;
+            const isToday = dayStart.getTime() === today.getTime();
+            const isSelected = draft.toDateString() === day.toDateString();
+            return (
+              <button
+                key={day.getTime()}
+                type="button"
+                disabled={isDisabled}
+                onClick={() => {
+                  const next = new Date(day);
+                  next.setHours(draft.getHours(), draft.getMinutes(), 0, 0);
+                  setDraft(next);
+                }}
+                className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full text-[14px] transition
+                  ${isSelected ? "bg-brand-500 font-semibold text-white shadow-[0_6px_14px_rgba(16,185,129,0.35)]" :
+                    isToday ? "border border-brand-500 text-brand-700 font-semibold" :
+                    isPast || isDisabled ? "text-[#CBD5E1]" :
+                    "font-medium text-[#0f172a] active:bg-[#F1F5F9]"}
+                `}
+              >
+                {day.getDate()}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Footer: label + time select + Done */}
       <div
-        className="flex items-center gap-3 border-t border-[#F3F4F6] px-5 py-4"
+        className="mt-4 flex flex-col gap-3 border-t border-[#E2E8F0] bg-white px-5 py-4"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}
       >
-        <span className="shrink-0 text-[15px] text-[#6B7280]">
+        <span className="text-[13px] font-semibold uppercase tracking-wide text-[#94A3B8]">
           {field === "start" ? "Enter after" : "Leave by"}
         </span>
         <div className="relative">
@@ -310,7 +315,7 @@ function DateTimeSheet({
               next.setHours(h, m, 0, 0);
               setDraft(next);
             }}
-            className="appearance-none rounded-xl border border-[#E5E7EB] bg-white py-2.5 pl-3 pr-8 text-[15px] font-semibold text-[#0f172a] focus:outline-none"
+            className="w-full appearance-none rounded-xl border border-[#E5E7EB] bg-white py-3 pl-4 pr-10 text-[15px] font-semibold text-[#0f172a] shadow-sm focus:outline-none"
           >
             {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
@@ -321,7 +326,7 @@ function DateTimeSheet({
         <button
           type="button"
           onClick={() => onConfirm(draft)}
-          className="flex-1 rounded-2xl bg-brand-500 py-3 text-[15px] font-bold text-white"
+          className="w-full rounded-2xl bg-brand-500 py-3 text-[15px] font-bold text-white shadow-[0_12px_24px_rgba(16,185,129,0.25)]"
         >
           Done
         </button>
