@@ -63,7 +63,7 @@ export default function HomePage() {
     <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.12),transparent_45%),radial-gradient(circle_at_80%_10%,rgba(59,130,246,0.12),transparent_40%),#ffffff]">
       <SlimNav />
 
-      <main className="mx-auto w-full max-w-6xl px-6 py-10">
+      <main className="mx-auto w-full max-w-6xl px-6 py-6 sm:py-10">
         <section className="grid items-center gap-10 lg:grid-cols-[1.1fr,0.9fr]">
           <div className="space-y-5">
             <p className="hidden text-xs font-semibold uppercase tracking-[0.32em] text-emerald-600 sm:block">Find parking fast</p>
