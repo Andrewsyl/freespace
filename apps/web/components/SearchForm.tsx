@@ -52,13 +52,13 @@ export function SearchForm({
 
   const initialStart = useMemo(() => {
     const now = new Date();
-    now.setMinutes(Math.ceil(now.getMinutes() / 5) * 5, 0, 0);
+    now.setMinutes(Math.ceil(now.getMinutes() / 30) * 30, 0, 0);
     return now;
   }, []);
 
   const [state, setState] = useState(() => {
     const startFromProps = initialValues?.date
-      ? buildDateTime(initialValues.date, initialValues.startTime ?? "09:00")
+      ? buildDateTime(initialValues.date, initialValues.startTime ?? toTimeString(initialStart))
       : initialStart;
     const endFromProps =
       initialValues?.endDate && initialValues?.endTime
@@ -86,7 +86,7 @@ export function SearchForm({
     if (!initialValues) return;
     syncingFromProps.current = true;
     const startFromProps = initialValues.date
-      ? buildDateTime(initialValues.date, initialValues.startTime ?? "09:00")
+      ? buildDateTime(initialValues.date, initialValues.startTime ?? toTimeString(initialStart))
       : state.startAt;
     const endFromProps =
       initialValues.endDate && initialValues.endTime

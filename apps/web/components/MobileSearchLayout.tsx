@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { SearchForm } from "./SearchForm";
 import { MapView } from "./MapView";
@@ -14,8 +14,17 @@ import type { Listing } from "./ListingCard";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS_LONG = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const TIME_SLOTS = Array.from({ length: 24 * 2 }, (_, i) =>
+  `${pad2(Math.floor(i / 2))}:${i % 2 === 0 ? "00" : "30"}`,
+);
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
+function roundUpToHalfHour(d: Date): Date {
+  const out = new Date(d);
+  out.setMinutes(Math.ceil(out.getMinutes() / 30) * 30, 0, 0);
+  return out;
+}
 
 function formatDate(d: Date): string {
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -67,11 +76,18 @@ export function MobileSearchLayout({
 }: SharedLayoutProps) {
   const router = useRouter();
   const [searchPanelOpen, setSearchPanelOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState<"start" | "end" | null>(null);
   const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
 
   const selectedListing = selectedListingId ? results.find((l) => l.id === selectedListingId) ?? null : null;
-  const startAt = parseDatetime(filters.date, filters.startTime ?? "09:00");
-  const endAt = parseDatetime(filters.endDate ?? filters.date, filters.endTime ?? "18:00");
+  const fallbackStart = useMemo(() => roundUpToHalfHour(new Date()), []);
+  const fallbackStartTime = `${pad2(fallbackStart.getHours())}:${pad2(fallbackStart.getMinutes())}`;
+  const startAt = parseDatetime(filters.date, filters.startTime ?? fallbackStartTime);
+  const fallbackEnd = new Date(startAt.getTime() + 120 * 60000);
+  const endAt = parseDatetime(
+    filters.endDate ?? filters.date,
+    filters.endTime ?? formatTime(fallbackEnd)
+  );
 
   const dismissCard = () => onMarkerSelect("");
 
@@ -125,28 +141,33 @@ export function MobileSearchLayout({
         </div>
 
         {/* Date row */}
-        <button
-          onClick={() => setSearchPanelOpen(true)}
-          className="pointer-events-auto w-full rounded-2xl bg-white px-[14px] py-[10px] text-left shadow-[0_4px_12px_rgba(15,23,42,0.08)]"
-        >
+        <div className="pointer-events-auto w-full rounded-2xl bg-white px-[14px] py-[10px] text-left shadow-[0_4px_12px_rgba(15,23,42,0.08)]">
           <div className="flex items-center gap-2.5">
-            <div className="min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={() => setPickerOpen("start")}
+              className="min-w-0 flex-1 text-left"
+            >
               <p className="mb-1 text-[11px] font-medium tracking-[0.2px] text-[#6B7280]">From</p>
               <p className="truncate text-sm font-bold leading-tight text-[#111827]">
                 {formatDate(startAt)} · {formatTime(startAt)}
               </p>
-            </div>
+            </button>
             <svg className="mx-1 h-[18px] w-[18px] shrink-0 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <div className="min-w-0 flex-1 text-right">
+            <button
+              type="button"
+              onClick={() => setPickerOpen("end")}
+              className="min-w-0 flex-1 text-right"
+            >
               <p className="mb-1 text-[11px] font-medium tracking-[0.2px] text-[#6B7280]">Until</p>
               <p className="truncate text-sm font-bold leading-tight text-[#111827]">
                 {formatDate(endAt)} · {formatTime(endAt)}
               </p>
-            </div>
+            </button>
           </div>
-        </button>
+        </div>
 
         {/* Loading pill */}
         {status === "loading" && (
@@ -215,6 +236,46 @@ export function MobileSearchLayout({
         </div>
       )}
 
+      {pickerOpen && (
+        <DateTimeSheet
+          field={pickerOpen}
+          startAt={startAt}
+          endAt={endAt}
+          onConfirm={(next) => {
+            const toDate = (d: Date) => d.toISOString().split("T")[0];
+            const toTime = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+            if (pickerOpen === "start") {
+              const updatedEnd = next >= endAt ? new Date(next.getTime() + 120 * 60000) : endAt;
+              onSearch(
+                {
+                  ...filters,
+                  date: toDate(next),
+                  startTime: toTime(next),
+                  endDate: toDate(updatedEnd),
+                  endTime: toTime(updatedEnd),
+                },
+                true,
+                { preserveViewport: true }
+              );
+            } else {
+              if (next > startAt) {
+                onSearch(
+                  {
+                    ...filters,
+                    endDate: toDate(next),
+                    endTime: toTime(next),
+                  },
+                  true,
+                  { preserveViewport: true }
+                );
+              }
+            }
+            setPickerOpen(null);
+          }}
+          onClose={() => setPickerOpen(null)}
+        />
+      )}
+
       {/* ── Full-screen filters panel ── */}
       {filtersPanelOpen && (
         <div className="absolute inset-0 z-30 flex flex-col bg-white">
@@ -239,6 +300,158 @@ export function MobileSearchLayout({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── DateTimeSheet (matches mobile landing) ───────────────────────────────────
+
+function DateTimeSheet({
+  field,
+  startAt,
+  endAt,
+  onConfirm,
+  onClose,
+}: {
+  field: "start" | "end";
+  startAt: Date;
+  endAt: Date;
+  onConfirm: (d: Date) => void;
+  onClose: () => void;
+}) {
+  const current = field === "start" ? startAt : endAt;
+  const [draft, setDraft] = useState(current);
+  const [viewYear, setViewYear] = useState(current.getFullYear());
+  const [viewMonth, setViewMonth] = useState(current.getMonth());
+
+  const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
+  const minDay = field === "end"
+    ? (() => { const d = new Date(startAt); d.setHours(0, 0, 0, 0); return d; })()
+    : today;
+
+  const calDays = useMemo(() => {
+    const first = new Date(viewYear, viewMonth, 1);
+    const last = new Date(viewYear, viewMonth + 1, 0);
+    const startOffset = (first.getDay() + 6) % 7;
+    const cells: (Date | null)[] = Array(startOffset).fill(null);
+    for (let d = 1; d <= last.getDate(); d++) {
+      cells.push(new Date(viewYear, viewMonth, d));
+    }
+    return cells;
+  }, [viewYear, viewMonth]);
+
+  const timeValue = `${pad2(draft.getHours())}:${pad2(draft.getMinutes())}`;
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
+    else setViewMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
+    else setViewMonth(m => m + 1);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-white"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
+      <div className="flex items-center justify-between px-5 py-4">
+        <h2 className="text-[18px] font-semibold text-[#0f172a]">
+          {field === "start" ? "Park from" : "Park until"}
+        </h2>
+        <button type="button" onClick={onClose} className="text-[14px] font-semibold text-brand-600">
+          Cancel
+        </button>
+      </div>
+
+      <div className="flex items-center justify-between px-5 pb-3">
+        <span className="text-[14px] font-semibold text-[#1F2937]">
+          {MONTHS_LONG[viewMonth]} {viewYear}
+        </span>
+        <div className="flex items-center gap-3 text-brand-600">
+          <button type="button" onClick={prevMonth} className="p-1 text-brand-600">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button type="button" onClick={nextMonth} className="p-1 text-brand-600">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-7 px-5 pb-2">
+        {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((d) => (
+          <div key={d} className="text-center text-[10px] font-semibold text-[#B0B8C5]">{d}</div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 content-start gap-y-2 px-5 py-2">
+        {calDays.map((day, i) => {
+          if (!day) return <div key={`e${i}`} />;
+          const dayStart = new Date(day); dayStart.setHours(0, 0, 0, 0);
+          const isDisabled = dayStart < minDay;
+          const isToday = dayStart.getTime() === today.getTime();
+          const isSelected = draft.toDateString() === day.toDateString();
+          return (
+            <button
+              key={day.getTime()}
+              type="button"
+              disabled={isDisabled}
+              onClick={() => {
+                const next = new Date(day);
+                next.setHours(draft.getHours(), draft.getMinutes(), 0, 0);
+                setDraft(next);
+              }}
+              className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full text-[13px] transition
+                ${isSelected ? "bg-brand-500 font-semibold text-white" :
+                  isToday ? "border border-brand-500 text-brand-700 font-semibold" :
+                  isDisabled ? "text-[#C7CDD8]" :
+                  "font-medium text-[#0f172a] active:bg-[#F1F5F9]"}
+              `}
+            >
+              {day.getDate()}
+            </button>
+          );
+        })}
+      </div>
+
+      <div
+        className="mt-auto flex items-center gap-3 border-t border-[#EEF2F7] px-5 py-3"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}
+      >
+        <span className="text-[13px] text-[#6B7280]">
+          {field === "start" ? "Enter after" : "Leave by"}
+        </span>
+        <div className="relative">
+          <select
+            value={timeValue}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              const [h, m] = e.target.value.split(":").map(Number);
+              const next = new Date(draft);
+              next.setHours(h, m, 0, 0);
+              setDraft(next);
+            }}
+            className="appearance-none rounded-lg border border-[#E5E7EB] bg-white py-2.5 pl-3 pr-8 text-[14px] font-semibold text-[#0f172a] focus:outline-none"
+          >
+            {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <svg className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <button
+          type="button"
+          onClick={() => onConfirm(draft)}
+          className="ml-auto rounded-xl bg-brand-500 px-6 py-2.5 text-[14px] font-semibold text-white"
+        >
+          Done
+        </button>
+      </div>
     </div>
   );
 }

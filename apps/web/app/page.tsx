@@ -1,17 +1,32 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AddressAutocomplete } from "../components/AddressAutocomplete";
 import type { SearchFilters } from "../components/SearchForm";
 import { SlimNav } from "../components/SlimNav";
 import { MobileSearchLanding } from "../components/MobileSearchLanding";
 
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function roundUpToHalfHour(d: Date): Date {
+  const out = new Date(d);
+  out.setMinutes(Math.ceil(out.getMinutes() / 30) * 30, 0, 0);
+  return out;
+}
+
+function toTimeString(d: Date) {
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+const now = roundUpToHalfHour(new Date());
 const defaultFilters: SearchFilters = {
   location: "Dublin City Centre",
-  date: new Date().toISOString().split("T")[0],
-  startTime: "09:00",
-  endTime: "18:00",
+  date: now.toISOString().split("T")[0],
+  startTime: toTimeString(now),
+  endTime: toTimeString(new Date(now.getTime() + 120 * 60000)),
   radiusKm: 5,
   latitude: 53.3498,
   longitude: -6.2603,
@@ -21,14 +36,13 @@ const defaultFilters: SearchFilters = {
 
 export default function HomePage() {
   const router = useRouter();
-  const now = useMemo(() => new Date(), []);
   const [mode, setMode] = useState<"daily" | "monthly">("daily");
   const [location, setLocation] = useState(defaultFilters.location);
   const [latitude, setLatitude] = useState<number | undefined>(defaultFilters.latitude);
   const [longitude, setLongitude] = useState<number | undefined>(defaultFilters.longitude);
-  const [date, setDate] = useState(() => now.toISOString().split("T")[0]);
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("18:00");
+  const [date, setDate] = useState(() => defaultFilters.date);
+  const [startTime, setStartTime] = useState(defaultFilters.startTime);
+  const [endTime, setEndTime] = useState(defaultFilters.endTime);
   const [heroStyle] = useState<"flat" | "iso" | "line">("line");
 
   const handleSearch = (filters: SearchFilters) => {

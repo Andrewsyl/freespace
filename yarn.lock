@@ -2791,9 +2791,9 @@
   dependencies:
     nanoid "^3.3.11"
 
-"@react-oauth/google@^0.12.1":
+"@react-oauth/google@^0.12.2":
   version "0.12.2"
-  resolved "https://registry.npmjs.org/@react-oauth/google/-/google-0.12.2.tgz#082086fcfac1309e4e66413e7a30d24f452445e9"
+  resolved "https://registry.npmjs.org/@react-oauth/google/-/google-0.12.2.tgz"
   integrity sha512-d1GVm2uD4E44EJft2RbKtp8Z1fp/gK8Lb6KHgs3pHlM0PxCXGLaq8LLYQYENnN4xPWO1gkL4apBtlPKzpLvZwg==
 
 "@rtsao/scc@^1.1.0":

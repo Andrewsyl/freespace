@@ -13,11 +13,26 @@ import { searchSpaces } from "../../../lib/api";
 
 // ── Defaults ─────────────────────────────────────────────────────────────────
 
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function roundUpToHalfHour(d: Date): Date {
+  const out = new Date(d);
+  out.setMinutes(Math.ceil(out.getMinutes() / 30) * 30, 0, 0);
+  return out;
+}
+
+function toTimeString(d: Date) {
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+const now = roundUpToHalfHour(new Date());
 const defaultFilters: SearchFilters = {
   location: "Dublin City Centre",
-  date: new Date().toISOString().split("T")[0],
-  startTime: "09:00",
-  endTime: "18:00",
+  date: now.toISOString().split("T")[0],
+  startTime: toTimeString(now),
+  endTime: toTimeString(new Date(now.getTime() + 120 * 60000)),
   radiusKm: 5,
   latitude: 53.3498,
   longitude: -6.2603,
