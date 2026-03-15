@@ -4,6 +4,19 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { getListing, type ListingDetail } from "../../../../lib/api";
 
+const MOCK_ID = "st-stephens-green-carpark";
+const MOCK_LISTING: ListingDetail = {
+  id: MOCK_ID,
+  title: "St Stephen's Green Carpark",
+  address: "St Stephen's Green, Dublin 2",
+  pricePerDay: 20,
+  availability: "Monday - Sunday (24 hours)",
+  amenities: ["CCTV", "Covered", "Gated"],
+  imageUrls: ["/hero-art.png"],
+  rating: 4.7,
+  ratingCount: 214,
+};
+
 export default function QaPortalQrPage() {
   const params = useParams<{ id: string }>();
   const [listing, setListing] = useState<ListingDetail | null>(null);
@@ -16,6 +29,10 @@ export default function QaPortalQrPage() {
     }
     const listingId = params?.id;
     if (!listingId) return;
+    if (listingId === MOCK_ID) {
+      setListing(MOCK_LISTING);
+      return;
+    }
     getListing(listingId)
       .then(setListing)
       .catch(() => setError("Could not load parking location"));

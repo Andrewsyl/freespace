@@ -4,6 +4,19 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { createPortalBooking, getListing, type ListingDetail } from "../../../lib/api";
 
+const MOCK_ID = "st-stephens-green-carpark";
+const MOCK_LISTING: ListingDetail = {
+  id: MOCK_ID,
+  title: "St Stephen's Green Carpark",
+  address: "St Stephen’s Green, Dublin 2",
+  pricePerDay: 20,
+  availability: "Monday - Sunday (24 hours)",
+  amenities: ["CCTV", "Covered", "Gated"],
+  imageUrls: ["/hero-art.png"],
+  rating: 4.7,
+  ratingCount: 214,
+};
+
 function toLocalInputValue(date: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
@@ -22,9 +35,15 @@ export default function QaPortalPage() {
   const defaultUntil = useMemo(() => new Date(now.getTime() + 2 * 60 * 60 * 1000), [now]);
   const [untilLocal, setUntilLocal] = useState(toLocalInputValue(defaultUntil));
 
+  const isMock = params?.id === MOCK_ID;
+
   useEffect(() => {
     const listingId = params?.id;
     if (!listingId) return;
+    if (listingId === MOCK_ID) {
+      setListing(MOCK_LISTING);
+      return;
+    }
     getListing(listingId)
       .then(setListing)
       .catch(() => setError("Could not load parking location"));
@@ -49,6 +68,10 @@ export default function QaPortalPage() {
   const handlePay = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!listing) return;
+    if (isMock) {
+      setCheckoutUrl("mock");
+      return;
+    }
     if (!plateValid) {
       setError("Enter a valid registration");
       return;
@@ -156,7 +179,11 @@ export default function QaPortalPage() {
         )}
 
         {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
-        {checkoutUrl ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Redirecting to payment…</div> : null}
+        {checkoutUrl ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            {isMock ? "Test mode: payment flow will be wired after launch." : "Redirecting to payment…"}
+          </div>
+        ) : null}
 
         <div className="flex items-center justify-between gap-2">
           <button

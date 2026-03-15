@@ -80,7 +80,7 @@ export function MobileSearchLanding({
 
   return (
     <div
-      className="flex min-h-[100dvh] flex-col bg-white px-5"
+      className="flex min-h-0 flex-col bg-white px-5"
       style={{ paddingTop: hideHeader ? "0px" : "env(safe-area-inset-top)" }}
     >
       {/* ── Header ── */}
@@ -152,7 +152,7 @@ export function MobileSearchLanding({
         </button>
       </div>
 
-      <div className="mt-10 flex justify-center pb-10">
+      <div className="mt-8 flex justify-center pb-2">
         <img
           src="/hero-art.png"
           alt="Person using phone with car"
