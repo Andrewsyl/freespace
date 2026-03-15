@@ -66,11 +66,11 @@ export default function HomePage() {
       <main className="mx-auto w-full max-w-6xl px-6 py-10">
         <section className="grid items-center gap-10 lg:grid-cols-[1.1fr,0.9fr]">
           <div className="space-y-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-600">Find parking fast</p>
-            <h1 className="font-display text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
+            <p className="hidden text-xs font-semibold uppercase tracking-[0.32em] text-emerald-600 sm:block">Find parking fast</p>
+            <h1 className="hidden font-display text-4xl font-semibold tracking-tight text-slate-900 sm:block sm:text-5xl">
               The smarter way to find<br />parking in seconds.
             </h1>
-            <p className="text-base text-slate-600">
+            <p className="hidden text-base text-slate-600 sm:block">
               Search thousands of trusted spaces, compare prices, and book instantly.
             </p>
 
