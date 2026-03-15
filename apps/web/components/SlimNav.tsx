@@ -21,7 +21,7 @@ export function SlimNav() {
   }, [open]);
 
   return (
-    <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
+    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/95 px-6 py-3 backdrop-blur">
       <Link href="/" className="flex items-center gap-3">
         <img src="/freespace-logo.png" alt="FreeSpace" className="h-7 w-auto" />
         <span className="text-sm font-semibold text-slate-800">FreeSpace</span>
