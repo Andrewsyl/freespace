@@ -73,9 +73,9 @@ export function SlimNav() {
             <Link href="/dashboard" className="block px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => setOpen(false)}>
               Dashboard
             </Link>
-            <Link href="/help" className="block px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => setOpen(false)}>
+            <a href="/help" className="block px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => setOpen(false)}>
               Help
-            </Link>
+            </a>
             {user ? (
               <button
                 type="button"
