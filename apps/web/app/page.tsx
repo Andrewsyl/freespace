@@ -74,7 +74,7 @@ export default function HomePage() {
               Search thousands of trusted spaces, compare prices, and book instantly.
             </p>
 
-            <div className="rounded-[26px] bg-white/60 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+            <div className="rounded-[26px] bg-white/60 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur sm:p-6 lg:p-6 min-h-[60dvh] sm:min-h-0 flex flex-col">
               <div className="flex gap-2 rounded-full border border-slate-200 bg-slate-100 p-1 text-sm font-semibold shadow-sm">
                 {(["daily", "monthly"] as const).map((value) => (
                   <button
@@ -92,7 +92,7 @@ export default function HomePage() {
                 ))}
               </div>
 
-              <div className="mt-4 space-y-3">
+              <div className="mt-4 space-y-3 flex-1">
                 <AddressAutocomplete
                   defaultValue={location}
                   placeholder="Where would you like to park?"
@@ -151,7 +151,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="flex justify-center">
+            <div className="mt-8 flex justify-center">
               <img
                 src="/hero-art.png"
                 alt="Person using phone with car"
