@@ -82,29 +82,19 @@ export function MobileSearchLanding({
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       {/* ── Header ── */}
-      <div className="flex items-center justify-center py-5">
-        <img src="/freespace-logo.png" alt="FreeSpace" className="h-14 w-auto mix-blend-multiply" />
-      </div>
-
-      {/* ── Hero ── */}
-      <div className="pb-6 pt-2">
-        <h1 className="text-[28px] font-extrabold leading-tight tracking-tight text-[#0f172a]">
-          Find parking fast.
-        </h1>
-        <p className="mt-2 text-[14px] text-[#6B7280]">
-          Pick a location and time to get started.
-        </p>
+      <div className="flex items-center justify-center py-4">
+        <img src="/freespace-logo.png" alt="FreeSpace" className="h-12 w-auto mix-blend-multiply" />
       </div>
 
       {/* ── Mode toggle ── */}
-      <div className="mb-5 flex rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-1 text-sm font-semibold">
+      <div className="mb-4 flex rounded-xl border border-[#E5E7EB] bg-[#F3F4F6] p-1 text-sm font-semibold">
         {(["daily", "monthly"] as const).map((m) => (
           <button
             key={m}
             type="button"
             onClick={() => setMode(m)}
             className={`flex-1 rounded-lg py-2 transition-all duration-150 ${
-              mode === m ? "bg-white text-[#0f172a] shadow-sm" : "text-[#9CA3AF]"
+              mode === m ? "bg-[#E8F5E9] text-[#166534]" : "text-[#9CA3AF]"
             }`}
           >
             {m === "daily" ? "Hourly / Daily" : "Monthly"}
@@ -112,13 +102,13 @@ export function MobileSearchLanding({
         ))}
       </div>
 
-      <div className="rounded-2xl bg-white/90 p-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
+      <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4">
         {/* ── Location search ── */}
         <div className="mb-3">
           <AddressAutocomplete
             defaultValue={location}
-            placeholder="Where do you want to park?"
-            inputClassName="w-full rounded-xl border border-[#E5E7EB] bg-white px-9 py-3 text-[15px] font-semibold text-[#0f172a] shadow-sm transition focus:border-brand-500 focus:outline-none"
+            placeholder="Enter a place or postcode"
+            inputClassName="w-full rounded-xl border border-[#E5E7EB] bg-white px-9 py-3 text-[15px] font-semibold text-[#0f172a] transition focus:border-brand-500 focus:outline-none"
             onPlace={(place) => {
               setLocation(place.address);
               setLatitude(place.lat);
@@ -134,7 +124,7 @@ export function MobileSearchLanding({
             onClick={() => setPickerOpen("start")}
             className="flex flex-col rounded-xl border border-[#E5E7EB] px-4 py-3 text-left active:bg-[#F9FAFB]"
           >
-            <span className="text-[11px] font-semibold text-[#9CA3AF]">From</span>
+            <span className="text-[11px] font-semibold text-[#16A34A]">From</span>
             <span className="mt-0.5 text-[13px] font-bold text-[#0f172a] leading-snug">{formatDatetime(startAt)}</span>
           </button>
           <button
@@ -142,7 +132,7 @@ export function MobileSearchLanding({
             onClick={() => setPickerOpen("end")}
             className="flex flex-col rounded-xl border border-[#E5E7EB] px-4 py-3 text-left active:bg-[#F9FAFB]"
           >
-            <span className="text-[11px] font-semibold text-[#9CA3AF]">Until</span>
+            <span className="text-[11px] font-semibold text-[#16A34A]">Until</span>
             <span className="mt-0.5 text-[13px] font-bold text-[#0f172a] leading-snug">{formatDatetime(endAt)}</span>
           </button>
         </div>
@@ -154,7 +144,7 @@ export function MobileSearchLanding({
           disabled={!location}
           className="w-full rounded-xl bg-brand-500 py-4 text-[15px] font-bold text-white transition active:opacity-90 disabled:opacity-40"
         >
-          Search parking spaces
+          Show parking spaces
         </button>
       </div>
 
