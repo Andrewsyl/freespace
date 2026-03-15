@@ -41,9 +41,11 @@ function snapTo5(d: Date): Date {
 export function MobileSearchLanding({
   initialFilters,
   onSearch,
+  hideHeader = false,
 }: {
   initialFilters: SearchFilters;
   onSearch: (filters: SearchFilters) => void;
+  hideHeader?: boolean;
 }) {
   const defaultStart = useMemo(() => snapTo5(new Date()), []);
   const defaultEnd = useMemo(() => addMinutes(defaultStart, 120), [defaultStart]);
@@ -79,12 +81,14 @@ export function MobileSearchLanding({
   return (
     <div
       className="flex min-h-[100dvh] flex-col bg-white px-5"
-      style={{ paddingTop: "env(safe-area-inset-top)" }}
+      style={{ paddingTop: hideHeader ? "0px" : "env(safe-area-inset-top)" }}
     >
       {/* ── Header ── */}
-      <div className="flex items-center justify-center py-4">
-        <img src="/freespace-logo.png" alt="FreeSpace" className="h-12 w-auto mix-blend-multiply" />
-      </div>
+      {!hideHeader && (
+        <div className="flex items-center justify-center py-4">
+          <img src="/freespace-logo.png" alt="FreeSpace" className="h-12 w-auto mix-blend-multiply" />
+        </div>
+      )}
 
       {/* ── Mode toggle ── */}
       <div className="mb-4 flex rounded-xl border border-[#E5E7EB] bg-[#F3F4F6] p-1 text-sm font-semibold">

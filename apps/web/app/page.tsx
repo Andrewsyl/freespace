@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { AddressAutocomplete } from "../components/AddressAutocomplete";
 import type { SearchFilters } from "../components/SearchForm";
 import { SlimNav } from "../components/SlimNav";
+import { MobileSearchLanding } from "../components/MobileSearchLanding";
 
 const defaultFilters: SearchFilters = {
   location: "Dublin City Centre",
@@ -64,7 +65,15 @@ export default function HomePage() {
       <SlimNav />
 
       <main className="mx-auto w-full max-w-6xl px-6 py-6 sm:py-10">
-        <section className="grid items-center gap-10 lg:grid-cols-[1.1fr,0.9fr]">
+        <section className="block sm:hidden">
+          <MobileSearchLanding
+            initialFilters={defaultFilters}
+            onSearch={(filters) => handleSearch(filters)}
+            hideHeader
+          />
+        </section>
+
+        <section className="hidden items-center gap-10 sm:grid lg:grid-cols-[1.1fr,0.9fr]">
           <div className="space-y-5">
             <p className="hidden text-xs font-semibold uppercase tracking-[0.32em] text-emerald-600 sm:block">Find parking fast</p>
             <h1 className="hidden font-display text-4xl font-semibold tracking-tight text-slate-900 sm:block sm:text-5xl">
