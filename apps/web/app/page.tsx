@@ -151,6 +151,14 @@ export default function HomePage() {
               </div>
             </div>
 
+            <div className="flex justify-center">
+              <img
+                src="/hero-art.png"
+                alt="Person using phone with car"
+                className="h-44 w-auto object-contain sm:h-52"
+              />
+            </div>
+
             <div className="flex flex-wrap gap-4 text-sm text-slate-600">
               <span>Best price guarantee</span>
               <span>Trusted by thousands</span>
