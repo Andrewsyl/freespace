@@ -152,6 +152,14 @@ export function MobileSearchLanding({
         </button>
       </div>
 
+      <div className="mt-10 flex justify-center pb-10">
+        <img
+          src="/hero-art.png"
+          alt="Person using phone with car"
+          className="h-44 w-auto object-contain"
+        />
+      </div>
+
       {/* ── Date/time picker bottom sheet ── */}
       {pickerOpen && (
         <DateTimeSheet
