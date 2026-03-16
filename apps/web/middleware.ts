@@ -17,6 +17,11 @@ function unauthorized() {
 export function middleware(request: NextRequest) {
   if (!isAuthConfigured) return NextResponse.next();
 
+  const { pathname } = request.nextUrl;
+  if (pathname === "/health") {
+    return NextResponse.next();
+  }
+
   const auth = request.headers.get("authorization");
   if (!auth || !auth.startsWith("Basic ")) {
     return unauthorized();
