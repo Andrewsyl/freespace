@@ -9,6 +9,7 @@ import { SearchForm } from "./SearchForm";
 import { MapView } from "./MapView";
 import { FiltersPanel } from "./FiltersPanel";
 import { listingGradient } from "./DesktopSearchLayout";
+import { SlimNav } from "./SlimNav";
 import type { SharedLayoutProps } from "./searchLayoutTypes";
 import type { Listing } from "./ListingCard";
 
@@ -96,7 +97,12 @@ export function MobileSearchLayout({
   return (
     <div className="mobile-search relative h-[100dvh] overflow-hidden">
       {/* ── Full-screen map ── */}
-      <div className="absolute inset-0">
+      <motion.div
+        className="absolute inset-0"
+        initial={{ opacity: 0, scale: 1.01 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
         <MapView
           listings={results}
           center={center}
@@ -112,12 +118,17 @@ export function MobileSearchLayout({
           disableAutoFit={lockViewport}
           onBoundsChanged={onBoundsChanged}
         />
+      </motion.div>
+
+      {/* ── Sticky nav (always visible) ── */}
+      <div className="pointer-events-auto absolute left-0 right-0 top-0 z-20 border-b border-black/10 bg-white/85 backdrop-blur">
+        <SlimNav />
       </div>
 
       {/* ── Top overlay: search bar + date row ── */}
       <div
         className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex flex-col gap-2.5 px-4"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 70px)" }}
       >
         {/* Search bar row */}
         <div className="pointer-events-auto flex items-center gap-2.5">

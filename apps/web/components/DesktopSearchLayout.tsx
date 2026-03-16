@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ListingCard } from "./ListingCard";
 import { SearchForm } from "./SearchForm";
@@ -164,7 +165,12 @@ export function DesktopSearchLayout({
       </div>
 
       {/* Right pane — map */}
-      <div className="h-full min-w-0">
+      <motion.div
+        className="h-full min-w-0"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
+      >
         <div className="relative h-full overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <MapView
             listings={results}
@@ -194,7 +200,7 @@ export function DesktopSearchLayout({
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
     </div>
   );
