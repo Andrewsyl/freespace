@@ -34,6 +34,7 @@ export default function AdminListingsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string | undefined>();
+  const [search, setSearch] = useState("");
   const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:4000";
   const [confirm, setConfirm] = useState<{ id: string; action: "approve" | "rejected" | "disabled"; title: string } | null>(null);
   const [confirmReason, setConfirmReason] = useState("");
@@ -77,6 +78,12 @@ export default function AdminListingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, filter]);
 
+  const filteredListings = listings.filter((listing) => {
+    if (!search.trim()) return true;
+    const haystack = `${listing.title} ${listing.address} ${listing.status}`.toLowerCase();
+    return haystack.includes(search.trim().toLowerCase());
+  });
+
   const updateListing = async (id: string, body: Record<string, any>) => {
     if (!token) return;
     setError(null);
@@ -98,12 +105,18 @@ export default function AdminListingsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="text-2xl tracking-tight font-semibold text-slate-900">Listings</h1>
           <p className="text-sm text-slate-600">Approve, reject, or disable listings.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            placeholder="Search title or address"
+          />
           <select
             value={filter ?? ""}
             onChange={(e) => setFilter(e.target.value || undefined)}
@@ -138,7 +151,7 @@ export default function AdminListingsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {listings.map((listing) => (
+            {filteredListings.map((listing) => (
               <tr key={listing.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3">
                   <div className="font-semibold text-slate-900">

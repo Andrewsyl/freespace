@@ -31,6 +31,13 @@ import { sendBookingEmail } from "../lib/email.js";
 import { sendPushNotification } from "../lib/notifications.js";
 import { requireAuth } from "../middleware/auth.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
+import {
+  enforceBlockedList,
+  getFraudSettings,
+  getRecentBookingStats,
+  getUserRiskProfile,
+  shouldEnforceFraud,
+} from "../middleware/fraud.js";
 import "../loadEnv.js";
 import { generateVerificationToken, hashPassword } from "../lib/auth.js";
 
@@ -47,6 +54,33 @@ const portalBookingLimiter = createRateLimiter({
   keyPrefix: "portal-booking",
   keyGenerator: (req) => req.ip ?? "unknown",
 });
+
+async function requireActiveDriver(userId?: string) {
+  if (!userId) return { ok: false, message: "Unauthorized" } as const;
+  const settings = await getFraudSettings();
+  const enforceFraud = shouldEnforceFraud(settings);
+  const profile = await getUserRiskProfile(userId);
+  if (!profile) return { ok: false, message: "Unauthorized" } as const;
+  if (profile.status === "suspended") {
+    return { ok: false, message: "Account suspended. Contact support." } as const;
+  }
+  if (!profile.email_verified) {
+    return { ok: false, message: "Please verify your email before booking." } as const;
+  }
+  const accountAgeMinutes = (Date.now() - new Date(profile.created_at).getTime()) / 60000;
+  if (accountAgeMinutes < settings.minAccountAgeMinutes) {
+    if (!enforceFraud) {
+      console.warn("[fraud] driver account age below threshold", {
+        userId,
+        accountAgeMinutes,
+        minAccountAgeMinutes: settings.minAccountAgeMinutes,
+      });
+      return { ok: true } as const;
+    }
+    return { ok: false, message: "Please wait a few minutes before booking." } as const;
+  }
+  return { ok: true } as const;
+}
 
 const bookingSchemaBase = z.object({
   listingId: z.string().uuid(),
@@ -282,11 +316,55 @@ async function getOrCreatePortalGuestUserId() {
   return created.id;
 }
 
-router.post("/", requireAuth, bookingLimiter, async (req, res, next) => {
+router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, res, next) => {
   try {
     const payload = bookingSchema.parse(req.body);
     const driverId = req.user?.userId;
     if (!driverId) return res.status(401).json({ message: "Unauthorized" });
+
+    const settings = await getFraudSettings();
+    const enforceFraud = shouldEnforceFraud(settings);
+    const profile = await getUserRiskProfile(driverId);
+    if (!profile) return res.status(401).json({ message: "Unauthorized" });
+    if (profile.status === "suspended") {
+      return res.status(403).json({ message: "Account suspended. Contact support." });
+    }
+    if (!profile.email_verified) {
+      return res.status(403).json({ message: "Please verify your email before booking." });
+    }
+    const accountAgeMinutes = (Date.now() - new Date(profile.created_at).getTime()) / 60000;
+    if (accountAgeMinutes < settings.minAccountAgeMinutes) {
+      if (enforceFraud) {
+        return res.status(429).json({ message: "Please wait a few minutes before booking." });
+      }
+      console.warn("[fraud] booking account age below threshold", {
+        userId: driverId,
+        accountAgeMinutes,
+        minAccountAgeMinutes: settings.minAccountAgeMinutes,
+      });
+    }
+    const recent = await getRecentBookingStats(driverId);
+    if (recent.count >= settings.maxBookingsPerDay) {
+      if (enforceFraud) {
+        return res.status(429).json({ message: "Booking limit reached. Try again later." });
+      }
+      console.warn("[fraud] booking count above threshold", {
+        userId: driverId,
+        count: recent.count,
+        maxBookingsPerDay: settings.maxBookingsPerDay,
+      });
+    }
+    if (recent.total_cents + payload.amountCents > settings.maxAmountPerDayCents) {
+      if (enforceFraud) {
+        return res.status(429).json({ message: "Daily booking limit reached." });
+      }
+      console.warn("[fraud] booking spend above threshold", {
+        userId: driverId,
+        totalCents: recent.total_cents,
+        attemptedCents: payload.amountCents,
+        maxAmountPerDayCents: settings.maxAmountPerDayCents,
+      });
+    }
 
     const overlapCheck = await pool.query(
       `SELECT 1 FROM bookings
@@ -302,6 +380,7 @@ router.post("/", requireAuth, bookingLimiter, async (req, res, next) => {
     }
 
     const listingWithHost = await getListingWithHostAccount(payload.listingId);
+    const driver = await findUserById(driverId);
     const payoutAvailableAt = new Date(
       new Date(payload.from).getTime() + 24 * 60 * 60 * 1000
     );
@@ -315,13 +394,23 @@ router.post("/", requireAuth, bookingLimiter, async (req, res, next) => {
       platformFeePercent: payload.platformFeePercent,
       successUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/booking/cancel?session_id={CHECKOUT_SESSION_ID}`,
+      driverId,
+      userEmail: driver?.email ?? null,
+      manualReview: settings.manualReview,
+      source: "booking",
     });
 
-    await sendBookingEmail({
-      to: "driver@example.com",
-      subject: "Parking booking created",
-      body: `Booking for listing ${payload.listingId} from ${payload.from} to ${payload.to}`,
-    });
+    try {
+      if (driver?.email) {
+        await sendBookingEmail({
+          to: driver.email,
+          subject: "Parking booking created",
+          body: `Your booking is confirmed.\n\nListing: ${listingWithHost?.title ?? payload.listingId}\nFrom: ${payload.from}\nTo: ${payload.to}`,
+        });
+      }
+    } catch (emailError) {
+      console.warn("Booking email failed", emailError);
+    }
 
     // Persist reservation as pending; confirm via Stripe webhook in production.
     await createBooking({
@@ -347,12 +436,56 @@ router.post("/", requireAuth, bookingLimiter, async (req, res, next) => {
   }
 });
 
-router.post("/payment-intent", requireAuth, bookingLimiter, async (req, res, next) => {
+router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, async (req, res, next) => {
   try {
     if (!stripe) return res.status(500).json({ message: "Stripe not configured" });
     const payload = paymentIntentSchema.parse(req.body);
     const driverId = req.user?.userId;
     if (!driverId) return res.status(401).json({ message: "Unauthorized" });
+
+    const settings = await getFraudSettings();
+    const enforceFraud = shouldEnforceFraud(settings);
+    const profile = await getUserRiskProfile(driverId);
+    if (!profile) return res.status(401).json({ message: "Unauthorized" });
+    if (profile.status === "suspended") {
+      return res.status(403).json({ message: "Account suspended. Contact support." });
+    }
+    if (!profile.email_verified) {
+      return res.status(403).json({ message: "Please verify your email before booking." });
+    }
+    const accountAgeMinutes = (Date.now() - new Date(profile.created_at).getTime()) / 60000;
+    if (accountAgeMinutes < settings.minAccountAgeMinutes) {
+      if (enforceFraud) {
+        return res.status(429).json({ message: "Please wait a few minutes before booking." });
+      }
+      console.warn("[fraud] booking account age below threshold", {
+        userId: driverId,
+        accountAgeMinutes,
+        minAccountAgeMinutes: settings.minAccountAgeMinutes,
+      });
+    }
+    const recent = await getRecentBookingStats(driverId);
+    if (recent.count >= settings.maxBookingsPerDay) {
+      if (enforceFraud) {
+        return res.status(429).json({ message: "Booking limit reached. Try again later." });
+      }
+      console.warn("[fraud] booking count above threshold", {
+        userId: driverId,
+        count: recent.count,
+        maxBookingsPerDay: settings.maxBookingsPerDay,
+      });
+    }
+    if (recent.total_cents + payload.amountCents > settings.maxAmountPerDayCents) {
+      if (enforceFraud) {
+        return res.status(429).json({ message: "Daily booking limit reached." });
+      }
+      console.warn("[fraud] booking spend above threshold", {
+        userId: driverId,
+        totalCents: recent.total_cents,
+        attemptedCents: payload.amountCents,
+        maxAmountPerDayCents: settings.maxAmountPerDayCents,
+      });
+    }
 
     const overlapCheck = await pool.query(
       `SELECT 1 FROM bookings
@@ -391,6 +524,10 @@ router.post("/payment-intent", requireAuth, bookingLimiter, async (req, res, nex
         driver_id: driverId,
         platform_fee_cents: String(platformFeeCents),
         host_account_id: listingWithHost?.hostStripeAccountId ?? "",
+        amount_cents: String(payload.amountCents),
+        currency: payload.currency,
+        manual_review: settings.manualReview ? "true" : "false",
+        source: "payment_intent",
       },
     };
 
@@ -424,7 +561,7 @@ router.post("/payment-intent", requireAuth, bookingLimiter, async (req, res, nex
   }
 });
 
-router.post("/portal", portalBookingLimiter, async (req, res, next) => {
+router.post("/portal", enforceBlockedList, portalBookingLimiter, async (req, res, next) => {
   try {
     const payload = portalBookingSchema.parse(req.body);
     const startAt = new Date();
@@ -483,6 +620,8 @@ router.post("/portal", portalBookingLimiter, async (req, res, next) => {
     const platformFeeCents = Math.round(amountCents * platformFeePercent);
     const payoutAvailableAt = new Date(startAt.getTime() + 24 * 60 * 60 * 1000);
 
+    const driverId = await getOrCreatePortalGuestUserId();
+    const settings = await getFraudSettings();
     const session = await createCheckoutSession({
       amount: amountCents,
       currency: "eur",
@@ -491,9 +630,11 @@ router.post("/portal", portalBookingLimiter, async (req, res, next) => {
       platformFeePercent,
       successUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/booking/cancel?session_id={CHECKOUT_SESSION_ID}`,
+      driverId,
+      manualReview: settings.manualReview,
+      source: "portal",
     });
 
-    const driverId = await getOrCreatePortalGuestUserId();
     await createBooking({
       listingId: payload.listingId,
       driverId,
@@ -517,7 +658,7 @@ router.post("/portal", portalBookingLimiter, async (req, res, next) => {
   }
 });
 
-router.post("/:id/extend-intent", requireAuth, bookingLimiter, async (req, res, next) => {
+router.post("/:id/extend-intent", requireAuth, enforceBlockedList, bookingLimiter, async (req, res, next) => {
   try {
     if (!stripe) return res.status(500).json({ message: "Stripe not configured" });
     const bookingId = z.string().uuid().parse(req.params.id);
@@ -527,6 +668,8 @@ router.post("/:id/extend-intent", requireAuth, bookingLimiter, async (req, res, 
     const { newEndTime } = schema.parse(req.body);
     const driverId = req.user?.userId;
     if (!driverId) return res.status(401).json({ message: "Unauthorized" });
+    const gate = await requireActiveDriver(driverId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
 
     const booking = await getBookingForExtension({ bookingId, driverId });
     if (!booking) return res.status(404).json({ message: "Booking not found" });
@@ -603,6 +746,7 @@ router.post("/:id/extend-intent", requireAuth, bookingLimiter, async (req, res, 
       { customer: customerId },
       { apiVersion: "2024-06-20" }
     );
+    const settings = await getFraudSettings();
 
     const intent = await stripe.paymentIntents.create({
       amount: additionalAmountCents,
@@ -611,7 +755,13 @@ router.post("/:id/extend-intent", requireAuth, bookingLimiter, async (req, res, 
       automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       metadata: {
         booking_id: bookingId,
+        driver_id: driverId,
+        listing_id: booking.listing_id,
+        amount_cents: String(additionalAmountCents),
+        currency: (booking.currency ?? "eur").toLowerCase(),
         type: "extension",
+        manual_review: settings.manualReview ? "true" : "false",
+        source: "extend_intent",
       },
     });
 
@@ -629,7 +779,7 @@ router.post("/:id/extend-intent", requireAuth, bookingLimiter, async (req, res, 
   }
 });
 
-router.post("/:id/extend-confirm", requireAuth, bookingLimiter, async (req, res, next) => {
+router.post("/:id/extend-confirm", requireAuth, enforceBlockedList, bookingLimiter, async (req, res, next) => {
   try {
     if (!stripe) return res.status(500).json({ message: "Stripe not configured" });
     const bookingId = z.string().uuid().parse(req.params.id);
@@ -641,6 +791,8 @@ router.post("/:id/extend-confirm", requireAuth, bookingLimiter, async (req, res,
     const { paymentIntentId, newEndTime, newTotalCents } = schema.parse(req.body);
     const driverId = req.user?.userId;
     if (!driverId) return res.status(401).json({ message: "Unauthorized" });
+    const gate = await requireActiveDriver(driverId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
 
     const booking = await getBookingForExtension({ bookingId, driverId });
     if (!booking) return res.status(404).json({ message: "Booking not found" });
@@ -689,7 +841,7 @@ router.post("/:id/extend-confirm", requireAuth, bookingLimiter, async (req, res,
   }
 });
 
-router.post("/:id/change-intent", requireAuth, bookingLimiter, async (req, res, next) => {
+router.post("/:id/change-intent", requireAuth, enforceBlockedList, bookingLimiter, async (req, res, next) => {
   try {
     if (!stripe) return res.status(500).json({ message: "Stripe not configured" });
     const bookingId = z.string().uuid().parse(req.params.id);
@@ -700,6 +852,8 @@ router.post("/:id/change-intent", requireAuth, bookingLimiter, async (req, res, 
     const { newStartTime, newEndTime } = schema.parse(req.body);
     const driverId = req.user?.userId;
     if (!driverId) return res.status(401).json({ message: "Unauthorized" });
+    const gate = await requireActiveDriver(driverId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
 
     const booking = await getBookingForExtension({ bookingId, driverId });
     if (!booking) return res.status(404).json({ message: "Booking not found" });
@@ -784,6 +938,7 @@ router.post("/:id/change-intent", requireAuth, bookingLimiter, async (req, res, 
       { customer: customerId },
       { apiVersion: "2024-06-20" }
     );
+    const settings = await getFraudSettings();
 
     const intent = await stripe.paymentIntents.create({
       amount: additionalAmountCents,
@@ -792,7 +947,13 @@ router.post("/:id/change-intent", requireAuth, bookingLimiter, async (req, res, 
       automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       metadata: {
         booking_id: bookingId,
+        driver_id: driverId,
+        listing_id: booking.listing_id,
+        amount_cents: String(additionalAmountCents),
+        currency: (booking.currency ?? "eur").toLowerCase(),
         type: "change",
+        manual_review: settings.manualReview ? "true" : "false",
+        source: "change_intent",
       },
     });
 
@@ -811,7 +972,7 @@ router.post("/:id/change-intent", requireAuth, bookingLimiter, async (req, res, 
   }
 });
 
-router.post("/:id/change-confirm", requireAuth, bookingLimiter, async (req, res, next) => {
+router.post("/:id/change-confirm", requireAuth, enforceBlockedList, bookingLimiter, async (req, res, next) => {
   try {
     if (!stripe) return res.status(500).json({ message: "Stripe not configured" });
     const bookingId = z.string().uuid().parse(req.params.id);
@@ -824,6 +985,8 @@ router.post("/:id/change-confirm", requireAuth, bookingLimiter, async (req, res,
     const { paymentIntentId, newStartTime, newEndTime, newTotalCents } = schema.parse(req.body);
     const driverId = req.user?.userId;
     if (!driverId) return res.status(401).json({ message: "Unauthorized" });
+    const gate = await requireActiveDriver(driverId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
 
     const booking = await getBookingForExtension({ bookingId, driverId });
     if (!booking) return res.status(404).json({ message: "Booking not found" });
@@ -874,7 +1037,7 @@ router.post("/:id/change-confirm", requireAuth, bookingLimiter, async (req, res,
   }
 });
 
-router.post("/confirm", requireAuth, bookingLimiter, async (req, res, next) => {
+router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (req, res, next) => {
   try {
     const schema = z.object({
       paymentIntentId: z.string().trim().min(5).max(200),
@@ -959,7 +1122,7 @@ router.post("/confirm", requireAuth, bookingLimiter, async (req, res, next) => {
   }
 });
 
-router.post("/:id/cancel", requireAuth, bookingLimiter, async (req, res, next) => {
+router.post("/:id/cancel", requireAuth, enforceBlockedList, bookingLimiter, async (req, res, next) => {
   try {
     const bookingId = z.string().uuid().parse(req.params.id);
     const userId = req.user?.userId;
@@ -1013,7 +1176,7 @@ router.post("/:id/cancel", requireAuth, bookingLimiter, async (req, res, next) =
   }
 });
 
-router.post("/:id/check-in", requireAuth, bookingLimiter, async (req, res, next) => {
+router.post("/:id/check-in", requireAuth, enforceBlockedList, bookingLimiter, async (req, res, next) => {
   try {
     const bookingId = z.string().uuid().parse(req.params.id);
     const userId = req.user?.userId;

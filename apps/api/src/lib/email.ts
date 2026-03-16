@@ -1,3 +1,5 @@
+import { sendMail } from "./mailer.js";
+
 export async function sendBookingEmail({
   to,
   subject,
@@ -7,6 +9,11 @@ export async function sendBookingEmail({
   subject: string;
   body: string;
 }) {
-  // Swap this stub with a real email provider (SendGrid, Resend, AWS SES, etc.)
-  console.info(`[email] to=${to} subject=${subject} body=${body}`);
+  await sendMail({
+    to,
+    subject,
+    text: body,
+    html: `<pre style=\"font-family: -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif; white-space: pre-wrap;\">${body}</pre>`,
+    from: process.env.EMAIL_FROM_BOOKINGS ?? process.env.EMAIL_FROM,
+  });
 }

@@ -93,6 +93,7 @@ export function MapView({
   const centerMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const markerSignatureRef = useRef<string>("");
   const [mapReady, setMapReady] = useState(false);
+  const [tokenMissing, setTokenMissing] = useState(false);
   const hasUserDraggedRef = useRef(false);
   const prevSelectedRef = useRef<string | null>(null);
   const popupRef = useRef<mapboxgl.Popup | null>(null);
@@ -101,7 +102,13 @@ export function MapView({
   // Initialise map once
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
+    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+    if (!token || token.trim().length === 0) {
+      setTokenMissing(true);
+      return;
+    }
+    setTokenMissing(false);
+    mapboxgl.accessToken = token;
     const defaultCenter = center ?? { lat: 53.3498, lng: -6.2603 };
     const map = new mapboxgl.Map({
       container: containerRef.current,
@@ -269,8 +276,18 @@ export function MapView({
   }, [mapReady, popupListing, onPopupBook]);
 
   return (
-    <div className="h-full w-full overflow-hidden rounded-xl bg-slate-100">
+    <div className="relative h-full w-full overflow-hidden rounded-xl bg-slate-100">
       <div ref={containerRef} className="h-full w-full" />
+      {tokenMissing && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-center text-sm text-slate-600">
+          <div className="max-w-xs rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-sm font-semibold text-slate-900">Mapbox token missing</p>
+            <p className="mt-2 text-xs text-slate-500">
+              Set <code className="rounded bg-slate-100 px-1 py-0.5">NEXT_PUBLIC_MAPBOX_TOKEN</code> to enable the map.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

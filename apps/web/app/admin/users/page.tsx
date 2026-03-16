@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../components/AuthProvider";
+import { listAdminSettings, updateAdminSetting } from "../../../lib/api";
 
 type UserRow = {
   id: string;
@@ -20,6 +21,8 @@ export default function AdminUsersPage() {
   const [confirm, setConfirm] = useState<{ id: string; action: "suspend" | "activate"; email: string } | null>(null);
   const [confirmReason, setConfirmReason] = useState("");
   const [deleteId, setDeleteId] = useState<{ id: string; email: string } | null>(null);
+  const [blockBusy, setBlockBusy] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const parseSafe = async (res: Response) => {
     try {
@@ -35,7 +38,9 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${apiBase}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } });
+      const params = new URLSearchParams();
+      if (search.trim()) params.set("search", search.trim());
+      const res = await fetch(`${apiBase}/api/admin/users?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await parseSafe(res);
       if (!res.ok) throw new Error((data as any).message ?? "Failed to load users");
       setUsers(data.users ?? []);
@@ -78,6 +83,24 @@ export default function AdminUsersPage() {
     }
   };
 
+  const blockValue = async (key: string, value: string) => {
+    if (!token) return;
+    setError(null);
+    setBlockBusy(value);
+    try {
+      const settings = await listAdminSettings(token);
+      const current = settings.find((row: any) => row.key === key)?.value;
+      const list = Array.isArray(current) ? current : [];
+      if (!list.includes(value)) list.push(value);
+      await updateAdminSetting(key, { value: list }, token);
+      await loadUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update block list");
+    } finally {
+      setBlockBusy(null);
+    }
+  };
+
   const deleteUser = async (id: string, reason?: string) => {
     if (!token) return;
     setError(null);
@@ -108,6 +131,23 @@ export default function AdminUsersPage() {
           className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
           Refresh
+        </button>
+      </div>
+      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <label className="text-xs font-semibold text-slate-600">
+          Search
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="mt-1 w-full min-w-[240px] rounded-lg border border-slate-200 px-2 py-2 text-sm"
+            placeholder="Email or user ID"
+          />
+        </label>
+        <button
+          onClick={loadUsers}
+          className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+        >
+          Apply
         </button>
       </div>
       {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
@@ -165,6 +205,20 @@ export default function AdminUsersPage() {
                       Suspend
                     </button>
                   )}
+                  <button
+                    onClick={() => blockValue("blocked_user_ids", user.id)}
+                    className="ml-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    disabled={blockBusy === user.id}
+                  >
+                    Block user
+                  </button>
+                  <button
+                    onClick={() => blockValue("blocked_emails", user.email.toLowerCase())}
+                    className="ml-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    disabled={blockBusy === user.email.toLowerCase()}
+                  >
+                    Block email
+                  </button>
                   <button
                     onClick={() => setDeleteId({ id: user.id, email: user.email })}
                     className="ml-2 rounded-lg border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50"

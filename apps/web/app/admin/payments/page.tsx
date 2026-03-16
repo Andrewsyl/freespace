@@ -38,6 +38,7 @@ export default function AdminPaymentsPage() {
   const { token } = useAuth();
   const [rows, setRows] = useState<PaymentRow[]>([]);
   const [status, setStatus] = useState("");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,6 +61,21 @@ export default function AdminPaymentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  const filteredRows = rows.filter((row) => {
+    if (!search.trim()) return true;
+    const haystack = [
+      row.payment_intent_id,
+      row.checkout_session_id,
+      row.listing_title,
+      row.driver_email,
+      row.status,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(search.trim().toLowerCase());
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex items-end justify-between gap-3">
@@ -75,7 +91,13 @@ export default function AdminPaymentsPage() {
         </button>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          placeholder="Search intent, listing, email"
+        />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
@@ -109,7 +131,7 @@ export default function AdminPaymentsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {rows.map((row) => (
+            {filteredRows.map((row) => (
               <tr key={row.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3 text-xs text-slate-700">{row.payment_intent_id}</td>
                 <td className="px-4 py-3 text-slate-700">{row.listing_title ?? "—"}</td>

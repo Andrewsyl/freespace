@@ -18,10 +18,26 @@ export type PaymentInput = {
   platformFeePercent: number;
   successUrl: string;
   cancelUrl: string;
+  driverId?: string | null;
+  userEmail?: string | null;
+  manualReview?: boolean;
+  source?: string;
 };
 
 export async function createCheckoutSession(input: PaymentInput) {
-  const { amount, currency, listingId, hostStripeAccountId, platformFeePercent, successUrl, cancelUrl } = input;
+  const {
+    amount,
+    currency,
+    listingId,
+    hostStripeAccountId,
+    platformFeePercent,
+    successUrl,
+    cancelUrl,
+    driverId,
+    userEmail,
+    manualReview,
+    source,
+  } = input;
   const normalizedCurrency = currency.toLowerCase();
   const feeAmount = Math.round(amount * platformFeePercent);
 
@@ -61,6 +77,12 @@ export async function createCheckoutSession(input: PaymentInput) {
         listing_id: listingId,
         platform_fee_cents: String(feeAmount),
         host_account_id: hostStripeAccountId ?? "",
+        driver_id: driverId ?? "",
+        user_email: userEmail ?? "",
+        amount_cents: String(amount),
+        currency: normalizedCurrency,
+        source: source ?? "web",
+        manual_review: manualReview ? "true" : "false",
       },
       success_url: successUrl,
       cancel_url: cancelUrl,

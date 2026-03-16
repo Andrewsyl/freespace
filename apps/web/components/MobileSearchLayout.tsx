@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import * as Select from "@radix-ui/react-select";
 import Image from "next/image";
 import { SearchForm } from "./SearchForm";
 import { MapView } from "./MapView";
@@ -236,45 +238,48 @@ export function MobileSearchLayout({
         </div>
       )}
 
-      {pickerOpen && (
-        <DateTimeSheet
-          field={pickerOpen}
-          startAt={startAt}
-          endAt={endAt}
-          onConfirm={(next) => {
-            const toDate = (d: Date) => d.toISOString().split("T")[0];
-            const toTime = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-            if (pickerOpen === "start") {
-              const updatedEnd = next >= endAt ? new Date(next.getTime() + 120 * 60000) : endAt;
-              onSearch(
-                {
-                  ...filters,
-                  date: toDate(next),
-                  startTime: toTime(next),
-                  endDate: toDate(updatedEnd),
-                  endTime: toTime(updatedEnd),
-                },
-                true,
-                { preserveViewport: true }
-              );
-            } else {
-              if (next > startAt) {
+      <AnimatePresence>
+        {pickerOpen && (
+          <DateTimeSheet
+            key="datetime-sheet"
+            field={pickerOpen}
+            startAt={startAt}
+            endAt={endAt}
+            onConfirm={(next) => {
+              const toDate = (d: Date) => d.toISOString().split("T")[0];
+              const toTime = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+              if (pickerOpen === "start") {
+                const updatedEnd = next >= endAt ? new Date(next.getTime() + 120 * 60000) : endAt;
                 onSearch(
                   {
                     ...filters,
-                    endDate: toDate(next),
-                    endTime: toTime(next),
+                    date: toDate(next),
+                    startTime: toTime(next),
+                    endDate: toDate(updatedEnd),
+                    endTime: toTime(updatedEnd),
                   },
                   true,
                   { preserveViewport: true }
                 );
+              } else {
+                if (next > startAt) {
+                  onSearch(
+                    {
+                      ...filters,
+                      endDate: toDate(next),
+                      endTime: toTime(next),
+                    },
+                    true,
+                    { preserveViewport: true }
+                  );
+                }
               }
-            }
-            setPickerOpen(null);
-          }}
-          onClose={() => setPickerOpen(null)}
-        />
-      )}
+              setPickerOpen(null);
+            }}
+            onClose={() => setPickerOpen(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── Full-screen filters panel ── */}
       {filtersPanelOpen && (
@@ -352,10 +357,24 @@ function DateTimeSheet({
   };
 
   return (
-    <div
+    <motion.div
       className="fixed inset-0 z-50 flex flex-col bg-white"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
+      initial={{ y: "100%", opacity: 0.98 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: "100%", opacity: 0.98 }}
+      transition={{ type: "spring", damping: 28, stiffness: 280 }}
     >
+      <motion.button
+        type="button"
+        aria-label="Close date and time picker"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      />
+      <div className="relative z-10 flex h-full flex-col bg-white">
       <div className="flex items-center justify-between px-5 py-4">
         <h2 className="text-[18px] font-semibold text-[#0f172a]">
           {field === "start" ? "Park from" : "Park until"}
@@ -426,24 +445,16 @@ function DateTimeSheet({
         <span className="text-[13px] text-[#6B7280]">
           {field === "start" ? "Enter after" : "Leave by"}
         </span>
-        <div className="relative">
-          <select
-            value={timeValue}
-            onChange={(e) => {
-              if (!e.target.value) return;
-              const [h, m] = e.target.value.split(":").map(Number);
-              const next = new Date(draft);
-              next.setHours(h, m, 0, 0);
-              setDraft(next);
-            }}
-            className="appearance-none rounded-lg border border-[#E5E7EB] bg-white py-2.5 pl-3 pr-8 text-[14px] font-semibold text-[#0f172a] focus:outline-none"
-          >
-            {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <svg className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
+        <TimeSelect
+          value={timeValue}
+          onChange={(value) => {
+            if (!value) return;
+            const [h, m] = value.split(":").map(Number);
+            const next = new Date(draft);
+            next.setHours(h, m, 0, 0);
+            setDraft(next);
+          }}
+        />
         <button
           type="button"
           onClick={() => onConfirm(draft)}
@@ -452,7 +463,50 @@ function DateTimeSheet({
           Done
         </button>
       </div>
-    </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function TimeSelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <Select.Root value={value} onValueChange={onChange}>
+      <Select.Trigger
+        className="inline-flex items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 py-2.5 text-[14px] font-semibold text-[#0f172a] shadow-sm transition focus:outline-none focus:ring-2 focus:ring-brand-500"
+        aria-label="Select time"
+      >
+        <Select.Value />
+        <Select.Icon className="text-brand-500">
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </Select.Icon>
+      </Select.Trigger>
+      <Select.Portal>
+        <Select.Content
+          className="z-[60] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+          position="popper"
+          sideOffset={8}
+        >
+          <Select.Viewport className="max-h-64 p-2">
+            {TIME_SLOTS.map((t) => (
+              <Select.Item
+                key={t}
+                value={t}
+                className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 data-[state=checked]:bg-brand-50 data-[state=checked]:text-brand-700"
+              >
+                <Select.ItemText>{t}</Select.ItemText>
+                <Select.ItemIndicator className="text-brand-500">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </Select.ItemIndicator>
+              </Select.Item>
+            ))}
+          </Select.Viewport>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
   );
 }
 

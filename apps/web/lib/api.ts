@@ -215,6 +215,9 @@ export type AdminMetrics = {
   bookings30d: number;
   gmv30dCents: number;
   payoutBacklog: number;
+  bookingsDaily: { day: string; count: number; gmvCents: number }[];
+  listingStatus: { status: string; count: number }[];
+  fraudByType: { eventType: string; count: number }[];
 };
 
 export async function getAdminDashboard(token?: string) {
@@ -368,6 +371,24 @@ export async function updateAdminSetting(key: string, payload: Record<string, an
   const { data, error } = await handleResponse<{ setting: any }>(res);
   if (error) throw new Error(error);
   return data!.setting;
+}
+
+export async function listAdminEvents(
+  params: { eventType?: string; limit?: number; offset?: number },
+  token?: string
+) {
+  if (!token) throw new Error("Authentication required");
+  const query = new URLSearchParams();
+  if (params.eventType) query.set("eventType", params.eventType);
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.offset) query.set("offset", String(params.offset));
+  const res = await fetch(`${API_BASE}/api/admin/events?${query.toString()}`, {
+    headers: { ...authHeaders(token) },
+    cache: "no-store",
+  });
+  const { data, error } = await handleResponse<{ events: any[] }>(res);
+  if (error) throw new Error(error);
+  return data!.events ?? [];
 }
 
 export type ListingDetail = {

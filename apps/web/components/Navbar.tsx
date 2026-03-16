@@ -15,6 +15,7 @@ const links: { href: Route; label: string; roles?: string[] }[] = [
   { href: "/host/dashboard", label: "Host dashboard" },
   { href: "/dashboard/payments", label: "Payments", roles: ["driver", "customer", "admin"] },
   { href: "/dashboard/earnings", label: "Earnings", roles: ["host", "admin"] },
+  { href: "/admin", label: "Admin", roles: ["admin"] },
 ];
 
 export function Navbar() {
@@ -101,6 +102,15 @@ export function Navbar() {
                 >
                   Profile
                 </Link>
+                {user.role === "admin" && (
+                  <Link
+                    href="/admin"
+                    className="block px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    onClick={() => setOpen(false)}
+                  >
+                    Admin
+                  </Link>
+                )}
                   <Link
                     href="/host/dashboard"
                   className="block px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"

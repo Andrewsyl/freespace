@@ -221,13 +221,13 @@ export function SearchForm({
     <div className="w-full">
       <form
         onSubmit={handleSubmit}
-        className="flex w-full flex-col gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm lg:flex-row lg:items-center lg:gap-3"
+        className="flex w-full flex-col gap-3 rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-sm"
       >
-        <div className="flex min-w-[520px] flex-[2] flex-col gap-1 text-sm font-semibold text-slate-800">
+        <div className="flex w-full flex-col gap-1 text-sm font-semibold text-slate-800">
           <AddressAutocomplete
             defaultValue={state.location}
             placeholder="Enter area or landmark"
-            inputClassName="w-full h-12 rounded-lg border border-emerald-400 bg-white px-9 text-sm font-semibold text-slate-800 transition focus:border-emerald-500 focus:outline-none"
+            inputClassName="w-full h-12 rounded-xl border border-[#E5E7EB] bg-white px-9 text-[15px] font-semibold text-[#0f172a] transition focus:border-brand-500 focus:outline-none"
             onPlace={(place) => {
               setState((prev) => ({
                 ...prev,
@@ -240,24 +240,26 @@ export function SearchForm({
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <DateTimePicker label="From" value={state.startAt} onChange={setStart} compact />
           <DateTimePicker label="Until" value={state.endAt} onChange={setEnd} compact />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {onOpenFilters && (
             <button
               type="button"
               onClick={onOpenFilters}
-              className="hidden h-12 rounded-full border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 lg:inline-flex"
+              className="h-12 w-full rounded-xl border border-[#E5E7EB] px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 md:h-10 md:px-3 md:text-[13px]"
             >
               Filters
             </button>
           )}
           <button
             type="submit"
-            className="h-12 rounded-full bg-slate-900 px-5 text-sm font-semibold text-white shadow-md transition hover:bg-slate-800"
+            className={`h-12 w-full rounded-xl bg-brand-500 px-5 text-[15px] font-bold text-white shadow-md transition hover:bg-brand-600 md:h-10 md:px-4 md:text-[13px] ${
+              onOpenFilters ? "" : "col-span-2"
+            }`}
           >
             Search
           </button>
@@ -329,13 +331,13 @@ function DateTimePicker({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white text-left shadow-sm transition hover:border-slate-300 ${
+        className={`flex w-full items-center justify-between rounded-xl border border-[#E5E7EB] bg-white text-left shadow-sm transition hover:border-slate-300 ${
           compact ? "h-12 px-3 py-2" : "px-3.5 py-2.5"
         }`}
       >
-        <div className={`flex flex-col text-sm font-semibold text-slate-800 ${compact ? "min-w-[180px]" : "min-w-[210px]"}`}>
-          <span className="text-[10px] font-semibold text-emerald-600">{label}</span>
-          <span className="tabular-nums">{formatTrigger(value)}</span>
+        <div className={`flex min-w-0 flex-col text-sm font-semibold text-[#0f172a]`}>
+          <span className="text-[11px] font-semibold text-[#16A34A]">{label}</span>
+          <span className="tabular-nums text-[13px] font-bold">{formatTrigger(value)}</span>
         </div>
         <span className="text-slate-400">▾</span>
       </button>

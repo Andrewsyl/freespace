@@ -6,8 +6,10 @@ import {
   insertReview,
   refreshListingRating,
   listListingReviews,
+  insertEventLog,
 } from "../lib/db.js";
 import { requireAuth } from "../middleware/auth.js";
+import { enforceBlockedList } from "../middleware/fraud.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
 
 const router = Router();
@@ -35,11 +37,21 @@ const createReviewSchema = z.object({
     .optional(),
 });
 
-router.post("/", requireAuth, reviewWriteLimiter, async (req, res, next) => {
+router.post("/", requireAuth, enforceBlockedList, reviewWriteLimiter, async (req, res, next) => {
   try {
     const { bookingId, rating, comment } = createReviewSchema.parse(req.body);
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    if (comment) {
+      const trimmed = comment.trim();
+      if (trimmed.length > 0 && new Set(trimmed.toLowerCase()).size <= 3) {
+        await insertEventLog({
+          eventType: "review_suspicious",
+          payload: { bookingId, userId, reason: "low_entropy_comment" },
+        });
+        return res.status(400).json({ message: "Review text looks invalid." });
+      }
+    }
 
     const booking = await getBookingForReview(bookingId);
     if (!booking) return res.status(404).json({ message: "Booking not found" });

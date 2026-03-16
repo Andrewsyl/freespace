@@ -38,6 +38,7 @@ export default function AdminPayoutsPage() {
   const { token } = useAuth();
   const [rows, setRows] = useState<PayoutRow[]>([]);
   const [status, setStatus] = useState("");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [payoutRun, setPayoutRun] = useState<string | null>(null);
@@ -79,6 +80,15 @@ export default function AdminPayoutsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  const filteredRows = rows.filter((row) => {
+    if (!search.trim()) return true;
+    const haystack = [row.listing_title, row.host_email, row.payout_status, row.stripe_transfer_id, row.id]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(search.trim().toLowerCase());
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -102,7 +112,13 @@ export default function AdminPayoutsPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          placeholder="Search listing, host, transfer"
+        />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
@@ -138,7 +154,7 @@ export default function AdminPayoutsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {rows.map((row) => {
+            {filteredRows.map((row) => {
               const net = (row.amount_cents ?? 0) - (row.platform_fee_cents ?? 0);
               return (
                 <tr key={row.id} className="hover:bg-slate-50">

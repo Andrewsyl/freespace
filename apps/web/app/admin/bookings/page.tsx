@@ -49,6 +49,7 @@ export default function AdminBookingsPage() {
   const [to, setTo] = useState<string>("");
   const [listingId, setListingId] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
+  const [search, setSearch] = useState<string>("");
 
   const load = async () => {
     if (!token) return;
@@ -78,6 +79,22 @@ export default function AdminBookingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  const filteredRows = rows.filter((row) => {
+    if (!search.trim()) return true;
+    const haystack = [
+      row.id,
+      row.listing_title,
+      row.listing_address,
+      row.driver_email,
+      row.host_email,
+      row.status,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(search.trim().toLowerCase());
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -93,7 +110,7 @@ export default function AdminBookingsPage() {
         </button>
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-5">
+      <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-6">
         <label className="text-xs font-semibold text-slate-600">
           Status
           <select
@@ -145,9 +162,18 @@ export default function AdminBookingsPage() {
             placeholder="UUID"
           />
         </label>
+        <label className="text-xs font-semibold text-slate-600 md:col-span-2">
+          Search
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+            placeholder="Listing, address, email, status"
+          />
+        </label>
         <button
           onClick={load}
-          className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 md:col-span-5 lg:col-span-1"
+          className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 md:col-span-6 lg:col-span-1"
         >
           Apply filters
         </button>
@@ -169,7 +195,7 @@ export default function AdminBookingsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {rows.map((row) => (
+            {filteredRows.map((row) => (
               <tr key={row.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3">
                   <div className="font-semibold text-slate-900">{row.listing_title}</div>

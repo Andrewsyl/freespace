@@ -2,9 +2,29 @@ import express from "express";
 import { z } from "zod";
 import Stripe from "stripe";
 import { requireAuth } from "../middleware/auth.js";
-import { findUserById, findUserByEmail } from "../lib/db.js";
+import { createRateLimiter } from "../middleware/rateLimit.js";
+import { enforceBlockedList, getFraudSettings, getUserRiskProfile, shouldEnforceFraud } from "../middleware/fraud.js";
+import { findUserById, findUserByEmail, getBookingByPaymentIntent, insertEventLog } from "../lib/db.js";
 
 const router = express.Router();
+const paymentMethodLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  keyPrefix: "payment-methods",
+  keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
+});
+const paymentsLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  keyPrefix: "payments",
+  keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
+});
+const retryLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 5,
+  keyPrefix: "payments-retry",
+  keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
+});
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
@@ -21,17 +41,50 @@ async function getOrCreateCustomer(email: string) {
   return customer.id;
 }
 
-router.post("/payment-methods", requireAuth, async (req, res, next) => {
+async function requireActiveUser(userId?: string) {
+  if (!userId) return { ok: false, message: "Unauthorized" } as const;
+  const settings = await getFraudSettings();
+  const enforceFraud = shouldEnforceFraud(settings);
+  const profile = await getUserRiskProfile(userId);
+  if (!profile) return { ok: false, message: "Unauthorized" } as const;
+  if (profile.status === "suspended") {
+    return { ok: false, message: "Account suspended. Contact support." } as const;
+  }
+  if (!profile.email_verified) {
+    return { ok: false, message: "Please verify your email before adding payments." } as const;
+  }
+  const accountAgeMinutes = (Date.now() - new Date(profile.created_at).getTime()) / 60000;
+  if (accountAgeMinutes < settings.minAccountAgeMinutes) {
+    if (!enforceFraud) {
+      console.warn("[fraud] payments account age below threshold", {
+        userId,
+        accountAgeMinutes,
+        minAccountAgeMinutes: settings.minAccountAgeMinutes,
+      });
+      return { ok: true } as const;
+    }
+    return { ok: false, message: "Please wait a few minutes before adding payments." } as const;
+  }
+  return { ok: true } as const;
+}
+
+router.post("/payment-methods", requireAuth, enforceBlockedList, paymentMethodLimiter, async (req, res, next) => {
   try {
     if (!stripe) return res.status(500).json({ message: "Stripe not configured" });
-    console.log("POST /api/payment-methods user:", req.user);
-    const userFromId = await findUserById(req.user!.id);
+    const gate = await requireActiveUser(req.user?.userId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
+    const userFromId = await findUserById(req.user!.userId);
     const user = userFromId ?? (req.user?.email ? await findUserByEmail(req.user.email) : undefined);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
     const customerId = await getOrCreateCustomer(user.email);
     const intent = await stripe.setupIntents.create({
       customer: customerId,
       payment_method_types: ["card"],
+      metadata: {
+        driver_id: req.user!.userId,
+        user_email: user.email,
+        source: "payment_methods",
+      },
     });
     res.json({ clientSecret: intent.client_secret });
   } catch (err) {
@@ -39,10 +92,12 @@ router.post("/payment-methods", requireAuth, async (req, res, next) => {
   }
 });
 
-router.get("/payment-methods", requireAuth, async (req, res, next) => {
+router.get("/payment-methods", requireAuth, enforceBlockedList, paymentMethodLimiter, async (req, res, next) => {
   try {
     if (!stripe) return res.status(500).json({ message: "Stripe not configured" });
-    const userFromId = await findUserById(req.user!.id);
+    const gate = await requireActiveUser(req.user?.userId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
+    const userFromId = await findUserById(req.user!.userId);
     const user = userFromId ?? (req.user?.email ? await findUserByEmail(req.user.email) : undefined);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
     const customerId = await getOrCreateCustomer(user.email);
@@ -67,10 +122,12 @@ router.get("/payment-methods", requireAuth, async (req, res, next) => {
   }
 });
 
-router.put("/payment-methods/:id", requireAuth, async (req, res, next) => {
+router.put("/payment-methods/:id", requireAuth, enforceBlockedList, paymentMethodLimiter, async (req, res, next) => {
   try {
     if (!stripe) return res.status(500).json({ message: "Stripe not configured" });
-    const userFromId = await findUserById(req.user!.id);
+    const gate = await requireActiveUser(req.user?.userId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
+    const userFromId = await findUserById(req.user!.userId);
     const user = userFromId ?? (req.user?.email ? await findUserByEmail(req.user.email) : undefined);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
     const customerId = await getOrCreateCustomer(user.email);
@@ -85,9 +142,11 @@ router.put("/payment-methods/:id", requireAuth, async (req, res, next) => {
   }
 });
 
-router.delete("/payment-methods/:id", requireAuth, async (req, res, next) => {
+router.delete("/payment-methods/:id", requireAuth, enforceBlockedList, paymentMethodLimiter, async (req, res, next) => {
   try {
     if (!stripe) return res.status(500).json({ message: "Stripe not configured" });
+    const gate = await requireActiveUser(req.user?.userId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
     const pmId = z.string().trim().min(5).max(200).parse(req.params.id);
     await stripe.paymentMethods.detach(pmId);
     res.status(204).send();
@@ -96,10 +155,12 @@ router.delete("/payment-methods/:id", requireAuth, async (req, res, next) => {
   }
 });
 
-router.get("/payments/history", requireAuth, async (req, res, next) => {
+router.get("/payments/history", requireAuth, enforceBlockedList, paymentsLimiter, async (req, res, next) => {
   try {
     if (!stripe) return res.status(500).json({ message: "Stripe not configured" });
-    const userFromId = await findUserById(req.user!.id);
+    const gate = await requireActiveUser(req.user?.userId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
+    const userFromId = await findUserById(req.user!.userId);
     const user = userFromId ?? (req.user?.email ? await findUserByEmail(req.user.email) : undefined);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
     const customerId = await getOrCreateCustomer(user.email);
@@ -126,12 +187,74 @@ router.get("/payments/history", requireAuth, async (req, res, next) => {
   }
 });
 
-router.post("/payments/:id/retry", requireAuth, async (req, res, next) => {
+router.post("/payments/:id/retry", requireAuth, enforceBlockedList, retryLimiter, async (req, res, next) => {
   try {
     if (!stripe) return res.status(500).json({ message: "Stripe not configured" });
+    const gate = await requireActiveUser(req.user?.userId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
     const paymentIntentId = z.string().trim().min(5).max(200).parse(req.params.id);
+    const booking = await getBookingByPaymentIntent(paymentIntentId);
+    if (!booking) return res.status(404).json({ message: "Payment not found" });
+    if (booking.driver_id !== req.user!.userId) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+    if (booking.status === "canceled") {
+      return res.status(400).json({ message: "Booking was canceled" });
+    }
+
+    const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (intent.status === "succeeded") {
+      return res.status(400).json({ message: "Payment already succeeded" });
+    }
+    if (intent.status === "canceled") {
+      return res.status(400).json({ message: "Payment was canceled" });
+    }
+
+    if (booking.amount_cents && intent.amount !== booking.amount_cents) {
+      await insertEventLog({
+        eventType: "payment_mismatch",
+        payload: {
+          paymentIntentId,
+          bookingId: booking.id,
+          bookingAmount: booking.amount_cents,
+          intentAmount: intent.amount,
+          userId: booking.driver_id,
+        },
+      });
+      return res.status(409).json({ message: "Payment amount mismatch" });
+    }
+    if (booking.currency && intent.currency && booking.currency !== intent.currency) {
+      await insertEventLog({
+        eventType: "payment_mismatch",
+        payload: {
+          paymentIntentId,
+          bookingId: booking.id,
+          bookingCurrency: booking.currency,
+          intentCurrency: intent.currency,
+          userId: booking.driver_id,
+        },
+      });
+      return res.status(409).json({ message: "Payment currency mismatch" });
+    }
+
+    const settings = await getFraudSettings();
+    const enforceFraud = shouldEnforceFraud(settings);
+    const retryCount = Number(intent.metadata?.retry_count ?? "0") + 1;
+    await stripe.paymentIntents.update(paymentIntentId, {
+      metadata: { ...intent.metadata, retry_count: String(retryCount) },
+    });
+    if (retryCount > 3) {
+      await insertEventLog({
+        eventType: "payment_retry_limit",
+        payload: { paymentIntentId, bookingId: booking.id, userId: booking.driver_id, retryCount },
+      });
+      if (enforceFraud) {
+        return res.status(429).json({ message: "Too many retry attempts. Try again later." });
+      }
+    }
+
     await stripe.paymentIntents.confirm(paymentIntentId);
-    res.json({ ok: true });
+    res.json({ ok: true, retryCount });
   } catch (err) {
     next(err);
   }

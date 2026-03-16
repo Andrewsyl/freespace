@@ -16,6 +16,7 @@ import {
 import { getPresignedUploadUrl, S3UploadConfigError } from "../lib/s3.js";
 import { geocodeAddress } from "../lib/geocode.js";
 import { requireAuth } from "../middleware/auth.js";
+import { enforceBlockedList, getFraudSettings, getUserRiskProfile, shouldEnforceFraud } from "../middleware/fraud.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
 
 const router = Router();
@@ -33,6 +34,33 @@ const listingWriteLimiter = createRateLimiter({
   keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
 });
 
+async function requireActiveHost(userId?: string) {
+  if (!userId) return { ok: false, message: "Unauthorized" } as const;
+  const settings = await getFraudSettings();
+  const enforceFraud = shouldEnforceFraud(settings);
+  const profile = await getUserRiskProfile(userId);
+  if (!profile) return { ok: false, message: "Unauthorized" } as const;
+  if (profile.status === "suspended") {
+    return { ok: false, message: "Account suspended. Contact support." } as const;
+  }
+  if (!profile.email_verified) {
+    return { ok: false, message: "Please verify your email before hosting." } as const;
+  }
+  const accountAgeMinutes = (Date.now() - new Date(profile.created_at).getTime()) / 60000;
+  if (accountAgeMinutes < settings.minAccountAgeMinutes) {
+    if (!enforceFraud) {
+      console.warn("[fraud] host account age below threshold", {
+        userId,
+        accountAgeMinutes,
+        minAccountAgeMinutes: settings.minAccountAgeMinutes,
+      });
+      return { ok: true } as const;
+    }
+    return { ok: false, message: "Please wait a few minutes before hosting." } as const;
+  }
+  return { ok: true } as const;
+}
+
 const imageUploadSchema = z.object({
   contentType: z
     .string()
@@ -44,10 +72,12 @@ const imageUploadSchema = z.object({
     ),
 });
 
-router.post("/image-upload-url", requireAuth, listingWriteLimiter, async (req, res, next) => {
+router.post("/image-upload-url", requireAuth, enforceBlockedList, listingWriteLimiter, async (req, res, next) => {
   try {
     const { contentType } = imageUploadSchema.parse(req.body);
     const userId = req.user!.userId;
+    const gate = await requireActiveHost(userId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
     const { signedUrl, publicUrl } = await getPresignedUploadUrl({ contentType, userId });
     res.json({ signedUrl, publicUrl });
   } catch (error) {
@@ -71,12 +101,14 @@ const createListingSchema = z.object({
   permissionDeclared: z.boolean().optional(),
 });
 
-router.post("/", requireAuth, listingWriteLimiter, async (req, res, next) => {
+router.post("/", requireAuth, enforceBlockedList, listingWriteLimiter, async (req, res, next) => {
   try {
     const payload = createListingSchema.parse(req.body);
     const pricePerDay = Math.max(1, Math.round(payload.pricePerDay));
     const hostId = req.user?.userId;
     if (!hostId) return res.status(401).json({ message: "Unauthorized" });
+    const gate = await requireActiveHost(hostId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
 
     const host = await findUserById(hostId);
     const hostStripeAccountId = host?.host_stripe_account_id ?? `acct_mock_${hostId.slice(0, 8)}`;

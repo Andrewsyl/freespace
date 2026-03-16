@@ -2,8 +2,9 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { sendMail } from "../lib/mailer.js";
-import { createSupportTicket } from "../lib/db.js";
+import { createSupportTicket, getLatestSupportTicketForUser, insertEventLog } from "../lib/db.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
+import { enforceBlockedList } from "../middleware/fraud.js";
 
 const router = Router();
 
@@ -19,11 +20,29 @@ const supportSchema = z.object({
   message: z.string().trim().min(10).max(2000),
 });
 
-router.post("/", requireAuth, supportLimiter, async (req, res, next) => {
+router.post("/", requireAuth, enforceBlockedList, supportLimiter, async (req, res, next) => {
   try {
     const payload = supportSchema.parse(req.body);
     const userEmail = req.user?.email ?? "unknown";
     const userId = req.user?.userId ?? "unknown";
+    if (req.user?.userId) {
+      const latest = await getLatestSupportTicketForUser(req.user.userId);
+      if (latest) {
+        const isDuplicate =
+          latest.subject.trim().toLowerCase() === payload.subject.trim().toLowerCase() &&
+          latest.message.trim().toLowerCase() === payload.message.trim().toLowerCase();
+        if (isDuplicate) {
+          await insertEventLog({
+            eventType: "support_duplicate",
+            payload: {
+              userId: req.user.userId,
+              latestTicketId: latest.id,
+            },
+          });
+          return res.status(409).json({ message: "Duplicate support request." });
+        }
+      }
+    }
     const to = process.env.SUPPORT_EMAIL ?? process.env.EMAIL_FROM ?? "support@freespace.local";
     const subject = `[FreeSpace Support] ${payload.subject}`;
     const text = `User: ${userEmail}\nUser ID: ${userId}\n\n${payload.message}`;
@@ -34,7 +53,12 @@ router.post("/", requireAuth, supportLimiter, async (req, res, next) => {
       message: payload.message,
     });
 
-    await sendMail({ to, subject, text });
+    await sendMail({
+      to,
+      subject,
+      text,
+      from: process.env.EMAIL_FROM_SUPPORT ?? process.env.EMAIL_FROM,
+    });
     res.json({ ok: true, ticketId: ticket?.id ?? null });
   } catch (err) {
     next(err);

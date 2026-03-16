@@ -29,6 +29,7 @@ import {
 import { isMailerConfigured, sendMail } from "../lib/mailer.ts";
 import { requireAuth } from "../middleware/auth.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
+import { enforceBlockedList } from "../middleware/fraud.js";
 
 const router = Router();
 const loginLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 5, keyPrefix: "login" });
@@ -58,7 +59,7 @@ const registerSchema = z.object({
   privacyVersion: z.string().trim().min(1).max(32),
 });
 
-router.post("/register", registerLimiter, async (req, res, next) => {
+router.post("/register", enforceBlockedList, registerLimiter, async (req, res, next) => {
   try {
     const { email, password, termsVersion, privacyVersion } = registerSchema.parse(req.body);
     const existing = await findUserByEmail(email);
@@ -90,6 +91,7 @@ router.post("/register", registerLimiter, async (req, res, next) => {
       subject: "Verify your email",
       text: `Click to verify: ${verifyUrl}`,
       html: buildVerificationEmail(verifyUrl),
+      from: process.env.EMAIL_FROM_SIGNUP ?? process.env.EMAIL_FROM,
     }).catch((err) => console.warn("send verification email failed", err));
     const previewUrl =
       process.env.NODE_ENV !== "production" || !isMailerConfigured ? verifyUrl : undefined;
@@ -109,7 +111,7 @@ const loginSchema = z.object({
   password: z.string().min(1).max(128),
 });
 
-router.post("/login", loginLimiter, async (req, res, next) => {
+router.post("/login", enforceBlockedList, loginLimiter, async (req, res, next) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
     const user = await findUserByEmail(email);
@@ -138,7 +140,7 @@ const googleOAuthSchema = z.object({
   idToken: z.string().min(20),
 });
 
-router.post("/oauth/google", oauthLimiter, async (req, res, next) => {
+router.post("/oauth/google", enforceBlockedList, oauthLimiter, async (req, res, next) => {
   try {
     const { idToken } = googleOAuthSchema.parse(req.body);
     const response = await fetch(
@@ -202,7 +204,7 @@ const facebookOAuthSchema = z.object({
   accessToken: z.string().min(20),
 });
 
-router.post("/oauth/facebook", oauthLimiter, async (req, res, next) => {
+router.post("/oauth/facebook", enforceBlockedList, oauthLimiter, async (req, res, next) => {
   try {
     const { accessToken } = facebookOAuthSchema.parse(req.body);
     const appId = process.env.FACEBOOK_APP_ID;
@@ -284,7 +286,7 @@ router.get("/verify", async (req, res, next) => {
   }
 });
 
-router.post("/request-verification", verifyLimiter, async (req, res, next) => {
+router.post("/request-verification", enforceBlockedList, verifyLimiter, async (req, res, next) => {
   try {
     const { email } = z.object({ email: z.string().trim().email() }).parse(req.body);
     const user = await findUserByEmail(email);
@@ -300,6 +302,7 @@ router.post("/request-verification", verifyLimiter, async (req, res, next) => {
         subject: "Verify your email",
         text: `Click to verify: ${verifyUrl}`,
         html: buildVerificationEmail(verifyUrl),
+        from: process.env.EMAIL_FROM_SIGNUP ?? process.env.EMAIL_FROM,
       });
     } catch (err) {
       sent = false;
@@ -313,7 +316,7 @@ router.post("/request-verification", verifyLimiter, async (req, res, next) => {
   }
 });
 
-router.post("/request-password-reset", resetLimiter, async (req, res, next) => {
+router.post("/request-password-reset", enforceBlockedList, resetLimiter, async (req, res, next) => {
   try {
     const { email } = z.object({ email: z.string().trim().email() }).parse(req.body);
     const user = await findUserByEmail(email);
@@ -329,6 +332,7 @@ router.post("/request-password-reset", resetLimiter, async (req, res, next) => {
           subject: "Reset your password",
           text: `Reset your password: ${resetUrl}`,
           html: buildPasswordResetEmail(resetUrl),
+          from: process.env.EMAIL_FROM_SIGNUP ?? process.env.EMAIL_FROM,
         });
       } catch (err) {
         sent = false;
@@ -344,7 +348,7 @@ router.post("/request-password-reset", resetLimiter, async (req, res, next) => {
   }
 });
 
-router.post("/reset-password", async (req, res, next) => {
+router.post("/reset-password", enforceBlockedList, async (req, res, next) => {
   try {
     const { token, password } = z
       .object({

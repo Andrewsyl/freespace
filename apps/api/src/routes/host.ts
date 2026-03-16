@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
+import { enforceBlockedList, getFraudSettings, getUserRiskProfile, shouldEnforceFraud } from "../middleware/fraud.js";
+import { createRateLimiter } from "../middleware/rateLimit.js";
 import {
   findUserById,
   setHostStripeAccountId,
@@ -20,6 +22,40 @@ import { stripe } from "../lib/stripe.js";
 const router = Router();
 const connectEnabled = process.env.STRIPE_CONNECT_ENABLED === "true";
 
+const payoutLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  keyPrefix: "host-payout",
+  keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
+});
+
+async function requireActiveHost(userId?: string) {
+  if (!userId) return { ok: false, message: "Unauthorized" } as const;
+  const settings = await getFraudSettings();
+  const enforceFraud = shouldEnforceFraud(settings);
+  const profile = await getUserRiskProfile(userId);
+  if (!profile) return { ok: false, message: "Unauthorized" } as const;
+  if (profile.status === "suspended") {
+    return { ok: false, message: "Account suspended. Contact support." } as const;
+  }
+  if (!profile.email_verified) {
+    return { ok: false, message: "Please verify your email before hosting." } as const;
+  }
+  const accountAgeMinutes = (Date.now() - new Date(profile.created_at).getTime()) / 60000;
+  if (accountAgeMinutes < settings.minAccountAgeMinutes) {
+    if (!enforceFraud) {
+      console.warn("[fraud] host account age below threshold", {
+        userId,
+        accountAgeMinutes,
+        minAccountAgeMinutes: settings.minAccountAgeMinutes,
+      });
+      return { ok: true } as const;
+    }
+    return { ok: false, message: "Please wait a few minutes before hosting." } as const;
+  }
+  return { ok: true } as const;
+}
+
 function isStripeConnectDisabled(error: unknown) {
   const maybe = error as {
     type?: string;
@@ -33,10 +69,12 @@ function isStripeConnectDisabled(error: unknown) {
   );
 }
 
-router.get("/payout", requireAuth, async (req, res, next) => {
+router.get("/payout", requireAuth, enforceBlockedList, payoutLimiter, async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const gate = await requireActiveHost(userId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
     const user = await findUserById(userId);
     const accountId = user?.host_stripe_account_id ?? null;
     if (!connectEnabled || !stripe || !accountId || accountId.startsWith("acct_mock_")) {
@@ -80,10 +118,12 @@ const payoutSchema = z.object({
   refreshUrl: z.string().trim().url().optional(),
 });
 
-router.post("/payout", requireAuth, async (req, res, next) => {
+router.post("/payout", requireAuth, enforceBlockedList, payoutLimiter, async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const gate = await requireActiveHost(userId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
 
     const payload = payoutSchema.parse(req.body ?? {});
     let accountId = payload.accountId;
@@ -143,10 +183,12 @@ router.post("/payout", requireAuth, async (req, res, next) => {
   }
 });
 
-router.get("/earnings", requireAuth, async (req, res, next) => {
+router.get("/earnings", requireAuth, enforceBlockedList, async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const gate = await requireActiveHost(userId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
     const summary = await getHostEarningsSummary(userId);
     res.json({ summary });
   } catch (error) {
@@ -154,10 +196,12 @@ router.get("/earnings", requireAuth, async (req, res, next) => {
   }
 });
 
-router.post("/payouts/run", requireAuth, async (req, res, next) => {
+router.post("/payouts/run", requireAuth, enforceBlockedList, payoutLimiter, async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const gate = await requireActiveHost(userId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
     const user = await findUserById(userId);
     const accountId = user?.host_stripe_account_id ?? null;
     if (!connectEnabled || !stripe || !accountId || accountId.startsWith("acct_mock_")) {
@@ -222,11 +266,13 @@ const availabilityIdParamSchema = z.object({
   availabilityId: z.string().uuid(),
 });
 
-router.get("/listings/:id/availability", requireAuth, async (req, res, next) => {
+router.get("/listings/:id/availability", requireAuth, enforceBlockedList, async (req, res, next) => {
   try {
     const { id: listingId } = listingIdParamSchema.parse(req.params);
     const hostId = req.user?.userId;
     if (!hostId) return res.status(401).json({ message: "Unauthorized" });
+    const gate = await requireActiveHost(hostId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
     const ownerId = await getListingHostId(listingId);
     if (ownerId !== hostId) return res.status(403).json({ message: "Forbidden" });
     const availability = await listAvailability(listingId);
@@ -236,11 +282,13 @@ router.get("/listings/:id/availability", requireAuth, async (req, res, next) => 
   }
 });
 
-router.post("/listings/:id/availability", requireAuth, async (req, res, next) => {
+router.post("/listings/:id/availability", requireAuth, enforceBlockedList, async (req, res, next) => {
   try {
     const { id: listingId } = listingIdParamSchema.parse(req.params);
     const hostId = req.user?.userId;
     if (!hostId) return res.status(401).json({ message: "Unauthorized" });
+    const gate = await requireActiveHost(hostId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
     const ownerId = await getListingHostId(listingId);
     if (ownerId !== hostId) return res.status(403).json({ message: "Forbidden" });
     const payload = availabilitySchema.parse(req.body);
@@ -258,11 +306,13 @@ router.post("/listings/:id/availability", requireAuth, async (req, res, next) =>
   }
 });
 
-router.patch("/availability/:availabilityId", requireAuth, async (req, res, next) => {
+router.patch("/availability/:availabilityId", requireAuth, enforceBlockedList, async (req, res, next) => {
   try {
     const { availabilityId } = availabilityIdParamSchema.parse(req.params);
     const hostId = req.user?.userId;
     if (!hostId) return res.status(401).json({ message: "Unauthorized" });
+    const gate = await requireActiveHost(hostId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
     const payload = availabilitySchema.partial().parse(req.body);
     const updated = await updateAvailabilityEntry({
       id: availabilityId,
@@ -280,11 +330,13 @@ router.patch("/availability/:availabilityId", requireAuth, async (req, res, next
   }
 });
 
-router.delete("/availability/:availabilityId", requireAuth, async (req, res, next) => {
+router.delete("/availability/:availabilityId", requireAuth, enforceBlockedList, async (req, res, next) => {
   try {
     const { availabilityId } = availabilityIdParamSchema.parse(req.params);
     const hostId = req.user?.userId;
     if (!hostId) return res.status(401).json({ message: "Unauthorized" });
+    const gate = await requireActiveHost(hostId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
     const deleted = await deleteAvailabilityEntry({ id: availabilityId, hostId });
     if (!deleted) return res.status(404).json({ message: "Not found" });
     res.status(204).end();

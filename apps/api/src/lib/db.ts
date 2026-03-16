@@ -1119,6 +1119,33 @@ export async function listPushTokensByUserIds(userIds: string[]) {
   return res.rows as { user_id: string; expo_token: string; platform: string }[];
 }
 
+export async function getPushTokenStats(userId: string) {
+  const res = await pool.query(
+    `
+    SELECT
+      COUNT(*)::int AS total_tokens,
+      COUNT(DISTINCT device_id) FILTER (WHERE device_id IS NOT NULL)::int AS total_devices
+    FROM push_tokens
+    WHERE user_id = $1
+    `,
+    [userId]
+  );
+  return res.rows[0] as { total_tokens: number; total_devices: number };
+}
+
+export async function hasPushToken(userId: string, expoToken: string) {
+  const res = await pool.query(
+    `
+    SELECT 1
+    FROM push_tokens
+    WHERE user_id = $1 AND expo_token = $2
+    LIMIT 1
+    `,
+    [userId, expoToken]
+  );
+  return res.rowCount > 0;
+}
+
 export async function getBookingNotificationTargetsByPaymentIntent(paymentIntentId: string) {
   const res = await pool.query(
     `
@@ -1575,6 +1602,52 @@ export async function insertEventLog({
     `,
     [eventType, payload ?? null]
   );
+}
+
+export async function listEventLog({
+  eventType,
+  limit,
+  offset,
+}: {
+  eventType?: string;
+  limit: number;
+  offset: number;
+}) {
+  const values: any[] = [];
+  let where = "";
+  if (eventType) {
+    values.push(eventType);
+    where = `WHERE event_type = $${values.length}`;
+  }
+  values.push(limit);
+  values.push(offset);
+  const res = await pool.query(
+    `
+    SELECT id, event_type, payload, created_at
+    FROM event_log
+    ${where}
+    ORDER BY created_at DESC
+    LIMIT $${values.length - 1}
+    OFFSET $${values.length}
+    `,
+    values
+  );
+  return res.rows as { id: string; event_type: string; payload: any; created_at: string }[];
+}
+
+export async function getBookingByPaymentIntent(paymentIntentId: string) {
+  const res = await pool.query(
+    `
+    SELECT id, driver_id, amount_cents, currency, status
+    FROM bookings
+    WHERE payment_intent_id = $1
+    LIMIT 1;
+    `,
+    [paymentIntentId]
+  );
+  return res.rows[0] as
+    | { id: string; driver_id: string; amount_cents: number | null; currency: string | null; status: string | null }
+    | undefined;
 }
 
 export async function cancelBookingByDriver({
@@ -2094,6 +2167,51 @@ export async function getAdminDashboardMetrics() {
     `
   );
   const row = res.rows[0] ?? {};
+  const bookingsSeries = await pool.query(
+    `
+    WITH days AS (
+      SELECT generate_series(
+        current_date - interval '29 days',
+        current_date,
+        interval '1 day'
+      )::date AS day
+    ),
+    stats AS (
+      SELECT
+        date_trunc('day', created_at)::date AS day,
+        COUNT(*)::int AS count,
+        COALESCE(SUM(amount_cents) FILTER (WHERE status = 'confirmed'), 0)::int AS gmv_cents
+      FROM bookings
+      WHERE created_at >= current_date - interval '29 days'
+      GROUP BY 1
+    )
+    SELECT d.day, COALESCE(s.count, 0) AS count, COALESCE(s.gmv_cents, 0) AS gmv_cents
+    FROM days d
+    LEFT JOIN stats s ON s.day = d.day
+    ORDER BY d.day ASC
+    `
+  );
+
+  const listingStatus = await pool.query(
+    `
+    SELECT COALESCE(status, 'unknown') AS status, COUNT(*)::int AS count
+    FROM listings
+    GROUP BY COALESCE(status, 'unknown')
+    ORDER BY count DESC
+    `
+  );
+
+  const fraudEvents = await pool.query(
+    `
+    SELECT event_type, COUNT(*)::int AS count
+    FROM event_log
+    WHERE created_at >= NOW() - interval '30 days'
+    GROUP BY event_type
+    ORDER BY count DESC
+    LIMIT 10
+    `
+  );
+
   return {
     userCount: Number(row.user_count ?? 0),
     listingCount: Number(row.listing_count ?? 0),
@@ -2101,6 +2219,19 @@ export async function getAdminDashboardMetrics() {
     bookings30d: Number(row.bookings_30d ?? 0),
     gmv30dCents: Number(row.gmv_30d_cents ?? 0),
     payoutBacklog: Number(row.payout_backlog ?? 0),
+    bookingsDaily: bookingsSeries.rows.map((r) => ({
+      day: r.day,
+      count: Number(r.count ?? 0),
+      gmvCents: Number(r.gmv_cents ?? 0),
+    })),
+    listingStatus: listingStatus.rows.map((r) => ({
+      status: r.status,
+      count: Number(r.count ?? 0),
+    })),
+    fraudByType: fraudEvents.rows.map((r) => ({
+      eventType: r.event_type,
+      count: Number(r.count ?? 0),
+    })),
   };
 }
 
@@ -2341,6 +2472,20 @@ export async function createSupportTicket({
     [userId ?? null, subject, message]
   );
   return res.rows[0];
+}
+
+export async function getLatestSupportTicketForUser(userId: string) {
+  const res = await pool.query(
+    `
+    SELECT id, subject, message, created_at
+    FROM support_tickets
+    WHERE user_id = $1
+    ORDER BY created_at DESC
+    LIMIT 1;
+    `,
+    [userId]
+  );
+  return res.rows[0] as { id: string; subject: string; message: string; created_at: string } | undefined;
 }
 
 export async function listSupportTickets({

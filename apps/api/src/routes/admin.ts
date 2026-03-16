@@ -23,6 +23,7 @@ import {
   updateSupportTicket,
   listAdminSettings,
   upsertAdminSetting,
+  listEventLog,
 } from "../lib/db.js";
 import { stripe } from "../lib/stripe.js";
 
@@ -90,6 +91,12 @@ const listSupportQuerySchema = z.object({
   status: z.string().trim().min(3).max(32).optional(),
   priority: z.string().trim().min(3).max(32).optional(),
   search: z.string().trim().min(1).max(100).optional(),
+});
+
+const listEventsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+  eventType: z.string().trim().min(3).max(64).optional(),
 });
 
 const updateSupportSchema = z.object({
@@ -363,6 +370,16 @@ router.get("/settings", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const settings = await listAdminSettings();
     res.json({ settings });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/events", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const { limit, offset, eventType } = listEventsQuerySchema.parse(req.query);
+    const events = await listEventLog({ limit, offset, eventType });
+    res.json({ events });
   } catch (error) {
     next(error);
   }
