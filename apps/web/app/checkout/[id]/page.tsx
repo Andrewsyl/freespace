@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createBooking, getListing, type ListingDetail } from "../../../lib/api";
 import { useAuth } from "../../../components/AuthProvider";
+import { SlimNav } from "../../../components/SlimNav";
 
 export default function CheckoutPage() {
   const { user, token, loading } = useAuth();
@@ -72,30 +73,46 @@ export default function CheckoutPage() {
     }
   };
 
-  if (loading) return <div className="text-sm text-slate-600">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f5f7fb]">
+        <SlimNav />
+        <div className="px-4 py-10 text-sm text-slate-600">Loading...</div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
-      <div className="space-y-4">
-        <p className="text-sm text-slate-700">Sign in to start a booking.</p>
-        <div className="flex gap-2 text-sm">
-          <Link href="/login" className="btn-primary">
-            Sign in
-          </Link>
-          <Link href="/signup" className="rounded-lg px-3 py-2 font-semibold text-slate-700 hover:bg-slate-100">
-            Create account
-          </Link>
+      <div className="min-h-screen bg-[#f5f7fb]">
+        <SlimNav />
+        <div className="mx-auto max-w-2xl space-y-4 px-4 py-10">
+          <p className="text-sm text-slate-700">Sign in to start a booking.</p>
+          <div className="flex gap-2 text-sm">
+            <Link href="/login" className="btn-primary">
+              Sign in
+            </Link>
+            <Link href="/signup" className="rounded-lg px-3 py-2 font-semibold text-slate-700 hover:bg-slate-100">
+              Create account
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   if (!listing) {
-    return <div className="text-sm text-slate-600">Loading listing…</div>;
+    return (
+      <div className="min-h-screen bg-[#f5f7fb]">
+        <SlimNav />
+        <div className="px-4 py-10 text-sm text-slate-600">Loading listing…</div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#f5f7fb]">
+      <SlimNav />
       <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 pb-28 pt-8 sm:px-6">
         <header className="space-y-2">
           <p className="text-sm font-semibold tracking-wide text-emerald-600">Booking confirmation</p>

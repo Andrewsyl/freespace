@@ -1,14 +1,44 @@
 import { notFound } from "next/navigation";
 import { StarIcon, MapPinIcon } from "@heroicons/react/24/solid";
+import {
+  BoltIcon,
+  CameraIcon,
+  HomeIcon,
+  KeyIcon,
+  LockClosedIcon,
+  ShieldCheckIcon,
+  TruckIcon,
+} from "@heroicons/react/24/outline";
 import { getListing, listListingReviews } from "../../../lib/api";
 import type { Listing } from "../../../components/ListingCard";
 import { ListingMap } from "./MapSection";
 import { WalkTime } from "./WalkTime";
 import { BookingSelector } from "./BookingSelector";
+import { SlimNav } from "../../../components/SlimNav";
+import { MobileListingView } from "./MobileListingView";
 
 function fallbackImage(title: string) {
   const encoded = encodeURIComponent(title);
   return `https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=1600&q=80&sat=-15&title=${encoded}`;
+}
+
+function formatAreaLabel(address: string) {
+  const parts = address.split(",").map((part) => part.trim()).filter(Boolean);
+  if (!parts.length) return address;
+  const first = parts[0].replace(/^\d+[A-Za-z0-9\-\/]*\s+/, "").trim();
+  return [first || parts[0], ...parts.slice(1)].join(", ");
+}
+
+function amenityToIcon(label: string) {
+  const normalized = label.toLowerCase();
+  if (normalized.includes("ev") || normalized.includes("charger")) return BoltIcon;
+  if (normalized.includes("cctv") || normalized.includes("camera")) return CameraIcon;
+  if (normalized.includes("covered") || normalized.includes("roof") || normalized.includes("shelter")) return HomeIcon;
+  if (normalized.includes("gated") || normalized.includes("barrier") || normalized.includes("gate")) return LockClosedIcon;
+  if (normalized.includes("permit") || normalized.includes("secure")) return ShieldCheckIcon;
+  if (normalized.includes("code") || normalized.includes("key")) return KeyIcon;
+  if (normalized.includes("van") || normalized.includes("large")) return TruckIcon;
+  return ShieldCheckIcon;
 }
 
 export default async function ListingDetailPage({
@@ -43,9 +73,11 @@ export default async function ListingDetailPage({
       : fallbackImage(listing.title);
 
   const images = listing.imageUrls && listing.imageUrls.length ? listing.imageUrls : [fallback];
+  const areaLabel = formatAreaLabel(listing.address);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#f5f7fb] lg:bg-slate-50">
+      <SlimNav />
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
         {resolvedSearchParams.created && (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
@@ -53,125 +85,138 @@ export default async function ListingDetailPage({
           </div>
         )}
 
-        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="relative grid gap-0 lg:grid-cols-[1.2fr,1fr]">
-            <div className="relative h-72 bg-slate-200 md:h-96 lg:h-full">
-              <img src={images[0]} alt={listing.title} className="h-full w-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-              <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800">
-                <StarIcon className="h-4 w-4 text-amber-500" />
-                {listing.rating?.toFixed(1) ?? "5.0"} ({listing.ratingCount ?? 0})
+        {/* Mobile layout */}
+        <MobileListingView
+          listing={listing}
+          listingForMap={listingForMap}
+          areaLabel={areaLabel}
+          reviews={reviews as any}
+        />
+
+        
+
+        {/* Desktop layout */}
+        <div className="hidden lg:block">
+          <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="relative grid gap-0 lg:grid-cols-[1.2fr,1fr]">
+              <div className="relative h-72 bg-slate-200 md:h-96 lg:h-full">
+                <img src={images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800">
+                  <StarIcon className="h-4 w-4 text-amber-500" />
+                  {listing.rating?.toFixed(1) ?? "5.0"} ({listing.ratingCount ?? 0})
+                </div>
               </div>
-            </div>
-            <div className="space-y-3 p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Parking space</p>
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{listing.title}</h1>
-              <p className="flex items-center gap-2 text-sm text-slate-600">
-                <MapPinIcon className="h-4 w-4 text-brand-500" />
-                {listing.address}
-              </p>
-              <div className="flex flex-wrap gap-2 pt-2 text-xs font-semibold text-slate-600">
-                <span className="rounded-full bg-slate-100 px-3 py-1">€{listing.pricePerDay} / day</span>
-                <span className="rounded-full bg-slate-100 px-3 py-1">Availability: {listing.availability}</span>
-                <span className="rounded-full bg-slate-100 px-3 py-1">
-                  {listing.permissionDeclared ? "Permission verified" : "Permission pending"}
-                </span>
-              </div>
-              {images.length > 1 && (
-                <div className="grid grid-cols-4 gap-2 pt-4">
-                  {images.slice(0, 4).map((img, idx) => (
-                    <div key={`${img}-${idx}`} className="h-20 overflow-hidden rounded-xl border border-slate-200">
-                      <img src={img} alt={`${listing.title} ${idx + 1}`} className="h-full w-full object-cover" />
-                    </div>
-                  ))}
+              <div className="space-y-3 p-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Parking space</p>
+                <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{listing.title}</h1>
+                <p className="flex items-center gap-2 text-sm text-slate-600">
+                  <MapPinIcon className="h-4 w-4 text-brand-500" />
+                  {listing.address}
+                </p>
+                <div className="flex flex-wrap gap-2 pt-2 text-xs font-semibold text-slate-600">
+                  <span className="rounded-full bg-slate-100 px-3 py-1">€{listing.pricePerDay} / day</span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1">Availability: {listing.availability}</span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1">
+                    {listing.permissionDeclared ? "Permission verified" : "Permission pending"}
+                  </span>
                 </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
-          <div className="space-y-6">
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-slate-900">About this space</h2>
-              <p className="mt-3 text-sm text-slate-600">{listing.availability}</p>
-              {listing.accessCode && (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-                  Access code is shared after booking confirmation.
-                </div>
-              )}
-            </section>
-
-            {listing.amenities && listing.amenities.length > 0 && (
-              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-slate-900">Features</h2>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {listing.amenities.map((amenity) => (
-                    <span key={amenity} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                      {amenity}
-                    </span>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {listing.latitude != null && listing.longitude != null && (
-              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-slate-900">Location</h2>
-                <p className="mt-2 text-sm text-slate-600">Exact location shown after booking.</p>
-                <div className="mt-4 h-64 overflow-hidden rounded-xl">
-                  <ListingMap
-                    listing={listingForMap}
-                    center={{ lat: listing.latitude, lng: listing.longitude }}
-                    zoom={14}
-                  />
-                </div>
-                <div className="mt-4">
-                  <WalkTime origin={{ lat: listing.latitude, lng: listing.longitude }} />
-                </div>
-              </section>
-            )}
-
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-slate-900">Reviews</h2>
-              {reviews.length === 0 ? (
-                <p className="mt-3 text-sm text-slate-600">No reviews yet.</p>
-              ) : (
-                <div className="mt-4 space-y-4">
-                  {reviews.slice(0, 6).map((review: any) => (
-                    <div key={review.id} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2 font-semibold text-slate-900">
-                          <StarIcon className="h-4 w-4 text-amber-500" />
-                          {Number(review.rating).toFixed(1)}
-                        </div>
-                        <span className="text-xs text-slate-500">
-                          {new Date(review.createdAt ?? review.created_at ?? "").toLocaleDateString("en-GB", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </span>
+                {images.length > 1 && (
+                  <div className="grid grid-cols-4 gap-2 pt-4">
+                    {images.slice(0, 4).map((img, idx) => (
+                      <div key={`${img}-${idx}`} className="h-20 overflow-hidden rounded-xl border border-slate-200">
+                        <img src={img} alt={`${listing.title} ${idx + 1}`} className="h-full w-full object-cover" />
                       </div>
-                      {review.comment && <p className="mt-2 text-sm text-slate-600">{review.comment}</p>}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
-
-          <aside className="space-y-4">
-            <div className="sticky top-6 space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Book this space</p>
-              <BookingSelector listingId={listing.id} pricePerDay={listing.pricePerDay} />
-              {!listing.hostStripeAccountId && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  Host payouts are not set up yet. You can still proceed for demo, but live payments require host onboarding.
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </aside>
+          </section>
+
+          <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+            <div className="space-y-6">
+              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-lg font-semibold text-slate-900">About this space</h2>
+                <p className="mt-3 text-sm text-slate-600">{listing.availability}</p>
+                {listing.accessCode && (
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                    Access code is shared after booking confirmation.
+                  </div>
+                )}
+              </section>
+
+              {listing.amenities && listing.amenities.length > 0 && (
+                <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-lg font-semibold text-slate-900">Features</h2>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {listing.amenities.map((amenity) => (
+                      <span key={amenity} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                        {amenity}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {listing.latitude != null && listing.longitude != null && (
+                <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-lg font-semibold text-slate-900">Location</h2>
+                  <p className="mt-2 text-sm text-slate-600">Exact location shown after booking.</p>
+                  <div className="mt-4 h-64 overflow-hidden rounded-xl">
+                    <ListingMap
+                      listing={listingForMap}
+                      center={{ lat: listing.latitude, lng: listing.longitude }}
+                      zoom={14}
+                    />
+                  </div>
+                  <div className="mt-4">
+                    <WalkTime origin={{ lat: listing.latitude, lng: listing.longitude }} />
+                  </div>
+                </section>
+              )}
+
+              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-lg font-semibold text-slate-900">Reviews</h2>
+                {reviews.length === 0 ? (
+                  <p className="mt-3 text-sm text-slate-600">No reviews yet.</p>
+                ) : (
+                  <div className="mt-4 space-y-4">
+                    {reviews.slice(0, 6).map((review: any) => (
+                      <div key={review.id} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2 font-semibold text-slate-900">
+                            <StarIcon className="h-4 w-4 text-amber-500" />
+                            {Number(review.rating).toFixed(1)}
+                          </div>
+                          <span className="text-xs text-slate-500">
+                            {new Date(review.createdAt ?? review.created_at ?? "").toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </div>
+                        {review.comment && <p className="mt-2 text-sm text-slate-600">{review.comment}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <aside className="space-y-4">
+              <div className="sticky top-6 space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Book this space</p>
+                <BookingSelector listingId={listing.id} pricePerDay={listing.pricePerDay} />
+                {!listing.hostStripeAccountId && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    Host payouts are not set up yet. You can still proceed for demo, but live payments require host onboarding.
+                  </div>
+                )}
+              </div>
+            </aside>
+          </div>
         </div>
       </div>
     </div>
