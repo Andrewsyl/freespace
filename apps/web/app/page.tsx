@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useState } from "react";
 import { AddressAutocomplete } from "../components/AddressAutocomplete";
 import type { SearchFilters } from "../components/SearchForm";
@@ -32,7 +33,6 @@ const defaultFilters: SearchFilters = {
   longitude: -6.2603,
   mode: "daily",
 };
-
 
 export default function HomePage() {
   const router = useRouter();
@@ -182,10 +182,13 @@ export default function HomePage() {
           </div>
 
           <div className="relative hidden h-[520px] overflow-hidden lg:block">
-            <img
+            <Image
               src="/hero-art.png"
               alt="Person using phone with car"
-              className="h-full w-full object-contain"
+              fill
+              priority
+              sizes="(min-width: 1024px) 520px, 0px"
+              className="object-contain"
             />
           </div>
         </section>

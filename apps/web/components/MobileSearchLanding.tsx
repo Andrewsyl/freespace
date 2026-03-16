@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import * as Select from "@radix-ui/react-select";
 import { AddressAutocomplete } from "./AddressAutocomplete";
@@ -155,9 +156,13 @@ export function MobileSearchLanding({
       </div>
 
       <div className="mt-8 flex justify-center pb-2">
-        <img
+        <Image
           src="/hero-art.png"
           alt="Person using phone with car"
+          width={320}
+          height={176}
+          priority
+          sizes="(max-width: 768px) 70vw, 0px"
           className="h-44 w-auto object-contain"
         />
       </div>
