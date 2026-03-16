@@ -109,6 +109,8 @@ export function MobileSearchLayout({
           initialZoom={16}
           maxZoom={17}
           minFitZoom={16}
+          controlsPosition="bottom-right"
+          controlsOffset={{ bottom: 160, right: 12 }}
           showCenterPin
           selectedListingId={selectedListingId ?? undefined}
           popupListing={undefined}
@@ -293,29 +295,37 @@ export function MobileSearchLayout({
       </AnimatePresence>
 
       {/* ── Full-screen filters panel ── */}
-      {filtersPanelOpen && (
-        <div className="absolute inset-0 z-30 flex flex-col bg-white">
-          <div
-            className="flex items-center justify-between bg-brand-500 px-5 pb-3"
-            style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}
+      <AnimatePresence>
+        {filtersPanelOpen && (
+          <motion.div
+            className="absolute inset-0 z-30 flex flex-col bg-white"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
           >
-            <h2 className="text-base font-semibold text-white">Filters</h2>
-            <button
-              onClick={() => setFiltersPanelOpen(false)}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white"
+            <div
+              className="flex items-center justify-between bg-brand-500/95 px-5 pb-3 shadow-md backdrop-blur"
+              style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}
             >
-              <CloseIcon />
-            </button>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <FiltersPanel
-              initialFilters={filters}
-              onApply={(next) => { onSearch(next, true); setFiltersPanelOpen(false); }}
-              onCancel={() => setFiltersPanelOpen(false)}
-            />
-          </div>
-        </div>
-      )}
+              <h2 className="text-base font-semibold text-white">Filters</h2>
+              <button
+                onClick={() => setFiltersPanelOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <FiltersPanel
+                initialFilters={filters}
+                onApply={(next) => { onSearch(next, true); setFiltersPanelOpen(false); }}
+                onCancel={() => setFiltersPanelOpen(false)}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

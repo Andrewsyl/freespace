@@ -124,3 +124,23 @@ a {
     opacity: 1;
   }
 }
+
+.mapboxgl-ctrl-top-right {
+  margin-top: var(--map-controls-top, 0px);
+  margin-right: var(--map-controls-right, 0px);
+}
+
+.mapboxgl-ctrl-top-left {
+  margin-top: var(--map-controls-top, 0px);
+  margin-left: var(--map-controls-left, 0px);
+}
+
+.mapboxgl-ctrl-bottom-right {
+  margin-bottom: var(--map-controls-bottom, 0px);
+  margin-right: var(--map-controls-right, 0px);
+}
+
+.mapboxgl-ctrl-bottom-left {
+  margin-bottom: var(--map-controls-bottom, 0px);
+  margin-left: var(--map-controls-left, 0px);
+}

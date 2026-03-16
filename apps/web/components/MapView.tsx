@@ -15,6 +15,8 @@ type MapViewProps = {
   initialZoom?: number;
   maxZoom?: number;
   minFitZoom?: number;
+  controlsPosition?: "top-right" | "top-left" | "bottom-right" | "bottom-left";
+  controlsOffset?: { top?: number; right?: number; bottom?: number; left?: number };
   selectedListingId?: string;
   popupListing?: Listing | null;
   onPopupBook?: (listing: Listing) => void;
@@ -78,6 +80,8 @@ export function MapView({
   initialZoom = 12,
   maxZoom = 12,
   minFitZoom,
+  controlsPosition = "top-right",
+  controlsOffset,
   selectedListingId,
   popupListing,
   onPopupBook,
@@ -118,7 +122,7 @@ export function MapView({
     });
     map.on("load", () => setMapReady(true));
     map.on("dragstart", () => { hasUserDraggedRef.current = true; });
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), controlsPosition);
     mapRef.current = map;
     return () => {
       map.remove();
@@ -279,7 +283,15 @@ export function MapView({
   }, [mapReady, popupListing, onPopupBook]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-xl bg-slate-100">
+    <div
+      className="relative h-full w-full overflow-hidden rounded-xl bg-slate-100"
+      style={{
+        ["--map-controls-top" as any]: controlsOffset?.top !== undefined ? `${controlsOffset.top}px` : undefined,
+        ["--map-controls-right" as any]: controlsOffset?.right !== undefined ? `${controlsOffset.right}px` : undefined,
+        ["--map-controls-bottom" as any]: controlsOffset?.bottom !== undefined ? `${controlsOffset.bottom}px` : undefined,
+        ["--map-controls-left" as any]: controlsOffset?.left !== undefined ? `${controlsOffset.left}px` : undefined,
+      }}
+    >
       <div ref={containerRef} className="h-full w-full" />
       {tokenMissing && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-center text-sm text-slate-600">
