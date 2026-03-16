@@ -526,18 +526,19 @@ export async function createHostPayoutAccount(token?: string) {
 export type AuthResponse = {
   token: string;
   refreshToken?: string;
-  user: { id: string; email: string; role?: string; emailVerified?: boolean };
+  user: { id: string; email: string; role?: string; emailVerified?: boolean; phone?: string | null; phoneVerified?: boolean };
 };
 
 const LEGAL_VERSION = "2026-01-10";
 
-export async function register(email: string, password: string) {
+export async function register(email: string, password: string, phone?: string) {
   const res = await fetch(`${API_BASE}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       email,
       password,
+      phone: phone || undefined,
       termsVersion: LEGAL_VERSION,
       privacyVersion: LEGAL_VERSION,
     }),
@@ -548,6 +549,34 @@ export async function register(email: string, password: string) {
   }
   if (!data?.user || !data?.token) {
     throw new Error("Signup failed. Please try again.");
+  }
+  return data!;
+}
+
+export async function requestPhoneVerification(phone: string, token?: string) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${API_BASE}/api/auth/request-phone-verification`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ phone }),
+  });
+  const { data, error } = await handleResponse<{ ok: boolean }>(res);
+  if (error) {
+    throw new Error(error);
+  }
+  return data!;
+}
+
+export async function verifyPhone(code: string, token?: string) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${API_BASE}/api/auth/verify-phone`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ code }),
+  });
+  const { data, error } = await handleResponse<{ ok: boolean; user: AuthResponse["user"] }>(res);
+  if (error) {
+    throw new Error(error);
   }
   return data!;
 }

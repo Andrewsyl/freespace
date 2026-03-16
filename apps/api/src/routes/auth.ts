@@ -25,8 +25,11 @@ import {
   setVerificationToken,
   updateUserPassword,
   verifyUserEmail,
+  setPhoneVerificationToken,
+  verifyUserPhone,
 } from "../lib/db.js";
 import { isMailerConfigured, sendMail } from "../lib/mailer.ts";
+import { sendSms, SmsConfigError } from "../lib/sms.ts";
 import { requireAuth } from "../middleware/auth.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
 import { enforceBlockedList } from "../middleware/fraud.js";
@@ -36,6 +39,7 @@ const loginLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 5, keyPr
 const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: "register" });
 const resetLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 3, keyPrefix: "reset" });
 const verifyLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 3, keyPrefix: "verify" });
+const smsLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 3, keyPrefix: "sms" });
 const oauthLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 10, keyPrefix: "oauth" });
 const refreshLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyPrefix: "refresh" });
 
@@ -44,6 +48,7 @@ const toPublicUser = (user: UserRecord) => ({
   email: user.email,
   name: user.full_name ?? null,
   phone: user.phone ?? null,
+  phoneVerified: user.phone_verified ?? false,
   role: user.role,
   emailVerified: user.email_verified ?? false,
   termsVersion: user.terms_version ?? null,
@@ -52,16 +57,32 @@ const toPublicUser = (user: UserRecord) => ({
   privacyAcceptedAt: user.privacy_accepted_at ?? null,
 });
 
+const phoneSchema = z.object({
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\+[1-9]\d{7,14}$/, "Use E.164 format, e.g. +353871234567"),
+});
+
+const phoneVerifySchema = z.object({
+  code: z.string().trim().min(4).max(8),
+});
+
 const registerSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(6).max(128),
+  phone: phoneSchema.shape.phone.optional(),
   termsVersion: z.string().trim().min(1).max(32),
   privacyVersion: z.string().trim().min(1).max(32),
 });
 
+function generateSmsCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 router.post("/register", enforceBlockedList, registerLimiter, async (req, res, next) => {
   try {
-    const { email, password, termsVersion, privacyVersion } = registerSchema.parse(req.body);
+    const { email, password, termsVersion, privacyVersion, phone } = registerSchema.parse(req.body);
     const existing = await findUserByEmail(email);
     if (existing) {
       return res.status(409).json({ message: "Email already registered" });
@@ -69,11 +90,16 @@ router.post("/register", enforceBlockedList, registerLimiter, async (req, res, n
     const passwordHash = await hashPassword(password);
     const token = generateVerificationToken();
     const expires = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24h
+    const phoneToken = phone ? generateSmsCode() : null;
+    const phoneExpires = phone ? new Date(Date.now() + 1000 * 60 * 10) : null; // 10 min
     const user = await createUser({
       email,
+      phone,
       passwordHash,
       verificationToken: token,
       verificationExpires: expires,
+      phoneVerificationToken: phoneToken,
+      phoneVerificationExpires: phoneExpires,
       termsVersion,
       privacyVersion,
     });
@@ -95,6 +121,12 @@ router.post("/register", enforceBlockedList, registerLimiter, async (req, res, n
     }).catch((err) => console.warn("send verification email failed", err));
     const previewUrl =
       process.env.NODE_ENV !== "production" || !isMailerConfigured ? verifyUrl : undefined;
+    if (phone && phoneToken) {
+      sendSms({
+        to: phone,
+        message: `Your FreeSpace verification code is ${phoneToken}. It expires in 10 minutes.`,
+      }).catch((err) => console.warn("send sms failed", err));
+    }
     res.status(201).json({
       token: jwt,
       refreshToken,
@@ -311,6 +343,39 @@ router.post("/request-verification", enforceBlockedList, verifyLimiter, async (r
     const previewUrl =
       process.env.NODE_ENV !== "production" || !isMailerConfigured ? verifyUrl : undefined;
     res.json({ ok: sent, previewUrl });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/request-phone-verification", requireAuth, enforceBlockedList, smsLimiter, async (req, res, next) => {
+  try {
+    const { phone } = phoneSchema.parse(req.body);
+    const userId = req.user!.userId;
+    await updateUserProfile({ userId, phone });
+    const code = generateSmsCode();
+    const expires = new Date(Date.now() + 1000 * 60 * 10);
+    await setPhoneVerificationToken(userId, code, expires);
+    await sendSms({
+      to: phone,
+      message: `Your FreeSpace verification code is ${code}. It expires in 10 minutes.`,
+    });
+    res.json({ ok: true });
+  } catch (error) {
+    if (error instanceof SmsConfigError) {
+      return res.status(503).json({ message: error.message });
+    }
+    next(error);
+  }
+});
+
+router.post("/verify-phone", requireAuth, enforceBlockedList, smsLimiter, async (req, res, next) => {
+  try {
+    const { code } = phoneVerifySchema.parse(req.body);
+    const userId = req.user!.userId;
+    const updated = await verifyUserPhone(userId, code);
+    if (!updated) return res.status(400).json({ message: "Invalid or expired code" });
+    res.json({ ok: true, user: toPublicUser(updated as UserRecord) });
   } catch (error) {
     next(error);
   }

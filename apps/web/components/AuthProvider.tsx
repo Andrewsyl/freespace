@@ -10,7 +10,7 @@ type AuthContextValue = {
   user: User | null;
   token: string | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, phone?: string) => Promise<void>;
   signInWithGoogle: (idToken: string) => Promise<void>;
   signOut: () => void;
   error: string | null;
@@ -137,13 +137,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, phone?: string) => {
     setLoading(true);
     setAuthLoading(true);
     setError(null);
     setGlobalError(null);
     try {
-      const res = await register(email, password);
+      const res = await register(email, password, phone);
       console.debug("auth: signup response", res);
       setUser(res.user);
       setToken(res.token);

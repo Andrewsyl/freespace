@@ -16,12 +16,15 @@ export type UserRecord = {
   email: string;
   full_name?: string | null;
   phone?: string | null;
+  phone_verified?: boolean;
   password_hash: string;
   role?: "driver" | "host" | "admin";
   host_stripe_account_id?: string | null;
   email_verified?: boolean;
   verification_token?: string | null;
   verification_expires?: Date | null;
+  phone_verification_token?: string | null;
+  phone_verification_expires?: Date | null;
   refresh_token_hash?: string | null;
   refresh_expires?: Date | null;
   terms_version?: string | null;
@@ -475,6 +478,8 @@ export async function createUser({
   role = "driver",
   verificationToken,
   verificationExpires,
+  phoneVerificationToken,
+  phoneVerificationExpires,
   termsVersion,
   privacyVersion,
 }: {
@@ -485,6 +490,8 @@ export async function createUser({
   role?: UserRecord["role"];
   verificationToken?: string | null;
   verificationExpires?: Date | null;
+  phoneVerificationToken?: string | null;
+  phoneVerificationExpires?: Date | null;
   termsVersion?: string | null;
   privacyVersion?: string | null;
 }) {
@@ -498,15 +505,18 @@ export async function createUser({
       role,
       verification_token,
       verification_expires,
+      phone_verification_token,
+      phone_verification_expires,
       terms_version,
       terms_accepted_at,
       privacy_version,
       privacy_accepted_at
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     ON CONFLICT (email) DO NOTHING
-    RETURNING id, email, full_name, phone, role, password_hash, host_stripe_account_id, email_verified,
-      verification_token, verification_expires, terms_version, terms_accepted_at, privacy_version, privacy_accepted_at;
+    RETURNING id, email, full_name, phone, phone_verified, role, password_hash, host_stripe_account_id, email_verified,
+      verification_token, verification_expires, phone_verification_token, phone_verification_expires,
+      terms_version, terms_accepted_at, privacy_version, privacy_accepted_at;
   `;
   const result = await pool.query(query, [
     email.toLowerCase(),
@@ -516,6 +526,8 @@ export async function createUser({
     role,
     verificationToken ?? null,
     verificationExpires ?? null,
+    phoneVerificationToken ?? null,
+    phoneVerificationExpires ?? null,
     termsVersion ?? null,
     termsVersion ? now : null,
     privacyVersion ?? null,
@@ -526,8 +538,8 @@ export async function createUser({
 
 export async function findUserByEmail(email: string) {
   const result = await pool.query(
-    `SELECT id, email, full_name, phone, password_hash, role, host_stripe_account_id, email_verified, verification_token,
-      verification_expires, refresh_token_hash, refresh_expires, terms_version, terms_accepted_at,
+    `SELECT id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, email_verified, verification_token,
+      verification_expires, phone_verification_token, phone_verification_expires, refresh_token_hash, refresh_expires, terms_version, terms_accepted_at,
       privacy_version, privacy_accepted_at
      FROM users WHERE email = $1 LIMIT 1`,
     [email.toLowerCase()]
@@ -537,8 +549,8 @@ export async function findUserByEmail(email: string) {
 
 export async function findUserById(userId: string) {
   const result = await pool.query(
-    `SELECT id, email, full_name, phone, password_hash, role, host_stripe_account_id, email_verified, verification_token,
-      verification_expires, refresh_token_hash, refresh_expires, terms_version, terms_accepted_at,
+    `SELECT id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, email_verified, verification_token,
+      verification_expires, phone_verification_token, phone_verification_expires, refresh_token_hash, refresh_expires, terms_version, terms_accepted_at,
       privacy_version, privacy_accepted_at
      FROM users WHERE id = $1 LIMIT 1`,
     [userId]
@@ -583,6 +595,35 @@ export async function setVerificationToken(userId: string, token: string, expire
   );
 }
 
+export async function setPhoneVerificationToken(userId: string, token: string, expiresAt: Date) {
+  await pool.query(
+    `
+    UPDATE users
+    SET phone_verification_token = $1, phone_verification_expires = $2, phone_verified = false
+    WHERE id = $3
+    `,
+    [token, expiresAt, userId]
+  );
+}
+
+export async function verifyUserPhone(userId: string, token: string) {
+  const result = await pool.query(
+    `
+    UPDATE users
+    SET phone_verified = true, phone_verification_token = null, phone_verification_expires = null
+    WHERE id = $1
+      AND phone_verification_token = $2
+      AND (phone_verification_expires IS NULL OR phone_verification_expires > now())
+    RETURNING id, email, full_name, phone, phone_verified, role, host_stripe_account_id, email_verified;
+    `,
+    [userId, token]
+  );
+  return result.rows[0] as Pick<
+    UserRecord,
+    "id" | "email" | "full_name" | "phone" | "phone_verified" | "role" | "host_stripe_account_id"
+  > & { email_verified: boolean } | undefined;
+}
+
 export async function setPasswordResetToken(userId: string, token: string, expiresAt: Date) {
   await pool.query(
     `
@@ -619,7 +660,7 @@ export async function clearRefreshToken(userId: string) {
 export async function findUserByRefreshTokenHash(tokenHash: string) {
   const result = await pool.query(
     `
-    SELECT id, email, full_name, phone, role, host_stripe_account_id, email_verified, refresh_token_hash, refresh_expires,
+    SELECT id, email, full_name, phone, phone_verified, role, host_stripe_account_id, email_verified, refresh_token_hash, refresh_expires,
       terms_version, terms_accepted_at, privacy_version, privacy_accepted_at
     FROM users
     WHERE refresh_token_hash = $1
@@ -676,12 +717,14 @@ export async function setEmailVerified(userId: string, verified: boolean) {
     UPDATE users
     SET email_verified = $1, verification_token = null, verification_expires = null
     WHERE id = $2
-    RETURNING id, email, full_name, phone, role, host_stripe_account_id, email_verified;
+    RETURNING id, email, full_name, phone, phone_verified, role, host_stripe_account_id, email_verified;
     `,
     [verified, userId]
   );
-  return result.rows[0] as Pick<UserRecord, "id" | "email" | "full_name" | "phone" | "role" | "host_stripe_account_id"> &
-    { email_verified: boolean };
+  return result.rows[0] as Pick<
+    UserRecord,
+    "id" | "email" | "full_name" | "phone" | "phone_verified" | "role" | "host_stripe_account_id"
+  > & { email_verified: boolean };
 }
 
 export async function updateUserProfile({
@@ -713,8 +756,8 @@ export async function updateUserProfile({
     UPDATE users
     SET ${fields.join(", ")}
     WHERE id = $${idx}
-    RETURNING id, email, full_name, phone, password_hash, role, host_stripe_account_id, email_verified,
-      verification_token, verification_expires, refresh_token_hash, refresh_expires,
+    RETURNING id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, email_verified,
+      verification_token, verification_expires, phone_verification_token, phone_verification_expires, refresh_token_hash, refresh_expires,
       terms_version, terms_accepted_at, privacy_version, privacy_accepted_at
     `,
     values
