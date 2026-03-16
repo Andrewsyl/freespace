@@ -38,6 +38,7 @@ export function SearchForm({
   onOpenFilters,
   autoSearch = true,
   onAddressChange,
+  variant = "default",
 }: {
   initialValues?: Partial<SearchFilters>;
   onSearch?: (filters: SearchFilters) => void;
@@ -45,6 +46,7 @@ export function SearchForm({
   onOpenFilters?: () => void;
   autoSearch?: boolean;
   onAddressChange?: (place: { address: string; lat: number; lng: number }) => void;
+  variant?: "default" | "desktop-inline";
 }) {
   const router = useRouter();
   const skipAutoSearch = useRef(true);
@@ -216,6 +218,45 @@ export function SearchForm({
     }
     setState((prev) => ({ ...prev, endAt: next }));
   };
+
+  if (variant === "desktop-inline") {
+    return (
+      <div className="w-full">
+        <form
+          onSubmit={handleSubmit}
+          className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
+        >
+          <div className="flex-1 text-sm font-semibold text-slate-800">
+            <AddressAutocomplete
+              defaultValue={state.location}
+              placeholder="Enter area or landmark"
+              inputClassName="w-full h-12 rounded-xl border border-[#E5E7EB] bg-white px-9 text-[15px] font-semibold text-[#0f172a] transition focus:border-brand-500 focus:outline-none"
+              onPlace={(place) => {
+                setState((prev) => ({
+                  ...prev,
+                  location: place.address,
+                  latitude: place.lat,
+                  longitude: place.lng,
+                }));
+                onAddressChange?.({ address: place.address, lat: place.lat, lng: place.lng });
+              }}
+            />
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="w-[220px]">
+              <DateTimePicker label="From" value={state.startAt} onChange={setStart} compact />
+            </div>
+            <div className="w-[220px]">
+              <DateTimePicker label="Until" value={state.endAt} onChange={setEnd} compact />
+            </div>
+          </div>
+          <button type="submit" className="sr-only">
+            Search
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">

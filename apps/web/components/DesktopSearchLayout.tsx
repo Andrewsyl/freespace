@@ -10,6 +10,7 @@ import { FiltersPanel } from "./FiltersPanel";
 import type { SharedLayoutProps } from "./searchLayoutTypes";
 import type { Listing } from "./ListingCard";
 import { SlimNav } from "./SlimNav";
+import { AdjustmentsHorizontalIcon } from "@heroicons/react/24/outline";
 
 export function DesktopSearchLayout({
   filters,
@@ -39,6 +40,19 @@ export function DesktopSearchLayout({
   const [showListingOverlay, setShowListingOverlay] = useState(false);
   const [sortMode, setSortMode] = useState<"recommended" | "cheapest" | "closest">("recommended");
   const selectedListing = selectedListingId ? results.find((l) => l.id === selectedListingId) ?? null : null;
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.radiusKm && filters.radiusKm !== 5) count += 1;
+    if (filters.priceMin !== undefined) count += 1;
+    if (filters.priceMax !== undefined) count += 1;
+    if (filters.coveredParking) count += 1;
+    if (filters.evCharging) count += 1;
+    if (filters.securityLevel) count += 1;
+    if (filters.vehicleSize) count += 1;
+    if (filters.instantBook) count += 1;
+    if (filters.mode === "monthly") count += 1;
+    return count;
+  }, [filters]);
 
   useEffect(() => {
     if (!selectedListingId) setShowListingOverlay(false);
@@ -65,40 +79,76 @@ export function DesktopSearchLayout({
           onOpenFilters={() => setShowFilters(true)}
           autoSearch={false}
           onAddressChange={onAddressChange}
+          variant="desktop-inline"
         />
+
+        <div className="mt-3 flex items-center justify-between">
+          <div className="flex items-center gap-6 text-sm font-semibold">
+            {[
+              { key: "recommended", label: "Recommended" },
+              { key: "cheapest", label: "Cheapest" },
+              { key: "closest", label: "Closest" },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setSortMode(tab.key as any)}
+                className={`border-b-2 pb-1 transition ${
+                  sortMode === tab.key
+                    ? "border-emerald-500 text-emerald-600"
+                    : "border-transparent text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowFilters(true)}
+            className="relative inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-emerald-200 hover:text-emerald-700"
+          >
+            <AdjustmentsHorizontalIcon className="h-4 w-4 text-slate-500" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="absolute -right-2 -top-2 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[11px] font-bold text-white">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="grid h-full min-w-0 grid-cols-[440px,1fr] gap-4 overflow-hidden px-6 pb-5 pt-4">
         {/* Left sidebar */}
         <div className="flex h-full min-w-0 flex-col overflow-hidden">
           <div className="flex-1 space-y-3 overflow-y-auto pr-2">
-          {showFilters ? (
-            <FiltersPanel
-              initialFilters={filters}
-              onApply={(next) => { onSearch(next, true); setShowFilters(false); }}
-              onCancel={() => setShowFilters(false)}
-              onLiveChange={(f) => onSearch(f)}
-            />
-          ) : showListingOverlay && selectedListing ? (
-            <ListingOverlay
-              key={selectedListing.id}
-              listing={selectedListing}
-              onClose={() => setShowListingOverlay(false)}
-              onOpen={() => router.push(`/listing/${selectedListing.id}`)}
-            />
-          ) : (
-            <>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold tracking-wide text-emerald-600">Parking spaces</p>
-                  <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{results.length} spaces</h1>
-                  <p className="text-sm text-slate-600">
-                    {filters.mode === "monthly"
-                      ? `${filters.date} → ${filters.endDate ?? "30 days out"}`
-                      : `${filters.date} ${filters.startTime}–${filters.endTime}`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
+            {showFilters ? (
+              <FiltersPanel
+                initialFilters={filters}
+                onApply={(next) => { onSearch(next, true); setShowFilters(false); }}
+                onCancel={() => setShowFilters(false)}
+                onLiveChange={(f) => onSearch(f)}
+              />
+            ) : showListingOverlay && selectedListing ? (
+              <ListingOverlay
+                key={selectedListing.id}
+                listing={selectedListing}
+                onClose={() => setShowListingOverlay(false)}
+                onOpen={() => router.push(`/listing/${selectedListing.id}`)}
+              />
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold tracking-wide text-emerald-600">Parking spaces</p>
+                    <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{results.length} spaces</h1>
+                    <p className="text-sm text-slate-600">
+                      {filters.mode === "monthly"
+                        ? `${filters.date} → ${filters.endDate ?? "30 days out"}`
+                        : `${filters.date} ${filters.startTime}–${filters.endTime}`}
+                    </p>
+                  </div>
                   <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
                     <input
                       type="checkbox"
@@ -108,100 +158,76 @@ export function DesktopSearchLayout({
                     />
                     Search as I move
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowFilters(true)}
-                    className="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-emerald-200 hover:text-emerald-700"
-                  >
-                    Filters
-                  </button>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-                {[
-                  { key: "recommended", label: "Recommended" },
-                  { key: "cheapest", label: "Cheapest" },
-                  { key: "closest", label: "Closest" },
-                ].map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setSortMode(tab.key as any)}
-                    className={`rounded-full px-3 py-1 ${
-                      sortMode === tab.key ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              {error && (
-                <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
-              )}
-              {status === "loading" && <p className="text-sm text-slate-600">Searching…</p>}
-
-              <div className="grid grid-cols-1 gap-2 pb-3">
-                {listResults.map((listing) => (
-                  <div
-                    key={listing.id}
-                    onClick={() => { onSelectListing(listing); setShowListingOverlay(true); }}
-                    className="cursor-pointer rounded-xl border border-slate-100 bg-white shadow-sm transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lg"
-                    style={{ animation: "slideUp 180ms ease-out" }}
-                  >
-                    <ListingCard listing={listing} suppressNavigation selected={selectedListingId === listing.id} />
+                {error && (
+                  <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {error}
                   </div>
-                ))}
-              </div>
+                )}
+                {status === "loading" && <p className="text-sm text-slate-600">Searching…</p>}
 
-              {status === "idle" && results.length === 0 && !error && (
-                <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                  No spaces found. Adjust the location, dates, or radius.
+                <div className="grid grid-cols-1 gap-2 pb-3">
+                  {listResults.map((listing) => (
+                    <div
+                      key={listing.id}
+                      onClick={() => { onSelectListing(listing); setShowListingOverlay(true); }}
+                      className="cursor-pointer rounded-xl border border-slate-100 bg-white shadow-sm transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lg"
+                      style={{ animation: "slideUp 180ms ease-out" }}
+                    >
+                      <ListingCard listing={listing} suppressNavigation selected={selectedListingId === listing.id} />
+                    </div>
+                  ))}
                 </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
 
-      {/* Right pane — map */}
-      <motion.div
-        className="h-full min-w-0"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: "easeOut" }}
-      >
-        <div className="relative h-full overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <MapView
-            listings={results}
-            center={center}
-            initialZoom={16}
-            maxZoom={17}
-            minFitZoom={16}
-            showCenterPin
-            selectedListingId={selectedListingId ?? undefined}
-            popupListing={popupListing ?? undefined}
-            onPopupBook={onPopupBook}
-            onSelectListing={onMarkerSelect}
-            onMarkerClick={onMarkerClick}
-            disableAutoFit={lockViewport}
-            onBoundsChanged={onBoundsChanged}
-          />
-          {pendingCenter && mapDirty && !searchAsMove && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
-              <button
-                type="button"
-                disabled={areaSearching}
-                onClick={onSearchArea}
-                className="pointer-events-auto rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-slate-800 disabled:opacity-60"
-              >
-                {areaSearching ? "Searching…" : "Search this area"}
-              </button>
-            </div>
-          )}
+                {status === "idle" && results.length === 0 && !error && (
+                  <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+                    No spaces found. Adjust the location, dates, or radius.
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </motion.div>
-    </div>
+
+        {/* Right pane — map */}
+        <motion.div
+          className="h-full min-w-0"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+        >
+          <div className="relative h-full overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <MapView
+              listings={results}
+              center={center}
+              initialZoom={16}
+              maxZoom={17}
+              minFitZoom={16}
+              showCenterPin
+              selectedListingId={selectedListingId ?? undefined}
+              popupListing={popupListing ?? undefined}
+              onPopupBook={onPopupBook}
+              onSelectListing={onMarkerSelect}
+              onMarkerClick={onMarkerClick}
+              disableAutoFit={lockViewport}
+              onBoundsChanged={onBoundsChanged}
+            />
+            {pendingCenter && mapDirty && !searchAsMove && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
+                <button
+                  type="button"
+                  disabled={areaSearching}
+                  onClick={onSearchArea}
+                  className="pointer-events-auto rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-slate-800 disabled:opacity-60"
+                >
+                  {areaSearching ? "Searching…" : "Search this area"}
+                </button>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }
