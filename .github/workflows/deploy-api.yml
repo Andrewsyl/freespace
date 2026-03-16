@@ -34,7 +34,7 @@ jobs:
               - 'apps/web/**'
 
   deploy-api:
-    name: Deploy API to FreeSpace-env-apii
+    name: Deploy API to FreeSpace-env-api
     needs: changes
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
@@ -62,7 +62,7 @@ jobs:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           application_name: FreeSpace
-          environment_name: FreeSpace-env-apii
+          environment_name: FreeSpace-env-api
           region: eu-west-1
           version_label: api-${{ github.sha }}-${{ github.run_number }}
           deployment_package: deploy.zip
