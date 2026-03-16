@@ -41,13 +41,21 @@ type PresignedUrlParams = {
   userId: string;
 };
 
-const ALLOWED_CONTENT_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/heic",
-  "image/heif",
-]);
+const CONTENT_TYPE_ALIASES: Record<string, string> = {
+  "image/jpg": "image/jpeg",
+  "image/pjpeg": "image/jpeg",
+  "image/x-png": "image/png",
+};
+
+const CONTENT_TYPE_EXTENSIONS: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/heic": "heic",
+  "image/heif": "heif",
+};
+
+const ALLOWED_CONTENT_TYPES = new Set(Object.keys(CONTENT_TYPE_EXTENSIONS));
 
 export async function getPresignedUploadUrl({ contentType, userId }: PresignedUrlParams) {
   if (!s3Client || !AWS_REGION || !S3_BUCKET_NAME) {
@@ -57,16 +65,17 @@ export async function getPresignedUploadUrl({ contentType, userId }: PresignedUr
   }
 
   const normalizedType = contentType.trim().toLowerCase();
-  if (!ALLOWED_CONTENT_TYPES.has(normalizedType)) {
+  const canonicalType = CONTENT_TYPE_ALIASES[normalizedType] ?? normalizedType;
+  if (!ALLOWED_CONTENT_TYPES.has(canonicalType)) {
     throw new S3UploadConfigError("Unsupported file type. Please upload a JPG, PNG, or WEBP image.");
   }
 
-  const fileKey = `listing-images/${userId}/${randomUUID()}`;
+  const extension = CONTENT_TYPE_EXTENSIONS[canonicalType] ?? "jpg";
+  const fileKey = `listing-images/${userId}/${randomUUID()}.${extension}`;
 
   const command = new PutObjectCommand({
     Bucket: S3_BUCKET_NAME,
     Key: fileKey,
-    ContentType: normalizedType,
   });
 
   let signedUrl: string;

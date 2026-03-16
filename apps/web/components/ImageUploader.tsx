@@ -27,15 +27,30 @@ export function ImageUploader({ onUpload }: { onUpload: (url: string) => void })
       return;
     }
 
+    const guessContentType = (file: File) => {
+      if (file.type) return file.type;
+      const lower = file.name.toLowerCase();
+      if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+      if (lower.endsWith(".png")) return "image/png";
+      if (lower.endsWith(".webp")) return "image/webp";
+      if (lower.endsWith(".heic")) return "image/heic";
+      if (lower.endsWith(".heif")) return "image/heif";
+      return "";
+    };
+
     for (const file of filesToUpload) {
       setUploadState((prev) => ({ ...prev, [file.name]: "uploading" }));
       try {
-        const { signedUrl, publicUrl } = await getImageUploadUrl(file.type, token);
+        const contentType = guessContentType(file);
+        if (!contentType) {
+          throw new Error("Unsupported file type. Please upload a JPG, PNG, or WEBP image.");
+        }
+        const { signedUrl, publicUrl } = await getImageUploadUrl(contentType, token);
 
         const uploadRes = await fetch(signedUrl, {
           method: "PUT",
           body: file,
-          headers: { "Content-Type": file.type },
+          headers: { "Content-Type": contentType },
         });
 
         if (!uploadRes.ok) {
