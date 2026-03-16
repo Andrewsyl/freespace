@@ -8,26 +8,24 @@ const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID?.trim() ?? "";
 const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY?.trim() ?? "";
 const AWS_SESSION_TOKEN = process.env.AWS_SESSION_TOKEN?.trim() ?? "";
 
-if (!AWS_REGION || !S3_BUCKET_NAME || !AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY) {
-  console.warn(
-    "S3 client not configured. Missing AWS_REGION, S3_BUCKET_NAME, AWS_ACCESS_KEY_ID, or AWS_SECRET_ACCESS_KEY."
-  );
+if (!AWS_REGION || !S3_BUCKET_NAME) {
+  console.warn("S3 client not configured. Missing AWS_REGION or S3_BUCKET_NAME.");
 }
 
-const hasValidS3Config =
-  Boolean(AWS_REGION) &&
-  Boolean(S3_BUCKET_NAME) &&
-  Boolean(AWS_ACCESS_KEY_ID) &&
-  Boolean(AWS_SECRET_ACCESS_KEY);
+const hasValidS3Config = Boolean(AWS_REGION) && Boolean(S3_BUCKET_NAME);
 
 const s3Client = hasValidS3Config
   ? new S3Client({
       region: AWS_REGION,
-      credentials: {
-        accessKeyId: AWS_ACCESS_KEY_ID,
-        secretAccessKey: AWS_SECRET_ACCESS_KEY,
-        ...(AWS_SESSION_TOKEN ? { sessionToken: AWS_SESSION_TOKEN } : {}),
-      },
+      ...(AWS_ACCESS_KEY_ID && AWS_SECRET_ACCESS_KEY
+        ? {
+            credentials: {
+              accessKeyId: AWS_ACCESS_KEY_ID,
+              secretAccessKey: AWS_SECRET_ACCESS_KEY,
+              ...(AWS_SESSION_TOKEN ? { sessionToken: AWS_SESSION_TOKEN } : {}),
+            },
+          }
+        : {}),
     })
   : null;
 
@@ -54,7 +52,7 @@ const ALLOWED_CONTENT_TYPES = new Set([
 export async function getPresignedUploadUrl({ contentType, userId }: PresignedUrlParams) {
   if (!s3Client || !AWS_REGION || !S3_BUCKET_NAME) {
     throw new S3UploadConfigError(
-      "Missing S3 configuration. Set AWS_REGION, S3_BUCKET_NAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY."
+      "Missing S3 configuration. Set AWS_REGION and S3_BUCKET_NAME (and credentials if running locally)."
     );
   }
 
@@ -69,7 +67,6 @@ export async function getPresignedUploadUrl({ contentType, userId }: PresignedUr
     Bucket: S3_BUCKET_NAME,
     Key: fileKey,
     ContentType: normalizedType,
-    ACL: "public-read", // Make the object publicly readable
   });
 
   let signedUrl: string;
@@ -79,7 +76,7 @@ export async function getPresignedUploadUrl({ contentType, userId }: PresignedUr
     });
   } catch {
     throw new S3UploadConfigError(
-      "Invalid AWS credentials for S3 image upload. Check AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."
+      "Invalid AWS credentials for S3 image upload. Check your AWS credentials or instance role."
     );
   }
 

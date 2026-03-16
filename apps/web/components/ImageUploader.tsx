@@ -32,11 +32,15 @@ export function ImageUploader({ onUpload }: { onUpload: (url: string) => void })
       try {
         const { signedUrl, publicUrl } = await getImageUploadUrl(file.type, token);
 
-        await fetch(signedUrl, {
+        const uploadRes = await fetch(signedUrl, {
           method: "PUT",
           body: file,
           headers: { "Content-Type": file.type },
         });
+
+        if (!uploadRes.ok) {
+          throw new Error(`Upload failed (${uploadRes.status})`);
+        }
 
         onUpload(publicUrl);
         setUploadState((prev) => ({ ...prev, [file.name]: "success" }));

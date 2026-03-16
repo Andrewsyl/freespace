@@ -244,8 +244,11 @@ export function MapView({
 
     popupRef.current?.remove();
     popupRef.current = null;
-    popupRootRef.current?.unmount();
-    popupRootRef.current = null;
+    if (popupRootRef.current) {
+      const root = popupRootRef.current;
+      popupRootRef.current = null;
+      queueMicrotask(() => root.unmount());
+    }
 
     if (!popupListing || typeof popupListing.latitude !== "number" || typeof popupListing.longitude !== "number") return;
 
@@ -270,7 +273,7 @@ export function MapView({
     return () => {
       popup.remove();
       popupRef.current = null;
-      root.unmount();
+      queueMicrotask(() => root.unmount());
       popupRootRef.current = null;
     };
   }, [mapReady, popupListing, onPopupBook]);
