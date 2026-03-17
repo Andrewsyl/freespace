@@ -14,6 +14,8 @@ export type Listing = {
   availability: string;
   tags?: string[];
   image?: string;
+  imageUrls?: string[];
+  image_urls?: string[];
   latitude?: number;
   longitude?: number;
 };
