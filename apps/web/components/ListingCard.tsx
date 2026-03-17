@@ -10,7 +10,7 @@ export type Listing = {
   pricePerDay: number;
   rating: number;
   ratingCount?: number;
-  distanceKm: number;
+  distanceKm?: number;
   availability: string;
   tags?: string[];
   image?: string;
@@ -68,7 +68,7 @@ export function ListingCard({
         />
         <div className="absolute inset-x-2 bottom-1.5 flex items-center justify-between text-[10px] font-semibold text-white drop-shadow">
           <span className="rounded-full bg-black/65 px-2 py-0.5">€{listing.pricePerDay}/d</span>
-          <span className="rounded-full bg-black/65 px-2 py-0.5">{listing.distanceKm} km</span>
+          <span className="rounded-full bg-black/65 px-2 py-0.5">{(listing.distanceKm ?? 0).toFixed(1)} km</span>
         </div>
       </div>
 
