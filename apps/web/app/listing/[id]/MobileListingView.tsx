@@ -55,6 +55,7 @@ export function MobileListingView({
   const href = `/checkout/${listing.id}?date=${date}&startTime=${startTime}&endTime=${endTime}`;
   const reviewCount = reviews.length;
   const amenities = listing.amenities ?? [];
+  const images = useMemo(() => listing.imageUrls ?? listing.image_urls ?? [], [listing.imageUrls, listing.image_urls]);
 
   const tabClass = (key: typeof active) =>
     `flex-1 rounded-xl px-3 py-2 text-center text-xs font-semibold transition ${
@@ -114,9 +115,9 @@ export function MobileListingView({
         <div className="mt-4 space-y-4">
           {active === "overview" && (
             <>
-              {listing.imageUrls && listing.imageUrls.length > 0 && (
+              {images.length > 0 && (
                 <div className="grid grid-cols-2 gap-2">
-                  {listing.imageUrls.slice(0, 2).map((img, idx) => (
+                  {images.slice(0, 2).map((img, idx) => (
                     <div key={`${img}-${idx}`} className="h-24 overflow-hidden rounded-[16px] border border-white/60 shadow-sm">
                       <img src={img} alt={`${listing.title} ${idx + 1}`} className="h-full w-full object-cover" />
                     </div>
