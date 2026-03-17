@@ -590,9 +590,9 @@ function MapBottomCard({
         )}
 
         {/* Rating badge */}
-        {listing.rating > 0 && (
+        {(listing.rating ?? 0) > 0 && (
           <div className="absolute right-2 top-2 rounded-full bg-black/75 px-2 py-1">
-            <span className="text-[12px] font-bold tracking-[0.2px] text-white">★ {listing.rating.toFixed(1)}</span>
+            <span className="text-[12px] font-bold tracking-[0.2px] text-white">★ {(listing.rating ?? 0).toFixed(1)}</span>
           </div>
         )}
 
@@ -615,7 +615,7 @@ function MapBottomCard({
         {/* Rating + amenity icons */}
         <div className="mb-1.5 flex items-center justify-between">
           <span className="text-[11px] font-medium text-[#6B7280]">
-            <span className="text-[#F2B01E]">★</span> {listing.rating.toFixed(1)}
+            <span className="text-[#F2B01E]">★</span> {(listing.rating ?? 0).toFixed(1)}
             {typeof listing.ratingCount === "number" && listing.ratingCount > 0
               ? ` · ${listing.ratingCount} reviews`
               : " · New listing"}

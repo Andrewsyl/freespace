@@ -8,7 +8,7 @@ export type Listing = {
   title: string;
   address: string;
   pricePerDay: number;
-  rating: number;
+  rating?: number;
   ratingCount?: number;
   distanceKm?: number;
   availability: string;
@@ -88,7 +88,7 @@ export function ListingCard({
             </p>
           </div>
           <div className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-            <StarIcon className="h-3.5 w-3.5" /> {listing.rating.toFixed(1)}
+            <StarIcon className="h-3.5 w-3.5" /> {(listing.rating ?? 5).toFixed(1)}
             {typeof listing.ratingCount === "number" && <span className="text-[10px] text-amber-800">({listing.ratingCount})</span>}
           </div>
         </div>
