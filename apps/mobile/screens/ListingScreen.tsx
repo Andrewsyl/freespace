@@ -528,12 +528,6 @@ export function ListingScreen({ navigation, route }: Props) {
                     ({listing.rating_count ?? 0})
                   </Text>
                 </View>
-                <View style={styles.finalAddressRow}>
-                  <Ionicons name="location-sharp" size={14} color="#6B7280" />
-                  <Text style={[styles.location, styles.finalAddressText]}>
-                    Final address will be shared after payment
-                  </Text>
-                </View>
                 {priceSummary ? (
                   <View style={styles.summaryStrip}>
                     <View style={styles.summaryCell}>
@@ -1848,25 +1842,6 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#E5E7EB",
     marginHorizontal: 16,
-  },
-  finalAddressRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    marginTop: 6,
-    alignSelf: "center",
-    backgroundColor: "#F3F4F6",
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-  },
-  finalAddressText: {
-    fontFamily: "Poppins-Regular",
-    color: "#6B7280",
-    fontSize: 12,
-    fontWeight: "400",
-    textAlign: "center",
   },
   hoursRow: {
     flexDirection: "row",

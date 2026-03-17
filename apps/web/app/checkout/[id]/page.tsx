@@ -270,7 +270,7 @@ export default function CheckoutPage() {
       </div>
 
       <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <div className="mx-auto flex h-14 max-w-2xl items-stretch justify-between gap-4 px-4 sm:px-6">
           <div>
             <p className="text-lg font-semibold text-slate-900">€{totalPrice.toFixed(2)}</p>
             <p className="text-sm text-slate-500">{durationHours} hours</p>
@@ -278,7 +278,7 @@ export default function CheckoutPage() {
           <button
             type="submit"
             form="checkout-form"
-            className="h-12 w-44 rounded-xl bg-emerald-500 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-emerald-300"
+            className="h-full w-44 rounded-xl bg-emerald-500 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-emerald-300"
             disabled={status === "loading"}
           >
             {status === "loading"
