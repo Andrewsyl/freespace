@@ -19,6 +19,9 @@ if (fs.existsSync(scopedEnvPath)) {
 }
 
 const appJson = require("./app.json");
+const isDevLike = appEnv === "dev" || appEnv === "local";
+const androidPackage = isDevLike ? "com.andrewsyl.carparking.dev" : "com.andrewsyl.carparking";
+const iosBundleId = isDevLike ? "com.andrewsyl.carparking.dev" : "com.andrewsyl.carparking";
 
 const withCoreKtxFix = (config) =>
   withProjectBuildGradle(config, (configMod) => {
@@ -250,9 +253,14 @@ module.exports = ({ config }) => {
                 extra,
                 android: {
                   ...base.android,
+                  package: androidPackage,
                   compileSdkVersion: 35,
                   targetSdkVersion: 35,
                   buildToolsVersion: "35.0.0",
+                },
+                ios: {
+                  ...base.ios,
+                  bundleIdentifier: iosBundleId,
                 },
                 plugins: [...plugins, buildProps],
               })

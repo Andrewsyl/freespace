@@ -81,15 +81,17 @@ def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBu
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+// Keep applicationId literal so Expo can detect it.
+
 android {
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.andrewsyl.carparking'
+    namespace 'com.andrewsyl.carparking.dev'
     defaultConfig {
-        applicationId 'com.andrewsyl.carparking'
+        applicationId 'com.andrewsyl.carparking.dev'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -108,7 +110,6 @@ android {
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
-            applicationIdSuffix ".dev"
             versionNameSuffix "-dev"
         }
         release {

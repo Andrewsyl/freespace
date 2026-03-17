@@ -1,4 +1,4 @@
-package com.andrewsyl.carparking
+package com.andrewsyl.carparking.dev
 
 import android.os.Build
 import android.os.Bundle
