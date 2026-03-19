@@ -30,19 +30,13 @@
           <string>carparking</string>
           <string>com.googleusercontent.apps.742052774291-32p3r3jcea4oge0uec8aqqe9chi2f79l</string>
           <string>com.googleusercontent.apps.742052774291-7ebm33putsqqjjb8h5kebok0214hp38h</string>
-          <string>com.andrewsyl.carparking</string>
+          <string>com.andrewsyl.carparking.dev</string>
         </array>
       </dict>
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
           <string>exp+carparking</string>
-        </array>
-      </dict>
-      <dict>
-        <key>CFBundleURLSchemes</key>
-        <array>
-          <string>com.googleusercontent.apps.742052774291-7ebm33putsqqjjb8h5kebok0214hp38h</string>
         </array>
       </dict>
     </array>

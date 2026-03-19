@@ -17,6 +17,15 @@
     ],
     "plugins": [
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-freespace.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FCFCFB",
+          "imageWidth": 420
+        }
+      ],
+      [
         "@stripe/stripe-react-native",
         {
           "merchantIdentifier": "merchant.com.andrewsyl.carparking"
@@ -32,6 +41,11 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "splash": {
+      "image": "./assets/splash-freespace.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FCFCFB"
+    },
     "android": {
       "userInterfaceStyle": "light",
       "package": "com.andrewsyl.carparking",
@@ -52,12 +66,12 @@
     },
     "androidStatusBar": {
       "translucent": true,
-      "backgroundColor": "#00000000",
+      "backgroundColor": "#FCFCFB",
       "barStyle": "dark-content"
     },
     "androidNavigationBar": {
-      "backgroundColor": "#2ECC8F",
-      "barStyle": "light-content"
+      "backgroundColor": "#FCFCFB",
+      "barStyle": "dark-content"
     },
     "ios": {
       "bundleIdentifier": "com.andrewsyl.carparking",

@@ -209,13 +209,15 @@ export function MapBottomCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#ffffff",
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    borderWidth: 1,
-    borderColor: "#374151",
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#D2C2A9",
     position: "absolute",
-    shadowOpacity: 0,
-    elevation: 0,
+    shadowColor: "#1D1515",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
     overflow: "hidden",
   },
   
@@ -226,8 +228,9 @@ const styles = StyleSheet.create({
   // Image section
   imageContainer: {
     width: "100%",
-    height: 92,
+    height: 108,
     position: "relative",
+    backgroundColor: "#F2EEE7",
   },
   
   image: {
@@ -253,14 +256,18 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    minWidth: 50,
+    backgroundColor: "rgba(252, 252, 251, 0.96)",
     paddingVertical: 4,
     paddingHorizontal: 8,
-    borderRadius: 16,
+    borderRadius: 999,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#D2C2A9",
   },
   
   ratingText: {
-    color: "#FFFFFF",
+    color: "#1D1515",
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 0.2,
@@ -271,16 +278,18 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     left: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(252, 252, 251, 0.96)",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
+    borderWidth: 1,
+    borderColor: "#D2C2A9",
+    shadowColor: "#1D1515",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     elevation: 4,
   },
   
@@ -296,37 +305,40 @@ const styles = StyleSheet.create({
   
   // Content section
   contentSection: {
-    padding: 10,
-    paddingTop: 8,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 12,
+    backgroundColor: "#FFFFFF",
   },
   
   title: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
     color: "#111827",
     marginBottom: 4,
-    letterSpacing: -0.2,
-    lineHeight: 18,
+    letterSpacing: -0.3,
+    lineHeight: 19,
   },
   
   detailsRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 6,
+    marginBottom: 8,
+    gap: 8,
   },
   
   detailText: {
     fontSize: 11,
     color: "#6B7280",
     fontWeight: "500",
+    flex: 1,
   },
 
   featuresRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginLeft: 8,
     flexShrink: 0,
   },
 
@@ -335,8 +347,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 22,
     height: 22,
-    backgroundColor: "#FFFFFF",
-    borderColor: "#E5E7EB",
+    backgroundColor: "#FCFCFB",
+    borderColor: "#D2C2A9",
     borderWidth: 1,
     borderRadius: 11,
   },
@@ -350,10 +362,8 @@ const styles = StyleSheet.create({
   // Dashed divider (receipt style)
   dashedDivider: {
     height: 1,
-    borderStyle: "dashed",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    marginBottom: 8,
+    backgroundColor: "#E8DDCD",
+    marginBottom: 10,
   },
   
   // Price section
@@ -383,9 +393,9 @@ const styles = StyleSheet.create({
   },
   
   currentPrice: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "800",
-    color: "#2ECC8F",
+    color: "#1D1515",
     letterSpacing: -0.5,
   },
   

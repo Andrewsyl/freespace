@@ -1,6 +1,13 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+def isDebugTask = gradle.startParameter.taskNames.any { task ->
+    task.toLowerCase().contains("debug")
+}
+
+if (!isDebugTask) {
+    apply plugin: "com.google.gms.google-services"
+}
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
@@ -81,8 +88,6 @@ def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBu
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
-// Keep applicationId literal so Expo can detect it.
-
 android {
     ndkVersion rootProject.ext.ndkVersion
 
@@ -110,7 +115,6 @@ android {
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
-            versionNameSuffix "-dev"
         }
         release {
             // Caution! In production, you need to generate your own keystore file.
@@ -184,4 +188,4 @@ dependencies {
     }
 }
 
-apply plugin: "com.google.gms.google-services"
+apply plugin: 'com.google.gms.google-services'

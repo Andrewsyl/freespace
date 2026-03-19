@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "CarParking.app"
-               BlueprintName = "CarParking"
-               ReferencedContainer = "container:CarParking.xcodeproj">
+               BuildableName = "FreeSpace.app"
+               BlueprintName = "FreeSpace"
+               ReferencedContainer = "container:FreeSpace.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "CarParkingTests.xctest"
-               BlueprintName = "CarParkingTests"
-               ReferencedContainer = "container:CarParking.xcodeproj">
+               BuildableName = "FreeSpaceTests.xctest"
+               BlueprintName = "FreeSpaceTests"
+               ReferencedContainer = "container:FreeSpace.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "CarParking.app"
-            BlueprintName = "CarParking"
-            ReferencedContainer = "container:CarParking.xcodeproj">
+            BuildableName = "FreeSpace.app"
+            BlueprintName = "FreeSpace"
+            ReferencedContainer = "container:FreeSpace.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "CarParking.app"
-            BlueprintName = "CarParking"
-            ReferencedContainer = "container:CarParking.xcodeproj">
+            BuildableName = "FreeSpace.app"
+            BlueprintName = "FreeSpace"
+            ReferencedContainer = "container:FreeSpace.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

@@ -13,6 +13,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Constants from "expo-constants";
 import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { enableScreens } from "react-native-screens";
@@ -56,6 +57,7 @@ const Tab = createBottomTabNavigator();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 enableScreens(false);
+void SplashScreen.preventAutoHideAsync();
 
 export default function App() {
   const [launchComplete, setLaunchComplete] = useState(true);
@@ -70,6 +72,11 @@ export default function App() {
     "Poppins-Bold": require("./assets/fonts/Poppins-Bold.ttf"),
     "UKNumberPlate": require("./assets/fonts/UKNumberPlate.ttf"),
   });
+
+  useEffect(() => {
+    if (!fontsLoaded) return;
+    void SplashScreen.hideAsync();
+  }, [fontsLoaded]);
 
   useEffect(() => {
     Notifications.setNotificationHandler({
@@ -156,7 +163,7 @@ function AppShell() {
       {showEnvBadge ? <EnvironmentBadge env={normalizedAppEnv} /> : null}
       {shouldShowLegalGate ? <LegalGate /> : null}
       <GlobalLoadingOverlay />
-      <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#FCFCFB" />
     </>
   );
 }
@@ -416,6 +423,7 @@ function PushRegistration() {
 const styles = StyleSheet.create({
   app: {
     flex: 1,
+    backgroundColor: "#FCFCFB",
   },
   envBadge: {
     backgroundColor: "#111827",
