@@ -134,7 +134,6 @@ export function ListingScreen({ navigation, route }: Props) {
   const [reviews, setReviews] = useState<ListingReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [navigatingToBooking, setNavigatingToBooking] = useState(false);
-  const [showAllHours, setShowAllHours] = useState(false);
   const [startAt, setStartAt] = useState(() => new Date(from));
   const [endAt, setEndAt] = useState(() => new Date(to));
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -273,10 +272,28 @@ export function ListingScreen({ navigation, route }: Props) {
     listing?.availability_text ??
     "Secure off-street parking space in a quiet residential area. The space is well-lit and monitored, with easy access from the main road. Ideal for commuters or longer stays, with clear signage and hassle-free entry.";
   const isOpen24 =
-    /24\s*\/\s*7|24\s*hours|open\s*24/i.test(aboutText) ||
-    /24\s*\/\s*7|24\s*hours|open\s*24/i.test(
+    /24\s*\/\s*7|24\s*hours|open\s*24|always available|available every day|every day|monday\s*-\s*sunday/i.test(
+      aboutText
+    ) ||
+    /24\s*\/\s*7|24\s*hours|open\s*24|always available|available every day|every day|monday\s*-\s*sunday/i.test(
       listing?.availability_text ?? ""
     );
+  const availabilityFallbackText = useMemo(() => {
+    const raw = (listing?.availability_text ?? "").trim();
+    if (!raw) {
+      if (isOpen24) return "Open 24 hours";
+      if (listing?.is_available === true) return "Available for selected times";
+      return "Check availability";
+    }
+    if (/24\s*\/\s*7|24\s*hours|open\s*24|always available|available every day|every day|monday\s*-\s*sunday/i.test(raw)) {
+      return "Open 24 hours";
+    }
+    if (/closed|by appointment|weekdays|weekends|mon|tue|wed|thu|fri|sat|sun|\d{1,2}:\d{2}/i.test(raw) && raw.length <= 80) {
+      return raw;
+    }
+    if (listing?.is_available === true) return "Available for selected times";
+    return "Check availability";
+  }, [isOpen24, listing?.availability_text]);
   const availabilityEntries = listing?.availabilitySchedule ?? [];
   const hasWeeklyAvailability = availabilityEntries.some(
     (entry) => Array.isArray(entry.repeatWeekdays) && entry.repeatWeekdays.length > 0
@@ -311,7 +328,7 @@ export function ListingScreen({ navigation, route }: Props) {
     }
     return {
       day: label,
-      hours: isOpen24 ? "Open 24 hours" : "Check availability",
+      hours: availabilityFallbackText,
     };
   });
   const aboutPreview =
@@ -350,7 +367,7 @@ export function ListingScreen({ navigation, route }: Props) {
   }, [listing]);
   const hostRating = hasReviews && listing?.rating ? listing.rating.toFixed(1) : null;
   const hostReviews = hasReviews ? listing?.rating_count ?? 0 : 0;
-  const heroHeight = Math.round(width * 0.72);
+  const heroHeight = Math.round(width * 0.6);
   const heroTapHeight = Math.max(0, heroHeight - 40);
   const distanceLabel = listing?.distance_m
     ? `${(listing.distance_m / 1000).toFixed(1)} km`
@@ -513,19 +530,41 @@ export function ListingScreen({ navigation, route }: Props) {
                 <View style={styles.contentCard}>
               {/* Title Section */}
               <View style={styles.titleSection}>
-                <Text style={styles.category}>{spaceTypeLabel.toUpperCase()}</Text>
                 <Text style={styles.cardTitle}>{listing.title}</Text>
-                <View style={styles.locationRow}>
-                  <Ionicons name="location-outline" size={16} color="#6B7280" />
-                  <Text style={styles.location}>{areaLabel}</Text>
+                <View style={styles.metaRow}>
+                  <View style={styles.typeChip}>
+                    <Text style={styles.typeChipText}>{spaceTypeLabel}</Text>
+                  </View>
+                  <View style={styles.metaInline}>
+                    <Ionicons name="location-outline" size={14} color="#7A7167" />
+                    <Text style={styles.metaInlineText} numberOfLines={1}>
+                      {areaLabel}
+                    </Text>
+                  </View>
                 </View>
                 <View style={styles.ratingRow}>
-                  <Ionicons name="star" size={16} color="#F59E0B" />
-                  <Text style={styles.rating}>
-                    {hasReviews ? listing.rating?.toFixed(1) : "0.0"}
-                  </Text>
+                  <View style={styles.ratingBadge}>
+                    <Ionicons name="star" size={14} color="#F59E0B" />
+                    <Text style={styles.rating}>
+                      {hasReviews ? listing.rating?.toFixed(1) : "0.0"}
+                    </Text>
+                  </View>
                   <Text style={styles.reviewCount}>
-                    ({listing.rating_count ?? 0})
+                    {listing.rating_count ?? 0} reviews
+                  </Text>
+                  <View
+                    style={[
+                      styles.availabilityDot,
+                      listing.is_available === false && styles.availabilityDotOff,
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.availabilityText,
+                      listing.is_available === false && styles.availabilityTextOff,
+                    ]}
+                  >
+                    {listing.is_available === false ? "Unavailable" : "Available now"}
                   </Text>
                 </View>
                 {priceSummary ? (
@@ -610,29 +649,23 @@ export function ListingScreen({ navigation, route }: Props) {
               <View style={styles.sectionDivider} />
 
               {/* Opening Hours */}
-              <Pressable
-                onPress={() => setShowAllHours((prev) => !prev)}
-                style={[styles.sectionBlock, { paddingHorizontal: 16 }]}
-              >
+              <View style={[styles.sectionBlock, { paddingHorizontal: 16 }]}>
                 <View style={styles.hoursHeaderRow}>
                   <Text style={[styles.sectionTitle, styles.hoursSectionTitle]}>
                     Space Availability
-                  </Text>
-                  <Text style={styles.hoursToggleText}>
-                    {showAllHours ? "Hide" : "See all"}
                   </Text>
                 </View>
                 {(() => {
                   const todayLabel = new Date().toLocaleDateString(undefined, {
                     weekday: "long",
                   });
-                  const rows = showAllHours
+                  const rows = hasWeeklyAvailability
                     ? openingHours
-                    : openingHours.filter((row) => row.day === todayLabel);
+                    : [{ day: "Availability", hours: availabilityFallbackText }];
                   return rows.map((row) => {
                     const isToday = row.day === todayLabel;
-                    const label = !showAllHours && isToday ? "Today" : row.day;
-                    const highlightToday = showAllHours && isToday;
+                    const label = row.day;
+                    const highlightToday = hasWeeklyAvailability && isToday;
                     return (
                       <View
                         key={row.day}
@@ -648,7 +681,7 @@ export function ListingScreen({ navigation, route }: Props) {
                     );
                   });
                 })()}
-              </Pressable>
+              </View>
               <View style={styles.sectionDivider} />
               {/* Features */}
               <View style={styles.featuresSection}>
@@ -1630,15 +1663,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingTop: 14,
+    paddingBottom: 12,
     paddingHorizontal: 0,
   },
   contentCardSpacer: {
     height: 120,
   },
   contentWrap: {
-    marginTop: -25,
+    marginTop: -12,
     zIndex: 2,
   },
   sheetHandle: {
@@ -1651,86 +1684,124 @@ const styles = StyleSheet.create({
   },
   titleSection: {
     paddingHorizontal: 16,
-    paddingBottom: 18,
-  },
-  category: {
-    fontFamily: "Poppins-Medium",
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#D97706',
-    letterSpacing: 0.8,
-    marginBottom: 6,
+    paddingBottom: 14,
   },
   cardTitle: {
     fontFamily: "Poppins-SemiBold",
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
     color: '#111827',
-    lineHeight: 33,
-    marginBottom: 8,
+    lineHeight: 29,
+    marginBottom: 10,
   },
-  locationRow: {
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
+    gap: 8,
+    marginBottom: 8,
   },
-  location: {
+  typeChip: {
+    borderRadius: 999,
+    backgroundColor: "#F4ECE2",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  typeChipText: {
+    fontFamily: "Poppins-Medium",
+    fontSize: 11,
+    color: "#8A5A2B",
+    fontWeight: "600",
+  },
+  metaInline: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    flex: 1,
+    minWidth: 0,
+  },
+  metaInlineText: {
     fontFamily: "Poppins-Regular",
-    fontSize: 15,
-    color: '#6B7280',
+    fontSize: 14,
+    color: '#7A7167',
     fontWeight: '400',
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    marginTop: 0,
+    marginBottom: 2,
+    flexWrap: "wrap",
+  },
+  ratingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
-    marginTop: 2,
-    marginBottom: 6,
+    backgroundColor: "#FFF8E8",
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   summaryStrip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 10,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.border,
-    marginTop: 12,
-    paddingVertical: 12,
+    borderColor: "#E5E7EB",
+    marginTop: 10,
+    paddingVertical: 8,
   },
   summaryCell: {
     flex: 1,
     alignItems: "center",
-    paddingHorizontal: 8,
-    gap: 2,
+    paddingHorizontal: 6,
+    gap: 1,
   },
   summaryLabel: {
     fontFamily: "Poppins-Regular",
     color: colors.textSoft,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "600",
   },
   summaryDivider: {
     width: 1,
-    height: 28,
+    height: 24,
     backgroundColor: colors.border,
   },
   summaryValue: {
     fontFamily: "Poppins-SemiBold",
     color: colors.text,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
   },
   rating: {
     fontFamily: "Poppins-Medium",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#16a34a',
+    color: '#1D1515',
   },
   reviewCount: {
     fontFamily: "Poppins-Regular",
     fontSize: 12,
-    color: '#6B7280',
+    color: '#7A7167',
+  },
+  availabilityDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: "#2ECC8F",
+  },
+  availabilityDotOff: {
+    backgroundColor: "#930D13",
+  },
+  availabilityText: {
+    fontFamily: "Poppins-Medium",
+    fontSize: 12,
+    color: "#2F6F4F",
+  },
+  availabilityTextOff: {
+    color: "#930D13",
   },
   chipRow: {
     marginTop: 10,
@@ -1753,7 +1824,7 @@ const styles = StyleSheet.create({
   },
   timePickerSection: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
   timePickerWrapper: {
     overflow: "hidden",
@@ -1771,8 +1842,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
   },
   timePickerField: {
     flexDirection: "row",
@@ -1780,7 +1851,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#bfe2d8",
@@ -1809,13 +1880,13 @@ const styles = StyleSheet.create({
   },
   dateTimeValue: {
     fontFamily: "Poppins-SemiBold",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#111827',
   },
   offerBar: {
     backgroundColor: "#1f2937",
-    paddingVertical: 10,
+    paddingVertical: 8,
     alignItems: "center",
   },
   offerText: {
@@ -1832,11 +1903,11 @@ const styles = StyleSheet.create({
   },
   contentSections: {
     paddingHorizontal: 16,
-    paddingTop: 6,
+    paddingTop: 2,
   },
   sectionBlock: {
-    paddingTop: 16,
-    paddingBottom: 14,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
   sectionDivider: {
     height: 1,
@@ -1853,7 +1924,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 6,
   },
   hoursToggleText: {
     fontFamily: "Poppins-Medium",
@@ -1862,10 +1933,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   hoursSectionTitle: {
-    fontFamily: "Poppins-Medium",
-    fontSize: 12,
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 15,
     fontWeight: "600",
-    color: "#6B7280",
+    color: "#111827",
   },
   hoursRowToday: {
     backgroundColor: "#F0FDF4",
@@ -1898,15 +1969,16 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: "Poppins-SemiBold",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 10,
+    letterSpacing: -0.2,
+    marginBottom: 8,
   },
   sectionBody: {
     fontFamily: "Poppins-Regular",
     fontSize: 14,
-    lineHeight: 24,
+    lineHeight: 22,
     color: '#6B7280',
     fontWeight: '400',
   },
@@ -1926,18 +1998,18 @@ const styles = StyleSheet.create({
   },
   featuresSection: {
     paddingHorizontal: 16,
-    paddingBottom: 10,
-    paddingTop: 6,
+    paddingBottom: 8,
+    paddingTop: 4,
   },
   featureIconCard: {
     width: "18%",
-    minHeight: 68,
+    minHeight: 62,
     borderRadius: 12,
     borderWidth: 0,
     backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 4,
     paddingVertical: 2,
   },
   featureIconLabel: {
@@ -2014,7 +2086,7 @@ const styles = StyleSheet.create({
     color: "#6B7280",
   },
   reviewCarouselWrap: {
-    marginTop: 12,
+    marginTop: 8,
   },
   reviewCarousel: {
     paddingRight: 12,
@@ -2025,7 +2097,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    padding: 14,
+    padding: 12,
     borderRadius: 12,
   },
   reviewCardTop: {
@@ -2125,7 +2197,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    padding: 16,
+    padding: 14,
     borderRadius: 12,
     marginTop: 20,
     gap: 12,
@@ -2218,7 +2290,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
-    paddingTop: 10,
+    paddingTop: 8,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -2241,7 +2313,7 @@ const styles = StyleSheet.create({
   },
   priceAmount: {
     fontFamily: "Poppins-Bold",
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '700',
     color: '#111827',
   },
@@ -2253,8 +2325,8 @@ const styles = StyleSheet.create({
   },
   bookButton: {
     backgroundColor: '#2a9d7f',
-    paddingVertical: 10,
-    paddingHorizontal: 28,
+    paddingVertical: 11,
+    paddingHorizontal: 26,
     borderRadius: 14,
   },
   bookButtonText: {

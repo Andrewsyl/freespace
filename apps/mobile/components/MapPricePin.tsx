@@ -10,14 +10,17 @@ type MapPricePinProps = {
 
 export function MapPricePin({ price, selected = false, soldOut = false }: MapPricePinProps) {
   const priceText = soldOut ? "Sold out" : `€${price}`;
+  const fill = soldOut ? "#F3F4F6" : selected ? "#111827" : "#FFFFFF";
+  const stroke = soldOut ? "#9CA3AF" : "#111827";
+  const textColor = soldOut ? "#6B7280" : selected ? "#FFFFFF" : "#111827";
 
   const dimensions = useMemo(() => {
     const textLength = priceText.length;
-    const baseWidth = soldOut ? 56 : 46;
+    const baseWidth = soldOut ? 58 : 46;
     const extraWidth = soldOut ? 0 : Math.max(0, (textLength - 3) * 7);
     const width = Math.max(baseWidth, baseWidth + extraWidth);
-    const bubbleHeight = soldOut ? 22 : 26;
-    const tailHeight = soldOut ? 5 : 6;
+    const bubbleHeight = soldOut ? 20 : 26;
+    const tailHeight = soldOut ? 4 : 6;
     const totalHeight = bubbleHeight + tailHeight;
     const tailWidth = soldOut ? 8 : 10;
 
@@ -25,7 +28,7 @@ export function MapPricePin({ price, selected = false, soldOut = false }: MapPri
   }, [priceText, soldOut]);
 
   const { width, bubbleHeight, tailHeight, totalHeight, tailWidth } = dimensions;
-  const strokeWidth = 1.5;
+  const strokeWidth = 1;
   const radius = bubbleHeight / 2;
   const padding = strokeWidth;
 
@@ -61,9 +64,9 @@ export function MapPricePin({ price, selected = false, soldOut = false }: MapPri
       <Svg width={viewBoxWidth} height={viewBoxHeight} viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}>
         <Path
           d={pinPath}
-          fill={soldOut ? "#f1f5f9" : selected ? "#000000" : "#FFFFFF"}
-          stroke="rgba(0,0,0,0.16)"
-          strokeWidth={1.25}
+          fill={fill}
+          stroke={stroke}
+          strokeWidth={1.9}
           strokeLinejoin="round"
         />
       </Svg>
@@ -74,6 +77,7 @@ export function MapPricePin({ price, selected = false, soldOut = false }: MapPri
             styles.priceText,
             soldOut && styles.priceTextSoldOut,
             selected && !soldOut && styles.priceTextSelected,
+            { color: textColor },
           ]}
         >
           {priceText}
@@ -87,10 +91,10 @@ const styles = StyleSheet.create({
   container: {
     alignItems: "center",
     justifyContent: "flex-start",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
     elevation: 4,
   },
   textContainer: {
@@ -103,15 +107,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   priceText: {
-    color: "#000000",
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "700",
+    letterSpacing: -0.2,
   },
   priceTextSelected: {
     color: "#FFFFFF",
   },
   priceTextSoldOut: {
-    color: "#94a3b8",
-    fontSize: 10,
+    color: "#94A3B8",
+    fontSize: 9,
   },
 });

@@ -209,9 +209,9 @@ export function MapBottomCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: "#D2C2A9",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
     position: "absolute",
     shadowColor: "#1D1515",
     shadowOffset: { width: 0, height: 6 },
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   // Image section
   imageContainer: {
     width: "100%",
-    height: 108,
+    height: 84,
     position: "relative",
     backgroundColor: "#F2EEE7",
   },
@@ -305,31 +305,31 @@ const styles = StyleSheet.create({
   
   // Content section
   contentSection: {
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 12,
+    paddingHorizontal: 10,
+    paddingTop: 7,
+    paddingBottom: 9,
     backgroundColor: "#FFFFFF",
   },
   
   title: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "700",
     color: "#111827",
-    marginBottom: 4,
+    marginBottom: 3,
     letterSpacing: -0.3,
-    lineHeight: 19,
+    lineHeight: 17,
   },
   
   detailsRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: 5,
     gap: 8,
   },
   
   detailText: {
-    fontSize: 11,
+    fontSize: 9,
     color: "#6B7280",
     fontWeight: "500",
     flex: 1,
@@ -345,12 +345,12 @@ const styles = StyleSheet.create({
   featureIconWrap: {
     alignItems: "center",
     justifyContent: "center",
-    width: 22,
-    height: 22,
+    width: 18,
+    height: 18,
     backgroundColor: "#FCFCFB",
     borderColor: "#D2C2A9",
     borderWidth: 1,
-    borderRadius: 11,
+    borderRadius: 9,
   },
 
   starText: {
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   dashedDivider: {
     height: 1,
     backgroundColor: "#E8DDCD",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   
   // Price section
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   },
   
   priceLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "600",
     color: "#6B7280",
   },
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   },
   
   currentPrice: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: "800",
     color: "#1D1515",
     letterSpacing: -0.5,

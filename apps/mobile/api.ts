@@ -390,7 +390,7 @@ export async function sendSupportMessage(token: string, payload: { subject: stri
 }
 
 export async function login(email: string, password: string) {
-  const response = await fetch(`${baseUrl}/api/auth/login`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -406,7 +406,7 @@ export async function register(
   password: string,
   payload?: { termsVersion: string; privacyVersion: string }
 ) {
-  const response = await fetch(`${baseUrl}/api/auth/register`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, ...payload }),
@@ -418,7 +418,7 @@ export async function register(
 }
 
 export async function refreshSession(refreshToken: string) {
-  const response = await fetch(`${baseUrl}/api/auth/refresh`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refreshToken }),

@@ -95,11 +95,21 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const [draftDate, setDraftDate] = useState<Date | null>(null);
   const { reset: resetGlobalLoading } = useGlobalLoading();
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [plateFocused, setPlateFocused] = useState(false);
+  const scrollRef = useRef<ScrollView | null>(null);
+  const plateScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const plateSectionYRef = useRef(0);
 
   useEffect(() => {
     if (Platform.OS === "android") {
       UIManager.setLayoutAnimationEnabledExperimental?.(true);
     }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (plateScrollTimeoutRef.current) clearTimeout(plateScrollTimeoutRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -279,6 +289,13 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setShowBreakdown((prev) => !prev);
   };
+
+  const scrollPlateIntoView = useCallback(() => {
+    scrollRef.current?.scrollTo({
+      y: Math.max(0, plateSectionYRef.current - 24),
+      animated: true,
+    });
+  }, []);
 
   const scheduleBookingReminders = useCallback(async () => {
     if (!listing) return;
@@ -494,7 +511,11 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           </View>
         </View>
       ) : listing ? (
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <View style={styles.summaryMapWrap}>
@@ -557,7 +578,12 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             </View>
           </View>
 
-          <View style={styles.sectionCard}>
+          <View
+            style={styles.sectionCard}
+            onLayout={(event) => {
+              plateSectionYRef.current = event.nativeEvent.layout.y;
+            }}
+          >
             <Text style={styles.fieldLabel}>Vehicle registration</Text>
             <View style={styles.regRow}>
               <View style={styles.plateCountry} />
@@ -571,6 +597,16 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                   autoCorrect={false}
                   textAlign="center"
                   style={styles.regInput}
+                  onFocus={() => {
+                    setPlateFocused(true);
+                    if (plateScrollTimeoutRef.current) clearTimeout(plateScrollTimeoutRef.current);
+                    plateScrollTimeoutRef.current = setTimeout(() => {
+                      scrollPlateIntoView();
+                    }, Platform.OS === "android" ? 180 : 60);
+                  }}
+                  onBlur={() => {
+                    setPlateFocused(false);
+                  }}
                 />
               </View>
             </View>
@@ -618,7 +654,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           <Text style={styles.error}>Listing not found.</Text>
         </View>
       )}
-      {listing && user ? (
+      {listing && user && !plateFocused ? (
         <View style={[styles.footerBar, { paddingBottom: 12 + insets.bottom }]}>
           <TouchableOpacity
             style={[
