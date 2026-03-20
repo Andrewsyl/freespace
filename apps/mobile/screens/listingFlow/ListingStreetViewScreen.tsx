@@ -90,10 +90,11 @@ export function ListingStreetViewScreen({ navigation }: Props) {
                   pov?: { heading: number; pitch: number };
                 };
                 if (payload.type === "pov" && payload.pov) {
+                  const { pov } = payload;
                   setDraft((prev) => ({
                     ...prev,
-                    coverHeading: Math.round(payload.pov.heading),
-                    coverPitch: Math.round(payload.pov.pitch),
+                    coverHeading: Math.round(pov.heading),
+                    coverPitch: Math.round(pov.pitch),
                   }));
                   navigation.navigate("ListingDetails");
                 }

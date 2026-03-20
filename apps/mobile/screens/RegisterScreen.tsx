@@ -80,15 +80,13 @@ export function RegisterScreen({ navigation }: Props) {
     setError(null);
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      const userInfo = await GoogleSignin.signIn();
-      let idToken = userInfo.idToken ?? null;
-      if (!idToken) {
-        try {
-          const tokens = await GoogleSignin.getTokens();
-          idToken = tokens.idToken ?? null;
-        } catch {
-          idToken = null;
-        }
+      await GoogleSignin.signIn();
+      let idToken: string | null = null;
+      try {
+        const tokens = await GoogleSignin.getTokens();
+        idToken = tokens.idToken ?? null;
+      } catch {
+        idToken = null;
       }
       if (!idToken) {
         return;

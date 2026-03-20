@@ -59,8 +59,8 @@ export function HistoryScreen({ navigation, route }: Props) {
     }, [])
   );
 
-  const loadBookings = useCallback(async (options?: { silent?: boolean }) => {
-    if (!token) return;
+  const loadBookings = useCallback(async (options?: { silent?: boolean }): Promise<BookingSummary[]> => {
+    if (!token) return [];
     let active = true;
     if (!options?.silent) {
       setLoading(true);
@@ -68,11 +68,11 @@ export function HistoryScreen({ navigation, route }: Props) {
     }
     try {
       const data = await listMyBookings(token);
-      if (!active) return;
+      if (!active) return [];
       setBookings(data.driverBookings ?? []);
       return data.driverBookings ?? [];
     } catch (err) {
-      if (!active) return;
+      if (!active) return [];
       setError(err instanceof Error ? err.message : "Could not load bookings");
       return [];
     } finally {
@@ -80,9 +80,6 @@ export function HistoryScreen({ navigation, route }: Props) {
         setLoading(false);
       }
     }
-    return () => {
-      active = false;
-    };
   }, [token]);
 
   useEffect(() => {
@@ -460,7 +457,7 @@ export function HistoryScreen({ navigation, route }: Props) {
       <View style={styles.contentWrapper}>
         {loading ? (
           <View style={styles.inlineLoading}>
-            <Spinner size={32} />
+            <Spinner size="large" />
             <Text style={styles.inlineLoadingText}>Loading bookings…</Text>
           </View>
         ) : null}
@@ -775,6 +772,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 12,
     elevation: 2,
+  },
+  card: {
+    backgroundColor: colors.cardBg,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  cardTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  cardBody: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
   },
   loadMoreButton: {
     alignItems: "center",

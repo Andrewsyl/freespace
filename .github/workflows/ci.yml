@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate-and-test:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgres://test:test@localhost:5432/carparking_test
+      JWT_SECRET: test-jwt-secret-123456
+      WEB_BASE_URL: http://localhost:3000
+      NEXT_PUBLIC_API_BASE: http://localhost:4000
+      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: test-google-maps-key
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_123456789
+      NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID: test-google-web-client
+      EXPO_PUBLIC_API_BASE: http://127.0.0.1:4000
+      EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: test-google-maps-key
+      EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_123456789
+      STRIPE_SECRET_KEY: sk_test_123456789
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "yarn"
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Sanity checks
+        run: |
+          yarn check:env:local
+          yarn check:migrations
+          yarn check:firebase
+
+      - name: API build and tests
+        run: |
+          yarn build:api
+          yarn test:api
+
+      - name: Web lint and build
+        run: |
+          yarn lint:web
+          yarn build:web

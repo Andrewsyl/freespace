@@ -1,9 +1,10 @@
 import { ReactNode, useEffect, useRef } from "react";
+import type { GestureResponderEvent } from "react-native";
 import { Animated, Pressable, StyleSheet, View } from "react-native";
 
 type Props = {
   children: ReactNode;
-  onPress?: () => void;
+  onPress?: (event: GestureResponderEvent) => void;
   accessibilityState?: { selected?: boolean };
 };
 

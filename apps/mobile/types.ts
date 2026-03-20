@@ -1,6 +1,6 @@
 export type RootStackParamList = {
   Tabs: { screen?: "Search" | "History" | "Profile" } | undefined;
-  Search: undefined;
+  Search: { hideTabBar?: boolean } | undefined;
   Listing: {
     id: string;
     from: string;
@@ -22,7 +22,7 @@ export type RootStackParamList = {
   SignIn: undefined;
   Register: undefined;
   ResetPassword: undefined;
-  Profile: undefined;
+  Profile: { hideTabBar?: boolean } | undefined;
   PersonalInfo: undefined;
   LoginSecurity: undefined;
   Legal: undefined;

@@ -1,6 +1,7 @@
 import type { ListingDetail, ListingSummary, SearchParams } from "./types";
+import { mobileEnv } from "./env";
 
-const baseUrl = process.env.EXPO_PUBLIC_API_BASE ?? "http://localhost:4000";
+const baseUrl = mobileEnv.apiBase;
 const REQUEST_TIMEOUT_MS = 15000;
 
 if (__DEV__) {

@@ -22,9 +22,11 @@ coverage
 .DS_Store
 *.log
 pnpm-lock.yaml
+package-lock.json
 npm-debug.log
 .idea
 .vscode
+apps/web/test-results/
 
 # Local secrets / editor junk
 apps/mobile/*.swp

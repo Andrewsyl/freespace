@@ -595,7 +595,7 @@ export function SearchScreen({ navigation }: Props) {
             setTimeout(() => reject(new Error("Location timeout")), ms)
           ),
         ]);
-      let position = await withTimeout(
+      let position: Location.LocationObject | null = await withTimeout(
         Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
         8000
       );
@@ -944,7 +944,7 @@ export function SearchScreen({ navigation }: Props) {
   }, [startAt, endAt]);
 
   const priceForListing = useCallback(
-    (listing: ListingResult) => {
+    (listing: ListingSummary) => {
       const day = Number(listing.price_per_day);
       const hourly = Number.isFinite(day) ? day / 24 : 0;
       const total = hourly * durationHours;
@@ -979,6 +979,8 @@ export function SearchScreen({ navigation }: Props) {
             mapPadding={{
               top: insets.top + 120,
               bottom: 180 + insets.bottom + 16,
+              left: 16,
+              right: 16,
             }}
             provider="google"
             customMapStyle={LIGHT_MAP_STYLE}
@@ -1499,9 +1501,7 @@ export function SearchScreen({ navigation }: Props) {
                   <DatePicker
                     date={draftDate ?? (pickerField === "start" ? startAt : endAt)}
                     mode="datetime"
-                    androidVariant="iosClone"
-                    minuteInterval={30}
-                    textColor="#101828"
+                        minuteInterval={30}
                     onDateChange={(date) => setDraftDate(date)}
                   />
                   <View style={styles.pickerFooter}>
@@ -1546,9 +1546,7 @@ export function SearchScreen({ navigation }: Props) {
               open={pickerVisible}
               date={draftDate ?? (pickerField === "start" ? startAt : endAt)}
               mode="datetime"
-              androidVariant="iosClone"
               minuteInterval={30}
-              textColor="#101828"
               onConfirm={(date) => {
                 setDraftDate(date);
                 if (pickerField === "start") {

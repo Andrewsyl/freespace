@@ -169,6 +169,11 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         return;
       }
 
+      if (!("paymentIntentClientSecret" in result)) {
+        setExtendError("We could not prepare the extension payment.");
+        return;
+      }
+
       const initResult = await initPaymentSheet({
         merchantDisplayName: "FreeSpace",
         customerId: result.customerId,
@@ -303,7 +308,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         ) : null}
 
         {/* Action Buttons */}
-        {isUpcoming && localStatus !== "canceled" ? (
+        {isUpcoming && localStatus !== "cancelled" ? (
           <>
             {canCheckIn ? (
               <TouchableOpacity style={styles.actionBtn} onPress={handleCheckIn}>
@@ -327,7 +332,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
           </TouchableOpacity>
         ) : null}
 
-        {isInProgress && localStatus !== "canceled" ? (
+        {isInProgress ? (
           <TouchableOpacity
             style={[styles.actionBtn, extendBusy && styles.actionBtnDisabled]}
             onPress={() => setExtendOpen(true)}

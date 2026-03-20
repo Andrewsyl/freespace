@@ -17,7 +17,7 @@ type FlowStackParamList = {
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingReview">;
 
 export function ListingReviewScreen({ navigation }: Props) {
-  const { draft, listingId } = useListingFlow();
+  const { draft, listingId, setDraft } = useListingFlow();
   const { token } = useAuth();
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const [submitting, setSubmitting] = useState(false);
@@ -70,8 +70,6 @@ export function ListingReviewScreen({ navigation }: Props) {
           address: draft.location.address || "Dublin",
           pricePerDay: Number.parseFloat(draft.pricePerDay),
           availabilityText: draft.availability.detail,
-          latitude: draft.location.latitude,
-          longitude: draft.location.longitude,
           imageUrls,
           amenities: draft.accessOptions,
           accessCode: draft.accessCode.trim() || null,

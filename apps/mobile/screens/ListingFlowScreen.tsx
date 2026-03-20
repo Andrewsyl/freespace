@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { ListingAvailabilityScreen } from "./listingFlow/ListingAvailabilityScreen";
 import { ListingDetailsScreen } from "./listingFlow/ListingDetailsScreen";
 import { ListingLocationScreen } from "./listingFlow/ListingLocationScreen";
-import { ListingPhotosScreen } from "./listingFlow/ListingPhotosScreen.tsx";
+import { ListingPhotosScreen } from "./listingFlow/ListingPhotosScreen";
 import { ListingPriceScreen } from "./listingFlow/ListingPriceScreen";
 import { ListingReviewScreen } from "./listingFlow/ListingReviewScreen";
 import { ListingStreetViewScreen } from "./listingFlow/ListingStreetViewScreen";
@@ -133,7 +133,7 @@ export function ListingFlowScreen({ route }: Props) {
               availability.find((entry) => entry.kind === "open") ?? availability[0];
             const hasRepeat =
               Array.isArray(openEntry.repeatWeekdays) && openEntry.repeatWeekdays.length > 0;
-            const isDaily = hasRepeat && openEntry.repeatWeekdays.length === 7;
+            const isDaily = hasRepeat && (openEntry.repeatWeekdays?.length ?? 0) === 7;
             const mode = isDaily ? "daily" : hasRepeat ? "recurring" : "dates";
             const weekdaysFromEntries = Array.from(
               new Set(

@@ -7,7 +7,7 @@ export async function getNotificationImageAttachment(): Promise<
   NotificationContentInput["attachments"]
 > {
   if (cachedNotificationImageUri) {
-    return [{ identifier: "red_car", url: cachedNotificationImageUri }];
+    return [{ identifier: "red_car", url: cachedNotificationImageUri, type: "image/png" }];
   }
 
   const asset = Asset.fromModule(require("./assets/red_car.png"));
@@ -15,5 +15,5 @@ export async function getNotificationImageAttachment(): Promise<
   cachedNotificationImageUri = asset.localUri ?? asset.uri ?? null;
   if (!cachedNotificationImageUri) return [];
 
-  return [{ identifier: "red_car", url: cachedNotificationImageUri }];
+  return [{ identifier: "red_car", url: cachedNotificationImageUri, type: "image/png" }];
 }

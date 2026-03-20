@@ -1,12 +1,13 @@
 import type { Listing } from "../components/ListingCard";
 import type { SearchFilters } from "../components/SearchForm";
 import type { PaymentMethod, PaymentHistoryItem, PayoutBalance, PayoutHistoryItem } from "../types/payments";
+import { webEnv } from "./env";
 
 // In the browser, use a relative base so requests go through Next.js rewrites
 // (works from any device/IP). On the server, call the API directly.
 const API_BASE =
   typeof window === "undefined"
-    ? (process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:4000")
+    ? webEnv.NEXT_PUBLIC_API_BASE
     : "";
 
 async function handleResponse<T>(res: Response): Promise<{ data: T | null; error: string | null }> {

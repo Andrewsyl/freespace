@@ -50,6 +50,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BottomTabButton } from "./components/BottomTabButton";
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { GlobalLoadingProvider, useGlobalLoading } from "./components/GlobalLoading";
+import { mobileEnv } from "./env";
 import { colors } from "./theme/colors";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -105,7 +106,7 @@ export default function App() {
   );
 
 
-  const stripeKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
+  const stripeKey = mobileEnv.stripePublishableKey;
 
   if (!fontsLoaded) {
     return <View style={styles.app} />;
@@ -185,7 +186,6 @@ function AppNavigator() {
         <Stack.Navigator
           screenOptions={{ headerShown: false }}
           initialRouteName="Tabs"
-          detachInactiveScreens={false}
         >
           <Stack.Screen name="Tabs" component={MainTabs} />
           <Stack.Screen name="Listing" component={ListingScreen} />
@@ -234,8 +234,6 @@ function MainTabs() {
   };
   return (
     <Tab.Navigator
-      detachInactiveScreens={false}
-      lazy={false}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.brand.teal,
@@ -243,14 +241,12 @@ function MainTabs() {
         tabBarStyle: baseTabBarStyle,
         tabBarLabelStyle: {
           fontSize: 9,
-          fontWeight: '600',
+          fontWeight: "600",
           marginTop: 0,
           letterSpacing: 0.1,
         },
         tabBarButton: (props) => <BottomTabButton {...props} />,
-        lazy: false,
       }}
-      detachInactiveScreens={false}
     >
       <Tab.Screen
         name="Search"
@@ -258,7 +254,7 @@ function MainTabs() {
         options={({ route }) => ({
           tabBarStyle: {
             ...baseTabBarStyle,
-            display: route.params?.hideTabBar ? "none" : "flex",
+            display: (route.params as { hideTabBar?: boolean } | undefined)?.hideTabBar ? "none" : "flex",
           },
           tabBarLabel: "Search",
           tabBarIcon: ({ focused, color, size }) => (

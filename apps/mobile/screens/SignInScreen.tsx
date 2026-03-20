@@ -264,9 +264,9 @@ export function SignInScreen({ navigation }: Props) {
                 setAuthSuccess(null);
                 try {
                   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-                  const userInfo = await GoogleSignin.signIn();
+                  await GoogleSignin.signIn();
                   const tokens = await GoogleSignin.getTokens();
-                  const idToken = userInfo.idToken ?? tokens.idToken;
+                  const idToken = tokens.idToken;
                   if (!idToken) {
                     throw new Error("Missing Google idToken");
                   }

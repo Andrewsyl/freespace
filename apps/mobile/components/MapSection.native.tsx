@@ -7,7 +7,7 @@ import MapView, {
   PROVIDER_GOOGLE,
   type Region,
 } from "react-native-maps";
-import ViewShot, { type ViewShotRef } from "react-native-view-shot";
+import ViewShot from "react-native-view-shot";
 import { MapPricePin } from "./MapPricePin";
 
 type ListingResult = {
@@ -19,6 +19,8 @@ type ListingResult = {
   latitude?: number | null;
   longitude?: number | null;
 };
+
+type ViewShotRef = InstanceType<typeof ViewShot>;
 
 type MapRegion = Region;
 const PIN_STYLE_VERSION = "v16";
@@ -172,7 +174,7 @@ export default function MapSection({
       pendingCaptures.current.add(key);
       void ref
         .capture?.()
-        .then((uri) => {
+        .then((uri: string | undefined) => {
           if (!uri) return;
           setPinImages((prev) => ({ ...prev, [key]: uri }));
         })
@@ -222,7 +224,7 @@ export default function MapSection({
         onMapLoaded={onMapLoaded}
         onMapReady={onMapReady}
         googleMapId={googleMapId}
-        customMapStyle={customMapStyle}
+        customMapStyle={customMapStyle as any}
         onPress={(event) => {
           if (!onSelect) return;
           const { latitude, longitude } = event.nativeEvent.coordinate;

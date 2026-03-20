@@ -44,7 +44,7 @@ export const colors = {
   info: "#3B82F6",
   border: "#E5E7EB",
   divider: "#F3F4F6",
-  overlay: "rgba(0, 0, 0, 0.5)",
+  overlayDark: "rgba(0, 0, 0, 0.5)",
   rating: {
     active: "#FBBF24",
     inactive: "#D1D5DB",

@@ -237,14 +237,15 @@ router.post("/payouts/run", requireAuth, enforceBlockedList, payoutLimiter, asyn
   }
 });
 
-const availabilitySchema = z
-  .object({
-    kind: z.enum(["open", "blocked"]),
-    startsAt: z.string().datetime(),
-    endsAt: z.string().datetime(),
-    repeatWeekdays: z.array(z.number().int().min(0).max(6)).optional(),
-    repeatUntil: z.string().datetime().optional().nullable(),
-  })
+const availabilityShape = z.object({
+  kind: z.enum(["open", "blocked"]),
+  startsAt: z.string().datetime(),
+  endsAt: z.string().datetime(),
+  repeatWeekdays: z.array(z.number().int().min(0).max(6)).optional(),
+  repeatUntil: z.string().datetime().optional().nullable(),
+});
+
+const availabilitySchema = availabilityShape
   .superRefine((value, ctx) => {
     const start = Date.parse(value.startsAt);
     const end = Date.parse(value.endsAt);
@@ -257,6 +258,8 @@ const availabilitySchema = z
       });
     }
   });
+
+const partialAvailabilitySchema = availabilityShape.partial();
 
 const listingIdParamSchema = z.object({
   id: z.string().uuid(),
@@ -313,7 +316,7 @@ router.patch("/availability/:availabilityId", requireAuth, enforceBlockedList, a
     if (!hostId) return res.status(401).json({ message: "Unauthorized" });
     const gate = await requireActiveHost(hostId);
     if (!gate.ok) return res.status(403).json({ message: gate.message });
-    const payload = availabilitySchema.partial().parse(req.body);
+    const payload = partialAvailabilitySchema.parse(req.body);
     const updated = await updateAvailabilityEntry({
       id: availabilityId,
       hostId,

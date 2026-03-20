@@ -820,7 +820,7 @@ router.post("/:id/extend-confirm", requireAuth, enforceBlockedList, bookingLimit
         newEndTime: requestedEnd.toISOString(),
         newAmountCents: newTotalCents,
         paymentIntentId,
-        receiptUrl: intent.charges?.data?.[0]?.receipt_url ?? null,
+        receiptUrl: (intent as any).charges?.data?.[0]?.receipt_url ?? null,
       });
       if (!updated) {
         return res.status(400).json({ message: "Booking cannot be extended" });
@@ -1015,7 +1015,7 @@ router.post("/:id/change-confirm", requireAuth, enforceBlockedList, bookingLimit
         newEndTime: requestedEnd.toISOString(),
         newAmountCents: newTotalCents,
         paymentIntentId,
-        receiptUrl: intent.charges?.data?.[0]?.receipt_url ?? null,
+        receiptUrl: (intent as any).charges?.data?.[0]?.receipt_url ?? null,
       });
       if (!updated) {
         return res.status(400).json({ message: "Booking cannot be updated" });
@@ -1085,7 +1085,7 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
       if (intent.status !== "succeeded") {
         return res.status(400).json({ message: `Payment not completed (${intent.status})` });
       }
-      receiptUrl = intent.charges?.data?.[0]?.receipt_url ?? null;
+      receiptUrl = (intent as any).charges?.data?.[0]?.receipt_url ?? null;
     }
     const ok = await updateBookingStatusByPaymentIntent({ paymentIntentId, status, receiptUrl });
     if (!ok) return res.status(404).json({ message: "Booking not found" });
@@ -1276,7 +1276,7 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         const intent = await stripe.paymentIntents.retrieve(session.payment_intent as string, {
           expand: ["charges.data.balance_transaction"],
         });
-        receiptUrl = intent.charges?.data?.[0]?.receipt_url ?? null;
+        receiptUrl = (intent as any).charges?.data?.[0]?.receipt_url ?? null;
       }
       await updateBookingStatus({
         checkoutSessionId: session.id,
@@ -1397,7 +1397,7 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       await updateBookingStatusByPaymentIntent({
         paymentIntentId,
         status: "confirmed",
-        receiptUrl: intent.charges?.data?.[0]?.receipt_url ?? null,
+        receiptUrl: (intent as any).charges?.data?.[0]?.receipt_url ?? null,
       });
       const targets = await getBookingNotificationTargetsByPaymentIntent(paymentIntentId);
       if (targets) {

@@ -8,7 +8,7 @@ if (!secret || secret === "sk_test_placeholder" || secret === "sk_test_replace")
   console.warn("STRIPE_SECRET_KEY not set; using mock Stripe responses for local development.");
 }
 
-export const stripe = secret ? new Stripe(secret, { apiVersion: "2024-06-20" }) : null;
+export const stripe = secret ? new Stripe(secret, { apiVersion: "2024-06-20" as any }) : null;
 
 export type PaymentInput = {
   amount: number;

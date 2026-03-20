@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { webEnv } from "./lib/env";
 
-const BASIC_USER = process.env.BASIC_AUTH_USER ?? "";
-const BASIC_PASS = process.env.BASIC_AUTH_PASS ?? "";
+const BASIC_USER = webEnv.BASIC_AUTH_USER ?? "";
+const BASIC_PASS = webEnv.BASIC_AUTH_PASS ?? "";
 
 const isAuthConfigured = BASIC_USER.length > 0 && BASIC_PASS.length > 0;
 

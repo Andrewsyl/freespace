@@ -64,11 +64,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   inputError: {
-    borderColor: colors.error,
+    borderColor: colors.error.main,
   },
   errorText: {
     ...typography.caption,
-    color: colors.error,
+    color: colors.error.main,
     marginTop: spacing.xs,
   },
 });

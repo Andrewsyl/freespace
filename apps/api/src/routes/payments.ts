@@ -169,7 +169,7 @@ router.get("/payments/history", requireAuth, enforceBlockedList, paymentsLimiter
       limit: 20,
     });
     const payments = paymentIntents.data.map((pi) => {
-      const charge = Array.isArray(pi.charges?.data) ? pi.charges.data[0] : undefined;
+      const charge = Array.isArray((pi as any).charges?.data) ? (pi as any).charges.data[0] : undefined;
       return {
         id: pi.id,
         booking_id: pi.metadata?.booking_id ?? undefined,

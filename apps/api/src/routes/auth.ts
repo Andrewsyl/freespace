@@ -28,8 +28,8 @@ import {
   setPhoneVerificationToken,
   verifyUserPhone,
 } from "../lib/db.js";
-import { isMailerConfigured, sendMail } from "../lib/mailer.ts";
-import { sendSms, SmsConfigError } from "../lib/sms.ts";
+import { isMailerConfigured, sendMail } from "../lib/mailer.js";
+import { sendSms, SmsConfigError } from "../lib/sms.js";
 import { requireAuth } from "../middleware/auth.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
 import { enforceBlockedList } from "../middleware/fraud.js";

@@ -184,8 +184,6 @@ export function ListingReviewScreen({ navigation }: Props) {
           address: draft.location.address || "Dublin",
           pricePerDay: Number.parseFloat(draft.pricePerDay),
           availabilityText: draft.availability.detail,
-          latitude: draft.location.latitude,
-          longitude: draft.location.longitude,
           imageUrls,
           amenities: draft.accessOptions,
           accessCode: draft.accessCode.trim() || null,

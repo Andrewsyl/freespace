@@ -17,7 +17,7 @@ import type { RootStackParamList } from "../types";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import { ArrowLeft } from "lucide-react-native";
 
-type Props = NativeStackScreenProps<RootStackParamList, "CreateListing">;
+type Props = NativeStackScreenProps<any, any>;
 
 export function CreateListingScreen({ navigation }: Props) {
   const { token, user } = useAuth();

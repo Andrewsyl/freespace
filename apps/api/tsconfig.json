@@ -2,14 +2,13 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
+    "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "outDir": "dist",
     "rootDir": "src",
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "noEmitOnError": true,
-    "allowImportingTsExtensions": true
+    "noEmitOnError": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]

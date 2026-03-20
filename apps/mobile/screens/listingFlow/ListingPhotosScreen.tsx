@@ -46,8 +46,10 @@ export function ListingPhotosScreen({ navigation }: Props) {
     if (!token) throw new Error("Sign in to upload photos.");
     const contentType = asset.mimeType ?? "image/jpeg";
     const upload = await getListingImageUploadUrl({ token, contentType });
+    if (!asset.uri) throw new Error("Selected photo is missing a file URI.");
     const fileResponse = await fetch(asset.uri);
     const blob = await fileResponse.blob();
+    if (!upload.signedUrl) throw new Error("Upload URL is missing.");
     const putResult = await fetch(upload.signedUrl, {
       method: "PUT",
       headers: { "Content-Type": contentType },
@@ -85,7 +87,10 @@ export function ListingPhotosScreen({ navigation }: Props) {
       const nextUrls: string[] = [];
       for (let i = 0; i < result.assets.length; i += 1) {
         setUploadLabel(`Uploading ${i + 1} of ${result.assets.length}...`);
-        const url = await uploadAsset(result.assets[i]);
+        const asset = result.assets[i];
+        if (!asset) continue;
+        const url = await uploadAsset(asset);
+        if (!url) continue;
         nextUrls.push(url);
       }
       setDraft((prev) => {

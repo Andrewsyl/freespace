@@ -1129,7 +1129,7 @@ export async function upsertPushToken({
     `,
     [userId, expoToken, platform, deviceId ?? null]
   );
-  return res.rowCount > 0;
+  return (res.rowCount ?? 0) > 0;
 }
 
 export async function deletePushToken({
@@ -1146,7 +1146,7 @@ export async function deletePushToken({
     `,
     [userId, expoToken]
   );
-  return res.rowCount > 0;
+  return (res.rowCount ?? 0) > 0;
 }
 
 export async function listPushTokensByUserIds(userIds: string[]) {
@@ -1186,7 +1186,7 @@ export async function hasPushToken(userId: string, expoToken: string) {
     `,
     [userId, expoToken]
   );
-  return res.rowCount > 0;
+  return (res.rowCount ?? 0) > 0;
 }
 
 export async function getBookingNotificationTargetsByPaymentIntent(paymentIntentId: string) {
@@ -1297,7 +1297,7 @@ export async function insertScheduledNotification({
     `,
     [userId, bookingId, type, scheduledAt, payload ?? null]
   );
-  return res.rowCount > 0;
+  return (res.rowCount ?? 0) > 0;
 }
 
 export async function listDueScheduledNotifications(limit = 50) {
@@ -1331,7 +1331,7 @@ export async function markScheduledNotificationSent(id: string) {
     `,
     [id]
   );
-  return res.rowCount > 0;
+  return (res.rowCount ?? 0) > 0;
 }
 
 export async function deleteScheduledNotificationsByBooking(bookingId: string) {
@@ -1342,7 +1342,7 @@ export async function deleteScheduledNotificationsByBooking(bookingId: string) {
     `,
     [bookingId]
   );
-  return res.rowCount > 0;
+  return (res.rowCount ?? 0) > 0;
 }
 
 export async function getListingWithHostAccount(listingId: string) {
@@ -1912,7 +1912,7 @@ export async function cancelBookingWithRefund({
     `,
     [bookingId, driverId, refundId ?? null]
   );
-  return res.rowCount > 0;
+  return (res.rowCount ?? 0) > 0;
 }
 
 export async function listUserBookings(userId: string) {
@@ -2130,7 +2130,7 @@ export async function markPayoutProcessing(bookingId: string) {
     `,
     [bookingId]
   );
-  return res.rowCount > 0;
+  return (res.rowCount ?? 0) > 0;
 }
 
 export async function markPayoutTransferred({
@@ -2150,7 +2150,7 @@ export async function markPayoutTransferred({
     `,
     [bookingId, transferId]
   );
-  return res.rowCount > 0;
+  return (res.rowCount ?? 0) > 0;
 }
 
 export async function markPayoutPending(bookingId: string) {
@@ -2163,7 +2163,7 @@ export async function markPayoutPending(bookingId: string) {
     `,
     [bookingId]
   );
-  return res.rowCount > 0;
+  return (res.rowCount ?? 0) > 0;
 }
 
 export async function setHostStripeAccountId(userId: string, accountId: string) {
@@ -2182,7 +2182,7 @@ export async function deleteUserAccount(userId: string) {
   );
   await pool.query(`DELETE FROM listings WHERE host_id = $1`, [userId]);
   const res = await pool.query(`DELETE FROM users WHERE id = $1 RETURNING id`, [userId]);
-  return res.rowCount > 0;
+  return (res.rowCount ?? 0) > 0;
 }
 
 // Admin utilities
@@ -2825,7 +2825,7 @@ export async function getBookingForReview(bookingId: string) {
 
 export async function hasExistingReview({ bookingId, role }: { bookingId: string; role: "driver_review" | "host_review" }) {
   const result = await pool.query(`SELECT 1 FROM reviews WHERE booking_id = $1 AND role = $2 LIMIT 1`, [bookingId, role]);
-  return result.rowCount > 0;
+  return (result.rowCount ?? 0) > 0;
 }
 
 export async function insertReview({

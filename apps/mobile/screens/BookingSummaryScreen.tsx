@@ -299,7 +299,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           body: `${listing.title} starts in 1 hour.`,
           attachments,
         },
-        trigger: startReminder,
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: startReminder },
       });
     }
 
@@ -311,7 +311,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           body: `${listing.title} ends in 30 minutes.`,
           attachments,
         },
-        trigger: endReminder,
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: endReminder },
       });
     }
   }, [end, listing, start]);
@@ -695,9 +695,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               <DatePicker
                 date={draftDate ?? (pickerField === "start" ? start : end)}
                 mode="datetime"
-                androidVariant="iosClone"
                 minuteInterval={30}
-                textColor={colors.accent}
                 onDateChange={(date) => {
                   setDraftDate(date);
                   applyPickedDate(date);
