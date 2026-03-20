@@ -142,35 +142,8 @@ function SearchPageContainer() {
     if (isMobile !== null) ignoreInitialBounds.current = true;
   }, [isMobile]);
 
-  // ── Initialise from URL on first render ──
-  useEffect(() => {
-    const merged: SearchFilters = {
-      ...defaultFilters,
-      ...initialFromUrl,
-      latitude: initialFromUrl.latitude ?? defaultFilters.latitude,
-      longitude: initialFromUrl.longitude ?? defaultFilters.longitude,
-      radiusKm: initialFromUrl.radiusKm ?? defaultFilters.radiusKm,
-      date: initialFromUrl.date ?? defaultFilters.date,
-      startTime: initialFromUrl.startTime ?? defaultFilters.startTime,
-      endTime: initialFromUrl.endTime ?? defaultFilters.endTime,
-    };
-    if (!initialized.current) {
-      initialized.current = true;
-      setFilters(merged);
-      if (merged.latitude && merged.longitude) {
-        lastAppliedCenter.current = { lat: merged.latitude, lng: merged.longitude };
-      }
-      // On mobile, don't auto-search — wait for the landing form submission
-      if (!isMobile || hasUrlParams) {
-        void runSearch(merged, true);
-      }
-    } else {
-      setFilters(merged);
-    }
-  }, [initialFromUrl]);
-
   // ── Search function ──
-  const runSearch = async (
+  const runSearch = useCallback(async (
     next: SearchFilters,
     force = false,
     opts?: { preserveViewport?: boolean },
@@ -221,7 +194,34 @@ function SearchPageContainer() {
     } finally {
       if (preserve) setAreaSearching(false);
     }
-  };
+  }, [router, searchParams]);
+
+  // ── Initialise from URL on first render ──
+  useEffect(() => {
+    const merged: SearchFilters = {
+      ...defaultFilters,
+      ...initialFromUrl,
+      latitude: initialFromUrl.latitude ?? defaultFilters.latitude,
+      longitude: initialFromUrl.longitude ?? defaultFilters.longitude,
+      radiusKm: initialFromUrl.radiusKm ?? defaultFilters.radiusKm,
+      date: initialFromUrl.date ?? defaultFilters.date,
+      startTime: initialFromUrl.startTime ?? defaultFilters.startTime,
+      endTime: initialFromUrl.endTime ?? defaultFilters.endTime,
+    };
+    if (!initialized.current) {
+      initialized.current = true;
+      setFilters(merged);
+      if (merged.latitude && merged.longitude) {
+        lastAppliedCenter.current = { lat: merged.latitude, lng: merged.longitude };
+      }
+      // On mobile, don't auto-search — wait for the landing form submission
+      if (!isMobile || hasUrlParams) {
+        void runSearch(merged, true);
+      }
+    } else {
+      setFilters(merged);
+    }
+  }, [hasUrlParams, initialFromUrl, isMobile, runSearch]);
 
   const center = useMemo(
     () => ({ lat: filters.latitude ?? 53.3498, lng: filters.longitude ?? -6.2603 }),
@@ -292,7 +292,7 @@ function SearchPageContainer() {
     setPendingCenter(null);
     setPendingBounds(null);
     setMapDirty(false);
-  }, [pendingCenter, pendingBounds, filters]);
+  }, [pendingCenter, pendingBounds, filters, runSearch]);
 
   const handleAddressChange = useCallback(
     (place: { address: string; lat: number; lng: number }) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AddressAutocomplete } from "./AddressAutocomplete";
 import { format } from "date-fns";
@@ -100,9 +100,9 @@ export function SearchForm({
       startAt: startFromProps,
       endAt: endFromProps,
     }));
-  }, [initialValues]);
+  }, [initialValues, initialStart, state.startAt]);
 
-  const buildFilters = (current = state): SearchFilters => {
+  const buildFilters = useCallback((current = state): SearchFilters => {
     const startDate = toDateString(current.startAt);
     const endDate = toDateString(current.endAt);
     const startTime = toTimeString(current.startAt);
@@ -133,7 +133,7 @@ export function SearchForm({
       submission.endDate = toDateString(end);
     }
     return submission;
-  };
+  }, [state]);
 
   useEffect(() => {
     if (!onSearch || redirectToSearch || !autoSearch) return;
@@ -149,7 +149,7 @@ export function SearchForm({
       onSearch(buildFilters());
     }, 250);
     return () => clearTimeout(timer);
-  }, [state, onSearch, redirectToSearch, autoSearch]);
+  }, [state, onSearch, redirectToSearch, autoSearch, buildFilters]);
 
   const geocodeAddress = async (address: string) => {
     if (!(window as any).google?.maps?.Geocoder) return null;

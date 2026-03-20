@@ -69,6 +69,25 @@ jobs:
           use_existing_version_if_available: true
           wait_for_environment_recovery: 60
 
+      - name: Resolve API environment URL
+        id: api-env
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: eu-west-1
+        run: |
+          cname=$(aws elasticbeanstalk describe-environments \
+            --environment-names FreeSpace-env-api \
+            --query 'Environments[0].CNAME' \
+            --output text)
+          echo "base_url=http://${cname}" >> "$GITHUB_OUTPUT"
+
+      - name: Post-deploy API smoke checks
+        env:
+          SMOKE_BASE_URL: ${{ steps.api-env.outputs.base_url }}
+          SMOKE_MODE: api
+        run: yarn smoke:post-deploy
+
   deploy-web:
     name: Deploy Web to FreeSpace-env-webb
     needs: changes
@@ -117,3 +136,22 @@ jobs:
           deployment_package: deploy-web.zip
           use_existing_version_if_available: true
           wait_for_environment_recovery: 60
+
+      - name: Resolve web environment URL
+        id: web-env
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: eu-west-1
+        run: |
+          cname=$(aws elasticbeanstalk describe-environments \
+            --environment-names FreeSpace-env-webb \
+            --query 'Environments[0].CNAME' \
+            --output text)
+          echo "base_url=http://${cname}" >> "$GITHUB_OUTPUT"
+
+      - name: Post-deploy web smoke checks
+        env:
+          SMOKE_BASE_URL: ${{ steps.web-env.outputs.base_url }}
+          SMOKE_MODE: web
+        run: yarn smoke:post-deploy

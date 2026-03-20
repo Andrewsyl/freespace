@@ -74,7 +74,7 @@ export default function QaPortalPage() {
       .catch(() => setError("Could not load parking location"));
   }, [params?.id]);
 
-  const fromDate = useMemo(() => new Date(), [untilAt]);
+  const fromDate = useMemo(() => new Date(), []);
   const untilDate = useMemo(() => new Date(untilAt), [untilAt]);
   const durationHours = useMemo(() => {
     const ms = untilDate.getTime() - fromDate.getTime();

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { login, refreshSession, register, revokeSession, oauthLoginGoogle, type AuthResponse } from "../lib/api";
 import { useAppStatus } from "./AppStatusProvider";
 
@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void restore();
   }, [setLoading]);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     setLoading(true);
     setAuthLoading(true);
     setError(null);
@@ -135,9 +135,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       setAuthLoading(false);
     }
-  };
+  }, [setLoading, setGlobalError]);
 
-  const signUp = async (email: string, password: string, phone?: string) => {
+  const signUp = useCallback(async (email: string, password: string, phone?: string) => {
     setLoading(true);
     setAuthLoading(true);
     setError(null);
@@ -162,9 +162,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       setAuthLoading(false);
     }
-  };
+  }, [setLoading, setGlobalError]);
 
-  const signInWithGoogle = async (idToken: string) => {
+  const signInWithGoogle = useCallback(async (idToken: string) => {
     setLoading(true);
     setAuthLoading(true);
     setError(null);
@@ -189,9 +189,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       setAuthLoading(false);
     }
-  };
+  }, [setLoading, setGlobalError]);
 
-  const signOut = () => {
+  const signOut = useCallback(() => {
     const currentToken = token;
     setUser(null);
     setToken(null);
@@ -211,7 +211,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       void revokeSession(currentToken);
     }
     setAuthLoading(false);
-  };
+  }, [token]);
 
   useEffect(() => {
     if (logoutTimerRef.current) {
@@ -261,7 +261,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshTimerRef.current = null;
       }
     };
-  }, [token, refreshToken]);
+  }, [token, refreshToken, signOut]);
 
   useEffect(() => {
     if (logoutTimerRef.current) {
@@ -286,7 +286,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logoutTimerRef.current = null;
       }
     };
-  }, [token]);
+  }, [token, signOut]);
 
   const value = useMemo(
     () => ({
@@ -302,7 +302,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser,
       setToken,
     }),
-    [user, token, error, loading, emailVerified]
+    [user, token, signIn, signUp, signInWithGoogle, signOut, error, loading, emailVerified]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

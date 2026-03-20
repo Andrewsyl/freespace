@@ -207,7 +207,7 @@ export function MapView({
     } else if (center) {
       map.flyTo({ center: [center.lng, center.lat], zoom: clampZoom(initialZoom, minFitZoom, maxZoom) });
     }
-  }, [listings, center?.lat, center?.lng, mapReady, initialZoom, maxZoom, minFitZoom, onMarkerClick, onSelectListing, disableAutoFit, showCenterPin]);
+  }, [listings, center, selectedListingId, mapReady, initialZoom, maxZoom, minFitZoom, onMarkerClick, onSelectListing, disableAutoFit, showCenterPin]);
 
   // Active marker style
   useEffect(() => {
@@ -239,7 +239,7 @@ export function MapView({
     } else {
       centerMarkerRef.current.setLngLat([center.lng, center.lat]);
     }
-  }, [center?.lat, center?.lng, showCenterPin, mapReady]);
+  }, [center, showCenterPin, mapReady]);
 
   // Popup
   useEffect(() => {
