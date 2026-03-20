@@ -93,9 +93,8 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 40,
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    paddingTop: 8,
+    paddingBottom: 10,
   },
   progressRow: {
     flexDirection: "row",

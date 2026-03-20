@@ -357,22 +357,22 @@ export default function MapSection({
 }
 
 const styles = StyleSheet.create({
+  capture: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  captureShell: {
+    alignItems: "center",
+    justifyContent: "center",
+    left: -1000,
+    opacity: 0,
+    position: "absolute",
+    top: -1000,
+  },
   container: {
     flex: 1,
   },
   map: {
     flex: 1,
-  },
-  captureShell: {
-    alignItems: "center",
-    justifyContent: "center",
-    opacity: 0,
-    position: "absolute",
-    left: -1000,
-    top: -1000,
-  },
-  capture: {
-    alignItems: "center",
-    justifyContent: "center",
   },
 });

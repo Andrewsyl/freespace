@@ -10,25 +10,25 @@ type MapPricePinProps = {
 
 export function MapPricePin({ price, selected = false, soldOut = false }: MapPricePinProps) {
   const priceText = soldOut ? "Sold out" : `€${price}`;
-  const fill = soldOut ? "#F3F4F6" : selected ? "#111827" : "#FFFFFF";
-  const stroke = soldOut ? "#9CA3AF" : "#111827";
-  const textColor = soldOut ? "#6B7280" : selected ? "#FFFFFF" : "#111827";
+  const fill = soldOut ? "#F3F4F6" : selected ? "#10B981" : "#FFFFFF";
+  const stroke = soldOut ? "#D1D5DB" : selected ? "none" : "#1F2937";
+  const textColor = soldOut ? "#6B7280" : selected ? "#FFFFFF" : "#111111";
 
   const dimensions = useMemo(() => {
     const textLength = priceText.length;
     const baseWidth = soldOut ? 58 : 46;
     const extraWidth = soldOut ? 0 : Math.max(0, (textLength - 3) * 7);
     const width = Math.max(baseWidth, baseWidth + extraWidth);
-    const bubbleHeight = soldOut ? 20 : 26;
-    const tailHeight = soldOut ? 4 : 6;
+    const bubbleHeight = soldOut ? 20 : 28;
+    const tailHeight = soldOut ? 4 : 5;
     const totalHeight = bubbleHeight + tailHeight;
-    const tailWidth = soldOut ? 8 : 10;
+    const tailWidth = soldOut ? 8 : 8;
 
     return { width, bubbleHeight, tailHeight, totalHeight, tailWidth };
   }, [priceText, soldOut]);
 
   const { width, bubbleHeight, tailHeight, totalHeight, tailWidth } = dimensions;
-  const strokeWidth = 1;
+  const strokeWidth = selected ? 0 : 1.2;
   const radius = bubbleHeight / 2;
   const padding = strokeWidth;
 
@@ -56,6 +56,24 @@ export function MapPricePin({ price, selected = false, soldOut = false }: MapPri
     `.trim();
   }, [width, bubbleHeight, tailHeight, tailWidth, radius, padding]);
 
+  const bubbleShadowPath = useMemo(() => {
+    const w = width;
+    const h = bubbleHeight;
+    const r = radius;
+    const p = padding;
+
+    return `
+      M ${r + p} ${p}
+      L ${w - r + p} ${p}
+      A ${r} ${r} 0 0 1 ${w + p} ${r + p}
+      A ${r} ${r} 0 0 1 ${w - r + p} ${h + p}
+      L ${r + p} ${h + p}
+      A ${r} ${r} 0 0 1 ${p} ${r + p}
+      A ${r} ${r} 0 0 1 ${r + p} ${p}
+      Z
+    `.trim();
+  }, [width, bubbleHeight, radius, padding]);
+
   const viewBoxWidth = width + padding * 2;
   const viewBoxHeight = totalHeight + padding * 2;
 
@@ -63,10 +81,15 @@ export function MapPricePin({ price, selected = false, soldOut = false }: MapPri
     <View style={[styles.container, { width: viewBoxWidth, height: viewBoxHeight }]}>
       <Svg width={viewBoxWidth} height={viewBoxHeight} viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}>
         <Path
+          d={bubbleShadowPath}
+          fill="rgba(15, 23, 42, 0.16)"
+          transform="translate(0 4)"
+        />
+        <Path
           d={pinPath}
           fill={fill}
           stroke={stroke}
-          strokeWidth={1.9}
+          strokeWidth={strokeWidth}
           strokeLinejoin="round"
         />
       </Svg>
@@ -91,11 +114,6 @@ const styles = StyleSheet.create({
   container: {
     alignItems: "center",
     justifyContent: "flex-start",
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 4,
-    elevation: 4,
   },
   textContainer: {
     position: "absolute",
@@ -107,9 +125,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   priceText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "700",
     letterSpacing: -0.2,
+    fontFamily: "Poppins-Bold",
   },
   priceTextSelected: {
     color: "#FFFFFF",

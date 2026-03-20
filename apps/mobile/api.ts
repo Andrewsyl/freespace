@@ -16,6 +16,7 @@ type AuthResponse = {
     email: string;
     name?: string | null;
     phone?: string | null;
+    phoneVerified?: boolean;
     role?: string;
     emailVerified?: boolean;
     termsVersion?: string | null;
@@ -477,6 +478,36 @@ export async function updateMe(
     throw new Error(await readErrorMessage(response, "Failed to update profile"));
   }
   return (await response.json()) as { user: AuthResponse["user"] };
+}
+
+export async function requestPhoneVerification(token: string, phone: string) {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/request-phone-verification`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ phone }),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "Phone verification request failed"));
+  }
+  return (await response.json()) as { ok: boolean };
+}
+
+export async function verifyPhone(token: string, code: string) {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/verify-phone`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ code }),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "Phone verification failed"));
+  }
+  return (await response.json()) as { ok: boolean; user?: AuthResponse["user"] };
 }
 
 export async function requestPasswordReset(email: string) {

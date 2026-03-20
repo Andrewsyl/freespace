@@ -26,7 +26,7 @@ export function SettingsScreen({ navigation }: Props) {
         </View>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Support</Text>
-          <Text style={styles.cardBody}>Need help? Contact support@freespace.app.</Text>
+          <Text style={styles.cardBody}>Need help? Contact support@freespace.ie.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

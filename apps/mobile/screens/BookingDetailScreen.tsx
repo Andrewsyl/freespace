@@ -285,6 +285,8 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         <ParkingTicket
           companyName="FREESPACE"
           companySubtitle="PARKING MARKETPLACE"
+          companyAddress="Dublin, Ireland"
+          companySupportEmail="support@freespace.ie"
           title="PARKING RECEIPT"
           date={bookingDateLabel}
           location={booking.address}

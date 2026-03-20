@@ -120,7 +120,6 @@ export function MapBottomCard({
       ]}
     >
       <Pressable onPress={onPress} style={styles.cardPress}>
-        {/* Image with rating badge overlay */}
         <View style={styles.imageContainer}>
           {imageUrl ? (
             <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
@@ -129,15 +128,13 @@ export function MapBottomCard({
               <Text style={styles.imagePlaceholderText}>No image</Text>
             </View>
           )}
-          
-          {/* Rating badge in top right corner of image */}
+
           {reviewCount > 0 ? (
             <View style={styles.ratingBadge}>
               <Text style={styles.ratingText}>★ {rating.toFixed(1)}</Text>
             </View>
           ) : null}
-          
-          {/* Favorite button */}
+
           {onToggleFavorite ? (
             <Pressable
               style={styles.favoriteButton}
@@ -150,15 +147,12 @@ export function MapBottomCard({
             </Pressable>
           ) : null}
         </View>
-        
-        {/* Content section */}
+
         <View style={styles.contentSection}>
-          {/* Title and details */}
           <Text style={styles.title} numberOfLines={2}>
             {title}
           </Text>
-          
-          {/* Distance and time */}
+
           <View style={styles.detailsRow}>
             {reviewCount > 0 ? (
               <Text style={styles.detailText}>
@@ -187,11 +181,9 @@ export function MapBottomCard({
               </View>
             ) : null}
           </View>
-          
-          {/* Dashed divider */}
+
           <View style={styles.dashedDivider} />
-          
-          {/* Price section */}
+
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Reserve now</Text>
             {isAvailable ? (
@@ -220,24 +212,19 @@ const styles = StyleSheet.create({
     elevation: 6,
     overflow: "hidden",
   },
-  
   cardPress: {
     width: "100%",
   },
-  
-  // Image section
   imageContainer: {
     width: "100%",
     height: 84,
     position: "relative",
     backgroundColor: "#F2EEE7",
   },
-  
   image: {
     width: "100%",
     height: "100%",
   },
-  
   imagePlaceholder: {
     width: "100%",
     height: "100%",
@@ -250,8 +237,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#9CA3AF",
   },
-  
-  // Rating badge in top right corner of image
   ratingBadge: {
     position: "absolute",
     top: 8,
@@ -265,15 +250,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#D2C2A9",
   },
-  
   ratingText: {
     color: "#1D1515",
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 0.2,
   },
-  
-  // Favorite button
   favoriteButton: {
     position: "absolute",
     top: 8,
@@ -292,25 +274,20 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  
   favoriteIcon: {
     fontSize: 14,
     color: "#D1D5DB",
     fontWeight: "600",
   },
-  
   favoriteIconActive: {
     color: "#2ECC8F",
   },
-  
-  // Content section
   contentSection: {
     paddingHorizontal: 10,
     paddingTop: 7,
     paddingBottom: 9,
     backgroundColor: "#FFFFFF",
   },
-  
   title: {
     fontSize: 13,
     fontWeight: "700",
@@ -319,7 +296,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     lineHeight: 17,
   },
-  
   detailsRow: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -327,21 +303,18 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     gap: 8,
   },
-  
   detailText: {
     fontSize: 9,
     color: "#6B7280",
     fontWeight: "500",
     flex: 1,
   },
-
   featuresRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     flexShrink: 0,
   },
-
   featureIconWrap: {
     alignItems: "center",
     justifyContent: "center",
@@ -352,53 +325,43 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 9,
   },
-
   starText: {
     fontSize: 14,
     color: "#F2B01E",
     fontWeight: "800",
   },
-  
-  // Dashed divider (receipt style)
   dashedDivider: {
     height: 1,
     backgroundColor: "#E8DDCD",
     marginBottom: 8,
   },
-  
-  // Price section
   priceRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  
   priceLabel: {
     fontSize: 10,
     fontWeight: "600",
     color: "#6B7280",
   },
-  
   priceContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-  
   originalPrice: {
     fontSize: 13,
     color: "#9CA3AF",
     textDecorationLine: "line-through",
     fontWeight: "500",
   },
-  
   currentPrice: {
     fontSize: 17,
     fontWeight: "800",
     color: "#1D1515",
     letterSpacing: -0.5,
   },
-  
   soldOutText: {
     fontSize: 16,
     fontWeight: "700",

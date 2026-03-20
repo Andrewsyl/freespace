@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../auth";
-import { getMe, updateMe } from "../api";
+import { getMe, requestPhoneVerification, updateMe, verifyPhone } from "../api";
 import type { RootStackParamList } from "../types";
 import { cardShadow, colors, radius, spacing } from "../styles/theme";
 
@@ -15,7 +15,11 @@ export function PersonalInfoScreen({ navigation }: Props) {
   const [name, setName] = useState(user?.name ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
   const [saving, setSaving] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [showPhoneVerify, setShowPhoneVerify] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const originalName = (user?.name ?? "").trim();
@@ -23,10 +27,14 @@ export function PersonalInfoScreen({ navigation }: Props) {
   const currentName = name.trim();
   const currentPhone = phone.trim();
   const hasChanges = currentName !== originalName || currentPhone !== originalPhone;
+  const phoneChanged = currentPhone !== originalPhone;
+  const phoneVerified = !!user?.phoneVerified && currentPhone === originalPhone;
 
   useEffect(() => {
     setName(user?.name ?? "");
     setPhone(user?.phone ?? "");
+    setShowPhoneVerify(false);
+    setVerificationCode("");
   }, [user?.name, user?.phone]);
 
   useEffect(() => {
@@ -57,10 +65,52 @@ export function PersonalInfoScreen({ navigation }: Props) {
       });
       await setAuthUser(res.user);
       setMessage("Profile saved");
+      if (currentPhone && phoneChanged) {
+        setShowPhoneVerify(true);
+      } else if (!currentPhone) {
+        setShowPhoneVerify(false);
+        setVerificationCode("");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save profile");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const onSendCode = async () => {
+    if (!token || !currentPhone) return;
+    setSendingCode(true);
+    setMessage(null);
+    setError(null);
+    try {
+      await requestPhoneVerification(token, currentPhone);
+      setShowPhoneVerify(true);
+      setMessage("Verification code sent");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not send verification code");
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  const onVerifyCode = async () => {
+    if (!token || !verificationCode.trim()) return;
+    setVerifyingCode(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const res = await verifyPhone(token, verificationCode.trim());
+      if (res.user) {
+        await setAuthUser(res.user);
+      }
+      setShowPhoneVerify(false);
+      setVerificationCode("");
+      setMessage("Phone number verified");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not verify phone number");
+    } finally {
+      setVerifyingCode(false);
     }
   };
 
@@ -96,6 +146,56 @@ export function PersonalInfoScreen({ navigation }: Props) {
               keyboardType="phone-pad"
               style={styles.input}
             />
+            <View style={styles.phoneStatusRow}>
+              <Text
+                style={[
+                  styles.verifyBadge,
+                  phoneVerified ? styles.verifyBadgeOk : styles.verifyBadgePending,
+                ]}
+              >
+                {phoneVerified ? "Phone verified" : currentPhone ? "Phone not verified" : "No phone added"}
+              </Text>
+              {currentPhone ? (
+                <Pressable
+                  style={[styles.inlineButton, (sendingCode || saving || loading) && styles.inlineButtonDisabled]}
+                  onPress={onSendCode}
+                  disabled={sendingCode || saving || loading}
+                >
+                  <Text style={styles.inlineButtonText}>
+                    {sendingCode ? "Sending..." : phoneVerified ? "Resend code" : "Verify"}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+            {(showPhoneVerify || (!!currentPhone && !phoneVerified && !phoneChanged)) ? (
+              <View style={styles.verifyPanel}>
+                <Text style={styles.verifyHelp}>
+                  Enter the 6-digit code sent to {currentPhone}.
+                </Text>
+                <TextInput
+                  value={verificationCode}
+                  onChangeText={setVerificationCode}
+                  placeholder="Verification code"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="number-pad"
+                  style={styles.input}
+                />
+                <Pressable
+                  style={[
+                    styles.saveButton,
+                    (!verificationCode.trim() || verifyingCode) && styles.saveButtonDisabled,
+                  ]}
+                  onPress={onVerifyCode}
+                  disabled={!verificationCode.trim() || verifyingCode}
+                >
+                  {verifyingCode ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.saveButtonText}>Verify phone</Text>
+                  )}
+                </Pressable>
+              </View>
+            ) : null}
           </View>
           <View style={[styles.row, styles.rowLast]}>
             <Text style={styles.label}>Email</Text>
@@ -203,6 +303,26 @@ const styles = StyleSheet.create({
     color: "#92400E",
     backgroundColor: "#FEF3C7",
   },
+  phoneStatusRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 10,
+  },
+  inlineButton: {
+    backgroundColor: "#ECFDF5",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  inlineButtonDisabled: {
+    opacity: 0.7,
+  },
+  inlineButtonText: {
+    color: colors.accent,
+    fontSize: 12,
+    fontWeight: "600",
+  },
   input: {
     color: colors.text,
     fontSize: 17,
@@ -213,6 +333,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     backgroundColor: colors.cardBg,
+  },
+  verifyPanel: {
+    gap: 10,
+    marginTop: 12,
+  },
+  verifyHelp: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 20,
   },
   saveButton: {
     marginTop: 14,

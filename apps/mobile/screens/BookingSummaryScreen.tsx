@@ -5,9 +5,7 @@ import {
   ActivityIndicator,
   BackHandler,
   Alert,
-  LayoutAnimation,
   Platform,
-  UIManager,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -25,7 +23,6 @@ import { useStripe } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
 import DatePicker from "react-native-date-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { cardShadow, colors, radius, spacing } from "../styles/theme";
@@ -94,17 +91,10 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const [pickerField, setPickerField] = useState<"start" | "end">("start");
   const [draftDate, setDraftDate] = useState<Date | null>(null);
   const { reset: resetGlobalLoading } = useGlobalLoading();
-  const [showBreakdown, setShowBreakdown] = useState(false);
   const [plateFocused, setPlateFocused] = useState(false);
   const scrollRef = useRef<ScrollView | null>(null);
   const plateScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const plateSectionYRef = useRef(0);
-
-  useEffect(() => {
-    if (Platform.OS === "android") {
-      UIManager.setLayoutAnimationEnabledExperimental?.(true);
-    }
-  }, []);
 
   useEffect(() => {
     return () => {
@@ -283,11 +273,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     minEnd.setHours(minEnd.getHours() + 1);
     const safeEnd = next < minEnd ? minEnd : next;
     setEndAt(safeEnd);
-  };
-
-  const toggleBreakdown = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setShowBreakdown((prev) => !prev);
   };
 
   const scrollPlateIntoView = useCallback(() => {
@@ -480,7 +465,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
       >
       <View style={styles.progressHeader}>
-        <BookingProgressBar currentStep={bookingBusy || confirmingBooking ? 3 : 2} />
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.progressBackButton}
@@ -491,6 +475,10 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               <Ionicons name="arrow-back" size={12} color={colors.text} />
             </View>
         </TouchableOpacity>
+        <View style={styles.progressTitleRow}>
+          <Text style={styles.progressTitle}>Booking Confirmation</Text>
+        </View>
+        <BookingProgressBar currentStep={bookingBusy || confirmingBooking ? 3 : 2} />
       </View>
       {loadingListing ? (
         <View style={styles.centered}>
@@ -518,68 +506,82 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         >
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <View style={styles.summaryMapWrap}>
-            {Platform.OS !== "ios" && staticMapUrl && !staticMapFailed ? (
-              <Image
-                source={{ uri: staticMapUrl }}
-                style={styles.summaryMap}
-                resizeMode="cover"
-                onError={(event) => {
-                  setStaticMapFailed(true);
-                  console.warn("[BookingSummary] Static map failed", event.nativeEvent);
-                }}
-                onLoad={() => {
-                  console.log("[BookingSummary] Static map loaded");
-                }}
-              />
-            ) : mapCoords ? (
-              <MapView
-                provider={PROVIDER_GOOGLE}
-                style={styles.summaryMap}
-                region={{
-                  latitude: mapCoords.latitude,
-                  longitude: mapCoords.longitude,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
-                }}
-                pointerEvents="none"
-              >
-                <Marker coordinate={mapCoords} />
-              </MapView>
-            ) : (
-              <View style={styles.summaryMapPlaceholder}>
-                <Text style={styles.summaryMapPlaceholderText}>Map preview unavailable</Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.summaryHeader}>
-            <Text style={styles.listingTitle}>{listing.title || "Adam House Car Park"}</Text>
-            <View style={styles.addressRow}>
-              <Ionicons name="location-sharp" size={14} color={colors.textMuted} />
-              <Text style={styles.addressText}>
-                {listing.address || "24 Adam Street, Dublin"}
-              </Text>
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryMapWrap}>
+              {Platform.OS !== "ios" && staticMapUrl && !staticMapFailed ? (
+                <Image
+                  source={{ uri: staticMapUrl }}
+                  style={styles.summaryMap}
+                  resizeMode="cover"
+                  onError={(event) => {
+                    setStaticMapFailed(true);
+                    console.warn("[BookingSummary] Static map failed", event.nativeEvent);
+                  }}
+                  onLoad={() => {
+                    console.log("[BookingSummary] Static map loaded");
+                  }}
+                />
+              ) : mapCoords ? (
+                <MapView
+                  provider={PROVIDER_GOOGLE}
+                  style={styles.summaryMap}
+                  region={{
+                    latitude: mapCoords.latitude,
+                    longitude: mapCoords.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  }}
+                  pointerEvents="none"
+                >
+                  <Marker coordinate={mapCoords} />
+                </MapView>
+              ) : (
+                <View style={styles.summaryMapPlaceholder}>
+                  <Text style={styles.summaryMapPlaceholderText}>Map preview unavailable</Text>
+                </View>
+              )}
             </View>
-          </View>
 
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionLabel}>Your parking session</Text>
-            <View style={styles.sessionRow}>
-              <Text style={styles.sessionLabel}>Duration</Text>
-              <Text style={styles.sessionValue}>{durationHours} hours</Text>
+            <View style={styles.summaryHeader}>
+              <Text style={styles.listingTitle}>{listing.title || "Adam House Car Park"}</Text>
+              <View style={styles.addressRow}>
+                <Ionicons name="location-sharp" size={14} color={colors.textMuted} />
+                <Text style={styles.addressText}>
+                  {listing.address || "24 Adam Street, Dublin"}
+                </Text>
+              </View>
             </View>
-            <View style={styles.sessionRow}>
-              <Text style={styles.sessionLabel}>Start time</Text>
-              <Text style={styles.sessionValue}>{formatDateTimeLabel(start)}</Text>
-            </View>
-            <View style={styles.sessionRow}>
-              <Text style={styles.sessionLabel}>End time</Text>
-              <Text style={styles.sessionValue}>{formatDateTimeLabel(end)}</Text>
+
+            <View style={styles.sessionTable}>
+              <View style={styles.sessionTableRow}>
+                <View style={styles.sessionTableLabelCell}>
+                  <Text style={styles.sessionTableLabel}>Duration</Text>
+                </View>
+                <View style={styles.sessionTableValueCell}>
+                  <Text style={styles.sessionTableValue}>{durationHours} hours</Text>
+                </View>
+              </View>
+              <View style={styles.sessionTableRow}>
+                <View style={styles.sessionTableLabelCell}>
+                  <Text style={styles.sessionTableLabel}>Start time</Text>
+                </View>
+                <View style={styles.sessionTableValueCell}>
+                  <Text style={styles.sessionTableValue}>{formatDateTimeLabel(start)}</Text>
+                </View>
+              </View>
+              <View style={styles.sessionTableRowLast}>
+                <View style={styles.sessionTableLabelCell}>
+                  <Text style={styles.sessionTableLabel}>End time</Text>
+                </View>
+                <View style={styles.sessionTableValueCell}>
+                  <Text style={styles.sessionTableValue}>{formatDateTimeLabel(end)}</Text>
+                </View>
+              </View>
             </View>
           </View>
 
           <View
-            style={styles.sectionCard}
+            style={styles.regCard}
             onLayout={(event) => {
               plateSectionYRef.current = event.nativeEvent.layout.y;
             }}
@@ -612,32 +614,21 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             </View>
           </View>
 
-          <View style={styles.sectionCard}>
-            <View style={styles.totalRow}>
-              <Pressable style={styles.totalInfo} onPress={toggleBreakdown}>
-                <Text style={styles.totalDueLabel}>Total due today</Text>
-                <MaterialCommunityIcons name="information-outline" size={16} color="#94a3b8" />
-              </Pressable>
-              <Text style={styles.totalDueValue}>€{Math.round(pricing.finalPrice)}</Text>
+          <View style={styles.priceCard}>
+            <Text style={styles.fieldLabel}>Price breakdown</Text>
+            <View style={styles.priceBreakdownRow}>
+              <Text style={styles.priceBreakdownLabel}>Parking fee</Text>
+              <Text style={styles.priceBreakdownValue}>€{Math.round(pricing.parkingFee)}</Text>
             </View>
-            {showBreakdown ? (
-              <View style={styles.breakdownList}>
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>Parking fee</Text>
-                  <Text style={styles.breakdownValue}>
-                    €{Math.round(pricing.parkingFee)}
-                  </Text>
-                </View>
-                {pricing.transactionFee > 0 ? (
-                  <View style={styles.breakdownRow}>
-                    <Text style={styles.breakdownLabel}>Platform fee (host)</Text>
-                    <Text style={styles.breakdownValue}>
-                      €{Math.round(pricing.transactionFee)}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-            ) : null}
+            <View style={styles.priceBreakdownRow}>
+              <Text style={styles.priceBreakdownLabel}>Platform fee</Text>
+              <Text style={styles.priceBreakdownMuted}>Included</Text>
+            </View>
+            <View style={styles.priceBreakdownRowLast}>
+              <Text style={styles.priceBreakdownTotalLabel}>Total due today</Text>
+              <Text style={styles.priceBreakdownTotalValue}>€{Math.round(pricing.finalPrice)}</Text>
+            </View>
+            <Text style={styles.priceBreakdownHelp}>No hidden fees will be added after checkout.</Text>
           </View>
 
           {paymentFailed ? (
@@ -656,6 +647,9 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       )}
       {listing && user && !plateFocused ? (
         <View style={[styles.footerBar, { paddingBottom: 12 + insets.bottom }]}>
+          <Text style={styles.footerDisclosure}>
+            FreeSpace is the booking marketplace. Hosts manage the physical space and site rules.
+          </Text>
           <TouchableOpacity
             style={[
               styles.footerButton,
@@ -669,7 +663,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 ? confirmingBooking
                   ? "Finalizing..."
                   : "Processing..."
-                : "Pay and reserve"}
+                : `Pay and reserve • €${Math.round(pricing.finalPrice)}`}
             </Text>
           </TouchableOpacity>
         </View>
@@ -722,7 +716,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.appBg,
   },
   keyboardAvoid: {
     flex: 1,
@@ -756,18 +750,35 @@ const styles = StyleSheet.create({
   },
   progressHeader: {
     backgroundColor: "#FFFFFF",
+    paddingTop: 8,
     paddingBottom: 0,
-    paddingTop: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
   },
   progressBackButton: {
     position: "absolute",
     left: spacing.screenX,
-    top: 2,
+    top: 10,
+    zIndex: 2,
+  },
+  progressTitleRow: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 64,
+    paddingTop: 6,
+    paddingBottom: 8,
+  },
+  progressTitle: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "600",
+    fontFamily: "Poppins-SemiBold",
+    letterSpacing: -0.2,
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingBottom: 120,
-    paddingTop: 0,
+    paddingBottom: 180,
+    paddingTop: 4,
   },
   divider: {
     height: 1,
@@ -801,10 +812,11 @@ const styles = StyleSheet.create({
   listingTitle: {
     color: colors.text,
     fontSize: 20,
-    fontWeight: "800",
-    fontFamily: "Poppins-Bold",
-    letterSpacing: -0.4,
-    marginBottom: 4,
+    fontWeight: "600",
+    fontFamily: "Poppins-SemiBold",
+    letterSpacing: -0.3,
+    lineHeight: 26,
+    marginBottom: 6,
   },
   addressRow: {
     alignItems: "center",
@@ -825,22 +837,34 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-Regular",
   },
   summaryHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  summaryCard: {
+    backgroundColor: colors.cardBg,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
     marginBottom: 16,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+    overflow: "hidden",
   },
   summaryMapWrap: {
-    marginHorizontal: -16,
-    marginBottom: 16,
     backgroundColor: "transparent",
   },
   summaryMap: {
     width: "100%",
-    height: 140,
+    height: 122,
     borderRadius: 0,
     backgroundColor: "transparent",
   },
   summaryMapPlaceholder: {
     width: "100%",
-    height: 140,
+    height: 122,
     backgroundColor: "#E5E7EB",
     alignItems: "center",
     justifyContent: "center",
@@ -868,43 +892,86 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   sectionCard: {
-    backgroundColor: "transparent",
-    borderRadius: 0,
-    borderWidth: 0,
-    borderColor: "transparent",
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    marginBottom: 18,
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+    backgroundColor: colors.cardBg,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginBottom: 16,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
   },
   sectionLabel: {
-    fontSize: 13,
-    fontWeight: "700",
+    fontSize: 15,
+    fontWeight: "600",
     fontFamily: "Poppins-SemiBold",
-    color: "#374151",
-    marginBottom: 10,
+    color: colors.text,
+    letterSpacing: -0.2,
+    marginBottom: 12,
   },
   sessionRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 8,
-    borderBottomWidth: 1.5,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   sessionLabel: {
     color: "#6B7280",
     fontSize: 13,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
+    fontWeight: "500",
+    fontFamily: "Poppins-Medium",
   },
   sessionValue: {
-    color: "#111827",
+    color: colors.text,
     fontSize: 14,
     fontWeight: "700",
     fontFamily: "Poppins-SemiBold",
+  },
+  sessionTable: {
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  sessionTableRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+    minHeight: 52,
+  },
+  sessionTableRowLast: {
+    flexDirection: "row",
+    minHeight: 52,
+  },
+  sessionTableLabelCell: {
+    width: "46%",
+    justifyContent: "center",
+    paddingHorizontal: 14,
+    borderRightWidth: 1,
+    borderRightColor: "#E5E7EB",
+  },
+  sessionTableValueCell: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "flex-end",
+    paddingHorizontal: 14,
+  },
+  sessionTableLabel: {
+    color: "#374151",
+    fontSize: 14,
+    fontFamily: "Poppins-Medium",
+    fontWeight: "500",
+  },
+  sessionTableValue: {
+    color: colors.text,
+    fontSize: 15,
+    fontFamily: "Poppins-SemiBold",
+    fontWeight: "600",
+    textAlign: "right",
   },
   dateRow: {
     flexDirection: "row",
@@ -934,7 +1001,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   dateTimeText: {
-    color: "#101828",
+    color: colors.text,
     fontSize: 12,
     fontWeight: "600",
     fontFamily: "Poppins-SemiBold",
@@ -1006,20 +1073,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     fontFamily: "Poppins-SemiBold",
-    color: "#111827",
+    color: "#6B7280",
   },
   totalDueValue: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "800",
     fontFamily: "Poppins-Bold",
-    color: "#0f172a",
+    color: colors.text,
     letterSpacing: -0.3,
   },
   totalRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 6,
+    paddingVertical: 2,
   },
   totalInfo: {
     flexDirection: "row",
@@ -1028,7 +1095,7 @@ const styles = StyleSheet.create({
   },
   breakdownList: {
     marginTop: 8,
-    borderTopWidth: 1.5,
+    borderTopWidth: 1,
     borderTopColor: "#E5E7EB",
     paddingTop: 8,
   },
@@ -1045,7 +1112,7 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-SemiBold",
   },
   breakdownValue: {
-    color: "#111827",
+    color: colors.text,
     fontSize: 12,
     fontWeight: "700",
     fontFamily: "Poppins-SemiBold",
@@ -1059,34 +1126,114 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     color: colors.text,
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 15,
+    fontWeight: "600",
     fontFamily: "Poppins-SemiBold",
-    marginBottom: 10,
+    letterSpacing: -0.2,
+    marginBottom: 12,
   },
   fieldInput: {
     backgroundColor: "#F8F9FA",
     borderColor: "#e2e8f0",
     borderRadius: 10,
     borderWidth: 1,
-    color: "#111827",
+    color: colors.text,
     fontSize: 15,
     fontFamily: "Poppins-Regular",
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
+  regCard: {
+    backgroundColor: colors.cardBg,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginBottom: 16,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  priceCard: {
+    backgroundColor: colors.cardBg,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginBottom: 16,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  priceBreakdownRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  priceBreakdownRowLast: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  priceBreakdownLabel: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontFamily: "Poppins-Regular",
+  },
+  priceBreakdownValue: {
+    color: colors.text,
+    fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
+    fontWeight: "600",
+  },
+  priceBreakdownMuted: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontFamily: "Poppins-Medium",
+  },
+  priceBreakdownTotalLabel: {
+    color: colors.text,
+    fontSize: 14,
+    fontFamily: "Poppins-SemiBold",
+    fontWeight: "600",
+  },
+  priceBreakdownTotalValue: {
+    color: colors.text,
+    fontSize: 22,
+    fontFamily: "Poppins-Bold",
+    fontWeight: "700",
+    letterSpacing: -0.3,
+  },
+  priceBreakdownHelp: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontFamily: "Poppins-Regular",
+    marginTop: 8,
+    lineHeight: 18,
+  },
   regRow: {
     flexDirection: "row",
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: "#111827",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
     overflow: "hidden",
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     alignItems: "center",
   },
   regDetails: {
     flex: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     justifyContent: "center",
   },
@@ -1098,17 +1245,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   regPlaceholder: {
-    color: colors.text,
+    color: "#9CA3AF",
     fontSize: 14,
-    fontWeight: "700",
-    fontFamily: "Poppins-SemiBold",
-    letterSpacing: 0.2,
+    fontWeight: "500",
+    fontFamily: "Poppins-Medium",
+    letterSpacing: 0.1,
   },
   regInput: {
-    color: "#6b7280",
-    fontSize: 28,
+    color: colors.text,
+    fontSize: 24,
     fontFamily: "UKNumberPlate",
-    letterSpacing: 1.2,
+    letterSpacing: 1,
     textTransform: "uppercase",
     paddingVertical: 0,
     includeFontPadding: false,
@@ -1128,9 +1275,9 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: 24,
-    fontWeight: "800",
-    fontFamily: "Poppins-Bold",
-    letterSpacing: -0.4,
+    fontWeight: "600",
+    fontFamily: "Poppins-SemiBold",
+    letterSpacing: -0.3,
   },
   subtitle: {
     color: colors.textMuted,
@@ -1209,25 +1356,38 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.appBg,
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: "#E5E7EB",
-    shadowColor: "#0f172a",
+    shadowColor: "#111827",
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 4,
   },
+  footerDisclosure: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontFamily: "Poppins-Regular",
+    lineHeight: 18,
+    marginBottom: 10,
+    textAlign: "center",
+  },
   footerButton: {
-    backgroundColor: "#2a9d7f",
-    borderRadius: 14,
-    paddingVertical: 10,
+    backgroundColor: colors.accent,
+    borderRadius: 999,
+    paddingVertical: 15,
     paddingHorizontal: 24,
-    minHeight: 48,
+    minHeight: 56,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    elevation: 3,
   },
   footerButtonDisabled: {
     backgroundColor: "#E5E7EB",
@@ -1235,8 +1395,9 @@ const styles = StyleSheet.create({
   footerButtonText: {
     color: "#FFFFFF",
     fontSize: 15,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
+    fontWeight: "700",
+    fontFamily: "Poppins-Bold",
+    letterSpacing: 0.2,
   },
   successOverlay: {
     ...StyleSheet.absoluteFillObject,

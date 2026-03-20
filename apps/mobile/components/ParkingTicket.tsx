@@ -5,6 +5,8 @@ import { Ionicons } from "@expo/vector-icons";
 type ParkingTicketProps = {
   companyName?: string;
   companySubtitle?: string;
+  companyAddress?: string;
+  companySupportEmail?: string;
   title?: string;
   date?: string;
   location?: string;
@@ -54,6 +56,8 @@ function FieldRow({
 export const ParkingTicket = memo(function ParkingTicket({
   companyName = "FREESPACE",
   companySubtitle = "PARKING MARKETPLACE",
+  companyAddress = "Dublin, Ireland",
+  companySupportEmail = "support@freespace.ie",
   title = "PARKING RECEIPT",
   date = "Wed, 11 Feb · 11:14 - 13:14",
   location = "College Green, Dublin 2",
@@ -76,6 +80,8 @@ export const ParkingTicket = memo(function ParkingTicket({
           <View style={styles.companyTextWrap}>
             <Text style={styles.companyName}>{companyName}</Text>
             <Text style={styles.companySub}>{companySubtitle}</Text>
+            <Text style={styles.companyMeta}>{companyAddress}</Text>
+            <Text style={styles.companyMeta}>{companySupportEmail}</Text>
           </View>
         </View>
 
@@ -180,6 +186,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: "uppercase",
     marginTop: 1,
+  },
+  companyMeta: {
+    color: "#6B7280",
+    fontSize: 10,
+    fontWeight: "500",
+    marginTop: 2,
   },
   dottedLine: {
     borderBottomWidth: 1.5,

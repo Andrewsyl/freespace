@@ -16,6 +16,7 @@ type AuthUser = {
   email: string;
   name?: string | null;
   phone?: string | null;
+  phoneVerified?: boolean;
   role?: string;
   emailVerified?: boolean;
   termsVersion?: string | null;

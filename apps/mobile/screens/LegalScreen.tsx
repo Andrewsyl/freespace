@@ -7,12 +7,32 @@ import { Ionicons } from "@expo/vector-icons";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Legal">;
 
-const SUPPORT_EMAIL = "support@parkshare.app";
+const SUPPORT_EMAIL = "support@freespace.ie";
+const WEBSITE_BASE = "https://freespace.ie";
+const COMPANY_NAME = "FreeSpace";
+const REGISTERED_NAME = "FreeSpace";
+const REGISTERED_ADDRESS = "Dublin, Ireland";
+
+const POLICY_LINKS = [
+  { title: "Terms of Service", description: "Marketplace booking and account terms.", slug: "terms-of-service" },
+  { title: "Privacy Policy", description: "How FreeSpace collects and uses personal data.", slug: "privacy-policy" },
+  { title: "Cookie Policy", description: "Website cookie and analytics usage.", slug: "cookie-policy" },
+  { title: "Refund and cancellation policy", description: "Cancellation windows, refunds, and disputes.", slug: "refund-cancellation-policy" },
+  { title: "Host terms", description: "Rules for hosts and operators listing spaces.", slug: "host-terms" },
+  { title: "Acceptable use policy", description: "Prohibited conduct and enforcement actions.", slug: "acceptable-use-policy" },
+  { title: "Community and review guidelines", description: "Rules for reviews and respectful conduct.", slug: "community-guidelines" },
+  { title: "Parking terms and liability", description: "Driver responsibilities, site rules, and liability wording.", slug: "parking-terms-liability" },
+  { title: "Clamping and enforcement policy", description: "How site enforcement and disputes are handled.", slug: "clamping-enforcement" },
+  { title: "Data processing terms", description: "Business-facing data handling and processor terms.", slug: "data-processing-terms" },
+] as const;
 
 export function LegalScreen({ navigation }: Props) {
   const openEmail = (subject: string) => {
     const url = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`;
     void Linking.openURL(url);
+  };
+  const openPolicy = (slug: string) => {
+    void Linking.openURL(`${WEBSITE_BASE}/legal/${slug}`);
   };
 
   return (
@@ -23,37 +43,23 @@ export function LegalScreen({ navigation }: Props) {
           <Text style={styles.backText}>Back</Text>
         </Pressable>
         <Text style={styles.title}>Terms & privacy</Text>
-        <Text style={styles.subtitle}>Legal and data rights</Text>
+        <Text style={styles.subtitle}>Policies, support, and company details</Text>
 
         <Text style={styles.sectionKicker}>Legal</Text>
-        <Text style={styles.sectionTitle}>How we use your data</Text>
+        <Text style={styles.sectionTitle}>FreeSpace policies</Text>
         <Text style={styles.body}>
-          We only use your data to run bookings, process payments, and keep the marketplace safe.
-          We never sell personal data, and we only share information with drivers or hosts when a
-          booking is confirmed.
+          Review the live legal documents that govern bookings, hosting, privacy, refunds, community conduct, parking rules, and enforcement.
         </Text>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Terms of Service</Text>
-          <Text style={styles.cardBody}>
-            By listing or booking, you agree to follow our community rules, cancellation policy,
-            and payout terms. Hosts are responsible for keeping availability accurate.
-          </Text>
-          <Pressable style={styles.cardAction} onPress={() => openEmail("Request Terms of Service")}>
-            <Text style={styles.cardActionText}>Email me the full terms</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Privacy Policy</Text>
-          <Text style={styles.cardBody}>
-            We collect account details, booking history, and payment metadata to complete
-            reservations and comply with legal obligations.
-          </Text>
-          <Pressable style={styles.cardAction} onPress={() => openEmail("Request Privacy Policy")}>
-            <Text style={styles.cardActionText}>Email me the privacy policy</Text>
-          </Pressable>
-        </View>
+        {POLICY_LINKS.map((policy) => (
+          <View style={styles.card} key={policy.slug}>
+            <Text style={styles.cardTitle}>{policy.title}</Text>
+            <Text style={styles.cardBody}>{policy.description}</Text>
+            <Pressable style={styles.cardAction} onPress={() => openPolicy(policy.slug)}>
+              <Text style={styles.cardActionText}>Open policy</Text>
+            </Pressable>
+          </View>
+        ))}
 
         <Text style={styles.sectionKicker}>GDPR requests</Text>
         <Text style={styles.sectionTitle}>Your rights</Text>
@@ -85,6 +91,21 @@ export function LegalScreen({ navigation }: Props) {
             <Text style={[styles.cardActionText, styles.cardActionTextDanger]}>
               Request deletion
             </Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.sectionKicker}>Company</Text>
+        <Text style={styles.sectionTitle}>Support and registered business details</Text>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{COMPANY_NAME}</Text>
+          <Text style={styles.cardBody}>Support email: {SUPPORT_EMAIL}</Text>
+          <Text style={styles.cardBody}>Registered business: {REGISTERED_NAME}</Text>
+          <Text style={styles.cardBody}>Registered address: {REGISTERED_ADDRESS}</Text>
+          <Text style={styles.footnote}>
+            Replace the registered business name and address above with the exact launch entity and registered office before public launch.
+          </Text>
+          <Pressable style={styles.cardAction} onPress={() => openEmail("Support request")}>
+            <Text style={styles.cardActionText}>Email support</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -177,5 +198,11 @@ const styles = StyleSheet.create({
   },
   cardActionTextDanger: {
     color: "#b42318",
+  },
+  footnote: {
+    color: colors.textSoft,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 10,
   },
 });

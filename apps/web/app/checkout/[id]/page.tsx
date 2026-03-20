@@ -29,7 +29,9 @@ export default function CheckoutPage() {
     return Math.max(1, Math.ceil(diff / (1000 * 60 * 60)));
   }, [endDateTime, startDateTime]);
   const billingDays = useMemo(() => Math.max(1, Math.ceil(durationHours / 24)), [durationHours]);
-  const totalPrice = useMemo(() => listing ? listing.pricePerDay * billingDays : 0, [billingDays, listing]);
+  const totalPrice = useMemo(() => (listing ? listing.pricePerDay * billingDays : 0), [billingDays, listing]);
+  const parkingFee = totalPrice;
+  const platformFeeLabel = "Included";
 
   useEffect(() => {
     const id = params?.id;
@@ -192,23 +194,28 @@ export default function CheckoutPage() {
             <h2 className="text-xl font-semibold text-slate-900">Price breakdown</h2>
             <div className="mt-4 space-y-3 text-sm text-slate-600">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold tracking-wide text-slate-400">RATE</span>
+                <span className="text-xs font-semibold tracking-wide text-slate-400">HOST RATE</span>
                 <span className="text-sm font-semibold text-slate-900">€{listing.pricePerDay} / day</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold tracking-wide text-slate-400">BILLING</span>
+                <span className="text-xs font-semibold tracking-wide text-slate-400">BILLING PERIOD</span>
                 <span className="text-sm font-semibold text-slate-900">{billingDays} day(s)</span>
               </div>
-              <div className="rounded-xl bg-emerald-50 px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold tracking-wide text-emerald-600">TOTAL</span>
-                  <span className="text-lg font-semibold text-emerald-700">€{totalPrice.toFixed(2)}</span>
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold tracking-wide text-slate-400">PARKING FEE</span>
+                <span className="text-sm font-semibold text-slate-900">€{parkingFee.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold tracking-wide text-slate-400">PLATFORM FEE</span>
-                <span className="text-sm font-semibold text-slate-900">Included</span>
+                <span className="text-sm font-semibold text-slate-900">{platformFeeLabel}</span>
               </div>
+              <div className="rounded-xl bg-emerald-50 px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold tracking-wide text-emerald-600">TOTAL DUE TODAY</span>
+                  <span className="text-lg font-semibold text-emerald-700">€{totalPrice.toFixed(2)}</span>
+                </div>
+              </div>
+              <p className="text-xs leading-5 text-slate-500">No hidden fees will be added after checkout.</p>
             </div>
           </div>
 
@@ -264,8 +271,11 @@ export default function CheckoutPage() {
         </form>
 
         <p className="text-xs text-slate-500">
-          After payment, you’ll see a confirmation on the success page and in your dashboard. If the host hasn’t finished
-          payouts, the booking uses a mock Stripe session for demo.
+          FreeSpace is the booking marketplace. Hosts manage the physical space and site rules. By booking, you agree to the{" "}
+          <Link href="/legal/parking-terms-liability" className="font-semibold text-emerald-700 hover:text-emerald-800">
+            parking terms and liability policy
+          </Link>
+          .
         </p>
       </div>
 
