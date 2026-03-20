@@ -45,6 +45,10 @@ jobs:
           yarn build:api
           yarn test:api
 
+      - name: Mobile typecheck
+        run: |
+          yarn typecheck:mobile
+
       - name: Web lint and build
         run: |
           yarn lint:web

@@ -150,8 +150,6 @@ export function ListingScreen({ navigation, route }: Props) {
     startAt.toISOString() === booking.startTime &&
     endAt.toISOString() === booking.endTime;
   const showBookingMode = booking && isBookingTimes;
-  const showBottomBar = !!(priceSummary && user);
-  const bottomBarSpacer = showBottomBar ? 140 + insets.bottom : 24;
 
   useEffect(() => {
     const load = async () => {
@@ -219,6 +217,9 @@ export function ListingScreen({ navigation, route }: Props) {
 
     return { total, totalCents: total * 100, durationLabel };
   }, [listing, startAt, endAt]);
+
+  const showBottomBar = !!(priceSummary && user);
+  const bottomBarSpacer = showBottomBar ? 140 + insets.bottom : 24;
 
   const openPicker = (field: "start" | "end") => {
     setPickerField(field);
@@ -491,7 +492,6 @@ export function ListingScreen({ navigation, route }: Props) {
                     loop={false}
                     onAnimationFinish={() => setShowFavAnim(false)}
                     style={styles.favAnimOverlay}
-                    pointerEvents="none"
                   />
                 ) : null}
               </Pressable>
@@ -886,9 +886,7 @@ export function ListingScreen({ navigation, route }: Props) {
               <DatePicker
                 date={draftDate ?? (pickerField === "start" ? startAt : endAt)}
                 mode="datetime"
-                androidVariant="iosClone"
                 minuteInterval={30}
-                textColor={colors.accent}
                 onDateChange={(date) => {
                   setDraftDate(date);
                 }}
@@ -914,7 +912,7 @@ export function ListingScreen({ navigation, route }: Props) {
             onCancel={() => setShowImageViewer(false)}
             onClick={() => setShowImageViewer(false)}
             onChange={(index) => setViewerIndex(index ?? 0)}
-            renderIndicator={() => null}
+            renderIndicator={() => <View />}
             renderHeader={() => (
               <Pressable
                 style={[styles.viewerClose, { top: insets.top + 12 }]}
@@ -1173,7 +1171,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     marginBottom: 10,
   },
-  dateRow: {
+  dateRowLegacy1: {
     alignItems: "center",
     flexDirection: "row",
     gap: 6,
@@ -1201,7 +1199,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     flex: 1,
   },
-  dateArrow: {
+  dateArrowLegacy1: {
     color: "#94a3b8",
     fontSize: 16,
     marginHorizontal: 8,
@@ -1209,7 +1207,7 @@ const styles = StyleSheet.create({
   dateArrow: {
     paddingHorizontal: 8,
   },
-  chipRow: {
+  chipRowLegacy1: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
@@ -1237,7 +1235,7 @@ const styles = StyleSheet.create({
     height: 12,
     width: 1,
   },
-  chip: {
+  chipLegacy1: {
     backgroundColor: colors.cardBg,
     borderRadius: radius.pill,
     paddingHorizontal: 12,
@@ -1247,7 +1245,7 @@ const styles = StyleSheet.create({
   chipStrong: {
     backgroundColor: colors.text,
   },
-  chipText: {
+  chipTextLegacy1: {
     color: colors.text,
     fontSize: 12,
     fontWeight: "600",
@@ -1268,7 +1266,7 @@ const styles = StyleSheet.create({
   sectionStack: {
     marginTop: 6,
   },
-  featuresGrid: {
+  featuresGridLegacy1: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
@@ -1297,14 +1295,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 2,
   },
-  sectionTitle: {
+  sectionTitleLegacy1: {
     color: '#111827',
     fontSize: 16,
     fontWeight: "600",
     letterSpacing: -0.2,
     marginBottom: 8,
   },
-  readMore: {
+  readMoreLegacy1: {
     marginTop: 6,
     color: '#16a34a',
     fontSize: 13,
@@ -1346,7 +1344,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
-  hostDetails: {
+  hostDetailsLegacy1: {
     flexDirection: "row",
     gap: 8,
     marginTop: 14,
@@ -1365,7 +1363,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
-  reviewList: {
+  reviewListLegacy1: {
     gap: 16,
     marginTop: 14,
   },
@@ -1380,12 +1378,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 6,
   },
-  reviewRating: {
+  reviewRatingLegacy1: {
     color: "#f59e0b",
     fontSize: 14,
     fontWeight: "600",
   },
-  reviewDate: {
+  reviewDateLegacy1: {
     color: colors.textSoft,
     fontSize: 12,
     fontWeight: "600",
@@ -1398,7 +1396,7 @@ const styles = StyleSheet.create({
   photoScroll: {
     marginTop: 12,
   },
-  sectionBody: {
+  sectionBodyLegacy1: {
     color: '#6B7280',
     fontSize: 15,
     lineHeight: 22,
@@ -1408,7 +1406,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  summaryValue: {
+  summaryValueLegacy1: {
     color: colors.text,
     fontSize: 18,
     fontWeight: "600",
@@ -1436,7 +1434,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: colors.appBg,
   },
-  authButtons: {
+  authButtonsLegacy1: {
     flexDirection: "row",
     gap: 12,
     marginTop: 6,
@@ -1467,7 +1465,7 @@ const styles = StyleSheet.create({
     color: "#b42318",
     marginBottom: 8,
   },
-  readMore: {
+  readMoreLegacy2: {
     color: colors.accent,
     fontSize: 12,
     fontWeight: "600",
@@ -1479,7 +1477,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
     width: 140,
   },
-  bottomBar: {
+  bottomBarLegacy1: {
     alignItems: "center",
     backgroundColor: colors.cardBg,
     flexDirection: "row",
