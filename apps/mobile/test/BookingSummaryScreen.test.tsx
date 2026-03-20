@@ -1,6 +1,7 @@
 import React from "react";
 import { render, userEvent, waitFor } from "@testing-library/react-native";
 import { BookingSummaryScreen } from "../screens/BookingSummaryScreen";
+import { GlobalLoadingProvider } from "../components/GlobalLoading";
 
 jest.mock("../auth", () => ({
   useAuth: () => ({
@@ -48,20 +49,20 @@ const route = {
 describe("BookingSummaryScreen", () => {
   it("renders the booking summary header", async () => {
     const { getByText } = render(
-      <BookingSummaryScreen navigation={navigation as any} route={route as any} />
+      <GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider>
     );
 
-    await waitFor(() => expect(getByText("Booking summary")).toBeTruthy());
+    await waitFor(() => expect(getByText("Booking Confirmation")).toBeTruthy());
   });
 
   it("starts payment when tapping the reserve button", async () => {
     const { getByText } = render(
-      <BookingSummaryScreen navigation={navigation as any} route={route as any} />
+      <GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider>
     );
     const user = userEvent.setup();
 
-    await waitFor(() => expect(getByText("Pay & reserve")).toBeTruthy());
-    await user.press(getByText("Pay & reserve"));
+    await waitFor(() => expect(getByText(/Pay and reserve/i)).toBeTruthy());
+    await user.press(getByText(/Pay and reserve/i));
 
     const api = require("../api");
     await waitFor(() => expect(api.createBookingPaymentIntent).toHaveBeenCalled());

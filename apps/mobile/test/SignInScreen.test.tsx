@@ -31,7 +31,7 @@ describe("SignInScreen", () => {
       <SignInScreen navigation={navigation as any} route={route as any} />
     );
 
-    expect(getAllByText("Sign in").length).toBeGreaterThan(0);
+    expect(getAllByText(/sign in/i).length).toBeGreaterThan(0);
     expect(getByText("Email")).toBeTruthy();
   });
 
@@ -56,8 +56,8 @@ describe("SignInScreen", () => {
 
     await user.type(getByPlaceholderText("you@example.com"), "test@example.com");
     await user.type(getByPlaceholderText("••••••••"), "123456");
-    await user.press(getByText("Create account"));
 
-    expect(getByText("Please accept the Terms & Privacy to create an account.")).toBeTruthy();
+    const createAccountButton = getByText("Create account").parent;
+    expect(createAccountButton).toBeDisabled();
   });
 });

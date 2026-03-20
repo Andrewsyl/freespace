@@ -1,6 +1,7 @@
 import React from "react";
 import { render, userEvent } from "@testing-library/react-native";
 import { SearchScreen } from "../screens/SearchScreen";
+import { GlobalLoadingProvider } from "../components/GlobalLoading";
 
 jest.mock("../auth", () => ({
   useAuth: () => ({ user: null }),
@@ -39,6 +40,7 @@ const navigation = {
   replace: jest.fn(),
   dispatch: jest.fn(),
   setOptions: jest.fn(),
+  setParams: jest.fn(),
 };
 
 const route = { key: "Search", name: "Search", params: undefined };
@@ -46,15 +48,15 @@ const route = { key: "Search", name: "Search", params: undefined };
 describe("SearchScreen", () => {
   it("renders the search input", () => {
     const { getByPlaceholderText } = render(
-      <SearchScreen navigation={navigation as any} route={route as any} />
+      <GlobalLoadingProvider><SearchScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider>
     );
 
-    expect(getByPlaceholderText("Where to?")).toBeTruthy();
+    expect(getByPlaceholderText(/where are you parking\?/i)).toBeTruthy();
   });
 
   it("opens the search sheet when tapping the search bar", async () => {
     const { getByTestId, getByText } = render(
-      <SearchScreen navigation={navigation as any} route={route as any} />
+      <GlobalLoadingProvider><SearchScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider>
     );
     const user = userEvent.setup();
 
