@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useRef } from "react";
 import type { GestureResponderEvent } from "react-native";
 import { Animated, Pressable, StyleSheet, View } from "react-native";
+import { colors, radius } from "../styles/theme";
 
 type Props = {
   children: ReactNode;
@@ -12,6 +13,7 @@ export function BottomTabButton({ children, onPress, accessibilityState }: Props
   const focused = accessibilityState?.selected;
   const scale = useRef(new Animated.Value(1)).current;
   const opacity = useRef(new Animated.Value(focused ? 1 : 0.8)).current;
+  const bgOpacity = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -26,8 +28,13 @@ export function BottomTabButton({ children, onPress, accessibilityState }: Props
         duration: 200,
         useNativeDriver: false,
       }),
+      Animated.timing(bgOpacity, {
+        toValue: focused ? 1 : 0,
+        duration: 180,
+        useNativeDriver: false,
+      }),
     ]).start();
-  }, [focused, scale, opacity]);
+  }, [focused, scale, opacity, bgOpacity]);
 
   const handlePressIn = () => {
     Animated.spring(scale, {
@@ -54,7 +61,23 @@ export function BottomTabButton({ children, onPress, accessibilityState }: Props
       onPressOut={handlePressOut}
       style={styles.pressable}
     >
-      <Animated.View style={[styles.item, { transform: [{ scale }], opacity }]}>
+      <Animated.View
+        style={[
+          styles.item,
+          {
+            transform: [{ scale }],
+            opacity,
+            backgroundColor: bgOpacity.interpolate({
+              inputRange: [0, 1],
+              outputRange: ["rgba(255,255,255,0)", colors.accentSoft],
+            }),
+            borderColor: bgOpacity.interpolate({
+              inputRange: [0, 1],
+              outputRange: ["rgba(229,231,235,0)", "#CDEFE2"],
+            }),
+          },
+        ]}
+      >
         {children}
       </Animated.View>
     </Pressable>
@@ -64,8 +87,13 @@ export function BottomTabButton({ children, onPress, accessibilityState }: Props
 const styles = StyleSheet.create({
   item: {
     alignItems: "center",
-    gap: 4,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    gap: 3,
     justifyContent: "center",
+    minWidth: 84,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
   },
   pressable: {
     alignItems: "center",

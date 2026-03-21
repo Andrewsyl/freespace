@@ -63,6 +63,26 @@ export function ListingsScreen({ navigation }: Props) {
     return `€${(value / 100).toFixed(2)}`;
   };
 
+  const emptyListingsState = (
+    <View style={styles.card}>
+      <Image
+        source={require("../assets/illustrations/parking-host.png")}
+        style={styles.emptyIllustration}
+        resizeMode="contain"
+      />
+      <Text style={styles.cardTitle}>No listings yet</Text>
+      <Text style={styles.cardBody}>
+        Create a listing to start earning from your parking space.
+      </Text>
+      <Pressable
+        style={styles.primaryButton}
+        onPress={() => navigation.navigate("CreateListingFlow")}
+      >
+        <Text style={styles.primaryButtonText}>List a space</Text>
+      </Pressable>
+    </View>
+  );
+
   const handlePayoutSetup = useCallback(async () => {
     if (!token) return;
     setPayoutBusy(true);
@@ -146,6 +166,11 @@ export function ListingsScreen({ navigation }: Props) {
         <ScrollView contentContainerStyle={styles.content}>
           {!user ? (
             <View style={styles.card}>
+              <Image
+                source={require("../assets/illustrations/by-my-car.png")}
+                style={styles.emptyIllustration}
+                resizeMode="contain"
+              />
               <Text style={styles.cardTitle}>Sign in to host</Text>
               <Text style={styles.cardBody}>
                 Log in to manage listings and start earning from your space.
@@ -208,18 +233,7 @@ export function ListingsScreen({ navigation }: Props) {
               </View>
             ) : null}
             {listings.length === 0 && !loading ? (
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>No listings yet</Text>
-                <Text style={styles.cardBody}>
-                  Create a listing to start earning from your parking space.
-                </Text>
-                <Pressable
-                  style={styles.primaryButton}
-                  onPress={() => navigation.navigate("CreateListingFlow")}
-                >
-                  <Text style={styles.primaryButtonText}>List a space</Text>
-                </Pressable>
-              </View>
+              emptyListingsState
             ) : (
               <View style={styles.list}>
                 {listings.map((listing) => (
@@ -327,17 +341,25 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     borderWidth: 1,
     padding: spacing.card,
+    alignItems: "center",
     ...cardShadow,
+  },
+  emptyIllustration: {
+    width: 220,
+    height: 150,
+    marginBottom: 16,
   },
   cardTitle: {
     color: colors.text,
     fontSize: 16,
     fontWeight: "600",
+    textAlign: "center",
   },
   cardBody: {
     color: colors.textMuted,
     fontSize: 13,
     marginTop: 6,
+    textAlign: "center",
   },
   error: {
     backgroundColor: "#fef2f2",

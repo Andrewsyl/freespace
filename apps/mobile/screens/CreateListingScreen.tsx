@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useState } from "react";
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -86,6 +87,17 @@ export function CreateListingScreen({ navigation }: Props) {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.heroCard}>
+            <Image
+              source={require("../assets/illustrations/parking-host.png")}
+              style={styles.heroIllustration}
+              resizeMode="contain"
+            />
+            <Text style={styles.heroTitle}>List your space</Text>
+            <Text style={styles.heroBody}>
+              Add the key details now. You can refine pricing, photos, and availability later.
+            </Text>
+          </View>
           <View style={styles.card}>
             <Text style={styles.kicker}>Host details</Text>
             <Text style={styles.subtitle}>
@@ -234,6 +246,32 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing.screenX,
     paddingBottom: 120,
+  },
+  heroCard: {
+    alignItems: "center",
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    marginBottom: 16,
+    padding: spacing.card,
+    ...cardShadow,
+  },
+  heroIllustration: {
+    width: 220,
+    height: 150,
+    marginBottom: 10,
+  },
+  heroTitle: {
+    ...textStyles.title,
+    fontSize: 22,
+    textAlign: "center",
+  },
+  heroBody: {
+    ...textStyles.subtitle,
+    fontSize: 13,
+    marginTop: 6,
+    textAlign: "center",
   },
   card: {
     backgroundColor: colors.cardBg,

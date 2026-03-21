@@ -70,6 +70,11 @@ function LoginPageContent() {
                 className="h-11 rounded-xl border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
               />
             </label>
+            <div className="text-right">
+              <Link href="/reset-password" className="text-sm font-semibold text-brand-700">
+                Forgot password?
+              </Link>
+            </div>
             <button type="submit" className="btn-primary w-full" disabled={loading}>
               {loading ? "Signing in..." : "Sign in"}
             </button>

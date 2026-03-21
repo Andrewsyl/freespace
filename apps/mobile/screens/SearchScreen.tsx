@@ -31,7 +31,7 @@ import { MapBottomCard } from "../components/MapBottomCard";
 import { LIGHT_MAP_STYLE } from "../components/mapStyles";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { getListing, searchListings } from "../api";
-import { cardShadow, colors, radius, spacing } from "../styles/theme";
+import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import { logError, logInfo } from "../logger";
 import type {
   ListingSummary,
@@ -79,6 +79,8 @@ const monthNames = [
   "Nov",
   "Dec",
 ];
+const MAX_SEARCH_RADIUS_KM = 50;
+const MIN_SEARCH_RADIUS_KM = 0.5;
 
 const ordinalSuffix = (value: number) => {
   const mod100 = value % 100;
@@ -285,7 +287,9 @@ export function SearchScreen({ navigation }: Props) {
     const diagDelta = Math.sqrt(
       region.latitudeDelta ** 2 + region.longitudeDelta ** 2
     );
-    return Math.max(0.5, (diagDelta * 111) / 2) * 1.2;
+    const rawRadiusKm =
+      Math.max(MIN_SEARCH_RADIUS_KM, (diagDelta * 111) / 2) * 1.2;
+    return Math.min(MAX_SEARCH_RADIUS_KM, rawRadiusKm);
   }, []);
 
   const buildSearchParams = useCallback(
@@ -1671,8 +1675,10 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 22,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: 24,
+    borderWidth: 1,
     flex: 1,
     flexDirection: "row",
     gap: 10,
@@ -1686,10 +1692,8 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   searchInput: {
-    color: colors.text,
+    ...textStyles.bodyMedium,
     flex: 1,
-    fontSize: 15,
-    fontWeight: "500",
   },
   clearButton: {
     alignItems: "center",
@@ -1712,8 +1716,10 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
     borderRadius: radius.pill,
+    borderWidth: 1,
     height: 40,
     justifyContent: "center",
     width: 40,
@@ -1741,8 +1747,10 @@ const styles = StyleSheet.create({
     width: 8,
   },
   dateRowCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
     marginTop: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -1799,9 +1807,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#e8fff8",
   },
   filtersToggleText: {
+    ...textStyles.meta,
     color: colors.text,
-    fontSize: 12,
-    fontWeight: "600",
   },
   filtersToggleTextActive: {
     color: colors.accent,
@@ -1816,9 +1823,7 @@ const styles = StyleSheet.create({
     ...cardShadow,
   },
   clearFiltersText: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
+    ...textStyles.meta,
   },
   filtersPanel: {
     backgroundColor: colors.cardBg,
@@ -1861,14 +1866,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   filtersTitle: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: "600",
+    ...textStyles.titleSmall,
   },
   filtersSubtitle: {
-    color: colors.textMuted,
+    ...textStyles.bodyMedium,
     fontSize: 13,
-    fontWeight: "500",
     marginBottom: 16,
   },
   filtersSection: {
@@ -1889,9 +1891,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   label: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
+    ...textStyles.meta,
     marginBottom: 6,
   },
   input: {
@@ -1899,6 +1899,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     color: colors.text,
+    fontFamily: "Inter-Medium",
+    fontSize: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -1918,9 +1920,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
   chipText: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
+    ...textStyles.meta,
     textTransform: "capitalize",
   },
   chipTextActive: {
@@ -1933,9 +1933,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   switchLabel: {
-    color: colors.text,
+    ...textStyles.bodyStrong,
     fontSize: 13,
-    fontWeight: "600",
   },
   applyButton: {
     alignItems: "center",
@@ -1945,9 +1944,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   applyButtonText: {
-    color: "#ffffff",
-    fontSize: 13,
-    fontWeight: "600",
+    ...textStyles.button,
+    fontSize: 14,
   },
   suggestions: {
     backgroundColor: colors.cardBg,
@@ -1978,9 +1976,8 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   searchHeaderTitle: {
+    ...textStyles.titleSmall,
     color: "#ffffff",
-    fontSize: 18,
-    fontWeight: "600",
   },
   headerIconButton: {
     alignItems: "center",
@@ -1989,9 +1986,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   headerIconText: {
+    ...textStyles.bodyStrong,
     color: "#ffffff",
-    fontSize: 14,
-    fontWeight: "600",
   },
   searchHeaderInput: {
     backgroundColor: colors.accent,
@@ -2001,14 +1997,15 @@ const styles = StyleSheet.create({
   searchOverlayInputShell: {
     alignItems: "center",
     backgroundColor: colors.cardBg,
-    borderRadius: 12,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
     flexDirection: "row",
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   searchOverlayInput: {
-    color: colors.text,
-    fontSize: 14,
+    ...textStyles.bodyMedium,
     flex: 1,
   },
   overlayClearButton: {
@@ -2026,7 +2023,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   searchContent: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     flex: 1,
@@ -2050,9 +2047,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f172a",
   },
   tabText: {
-    color: "#6b7280",
+    ...textStyles.bodyStrong,
     fontSize: 13,
-    fontWeight: "600",
+    color: colors.textMuted,
   },
   tabTextActive: {
     color: "#ffffff",
@@ -2102,13 +2099,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   resultTitle: {
-    color: "#1a1f2e",
-    fontSize: 16,
-    fontWeight: "600",
+    ...textStyles.bodyStrong,
+    fontSize: 15,
+    color: colors.text,
   },
   resultSubtitle: {
-    color: "#6b7280",
-    fontSize: 14,
+    ...textStyles.bodyMedium,
     marginTop: 2,
   },
   resultRemove: {
@@ -2126,9 +2122,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   sectionLabel: {
-    color: "#111827",
-    fontSize: 13,
-    fontWeight: "600",
+    ...textStyles.meta,
+    color: colors.text,
     letterSpacing: 0.4,
     marginBottom: 10,
   },
@@ -2146,17 +2141,11 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   dateTimeLabel: {
-    fontSize: 11,
-    color: "#6B7280",
+    ...textStyles.label,
     marginBottom: 4,
-    letterSpacing: 0.2,
-    fontFamily: "Inter-Medium",
   },
   dateTimeValue: {
-    color: "#111827",
-    fontSize: 14,
-    fontWeight: "700",
-    fontFamily: "Inter-SemiBold",
+    ...textStyles.bodyStrong,
   },
   dateArrowIcon: {
     marginHorizontal: 4,
@@ -2193,9 +2182,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   searchAreaText: {
-    color: "#ffffff",
-    fontSize: 13,
-    fontWeight: "600",
+    ...textStyles.button,
+    fontSize: 14,
   },
   durationRow: {
     flexDirection: "row",
@@ -2211,9 +2199,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   durationText: {
-    color: "#475569",
-    fontSize: 12,
-    fontWeight: "600",
+    ...textStyles.meta,
+    color: colors.textMuted,
   },
   pickerBackdrop: {
     backgroundColor: "rgba(15, 23, 42, 0.4)",
@@ -2239,14 +2226,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   pickerTitle: {
-    color: "#0f172a",
-    fontSize: 15,
-    fontWeight: "600",
+    ...textStyles.sectionTitle,
     textAlign: "center",
   },
   pickerSubtitle: {
-    color: "#98a2b3",
-    fontSize: 12,
+    ...textStyles.meta,
+    color: colors.textSoft,
     marginTop: 4,
     textAlign: "center",
   },
@@ -2271,9 +2256,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   pickerQuickText: {
-    color: "#6B7280",
-    fontSize: 12,
-    fontWeight: "600",
+    ...textStyles.meta,
   },
   pickerFooter: {
     flexDirection: "row",
@@ -2286,9 +2269,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   pickerFooterGhostText: {
-    color: "#16a34a",
+    ...textStyles.bodyStrong,
     fontSize: 13,
-    fontWeight: "600",
+    color: "#16a34a",
   },
   pickerFooterPrimary: {
     backgroundColor: "#16a34a",
@@ -2299,9 +2282,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   pickerFooterPrimaryText: {
-    color: "#ffffff",
-    fontSize: 13,
-    fontWeight: "600",
+    ...textStyles.button,
+    fontSize: 14,
   },
   suggestionItem: {
     borderBottomColor: "#f2f4f7",
@@ -2310,12 +2292,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   suggestionText: {
-    color: "#101828",
-    fontSize: 14,
+    ...textStyles.body,
   },
   suggestionMuted: {
-    color: "#98a2b3",
-    fontSize: 12,
+    ...textStyles.meta,
+    color: colors.textSoft,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
@@ -2351,15 +2332,11 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   overlappingTitle: {
-    color: "#0f172a",
-    fontSize: 20,
-    fontWeight: "600",
+    ...textStyles.titleSmall,
     marginBottom: 4,
   },
   overlappingSubtitle: {
-    color: "#64748b",
-    fontSize: 14,
-    fontWeight: "500",
+    ...textStyles.bodyMedium,
   },
   overlappingList: {
     paddingHorizontal: 12,
@@ -2383,19 +2360,15 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   overlappingItemTitle: {
-    color: "#0f172a",
-    fontSize: 16,
-    fontWeight: "600",
+    ...textStyles.bodyStrong,
+    fontSize: 15,
     marginBottom: 4,
   },
   overlappingItemAddress: {
-    color: "#64748b",
-    fontSize: 13,
-    fontWeight: "500",
+    ...textStyles.meta,
   },
   overlappingItemPrice: {
-    color: "#2ECC8F",
-    fontSize: 18,
-    fontWeight: "600",
+    ...textStyles.titleSmall,
+    color: colors.accent,
   },
 });

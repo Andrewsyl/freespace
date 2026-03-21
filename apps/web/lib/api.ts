@@ -27,10 +27,11 @@ async function handleResponse<T>(res: Response): Promise<{ data: T | null; error
 }
 
 export async function searchSpaces(filters: SearchFilters): Promise<Listing[]> {
+  const radiusKm = Math.min(50, Math.max(0.1, Number(filters.radiusKm) || 5));
   const params = new URLSearchParams({
     lat: String(filters.latitude ?? 53.3498),
     lng: String(filters.longitude ?? -6.2603),
-    radiusKm: String(filters.radiusKm),
+    radiusKm: String(radiusKm),
     from: `${filters.date}T${filters.startTime}:00Z`,
     to: `${(filters.endDate ?? filters.date)}T${filters.endTime}:00Z`,
   });
@@ -206,6 +207,32 @@ export async function requestEmailVerification(email: string) {
   if (error) {
     throw new Error(error);
   }
+}
+
+export async function requestPasswordReset(email: string) {
+  const res = await fetch(`${API_BASE}/api/auth/request-password-reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const { data, error } = await handleResponse<{ ok: boolean; previewUrl?: string }>(res);
+  if (error) {
+    throw new Error(error);
+  }
+  return data ?? { ok: true };
+}
+
+export async function resetPassword(token: string, password: string) {
+  const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, password }),
+  });
+  const { data, error } = await handleResponse<{ ok: boolean }>(res);
+  if (error) {
+    throw new Error(error);
+  }
+  return data ?? { ok: true };
 }
 
 // Admin API

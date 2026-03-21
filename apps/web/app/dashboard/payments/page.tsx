@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   addPaymentMethod,
   deletePaymentMethod,
@@ -219,7 +220,27 @@ export default function PaymentsPage() {
           </div>
 
           {status === "loading" && <div className="text-sm text-slate-600">Loading cards…</div>}
-          {methods.length === 0 && status !== "loading" && <div className="text-sm text-slate-600">No cards saved yet.</div>}
+          {methods.length === 0 && status !== "loading" && (
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-5">
+              <div className="grid items-center gap-4 md:grid-cols-[180px_1fr]">
+                <div className="mx-auto w-full max-w-[180px]">
+                  <Image
+                    src="/illustrations/payment-information.svg.png"
+                    alt="Payment methods illustration"
+                    width={720}
+                    height={720}
+                    className="h-auto w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-base font-semibold text-slate-900">No cards saved yet</p>
+                  <p className="text-sm text-slate-600">
+                    Add a card now so checkout is faster the next time you book a space.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             {methods.map((pm) => (
@@ -271,7 +292,25 @@ export default function PaymentsPage() {
 
           {historyStatus === "loading" && <div className="text-sm text-slate-600">Loading payments…</div>}
           {history.length === 0 && historyStatus === "idle" && (
-            <div className="text-sm text-slate-600">No payments recorded yet.</div>
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-5">
+              <div className="grid items-center gap-4 md:grid-cols-[180px_1fr]">
+                <div className="mx-auto w-full max-w-[180px]">
+                  <Image
+                    src="/illustrations/navigation.svg.png"
+                    alt="No payments illustration"
+                    width={720}
+                    height={720}
+                    className="h-auto w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-base font-semibold text-slate-900">No payments recorded yet</p>
+                  <p className="text-sm text-slate-600">
+                    Once you complete bookings, your recent charges and receipts will show here.
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
 
           <div className="space-y-2">

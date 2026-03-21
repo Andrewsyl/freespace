@@ -18,6 +18,10 @@ type AuthResponse = {
     name?: string | null;
     phone?: string | null;
     phoneVerified?: boolean;
+    vehicleMake?: string | null;
+    vehicleType?: string | null;
+    vehicleColor?: string | null;
+    vehiclePlate?: string | null;
     role?: string;
     emailVerified?: boolean;
     termsVersion?: string | null;
@@ -60,10 +64,11 @@ async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit, ti
 }
 
 export async function searchListings(params: SearchParams) {
+  const radiusKm = Math.min(50, Math.max(0.1, Number(params.radiusKm) || 5));
   const query = new URLSearchParams();
   query.set("lat", params.lat);
   query.set("lng", params.lng);
-  query.set("radiusKm", params.radiusKm);
+  query.set("radiusKm", String(radiusKm));
   query.set("from", params.from);
   query.set("to", params.to);
   if (params.includeUnavailable) query.set("includeUnavailable", "true");
@@ -465,7 +470,14 @@ export async function getMe(token: string) {
 
 export async function updateMe(
   token: string,
-  payload: { name?: string | null; phone?: string | null }
+  payload: {
+    name?: string | null;
+    phone?: string | null;
+    vehicleMake?: string | null;
+    vehicleType?: string | null;
+    vehicleColor?: string | null;
+    vehiclePlate?: string | null;
+  }
 ) {
   const response = await fetch(`${baseUrl}/api/auth/me`, {
     method: "PUT",
@@ -512,7 +524,7 @@ export async function verifyPhone(token: string, code: string) {
 }
 
 export async function requestPasswordReset(email: string) {
-  const response = await fetch(`${baseUrl}/api/auth/request-password-reset`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/request-password-reset`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
@@ -524,7 +536,7 @@ export async function requestPasswordReset(email: string) {
 }
 
 export async function resetPassword(token: string, password: string) {
-  const response = await fetch(`${baseUrl}/api/auth/reset-password`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/reset-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token, password }),

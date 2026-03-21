@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   createPayoutOnboardingLink,
   getPayoutBalance,
@@ -166,7 +167,27 @@ export default function EarningsPage() {
         </div>
 
         {status === "loading" && <div className="text-sm text-slate-600">Loading payouts…</div>}
-        {payouts.length === 0 && status === "idle" && <div className="text-sm text-slate-600">No payouts yet.</div>}
+        {payouts.length === 0 && status === "idle" && (
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-5">
+            <div className="grid items-center gap-4 md:grid-cols-[180px_1fr]">
+              <div className="mx-auto w-full max-w-[180px]">
+                <Image
+                  src="/illustrations/revenue.svg.png"
+                  alt="Revenue illustration"
+                  width={720}
+                  height={720}
+                  className="h-auto w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="text-base font-semibold text-slate-900">No payouts yet</p>
+                <p className="text-sm text-slate-600">
+                  Complete Stripe onboarding and publish a space to start receiving host payouts.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="divide-y divide-slate-100">
           {payouts.map((p) => (

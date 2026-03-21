@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,6 +12,10 @@ type Props = NativeStackScreenProps<RootStackParamList, "PersonalInfo">;
 
 export function PersonalInfoScreen({ navigation }: Props) {
   const { user, token, setAuthUser } = useAuth();
+  const scrollRef = useRef<ScrollView | null>(null);
+  const nameFieldY = useRef(0);
+  const phoneFieldY = useRef(0);
+  const verifyFieldY = useRef(0);
   const [name, setName] = useState(user?.name ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
   const [saving, setSaving] = useState(false);
@@ -114,9 +118,24 @@ export function PersonalInfoScreen({ navigation }: Props) {
     }
   };
 
+  const scrollToField = (y: number) => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - 120), animated: true });
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+      >
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={20} color={colors.text} />
           <Text style={styles.backText}>Back</Text>
@@ -126,7 +145,12 @@ export function PersonalInfoScreen({ navigation }: Props) {
         <Text style={styles.subtitle}>Your account details</Text>
 
         <View style={styles.card}>
-          <View style={styles.row}>
+          <View
+            style={styles.row}
+            onLayout={(event) => {
+              nameFieldY.current = event.nativeEvent.layout.y;
+            }}
+          >
             <Text style={styles.label}>Name</Text>
             <TextInput
               value={name}
@@ -134,9 +158,15 @@ export function PersonalInfoScreen({ navigation }: Props) {
               placeholder="Enter your name"
               placeholderTextColor={colors.textMuted}
               style={styles.input}
+              onFocus={() => scrollToField(nameFieldY.current)}
             />
           </View>
-          <View style={styles.row}>
+          <View
+            style={styles.row}
+            onLayout={(event) => {
+              phoneFieldY.current = event.nativeEvent.layout.y;
+            }}
+          >
             <Text style={styles.label}>Phone number</Text>
             <TextInput
               value={phone}
@@ -145,6 +175,7 @@ export function PersonalInfoScreen({ navigation }: Props) {
               placeholderTextColor={colors.textMuted}
               keyboardType="phone-pad"
               style={styles.input}
+              onFocus={() => scrollToField(phoneFieldY.current)}
             />
             <View style={styles.phoneStatusRow}>
               <Text
@@ -179,6 +210,10 @@ export function PersonalInfoScreen({ navigation }: Props) {
                   placeholderTextColor={colors.textMuted}
                   keyboardType="number-pad"
                   style={styles.input}
+                  onLayout={(event) => {
+                    verifyFieldY.current = event.nativeEvent.layout.y;
+                  }}
+                  onFocus={() => scrollToField(phoneFieldY.current + verifyFieldY.current)}
                 />
                 <Pressable
                   style={[
@@ -219,6 +254,7 @@ export function PersonalInfoScreen({ navigation }: Props) {
           )}
         </Pressable>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

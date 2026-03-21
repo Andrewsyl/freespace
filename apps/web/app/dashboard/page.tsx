@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { BookingCard, type Booking } from "../../components/BookingCard";
 import { getMyBookings } from "../../lib/api";
 import { useAuth } from "../../components/AuthProvider";
@@ -157,8 +158,22 @@ export default function DashboardPage() {
               </button>
             ))}
             {driverBookings.length === 0 && status === "idle" && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                No driver bookings yet. Head to search to book a space.
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                <div className="grid items-center gap-3 md:grid-cols-[160px_1fr]">
+                  <div className="mx-auto w-full max-w-[160px]">
+                    <Image
+                      src="/illustrations/city-driver-alt.svg.png"
+                      alt="No trips illustration"
+                      width={720}
+                      height={720}
+                      className="h-auto w-full"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-base font-semibold text-slate-900">No driver bookings yet</p>
+                    <p className="text-sm text-slate-600">Head to search to book your first parking space.</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -181,8 +196,22 @@ export default function DashboardPage() {
               </button>
             ))}
             {hostBookings.length === 0 && status === "idle" && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                No host bookings yet. List a space to start earning.
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                <div className="grid items-center gap-3 md:grid-cols-[160px_1fr]">
+                  <div className="mx-auto w-full max-w-[160px]">
+                    <Image
+                      src="/illustrations/by-my-car-alt.svg.png"
+                      alt="No host bookings illustration"
+                      width={720}
+                      height={720}
+                      className="h-auto w-full"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-base font-semibold text-slate-900">No host bookings yet</p>
+                    <p className="text-sm text-slate-600">List a space to start earning from host bookings.</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>

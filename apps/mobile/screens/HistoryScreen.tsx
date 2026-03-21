@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
-import { Animated, BackHandler, Easing, FlatList, InteractionManager, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Animated, BackHandler, Easing, FlatList, Image, InteractionManager, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import LottieView from "lottie-react-native";
@@ -562,10 +562,10 @@ export function HistoryScreen({ navigation, route }: Props) {
                         ) : showPaneEmpty ? (
                           <View style={styles.emptyState}>
                             <View style={styles.emptyIcon}>
-                              <Ionicons
-                                name={paneTab === "upcoming" ? "calendar-outline" : paneTab === "active" ? "time-outline" : "checkmark-done-outline"}
-                                size={44}
-                                color={colors.textSoft}
+                              <Image
+                                source={require("../assets/illustrations/city-driver.png")}
+                                style={styles.emptyIllustration}
+                                resizeMode="contain"
                               />
                             </View>
                             <Text style={styles.emptyTitle}>
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.appBg,
   },
   gradientWrapper: {
     flex: 0,
@@ -645,10 +645,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "700",
+    ...textStyles.title,
     color: "#ffffff",
-    letterSpacing: 0,
   },
   mapCtaBanner: {
     alignItems: "center",
@@ -670,13 +668,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mapCtaTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "600",
+    ...textStyles.sectionTitle,
     marginBottom: 2,
   },
   mapCtaBody: {
-    color: colors.textMuted,
+    ...textStyles.bodyMedium,
     fontSize: 13,
   },
   mapCtaButton: {
@@ -689,9 +685,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   mapCtaButtonText: {
-    color: "#ffffff",
-    fontSize: 13,
-    fontWeight: "600",
+    ...textStyles.button,
+    fontSize: 14,
   },
   inlineLoading: {
     alignItems: "center",
@@ -703,9 +698,9 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   inlineLoadingText: {
+    ...textStyles.bodyStrong,
     color: colors.textMuted,
     fontSize: 13,
-    fontWeight: "600",
   },
   tabBar: {
     flexDirection: "row",
@@ -722,9 +717,9 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   tabText: {
+    ...textStyles.bodyStrong,
     color: "rgba(255,255,255,0.8)",
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 15,
     letterSpacing: 0.2,
   },
   tabTextActive: {
@@ -753,9 +748,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   monthLabel: {
+    ...textStyles.label,
     color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "700",
     letterSpacing: 0.6,
     marginTop: 4,
     marginBottom: 6,
@@ -784,15 +778,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardTitle: {
-    color: colors.text,
+    ...textStyles.titleSmall,
     fontSize: 18,
-    fontWeight: "600",
     marginBottom: 8,
   },
   cardBody: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
+    ...textStyles.bodyMedium,
   },
   loadMoreButton: {
     alignItems: "center",
@@ -804,9 +795,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   loadMoreText: {
-    color: colors.text,
+    ...textStyles.bodyStrong,
     fontSize: 13,
-    fontWeight: "600",
   },
   skeletonRow: {
     alignItems: "center",
@@ -859,25 +849,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: "#f3f4f6",
+    width: 156,
+    height: 120,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 24,
+    marginBottom: 18,
+  },
+  emptyIllustration: {
+    width: "100%",
+    height: "100%",
   },
   emptyTitle: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: "600",
+    ...textStyles.titleSmall,
     marginBottom: 8,
   },
   emptyBody: {
-    color: colors.textMuted,
+    ...textStyles.subtitle,
     fontSize: 15,
     textAlign: "center",
-    lineHeight: 22,
     marginBottom: 24,
   },
   error: {
@@ -908,9 +897,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   primaryButtonText: {
-    color: "#ffffff",
-    fontSize: 15,
-    fontWeight: "600",
+    ...textStyles.button,
   },
   successOverlay: {
     alignItems: "center",
@@ -936,13 +923,12 @@ const styles = StyleSheet.create({
     width: 140,
   },
   successTitle: {
-    color: colors.text,
+    ...textStyles.titleSmall,
     fontSize: 18,
-    fontWeight: "600",
     marginTop: 6,
   },
   successBody: {
-    color: colors.textMuted,
+    ...textStyles.bodyMedium,
     fontSize: 13,
     marginTop: 4,
     textAlign: "center",

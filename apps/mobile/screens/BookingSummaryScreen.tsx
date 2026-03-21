@@ -23,9 +23,8 @@ import { useStripe } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
 import DatePicker from "react-native-date-picker";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import { cardShadow, colors, radius, spacing } from "../styles/theme";
+import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import {
   confirmBookingPayment,
   createBookingPaymentIntent,
@@ -36,16 +35,13 @@ import { logError, logInfo } from "../logger";
 import { getNotificationImageAttachment } from "../notifications";
 import { BookingProgressBar } from "../components/BookingProgressBar";
 import { useGlobalLoading } from "../components/GlobalLoading";
+import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { formatDateLabel, formatTimeLabel } from "../utils/dateFormat";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingSummary">;
 
 const formatDateTimeLabel = (date: Date) => `${formatDateLabel(date)} · ${formatTimeLabel(date)}`;
-
-const VEHICLE_MAKE_KEY = "vehicle.make";
-const VEHICLE_COLOR_KEY = "vehicle.color";
-const VEHICLE_PLATE_KEY = "vehicle.plate";
 
 function formatIrishPlateInput(raw: string) {
   const compact = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -152,32 +148,10 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   }, [from, to]);
 
   useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const [savedMake, savedColor, savedPlate] = await Promise.all([
-          AsyncStorage.getItem(VEHICLE_MAKE_KEY),
-          AsyncStorage.getItem(VEHICLE_COLOR_KEY),
-          AsyncStorage.getItem(VEHICLE_PLATE_KEY),
-        ]);
-        if (!active) return;
-        if (savedMake) setVehicleMake(savedMake);
-        if (savedColor) setVehicleColor(savedColor);
-        if (savedPlate) setVehiclePlate(savedPlate);
-      } catch {
-        // Ignore lookup failures.
-      }
-    };
-    void load();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    const value = vehiclePlate.trim().toUpperCase();
-    void AsyncStorage.setItem(VEHICLE_PLATE_KEY, value).catch(() => {});
-  }, [vehiclePlate]);
+    setVehicleMake(user?.vehicleMake ?? "");
+    setVehicleColor(user?.vehicleColor ?? "");
+    setVehiclePlate(user?.vehiclePlate ?? "");
+  }, [user?.vehicleColor, user?.vehicleMake, user?.vehiclePlate]);
 
   const start = useMemo(() => startAt, [startAt]);
   const end = useMemo(() => endAt, [endAt]);
@@ -586,6 +560,28 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               plateSectionYRef.current = event.nativeEvent.layout.y;
             }}
           >
+            <View style={styles.vehicleCardHeader}>
+              <View style={styles.vehicleCardInfo}>
+                {vehicleMake ? <VehicleBrandLogo make={vehicleMake} size={20} /> : null}
+                <View style={styles.vehicleCardText}>
+                  <Text style={styles.fieldLabel}>Vehicle</Text>
+                  <Text style={styles.vehicleCardMeta}>
+                    {vehicleMake && vehicleColor
+                      ? `${vehicleMake} · ${vehicleColor}`
+                      : vehicleMake || "Add your vehicle details"}
+                  </Text>
+                </View>
+              </View>
+              <Pressable
+                style={styles.vehicleEditButton}
+                onPress={() => navigation.navigate("VehicleType")}
+              >
+                <Text style={styles.vehicleEditButtonText}>
+                  {vehicleMake ? "Edit" : "Add"}
+                </Text>
+              </Pressable>
+            </View>
+            {user?.vehicleType ? <Text style={styles.vehicleTypeText}>{user.vehicleType}</Text> : null}
             <Text style={styles.fieldLabel}>Vehicle registration</Text>
             <View style={styles.regRow}>
               <View style={styles.plateCountry} />
@@ -767,11 +763,8 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   progressTitle: {
-    color: colors.text,
+    ...textStyles.sectionTitle,
     fontSize: 17,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
-    letterSpacing: -0.2,
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -784,36 +777,25 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.cardBg,
-    borderRadius: 16,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     marginBottom: 16,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 14,
-    elevation: 4,
+    ...cardShadow,
   },
   cardBody: {
     paddingHorizontal: 18,
     paddingVertical: 16,
   },
   cardSectionLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
-    color: "#6B7280",
+    ...textStyles.label,
+    color: colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.6,
     marginBottom: 6,
   },
   listingTitle: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
-    letterSpacing: -0.3,
-    lineHeight: 26,
+    ...textStyles.titleSmall,
     marginBottom: 6,
   },
   addressRow: {
@@ -829,10 +811,7 @@ const styles = StyleSheet.create({
     width: 6,
   },
   addressText: {
-    color: colors.textMuted,
-    fontSize: 14,
-    fontWeight: "400",
-    fontFamily: "Poppins-Regular",
+    ...textStyles.bodyMedium,
   },
   summaryHeader: {
     paddingHorizontal: 16,
@@ -840,15 +819,11 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     backgroundColor: colors.cardBg,
-    borderRadius: 18,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     marginBottom: 16,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
+    ...cardShadow,
     overflow: "hidden",
   },
   summaryMapWrap: {
@@ -868,10 +843,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   summaryMapPlaceholderText: {
-    color: "#94A3B8",
-    fontSize: 12,
-    fontWeight: "500",
-    fontFamily: "Poppins-Medium",
+    ...textStyles.meta,
+    color: colors.textSoft,
   },
   summaryCode: {
     alignSelf: "flex-start",
@@ -891,24 +864,16 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     backgroundColor: colors.cardBg,
-    borderRadius: 18,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     paddingHorizontal: 14,
     paddingVertical: 14,
     marginBottom: 16,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
+    ...cardShadow,
   },
   sectionLabel: {
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
-    color: colors.text,
-    letterSpacing: -0.2,
+    ...textStyles.sectionTitle,
     marginBottom: 12,
   },
   sessionRow: {
@@ -920,16 +885,11 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E5E7EB",
   },
   sessionLabel: {
-    color: "#6B7280",
+    ...textStyles.bodyMedium,
     fontSize: 13,
-    fontWeight: "500",
-    fontFamily: "Poppins-Medium",
   },
   sessionValue: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: "700",
-    fontFamily: "Poppins-SemiBold",
+    ...textStyles.bodyStrong,
   },
   sessionTable: {
     borderTopWidth: 1,
@@ -959,16 +919,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   sessionTableLabel: {
+    ...textStyles.bodyMedium,
     color: "#374151",
-    fontSize: 14,
-    fontFamily: "Poppins-Medium",
-    fontWeight: "500",
   },
   sessionTableValue: {
-    color: colors.text,
+    ...textStyles.bodyStrong,
     fontSize: 15,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
     textAlign: "right",
   },
   dateRow: {
@@ -981,10 +937,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dateLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
+    ...textStyles.label,
     marginBottom: 6,
   },
   dateTimePill: {
@@ -999,10 +952,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   dateTimeText: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
+    ...textStyles.bodyStrong,
+    fontSize: 13,
     flex: 1,
   },
   durationPill: {
@@ -1037,22 +988,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   rowLabel: {
-    color: colors.text,
+    ...textStyles.body,
     fontSize: 15,
-    fontWeight: "400",
-    fontFamily: "Poppins-Regular",
   },
   rowValue: {
-    color: colors.text,
+    ...textStyles.bodyStrong,
     fontSize: 15,
-    fontWeight: "700",
-    fontFamily: "Poppins-SemiBold",
   },
   rowSubtext: {
     marginTop: 8,
-    color: "#6B7280",
-    fontSize: 12,
-    fontFamily: "Poppins-Regular",
+    ...textStyles.meta,
     lineHeight: 18,
   },
   totalDue: {
@@ -1123,51 +1068,75 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   fieldLabel: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
-    letterSpacing: -0.2,
+    ...textStyles.sectionTitle,
     marginBottom: 12,
   },
   fieldInput: {
-    backgroundColor: "#F8F9FA",
-    borderColor: "#e2e8f0",
+    backgroundColor: colors.cardBgMuted,
+    borderColor: colors.borderStrong,
     borderRadius: 10,
     borderWidth: 1,
     color: colors.text,
     fontSize: 15,
-    fontFamily: "Poppins-Regular",
+    fontFamily: "Inter-Medium",
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
   regCard: {
     backgroundColor: colors.cardBg,
-    borderRadius: 18,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     paddingHorizontal: 14,
     paddingVertical: 14,
     marginBottom: 16,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
+    ...cardShadow,
+  },
+  vehicleCardHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  vehicleCardInfo: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexShrink: 1,
+    gap: 10,
+  },
+  vehicleCardText: {
+    flexShrink: 1,
+  },
+  vehicleCardMeta: {
+    ...textStyles.bodyMedium,
+    color: colors.text,
+    marginTop: -6,
+  },
+  vehicleTypeText: {
+    ...textStyles.meta,
+    color: colors.textMuted,
+    marginBottom: 12,
+  },
+  vehicleEditButton: {
+    backgroundColor: colors.accentSoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  vehicleEditButtonText: {
+    ...textStyles.meta,
+    color: colors.accent,
+    fontFamily: "Poppins-SemiBold",
   },
   priceCard: {
     backgroundColor: colors.cardBg,
-    borderRadius: 18,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     paddingHorizontal: 14,
     paddingVertical: 14,
     marginBottom: 16,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
+    ...cardShadow,
   },
   priceBreakdownRow: {
     flexDirection: "row",
@@ -1185,26 +1154,17 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   priceBreakdownLabel: {
-    color: colors.textMuted,
-    fontSize: 14,
-    fontFamily: "Poppins-Regular",
+    ...textStyles.bodyMedium,
   },
   priceBreakdownValue: {
-    color: colors.text,
-    fontSize: 14,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
+    ...textStyles.bodyStrong,
   },
   priceBreakdownMuted: {
-    color: colors.textMuted,
+    ...textStyles.bodyMedium,
     fontSize: 13,
-    fontFamily: "Poppins-Medium",
   },
   priceBreakdownTotalLabel: {
-    color: colors.text,
-    fontSize: 14,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
+    ...textStyles.bodyStrong,
   },
   priceBreakdownTotalValue: {
     color: colors.text,
@@ -1214,9 +1174,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   priceBreakdownHelp: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontFamily: "Poppins-Regular",
+    ...textStyles.meta,
     marginTop: 8,
     lineHeight: 18,
   },
@@ -1243,10 +1201,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   regPlaceholder: {
-    color: "#9CA3AF",
-    fontSize: 14,
-    fontWeight: "500",
-    fontFamily: "Poppins-Medium",
+    ...textStyles.bodyMedium,
+    color: colors.textSoft,
     letterSpacing: 0.1,
   },
   regInput: {
@@ -1259,9 +1215,8 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   regHint: {
-    color: "#94a3b8",
-    fontSize: 11,
-    fontFamily: "Poppins-Regular",
+    ...textStyles.meta,
+    color: colors.textSoft,
     marginTop: 4,
   },
   centered: {
@@ -1271,24 +1226,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   title: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
-    letterSpacing: -0.3,
+    ...textStyles.title,
   },
   subtitle: {
-    color: colors.textMuted,
+    ...textStyles.subtitle,
     fontSize: 15,
-    fontFamily: "Poppins-Regular",
     marginTop: 8,
     textAlign: "center",
-    lineHeight: 22,
   },
   muted: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontFamily: "Poppins-Regular",
+    ...textStyles.meta,
     marginTop: 8,
   },
   noticeCard: {
@@ -1300,15 +1247,10 @@ const styles = StyleSheet.create({
     padding: spacing.card,
   },
   noticeTitle: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
+    ...textStyles.bodyStrong,
   },
   noticeText: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontFamily: "Poppins-Regular",
+    ...textStyles.meta,
     marginTop: 6,
     lineHeight: 18,
   },
@@ -1335,10 +1277,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   pickerTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
-    color: colors.text,
+    ...textStyles.sectionTitle,
   },
   pickerDone: {
     paddingVertical: 6,
@@ -1366,9 +1305,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   footerDisclosure: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontFamily: "Poppins-Regular",
+    ...textStyles.meta,
     lineHeight: 18,
     marginBottom: 10,
     textAlign: "center",
@@ -1391,10 +1328,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#E5E7EB",
   },
   footerButtonText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "700",
-    fontFamily: "Poppins-Bold",
+    ...textStyles.button,
     letterSpacing: 0.2,
   },
   successOverlay: {
@@ -1412,16 +1346,13 @@ const styles = StyleSheet.create({
     ...cardShadow,
   },
   successTitle: {
-    color: colors.text,
+    ...textStyles.titleSmall,
     fontSize: 18,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
     textAlign: "center",
   },
   successBody: {
-    color: colors.textMuted,
+    ...textStyles.bodyMedium,
     fontSize: 13,
-    fontFamily: "Poppins-Regular",
     marginTop: 6,
     textAlign: "center",
   },
@@ -1434,10 +1365,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   primaryButtonText: {
-    color: "#ffffff",
+    ...textStyles.button,
     fontSize: 14,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
   },
   authButtons: {
     marginTop: 16,
@@ -1455,10 +1384,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   secondaryButtonText: {
-    color: colors.text,
+    ...textStyles.bodyStrong,
     fontSize: 14,
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
   },
   error: {
     backgroundColor: "#fef2f2",

@@ -59,7 +59,10 @@ const radiusFromBounds = (bounds: LatLngBoundsLiteral, center: { lat: number; ln
     { lat: bounds.south, lng: bounds.east },
     { lat: bounds.south, lng: bounds.west },
   ];
-  return Math.max(0.05, Number(Math.max(...corners.map((c) => haversineKm(center, c))).toFixed(2)));
+  return Math.min(
+    50,
+    Math.max(0.05, Number(Math.max(...corners.map((c) => haversineKm(center, c))).toFixed(2)))
+  );
 };
 
 // ── Page entry point ──────────────────────────────────────────────────────────

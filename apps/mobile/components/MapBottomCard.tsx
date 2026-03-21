@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { Cctv, EvCharger, Fence, Home, KeyRound } from "lucide-react-native";
+import { cardShadow, colors, radius, textStyles } from "../styles/theme";
 
 type MapBottomCardProps = {
   title: string;
@@ -200,16 +201,12 @@ export function MapBottomCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 18,
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     position: "absolute",
-    shadowColor: "#1D1515",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
+    ...cardShadow,
     overflow: "hidden",
   },
   cardPress: {
@@ -219,7 +216,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 84,
     position: "relative",
-    backgroundColor: "#F2EEE7",
+    backgroundColor: colors.cardBgMuted,
   },
   image: {
     width: "100%",
@@ -228,14 +225,13 @@ const styles = StyleSheet.create({
   imagePlaceholder: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.cardBgMuted,
     alignItems: "center",
     justifyContent: "center",
   },
   
   imagePlaceholderText: {
-    fontSize: 12,
-    color: "#9CA3AF",
+    ...textStyles.meta,
   },
   ratingBadge: {
     position: "absolute",
@@ -267,12 +263,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#D2C2A9",
-    shadowColor: "#1D1515",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 4,
+    borderColor: colors.border,
   },
   favoriteIcon: {
     fontSize: 14,
@@ -286,15 +277,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingTop: 7,
     paddingBottom: 9,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.cardBg,
   },
   title: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#111827",
+    ...textStyles.sectionTitle,
+    fontSize: 14,
+    lineHeight: 18,
     marginBottom: 3,
-    letterSpacing: -0.3,
-    lineHeight: 17,
   },
   detailsRow: {
     flexDirection: "row",
@@ -304,9 +293,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   detailText: {
-    fontSize: 9,
-    color: "#6B7280",
-    fontWeight: "500",
+    ...textStyles.meta,
+    fontSize: 10,
     flex: 1,
   },
   featuresRow: {
@@ -320,8 +308,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 18,
     height: 18,
-    backgroundColor: "#FCFCFB",
-    borderColor: "#D2C2A9",
+    backgroundColor: colors.appBg,
+    borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 9,
   },
@@ -332,7 +320,7 @@ const styles = StyleSheet.create({
   },
   dashedDivider: {
     height: 1,
-    backgroundColor: "#E8DDCD",
+    backgroundColor: colors.border,
     marginBottom: 8,
   },
   priceRow: {
@@ -341,9 +329,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   priceLabel: {
+    ...textStyles.meta,
     fontSize: 10,
-    fontWeight: "600",
-    color: "#6B7280",
   },
   priceContainer: {
     flexDirection: "row",
@@ -351,21 +338,20 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   originalPrice: {
+    ...textStyles.bodyMedium,
     fontSize: 13,
-    color: "#9CA3AF",
+    color: colors.textSoft,
     textDecorationLine: "line-through",
-    fontWeight: "500",
   },
   currentPrice: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: "#1D1515",
-    letterSpacing: -0.5,
+    ...textStyles.title,
+    fontSize: 18,
+    lineHeight: 22,
   },
   soldOutText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#9CA3AF",
+    ...textStyles.bodyStrong,
+    fontSize: 14,
+    color: colors.textSoft,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },

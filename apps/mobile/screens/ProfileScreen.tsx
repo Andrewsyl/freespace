@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { requestEmailVerification } from "../api";
 import { useAuth } from "../auth";
+import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
@@ -102,6 +103,11 @@ export function ProfileScreen({ navigation }: Props) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.emptyState}>
+          <Image
+            source={require("../assets/illustrations/by-my-car.png")}
+            style={styles.emptyIllustration}
+            resizeMode="contain"
+          />
           <Text style={styles.title}>Account settings</Text>
           <Text style={styles.subtitle}>Sign in to manage your profile and security.</Text>
           <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
@@ -183,6 +189,24 @@ export function ProfileScreen({ navigation }: Props) {
               <Text style={styles.rowSubtitle}>Add cards or bank accounts</Text>
             </View>
             <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            onPress={() => navigation.navigate("VehicleType")}
+          >
+            <MaterialIcons name="directions-car" size={24} color="#111827" />
+            <View style={styles.rowText}>
+              <Text style={styles.rowTitle}>My vehicle</Text>
+              <Text style={styles.rowSubtitle}>
+                {user.vehicleMake && user.vehicleType
+                  ? `${user.vehicleMake} • ${user.vehicleType}`
+                  : "Add your car brand and model"}
+              </Text>
+            </View>
+            <View style={styles.rowActions}>
+              {user.vehicleMake ? <VehicleBrandLogo make={user.vehicleMake} size={30} /> : null}
+              <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+            </View>
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
@@ -384,14 +408,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    color: colors.text,
-    fontSize: 34,
-    fontWeight: "600",
+    ...textStyles.screenTitle,
     marginTop: 6,
   },
   subtitle: {
-    color: colors.textMuted,
-    fontSize: 16,
+    ...textStyles.subtitle,
+    fontSize: 15,
     marginTop: 6,
   },
   notice: {
@@ -426,17 +448,14 @@ const styles = StyleSheet.create({
     ...cardShadow,
   },
   sectionLabel: {
+    ...textStyles.label,
     color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
     letterSpacing: 1,
     marginBottom: 8,
     marginTop: 24,
   },
   sectionHeader: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: "600",
+    ...textStyles.titleSmall,
     marginBottom: 10,
     marginTop: 18,
   },
@@ -474,14 +493,17 @@ const styles = StyleSheet.create({
   rowText: {
     flex: 1,
   },
+  rowActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+  },
   rowTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
+    ...textStyles.bodyStrong,
+    fontSize: 15,
   },
   rowSubtitle: {
-    color: colors.textMuted,
-    fontSize: 14,
+    ...textStyles.bodyMedium,
     marginTop: 2,
   },
   inlineButton: {
@@ -492,29 +514,31 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   inlineButtonText: {
+    ...textStyles.meta,
     color: "#0f766e",
-    fontSize: 12,
-    fontWeight: "600",
   },
   linkButton: {
     alignItems: "center",
     marginBottom: 12,
   },
   linkButtonText: {
+    ...textStyles.meta,
     color: "#0f766e",
-    fontSize: 12,
-    fontWeight: "600",
   },
   inlineStatus: {
+    ...textStyles.meta,
     color: "#2ECC8F",
-    fontSize: 12,
-    fontWeight: "600",
   },
   emptyState: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
+  },
+  emptyIllustration: {
+    width: 220,
+    height: 150,
+    marginBottom: 18,
   },
   primaryButton: {
     alignItems: "center",

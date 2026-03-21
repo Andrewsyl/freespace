@@ -52,6 +52,7 @@ import { LoadingOverlay } from "./components/LoadingOverlay";
 import { GlobalLoadingProvider, useGlobalLoading } from "./components/GlobalLoading";
 import { mobileEnv } from "./env";
 import { colors } from "./theme/colors";
+import { radius, spacing as appSpacing, textStyles } from "./styles/theme";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -220,17 +221,17 @@ function AppNavigator() {
 function MainTabs() {
   const insets = useSafeAreaInsets();
   const baseTabBarStyle = {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    borderTopColor: "#E5E7EB",
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowRadius: 16,
     elevation: 6,
-    paddingTop: 4,
-    paddingBottom: Math.max(6, insets.bottom),
-    height: 52 + Math.max(6, insets.bottom),
+    paddingTop: 6,
+    paddingBottom: Math.max(8, insets.bottom),
+    height: 58 + Math.max(8, insets.bottom),
   };
   return (
     <Tab.Navigator
@@ -240,10 +241,8 @@ function MainTabs() {
         tabBarInactiveTintColor: colors.text.muted,
         tabBarStyle: baseTabBarStyle,
         tabBarLabelStyle: {
-          fontSize: 9,
-          fontWeight: "600",
-          marginTop: 0,
-          letterSpacing: 0.1,
+          ...textStyles.tabLabel,
+          marginTop: 1,
         },
         tabBarButton: (props) => <BottomTabButton {...props} />,
       }}
@@ -423,12 +422,12 @@ const styles = StyleSheet.create({
   },
   envBadge: {
     backgroundColor: "#111827",
-    borderRadius: 10,
+    borderRadius: radius.pill,
     opacity: 0.9,
     paddingHorizontal: 10,
     paddingVertical: 5,
     position: "absolute",
-    right: 10,
+    right: appSpacing.screenX,
     zIndex: 999,
   },
   envBadgeText: {

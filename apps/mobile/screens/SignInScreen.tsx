@@ -25,6 +25,9 @@ type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
 
 export function SignInScreen({ navigation }: Props) {
   const { login, register, loginWithOAuth, logout } = useAuth();
+  const scrollRef = useRef<ScrollView | null>(null);
+  const emailFieldY = useRef(0);
+  const passwordFieldY = useRef(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -154,13 +157,24 @@ export function SignInScreen({ navigation }: Props) {
     }
   };
 
+  const scrollToField = (y: number) => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - 120), animated: true });
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
               <Ionicons name="chevron-back" size={24} color="#4A9EFF" />
@@ -177,7 +191,12 @@ export function SignInScreen({ navigation }: Props) {
             <Text style={styles.cardTitle}>Sign In</Text>
             <Text style={styles.cardSubtitle}>Access your bookings and host dashboard.</Text>
 
-            <View style={styles.inputGroup}>
+            <View
+              style={styles.inputGroup}
+              onLayout={(event) => {
+                emailFieldY.current = event.nativeEvent.layout.y;
+              }}
+            >
               <Text style={styles.inputLabel}>Email</Text>
               <TextInput
                 style={styles.input}
@@ -187,10 +206,16 @@ export function SignInScreen({ navigation }: Props) {
                 keyboardType="email-address"
                 placeholder="you@example.com"
                 placeholderTextColor="#9CA3AF"
+                onFocus={() => scrollToField(emailFieldY.current)}
               />
             </View>
 
-            <View style={styles.inputGroup}>
+            <View
+              style={styles.inputGroup}
+              onLayout={(event) => {
+                passwordFieldY.current = event.nativeEvent.layout.y;
+              }}
+            >
               <Text style={styles.inputLabel}>Password</Text>
               <TextInput
                 style={styles.input}
@@ -199,6 +224,7 @@ export function SignInScreen({ navigation }: Props) {
                 secureTextEntry
                 placeholder="••••••••"
                 placeholderTextColor="#9CA3AF"
+                onFocus={() => scrollToField(passwordFieldY.current)}
               />
             </View>
 

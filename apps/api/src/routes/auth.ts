@@ -49,6 +49,10 @@ const toPublicUser = (user: UserRecord) => ({
   name: user.full_name ?? null,
   phone: user.phone ?? null,
   phoneVerified: user.phone_verified ?? false,
+  vehicleMake: user.vehicle_make ?? null,
+  vehicleType: user.vehicle_type ?? null,
+  vehicleColor: user.vehicle_color ?? null,
+  vehiclePlate: user.vehicle_plate ?? null,
   role: user.role,
   emailVerified: user.email_verified ?? false,
   termsVersion: user.terms_version ?? null,
@@ -495,12 +499,27 @@ router.put("/me", requireAuth, async (req, res, next) => {
       .object({
         name: z.string().trim().min(1).max(120).nullable().optional(),
         phone: z.string().trim().min(6).max(32).nullable().optional(),
+        vehicleMake: z.string().trim().min(1).max(80).nullable().optional(),
+        vehicleType: z.string().trim().min(1).max(80).nullable().optional(),
+        vehicleColor: z.string().trim().min(1).max(40).nullable().optional(),
+        vehiclePlate: z
+          .string()
+          .trim()
+          .min(2)
+          .max(12)
+          .regex(/^[A-Za-z0-9 \-]+$/, "Only letters, numbers, spaces, and dashes")
+          .nullable()
+          .optional(),
       })
       .parse(req.body);
     const user = await updateUserProfile({
       userId,
       fullName: payload.name,
       phone: payload.phone,
+      vehicleMake: payload.vehicleMake,
+      vehicleType: payload.vehicleType,
+      vehicleColor: payload.vehicleColor,
+      vehiclePlate: payload.vehiclePlate ? payload.vehiclePlate.toUpperCase() : payload.vehiclePlate,
     });
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({ user: toPublicUser(user) });

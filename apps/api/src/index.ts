@@ -35,11 +35,11 @@ async function logRuntimeHealthChecks() {
       SELECT column_name
       FROM information_schema.columns
       WHERE table_name = 'users'
-        AND column_name IN ('full_name', 'phone')
+        AND column_name IN ('full_name', 'phone', 'vehicle_make', 'vehicle_type', 'vehicle_color', 'vehicle_plate')
       `
     );
     const present = new Set(hasColumns.rows.map((r: { column_name: string }) => r.column_name));
-    const missing = ["full_name", "phone"].filter((col) => !present.has(col));
+    const missing = ["full_name", "phone", "vehicle_make", "vehicle_type", "vehicle_color", "vehicle_plate"].filter((col) => !present.has(col));
     if (missing.length) {
       console.error(
         `[startup] Missing users columns: ${missing.join(", ")}. Run: npm --workspace apps/api run migrate`

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { deleteListing, getHostListings, getHostPayoutStatus, createHostPayoutAccount } from "../../../lib/api";
 import { useAuth } from "../../../components/AuthProvider";
 
@@ -89,7 +90,7 @@ export default function HostDashboardPage() {
   return (
     <div className="space-y-6">
       <header className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-5 text-white shadow-lg">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <p className="text-xs font-semibold tracking-[0.28em] text-emerald-200">Host dashboard</p>
             <h1 className="text-3xl tracking-tight font-semibold leading-tight">Your listings</h1>
@@ -127,6 +128,15 @@ export default function HostDashboardPage() {
                 {payoutStatus === "loading" ? "Enabling payouts…" : "Enable payouts"}
               </button>
             )}
+          </div>
+          <div className="mx-auto w-full max-w-[220px] lg:mx-0">
+            <Image
+              src="/illustrations/parking-alt-02.svg.png"
+              alt="Host parking illustration"
+              width={720}
+              height={720}
+              className="h-auto w-full"
+            />
           </div>
         </div>
       </header>
@@ -189,8 +199,30 @@ export default function HostDashboardPage() {
           </div>
         ))}
         {status === "idle" && listings.length === 0 && (
-          <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-            No listings yet. Add your first on the host page.
+          <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+            <div className="grid items-center gap-4 md:grid-cols-[200px_1fr]">
+              <div className="mx-auto w-full max-w-[200px]">
+                <Image
+                  src="/illustrations/parking-alt-01.svg.png"
+                  alt="No listings illustration"
+                  width={720}
+                  height={720}
+                  className="h-auto w-full"
+                />
+              </div>
+              <div className="space-y-3">
+                <p className="text-lg font-semibold text-slate-900">No listings yet</p>
+                <p className="text-sm text-slate-600">
+                  Add your first space to start taking bookings, generating QR check-in links, and earning payouts.
+                </p>
+                <Link
+                  href="/host"
+                  className="inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                >
+                  Add first listing
+                </Link>
+              </div>
+            </div>
           </div>
         )}
       </div>

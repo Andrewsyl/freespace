@@ -17,6 +17,10 @@ export type UserRecord = {
   full_name?: string | null;
   phone?: string | null;
   phone_verified?: boolean;
+  vehicle_make?: string | null;
+  vehicle_type?: string | null;
+  vehicle_color?: string | null;
+  vehicle_plate?: string | null;
   password_hash: string;
   role?: "driver" | "host" | "admin";
   host_stripe_account_id?: string | null;
@@ -515,6 +519,7 @@ export async function createUser({
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     ON CONFLICT (email) DO NOTHING
     RETURNING id, email, full_name, phone, phone_verified, role, password_hash, host_stripe_account_id, email_verified,
+      vehicle_make, vehicle_type, vehicle_color, vehicle_plate,
       verification_token, verification_expires, phone_verification_token, phone_verification_expires,
       terms_version, terms_accepted_at, privacy_version, privacy_accepted_at;
   `;
@@ -538,7 +543,7 @@ export async function createUser({
 
 export async function findUserByEmail(email: string) {
   const result = await pool.query(
-    `SELECT id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, email_verified, verification_token,
+    `SELECT id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, email_verified, vehicle_make, vehicle_type, vehicle_color, vehicle_plate, verification_token,
       verification_expires, phone_verification_token, phone_verification_expires, refresh_token_hash, refresh_expires, terms_version, terms_accepted_at,
       privacy_version, privacy_accepted_at
      FROM users WHERE email = $1 LIMIT 1`,
@@ -549,7 +554,7 @@ export async function findUserByEmail(email: string) {
 
 export async function findUserById(userId: string) {
   const result = await pool.query(
-    `SELECT id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, email_verified, verification_token,
+    `SELECT id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, email_verified, vehicle_make, vehicle_type, vehicle_color, vehicle_plate, verification_token,
       verification_expires, phone_verification_token, phone_verification_expires, refresh_token_hash, refresh_expires, terms_version, terms_accepted_at,
       privacy_version, privacy_accepted_at
      FROM users WHERE id = $1 LIMIT 1`,
@@ -614,7 +619,8 @@ export async function verifyUserPhone(userId: string, token: string) {
     WHERE id = $1
       AND phone_verification_token = $2
       AND (phone_verification_expires IS NULL OR phone_verification_expires > now())
-    RETURNING id, email, full_name, phone, phone_verified, role, host_stripe_account_id, email_verified;
+    RETURNING id, email, full_name, phone, phone_verified, role, host_stripe_account_id, email_verified,
+      vehicle_make, vehicle_type, vehicle_color, vehicle_plate;
     `,
     [userId, token]
   );
@@ -660,7 +666,7 @@ export async function clearRefreshToken(userId: string) {
 export async function findUserByRefreshTokenHash(tokenHash: string) {
   const result = await pool.query(
     `
-    SELECT id, email, full_name, phone, phone_verified, role, host_stripe_account_id, email_verified, refresh_token_hash, refresh_expires,
+    SELECT id, email, full_name, phone, phone_verified, role, host_stripe_account_id, email_verified, vehicle_make, vehicle_type, vehicle_color, vehicle_plate, refresh_token_hash, refresh_expires,
       terms_version, terms_accepted_at, privacy_version, privacy_accepted_at
     FROM users
     WHERE refresh_token_hash = $1
@@ -690,7 +696,7 @@ export async function setLegalAcceptance({
         privacy_version = COALESCE($3, privacy_version),
         privacy_accepted_at = CASE WHEN $3 IS NOT NULL THEN $4 ELSE privacy_accepted_at END
     WHERE id = $1
-    RETURNING id, email, full_name, phone, role, host_stripe_account_id, email_verified, terms_version, terms_accepted_at,
+    RETURNING id, email, full_name, phone, role, host_stripe_account_id, email_verified, vehicle_make, vehicle_type, vehicle_color, vehicle_plate, terms_version, terms_accepted_at,
       privacy_version, privacy_accepted_at;
     `,
     [userId, termsVersion ?? null, privacyVersion ?? null, now]
@@ -717,7 +723,8 @@ export async function setEmailVerified(userId: string, verified: boolean) {
     UPDATE users
     SET email_verified = $1, verification_token = null, verification_expires = null
     WHERE id = $2
-    RETURNING id, email, full_name, phone, phone_verified, role, host_stripe_account_id, email_verified;
+    RETURNING id, email, full_name, phone, phone_verified, role, host_stripe_account_id, email_verified,
+      vehicle_make, vehicle_type, vehicle_color, vehicle_plate;
     `,
     [verified, userId]
   );
@@ -731,10 +738,18 @@ export async function updateUserProfile({
   userId,
   fullName,
   phone,
+  vehicleMake,
+  vehicleType,
+  vehicleColor,
+  vehiclePlate,
 }: {
   userId: string;
   fullName?: string | null;
   phone?: string | null;
+  vehicleMake?: string | null;
+  vehicleType?: string | null;
+  vehicleColor?: string | null;
+  vehiclePlate?: string | null;
 }) {
   const fields: string[] = [];
   const values: any[] = [];
@@ -748,6 +763,22 @@ export async function updateUserProfile({
     fields.push(`phone = $${idx++}`);
     values.push(phone);
   }
+  if (vehicleMake !== undefined) {
+    fields.push(`vehicle_make = $${idx++}`);
+    values.push(vehicleMake);
+  }
+  if (vehicleType !== undefined) {
+    fields.push(`vehicle_type = $${idx++}`);
+    values.push(vehicleType);
+  }
+  if (vehicleColor !== undefined) {
+    fields.push(`vehicle_color = $${idx++}`);
+    values.push(vehicleColor);
+  }
+  if (vehiclePlate !== undefined) {
+    fields.push(`vehicle_plate = $${idx++}`);
+    values.push(vehiclePlate);
+  }
   if (!fields.length) return undefined;
 
   values.push(userId);
@@ -757,6 +788,7 @@ export async function updateUserProfile({
     SET ${fields.join(", ")}
     WHERE id = $${idx}
     RETURNING id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, email_verified,
+      vehicle_make, vehicle_type, vehicle_color, vehicle_plate,
       verification_token, verification_expires, phone_verification_token, phone_verification_expires, refresh_token_hash, refresh_expires,
       terms_version, terms_accepted_at, privacy_version, privacy_accepted_at
     `,

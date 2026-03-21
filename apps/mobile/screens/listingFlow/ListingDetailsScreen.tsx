@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   CarFront,
@@ -82,6 +82,11 @@ export function ListingDetailsScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <ScrollView contentContainerStyle={styles.content}>
+        <Image
+          source={require("../../assets/illustrations/parking-host.png")}
+          style={styles.heroIllustration}
+          resizeMode="contain"
+        />
         <Text style={styles.kicker}>Tell us about your space</Text>
         <StepProgress current={3} total={7} />
         <Text style={styles.title}>What type of space is it?</Text>
@@ -225,6 +230,11 @@ const styles = StyleSheet.create({
     padding: spacing.screenX,
     paddingBottom: 140,
     paddingTop: 0,
+  },
+  heroIllustration: {
+    width: "100%",
+    height: 150,
+    marginBottom: 10,
   },
   kicker: textStyles.kicker,
   title: {

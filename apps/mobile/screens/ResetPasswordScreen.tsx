@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Linking,
@@ -20,6 +20,11 @@ import { Ionicons } from "@expo/vector-icons";
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPassword">;
 
 export function ResetPasswordScreen({ navigation }: Props) {
+  const scrollRef = useRef<ScrollView | null>(null);
+  const emailFieldY = useRef(0);
+  const tokenFieldY = useRef(0);
+  const passwordFieldY = useRef(0);
+  const confirmPasswordFieldY = useRef(0);
   const [step, setStep] = useState<"request" | "reset">("request");
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
@@ -87,13 +92,24 @@ export function ResetPasswordScreen({ navigation }: Props) {
     }
   };
 
+  const scrollToField = (y: number) => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - 120), animated: true });
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.header}>
             <Text style={styles.kicker}>Account</Text>
             <Text style={styles.title}>Reset password</Text>
@@ -105,7 +121,12 @@ export function ResetPasswordScreen({ navigation }: Props) {
           <View style={styles.card}>
             {step === "request" ? (
               <>
-                <View style={styles.field}>
+                <View
+                  style={styles.field}
+                  onLayout={(event) => {
+                    emailFieldY.current = event.nativeEvent.layout.y;
+                  }}
+                >
                   <Text style={styles.label}>Email</Text>
                   <TextInput
                     style={styles.input}
@@ -115,6 +136,7 @@ export function ResetPasswordScreen({ navigation }: Props) {
                     keyboardType="email-address"
                     placeholder="you@example.com"
                     placeholderTextColor="#94a3b8"
+                    onFocus={() => scrollToField(emailFieldY.current)}
                   />
                 </View>
                 <Pressable style={styles.primaryButton} onPress={handleRequest} disabled={submitting}>
@@ -141,7 +163,12 @@ export function ResetPasswordScreen({ navigation }: Props) {
                     </Pressable>
                   </View>
                 ) : null}
-                <View style={styles.field}>
+                <View
+                  style={styles.field}
+                  onLayout={(event) => {
+                    tokenFieldY.current = event.nativeEvent.layout.y;
+                  }}
+                >
                   <Text style={styles.label}>Reset token</Text>
                   <TextInput
                     style={styles.input}
@@ -150,9 +177,15 @@ export function ResetPasswordScreen({ navigation }: Props) {
                     autoCapitalize="none"
                     placeholder="Paste the token from your email"
                     placeholderTextColor="#94a3b8"
+                    onFocus={() => scrollToField(tokenFieldY.current)}
                   />
                 </View>
-                <View style={styles.field}>
+                <View
+                  style={styles.field}
+                  onLayout={(event) => {
+                    passwordFieldY.current = event.nativeEvent.layout.y;
+                  }}
+                >
                   <Text style={styles.label}>New password</Text>
                   <TextInput
                     style={styles.input}
@@ -161,9 +194,15 @@ export function ResetPasswordScreen({ navigation }: Props) {
                     secureTextEntry
                     placeholder="••••••••"
                     placeholderTextColor="#94a3b8"
+                    onFocus={() => scrollToField(passwordFieldY.current)}
                   />
                 </View>
-                <View style={styles.field}>
+                <View
+                  style={styles.field}
+                  onLayout={(event) => {
+                    confirmPasswordFieldY.current = event.nativeEvent.layout.y;
+                  }}
+                >
                   <Text style={styles.label}>Confirm password</Text>
                   <TextInput
                     style={styles.input}
@@ -172,6 +211,7 @@ export function ResetPasswordScreen({ navigation }: Props) {
                     secureTextEntry
                     placeholder="••••••••"
                     placeholderTextColor="#94a3b8"
+                    onFocus={() => scrollToField(confirmPasswordFieldY.current)}
                   />
                 </View>
                 <Pressable style={styles.primaryButton} onPress={handleReset} disabled={submitting}>

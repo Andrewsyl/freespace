@@ -17,6 +17,10 @@ type AuthUser = {
   name?: string | null;
   phone?: string | null;
   phoneVerified?: boolean;
+  vehicleMake?: string | null;
+  vehicleType?: string | null;
+  vehicleColor?: string | null;
+  vehiclePlate?: string | null;
   role?: string;
   emailVerified?: boolean;
   termsVersion?: string | null;
