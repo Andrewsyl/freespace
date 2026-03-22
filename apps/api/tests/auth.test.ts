@@ -9,6 +9,7 @@ process.env.WEB_BASE_URL = "http://localhost:3000";
 const db = {
   createUser: vi.fn(),
   findUserByEmail: vi.fn(),
+  insertEventLog: vi.fn(),
   setRefreshToken: vi.fn(),
 };
 
@@ -18,11 +19,12 @@ vi.mock("../src/lib/db.js", async () => {
     ...actual,
     createUser: db.createUser,
     findUserByEmail: db.findUserByEmail,
+    insertEventLog: db.insertEventLog,
     setRefreshToken: db.setRefreshToken,
   };
 });
 
-vi.mock("../src/lib/mailer.ts", () => ({
+vi.mock("../src/lib/mailer.js", () => ({
   isMailerConfigured: false,
   sendMail: vi.fn().mockResolvedValue(undefined),
 }));
