@@ -40,6 +40,7 @@ const defaultDraft: ListingDraft = {
   accessOptions: [],
   requiresAccessCode: null,
   accessCode: "",
+  arrivalInstructions: "",
   permissionDeclared: false,
   availability: {
     mode: "daily",
@@ -103,6 +104,12 @@ export function ListingFlowScreen({ route }: Props) {
           accessCode:
             (listing as { access_code?: string; accessCode?: string }).access_code ??
             (listing as { access_code?: string; accessCode?: string }).accessCode ??
+            "",
+          arrivalInstructions:
+            (listing as { arrival_instructions?: string; arrivalInstructions?: string })
+              .arrival_instructions ??
+            (listing as { arrival_instructions?: string; arrivalInstructions?: string })
+              .arrivalInstructions ??
             "",
           requiresAccessCode: Boolean(
             (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -7,6 +7,7 @@ import * as Notifications from "expo-notifications";
 import { requestEmailVerification } from "../api";
 import { useAuth } from "../auth";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
+import { Button, Card, Screen, SectionHeader } from "../components/ui";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
@@ -102,7 +103,7 @@ export function ProfileScreen({ navigation }: Props) {
   if (!user) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <View style={styles.emptyState}>
+        <Screen style={styles.emptyState}>
           <Image
             source={require("../assets/illustrations/by-my-car.png")}
             style={styles.emptyIllustration}
@@ -110,9 +111,7 @@ export function ProfileScreen({ navigation }: Props) {
           />
           <Text style={styles.title}>Account settings</Text>
           <Text style={styles.subtitle}>Sign in to manage your profile and security.</Text>
-          <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
-            <Text style={styles.primaryButtonText}>Sign in</Text>
-          </Pressable>
+          <Button style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")} title="Sign in" />
           <Pressable
             style={styles.ghostButton}
             onPress={() => navigation.navigate("Tabs", { screen: "Search" })}
@@ -120,14 +119,17 @@ export function ProfileScreen({ navigation }: Props) {
             <Ionicons name="arrow-back" size={24} color={colors.text} />
             <Text style={styles.ghostButtonText}>Search</Text>
           </Pressable>
-        </View>
+        </Screen>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <Screen
+        scroll
+        scrollProps={{ contentContainerStyle: styles.content as any }}
+      >
         <View style={styles.header}>
           <Text style={styles.title}>Account settings</Text>
           <Text style={styles.subtitle}>Manage your account info, verification, and security.</Text>
@@ -141,7 +143,7 @@ export function ProfileScreen({ navigation }: Props) {
           </Pressable>
         ) : null}
 
-        <View style={styles.section}>
+        <Card style={styles.section} noPadding>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("Favorites")}
@@ -164,10 +166,10 @@ export function ProfileScreen({ navigation }: Props) {
             </View>
             <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
           </Pressable>
-        </View>
+        </Card>
 
-        <Text style={styles.sectionLabel}>Account</Text>
-        <View style={styles.section}>
+        <SectionHeader title="Account" style={styles.sectionHeaderWrap} />
+        <Card style={styles.section} noPadding>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("PersonalInfo")}
@@ -285,10 +287,10 @@ export function ProfileScreen({ navigation }: Props) {
               <Text style={styles.inlineStatus}>Verified</Text>
             )}
           </View>
-        </View>
+        </Card>
 
-        <Text style={styles.sectionHeader}>Hosting</Text>
-        <View style={styles.section}>
+        <SectionHeader title="Hosting" style={styles.sectionHeaderWrap} />
+        <Card style={styles.section} noPadding>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("CreateListingFlow")}
@@ -322,10 +324,10 @@ export function ProfileScreen({ navigation }: Props) {
             </View>
             <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
           </Pressable>
-        </View>
+        </Card>
 
-        <Text style={styles.sectionHeader}>Support</Text>
-        <View style={styles.section}>
+        <SectionHeader title="Support" style={styles.sectionHeaderWrap} />
+        <Card style={styles.section} noPadding>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => showPlaceholder("Help centre")}
@@ -359,10 +361,10 @@ export function ProfileScreen({ navigation }: Props) {
             </View>
             <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
           </Pressable>
-        </View>
+        </Card>
 
-        <Text style={styles.sectionHeader}>Account</Text>
-        <View style={styles.section}>
+        <SectionHeader title="Account" style={styles.sectionHeaderWrap} />
+        <Card style={styles.section} noPadding>
           {user?.role === "admin" ? (
             <Pressable
               style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
@@ -378,6 +380,17 @@ export function ProfileScreen({ navigation }: Props) {
           ) : null}
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            onPress={() => navigation.navigate("LoginSecurity")}
+          >
+            <MaterialIcons name="delete-outline" size={24} color={colors.danger} />
+            <View style={styles.rowText}>
+              <Text style={[styles.rowTitle, styles.rowTitleDanger]}>Delete account</Text>
+              <Text style={styles.rowSubtitle}>Permanently remove your profile, bookings, and listings</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => logout()}
           >
             <MaterialIcons name="logout" size={24} color="#111827" />
@@ -387,8 +400,8 @@ export function ProfileScreen({ navigation }: Props) {
             </View>
             <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
           </Pressable>
-        </View>
-      </ScrollView>
+        </Card>
+      </Screen>
     </SafeAreaView>
   );
 }
@@ -399,8 +412,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.appBg,
   },
   content: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.screenX,
     paddingBottom: 0,
     paddingTop: 24,
   },
@@ -447,15 +458,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     ...cardShadow,
   },
-  sectionLabel: {
-    ...textStyles.label,
-    color: colors.textMuted,
-    letterSpacing: 1,
-    marginBottom: 8,
-    marginTop: 24,
-  },
-  sectionHeader: {
-    ...textStyles.titleSmall,
+  sectionHeaderWrap: {
     marginBottom: 10,
     marginTop: 18,
   },
@@ -502,6 +505,9 @@ const styles = StyleSheet.create({
     ...textStyles.bodyStrong,
     fontSize: 15,
   },
+  rowTitleDanger: {
+    color: colors.danger,
+  },
   rowSubtitle: {
     ...textStyles.bodyMedium,
     marginTop: 2,
@@ -541,17 +547,8 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   primaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radius.card,
     marginTop: 16,
-    paddingVertical: 12,
     width: "100%",
-  },
-  primaryButtonText: {
-    color: "#ffffff",
-    fontSize: 14,
-    fontWeight: "600",
   },
   ghostButton: {
     alignItems: "center",

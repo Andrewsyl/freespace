@@ -1,7 +1,7 @@
 import React from "react";
 import { Animated, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, spacing } from "../../theme";
+import { colors, spacing } from "../../styles/theme";
 
 interface StarRatingProps {
   rating: number;
@@ -48,7 +48,7 @@ export function StarRating({ rating, onRatingChange, size = 40, disabled = false
               <Ionicons
                 name={isSelected ? "star" : "star-outline"}
                 size={size}
-                color={isSelected ? colors.rating.active : colors.rating.inactive}
+                color={isSelected ? colors.star.active : colors.star.inactive}
               />
             </TouchableOpacity>
           </Animated.View>

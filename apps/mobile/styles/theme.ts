@@ -28,6 +28,12 @@ export const colors = {
 };
 
 export const spacing = {
+  xxs: 4,
+  xs: 8,
+  sm: 12,
+  md: 16,
+  lg: 20,
+  xl: 24,
   screenX: 20,
   screenY: 16,
   card: 18,
@@ -35,7 +41,10 @@ export const spacing = {
 };
 
 export const radius = {
+  sm: 12,
+  md: 16,
   card: 18,
+  lg: 22,
   pill: 999,
 };
 
@@ -145,5 +154,109 @@ export const textStyles = {
     fontFamily: "Poppins-SemiBold",
     fontWeight: "600" as const,
     letterSpacing: 0,
+  },
+};
+
+export const surfaces = {
+  screen: {
+    backgroundColor: colors.appBg,
+  },
+  card: {
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: radius.card,
+    ...cardShadow,
+  },
+  cardMuted: {
+    backgroundColor: colors.cardBgMuted,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: radius.card,
+  },
+  sheet: {
+    backgroundColor: colors.cardBg,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    borderColor: colors.border,
+    borderWidth: 1,
+    ...cardShadow,
+  },
+};
+
+export const fields = {
+  container: {
+    marginBottom: spacing.md,
+  },
+  label: {
+    ...textStyles.label,
+    color: colors.textSoft,
+    marginBottom: spacing.xs,
+  },
+  input: {
+    backgroundColor: "#FCFEFD",
+    borderColor: "#D7DEE7",
+    borderWidth: 1,
+    borderRadius: radius.md,
+    minHeight: 54,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  inputFocused: {
+    borderColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  inputError: {
+    borderColor: colors.danger,
+  },
+  inputText: {
+    ...textStyles.bodyStrong,
+    color: colors.text,
+  },
+  placeholderTextColor: colors.textMuted,
+  helpText: {
+    ...textStyles.meta,
+    color: colors.textMuted,
+    marginTop: spacing.xxs,
+  },
+  errorText: {
+    ...textStyles.meta,
+    color: colors.danger,
+    marginTop: spacing.xxs,
+  },
+};
+
+export const buttons = {
+  primary: {
+    backgroundColor: colors.accent,
+    borderRadius: radius.md,
+    minHeight: 54,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 15,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  secondary: {
+    backgroundColor: colors.cardBg,
+    borderColor: colors.borderStrong,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    minHeight: 54,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 15,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  ghost: {
+    borderRadius: radius.md,
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
 };

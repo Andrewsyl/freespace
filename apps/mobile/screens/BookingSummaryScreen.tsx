@@ -36,6 +36,7 @@ import { getNotificationImageAttachment } from "../notifications";
 import { BookingProgressBar } from "../components/BookingProgressBar";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
+import { Button } from "../components/ui";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { formatDateLabel, formatTimeLabel } from "../utils/dateFormat";
 
@@ -464,12 +465,13 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           <Text style={styles.title}>Sign in to continue</Text>
           <Text style={styles.subtitle}>Log in or create an account to confirm your booking.</Text>
           <View style={styles.authButtons}>
-            <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("SignIn")}>
-              <Text style={styles.primaryButtonText}>Sign in</Text>
-            </Pressable>
-            <Pressable style={styles.secondaryButton} onPress={() => navigation.navigate("Register")}>
-              <Text style={styles.secondaryButtonText}>Create account</Text>
-            </Pressable>
+            <Button style={styles.authButton} onPress={() => navigation.navigate("SignIn")} title="Sign in" />
+            <Button
+              variant="secondary"
+              style={styles.authButton}
+              onPress={() => navigation.navigate("Register")}
+              title="Create account"
+            />
           </View>
         </View>
       ) : listing ? (
@@ -1356,36 +1358,14 @@ const styles = StyleSheet.create({
     marginTop: 6,
     textAlign: "center",
   },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    marginTop: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  primaryButtonText: {
-    ...textStyles.button,
-    fontSize: 14,
-  },
   authButtons: {
     marginTop: 16,
     width: "100%",
     maxWidth: 320,
     gap: 10,
   },
-  secondaryButton: {
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  secondaryButtonText: {
-    ...textStyles.bodyStrong,
-    fontSize: 14,
+  authButton: {
+    width: "100%",
   },
   error: {
     backgroundColor: "#fef2f2",

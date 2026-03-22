@@ -153,6 +153,20 @@ export const LEGAL_DOCS: LegalDoc[] = [
         ],
       },
       {
+        heading: "Host cancellations",
+        bullets: [
+          "If a host cancels a confirmed booking and no suitable alternative is accepted, the booking should be canceled and refunded to the original payment method.",
+          "Repeated host-side cancellations may lead to listing suspension or removal.",
+        ],
+      },
+      {
+        heading: "No-shows and overstays",
+        bullets: [
+          "Drivers who do not arrive for a valid booking may lose some or all of the booking amount where the cancellation window has already passed.",
+          "Unauthorised overstays, parking outside the booked period, or parking outside the permitted area may lead to enforcement action and may reduce refund eligibility.",
+        ],
+      },
+      {
         heading: "Processing times",
         paragraphs: [
           "Approved refunds are sent back to the original payment method. Bank processing times can vary after we submit the refund.",

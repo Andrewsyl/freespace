@@ -50,6 +50,11 @@ export function SiteFooter() {
                 {LEGAL_CONTACT.supportEmail}
               </a>
             </li>
+            <li>
+              <Link href="/contact" className="hover:text-slate-900">
+                Contact us
+              </Link>
+            </li>
             <li>{LEGAL_CONTACT.registeredName}</li>
             <li>{LEGAL_CONTACT.registeredAddress}</li>
           </ul>

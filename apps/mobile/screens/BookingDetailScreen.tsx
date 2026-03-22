@@ -35,6 +35,8 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   const { token } = useAuth();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [localStatus, setLocalStatus] = useState(booking.status);
+  const [localRefundStatus, setLocalRefundStatus] = useState(booking.refundStatus ?? null);
+  const [localRefundedAt, setLocalRefundedAt] = useState(booking.refundedAt ?? null);
   const [localEndTime, setLocalEndTime] = useState(() => new Date(booking.endTime));
   const [localAmountCents, setLocalAmountCents] = useState(booking.amountCents);
   const [canceling, setCanceling] = useState(false);
@@ -51,6 +53,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   const isUpcoming = end.getTime() > now && start.getTime() > now;
   const isInProgress = start.getTime() <= now && end.getTime() > now && localStatus === "confirmed";
   const isCanceled = localStatus === "canceled";
+  const isRefunded = localRefundStatus === "succeeded";
   const canReview = end.getTime() <= now && booking.status === "confirmed";
   const [reviewed, setReviewed] = useState(false);
   const [reviewedRating, setReviewedRating] = useState<number | null>(null);
@@ -105,6 +108,9 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     Date.now() >= start.getTime() - 15 * 60 * 1000 &&
     Date.now() <= end.getTime();
   const canBookAgain = !isUpcoming && !isInProgress;
+  const showArrivalInfo =
+    (isUpcoming || isInProgress || canReview) &&
+    (Boolean(booking.arrivalInstructions?.trim()) || Boolean(booking.accessCode?.trim()));
   const bookingDateLabel = `${start.toLocaleDateString(undefined, {
     weekday: "short",
     day: "2-digit",
@@ -120,9 +126,13 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     if (!token || canceling || localStatus === "canceled") return;
     setCanceling(true);
     try {
-      await cancelBooking({ token, bookingId: booking.id });
+      const result = await cancelBooking({ token, bookingId: booking.id });
       await AsyncStorage.setItem("searchRefreshToken", Date.now().toString());
       setLocalStatus("canceled");
+      if (result.refunded) {
+        setLocalRefundStatus("succeeded");
+        setLocalRefundedAt(new Date().toISOString());
+      }
       setCanceling(false);
       try {
         const attachments = await getNotificationImageAttachment();
@@ -145,7 +155,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 
   const handleCancel = () => {
     if (!token || canceling || localStatus === "canceled") return;
-    Alert.alert("Cancel booking", "Cancel this reservation and release the space?", [
+    Alert.alert("Cancel booking", "Cancel this reservation and release the space? Eligible refunds are returned to the original payment method.", [
       { text: "Keep", style: "cancel" },
       { text: "Cancel booking", style: "destructive", onPress: performCancel },
     ]);
@@ -242,6 +252,13 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     ]);
   };
 
+  const handleContactSupport = () => {
+    navigation.navigate("Support", {
+      prefillSubject: isCanceled ? "Refund request" : "Payment or refund",
+      prefillMessage: `Booking reference: ${formatBookingReference(booking.id)}\nListing: ${booking.title}\nIssue:\n`,
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar style="light" translucent={false} backgroundColor="#2ECC8F" />
@@ -307,6 +324,37 @@ export function BookingDetailScreen({ navigation, route }: Props) {
           </TouchableOpacity>
         ) : null}
 
+        {showArrivalInfo ? (
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>Arrival details</Text>
+            {booking.arrivalInstructions?.trim() ? (
+              <Text style={styles.infoCardBody}>{booking.arrivalInstructions.trim()}</Text>
+            ) : null}
+            {booking.accessCode?.trim() ? (
+              <View style={styles.accessCodeWrap}>
+                <Text style={styles.infoCardLabel}>Entry code</Text>
+                <Text style={styles.accessCodeValue}>{booking.accessCode.trim()}</Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {isCanceled ? (
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>Cancellation and refund</Text>
+            <Text style={styles.infoCardBody}>
+              {isRefunded
+                ? `This booking was canceled and the refund has been submitted to your original payment method${localRefundedAt ? ` on ${new Date(localRefundedAt).toLocaleDateString("en-IE", { day: "2-digit", month: "short", year: "numeric", timeZone: "Europe/Dublin" })}` : ""}.`
+                : "This booking was canceled. If you expected a refund and do not see one yet, contact support with your booking reference."}
+            </Text>
+            <TouchableOpacity style={styles.secondaryLinkButton} onPress={handleContactSupport}>
+              <Text style={styles.secondaryLinkButtonText}>
+                {isRefunded ? "Need refund help?" : "Request refund support"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {/* Action Buttons */}
         {isUpcoming && localStatus !== "cancelled" ? (
           <>
@@ -353,7 +401,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         ) : null}
 
         {/* Help Button */}
-        <TouchableOpacity style={styles.helpButton}>
+        <TouchableOpacity style={styles.helpButton} onPress={handleContactSupport}>
           <Ionicons name="help-circle-outline" size={28} color="#2ECC8F" />
           <Text style={styles.helpText}>Need help?</Text>
         </TouchableOpacity>
@@ -948,6 +996,57 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 12,
     marginHorizontal: 20,
+  },
+
+  infoCard: {
+    marginTop: 16,
+    marginHorizontal: 20,
+    borderRadius: 18,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  infoCardTitle: {
+    color: '#111827',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  infoCardBody: {
+    color: '#4B5563',
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  accessCodeWrap: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  infoCardLabel: {
+    color: '#6B7280',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 6,
+  },
+  accessCodeValue: {
+    color: '#111827',
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: 2,
+  },
+  secondaryLinkButton: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+  },
+  secondaryLinkButtonText: {
+    color: '#2ECC8F',
+    fontSize: 14,
+    fontWeight: '700',
   },
 
   // Help button

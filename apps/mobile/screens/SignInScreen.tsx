@@ -4,30 +4,31 @@ import {
   KeyboardAvoidingView,
   Linking,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../auth";
 import { requestEmailVerification } from "../api";
 import type { RootStackParamList } from "../types";
-import { Ionicons } from "@expo/vector-icons";
 import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
+import { Button, TextInput as AppTextInput } from "../components/ui";
+import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
 
 export function SignInScreen({ navigation }: Props) {
-  const { login, register, loginWithOAuth, logout } = useAuth();
+  const { login, register, loginWithOAuth } = useAuth();
   const scrollRef = useRef<ScrollView | null>(null);
   const emailFieldY = useRef(0);
   const passwordFieldY = useRef(0);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -37,13 +38,11 @@ export function SignInScreen({ navigation }: Props) {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [acceptLegalChecked, setAcceptLegalChecked] = useState(false);
-  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
   const legalVersion = "2026-01-10";
   const needsLegalAcceptance = (candidate: { termsVersion?: string | null; privacyVersion?: string | null }) =>
     !candidate.termsVersion || !candidate.privacyVersion;
-
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -53,9 +52,7 @@ export function SignInScreen({ navigation }: Props) {
 
   useEffect(() => {
     return () => {
-      if (successTimerRef.current) {
-        clearTimeout(successTimerRef.current);
-      }
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
     };
   }, []);
 
@@ -111,19 +108,17 @@ export function SignInScreen({ navigation }: Props) {
     setError(null);
     setNotice(null);
     try {
-      const { previewUrl, user } = await register(trimmed, password, {
+      const { previewUrl: nextPreviewUrl, user } = await register(trimmed, password, {
         termsVersion: legalVersion,
         privacyVersion: legalVersion,
       });
-      setPreviewUrl(previewUrl);
+      setPreviewUrl(nextPreviewUrl);
       setNotice(
-        previewUrl
+        nextPreviewUrl
           ? "Account created. Verify your email to continue."
           : "Account created. Check your email to verify."
       );
-      if (needsLegalAcceptance(user)) {
-        return;
-      }
+      if (needsLegalAcceptance(user)) return;
       setNotice("Account created successfully.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign up failed");
@@ -176,18 +171,14 @@ export function SignInScreen({ navigation }: Props) {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Ionicons name="chevron-back" size={24} color="#4A9EFF" />
+            <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={20} color={colors.accent} />
               <Text style={styles.backText}>Back</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <View style={styles.card}>
-            <Image
-              source={freeSpaceLogo}
-              style={styles.brandLogo}
-              resizeMode="contain"
-            />
+            <Image source={freeSpaceLogo} style={styles.brandLogo} resizeMode="contain" />
             <Text style={styles.cardTitle}>Sign In</Text>
             <Text style={styles.cardSubtitle}>Access your bookings and host dashboard.</Text>
 
@@ -198,14 +189,13 @@ export function SignInScreen({ navigation }: Props) {
               }}
             >
               <Text style={styles.inputLabel}>Email</Text>
-              <TextInput
-                style={styles.input}
+              <AppTextInput
+                containerStyle={styles.inputContainer}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 placeholder="you@example.com"
-                placeholderTextColor="#9CA3AF"
                 onFocus={() => scrollToField(emailFieldY.current)}
               />
             </View>
@@ -217,25 +207,21 @@ export function SignInScreen({ navigation }: Props) {
               }}
             >
               <Text style={styles.inputLabel}>Password</Text>
-              <TextInput
-                style={styles.input}
+              <AppTextInput
+                containerStyle={styles.inputContainer}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
                 placeholder="••••••••"
-                placeholderTextColor="#9CA3AF"
                 onFocus={() => scrollToField(passwordFieldY.current)}
               />
             </View>
 
-            <TouchableOpacity
-              style={styles.forgotRow}
-              onPress={() => navigation.navigate("ResetPassword")}
-            >
+            <Pressable style={styles.forgotRow} onPress={() => navigation.navigate("ResetPassword")}>
               <Text style={styles.forgotText}>Forgot password?</Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            <Pressable
               style={styles.checkboxRow}
               onPress={() => setAcceptLegalChecked((value) => !value)}
               accessibilityRole="checkbox"
@@ -244,7 +230,7 @@ export function SignInScreen({ navigation }: Props) {
               <MaterialIcons
                 name={acceptLegalChecked ? "check-box" : "check-box-outline-blank"}
                 size={20}
-                color={acceptLegalChecked ? "#4A9EFF" : "#9CA3AF"}
+                color={acceptLegalChecked ? colors.accent : colors.textSoft}
               />
               <Text style={styles.checkboxText}>
                 I agree to the{" "}
@@ -253,28 +239,24 @@ export function SignInScreen({ navigation }: Props) {
                 </Text>
                 .
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
-              style={styles.signInButton}
+            <Button
+              style={styles.primaryButton}
               onPress={handleLogin}
               disabled={submitting}
+              loading={submitting}
+              title={submitting ? "Signing in..." : "Sign In"}
               testID="sign-in-button"
-            >
-              <Text style={styles.buttonText}>{submitting ? "Signing in..." : "Sign In"}</Text>
-              <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
+            />
 
-            <TouchableOpacity
-              style={[
-                styles.secondaryButton,
-                (!acceptLegalChecked || submitting) && styles.secondaryButtonDisabled,
-              ]}
+            <Button
+              variant="secondary"
+              style={styles.secondaryButton}
               onPress={handleRegister}
               disabled={submitting || !acceptLegalChecked}
-            >
-              <Text style={styles.secondaryButtonText}>Create account</Text>
-            </TouchableOpacity>
+              title="Create account"
+            />
 
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
@@ -282,7 +264,7 @@ export function SignInScreen({ navigation }: Props) {
               <View style={styles.dividerLine} />
             </View>
 
-            <TouchableOpacity
+            <Pressable
               style={styles.socialButton}
               onPress={async () => {
                 setError(null);
@@ -293,9 +275,7 @@ export function SignInScreen({ navigation }: Props) {
                   await GoogleSignin.signIn();
                   const tokens = await GoogleSignin.getTokens();
                   const idToken = tokens.idToken;
-                  if (!idToken) {
-                    throw new Error("Missing Google idToken");
-                  }
+                  if (!idToken) throw new Error("Missing Google idToken");
                   const authUser = await loginWithOAuth("google", idToken);
                   if (needsLegalAcceptance(authUser)) {
                     setNotice("Please accept Terms & Privacy to continue.");
@@ -305,9 +285,7 @@ export function SignInScreen({ navigation }: Props) {
                 } catch (err) {
                   const errorCode =
                     err && typeof err === "object" && "code" in err ? String(err.code) : "";
-                  if (errorCode === statusCodes.SIGN_IN_CANCELLED) {
-                    return;
-                  }
+                  if (errorCode === statusCodes.SIGN_IN_CANCELLED) return;
                   const message = err instanceof Error ? err.message : "Google sign-in failed";
                   console.warn("Google sign-in failed", err);
                   setError(errorCode ? `${message} (${errorCode})` : message);
@@ -316,7 +294,7 @@ export function SignInScreen({ navigation }: Props) {
             >
               <Ionicons name="logo-google" size={20} color="#DB4437" />
               <Text style={styles.socialText}>Google</Text>
-            </TouchableOpacity>
+            </Pressable>
 
             <Text style={styles.legalNote}>
               By continuing, you agree to the{" "}
@@ -329,14 +307,11 @@ export function SignInScreen({ navigation }: Props) {
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
             {notice ? <Text style={styles.noticeText}>{notice}</Text> : null}
             {previewUrl ? (
-              <TouchableOpacity
-                style={styles.linkButton}
-                onPress={() => Linking.openURL(previewUrl)}
-              >
+              <Pressable style={styles.linkButton} onPress={() => Linking.openURL(previewUrl)}>
                 <Text style={styles.linkButtonText}>Open verification link</Text>
-              </TouchableOpacity>
+              </Pressable>
             ) : null}
-            <TouchableOpacity
+            <Pressable
               style={styles.linkButton}
               onPress={handleResend}
               disabled={submitting || resendCooldown > 0}
@@ -346,7 +321,7 @@ export function SignInScreen({ navigation }: Props) {
                   ? `Resend available in ${resendCooldown}s`
                   : "Resend verification email"}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </ScrollView>
 
@@ -366,218 +341,169 @@ export function SignInScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FA",
+    backgroundColor: colors.appBg,
   },
   content: {
     flexGrow: 1,
-    paddingBottom: 24,
+    paddingBottom: spacing.xl,
   },
   header: {
-    padding: 20,
+    paddingHorizontal: spacing.screenX,
+    paddingTop: spacing.screenY,
+    paddingBottom: spacing.sm,
   },
   backButton: {
-    flexDirection: "row",
     alignItems: "center",
+    flexDirection: "row",
     gap: 4,
   },
   backText: {
-    fontSize: 16,
-    color: "#4A9EFF",
+    ...textStyles.bodyStrong,
+    color: colors.accent,
   },
   card: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    borderWidth: 1,
+    padding: spacing.xl,
+    ...cardShadow,
   },
   brandLogo: {
     width: "100%",
     height: 46,
-    marginBottom: 4,
+    marginBottom: spacing.xxs,
   },
   cardTitle: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    marginBottom: 8,
+    ...textStyles.screenTitle,
+    marginBottom: spacing.xs,
   },
   cardSubtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 24,
+    ...textStyles.subtitle,
+    marginBottom: spacing.lg,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: spacing.md,
   },
   inputLabel: {
-    fontSize: 13,
-    color: "#9CA3AF",
-    marginBottom: 8,
-    fontWeight: "500",
+    ...textStyles.label,
+    color: colors.textSoft,
+    marginBottom: spacing.xs,
   },
-  input: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    paddingVertical: 12,
-    fontSize: 16,
-    color: "#1A1A1A",
+  inputContainer: {
+    marginBottom: 0,
   },
   forgotRow: {
     alignItems: "flex-end",
-    marginBottom: 12,
-    marginTop: -8,
+    marginBottom: spacing.sm,
+    marginTop: -4,
   },
   forgotText: {
-    color: "#4A9EFF",
-    fontSize: 13,
-    fontWeight: "600",
+    ...textStyles.meta,
+    color: colors.accent,
   },
   checkboxRow: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginTop: 8,
-    marginBottom: 24,
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+    marginBottom: spacing.lg,
   },
   checkboxText: {
+    ...textStyles.meta,
+    color: colors.textMuted,
     flex: 1,
-    fontSize: 13,
-    color: "#6B7280",
   },
   link: {
-    color: "#4A9EFF",
+    color: colors.accent,
     fontWeight: "500",
   },
-  signInButton: {
-    backgroundColor: "#2ECC8F",
-    borderRadius: 28,
-    paddingVertical: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    marginBottom: 16,
-    shadowColor: "#2ECC8F",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+  primaryButton: {
+    marginBottom: spacing.sm,
   },
   secondaryButton: {
-    alignItems: "center",
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 12,
-  },
-  secondaryButtonDisabled: {
-    opacity: 0.6,
-  },
-  secondaryButtonText: {
-    color: "#1A1A1A",
-    fontSize: 14,
-    fontWeight: "600",
+    marginBottom: spacing.md,
   },
   divider: {
-    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
-    marginTop: 24,
+    flexDirection: "row",
+    marginBottom: spacing.md,
+    marginTop: spacing.md,
   },
   dividerLine: {
+    backgroundColor: colors.border,
     flex: 1,
     height: 1,
-    backgroundColor: "#E5E7EB",
   },
   dividerText: {
-    marginHorizontal: 16,
-    fontSize: 13,
-    color: "#9CA3AF",
+    ...textStyles.meta,
+    color: colors.textSoft,
+    marginHorizontal: spacing.md,
   },
   socialButton: {
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.cardBgMuted,
+    borderColor: colors.border,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
+    flexDirection: "row",
+    gap: spacing.xs,
+    justifyContent: "center",
     paddingVertical: 14,
   },
   socialText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#4A4A4A",
+    ...textStyles.bodyStrong,
+    color: colors.text,
   },
   legalNote: {
-    marginTop: 12,
-    color: "#6B7280",
-    fontSize: 12,
-    lineHeight: 18,
+    ...textStyles.meta,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
     textAlign: "center",
   },
   errorText: {
-    color: "#b42318",
-    fontSize: 13,
-    marginTop: 12,
+    ...textStyles.meta,
+    color: colors.danger,
+    marginTop: spacing.sm,
     textAlign: "center",
   },
   noticeText: {
-    color: "#4A9EFF",
-    fontSize: 12,
-    marginTop: 8,
+    ...textStyles.meta,
+    color: colors.accent,
+    marginTop: spacing.xs,
     textAlign: "center",
   },
   linkButton: {
     alignItems: "center",
-    marginTop: 12,
+    marginTop: spacing.sm,
   },
   linkButtonText: {
-    color: "#4A9EFF",
-    fontSize: 12,
-    fontWeight: "600",
+    ...textStyles.meta,
+    color: colors.accent,
   },
   successOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     backgroundColor: "rgba(15, 23, 42, 0.18)",
     justifyContent: "center",
-    padding: 24,
+    padding: spacing.xl,
   },
   successCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 18,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 18,
-    elevation: 6,
-    width: "100%",
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.card,
     maxWidth: 320,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    width: "100%",
+    ...cardShadow,
   },
   successTitle: {
-    color: "#0f172a",
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 6,
+    ...textStyles.titleSmall,
+    marginBottom: spacing.xxs,
   },
   successMessage: {
-    color: "#475569",
-    fontSize: 14,
-    lineHeight: 20,
+    ...textStyles.bodyMedium,
   },
 });

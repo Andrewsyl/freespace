@@ -207,6 +207,27 @@ export function ListingDetailsScreen({ navigation }: Props) {
             </Text>
           </>
         ) : null}
+
+        <Text style={styles.sectionTitle}>Arrival instructions (optional)</Text>
+        <Text style={styles.subtitle}>
+          Add short directions the driver should only need after booking, for example which gate to use or where to park.
+        </Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Example: Enter through the left gate and use the marked bay beside the hedge."
+          placeholderTextColor="#9ca3af"
+          value={draft.arrivalInstructions}
+          onChangeText={(value) =>
+            setDraft((prev) => ({
+              ...prev,
+              arrivalInstructions: value,
+            }))
+          }
+          multiline
+          numberOfLines={3}
+          textAlignVertical="top"
+          maxLength={240}
+        />
       </ScrollView>
       <View style={styles.footer}>
         <Pressable

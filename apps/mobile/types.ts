@@ -31,7 +31,12 @@ export type RootStackParamList = {
   Listings: undefined;
   Payments: undefined;
   Favorites: undefined;
-  Support: undefined;
+  Support:
+    | {
+        prefillSubject?: string;
+        prefillMessage?: string;
+      }
+    | undefined;
   Admin: undefined;
   BookingDetail: {
     booking: import("./api").BookingSummary;
@@ -59,6 +64,8 @@ export type ListingSummary = {
   amenities?: string[] | null;
   access_code?: string | null;
   accessCode?: string | null;
+  arrival_instructions?: string | null;
+  arrivalInstructions?: string | null;
   latitude?: number | null;
   longitude?: number | null;
   distance_m?: number | null;
@@ -71,6 +78,8 @@ export type ListingDetail = ListingSummary & {
   amenities?: string[] | null;
   access_code?: string | null;
   accessCode?: string | null;
+  arrival_instructions?: string | null;
+  arrivalInstructions?: string | null;
   is_available?: boolean | null;
   permission_declared?: boolean | null;
   permissionDeclared?: boolean | null;

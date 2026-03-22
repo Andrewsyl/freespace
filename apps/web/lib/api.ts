@@ -439,6 +439,7 @@ export type ListingDetail = {
   hostId?: string;
   hostStripeAccountId?: string | null;
   accessCode?: string | null;
+  arrivalInstructions?: string | null;
   permissionDeclared?: boolean;
 };
 

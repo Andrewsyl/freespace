@@ -14,6 +14,7 @@ type BookingRow = {
   start_time: string;
   end_time: string;
   status: string;
+  refund_status?: string | null;
   amount_cents?: number | null;
   currency?: string | null;
   created_at: string;
@@ -190,6 +191,7 @@ export default function AdminBookingsPage() {
               <th className="px-4 py-3 text-left font-semibold text-slate-700">Host</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-700">Window</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-700">Status</th>
+              <th className="px-4 py-3 text-left font-semibold text-slate-700">Refund</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-700">Amount</th>
               <th className="px-4 py-3 text-right font-semibold text-slate-700">Actions</th>
             </tr>
@@ -211,6 +213,15 @@ export default function AdminBookingsPage() {
                   <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
                     {row.status}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-slate-700">
+                  {row.refund_status ? (
+                    <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
+                      {row.refund_status}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
                 </td>
                 <td className="px-4 py-3 text-slate-700">{formatMoney(row.amount_cents, row.currency)}</td>
                 <td className="px-4 py-3 text-right">

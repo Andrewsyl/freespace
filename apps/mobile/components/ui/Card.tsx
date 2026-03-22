@@ -1,17 +1,17 @@
 import React from "react";
 import { StyleSheet, View, ViewStyle } from "react-native";
-import { borderRadius, colors, shadows, spacing } from "../../theme";
+import { spacing, surfaces } from "../../styles/theme";
 
 interface CardProps {
   children: React.ReactNode;
   style?: ViewStyle;
   noPadding?: boolean;
-  noShadow?: boolean;
+  muted?: boolean;
 }
 
-export function Card({ children, style, noPadding = false, noShadow = false }: CardProps) {
+export function Card({ children, style, noPadding = false, muted = false }: CardProps) {
   return (
-    <View style={[styles.card, noPadding && styles.noPadding, noShadow && styles.noShadow, style]}>
+    <View style={[styles.card, muted ? styles.cardMuted : styles.cardDefault, noPadding && styles.noPadding, style]}>
       {children}
     </View>
   );
@@ -19,15 +19,15 @@ export function Card({ children, style, noPadding = false, noShadow = false }: C
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    ...shadows.md,
+    padding: spacing.card,
+  },
+  cardDefault: {
+    ...surfaces.card,
+  },
+  cardMuted: {
+    ...surfaces.cardMuted,
   },
   noPadding: {
     padding: 0,
-  },
-  noShadow: {
-    ...shadows.none,
   },
 });

@@ -82,6 +82,7 @@ const listBookingsQuerySchema = z.object({
 const updateBookingSchema = z.object({
   status: z.enum(["pending", "confirmed", "canceled"]).optional(),
   refundId: z.string().trim().min(5).max(200).optional(),
+  issueRefund: z.boolean().optional(),
   markNoShow: z.boolean().optional(),
   reason: z.string().trim().max(200).optional(),
 });
@@ -297,10 +298,34 @@ router.patch("/bookings/:id", requireAuth, requireAdmin, adminWriteLimiter, asyn
     const payload = updateBookingSchema.parse(req.body);
     const before = await getBookingForAdmin(id);
     if (!before) return res.status(404).json({ message: "Booking not found" });
+    let refundId = payload.refundId ?? null;
+    if (payload.issueRefund) {
+      if (!stripe) return res.status(500).json({ message: "Stripe not configured" });
+      if (!before.payment_intent_id) {
+        return res.status(400).json({ message: "Booking has no payment intent" });
+      }
+      if (before.refund_status === "succeeded" || before.refund_id) {
+        refundId = before.refund_id ?? null;
+      } else {
+        const refund = await stripe.refunds.create(
+          {
+            payment_intent: before.payment_intent_id,
+            metadata: {
+              booking_id: id,
+              source: "admin",
+            },
+          },
+          {
+            idempotencyKey: `refund:admin:${id}:${before.payment_intent_id}`,
+          }
+        );
+        refundId = refund.id;
+      }
+    }
     const updated = await updateBookingAsAdmin({
       bookingId: id,
       status: payload.status,
-      refundId: payload.refundId ?? null,
+      refundId,
       markNoShow: payload.markNoShow ?? false,
     });
     if (!updated) return res.status(404).json({ message: "Booking not found" });

@@ -10,11 +10,11 @@ import { Ionicons } from "@expo/vector-icons";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Support">;
 
-export function SupportScreen({ navigation }: Props) {
+export function SupportScreen({ navigation, route }: Props) {
   const { token, user } = useAuth();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
+  const [subject, setSubject] = useState(route.params?.prefillSubject ?? "");
+  const [message, setMessage] = useState(route.params?.prefillMessage ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);

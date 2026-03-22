@@ -103,6 +103,7 @@ const createListingSchema = z.object({
   amenities: z.array(z.string().trim().max(40)).max(20).optional(),
   imageUrls: z.array(z.string().trim().url()).max(10).optional(),
   accessCode: z.string().trim().min(2).max(40).nullable().optional(),
+  arrivalInstructions: z.string().trim().min(3).max(240).nullable().optional(),
   permissionDeclared: z.boolean().optional(),
 });
 
@@ -138,6 +139,7 @@ router.post("/", requireAuth, enforceBlockedList, listingWriteLimiter, async (re
       longitude,
       imageUrls: payload.imageUrls,
       accessCode: payload.accessCode?.trim() || null,
+      arrivalInstructions: payload.arrivalInstructions?.trim() || null,
       permissionDeclared: payload.permissionDeclared ?? false,
       hostStripeAccountId,
     });
@@ -229,6 +231,7 @@ const updateListingSchema = z.object({
   imageUrls: z.array(z.string().trim().url()).max(10).optional(),
   amenities: z.array(z.string().trim().max(40)).max(20).optional(),
   accessCode: z.string().trim().min(2).max(40).nullable().optional(),
+  arrivalInstructions: z.string().trim().min(3).max(240).nullable().optional(),
   permissionDeclared: z.boolean().optional(),
 });
 
@@ -256,6 +259,7 @@ router.patch("/:id", requireAuth, listingWriteLimiter, async (req, res, next) =>
       imageUrls: payload.imageUrls,
       amenities: payload.amenities,
       accessCode: payload.accessCode ?? undefined,
+      arrivalInstructions: payload.arrivalInstructions ?? undefined,
       permissionDeclared: payload.permissionDeclared,
     });
     if (!updated) return res.status(404).json({ message: "Listing not found" });

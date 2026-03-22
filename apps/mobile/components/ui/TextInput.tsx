@@ -7,15 +7,23 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { borderRadius, colors, spacing, typography } from "../../theme";
+import { colors, fields } from "../../styles/theme";
 
-interface CustomTextInputProps extends TextInputProps {
+interface AppTextInputProps extends TextInputProps {
   label?: string;
   error?: string;
+  helpText?: string;
   containerStyle?: ViewStyle;
 }
 
-export function TextInput({ label, error, containerStyle, ...props }: CustomTextInputProps) {
+export function TextInput({
+  label,
+  error,
+  helpText,
+  containerStyle,
+  style,
+  ...props
+}: AppTextInputProps) {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
@@ -23,7 +31,12 @@ export function TextInput({ label, error, containerStyle, ...props }: CustomText
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <RNTextInput
         {...props}
-        style={[styles.input, isFocused && styles.inputFocused, error && styles.inputError, props.style]}
+        style={[
+          styles.input,
+          isFocused && styles.inputFocused,
+          error && styles.inputError,
+          style,
+        ]}
         onFocus={(event) => {
           setIsFocused(true);
           props.onFocus?.(event);
@@ -32,43 +45,35 @@ export function TextInput({ label, error, containerStyle, ...props }: CustomText
           setIsFocused(false);
           props.onBlur?.(event);
         }}
-        placeholderTextColor={colors.text.tertiary}
+        placeholderTextColor={fields.placeholderTextColor}
       />
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {!error && helpText ? <Text style={styles.helpText}>{helpText}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.md,
+    ...fields.container,
   },
   label: {
-    ...typography.bodySmall,
-    fontWeight: "600",
-    marginBottom: spacing.sm,
-    color: colors.text.primary,
+    ...fields.label,
   },
   input: {
-    backgroundColor: colors.background.primary,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
-    fontSize: 16,
-    color: colors.text.primary,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...fields.input,
+    ...fields.inputText,
   },
   inputFocused: {
-    backgroundColor: colors.background.secondary,
-    borderColor: colors.primary.main,
-    borderWidth: 2,
+    ...fields.inputFocused,
   },
   inputError: {
-    borderColor: colors.error.main,
+    ...fields.inputError,
+  },
+  helpText: {
+    ...fields.helpText,
   },
   errorText: {
-    ...typography.caption,
-    color: colors.error.main,
-    marginTop: spacing.xs,
+    ...fields.errorText,
   },
 });

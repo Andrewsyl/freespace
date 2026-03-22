@@ -254,6 +254,7 @@ module.exports = ({ config }) => {
                 android: {
                   ...base.android,
                   package: androidPackage,
+                  usesCleartextTraffic: isDevLike,
                   compileSdkVersion: 35,
                   targetSdkVersion: 35,
                   buildToolsVersion: "35.0.0",

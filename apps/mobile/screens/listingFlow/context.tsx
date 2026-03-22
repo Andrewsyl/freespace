@@ -12,6 +12,7 @@ export type ListingDraft = {
   accessOptions: string[];
   requiresAccessCode: boolean | null;
   accessCode: string;
+  arrivalInstructions: string;
   permissionDeclared: boolean;
   availability: {
     mode: "daily" | "dates" | "recurring";

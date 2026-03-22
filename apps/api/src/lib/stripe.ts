@@ -22,6 +22,7 @@ export type PaymentInput = {
   userEmail?: string | null;
   manualReview?: boolean;
   source?: string;
+  idempotencyKey?: string;
 };
 
 export async function createCheckoutSession(input: PaymentInput) {
@@ -37,6 +38,7 @@ export async function createCheckoutSession(input: PaymentInput) {
     userEmail,
     manualReview,
     source,
+    idempotencyKey,
   } = input;
   const normalizedCurrency = currency.toLowerCase();
   const feeAmount = Math.round(amount * platformFeePercent);
@@ -88,7 +90,10 @@ export async function createCheckoutSession(input: PaymentInput) {
       cancel_url: cancelUrl,
     };
 
-    return await stripe.checkout.sessions.create(base);
+    return await stripe.checkout.sessions.create(
+      base,
+      idempotencyKey ? { idempotencyKey } : undefined
+    );
   } catch (err: any) {
     if (err?.statusCode === 401 || err?.code === "authentication_required" || err?.type === "StripeAuthenticationError") {
       console.warn("Stripe auth failed; returning mock checkout session. Set a valid STRIPE_SECRET_KEY to enable live calls.");

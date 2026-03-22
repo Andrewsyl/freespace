@@ -362,6 +362,7 @@ export type NewListing = {
   amenities?: string[];
   imageUrls?: string[];
   accessCode?: string | null;
+  arrivalInstructions?: string | null;
   permissionDeclared?: boolean;
 };
 
@@ -377,9 +378,10 @@ export async function createListing(listing: NewListing) {
       geom,
       image_urls,
       access_code,
+      arrival_instructions,
       permission_declared
     )
-    VALUES ($1, $2, $3, $4, $5, $6, ST_SetSRID(ST_MakePoint($7, $8), 4326), $9, $10, $11)
+    VALUES ($1, $2, $3, $4, $5, $6, ST_SetSRID(ST_MakePoint($7, $8), 4326), $9, $10, $11, $12)
     RETURNING id;
   `;
   const params = [
@@ -393,11 +395,46 @@ export async function createListing(listing: NewListing) {
     listing.latitude,
     listing.imageUrls ?? [],
     listing.accessCode ?? null,
+    listing.arrivalInstructions ?? null,
     listing.permissionDeclared ?? false,
   ];
-
-  const result = await pool.query(query, params);
-  return result.rows[0];
+  try {
+    const result = await pool.query(query, params);
+    return result.rows[0];
+  } catch (err: any) {
+    if (err?.code !== "42703") throw err;
+    const legacyQuery = `
+      INSERT INTO listings (
+        title,
+        address,
+        price_per_day,
+        availability_text,
+        host_id,
+        amenities,
+        geom,
+        image_urls,
+        access_code,
+        permission_declared
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, ST_SetSRID(ST_MakePoint($7, $8), 4326), $9, $10, $11)
+      RETURNING id;
+    `;
+    const legacyParams = [
+      listing.title,
+      listing.address,
+      listing.pricePerDay,
+      listing.availabilityText,
+      listing.hostId,
+      listing.amenities ?? [],
+      listing.longitude,
+      listing.latitude,
+      listing.imageUrls ?? [],
+      listing.accessCode ?? null,
+      listing.permissionDeclared ?? false,
+    ];
+    const result = await pool.query(legacyQuery, legacyParams);
+    return result.rows[0];
+  }
 }
 
 export async function createBooking({
@@ -799,25 +836,50 @@ export async function updateUserProfile({
 }
 
 export async function listListingsByHost(hostId: string) {
-  const result = await pool.query(
-    `
-    SELECT
-      id,
-      title,
-      address,
-      price_per_day,
-      availability_text,
-      image_urls,
-      access_code,
-      ST_X(geom) AS longitude,
-      ST_Y(geom) AS latitude
-    FROM listings
-    WHERE host_id = $1
-      AND status <> 'archived'
-    ORDER BY created_at DESC
-    `,
-    [hostId]
-  );
+  let result;
+  try {
+    result = await pool.query(
+      `
+      SELECT
+        id,
+        title,
+        address,
+        price_per_day,
+        availability_text,
+        image_urls,
+        access_code,
+        arrival_instructions,
+        ST_X(geom) AS longitude,
+        ST_Y(geom) AS latitude
+      FROM listings
+      WHERE host_id = $1
+        AND status <> 'archived'
+      ORDER BY created_at DESC
+      `,
+      [hostId]
+    );
+  } catch (err: any) {
+    if (err?.code !== "42703") throw err;
+    result = await pool.query(
+      `
+      SELECT
+        id,
+        title,
+        address,
+        price_per_day,
+        availability_text,
+        image_urls,
+        access_code,
+        ST_X(geom) AS longitude,
+        ST_Y(geom) AS latitude
+      FROM listings
+      WHERE host_id = $1
+        AND status <> 'archived'
+      ORDER BY created_at DESC
+      `,
+      [hostId]
+    );
+  }
   return result.rows.map((row) => ({
     id: row.id,
     title: row.title,
@@ -826,6 +888,7 @@ export async function listListingsByHost(hostId: string) {
     availability: row.availability_text,
     imageUrls: row.image_urls ?? [],
     accessCode: row.access_code ?? null,
+    arrivalInstructions: row.arrival_instructions ?? null,
     longitude: row.longitude,
     latitude: row.latitude,
   }));
@@ -861,6 +924,7 @@ export async function updateListingForHost({
   imageUrls,
   amenities,
   accessCode,
+  arrivalInstructions,
   permissionDeclared,
 }: {
   listingId: string;
@@ -874,6 +938,7 @@ export async function updateListingForHost({
   imageUrls?: string[];
   amenities?: string[];
   accessCode?: string | null;
+  arrivalInstructions?: string | null;
   permissionDeclared?: boolean;
 }) {
   const fields: string[] = [];
@@ -908,6 +973,10 @@ export async function updateListingForHost({
     fields.push(`access_code = $${idx++}`);
     values.push(accessCode ? accessCode.trim() : null);
   }
+  if (arrivalInstructions !== undefined) {
+    fields.push(`arrival_instructions = $${idx++}`);
+    values.push(arrivalInstructions ? arrivalInstructions.trim() : null);
+  }
   if (typeof permissionDeclared === "boolean") {
     fields.push(`permission_declared = $${idx++}`);
     values.push(permissionDeclared);
@@ -919,43 +988,128 @@ export async function updateListingForHost({
 
   if (!fields.length) return null;
   values.push(listingId, hostId);
-  const result = await pool.query(
-    `
-    UPDATE listings
-    SET ${fields.join(", ")}
-    WHERE id = $${idx++} AND host_id = $${idx}
-    RETURNING id;
-    `,
-    values
-  );
-  return result.rowCount ? result.rows[0] : null;
+  try {
+    const result = await pool.query(
+      `
+      UPDATE listings
+      SET ${fields.join(", ")}
+      WHERE id = $${idx++} AND host_id = $${idx}
+      RETURNING id;
+      `,
+      values
+    );
+    return result.rowCount ? result.rows[0] : null;
+  } catch (err: any) {
+    if (err?.code !== "42703") throw err;
+    const legacyFields: string[] = [];
+    const legacyValues: any[] = [];
+    let legacyIdx = 1;
+    if (typeof title === "string") {
+      legacyFields.push(`title = $${legacyIdx++}`);
+      legacyValues.push(title);
+    }
+    if (typeof address === "string") {
+      legacyFields.push(`address = $${legacyIdx++}`);
+      legacyValues.push(address);
+    }
+    if (typeof pricePerDay === "number") {
+      legacyFields.push(`price_per_day = $${legacyIdx++}`);
+      legacyValues.push(pricePerDay);
+    }
+    if (typeof availabilityText === "string") {
+      legacyFields.push(`availability_text = $${legacyIdx++}`);
+      legacyValues.push(availabilityText);
+    }
+    if (Array.isArray(imageUrls)) {
+      legacyFields.push(`image_urls = $${legacyIdx++}`);
+      legacyValues.push(imageUrls);
+    }
+    if (Array.isArray(amenities)) {
+      legacyFields.push(`amenities = $${legacyIdx++}`);
+      legacyValues.push(amenities);
+    }
+    if (accessCode !== undefined) {
+      legacyFields.push(`access_code = $${legacyIdx++}`);
+      legacyValues.push(accessCode ? accessCode.trim() : null);
+    }
+    if (typeof permissionDeclared === "boolean") {
+      legacyFields.push(`permission_declared = $${legacyIdx++}`);
+      legacyValues.push(permissionDeclared);
+    }
+    if (typeof latitude === "number" && typeof longitude === "number") {
+      legacyFields.push(`geom = ST_SetSRID(ST_MakePoint($${legacyIdx++}, $${legacyIdx++}), 4326)`);
+      legacyValues.push(longitude, latitude);
+    }
+    if (!legacyFields.length) return null;
+    legacyValues.push(listingId, hostId);
+    const legacyResult = await pool.query(
+      `
+      UPDATE listings
+      SET ${legacyFields.join(", ")}
+      WHERE id = $${legacyIdx++} AND host_id = $${legacyIdx}
+      RETURNING id;
+      `,
+      legacyValues
+    );
+    return legacyResult.rowCount ? legacyResult.rows[0] : null;
+  }
 }
 
 export async function getListingById(listingId: string) {
-  const result = await pool.query(
-    `
-    SELECT
-      id,
-      title,
-      address,
-      price_per_day,
-      availability_text,
-      image_urls,
-      amenities,
-      access_code,
-      permission_declared,
-      host_id,
-      rating,
-      rating_count,
-      ST_X(geom) AS longitude,
-      ST_Y(geom) AS latitude
-    FROM listings
-    WHERE id = $1
-      AND status <> 'archived'
-    LIMIT 1
-    `,
-    [listingId]
-  );
+  let result;
+  try {
+    result = await pool.query(
+      `
+      SELECT
+        id,
+        title,
+        address,
+        price_per_day,
+        availability_text,
+        image_urls,
+        amenities,
+        access_code,
+        arrival_instructions,
+        permission_declared,
+        host_id,
+        rating,
+        rating_count,
+        ST_X(geom) AS longitude,
+        ST_Y(geom) AS latitude
+      FROM listings
+      WHERE id = $1
+        AND status <> 'archived'
+      LIMIT 1
+      `,
+      [listingId]
+    );
+  } catch (err: any) {
+    if (err?.code !== "42703") throw err;
+    result = await pool.query(
+      `
+      SELECT
+        id,
+        title,
+        address,
+        price_per_day,
+        availability_text,
+        image_urls,
+        amenities,
+        access_code,
+        permission_declared,
+        host_id,
+        rating,
+        rating_count,
+        ST_X(geom) AS longitude,
+        ST_Y(geom) AS latitude
+      FROM listings
+      WHERE id = $1
+        AND status <> 'archived'
+      LIMIT 1
+      `,
+      [listingId]
+    );
+  }
 
   if (!result.rowCount) return null;
   const row = result.rows[0];
@@ -968,6 +1122,7 @@ export async function getListingById(listingId: string) {
     amenities: row.amenities ?? [],
     imageUrls: row.image_urls ?? [],
     accessCode: row.access_code ?? null,
+    arrivalInstructions: row.arrival_instructions ?? null,
     permissionDeclared: row.permission_declared ?? false,
     hostId: row.host_id,
     rating: Number(row.rating ?? 5),
@@ -1029,31 +1184,62 @@ export async function getListingByIdWithAvailability(
       )
     )
   `;
-  const result = await pool.query(
-    `
-    SELECT
-      id,
-      title,
-      address,
-      price_per_day,
-      availability_text,
-      image_urls,
-      amenities,
-      access_code,
-      permission_declared,
-      host_id,
-      rating,
-      rating_count,
-      (${availabilityCheck}) AS is_available,
-      ST_X(geom) AS longitude,
-      ST_Y(geom) AS latitude
-    FROM listings
-    WHERE id = $1
-      AND status <> 'archived'
-    LIMIT 1
-    `,
-    [listingId, from, to]
-  );
+  let result;
+  try {
+    result = await pool.query(
+      `
+      SELECT
+        id,
+        title,
+        address,
+        price_per_day,
+        availability_text,
+        image_urls,
+        amenities,
+        access_code,
+        arrival_instructions,
+        permission_declared,
+        host_id,
+        rating,
+        rating_count,
+        (${availabilityCheck}) AS is_available,
+        ST_X(geom) AS longitude,
+        ST_Y(geom) AS latitude
+      FROM listings
+      WHERE id = $1
+        AND status <> 'archived'
+      LIMIT 1
+      `,
+      [listingId, from, to]
+    );
+  } catch (err: any) {
+    if (err?.code !== "42703") throw err;
+    result = await pool.query(
+      `
+      SELECT
+        id,
+        title,
+        address,
+        price_per_day,
+        availability_text,
+        image_urls,
+        amenities,
+        access_code,
+        permission_declared,
+        host_id,
+        rating,
+        rating_count,
+        (${availabilityCheck}) AS is_available,
+        ST_X(geom) AS longitude,
+        ST_Y(geom) AS latitude
+      FROM listings
+      WHERE id = $1
+        AND status <> 'archived'
+      LIMIT 1
+      `,
+      [listingId, from, to]
+    );
+  }
 
   if (!result.rowCount) return null;
   const row = result.rows[0];
@@ -1066,6 +1252,7 @@ export async function getListingByIdWithAvailability(
     amenities: row.amenities ?? [],
     imageUrls: row.image_urls ?? [],
     accessCode: row.access_code ?? null,
+    arrivalInstructions: row.arrival_instructions ?? null,
     permissionDeclared: row.permission_declared ?? false,
     hostId: row.host_id,
     rating: Number(row.rating ?? 5),
@@ -1229,10 +1416,15 @@ export async function getBookingNotificationTargetsByPaymentIntent(paymentIntent
            b.driver_id,
            l.host_id,
            l.title AS listing_title,
+           l.address AS listing_address,
+           l.access_code,
+           l.arrival_instructions,
+           driver.email AS driver_email,
            b.start_time,
            b.end_time
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
+    LEFT JOIN users driver ON driver.id = b.driver_id
     WHERE b.payment_intent_id = $1
     LIMIT 1;
     `,
@@ -1244,6 +1436,10 @@ export async function getBookingNotificationTargetsByPaymentIntent(paymentIntent
         driver_id: string;
         host_id: string;
         listing_title: string;
+        listing_address: string;
+        access_code: string | null;
+        arrival_instructions: string | null;
+        driver_email: string | null;
         start_time: Date;
         end_time: Date;
       }
@@ -1257,10 +1453,15 @@ export async function getBookingNotificationTargetsByCheckoutSession(checkoutSes
            b.driver_id,
            l.host_id,
            l.title AS listing_title,
+           l.address AS listing_address,
+           l.access_code,
+           l.arrival_instructions,
+           driver.email AS driver_email,
            b.start_time,
            b.end_time
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
+    LEFT JOIN users driver ON driver.id = b.driver_id
     WHERE b.checkout_session_id = $1
     LIMIT 1;
     `,
@@ -1272,6 +1473,10 @@ export async function getBookingNotificationTargetsByCheckoutSession(checkoutSes
         driver_id: string;
         host_id: string;
         listing_title: string;
+        listing_address: string;
+        access_code: string | null;
+        arrival_instructions: string | null;
+        driver_email: string | null;
         start_time: Date;
         end_time: Date;
       }
@@ -1285,10 +1490,15 @@ export async function getBookingNotificationTargets(bookingId: string) {
            b.driver_id,
            l.host_id,
            l.title AS listing_title,
+           l.address AS listing_address,
+           l.access_code,
+           l.arrival_instructions,
+           driver.email AS driver_email,
            b.start_time,
            b.end_time
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
+    LEFT JOIN users driver ON driver.id = b.driver_id
     WHERE b.id = $1
     LIMIT 1;
     `,
@@ -1300,6 +1510,10 @@ export async function getBookingNotificationTargets(bookingId: string) {
         driver_id: string;
         host_id: string;
         listing_title: string;
+        listing_address: string;
+        access_code: string | null;
+        arrival_instructions: string | null;
+        driver_email: string | null;
         start_time: Date;
         end_time: Date;
       }
@@ -1591,6 +1805,10 @@ export async function updateBookingStatus({
             ELSE payout_available_at
           END
       WHERE checkout_session_id = $2
+        AND (
+          ($1 = 'confirmed' AND COALESCE(status::text, 'pending') = 'pending')
+          OR ($1 = 'canceled' AND COALESCE(status::text, 'pending') <> 'canceled')
+        )
       RETURNING id;
       `,
       [status, checkoutSessionId, paymentIntentId ?? null, receiptUrl ?? null]
@@ -1629,6 +1847,10 @@ export async function updateBookingStatusByPaymentIntent({
             ELSE payout_available_at
           END
       WHERE payment_intent_id = $2
+        AND (
+          ($1 = 'confirmed' AND COALESCE(status::text, 'pending') = 'pending')
+          OR ($1 = 'canceled' AND COALESCE(status::text, 'pending') <> 'canceled')
+        )
       RETURNING id;
       `,
       [status, paymentIntentId, receiptUrl ?? null]
@@ -1714,7 +1936,7 @@ export async function listEventLog({
 export async function getBookingByPaymentIntent(paymentIntentId: string) {
   const res = await pool.query(
     `
-    SELECT id, driver_id, amount_cents, currency, status
+    SELECT id, driver_id, amount_cents, currency, status, refund_status, refund_id, checkout_session_id
     FROM bookings
     WHERE payment_intent_id = $1
     LIMIT 1;
@@ -1722,7 +1944,16 @@ export async function getBookingByPaymentIntent(paymentIntentId: string) {
     [paymentIntentId]
   );
   return res.rows[0] as
-    | { id: string; driver_id: string; amount_cents: number | null; currency: string | null; status: string | null }
+    | {
+        id: string;
+        driver_id: string;
+        amount_cents: number | null;
+        currency: string | null;
+        status: string | null;
+        refund_status: string | null;
+        refund_id: string | null;
+        checkout_session_id: string | null;
+      }
     | undefined;
 }
 
@@ -1756,7 +1987,7 @@ export async function getBookingForRefund({
 }) {
   const res = await pool.query(
     `
-    SELECT id, status, payment_intent_id, payout_status, end_time
+    SELECT id, status, payment_intent_id, payout_status, end_time, refund_status, refund_id
     FROM bookings
     WHERE id = $1
       AND driver_id = $2
@@ -1770,6 +2001,47 @@ export async function getBookingForRefund({
         payment_intent_id: string | null;
         payout_status: string | null;
         end_time: Date;
+        refund_status: string | null;
+        refund_id: string | null;
+      }
+    | undefined;
+}
+
+export async function getBookingForHostRefund({
+  bookingId,
+  hostId,
+}: {
+  bookingId: string;
+  hostId: string;
+}) {
+  const res = await pool.query(
+    `
+    SELECT
+      b.id,
+      b.driver_id,
+      b.status,
+      b.payment_intent_id,
+      b.payout_status,
+      b.end_time,
+      b.refund_status,
+      b.refund_id
+    FROM bookings b
+    JOIN listings l ON l.id = b.listing_id
+    WHERE b.id = $1
+      AND l.host_id = $2
+    `,
+    [bookingId, hostId]
+  );
+  return res.rows[0] as
+    | {
+        id: string;
+        driver_id: string;
+        status: string | null;
+        payment_intent_id: string | null;
+        payout_status: string | null;
+        end_time: Date;
+        refund_status: string | null;
+        refund_id: string | null;
       }
     | undefined;
 }
@@ -1948,6 +2220,41 @@ export async function cancelBookingWithRefund({
   return (res.rowCount ?? 0) > 0;
 }
 
+export async function cancelBookingWithRefundByHost({
+  bookingId,
+  hostId,
+  refundId,
+}: {
+  bookingId: string;
+  hostId: string;
+  refundId?: string | null;
+}) {
+  const res = await pool.query(
+    `
+    UPDATE bookings b
+    SET status = 'canceled',
+        payout_status = 'canceled',
+        refund_status = CASE
+          WHEN $3::text IS NOT NULL THEN 'succeeded'
+          ELSE refund_status
+        END,
+        refund_id = COALESCE($3::text, refund_id),
+        refunded_at = CASE
+          WHEN $3::text IS NOT NULL THEN NOW()
+          ELSE refunded_at
+        END
+    FROM listings l
+    WHERE b.id = $1
+      AND l.id = b.listing_id
+      AND l.host_id = $2
+      AND b.end_time > NOW()
+    RETURNING b.id;
+    `,
+    [bookingId, hostId, refundId ?? null]
+  );
+  return (res.rowCount ?? 0) > 0;
+}
+
 export async function listUserBookings(userId: string) {
   const driverRows = await pool.query(
     `
@@ -1971,7 +2278,8 @@ export async function listUserBookings(userId: string) {
       ST_X(l.geom) AS longitude,
       ST_Y(l.geom) AS latitude,
       l.host_id,
-      l.access_code
+      l.access_code,
+      l.arrival_instructions
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
     WHERE b.driver_id = $1
@@ -2003,7 +2311,8 @@ export async function listUserBookings(userId: string) {
       ST_X(l.geom) AS longitude,
       ST_Y(l.geom) AS latitude,
       l.host_id,
-      l.access_code
+      l.access_code,
+      l.arrival_instructions
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
     WHERE l.host_id = $1
@@ -2033,6 +2342,7 @@ export async function listUserBookings(userId: string) {
     latitude: row.latitude ?? null,
     longitude: row.longitude ?? null,
     accessCode: row.access_code ?? null,
+    arrivalInstructions: row.arrival_instructions ?? null,
   });
 
   return {

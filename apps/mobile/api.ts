@@ -98,6 +98,7 @@ export async function searchListings(params: SearchParams) {
     availability_text: space.availability_text ?? space.availability,
     amenities: space.amenities ?? null,
     access_code: space.access_code ?? space.accessCode ?? null,
+    arrival_instructions: space.arrival_instructions ?? space.arrivalInstructions ?? null,
     latitude: space.latitude,
     longitude: space.longitude,
     distance_m:
@@ -139,6 +140,8 @@ export async function getListing(
       listing.availabilitySchedule,
     amenities: listing.amenities ?? null,
     access_code: listing.access_code ?? listing.accessCode ?? null,
+    arrival_instructions:
+      listing.arrival_instructions ?? listing.arrivalInstructions ?? null,
     permission_declared:
       listing.permission_declared ?? listing.permissionDeclared ?? null,
     image_urls: listing.image_urls ?? listing.imageUrls ?? null,
@@ -732,6 +735,11 @@ export async function cancelBooking(payload: { token: string; bookingId: string 
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, "Booking cancelation failed"));
   }
+  return (await response.json()) as {
+    ok: true;
+    refunded?: boolean;
+    alreadyCanceled?: boolean;
+  };
 }
 
 export async function createReview(payload: {
@@ -791,6 +799,7 @@ export type BookingSummary = {
   noShowAt?: string | null;
   vehiclePlate?: string | null;
   accessCode?: string | null;
+  arrivalInstructions?: string | null;
   amountCents: number;
   currency: string;
   title: string;
@@ -905,6 +914,7 @@ export async function createListing(payload: {
   imageUrls?: string[];
   amenities?: string[];
   accessCode?: string | null;
+  arrivalInstructions?: string | null;
   permissionDeclared?: boolean;
 }) {
   const response = await fetch(`${baseUrl}/api/listings`, {
@@ -923,6 +933,7 @@ export async function createListing(payload: {
       imageUrls: payload.imageUrls ?? [],
       amenities: payload.amenities ?? [],
       accessCode: payload.accessCode ?? null,
+      arrivalInstructions: payload.arrivalInstructions ?? null,
       permissionDeclared: payload.permissionDeclared ?? false,
     }),
   });
@@ -952,6 +963,7 @@ export async function listHostListings(token: string) {
     image_urls: listing.image_urls ?? listing.imageUrls ?? [],
     amenities: listing.amenities ?? [],
     access_code: listing.access_code ?? listing.accessCode ?? null,
+    arrival_instructions: listing.arrival_instructions ?? listing.arrivalInstructions ?? null,
     latitude: listing.latitude,
     longitude: listing.longitude,
   }));
@@ -967,6 +979,7 @@ export async function updateListing(payload: {
   imageUrls?: string[];
   amenities?: string[];
   accessCode?: string | null;
+  arrivalInstructions?: string | null;
   permissionDeclared?: boolean;
 }) {
   const response = await fetch(`${baseUrl}/api/listings/${payload.listingId}`, {
@@ -983,6 +996,7 @@ export async function updateListing(payload: {
       imageUrls: payload.imageUrls ?? [],
       amenities: payload.amenities ?? [],
       accessCode: payload.accessCode ?? null,
+      arrivalInstructions: payload.arrivalInstructions ?? null,
       permissionDeclared: payload.permissionDeclared ?? false,
     }),
   });

@@ -82,7 +82,7 @@ export function BookingCard({
       : booking.checkedInAt
       ? "Checked in"
       : booking.refundStatus === "succeeded"
-      ? "Refunded"
+      ? "Refund processed"
       : booking.receiptUrl
       ? "Receipt available"
       : statusLabel;

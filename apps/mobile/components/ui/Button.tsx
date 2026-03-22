@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   ViewStyle,
 } from "react-native";
-import { borderRadius, colors, shadows, spacing, typography } from "../../theme";
+import { buttons, cardShadow, colors, spacing, textStyles } from "../../styles/theme";
 
 interface ButtonProps {
   title: string;
@@ -19,6 +19,7 @@ interface ButtonProps {
   loading?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  testID?: string;
 }
 
 export function Button({
@@ -30,12 +31,13 @@ export function Button({
   loading = false,
   style,
   textStyle,
+  testID,
 }: ButtonProps) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
-      toValue: 0.97,
+      toValue: 0.98,
       useNativeDriver: true,
     }).start();
   };
@@ -43,7 +45,7 @@ export function Button({
   const handlePressOut = () => {
     Animated.spring(scaleAnim, {
       toValue: 1,
-      friction: 3,
+      friction: 4,
       useNativeDriver: true,
     }).start();
   };
@@ -56,6 +58,7 @@ export function Button({
         onPressOut={handlePressOut}
         disabled={disabled || loading}
         activeOpacity={0.9}
+        testID={testID}
         style={[
           styles.button,
           styles[variant],
@@ -65,9 +68,7 @@ export function Button({
         ]}
       >
         {loading ? (
-          <ActivityIndicator
-            color={variant === "primary" ? colors.text.inverse : colors.primary.main}
-          />
+          <ActivityIndicator color={variant === "primary" ? colors.cardBg : colors.accent} />
         ) : (
           <Text style={[styles.text, styles[`${variant}Text`], styles[`${size}Text`], textStyle]}>
             {title}
@@ -80,67 +81,70 @@ export function Button({
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: borderRadius.md,
     alignItems: "center",
-    justifyContent: "center",
     flexDirection: "row",
+    justifyContent: "center",
   },
-
   primary: {
-    backgroundColor: colors.primary.main,
-    ...shadows.primary,
+    ...buttons.primary,
+    ...cardShadow,
   },
   secondary: {
-    backgroundColor: colors.secondary.main,
+    ...buttons.secondary,
   },
   outline: {
+    ...buttons.secondary,
     backgroundColor: "transparent",
-    borderWidth: 2,
-    borderColor: colors.primary.main,
+    borderColor: colors.accent,
+    borderWidth: 1.5,
   },
   ghost: {
+    ...buttons.ghost,
     backgroundColor: "transparent",
   },
-
   small: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    minHeight: 42,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
   medium: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
+    minHeight: 48,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
   },
   large: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xxl,
+    minHeight: 54,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 15,
   },
-
   disabled: {
-    opacity: 0.5,
+    opacity: 0.55,
   },
-
   text: {
-    ...typography.button,
+    ...textStyles.button,
   },
   primaryText: {
-    color: colors.text.inverse,
+    color: colors.cardBg,
   },
   secondaryText: {
-    color: colors.text.inverse,
+    color: colors.text,
   },
   outlineText: {
-    color: colors.primary.main,
+    color: colors.accent,
   },
   ghostText: {
-    color: colors.primary.main,
+    color: colors.accent,
   },
   smallText: {
     fontSize: 14,
+    lineHeight: 18,
   },
   mediumText: {
     fontSize: 15,
+    lineHeight: 20,
   },
   largeText: {
-    fontSize: 16,
+    fontSize: 15,
+    lineHeight: 20,
   },
 });

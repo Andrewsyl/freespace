@@ -21,6 +21,7 @@ export default function AdminBookingDetailPage() {
   const [booking, setBooking] = useState<any | null>(null);
   const [status, setStatus] = useState<string>("");
   const [refundId, setRefundId] = useState<string>("");
+  const [issueRefund, setIssueRefund] = useState(false);
   const [markNoShow, setMarkNoShow] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +54,7 @@ export default function AdminBookingDetailPage() {
         {
           status: status || undefined,
           refundId: refundId || undefined,
+          issueRefund: issueRefund || undefined,
           markNoShow: markNoShow || undefined,
           reason: reason || undefined,
         },
@@ -60,6 +62,7 @@ export default function AdminBookingDetailPage() {
       );
       setBooking((prev: any) => ({ ...prev, ...updated }));
       setReason("");
+      setIssueRefund(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Update failed");
     } finally {
@@ -104,6 +107,18 @@ export default function AdminBookingDetailPage() {
               <dt className="text-slate-500">End</dt>
               <dd>{formatDateTime(booking.end_time)}</dd>
             </div>
+            <div className="flex justify-between">
+              <dt className="text-slate-500">Refund status</dt>
+              <dd>{booking.refund_status ?? "—"}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-slate-500">Refund ID</dt>
+              <dd className="max-w-[14rem] truncate">{booking.refund_id ?? "—"}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-slate-500">Refunded at</dt>
+              <dd>{booking.refunded_at ? formatDateTime(booking.refunded_at) : "—"}</dd>
+            </div>
           </dl>
         </div>
 
@@ -132,6 +147,10 @@ export default function AdminBookingDetailPage() {
                 className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
                 placeholder="re_123"
               />
+            </label>
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+              <input type="checkbox" checked={issueRefund} onChange={(e) => setIssueRefund(e.target.checked)} />
+              Create Stripe refund now
             </label>
             <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
               <input type="checkbox" checked={markNoShow} onChange={(e) => setMarkNoShow(e.target.checked)} />

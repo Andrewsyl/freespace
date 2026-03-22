@@ -73,6 +73,7 @@ export function ListingReviewScreen({ navigation }: Props) {
           imageUrls,
           amenities: draft.accessOptions,
           accessCode: draft.accessCode.trim() || null,
+          arrivalInstructions: draft.arrivalInstructions.trim() || null,
           permissionDeclared: draft.permissionDeclared,
         });
       } else {
@@ -89,6 +90,7 @@ export function ListingReviewScreen({ navigation }: Props) {
           imageUrls,
           amenities: draft.accessOptions,
           accessCode: draft.accessCode.trim() || null,
+          arrivalInstructions: draft.arrivalInstructions.trim() || null,
           permissionDeclared: draft.permissionDeclared,
         });
       }

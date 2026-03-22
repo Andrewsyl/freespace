@@ -13,6 +13,7 @@ import {
   cancelBookingByDriver,
   cancelBookingWithRefund,
   getBookingForRefund,
+  getBookingForHostRefund,
   getBookingForExtension,
   getBookingNotificationTargets,
   getBookingNotificationTargetsByCheckoutSession,
@@ -25,6 +26,8 @@ import {
   updateBookingWindow,
   findUserByEmail,
   createUser,
+  getBookingByPaymentIntent,
+  cancelBookingWithRefundByHost,
 } from "../lib/db.js";
 import { createCheckoutSession, stripe } from "../lib/stripe.js";
 import { sendBookingEmail } from "../lib/email.js";
@@ -61,6 +64,124 @@ const bookingReadLimiter = createRateLimiter({
   keyPrefix: "booking-read",
   keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
 });
+
+function buildBookingIntentKey(input: {
+  driverId: string;
+  listingId: string;
+  from: string;
+  to: string;
+  amountCents: number;
+  currency: string;
+  source: string;
+}) {
+  return [
+    input.source,
+    input.driverId,
+    input.listingId,
+    input.from,
+    input.to,
+    input.amountCents,
+    input.currency.toLowerCase(),
+  ].join(":");
+}
+
+async function createRefundSafely({
+  paymentIntentId,
+  bookingId,
+  reason,
+}: {
+  paymentIntentId: string;
+  bookingId: string;
+  reason: string;
+}) {
+  if (!stripe) throw new Error("Stripe not configured");
+  try {
+    return await stripe.refunds.create(
+      {
+        payment_intent: paymentIntentId,
+        metadata: {
+          booking_id: bookingId,
+          reason,
+        },
+      },
+      {
+        idempotencyKey: `refund:${reason}:${bookingId}:${paymentIntentId}`,
+      }
+    );
+  } catch (err: any) {
+    if (err?.code === "charge_already_refunded") {
+      return null;
+    }
+    throw err;
+  }
+}
+
+async function refundBookingPayment({
+  paymentIntentId,
+  bookingId,
+  existingRefundId,
+  existingRefundStatus,
+  reason,
+}: {
+  paymentIntentId: string | null;
+  bookingId: string;
+  existingRefundId?: string | null;
+  existingRefundStatus?: string | null;
+  reason: string;
+}) {
+  if (!paymentIntentId || !stripe) {
+    return { refundId: existingRefundId ?? null, alreadyRefunded: Boolean(existingRefundId) };
+  }
+  if (existingRefundStatus === "succeeded" || existingRefundId) {
+    return { refundId: existingRefundId ?? null, alreadyRefunded: true };
+  }
+
+  const refund = await createRefundSafely({ paymentIntentId, bookingId, reason });
+  if (!refund) {
+    return { refundId: null, alreadyRefunded: true };
+  }
+
+  await markBookingRefundedByPaymentIntent({
+    paymentIntentId,
+    refundId: refund.id,
+  });
+  return { refundId: refund.id, alreadyRefunded: false };
+}
+
+async function refundOrphanPayment({
+  paymentIntentId,
+  referenceId,
+  source,
+}: {
+  paymentIntentId: string;
+  referenceId: string;
+  source: string;
+}) {
+  const refund = await createRefundSafely({
+    paymentIntentId,
+    bookingId: `orphan:${referenceId}`,
+    reason: source,
+  });
+  await insertEventLog({
+    eventType: refund ? "orphan_payment_refunded" : "orphan_payment_already_refunded",
+    payload: {
+      source,
+      referenceId,
+      paymentIntentId,
+      refundId: refund?.id ?? null,
+    },
+  });
+  await reportOperationalAlert({
+    source: "stripe-webhook",
+    title: "Stripe payment received without booking record",
+    payload: {
+      source,
+      referenceId,
+      paymentIntentId,
+      refundId: refund?.id ?? null,
+    },
+  });
+}
 
 async function requireActiveDriver(userId?: string) {
   if (!userId) return { ok: false, message: "Unauthorized" } as const;
@@ -146,14 +267,68 @@ function formatBookingWindow(start: Date, end: Date) {
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Europe/Dublin",
   });
   const endText = end.toLocaleString("en-IE", {
     day: "numeric",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Europe/Dublin",
   });
   return `${startText} → ${endText}`;
+}
+
+async function sendDriverBookingLifecycleEmail(input: {
+  driverEmail?: string | null;
+  status: "confirmed" | "canceled";
+  bookingId: string;
+  listingTitle: string;
+  listingAddress: string;
+  startTime: Date;
+  endTime: Date;
+  receiptUrl?: string | null;
+  accessCode?: string | null;
+  arrivalInstructions?: string | null;
+}) {
+  if (!input.driverEmail) return;
+  const windowText = formatBookingWindow(input.startTime, input.endTime);
+  const lines = [
+    input.status === "confirmed" ? "Your parking booking is confirmed." : "Your parking booking has been canceled.",
+    "",
+    `Booking reference: ${input.bookingId}`,
+    `Listing: ${input.listingTitle}`,
+    `Address: ${input.listingAddress}`,
+    `Time: ${windowText}`,
+  ];
+
+  if (input.status === "confirmed" && input.arrivalInstructions) {
+    lines.push("", `Arrival instructions: ${input.arrivalInstructions}`);
+  }
+  if (input.status === "confirmed" && input.accessCode) {
+    lines.push("", `Entry code: ${input.accessCode}`);
+  }
+  if (input.receiptUrl) {
+    lines.push("", `Receipt: ${input.receiptUrl}`);
+  }
+
+  try {
+    await sendBookingEmail({
+      to: input.driverEmail,
+      subject: input.status === "confirmed" ? "FreeSpace booking confirmed" : "FreeSpace booking canceled",
+      body: lines.join("\n"),
+    });
+  } catch (error) {
+    await insertEventLog({
+      eventType: "booking_email_failed",
+      payload: {
+        bookingId: input.bookingId,
+        status: input.status,
+        email: input.driverEmail,
+        message: error instanceof Error ? error.message : "Unknown email error",
+      },
+    });
+  }
 }
 
 async function hasBookingOverlap({
@@ -405,6 +580,15 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
       userEmail: driver?.email ?? null,
       manualReview: settings.manualReview,
       source: "booking",
+      idempotencyKey: buildBookingIntentKey({
+        source: "checkout",
+        driverId,
+        listingId: payload.listingId,
+        from: payload.from,
+        to: payload.to,
+        amountCents: payload.amountCents,
+        currency: payload.currency,
+      }),
     });
 
     try {
@@ -420,19 +604,40 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
     }
 
     // Persist reservation as pending; confirm via Stripe webhook in production.
-    await createBooking({
-      listingId: payload.listingId,
-      driverId,
-      from: payload.from,
-      to: payload.to,
-      stripePaymentIntentId: session.payment_intent as string,
-      checkoutSessionId: session.id,
-      amountCents: payload.amountCents,
-      currency: payload.currency,
-      platformFeeCents,
-      payoutAvailableAt,
-      vehiclePlate: payload.vehiclePlate ? payload.vehiclePlate.toUpperCase() : null,
-    });
+    try {
+      await createBooking({
+        listingId: payload.listingId,
+        driverId,
+        from: payload.from,
+        to: payload.to,
+        stripePaymentIntentId: session.payment_intent as string,
+        checkoutSessionId: session.id,
+        amountCents: payload.amountCents,
+        currency: payload.currency,
+        platformFeeCents,
+        payoutAvailableAt,
+        vehiclePlate: payload.vehiclePlate ? payload.vehiclePlate.toUpperCase() : null,
+      });
+    } catch (error) {
+      if (stripe && session.id) {
+        try {
+          await stripe.checkout.sessions.expire(session.id);
+        } catch (expireError) {
+          console.warn("Failed to expire checkout session after booking persistence failure", expireError);
+        }
+      }
+      await reportOperationalAlert({
+        source: "booking-create",
+        title: "Checkout session created but booking persistence failed",
+        payload: {
+          driverId,
+          listingId: payload.listingId,
+          checkoutSessionId: session.id,
+          paymentIntentId: session.payment_intent as string,
+        },
+      });
+      throw error;
+    }
 
     res.status(201).json({ checkoutUrl: session.url, sessionId: session.id });
   } catch (error: any) {
@@ -538,21 +743,49 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
       },
     };
 
-    const intent = await stripe.paymentIntents.create(intentParams);
-
-    await createBooking({
-      listingId: payload.listingId,
-      driverId,
-      from: payload.from,
-      to: payload.to,
-      stripePaymentIntentId: intent.id,
-      checkoutSessionId: null,
-      amountCents: payload.amountCents,
-      currency: payload.currency,
-      platformFeeCents,
-      payoutAvailableAt,
-      vehiclePlate: payload.vehiclePlate ? payload.vehiclePlate.toUpperCase() : null,
+    const intent = await stripe.paymentIntents.create(intentParams, {
+      idempotencyKey: buildBookingIntentKey({
+        source: "payment-intent",
+        driverId,
+        listingId: payload.listingId,
+        from: payload.from,
+        to: payload.to,
+        amountCents: payload.amountCents,
+        currency: payload.currency,
+      }),
     });
+
+    try {
+      await createBooking({
+        listingId: payload.listingId,
+        driverId,
+        from: payload.from,
+        to: payload.to,
+        stripePaymentIntentId: intent.id,
+        checkoutSessionId: null,
+        amountCents: payload.amountCents,
+        currency: payload.currency,
+        platformFeeCents,
+        payoutAvailableAt,
+        vehiclePlate: payload.vehiclePlate ? payload.vehiclePlate.toUpperCase() : null,
+      });
+    } catch (error) {
+      try {
+        await stripe.paymentIntents.cancel(intent.id);
+      } catch (cancelError) {
+        console.warn("Failed to cancel payment intent after booking persistence failure", cancelError);
+      }
+      await reportOperationalAlert({
+        source: "booking-create",
+        title: "Payment intent created but booking persistence failed",
+        payload: {
+          driverId,
+          listingId: payload.listingId,
+          paymentIntentId: intent.id,
+        },
+      });
+      throw error;
+    }
 
     res.json({
       paymentIntentClientSecret: intent.client_secret,
@@ -640,6 +873,15 @@ router.post("/portal", enforceBlockedList, portalBookingLimiter, async (req, res
       driverId,
       manualReview: settings.manualReview,
       source: "portal",
+      idempotencyKey: buildBookingIntentKey({
+        source: "portal",
+        driverId,
+        listingId: payload.listingId,
+        from: startAt.toISOString(),
+        to: endAt.toISOString(),
+        amountCents,
+        currency: "eur",
+      }),
     });
 
     await createBooking({
@@ -1095,7 +1337,13 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
       receiptUrl = (intent as any).charges?.data?.[0]?.receipt_url ?? null;
     }
     const ok = await updateBookingStatusByPaymentIntent({ paymentIntentId, status, receiptUrl });
-    if (!ok) return res.status(404).json({ message: "Booking not found" });
+    if (!ok) {
+      const existing = await getBookingByPaymentIntent(paymentIntentId);
+      if (existing?.status === "canceled") {
+        return res.status(409).json({ message: "Booking already canceled" });
+      }
+      return res.status(404).json({ message: "Booking not found" });
+    }
     const targets = await getBookingNotificationTargetsByPaymentIntent(paymentIntentId);
     if (targets) {
       await sendBookingStatusPush({
@@ -1106,6 +1354,18 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
         startTime: new Date(targets.start_time),
         endTime: new Date(targets.end_time),
         status,
+      });
+      await sendDriverBookingLifecycleEmail({
+        driverEmail: targets.driver_email,
+        status,
+        bookingId: targets.booking_id,
+        listingTitle: targets.listing_title,
+        listingAddress: targets.listing_address,
+        startTime: new Date(targets.start_time),
+        endTime: new Date(targets.end_time),
+        receiptUrl,
+        accessCode: targets.access_code,
+        arrivalInstructions: targets.arrival_instructions,
       });
       if (status === "confirmed") {
         await sendPaymentReceivedPush({
@@ -1142,24 +1402,19 @@ router.post("/:id/cancel", requireAuth, enforceBlockedList, bookingLimiter, asyn
 
     let refundId: string | null = null;
     let alreadyRefunded = false;
-    if (booking.payment_intent_id && stripe && booking.status === "confirmed") {
-      try {
-        const refund = await stripe.refunds.create({
-          payment_intent: booking.payment_intent_id,
-        });
-        refundId = refund.id;
-      } catch (err: any) {
-        // If charge is already refunded, just proceed with cancellation
-        if (err?.code === 'charge_already_refunded') {
-          console.log(`[Booking ${bookingId}] Charge already refunded, proceeding with cancellation`);
-          alreadyRefunded = true;
-        } else {
-          throw err;
-        }
-      }
+    if (booking.status === "confirmed") {
+      const refundResult = await refundBookingPayment({
+        paymentIntentId: booking.payment_intent_id,
+        bookingId,
+        existingRefundId: booking.refund_id,
+        existingRefundStatus: booking.refund_status,
+        reason: "driver_cancellation",
+      });
+      refundId = refundResult.refundId;
+      alreadyRefunded = refundResult.alreadyRefunded;
     }
 
-    const ok = refundId
+    const ok = refundId || alreadyRefunded
       ? await cancelBookingWithRefund({ bookingId, driverId: userId, refundId })
       : await cancelBookingByDriver({ bookingId, driverId: userId });
 
@@ -1175,8 +1430,88 @@ router.post("/:id/cancel", requireAuth, enforceBlockedList, bookingLimiter, asyn
         endTime: new Date(targets.end_time),
         status: "canceled",
       });
+      await sendDriverBookingLifecycleEmail({
+        driverEmail: targets.driver_email,
+        status: "canceled",
+        bookingId: targets.booking_id,
+        listingTitle: targets.listing_title,
+        listingAddress: targets.listing_address,
+        startTime: new Date(targets.start_time),
+        endTime: new Date(targets.end_time),
+        accessCode: targets.access_code,
+        arrivalInstructions: targets.arrival_instructions,
+      });
       await deleteScheduledNotificationsByBooking(targets.booking_id);
     }
+    res.json({ ok: true, refunded: Boolean(refundId) || alreadyRefunded });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/:id/host-cancel", requireAuth, enforceBlockedList, bookingLimiter, async (req, res, next) => {
+  try {
+    const bookingId = z.string().uuid().parse(req.params.id);
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const booking = await getBookingForHostRefund({ bookingId, hostId: userId });
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (booking.status === "canceled") {
+      return res.json({ ok: true, alreadyCanceled: true });
+    }
+
+    let refundId: string | null = null;
+    let alreadyRefunded = false;
+    if (booking.status === "confirmed") {
+      const refundResult = await refundBookingPayment({
+        paymentIntentId: booking.payment_intent_id,
+        bookingId,
+        existingRefundId: booking.refund_id,
+        existingRefundStatus: booking.refund_status,
+        reason: "host_cancellation",
+      });
+      refundId = refundResult.refundId;
+      alreadyRefunded = refundResult.alreadyRefunded;
+    }
+
+    const ok = await cancelBookingWithRefundByHost({ bookingId, hostId: userId, refundId });
+    if (!ok) return res.status(400).json({ message: "Booking cannot be canceled" });
+
+    await insertEventLog({
+      eventType: "host_booking_canceled",
+      payload: {
+        bookingId,
+        hostId: userId,
+        refundId,
+        alreadyRefunded,
+      },
+    });
+
+    const targets = await getBookingNotificationTargets(bookingId);
+    if (targets) {
+      await sendBookingStatusPush({
+        bookingId: targets.booking_id,
+        driverId: targets.driver_id,
+        hostId: targets.host_id,
+        listingTitle: targets.listing_title,
+        startTime: new Date(targets.start_time),
+        endTime: new Date(targets.end_time),
+        status: "canceled",
+      });
+      await sendDriverBookingLifecycleEmail({
+        driverEmail: targets.driver_email,
+        status: "canceled",
+        bookingId: targets.booking_id,
+        listingTitle: targets.listing_title,
+        listingAddress: targets.listing_address,
+        startTime: new Date(targets.start_time),
+        endTime: new Date(targets.end_time),
+        accessCode: targets.access_code,
+        arrivalInstructions: targets.arrival_instructions,
+      });
+      await deleteScheduledNotificationsByBooking(targets.booking_id);
+    }
+
     res.json({ ok: true, refunded: Boolean(refundId) || alreadyRefunded });
   } catch (error) {
     next(error);
@@ -1236,6 +1571,24 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       const booking = bookingRow.rows[0] as
         | { id: string; listing_id: string; start_time: Date; end_time: Date }
         | undefined;
+      if (!booking) {
+        if (paymentIntentId) {
+          await refundOrphanPayment({
+            paymentIntentId,
+            referenceId: session.id,
+            source: "checkout.session.completed",
+          });
+        } else {
+          await reportOperationalAlert({
+            source: "stripe-webhook",
+            title: "Checkout session completed without booking or payment intent",
+            payload: {
+              checkoutSessionId: session.id,
+            },
+          });
+        }
+        return res.json({ received: true, orphan: true });
+      }
       if (booking) {
         const conflict = await hasBookingOverlap({
           listingId: booking.listing_id,
@@ -1255,13 +1608,11 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
             eventType: "booking_conflict",
             payload: conflictPayload,
           });
-          if (stripe && paymentIntentId) {
-            const refund = await stripe.refunds.create({
-              payment_intent: paymentIntentId,
-            });
-            await markBookingRefundedByPaymentIntent({
+          if (paymentIntentId) {
+            await refundBookingPayment({
               paymentIntentId,
-              refundId: refund.id,
+              bookingId: booking.id,
+              reason: "booking_conflict",
             });
           }
           await updateBookingStatus({
@@ -1280,6 +1631,17 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
               endTime: new Date(conflictTargets.end_time),
               status: "canceled",
             });
+            await sendDriverBookingLifecycleEmail({
+              driverEmail: conflictTargets.driver_email,
+              status: "canceled",
+              bookingId: conflictTargets.booking_id,
+              listingTitle: conflictTargets.listing_title,
+              listingAddress: conflictTargets.listing_address,
+              startTime: new Date(conflictTargets.start_time),
+              endTime: new Date(conflictTargets.end_time),
+              accessCode: conflictTargets.access_code,
+              arrivalInstructions: conflictTargets.arrival_instructions,
+            });
             await deleteScheduledNotificationsByBooking(conflictTargets.booking_id);
           }
           return res.json({ received: true, conflict: true });
@@ -1292,12 +1654,24 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         });
         receiptUrl = (intent as any).charges?.data?.[0]?.receipt_url ?? null;
       }
-      await updateBookingStatus({
+      const updated = await updateBookingStatus({
         checkoutSessionId: session.id,
         status: "confirmed",
         paymentIntentId: session.payment_intent as string,
         receiptUrl,
       });
+      if (!updated) {
+        await insertEventLog({
+          eventType: "booking_status_transition_skipped",
+          payload: {
+            source: "checkout.session.completed",
+            checkoutSessionId: session.id,
+            paymentIntentId: session.payment_intent as string,
+            attemptedStatus: "confirmed",
+          },
+        });
+        return res.json({ received: true, skipped: true });
+      }
       const targets = await getBookingNotificationTargetsByCheckoutSession(session.id);
       if (targets) {
         await sendBookingStatusPush({
@@ -1308,6 +1682,18 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           startTime: new Date(targets.start_time),
           endTime: new Date(targets.end_time),
           status: "confirmed",
+        });
+        await sendDriverBookingLifecycleEmail({
+          driverEmail: targets.driver_email,
+          status: "confirmed",
+          bookingId: targets.booking_id,
+          listingTitle: targets.listing_title,
+          listingAddress: targets.listing_address,
+          startTime: new Date(targets.start_time),
+          endTime: new Date(targets.end_time),
+          receiptUrl,
+          accessCode: targets.access_code,
+          arrivalInstructions: targets.arrival_instructions,
         });
         await sendPaymentReceivedPush({
           bookingId: targets.booking_id,
@@ -1341,6 +1727,17 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           endTime: new Date(targets.end_time),
           status: "canceled",
         });
+        await sendDriverBookingLifecycleEmail({
+          driverEmail: targets.driver_email,
+          status: "canceled",
+          bookingId: targets.booking_id,
+          listingTitle: targets.listing_title,
+          listingAddress: targets.listing_address,
+          startTime: new Date(targets.start_time),
+          endTime: new Date(targets.end_time),
+          accessCode: targets.access_code,
+          arrivalInstructions: targets.arrival_instructions,
+        });
         await deleteScheduledNotificationsByBooking(targets.booking_id);
       }
     }
@@ -1360,6 +1757,14 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       const booking = bookingRow.rows[0] as
         | { id: string; listing_id: string; start_time: Date; end_time: Date }
         | undefined;
+      if (!booking) {
+        await refundOrphanPayment({
+          paymentIntentId,
+          referenceId: paymentIntentId,
+          source: "payment_intent.succeeded",
+        });
+        return res.json({ received: true, orphan: true });
+      }
       if (booking) {
         const conflict = await hasBookingOverlap({
           listingId: booking.listing_id,
@@ -1379,13 +1784,11 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
             eventType: "booking_conflict",
             payload: conflictPayload,
           });
-          if (stripe && paymentIntentId) {
-            const refund = await stripe.refunds.create({
-              payment_intent: paymentIntentId,
-            });
-            await markBookingRefundedByPaymentIntent({
+          if (paymentIntentId) {
+            await refundBookingPayment({
               paymentIntentId,
-              refundId: refund.id,
+              bookingId: booking.id,
+              reason: "booking_conflict",
             });
           }
           await updateBookingStatusByPaymentIntent({
@@ -1403,16 +1806,38 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
               endTime: new Date(conflictTargets.end_time),
               status: "canceled",
             });
+            await sendDriverBookingLifecycleEmail({
+              driverEmail: conflictTargets.driver_email,
+              status: "canceled",
+              bookingId: conflictTargets.booking_id,
+              listingTitle: conflictTargets.listing_title,
+              listingAddress: conflictTargets.listing_address,
+              startTime: new Date(conflictTargets.start_time),
+              endTime: new Date(conflictTargets.end_time),
+              accessCode: conflictTargets.access_code,
+              arrivalInstructions: conflictTargets.arrival_instructions,
+            });
             await deleteScheduledNotificationsByBooking(conflictTargets.booking_id);
           }
           return res.json({ received: true, conflict: true });
         }
       }
-      await updateBookingStatusByPaymentIntent({
+      const updated = await updateBookingStatusByPaymentIntent({
         paymentIntentId,
         status: "confirmed",
         receiptUrl: (intent as any).charges?.data?.[0]?.receipt_url ?? null,
       });
+      if (!updated) {
+        await insertEventLog({
+          eventType: "booking_status_transition_skipped",
+          payload: {
+            source: "payment_intent.succeeded",
+            paymentIntentId,
+            attemptedStatus: "confirmed",
+          },
+        });
+        return res.json({ received: true, skipped: true });
+      }
       const targets = await getBookingNotificationTargetsByPaymentIntent(paymentIntentId);
       if (targets) {
         await sendBookingStatusPush({
@@ -1423,6 +1848,18 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           startTime: new Date(targets.start_time),
           endTime: new Date(targets.end_time),
           status: "confirmed",
+        });
+        await sendDriverBookingLifecycleEmail({
+          driverEmail: targets.driver_email,
+          status: "confirmed",
+          bookingId: targets.booking_id,
+          listingTitle: targets.listing_title,
+          listingAddress: targets.listing_address,
+          startTime: new Date(targets.start_time),
+          endTime: new Date(targets.end_time),
+          receiptUrl: (intent as any).charges?.data?.[0]?.receipt_url ?? null,
+          accessCode: targets.access_code,
+          arrivalInstructions: targets.arrival_instructions,
         });
         await sendPaymentReceivedPush({
           bookingId: targets.booking_id,
@@ -1454,6 +1891,17 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           startTime: new Date(targets.start_time),
           endTime: new Date(targets.end_time),
           status: "canceled",
+        });
+        await sendDriverBookingLifecycleEmail({
+          driverEmail: targets.driver_email,
+          status: "canceled",
+          bookingId: targets.booking_id,
+          listingTitle: targets.listing_title,
+          listingAddress: targets.listing_address,
+          startTime: new Date(targets.start_time),
+          endTime: new Date(targets.end_time),
+          accessCode: targets.access_code,
+          arrivalInstructions: targets.arrival_instructions,
         });
         await deleteScheduledNotificationsByBooking(targets.booking_id);
       }
