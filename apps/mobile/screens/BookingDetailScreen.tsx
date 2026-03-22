@@ -111,10 +111,12 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   const showArrivalInfo =
     (isUpcoming || isInProgress || canReview) &&
     (Boolean(booking.arrivalInstructions?.trim()) || Boolean(booking.accessCode?.trim()));
+  const cancellationSource = booking.cancellationSource ?? null;
   const bookingDateLabel = `${start.toLocaleDateString(undefined, {
     weekday: "short",
     day: "2-digit",
     month: "short",
+    timeZone: "Europe/Dublin",
   })} · ${formatTimeLabel(start)} - ${formatTimeLabel(end)}`;
   const barcodeRaw = booking.id.replace(/-/g, "").slice(0, 12).toUpperCase();
   const barcodeText =
@@ -259,6 +261,13 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     });
   };
 
+  const openSupportCase = (subject: string, issue: string) => {
+    navigation.navigate("Support", {
+      prefillSubject: subject,
+      prefillMessage: `Booking reference: ${formatBookingReference(booking.id)}\nListing: ${booking.title}\nIssue: ${issue}\n\nWhat happened:\n`,
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar style="light" translucent={false} backgroundColor="#2ECC8F" />
@@ -339,17 +348,65 @@ export function BookingDetailScreen({ navigation, route }: Props) {
           </View>
         ) : null}
 
+        {!isCanceled ? (
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>If something goes wrong</Text>
+            <View style={styles.edgeCaseList}>
+              <Text style={styles.edgeCaseItem}>
+                If access fails, try the arrival details first. If you still cannot get in, contact support immediately so we can investigate and review refund eligibility.
+              </Text>
+              <Text style={styles.edgeCaseItem}>
+                If a host cancels, we will cancel the booking, notify you, and return any eligible refund to the original payment method.
+              </Text>
+              <Text style={styles.edgeCaseItem}>
+                If you do not show up, the booking still counts once the booked window starts unless support confirms a host-side access issue.
+              </Text>
+              <Text style={styles.edgeCaseItem}>
+                If you need extra time, extend before the session ends. Unauthorised overstays can trigger enforcement or reduce refund eligibility.
+              </Text>
+            </View>
+            <View style={styles.helpChips}>
+              <TouchableOpacity
+                style={styles.helpChip}
+                onPress={() => openSupportCase("Access issue", "I could not access the booked space.")}
+              >
+                <Text style={styles.helpChipText}>Access issue</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.helpChip}
+                onPress={() => openSupportCase("Host canceled", "The host canceled or could not honor this booking.")}
+              >
+                <Text style={styles.helpChipText}>Host canceled</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.helpChip}
+                onPress={() => openSupportCase("No-show or overstay", "I need help with no-show or overstay handling.")}
+              >
+                <Text style={styles.helpChipText}>No-show / overstay</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
+
         {isCanceled ? (
           <View style={styles.infoCard}>
             <Text style={styles.infoCardTitle}>Cancellation and refund</Text>
             <Text style={styles.infoCardBody}>
-              {isRefunded
-                ? `This booking was canceled and the refund has been submitted to your original payment method${localRefundedAt ? ` on ${new Date(localRefundedAt).toLocaleDateString("en-IE", { day: "2-digit", month: "short", year: "numeric", timeZone: "Europe/Dublin" })}` : ""}.`
-                : "This booking was canceled. If you expected a refund and do not see one yet, contact support with your booking reference."}
+              {cancellationSource === "host"
+                ? isRefunded
+                  ? `The host canceled this booking. Your refund has been submitted to the original payment method${localRefundedAt ? ` on ${new Date(localRefundedAt).toLocaleDateString("en-IE", { day: "2-digit", month: "short", year: "numeric", timeZone: "Europe/Dublin" })}` : ""}.`
+                  : "The host canceled this booking. If the refund has not appeared yet, contact support and we will trace it."
+                : isRefunded
+                  ? `This booking was canceled and the refund has been submitted to your original payment method${localRefundedAt ? ` on ${new Date(localRefundedAt).toLocaleDateString("en-IE", { day: "2-digit", month: "short", year: "numeric", timeZone: "Europe/Dublin" })}` : ""}.`
+                  : "This booking was canceled. If you expected a refund and do not see one yet, contact support with your booking reference."}
             </Text>
             <TouchableOpacity style={styles.secondaryLinkButton} onPress={handleContactSupport}>
               <Text style={styles.secondaryLinkButtonText}>
-                {isRefunded ? "Need refund help?" : "Request refund support"}
+                {cancellationSource === "host"
+                  ? "Need help with host cancellation?"
+                  : isRefunded
+                    ? "Need refund help?"
+                    : "Request refund support"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1018,6 +1075,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
   },
+  edgeCaseList: {
+    gap: 10,
+  },
+  edgeCaseItem: {
+    color: '#4B5563',
+    fontSize: 14,
+    lineHeight: 22,
+  },
   accessCodeWrap: {
     marginTop: 14,
     paddingTop: 14,
@@ -1047,6 +1112,25 @@ const styles = StyleSheet.create({
     color: '#2ECC8F',
     fontSize: 14,
     fontWeight: '700',
+  },
+  helpChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 14,
+  },
+  helpChip: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  helpChipText: {
+    color: '#111827',
+    fontSize: 12,
+    fontWeight: '600',
   },
 
   // Help button

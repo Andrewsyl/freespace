@@ -2,6 +2,7 @@ import { CalendarDaysIcon, MapPinIcon } from "@heroicons/react/24/outline";
 
 export type Booking = {
   id: string;
+  listingId?: string;
   address: string;
   title?: string;
   date: string;
@@ -9,6 +10,12 @@ export type Booking = {
   payout?: number;
   driver?: string;
   status: "pending" | "confirmed" | "canceled" | "upcoming" | "completed";
+  refundStatus?: string | null;
+  refundedAt?: string | null;
+  noShowAt?: string | null;
+  cancellationSource?: "driver" | "host" | null;
+  startTime?: string;
+  endTime?: string;
 };
 
 export function BookingCard({ booking }: { booking: Booking }) {

@@ -247,6 +247,16 @@ export function ListingReviewScreen({ navigation }: Props) {
           {listingId ? "Confirm everything looks right." : "You can edit anything after publishing."}
         </Text>
 
+        <View style={styles.guidanceCard}>
+          <Text style={styles.guidanceTitle}>What gets bookings</Text>
+          <Text style={styles.guidanceBody}>
+            The strongest listings are easy to trust at a glance and easy to use after booking.
+          </Text>
+          <Text style={styles.guidanceBullet}>• Show exactly where the driver should park</Text>
+          <Text style={styles.guidanceBullet}>• Add arrival notes and any code they need after booking</Text>
+          <Text style={styles.guidanceBullet}>• Keep price and availability accurate to avoid cancellations</Text>
+        </View>
+
         <Pressable
           style={[
             styles.confirmRow,
@@ -428,6 +438,34 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-Regular",
     marginTop: 6,
     lineHeight: 20,
+  },
+  guidanceCard: {
+    backgroundColor: "#F8FAFC",
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    marginTop: 16,
+    padding: 16,
+  },
+  guidanceTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontFamily: "Poppins-SemiBold",
+    fontWeight: "600",
+  },
+  guidanceBody: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontFamily: "Poppins-Regular",
+    lineHeight: 20,
+    marginTop: 6,
+  },
+  guidanceBullet: {
+    color: colors.text,
+    fontSize: 13,
+    fontFamily: "Poppins-Medium",
+    lineHeight: 19,
+    marginTop: 8,
   },
   error: {
     backgroundColor: "#fef2f2",

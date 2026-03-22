@@ -9,7 +9,11 @@ const statusOptions = ["pending", "confirmed", "canceled"];
 
 const formatDateTime = (value: string) => {
   try {
-    return new Date(value).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+    return new Date(value).toLocaleString("en-IE", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Europe/Dublin",
+    });
   } catch {
     return value;
   }
@@ -119,6 +123,10 @@ export default function AdminBookingDetailPage() {
               <dt className="text-slate-500">Refunded at</dt>
               <dd>{booking.refunded_at ? formatDateTime(booking.refunded_at) : "—"}</dd>
             </div>
+            <div className="flex justify-between">
+              <dt className="text-slate-500">No-show marked</dt>
+              <dd>{booking.no_show_at ? formatDateTime(booking.no_show_at) : "—"}</dd>
+            </div>
           </dl>
         </div>
 
@@ -174,6 +182,15 @@ export default function AdminBookingDetailPage() {
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 shadow-sm">
+        <p className="font-semibold text-slate-900">Operational handling</p>
+        <ul className="mt-2 space-y-1">
+          <li>Use host cancellation when the space cannot be honored. Refunds should be created or confirmed in the same action.</li>
+          <li>Use no-show only when the booked window started and the driver never arrived.</li>
+          <li>Overstay issues should keep the booking record intact and be documented through support or admin notes with timestamps.</li>
+        </ul>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { BookingCard, type Booking } from "../../components/BookingCard";
-import { getMyBookings } from "../../lib/api";
+import { cancelHostBooking, getMyBookings } from "../../lib/api";
 import { useAuth } from "../../components/AuthProvider";
 
 export default function DashboardPage() {
@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Booking | null>(null);
+  const [cancelingHostBooking, setCancelingHostBooking] = useState(false);
   const [stats, setStats] = useState<{ driverCount: number; hostCount: number; hostEarnings: number }>({
     driverCount: 0,
     hostCount: 0,
@@ -23,8 +24,13 @@ export default function DashboardPage() {
   const formatDateRange = (start: string, end: string) => {
     const startDate = new Date(start);
     const endDate = new Date(end);
-    const date = startDate.toLocaleDateString();
-    const timeRange = `${startDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${endDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    const date = startDate.toLocaleDateString("en-IE", {
+      weekday: "short",
+      day: "2-digit",
+      month: "short",
+      timeZone: "Europe/Dublin",
+    });
+    const timeRange = `${startDate.toLocaleTimeString("en-IE", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Dublin" })} - ${endDate.toLocaleTimeString("en-IE", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Dublin" })}`;
     return { date, timeRange };
   };
 
@@ -49,6 +55,12 @@ export default function DashboardPage() {
               payout: 0,
               driver: user?.email ?? "You",
               status: (b.status as Booking["status"]) ?? "pending",
+              refundStatus: b.refundStatus,
+              refundedAt: b.refundedAt,
+              noShowAt: b.noShowAt,
+              cancellationSource: b.cancellationSource ?? null,
+              startTime: b.startTime,
+              endTime: b.endTime,
             };
           })
         );
@@ -64,6 +76,13 @@ export default function DashboardPage() {
               payout: (b.amountCents ?? 0) / 100,
               driver: undefined,
               status: (b.status as Booking["status"]) ?? "pending",
+              listingId: b.listingId,
+              refundStatus: b.refundStatus,
+              refundedAt: b.refundedAt,
+              noShowAt: b.noShowAt,
+              cancellationSource: b.cancellationSource ?? null,
+              startTime: b.startTime,
+              endTime: b.endTime,
             };
           })
         );
@@ -84,6 +103,30 @@ export default function DashboardPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const handleHostCancel = async () => {
+    if (!token || !selected?.id || cancelingHostBooking) return;
+    if (!confirm("Cancel this booking? The driver will be refunded where eligible.")) return;
+    setCancelingHostBooking(true);
+    try {
+      await cancelHostBooking(selected.id, token);
+      await load();
+      setSelected((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "canceled",
+              cancellationSource: "host",
+              refundStatus: "succeeded",
+            }
+          : prev
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not cancel booking");
+    } finally {
+      setCancelingHostBooking(false);
+    }
+  };
 
   if (loading) return <div className="text-sm text-slate-600">Loading...</div>;
 
@@ -257,6 +300,32 @@ export default function DashboardPage() {
               {typeof selected.payout === "number" && <span>€{selected.payout.toFixed(2)} payout</span>}
             </div>
             <p className="text-sm text-slate-700">Driver: {selected.driver ?? "You"}</p>
+            {selected.noShowAt ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                This booking has been marked as a no-show.
+              </div>
+            ) : null}
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <p className="font-semibold text-slate-900">Booking handling</p>
+              <ul className="mt-2 space-y-1">
+                <li>If you cancel, the driver is notified and any eligible refund is sent back to their original payment method.</li>
+                <li>If the driver does not show, mark it through admin/support rather than editing the booking window manually.</li>
+                <li>If the driver overstays or ignores access rules, report it with timestamps and any evidence so support can review it.</li>
+              </ul>
+            </div>
+            {selected.status !== "canceled" ? (
+              <button
+                onClick={handleHostCancel}
+                disabled={cancelingHostBooking}
+                className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-60"
+              >
+                {cancelingHostBooking ? "Canceling booking…" : "Host cancel booking"}
+              </button>
+            ) : selected.cancellationSource === "host" ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                This booking was canceled by the host. Refund tracking should be reviewed if the driver reports an issue.
+              </div>
+            ) : null}
           </div>
         </div>
       )}

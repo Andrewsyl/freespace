@@ -22,7 +22,11 @@ const priorityOptions = ["low", "normal", "high", "urgent"];
 
 const formatDate = (value: string) => {
   try {
-    return new Date(value).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+    return new Date(value).toLocaleString("en-IE", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Europe/Dublin",
+    });
   } catch {
     return value;
   }

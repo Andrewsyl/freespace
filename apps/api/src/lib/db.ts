@@ -2345,10 +2345,51 @@ export async function listUserBookings(userId: string) {
     arrivalInstructions: row.arrival_instructions ?? null,
   });
 
+  const allRows = [...driverRows.rows, ...hostRows.rows];
+  const bookingIds = allRows.map((row) => row.id).filter(Boolean);
+  const bookingSignals =
+    bookingIds.length > 0 ? await getBookingStatusSignals(bookingIds) : new Map<string, { cancellationSource?: string | null }>();
+
   return {
-    driverBookings: driverRows.rows.map(mapRow),
-    hostBookings: hostRows.rows.map(mapRow),
+    driverBookings: driverRows.rows.map((row) => ({
+      ...mapRow(row),
+      cancellationSource: bookingSignals.get(row.id)?.cancellationSource ?? null,
+    })),
+    hostBookings: hostRows.rows.map((row) => ({
+      ...mapRow(row),
+      cancellationSource: bookingSignals.get(row.id)?.cancellationSource ?? null,
+    })),
   };
+}
+
+async function getBookingStatusSignals(bookingIds: string[]) {
+  const res = await pool.query(
+    `
+    SELECT
+      payload->>'bookingId' AS booking_id,
+      event_type,
+      created_at
+    FROM event_log
+    WHERE payload->>'bookingId' = ANY($1::text[])
+      AND event_type IN ('host_booking_canceled', 'driver_booking_canceled')
+    ORDER BY created_at DESC
+    `,
+    [bookingIds]
+  );
+
+  const map = new Map<string, { cancellationSource?: string | null }>();
+  for (const row of res.rows as Array<{ booking_id: string | null; event_type: string }>) {
+    if (!row.booking_id || map.has(row.booking_id)) continue;
+    map.set(row.booking_id, {
+      cancellationSource:
+        row.event_type === "host_booking_canceled"
+          ? "host"
+          : row.event_type === "driver_booking_canceled"
+            ? "driver"
+            : null,
+    });
+  }
+  return map;
 }
 
 export async function getHostEarningsSummary(hostId: string) {
@@ -2598,6 +2639,47 @@ export async function getAdminDashboardMetrics() {
     `
   );
 
+  const recentOperationalEvents = await pool.query(
+    `
+    SELECT id, event_type, payload, created_at
+    FROM event_log
+    WHERE event_type IN (
+      'booking_conflict',
+      'booking_email_failed',
+      'orphan_payment_refunded',
+      'orphan_payment_already_refunded',
+      'stripe_webhook_failed',
+      'operational_alert',
+      'host_booking_canceled',
+      'booking_status_transition_skipped'
+    )
+    ORDER BY created_at DESC
+    LIMIT 8
+    `
+  );
+
+  const funnelCounts = await pool.query(
+    `
+    SELECT event_type, COUNT(*)::int AS count
+    FROM event_log
+    WHERE created_at >= NOW() - interval '30 days'
+      AND event_type IN (
+        'signup_completed',
+        'email_verified',
+        'login_succeeded',
+        'listing_published',
+        'booking_checkout_started',
+        'booking_payment_intent_created',
+        'booking_confirmed'
+      )
+    GROUP BY event_type
+    `
+  );
+  const funnelMap = new Map<string, number>();
+  for (const row of funnelCounts.rows as Array<{ event_type: string; count: number }>) {
+    funnelMap.set(row.event_type, Number(row.count ?? 0));
+  }
+
   return {
     userCount: Number(row.user_count ?? 0),
     listingCount: Number(row.listing_count ?? 0),
@@ -2618,6 +2700,23 @@ export async function getAdminDashboardMetrics() {
       eventType: r.event_type,
       count: Number(r.count ?? 0),
     })),
+    recentOperationalEvents: recentOperationalEvents.rows.map((row) => ({
+      id: row.id,
+      eventType: row.event_type,
+      payload: row.payload ?? null,
+      createdAt: row.created_at,
+    })),
+    signupFunnel: {
+      signedUp: funnelMap.get("signup_completed") ?? 0,
+      verifiedEmail: funnelMap.get("email_verified") ?? 0,
+      loggedIn: funnelMap.get("login_succeeded") ?? 0,
+    },
+    bookingFunnel: {
+      listingPublished: funnelMap.get("listing_published") ?? 0,
+      checkoutStarted: funnelMap.get("booking_checkout_started") ?? 0,
+      paymentIntentCreated: funnelMap.get("booking_payment_intent_created") ?? 0,
+      confirmed: funnelMap.get("booking_confirmed") ?? 0,
+    },
   };
 }
 
@@ -2677,6 +2776,7 @@ export async function listBookingsForAdmin({
       b.checkout_session_id,
       b.refund_status,
       b.refunded_at,
+      b.no_show_at,
       b.payout_status,
       b.payout_available_at,
       b.created_at,

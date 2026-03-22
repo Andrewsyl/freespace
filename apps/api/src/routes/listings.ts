@@ -12,6 +12,7 @@ import {
   findUserById,
   updateListingForHost,
   getListingHostId,
+  insertEventLog,
 } from "../lib/db.js";
 import { getPresignedPostUpload, MAX_LISTING_IMAGE_BYTES, S3UploadConfigError } from "../lib/s3.js";
 import { geocodeAddress } from "../lib/geocode.js";
@@ -142,6 +143,13 @@ router.post("/", requireAuth, enforceBlockedList, listingWriteLimiter, async (re
       arrivalInstructions: payload.arrivalInstructions?.trim() || null,
       permissionDeclared: payload.permissionDeclared ?? false,
       hostStripeAccountId,
+    });
+    await insertEventLog({
+      eventType: "listing_published",
+      payload: {
+        listingId: created.id,
+        hostId,
+      },
     });
     res.status(201).json({ id: created.id });
   } catch (error) {

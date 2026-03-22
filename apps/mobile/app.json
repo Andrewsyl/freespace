@@ -22,7 +22,7 @@
           "image": "./assets/splash-freespace.png",
           "resizeMode": "contain",
           "backgroundColor": "#FCFCFB",
-          "imageWidth": 420
+          "imageWidth": 250
         }
       ],
       [

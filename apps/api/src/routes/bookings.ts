@@ -639,6 +639,15 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
       throw error;
     }
 
+    await insertEventLog({
+      eventType: "booking_checkout_started",
+      payload: {
+        driverId,
+        listingId: payload.listingId,
+        checkoutSessionId: session.id,
+      },
+    });
+
     res.status(201).json({ checkoutUrl: session.url, sessionId: session.id });
   } catch (error: any) {
     if (error?.code === "23P01") {
@@ -786,6 +795,15 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
       });
       throw error;
     }
+
+    await insertEventLog({
+      eventType: "booking_payment_intent_created",
+      payload: {
+        driverId,
+        listingId: payload.listingId,
+        paymentIntentId: intent.id,
+      },
+    });
 
     res.json({
       paymentIntentClientSecret: intent.client_secret,
@@ -1419,6 +1437,15 @@ router.post("/:id/cancel", requireAuth, enforceBlockedList, bookingLimiter, asyn
       : await cancelBookingByDriver({ bookingId, driverId: userId });
 
     if (!ok) return res.status(400).json({ message: "Booking cannot be canceled" });
+    await insertEventLog({
+      eventType: "driver_booking_canceled",
+      payload: {
+        bookingId,
+        driverId: userId,
+        refundId,
+        alreadyRefunded,
+      },
+    });
     const targets = await getBookingNotificationTargets(bookingId);
     if (targets) {
       await sendBookingStatusPush({
@@ -1672,6 +1699,14 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         });
         return res.json({ received: true, skipped: true });
       }
+      await insertEventLog({
+        eventType: "booking_confirmed",
+        payload: {
+          bookingId: booking.id,
+          paymentIntentId: session.payment_intent as string,
+          source: "checkout.session.completed",
+        },
+      });
       const targets = await getBookingNotificationTargetsByCheckoutSession(session.id);
       if (targets) {
         await sendBookingStatusPush({
@@ -1838,6 +1873,14 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         });
         return res.json({ received: true, skipped: true });
       }
+      await insertEventLog({
+        eventType: "booking_confirmed",
+        payload: {
+          bookingId: booking.id,
+          paymentIntentId,
+          source: "payment_intent.succeeded",
+        },
+      });
       const targets = await getBookingNotificationTargetsByPaymentIntent(paymentIntentId);
       if (targets) {
         await sendBookingStatusPush({
@@ -1910,6 +1953,12 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
     res.json({ received: true });
   } catch (err) {
     console.error("Stripe webhook error", err);
+    await insertEventLog({
+      eventType: "stripe_webhook_failed",
+      payload: {
+        message: err instanceof Error ? err.message : "Unknown webhook error",
+      },
+    });
     await reportOperationalAlert({
       source: "stripe-webhook",
       title: "Stripe webhook processing failed",

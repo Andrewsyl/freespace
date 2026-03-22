@@ -27,6 +27,9 @@ export function SupportScreen({ navigation, route }: Props) {
   const subjectOptions = [
     "Booking issue",
     "Payment or refund",
+    "Host canceled",
+    "Access issue",
+    "No-show or overstay",
     "Host payout",
     "Listing problem",
     "Account access",

@@ -205,6 +205,23 @@ export default function HostWizardPage() {
       nextDisabled={nextDisabled}
       loading={saving}
     >
+      <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Hosting tips</p>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Be specific</p>
+            <p className="mt-1 text-sm text-slate-600">Drivers convert faster when your title, access details, and photos match the real space.</p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Reduce friction</p>
+            <p className="mt-1 text-sm text-slate-600">Add arrival instructions and any gate or permit details before you publish.</p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Stay bookable</p>
+            <p className="mt-1 text-sm text-slate-600">Only publish times you can actually honor. Cancellations damage trust and future conversion.</p>
+          </div>
+        </div>
+      </div>
       {error && <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{error}</div>}
       {renderStep()}
     </HostStepperLayout>

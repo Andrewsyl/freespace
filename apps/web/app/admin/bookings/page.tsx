@@ -15,6 +15,7 @@ type BookingRow = {
   end_time: string;
   status: string;
   refund_status?: string | null;
+  no_show_at?: string | null;
   amount_cents?: number | null;
   currency?: string | null;
   created_at: string;
@@ -24,7 +25,11 @@ const statusOptions = ["pending", "confirmed", "canceled"];
 
 const formatDateTime = (value: string) => {
   try {
-    return new Date(value).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+    return new Date(value).toLocaleString("en-IE", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Europe/Dublin",
+    });
   } catch {
     return value;
   }
@@ -192,6 +197,7 @@ export default function AdminBookingsPage() {
               <th className="px-4 py-3 text-left font-semibold text-slate-700">Window</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-700">Status</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-700">Refund</th>
+              <th className="px-4 py-3 text-left font-semibold text-slate-700">No-show</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-700">Amount</th>
               <th className="px-4 py-3 text-right font-semibold text-slate-700">Actions</th>
             </tr>
@@ -218,6 +224,15 @@ export default function AdminBookingsPage() {
                   {row.refund_status ? (
                     <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
                       {row.refund_status}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                <td className="px-4 py-3 text-slate-700">
+                  {row.no_show_at ? (
+                    <span className="rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
+                      Marked
                     </span>
                   ) : (
                     "—"

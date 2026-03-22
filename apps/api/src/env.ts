@@ -47,6 +47,10 @@ const envSchema = z
       .string()
       .optional()
       .refine((value) => !value || value.startsWith("whsec_"), "STRIPE_WEBHOOK_SECRET must start with whsec_"),
+    RESEND_API_KEY: z
+      .string()
+      .optional()
+      .refine((value) => !value || value.startsWith("re_"), "RESEND_API_KEY must look like a Resend API key"),
     SENTRY_DSN: z.string().url("SENTRY_DSN must be a valid URL").optional(),
     STRIPE_CONNECT_ENABLED: stringBool,
     ERROR_REPORT_WEBHOOK_URL: z.string().url("ERROR_REPORT_WEBHOOK_URL must be a valid URL").optional(),

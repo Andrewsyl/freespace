@@ -797,6 +797,7 @@ export type BookingSummary = {
   receiptUrl?: string | null;
   checkedInAt?: string | null;
   noShowAt?: string | null;
+  cancellationSource?: "driver" | "host" | null;
   vehiclePlate?: string | null;
   accessCode?: string | null;
   arrivalInstructions?: string | null;

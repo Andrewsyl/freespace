@@ -152,6 +152,53 @@ export default function HostDashboardPage() {
       )}
       {status === "loading" && <div className="text-sm text-slate-600">Loading listings...</div>}
 
+      <section className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Host playbook</p>
+              <h2 className="mt-1 text-xl font-semibold text-slate-900">What gets bookings</h2>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-xl border border-emerald-100 bg-white/80 p-4">
+                <p className="text-sm font-semibold text-slate-900">Make access obvious</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Add clear arrival notes, gate details, and any code drivers need after booking.
+                </p>
+              </div>
+              <div className="rounded-xl border border-emerald-100 bg-white/80 p-4">
+                <p className="text-sm font-semibold text-slate-900">Keep pricing credible</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Drivers convert faster when your daily rate is close to nearby spaces and easy to understand.
+                </p>
+              </div>
+              <div className="rounded-xl border border-emerald-100 bg-white/80 p-4">
+                <p className="text-sm font-semibold text-slate-900">Use photos that prove the spot</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Show the entrance, the bay itself, and anything that helps a driver recognize the space quickly.
+                </p>
+              </div>
+              <div className="rounded-xl border border-emerald-100 bg-white/80 p-4">
+                <p className="text-sm font-semibold text-slate-900">Avoid cancellations</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Accurate availability and fast support matter more than aggressive pricing once a driver has paid.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="min-w-[220px] rounded-2xl border border-white/70 bg-white/80 p-4">
+            <p className="text-sm font-semibold text-slate-900">Quality checklist</p>
+            <ul className="mt-3 space-y-2 text-sm text-slate-600">
+              <li>Street address pinned correctly</li>
+              <li>Arrival instructions added</li>
+              <li>Price reviewed against nearby spaces</li>
+              <li>Availability reflects real access</li>
+              <li>Photos show exactly where to park</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       <div className="grid gap-4">
         {listings.map((listing) => (
           <div

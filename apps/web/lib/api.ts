@@ -251,6 +251,23 @@ export type AdminMetrics = {
   bookingsDaily: { day: string; count: number; gmvCents: number }[];
   listingStatus: { status: string; count: number }[];
   fraudByType: { eventType: string; count: number }[];
+  recentOperationalEvents: {
+    id: string;
+    eventType: string;
+    payload?: Record<string, unknown> | null;
+    createdAt: string;
+  }[];
+  signupFunnel: {
+    signedUp: number;
+    verifiedEmail: number;
+    loggedIn: number;
+  };
+  bookingFunnel: {
+    listingPublished: number;
+    checkoutStarted: number;
+    paymentIntentCreated: number;
+    confirmed: number;
+  };
 };
 
 export async function getAdminDashboard(token?: string) {
@@ -508,9 +525,14 @@ export async function createPortalBooking(input: { listingId: string; until: str
 
 export type BookingSummary = {
   id: string;
+  listingId?: string;
   startTime: string;
   endTime: string;
   status: string;
+  refundStatus?: string | null;
+  refundedAt?: string | null;
+  noShowAt?: string | null;
+  cancellationSource?: "driver" | "host" | null;
   amountCents: number;
   currency: string;
   address: string;
@@ -528,6 +550,17 @@ export async function getMyBookings(token?: string) {
     throw new Error(error);
   }
   return data!;
+}
+
+export async function cancelHostBooking(bookingId: string, token?: string) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${API_BASE}/api/bookings/${bookingId}/host-cancel`, {
+    method: "POST",
+    headers: { ...authHeaders(token) },
+  });
+  const { data, error } = await handleResponse<{ ok: boolean; refunded?: boolean; alreadyCanceled?: boolean }>(res);
+  if (error) throw new Error(error);
+  return data ?? { ok: true };
 }
 
 export async function getHostPayoutStatus(token?: string) {
