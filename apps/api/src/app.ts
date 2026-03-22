@@ -1,6 +1,8 @@
 import "./loadEnv.js";
 import cors from "cors";
 import express from "express";
+import { randomUUID } from "crypto";
+import * as Sentry from "@sentry/node";
 import { z } from "zod";
 import authRouter from "./routes/auth.js";
 import bookingsRouter from "./routes/bookings.js";
@@ -19,6 +21,13 @@ export function createApp() {
 
   app.set("trust proxy", 1);
   app.disable("x-powered-by");
+
+  app.use((req, res, next) => {
+    const requestId = typeof req.headers["x-request-id"] === "string" ? req.headers["x-request-id"] : randomUUID();
+    req.headers["x-request-id"] = requestId;
+    res.setHeader("X-Request-Id", requestId);
+    return next();
+  });
 
   app.use((req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -89,12 +98,26 @@ export function createApp() {
   app.use("/api/support", supportRouter);
   app.use("/api/notifications", notificationsRouter);
 
-  app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    console.error(err);
+  app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    const requestId = typeof req.headers["x-request-id"] === "string" ? req.headers["x-request-id"] : "unknown";
+    console.error("[api:error]", {
+      requestId,
+      method: req.method,
+      path: req.originalUrl,
+      error: err instanceof Error ? { name: err.name, message: err.message, stack: err.stack } : err,
+    });
+    Sentry.captureException(err, {
+      tags: {
+        requestId,
+        method: req.method,
+        path: req.originalUrl,
+      },
+    });
 
     if (err instanceof z.ZodError) {
       return res.status(422).json({
         message: "Validation failed",
+        requestId,
         errors: err.flatten().fieldErrors,
       });
     }
@@ -129,16 +152,17 @@ export function createApp() {
       ) {
         return res.status(400).json({
           message: stripeMessage ?? "Stripe request failed",
+          requestId,
           code: stripeCode,
           param: stripeParam,
           type: stripeType,
-          requestId: stripeRequestId,
+          stripeRequestId,
         });
       }
-      return res.status(500).json({ message: "Internal server error" });
+      return res.status(500).json({ message: "Internal server error", requestId });
     }
 
-    res.status(500).json({ message: "An unexpected error occurred" });
+    res.status(500).json({ message: "An unexpected error occurred", requestId });
   });
 
   return app;

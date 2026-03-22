@@ -30,27 +30,80 @@ const intervalSchema = z
     return parsed;
   });
 
-const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).optional().default("development"),
-  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
-  JWT_SECRET: z.string().min(16, "JWT_SECRET must be at least 16 characters"),
-  WEB_BASE_URL: z.string().url("WEB_BASE_URL must be a valid URL").optional(),
-  STRIPE_SECRET_KEY: z
-    .string()
-    .optional()
-    .refine((value) => !value || /^sk_(test|live)_/.test(value), "STRIPE_SECRET_KEY must look like a Stripe secret key"),
-  STRIPE_WEBHOOK_SECRET: z
-    .string()
-    .optional()
-    .refine((value) => !value || value.startsWith("whsec_"), "STRIPE_WEBHOOK_SECRET must start with whsec_"),
-  STRIPE_CONNECT_ENABLED: stringBool,
-  GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
-  FACEBOOK_APP_ID: z.string().optional(),
-  FACEBOOK_APP_SECRET: z.string().optional(),
-  ENFORCE_HTTPS: stringBool,
-  PORT: portSchema,
-  NOTIFICATION_PROCESSOR_INTERVAL_MS: intervalSchema,
-});
+const envSchema = z
+  .object({
+    NODE_ENV: z.enum(["development", "test", "production"]).optional().default("development"),
+    DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+    JWT_SECRET: z.string().min(16, "JWT_SECRET must be at least 16 characters"),
+    WEB_BASE_URL: z.string().url("WEB_BASE_URL must be a valid URL").optional(),
+    STRIPE_SECRET_KEY: z
+      .string()
+      .optional()
+      .refine(
+        (value) => !value || /^sk_(test|live)_/.test(value),
+        "STRIPE_SECRET_KEY must look like a Stripe secret key"
+      ),
+    STRIPE_WEBHOOK_SECRET: z
+      .string()
+      .optional()
+      .refine((value) => !value || value.startsWith("whsec_"), "STRIPE_WEBHOOK_SECRET must start with whsec_"),
+    SENTRY_DSN: z.string().url("SENTRY_DSN must be a valid URL").optional(),
+    STRIPE_CONNECT_ENABLED: stringBool,
+    ERROR_REPORT_WEBHOOK_URL: z.string().url("ERROR_REPORT_WEBHOOK_URL must be a valid URL").optional(),
+    GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
+    FACEBOOK_APP_ID: z.string().optional(),
+    FACEBOOK_APP_SECRET: z.string().optional(),
+    ENFORCE_HTTPS: stringBool,
+    PORT: portSchema,
+    NOTIFICATION_PROCESSOR_INTERVAL_MS: intervalSchema,
+  })
+  .superRefine((value, ctx) => {
+    const stripeMode = value.STRIPE_SECRET_KEY?.startsWith("sk_live_")
+      ? "live"
+      : value.STRIPE_SECRET_KEY?.startsWith("sk_test_")
+        ? "test"
+        : null;
+
+    if (value.NODE_ENV === "production") {
+      if (!value.WEB_BASE_URL) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["WEB_BASE_URL"],
+          message: "WEB_BASE_URL is required in production",
+        });
+      } else if (!value.WEB_BASE_URL.startsWith("https://")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["WEB_BASE_URL"],
+          message: "WEB_BASE_URL must use https in production",
+        });
+      }
+
+      if (!value.ENFORCE_HTTPS) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["ENFORCE_HTTPS"],
+          message: "ENFORCE_HTTPS must be true in production",
+        });
+      }
+    }
+
+    if (stripeMode === "live" && value.NODE_ENV !== "production") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["STRIPE_SECRET_KEY"],
+        message: "Live Stripe secret keys are only allowed in production",
+      });
+    }
+
+    if (value.NODE_ENV === "production" && value.STRIPE_SECRET_KEY && !value.STRIPE_WEBHOOK_SECRET) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["STRIPE_WEBHOOK_SECRET"],
+        message: "STRIPE_WEBHOOK_SECRET is required when Stripe is configured in production",
+      });
+    }
+  });
 
 const parsed = envSchema.safeParse(process.env);
 

@@ -42,6 +42,7 @@
     "@react-navigation/bottom-tabs": "^7.10.0",
     "@react-navigation/native": "^7.1.26",
     "@react-navigation/native-stack": "^7.9.0",
+    "@sentry/react-native": "^8.5.0",
     "@stripe/stripe-react-native": "^0.57.2",
     "@ui-kitten/components": "^5.3.1",
     "expo": "~54.0.0",

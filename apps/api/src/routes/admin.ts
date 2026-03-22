@@ -26,8 +26,21 @@ import {
   listEventLog,
 } from "../lib/db.js";
 import { stripe } from "../lib/stripe.js";
+import { createRateLimiter } from "../middleware/rateLimit.js";
 
 const router = Router();
+const adminReadLimiter = createRateLimiter({
+  windowMs: 5 * 60 * 1000,
+  max: 120,
+  keyPrefix: "admin-read",
+  keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
+});
+const adminWriteLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 60,
+  keyPrefix: "admin-write",
+  keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
+});
 
 const userStatusSchema = z.object({
   status: z.enum(["active", "suspended"]).optional(),
@@ -112,7 +125,7 @@ const upsertSettingSchema = z.object({
   reason: z.string().trim().max(200).optional(),
 });
 
-router.get("/dashboard", requireAuth, requireAdmin, async (req, res, next) => {
+router.get("/dashboard", requireAuth, requireAdmin, adminReadLimiter, async (req, res, next) => {
   try {
     const metrics = await getAdminDashboardMetrics();
     res.json({ metrics });
@@ -121,7 +134,7 @@ router.get("/dashboard", requireAuth, requireAdmin, async (req, res, next) => {
   }
 });
 
-router.get("/users", requireAuth, requireAdmin, async (req, res, next) => {
+router.get("/users", requireAuth, requireAdmin, adminReadLimiter, async (req, res, next) => {
   try {
     const { limit, offset, search } = listUsersQuerySchema.parse(req.query);
     const users = await listUsers({ limit, offset, search });
@@ -131,7 +144,7 @@ router.get("/users", requireAuth, requireAdmin, async (req, res, next) => {
   }
 });
 
-router.patch("/users/:id", requireAuth, requireAdmin, async (req, res, next) => {
+router.patch("/users/:id", requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
   try {
     const { id } = idParamSchema.parse(req.params);
     const payload = userStatusSchema.parse(req.body);
@@ -158,7 +171,7 @@ router.patch("/users/:id", requireAuth, requireAdmin, async (req, res, next) => 
   }
 });
 
-router.delete("/users/:id", requireAuth, requireAdmin, async (req, res, next) => {
+router.delete("/users/:id", requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
   try {
     const { id } = idParamSchema.parse(req.params);
     const { reason } = adminDeleteSchema.parse(req.body ?? {});
@@ -186,7 +199,7 @@ const listingStatusSchema = z.object({
   reason: z.string().trim().max(200).optional(),
 });
 
-router.get("/listings", requireAuth, requireAdmin, async (req, res, next) => {
+router.get("/listings", requireAuth, requireAdmin, adminReadLimiter, async (req, res, next) => {
   try {
     const { limit, offset, status } = listListingsQuerySchema.parse(req.query);
     const listings = await listListingsForAdmin({ status, limit, offset });
@@ -196,7 +209,7 @@ router.get("/listings", requireAuth, requireAdmin, async (req, res, next) => {
   }
 });
 
-router.patch("/listings/:id", requireAuth, requireAdmin, async (req, res, next) => {
+router.patch("/listings/:id", requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
   try {
     const { id } = idParamSchema.parse(req.params);
     const payload = listingStatusSchema.parse(req.body);
@@ -224,7 +237,7 @@ router.patch("/listings/:id", requireAuth, requireAdmin, async (req, res, next) 
 });
 
 // TODO: Wire this to a daily cron (e.g. CloudWatch/EventBridge) to automate payouts.
-router.post("/payouts/run", requireAuth, requireAdmin, async (req, res, next) => {
+router.post("/payouts/run", requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
   try {
     if (!stripe) return res.json({ processed: 0, skipped: true });
 
@@ -257,7 +270,7 @@ router.post("/payouts/run", requireAuth, requireAdmin, async (req, res, next) =>
   }
 });
 
-router.get("/bookings", requireAuth, requireAdmin, async (req, res, next) => {
+router.get("/bookings", requireAuth, requireAdmin, adminReadLimiter, async (req, res, next) => {
   try {
     const query = listBookingsQuerySchema.parse(req.query);
     const bookings = await listBookingsForAdmin(query);
@@ -267,7 +280,7 @@ router.get("/bookings", requireAuth, requireAdmin, async (req, res, next) => {
   }
 });
 
-router.get("/bookings/:id", requireAuth, requireAdmin, async (req, res, next) => {
+router.get("/bookings/:id", requireAuth, requireAdmin, adminReadLimiter, async (req, res, next) => {
   try {
     const { id } = idParamSchema.parse(req.params);
     const booking = await getBookingForAdmin(id);
@@ -278,7 +291,7 @@ router.get("/bookings/:id", requireAuth, requireAdmin, async (req, res, next) =>
   }
 });
 
-router.patch("/bookings/:id", requireAuth, requireAdmin, async (req, res, next) => {
+router.patch("/bookings/:id", requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
   try {
     const { id } = idParamSchema.parse(req.params);
     const payload = updateBookingSchema.parse(req.body);
@@ -308,7 +321,7 @@ router.patch("/bookings/:id", requireAuth, requireAdmin, async (req, res, next) 
   }
 });
 
-router.get("/payments", requireAuth, requireAdmin, async (req, res, next) => {
+router.get("/payments", requireAuth, requireAdmin, adminReadLimiter, async (req, res, next) => {
   try {
     const query = listPaymentsQuerySchema.parse(req.query);
     const payments = await listPaymentsForAdmin(query);
@@ -318,7 +331,7 @@ router.get("/payments", requireAuth, requireAdmin, async (req, res, next) => {
   }
 });
 
-router.get("/payouts", requireAuth, requireAdmin, async (req, res, next) => {
+router.get("/payouts", requireAuth, requireAdmin, adminReadLimiter, async (req, res, next) => {
   try {
     const query = listPayoutsQuerySchema.parse(req.query);
     const payouts = await listPayoutsForAdmin(query);
@@ -328,7 +341,7 @@ router.get("/payouts", requireAuth, requireAdmin, async (req, res, next) => {
   }
 });
 
-router.get("/support", requireAuth, requireAdmin, async (req, res, next) => {
+router.get("/support", requireAuth, requireAdmin, adminReadLimiter, async (req, res, next) => {
   try {
     const query = listSupportQuerySchema.parse(req.query);
     const tickets = await listSupportTickets(query);
@@ -338,7 +351,7 @@ router.get("/support", requireAuth, requireAdmin, async (req, res, next) => {
   }
 });
 
-router.patch("/support/:id", requireAuth, requireAdmin, async (req, res, next) => {
+router.patch("/support/:id", requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
   try {
     const { id } = idParamSchema.parse(req.params);
     const payload = updateSupportSchema.parse(req.body);
@@ -366,7 +379,7 @@ router.patch("/support/:id", requireAuth, requireAdmin, async (req, res, next) =
   }
 });
 
-router.get("/settings", requireAuth, requireAdmin, async (req, res, next) => {
+router.get("/settings", requireAuth, requireAdmin, adminReadLimiter, async (req, res, next) => {
   try {
     const settings = await listAdminSettings();
     res.json({ settings });
@@ -375,7 +388,7 @@ router.get("/settings", requireAuth, requireAdmin, async (req, res, next) => {
   }
 });
 
-router.get("/events", requireAuth, requireAdmin, async (req, res, next) => {
+router.get("/events", requireAuth, requireAdmin, adminReadLimiter, async (req, res, next) => {
   try {
     const { limit, offset, eventType } = listEventsQuerySchema.parse(req.query);
     const events = await listEventLog({ limit, offset, eventType });
@@ -385,7 +398,7 @@ router.get("/events", requireAuth, requireAdmin, async (req, res, next) => {
   }
 });
 
-router.put("/settings/:key", requireAuth, requireAdmin, async (req, res, next) => {
+router.put("/settings/:key", requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
   try {
     const key = z.string().trim().min(2).max(80).parse(req.params.key);
     const payload = upsertSettingSchema.parse(req.body ?? {});

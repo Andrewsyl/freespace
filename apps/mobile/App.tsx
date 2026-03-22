@@ -51,6 +51,7 @@ import { BottomTabButton } from "./components/BottomTabButton";
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { GlobalLoadingProvider, useGlobalLoading } from "./components/GlobalLoading";
 import { mobileEnv } from "./env";
+import { installGlobalErrorLogging } from "./logger";
 import { colors } from "./theme/colors";
 import { radius, spacing as appSpacing, textStyles } from "./styles/theme";
 
@@ -60,6 +61,36 @@ const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 enableScreens(false);
 void SplashScreen.preventAutoHideAsync();
+installGlobalErrorLogging();
+
+if (mobileEnv.sentryDsn) {
+  getSentry()?.init({
+    dsn: mobileEnv.sentryDsn,
+    enabled: true,
+    enableNativeFramesTracking: false,
+    environment: mobileEnv.appEnv ?? (__DEV__ ? "local" : "production"),
+    tracesSampleRate: 0,
+  });
+}
+
+function getSentry():
+  | {
+      init: (options: {
+        dsn: string;
+        enabled: boolean;
+        enableNativeFramesTracking: boolean;
+        environment: string;
+        tracesSampleRate: number;
+      }) => void;
+    }
+  | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require("@sentry/react-native");
+  } catch {
+    return null;
+  }
+}
 
 export default function App() {
   const [launchComplete, setLaunchComplete] = useState(true);

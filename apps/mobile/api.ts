@@ -22,6 +22,7 @@ type AuthResponse = {
     vehicleType?: string | null;
     vehicleColor?: string | null;
     vehiclePlate?: string | null;
+    status?: "active" | "suspended";
     role?: string;
     emailVerified?: boolean;
     termsVersion?: string | null;
@@ -611,6 +612,21 @@ export async function deleteAccount(token: string) {
   }
 }
 
+export async function changePassword(token: string, currentPassword: string, newPassword: string) {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/change-password`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "Password change failed"));
+  }
+  return (await response.json()) as { ok: true };
+}
+
 export async function createBooking(payload: {
   listingId: string;
   from: string;
@@ -990,6 +1006,7 @@ export async function deleteListing(payload: { token: string; listingId: string 
 export async function getListingImageUploadUrl(payload: {
   token: string;
   contentType: string;
+  fileSizeBytes: number;
 }) {
   const response = await fetch(`${baseUrl}/api/listings/image-upload-url`, {
     method: "POST",
@@ -997,13 +1014,18 @@ export async function getListingImageUploadUrl(payload: {
       Authorization: `Bearer ${payload.token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ contentType: payload.contentType }),
+    body: JSON.stringify({ contentType: payload.contentType, fileSizeBytes: payload.fileSizeBytes }),
   });
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, "Image upload failed"));
   }
-  const payloadJson = (await response.json()) as { signedUrl?: string; publicUrl?: string };
-  if (!payloadJson.signedUrl || !payloadJson.publicUrl) {
+  const payloadJson = (await response.json()) as {
+    method?: "POST";
+    uploadUrl?: string;
+    uploadFields?: Record<string, string>;
+    publicUrl?: string;
+  };
+  if (!payloadJson.uploadUrl || !payloadJson.uploadFields || !payloadJson.publicUrl) {
     throw new Error("Image upload failed: missing upload URL");
   }
   return payloadJson;

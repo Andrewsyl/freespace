@@ -1,17 +1,45 @@
 import { z } from "zod";
 
-const webEnvSchema = z.object({
-  NEXT_PUBLIC_API_BASE: z.string().url("NEXT_PUBLIC_API_BASE must be a valid URL"),
-  NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().min(1, "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is required"),
-  NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID: z.string().min(1).optional(),
-  NEXT_PUBLIC_MAPBOX_TOKEN: z.string().min(1).optional(),
-  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z
-    .string()
-    .optional()
-    .refine((value) => !value || /^pk_(test|live)_/.test(value), "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY must look like a Stripe publishable key"),
-  BASIC_AUTH_USER: z.string().optional(),
-  BASIC_AUTH_PASS: z.string().optional(),
-});
+const webEnvSchema = z
+  .object({
+    NEXT_PUBLIC_API_BASE: z.string().url("NEXT_PUBLIC_API_BASE must be a valid URL"),
+    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().min(1, "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is required"),
+    NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID: z.string().min(1).optional(),
+    NEXT_PUBLIC_MAPBOX_TOKEN: z.string().min(1).optional(),
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z
+      .string()
+      .optional()
+      .refine(
+        (value) => !value || /^pk_(test|live)_/.test(value),
+        "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY must look like a Stripe publishable key"
+      ),
+    BASIC_AUTH_USER: z.string().optional(),
+    BASIC_AUTH_PASS: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    const apiUsesLocalhost = /^https?:\/\/(127\.0\.0\.1|localhost)/.test(value.NEXT_PUBLIC_API_BASE);
+    if (!apiUsesLocalhost && !value.NEXT_PUBLIC_API_BASE.startsWith("https://")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["NEXT_PUBLIC_API_BASE"],
+        message: "NEXT_PUBLIC_API_BASE must use https outside localhost",
+      });
+    }
+    if (value.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith("pk_live_") && apiUsesLocalhost) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"],
+        message: "Live web Stripe keys cannot be used with localhost API bases",
+      });
+    }
+    if (value.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith("pk_live_") && !value.NEXT_PUBLIC_API_BASE.startsWith("https://")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"],
+        message: "Live web Stripe keys require an https API base",
+      });
+    }
+  });
 
 const candidateEnv = {
   NEXT_PUBLIC_API_BASE: process.env.NEXT_PUBLIC_API_BASE,

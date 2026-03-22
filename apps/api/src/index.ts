@@ -2,10 +2,20 @@ import "./loadEnv.js";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import * as Sentry from "@sentry/node";
 import { createApp } from "./app.js";
 import { processScheduledNotifications } from "./lib/notifications.js";
+import { reportOperationalAlert } from "./lib/opsAlerts.js";
 import { pool } from "./lib/db.js";
 import { env } from "./env.js";
+
+if (env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: env.SENTRY_DSN,
+    environment: env.NODE_ENV,
+    tracesSampleRate: 0,
+  });
+}
 
 const app = createApp();
 const port = env.PORT;
@@ -13,6 +23,31 @@ const port = env.PORT;
 app.listen(port, () => {
   console.log(`API listening on http://localhost:${port}`);
   void logRuntimeHealthChecks();
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("[process] Unhandled rejection", reason);
+  Sentry.captureException(reason);
+  void reportOperationalAlert({
+    source: "api-process",
+    title: "Unhandled promise rejection",
+    payload: {
+      reason: reason instanceof Error ? { message: reason.message, stack: reason.stack } : String(reason),
+    },
+  });
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("[process] Uncaught exception", error);
+  Sentry.captureException(error);
+  void reportOperationalAlert({
+    source: "api-process",
+    title: "Uncaught exception",
+    payload: {
+      message: error.message,
+      stack: error.stack,
+    },
+  });
 });
 
 if (env.NOTIFICATION_PROCESSOR_INTERVAL_MS) {

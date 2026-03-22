@@ -26,6 +26,9 @@ type FlowStackParamList = {
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingPhotos">;
 
+const MAX_PHOTO_UPLOAD_BYTES = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
+
 export function ListingPhotosScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
   const { token } = useAuth();
@@ -45,17 +48,32 @@ export function ListingPhotosScreen({ navigation }: Props) {
   const uploadAsset = async (asset: ImagePicker.ImagePickerAsset) => {
     if (!token) throw new Error("Sign in to upload photos.");
     const contentType = asset.mimeType ?? "image/jpeg";
-    const upload = await getListingImageUploadUrl({ token, contentType });
+    if (!ALLOWED_IMAGE_TYPES.has(contentType.toLowerCase())) {
+      throw new Error("Unsupported file type. Please upload a JPG, PNG, WEBP, or HEIC image.");
+    }
+    const fileSize = asset.fileSize ?? 0;
+    if (!fileSize || fileSize > MAX_PHOTO_UPLOAD_BYTES) {
+      throw new Error("Each photo must be 10MB or smaller.");
+    }
+    const upload = await getListingImageUploadUrl({ token, contentType, fileSizeBytes: fileSize });
+    if (!upload.uploadUrl || !upload.uploadFields) {
+      throw new Error("Upload URL is missing.");
+    }
     if (!asset.uri) throw new Error("Selected photo is missing a file URI.");
-    const fileResponse = await fetch(asset.uri);
-    const blob = await fileResponse.blob();
-    if (!upload.signedUrl) throw new Error("Upload URL is missing.");
-    const putResult = await fetch(upload.signedUrl, {
-      method: "PUT",
-      headers: { "Content-Type": contentType },
-      body: blob,
+    const formData = new FormData();
+    Object.entries(upload.uploadFields).forEach(([key, value]) => {
+      formData.append(key, value);
     });
-    if (!putResult.ok) {
+    formData.append("file", {
+      uri: asset.uri,
+      name: `listing-photo.${contentType.split("/")[1] ?? "jpg"}`,
+      type: contentType,
+    } as unknown as Blob);
+    const uploadResult = await fetch(upload.uploadUrl, {
+      method: "POST",
+      body: formData,
+    });
+    if (!uploadResult.ok) {
       throw new Error("Upload failed. Try again.");
     }
     return upload.publicUrl;

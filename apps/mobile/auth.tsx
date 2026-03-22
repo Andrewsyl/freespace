@@ -21,6 +21,7 @@ type AuthUser = {
   vehicleType?: string | null;
   vehicleColor?: string | null;
   vehiclePlate?: string | null;
+  status?: "active" | "suspended";
   role?: string;
   emailVerified?: boolean;
   termsVersion?: string | null;

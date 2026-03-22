@@ -5,6 +5,7 @@ import { useAuth } from "./AuthProvider";
 import { getImageUploadUrl } from "../lib/api";
 
 type UploadState = "idle" | "uploading" | "success" | "error";
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 export function ImageUploader({ onUpload }: { onUpload: (url: string) => void }) {
   const { token } = useAuth();
@@ -45,12 +46,19 @@ export function ImageUploader({ onUpload }: { onUpload: (url: string) => void })
         if (!contentType) {
           throw new Error("Unsupported file type. Please upload a JPG, PNG, or WEBP image.");
         }
-        const { signedUrl, publicUrl } = await getImageUploadUrl(contentType, token);
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+          throw new Error("Each image must be 10MB or smaller.");
+        }
+        const { uploadUrl, uploadFields, publicUrl } = await getImageUploadUrl(contentType, file.size, token);
 
-        const uploadRes = await fetch(signedUrl, {
-          method: "PUT",
-          body: file,
-          headers: { "Content-Type": contentType },
+        const formData = new FormData();
+        Object.entries(uploadFields).forEach(([key, value]) => {
+          formData.append(key, value);
+        });
+        formData.append("file", file);
+        const uploadRes = await fetch(uploadUrl, {
+          method: "POST",
+          body: formData,
         });
 
         if (!uploadRes.ok) {

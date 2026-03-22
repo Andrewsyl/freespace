@@ -29,6 +29,7 @@ import {
 import { createCheckoutSession, stripe } from "../lib/stripe.js";
 import { sendBookingEmail } from "../lib/email.js";
 import { sendPushNotification } from "../lib/notifications.js";
+import { reportOperationalAlert } from "../lib/opsAlerts.js";
 import { requireAuth } from "../middleware/auth.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
 import {
@@ -53,6 +54,12 @@ const portalBookingLimiter = createRateLimiter({
   max: 20,
   keyPrefix: "portal-booking",
   keyGenerator: (req) => req.ip ?? "unknown",
+});
+const bookingReadLimiter = createRateLimiter({
+  windowMs: 5 * 60 * 1000,
+  max: 60,
+  keyPrefix: "booking-read",
+  keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
 });
 
 async function requireActiveDriver(userId?: string) {
@@ -1197,6 +1204,13 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
 
   if (!stripe || !webhookSecret) {
     console.warn("Stripe webhook skipped (missing secret or stripe client).");
+    await reportOperationalAlert({
+      source: "stripe-webhook",
+      title: "Stripe webhook skipped",
+      payload: {
+        reason: !stripe ? "stripe_not_configured" : "missing_webhook_secret",
+      },
+    });
     return res.json({ received: true, skipped: true });
   }
 
@@ -1448,11 +1462,18 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
     res.json({ received: true });
   } catch (err) {
     console.error("Stripe webhook error", err);
+    await reportOperationalAlert({
+      source: "stripe-webhook",
+      title: "Stripe webhook processing failed",
+      payload: {
+        message: err instanceof Error ? err.message : "Unknown webhook error",
+      },
+    });
     return res.status(400).json({ message: "Invalid webhook" });
   }
 });
 
-router.get("/me", requireAuth, async (req, res, next) => {
+router.get("/me", requireAuth, bookingReadLimiter, async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });

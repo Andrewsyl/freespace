@@ -28,6 +28,18 @@ const payoutLimiter = createRateLimiter({
   keyPrefix: "host-payout",
   keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
 });
+const hostReadLimiter = createRateLimiter({
+  windowMs: 5 * 60 * 1000,
+  max: 60,
+  keyPrefix: "host-read",
+  keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
+});
+const hostAvailabilityWriteLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  keyPrefix: "host-availability-write",
+  keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
+});
 
 async function requireActiveHost(userId?: string) {
   if (!userId) return { ok: false, message: "Unauthorized" } as const;
@@ -183,7 +195,7 @@ router.post("/payout", requireAuth, enforceBlockedList, payoutLimiter, async (re
   }
 });
 
-router.get("/earnings", requireAuth, enforceBlockedList, async (req, res, next) => {
+router.get("/earnings", requireAuth, enforceBlockedList, hostReadLimiter, async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
@@ -269,7 +281,7 @@ const availabilityIdParamSchema = z.object({
   availabilityId: z.string().uuid(),
 });
 
-router.get("/listings/:id/availability", requireAuth, enforceBlockedList, async (req, res, next) => {
+router.get("/listings/:id/availability", requireAuth, enforceBlockedList, hostReadLimiter, async (req, res, next) => {
   try {
     const { id: listingId } = listingIdParamSchema.parse(req.params);
     const hostId = req.user?.userId;
@@ -285,7 +297,7 @@ router.get("/listings/:id/availability", requireAuth, enforceBlockedList, async 
   }
 });
 
-router.post("/listings/:id/availability", requireAuth, enforceBlockedList, async (req, res, next) => {
+router.post("/listings/:id/availability", requireAuth, enforceBlockedList, hostAvailabilityWriteLimiter, async (req, res, next) => {
   try {
     const { id: listingId } = listingIdParamSchema.parse(req.params);
     const hostId = req.user?.userId;
@@ -309,7 +321,7 @@ router.post("/listings/:id/availability", requireAuth, enforceBlockedList, async
   }
 });
 
-router.patch("/availability/:availabilityId", requireAuth, enforceBlockedList, async (req, res, next) => {
+router.patch("/availability/:availabilityId", requireAuth, enforceBlockedList, hostAvailabilityWriteLimiter, async (req, res, next) => {
   try {
     const { availabilityId } = availabilityIdParamSchema.parse(req.params);
     const hostId = req.user?.userId;
@@ -333,7 +345,7 @@ router.patch("/availability/:availabilityId", requireAuth, enforceBlockedList, a
   }
 });
 
-router.delete("/availability/:availabilityId", requireAuth, enforceBlockedList, async (req, res, next) => {
+router.delete("/availability/:availabilityId", requireAuth, enforceBlockedList, hostAvailabilityWriteLimiter, async (req, res, next) => {
   try {
     const { availabilityId } = availabilityIdParamSchema.parse(req.params);
     const hostId = req.user?.userId;

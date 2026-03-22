@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { sendMail } from "../lib/mailer.js";
 import { createSupportTicket, getLatestSupportTicketForUser, insertEventLog } from "../lib/db.js";
+import { reportOperationalAlert } from "../lib/opsAlerts.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
 import { enforceBlockedList } from "../middleware/fraud.js";
 
@@ -18,6 +19,21 @@ const supportLimiter = createRateLimiter({
 const supportSchema = z.object({
   subject: z.string().trim().min(3).max(120),
   message: z.string().trim().min(10).max(2000),
+});
+
+const clientErrorLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  keyPrefix: "client-error",
+  keyGenerator: (req) => req.ip ?? "unknown",
+});
+
+const clientErrorSchema = z.object({
+  source: z.enum(["mobile", "web"]),
+  name: z.string().trim().min(1).max(120).optional(),
+  message: z.string().trim().min(1).max(2000),
+  stack: z.string().trim().max(12000).optional(),
+  isFatal: z.boolean().optional(),
 });
 
 router.post("/", requireAuth, enforceBlockedList, supportLimiter, async (req, res, next) => {
@@ -60,6 +76,20 @@ router.post("/", requireAuth, enforceBlockedList, supportLimiter, async (req, re
       from: process.env.EMAIL_FROM_SUPPORT ?? process.env.EMAIL_FROM,
     });
     res.json({ ok: true, ticketId: ticket?.id ?? null });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/client-error", clientErrorLimiter, async (req, res, next) => {
+  try {
+    const payload = clientErrorSchema.parse(req.body);
+    await reportOperationalAlert({
+      source: `${payload.source}-client`,
+      title: "Client error report",
+      payload,
+    });
+    res.json({ ok: true });
   } catch (err) {
     next(err);
   }

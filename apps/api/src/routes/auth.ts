@@ -42,6 +42,18 @@ const verifyLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 3, keyP
 const smsLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 3, keyPrefix: "sms" });
 const oauthLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 10, keyPrefix: "oauth" });
 const refreshLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyPrefix: "refresh" });
+const accountWriteLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyPrefix: "account-write",
+  keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
+});
+const accountDeleteLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 2,
+  keyPrefix: "account-delete",
+  keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
+});
 
 const toPublicUser = (user: UserRecord) => ({
   id: user.id,
@@ -53,6 +65,7 @@ const toPublicUser = (user: UserRecord) => ({
   vehicleType: user.vehicle_type ?? null,
   vehicleColor: user.vehicle_color ?? null,
   vehiclePlate: user.vehicle_plate ?? null,
+  status: user.status ?? "active",
   role: user.role,
   emailVerified: user.email_verified ?? false,
   termsVersion: user.terms_version ?? null,
@@ -60,6 +73,8 @@ const toPublicUser = (user: UserRecord) => ({
   privacyVersion: user.privacy_version ?? null,
   privacyAcceptedAt: user.privacy_accepted_at ?? null,
 });
+
+const ensureAccountActive = (user: Pick<UserRecord, "status">) => user.status !== "suspended";
 
 const phoneSchema = z.object({
   phone: z
@@ -158,6 +173,9 @@ router.post("/login", enforceBlockedList, loginLimiter, async (req, res, next) =
     if (!valid) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
+    if (!ensureAccountActive(user)) {
+      return res.status(403).json({ message: "Account suspended. Contact support." });
+    }
     const token = signToken({ userId: user.id, email: user.email, role: user.role });
     const refreshToken = generateRefreshToken();
     const refreshExpires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
@@ -217,6 +235,9 @@ router.post("/oauth/google", enforceBlockedList, oauthLimiter, async (req, res, 
     }
     if (!user) {
       return res.status(500).json({ message: "Could not create user" });
+    }
+    if (!ensureAccountActive(user)) {
+      return res.status(403).json({ message: "Account suspended. Contact support." });
     }
     await setEmailVerified(user.id, true);
     const token = signToken({ userId: user.id, email: user.email, role: user.role });
@@ -292,6 +313,9 @@ router.post("/oauth/facebook", enforceBlockedList, oauthLimiter, async (req, res
     }
     if (!user) {
       return res.status(500).json({ message: "Could not create user" });
+    }
+    if (!ensureAccountActive(user)) {
+      return res.status(403).json({ message: "Account suspended. Contact support." });
     }
     await setEmailVerified(user.id, true);
     const token = signToken({ userId: user.id, email: user.email, role: user.role });
@@ -417,7 +441,7 @@ router.post("/request-password-reset", enforceBlockedList, resetLimiter, async (
   }
 });
 
-router.post("/reset-password", enforceBlockedList, async (req, res, next) => {
+router.post("/reset-password", enforceBlockedList, resetLimiter, async (req, res, next) => {
   try {
     const { token, password } = z
       .object({
@@ -435,12 +459,44 @@ router.post("/reset-password", enforceBlockedList, async (req, res, next) => {
   }
 });
 
+router.post("/change-password", requireAuth, accountWriteLimiter, async (req, res, next) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const { currentPassword, newPassword } = z
+      .object({
+        currentPassword: z.string().min(1).max(128),
+        newPassword: z.string().min(6).max(128),
+      })
+      .parse(req.body);
+    const user = await findUserById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!ensureAccountActive(user)) {
+      return res.status(403).json({ message: "Account suspended. Contact support." });
+    }
+    const valid = await comparePassword(currentPassword, user.password_hash);
+    if (!valid) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+    const passwordHash = await hashPassword(newPassword);
+    await updateUserPassword(user.id, passwordHash);
+    await clearRefreshToken(user.id);
+    res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post("/refresh", refreshLimiter, async (req, res, next) => {
   try {
     const { refreshToken } = z.object({ refreshToken: z.string().min(20) }).parse(req.body);
     const tokenHash = hashToken(refreshToken);
     const user = await findUserByRefreshTokenHash(tokenHash);
     if (!user) return res.status(401).json({ message: "Invalid refresh token" });
+    if (!ensureAccountActive(user)) {
+      await clearRefreshToken(user.id);
+      return res.status(403).json({ message: "Account suspended. Contact support." });
+    }
     const token = signToken({ userId: user.id, email: user.email, role: user.role });
     const nextRefreshToken = generateRefreshToken();
     const refreshExpires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
@@ -455,7 +511,7 @@ router.post("/refresh", refreshLimiter, async (req, res, next) => {
   }
 });
 
-router.post("/legal", requireAuth, async (req, res, next) => {
+router.post("/legal", requireAuth, accountWriteLimiter, async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
@@ -485,13 +541,16 @@ router.get("/me", requireAuth, async (req, res, next) => {
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
     const user = await findUserById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
+    if (!ensureAccountActive(user)) {
+      return res.status(403).json({ message: "Account suspended. Contact support." });
+    }
     res.json({ user: toPublicUser(user) });
   } catch (error) {
     next(error);
   }
 });
 
-router.put("/me", requireAuth, async (req, res, next) => {
+router.put("/me", requireAuth, accountWriteLimiter, async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
@@ -528,7 +587,7 @@ router.put("/me", requireAuth, async (req, res, next) => {
   }
 });
 
-router.post("/logout-all", requireAuth, async (req, res, next) => {
+router.post("/logout-all", requireAuth, accountWriteLimiter, async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
@@ -539,7 +598,7 @@ router.post("/logout-all", requireAuth, async (req, res, next) => {
   }
 });
 
-router.post("/logout", requireAuth, async (req, res, next) => {
+router.post("/logout", requireAuth, accountWriteLimiter, async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
@@ -551,7 +610,7 @@ router.post("/logout", requireAuth, async (req, res, next) => {
 });
 
 // Delete current account and related data (bookings, listings). Auth required.
-router.delete("/me", requireAuth, async (req, res, next) => {
+router.delete("/me", requireAuth, accountDeleteLimiter, async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
