@@ -1,10 +1,10 @@
 import "./loadEnv.js";
 import { z } from "zod";
 
-const stringBool = z
+const optionalStringBool = z
   .enum(["true", "false"])
   .optional()
-  .transform((value) => value === "true");
+  .transform((value) => (value == null ? undefined : value === "true"));
 
 const portSchema = z
   .string()
@@ -52,12 +52,12 @@ const envSchema = z
       .optional()
       .refine((value) => !value || value.startsWith("re_"), "RESEND_API_KEY must look like a Resend API key"),
     SENTRY_DSN: z.string().url("SENTRY_DSN must be a valid URL").optional(),
-    STRIPE_CONNECT_ENABLED: stringBool,
+    STRIPE_CONNECT_ENABLED: optionalStringBool.transform((value) => value ?? false),
     ERROR_REPORT_WEBHOOK_URL: z.string().url("ERROR_REPORT_WEBHOOK_URL must be a valid URL").optional(),
     GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
     FACEBOOK_APP_ID: z.string().optional(),
     FACEBOOK_APP_SECRET: z.string().optional(),
-    ENFORCE_HTTPS: stringBool,
+    ENFORCE_HTTPS: optionalStringBool,
     PORT: portSchema,
     NOTIFICATION_PROCESSOR_INTERVAL_MS: intervalSchema,
   })
@@ -83,13 +83,6 @@ const envSchema = z
         });
       }
 
-      if (!value.ENFORCE_HTTPS) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["ENFORCE_HTTPS"],
-          message: "ENFORCE_HTTPS must be true in production",
-        });
-      }
     }
 
     if (stripeMode === "live" && value.NODE_ENV !== "production") {
@@ -116,4 +109,7 @@ if (!parsed.success) {
   throw new Error(`Invalid API environment: ${details}`);
 }
 
-export const env = parsed.data;
+export const env = {
+  ...parsed.data,
+  ENFORCE_HTTPS: parsed.data.ENFORCE_HTTPS ?? parsed.data.NODE_ENV === "production",
+};

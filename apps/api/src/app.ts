@@ -40,7 +40,11 @@ export function createApp() {
     return next();
   });
 
-  if (process.env.ENFORCE_HTTPS === "true") {
+  const shouldEnforceHttps =
+    process.env.ENFORCE_HTTPS === "true" ||
+    (process.env.ENFORCE_HTTPS !== "false" && process.env.NODE_ENV === "production");
+
+  if (shouldEnforceHttps) {
     app.use((req, res, next) => {
       if (req.secure || req.headers["x-forwarded-proto"] === "https") {
         return next();
