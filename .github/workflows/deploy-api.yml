@@ -107,8 +107,8 @@ jobs:
           SMOKE_MODE: api
         run: yarn smoke:post-deploy
 
-  deploy-web:
-    name: Deploy Web to FreeSpace-env-webb
+  verify-web:
+    name: Verify Web Build (Amplify deploys separately)
     needs: changes
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
@@ -134,43 +134,5 @@ jobs:
           NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
         run: yarn build:web
 
-      - name: Package standalone output
-        run: |
-          mkdir -p apps/web/.next/standalone/apps/web/.next
-          cp -r apps/web/public apps/web/.next/standalone/apps/web/public
-          cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
-          echo "web: node apps/web/server.js" > apps/web/.next/standalone/Procfile
-          cd apps/web/.next/standalone
-          zip -r ../../../../deploy-web.zip . -x "**/.DS_Store"
-
-      - name: Deploy to Elastic Beanstalk
-        uses: einaregilsson/beanstalk-deploy@v22
-        with:
-          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: FreeSpace
-          environment_name: FreeSpace-env-webb
-          region: eu-west-1
-          version_label: web-${{ github.sha }}-${{ github.run_number }}
-          deployment_package: deploy-web.zip
-          use_existing_version_if_available: true
-          wait_for_environment_recovery: 60
-
-      - name: Resolve web environment URL
-        id: web-env
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: eu-west-1
-        run: |
-          cname=$(aws elasticbeanstalk describe-environments \
-            --environment-names FreeSpace-env-webb \
-            --query 'Environments[0].CNAME' \
-            --output text)
-          echo "base_url=http://${cname}" >> "$GITHUB_OUTPUT"
-
-      - name: Post-deploy web smoke checks
-        env:
-          SMOKE_BASE_URL: ${{ steps.web-env.outputs.base_url }}
-          SMOKE_MODE: web
-        run: yarn smoke:post-deploy
+      - name: Note Amplify deployment
+        run: echo "Web deployment is handled by Amplify from the main branch; this workflow only validates the web build."
