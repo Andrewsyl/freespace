@@ -7,13 +7,13 @@ COPY package.json yarn.lock ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY apps/mobile/package.json apps/mobile/package.json
-RUN corepack enable && yarn install --frozen-lockfile
+RUN corepack enable && yarn install --frozen-lockfile --production=false
 
 FROM deps AS build
 COPY tsconfig.base.json ./
 COPY apps/api/tsconfig.json apps/api/tsconfig.json
 COPY apps/api/src apps/api/src
-RUN npm --workspace apps/api run build
+RUN yarn workspace api build
 
 FROM base AS runtime
 COPY package.json yarn.lock ./
