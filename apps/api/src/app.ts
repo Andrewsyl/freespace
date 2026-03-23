@@ -46,6 +46,9 @@ export function createApp() {
 
   if (shouldEnforceHttps) {
     app.use((req, res, next) => {
+      if (req.path === "/health") {
+        return next();
+      }
       if (req.secure || req.headers["x-forwarded-proto"] === "https") {
         return next();
       }
