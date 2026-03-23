@@ -1,0 +1,29 @@
+Use these settings when creating the ECS Fargate service for the API:
+
+- Cluster: `freespace-prod`
+- Service name: `freespace-api`
+- Task family: `freespace-api`
+- Launch type: `FARGATE`
+- Desired tasks: `2`
+- Deployment circuit breaker: enabled with rollback
+- Networking:
+  - private subnets for tasks
+  - public IP disabled
+  - security group allows ingress only from the ALB
+- Load balancer:
+  - application load balancer target group
+  - target type: `ip`
+  - container name: `api`
+  - container port: `8080`
+- ALB target group health check:
+  - path: `/health`
+  - matcher: `200`
+  - protocol: `HTTP`
+  - interval: `15`
+  - timeout: `5`
+  - healthy threshold: `2`
+  - unhealthy threshold: `3`
+- Grace period:
+  - `60` seconds
+- Route53:
+  - `api.freespace.ie` alias to the ALB

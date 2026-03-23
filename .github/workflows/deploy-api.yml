@@ -1,4 +1,4 @@
-name: Deploy to Elastic Beanstalk
+name: Deploy API and Web
 
 on:
   workflow_dispatch:
@@ -8,8 +8,10 @@ on:
       - 'apps/api/**'
       - 'apps/web/**'
       - 'db/**'
-      - '.platform/**'
-      - 'Procfile'
+      - 'docs/deploy/**'
+      - 'infra/**'
+      - 'scripts/build-push-ecs-api.sh'
+      - 'scripts/setup-ecs-api-aws.sh'
       - '.github/workflows/deploy-api.yml'
 
 jobs:
@@ -28,13 +30,15 @@ jobs:
             api:
               - 'apps/api/**'
               - 'db/**'
-              - '.platform/**'
-              - 'Procfile'
+              - 'docs/deploy/**'
+              - 'infra/**'
+              - 'scripts/build-push-ecs-api.sh'
+              - 'scripts/setup-ecs-api-aws.sh'
             web:
               - 'apps/web/**'
 
   deploy-api:
-    name: Deploy API to FreeSpace-env-api
+    name: Deploy API to ECS Fargate
     needs: changes
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
@@ -43,48 +47,63 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create deployment package
-        run: |
-          zip -r deploy.zip \
-            apps/api \
-            db \
-            .platform \
-            package.json \
-            yarn.lock \
-            Procfile \
-            -x "apps/api/node_modules/*" \
-            -x "apps/api/.env*" \
-            -x "**/.DS_Store"
-
-      - name: Deploy to Elastic Beanstalk
-        uses: einaregilsson/beanstalk-deploy@v22
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: FreeSpace
-          environment_name: FreeSpace-env-api
-          region: eu-west-1
-          version_label: api-${{ github.sha }}-${{ github.run_number }}
-          deployment_package: deploy.zip
-          use_existing_version_if_available: true
-          wait_for_environment_recovery: 60
+          node-version: '22'
 
-      - name: Resolve API environment URL
-        id: api-env
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: eu-west-1
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+
+      - name: Log in to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push API image
+        id: image
         run: |
-          cname=$(aws elasticbeanstalk describe-environments \
-            --environment-names FreeSpace-env-api \
-            --query 'Environments[0].CNAME' \
-            --output text)
-          echo "base_url=http://${cname}" >> "$GITHUB_OUTPUT"
+          image_uri=${{ steps.ecr.outputs.registry }}/freespace-api:${{ github.sha }}
+          docker build --platform linux/amd64 -f apps/api/Dockerfile -t "$image_uri" .
+          docker push "$image_uri"
+          echo "image_uri=$image_uri" >> "$GITHUB_OUTPUT"
+
+      - name: Render task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition freespace-api:6 \
+            --query taskDefinition > task-definition.json
+
+          jq --arg IMAGE "${{ steps.image.outputs.image_uri }}" '
+            del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy
+            )
+            | .containerDefinitions[0].image = $IMAGE
+          ' task-definition.json > task-definition-rendered.json
+
+      - name: Deploy ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: task-definition-rendered.json
+          service: freespace-api-v2
+          cluster: freespace-prod
+          wait-for-service-stability: true
 
       - name: Post-deploy API smoke checks
         env:
-          SMOKE_BASE_URL: ${{ steps.api-env.outputs.base_url }}
+          SMOKE_BASE_URL: https://api.freespace.ie
           SMOKE_MODE: api
         run: yarn smoke:post-deploy
 

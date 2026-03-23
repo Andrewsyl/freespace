@@ -1,0 +1,64 @@
+{
+  "family": "freespace-api",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::123456789012:role/freespace-ecs-execution-role",
+  "taskRoleArn": "arn:aws:iam::123456789012:role/freespace-api-task-role",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "api",
+      "image": "123456789012.dkr.ecr.eu-west-1.amazonaws.com/freespace-api:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "PORT", "value": "8080" },
+        { "name": "WEB_BASE_URL", "value": "https://freespace.ie" },
+        { "name": "ENFORCE_HTTPS", "value": "true" },
+        { "name": "EMAIL_FROM", "value": "FreeSpace <hello@freespace.ie>" },
+        { "name": "EMAIL_FROM_SIGNUP", "value": "FreeSpace Accounts <accounts@freespace.ie>" },
+        { "name": "EMAIL_FROM_BOOKINGS", "value": "FreeSpace Bookings <booking@freespace.ie>" },
+        { "name": "EMAIL_FROM_SUPPORT", "value": "FreeSpace Support <support@freespace.ie>" },
+        { "name": "SUPPORT_EMAIL", "value": "support@freespace.ie" }
+      ],
+      "secrets": [
+        { "name": "DATABASE_URL", "valueFrom": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:freespace/api" },
+        { "name": "JWT_SECRET", "valueFrom": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:freespace/api:JWT_SECRET::" },
+        { "name": "STRIPE_SECRET_KEY", "valueFrom": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:freespace/api:STRIPE_SECRET_KEY::" },
+        { "name": "STRIPE_WEBHOOK_SECRET", "valueFrom": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:freespace/api:STRIPE_WEBHOOK_SECRET::" },
+        { "name": "RESEND_API_KEY", "valueFrom": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:freespace/api:RESEND_API_KEY::" },
+        { "name": "SMTP_HOST", "valueFrom": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:freespace/api:SMTP_HOST::" },
+        { "name": "SMTP_PORT", "valueFrom": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:freespace/api:SMTP_PORT::" },
+        { "name": "SMTP_USER", "valueFrom": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:freespace/api:SMTP_USER::" },
+        { "name": "SMTP_PASS", "valueFrom": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:freespace/api:SMTP_PASS::" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/freespace-api",
+          "awslogs-region": "eu-west-1",
+          "awslogs-stream-prefix": "api"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 20
+      }
+    }
+  ]
+}
