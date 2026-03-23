@@ -2,6 +2,17 @@ name: Deploy API and Web
 
 on:
   workflow_dispatch:
+    inputs:
+      deploy_api:
+        description: Deploy the API service to ECS
+        required: true
+        type: boolean
+        default: true
+      verify_web:
+        description: Run the web build verification job
+        required: true
+        type: boolean
+        default: true
   push:
     branches: [main]
     paths:
@@ -24,6 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
+        if: github.event_name != 'workflow_dispatch'
         id: filter
         with:
           filters: |
@@ -36,6 +48,15 @@ jobs:
               - 'scripts/setup-ecs-api-aws.sh'
             web:
               - 'apps/web/**'
+      - id: set
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "api=${{ inputs.deploy_api }}" >> "$GITHUB_OUTPUT"
+            echo "web=${{ inputs.verify_web }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "api=${{ steps.filter.outputs.api }}" >> "$GITHUB_OUTPUT"
+            echo "web=${{ steps.filter.outputs.web }}" >> "$GITHUB_OUTPUT"
+          fi
 
   deploy-api:
     name: Deploy API to ECS Fargate
