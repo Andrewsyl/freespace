@@ -1,4 +1,5 @@
 import { sendMail } from "./mailer.js";
+import { getBookingEmailFrom } from "./emailSenders.js";
 
 export async function sendBookingEmail({
   to,
@@ -14,6 +15,6 @@ export async function sendBookingEmail({
     subject,
     text: body,
     html: `<pre style=\"font-family: -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif; white-space: pre-wrap;\">${body}</pre>`,
-    from: process.env.EMAIL_FROM_BOOKINGS ?? process.env.EMAIL_FROM,
+    from: getBookingEmailFrom(),
   });
 }

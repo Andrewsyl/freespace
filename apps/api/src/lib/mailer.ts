@@ -1,12 +1,13 @@
 import "../loadEnv.js";
 import nodemailer from "nodemailer";
+import { getDefaultEmailFrom } from "./emailSenders.js";
 
 const host = process.env.SMTP_HOST;
 const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined;
 const user = process.env.SMTP_USER;
 const pass = process.env.SMTP_PASS;
 const resendApiKey = process.env.RESEND_API_KEY?.trim();
-const defaultFrom = process.env.EMAIL_FROM ?? process.env.SMTP_FROM ?? "no-reply@parkshare.local";
+const defaultFrom = getDefaultEmailFrom();
 
 const transport =
   host && port && user && pass

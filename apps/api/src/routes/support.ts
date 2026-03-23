@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { sendMail } from "../lib/mailer.js";
+import { getSupportEmailFrom, getSupportEmailInbox } from "../lib/emailSenders.js";
 import { createSupportTicket, getLatestSupportTicketForUser, insertEventLog } from "../lib/db.js";
 import { reportOperationalAlert } from "../lib/opsAlerts.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
@@ -59,7 +60,7 @@ router.post("/", requireAuth, enforceBlockedList, supportLimiter, async (req, re
         }
       }
     }
-    const to = process.env.SUPPORT_EMAIL ?? process.env.EMAIL_FROM ?? "support@freespace.local";
+    const to = getSupportEmailInbox();
     const subject = `[FreeSpace Support] ${payload.subject}`;
     const text = `User: ${userEmail}\nUser ID: ${userId}\n\n${payload.message}`;
 
@@ -73,7 +74,7 @@ router.post("/", requireAuth, enforceBlockedList, supportLimiter, async (req, re
       to,
       subject,
       text,
-      from: process.env.EMAIL_FROM_SUPPORT ?? process.env.EMAIL_FROM,
+      from: getSupportEmailFrom(),
     });
     res.json({ ok: true, ticketId: ticket?.id ?? null });
   } catch (err) {

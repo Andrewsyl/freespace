@@ -1,8 +1,9 @@
 import { insertEventLog } from "./db.js";
+import { getSupportEmailFrom, getSupportEmailInbox } from "./emailSenders.js";
 import { isMailerConfigured, sendMail } from "./mailer.js";
 
 const errorWebhookUrl = process.env.ERROR_REPORT_WEBHOOK_URL?.trim();
-const supportEmail = process.env.SUPPORT_EMAIL?.trim() || process.env.EMAIL_FROM?.trim();
+const supportEmail = getSupportEmailInbox();
 
 type OperationalAlertPayload = Record<string, unknown> | undefined;
 
@@ -47,7 +48,7 @@ export async function reportOperationalAlert({
         to: supportEmail,
         subject: `[FreeSpace Alert] ${title}`,
         text: `${source}\n\n${JSON.stringify(payload ?? {}, null, 2)}`,
-        from: process.env.EMAIL_FROM_SUPPORT ?? process.env.EMAIL_FROM,
+        from: getSupportEmailFrom(),
       });
     } catch (error) {
       console.error("[ops-alert] failed to deliver email alert", error);

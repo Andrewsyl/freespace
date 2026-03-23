@@ -30,6 +30,7 @@ import {
   insertEventLog,
 } from "../lib/db.js";
 import { isMailerConfigured, sendMail } from "../lib/mailer.js";
+import { getAuthEmailFrom, getSenderAddress } from "../lib/emailSenders.js";
 import { sendSms, SmsConfigError } from "../lib/sms.js";
 import { requireAuth } from "../middleware/auth.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
@@ -55,6 +56,10 @@ const accountDeleteLimiter = createRateLimiter({
   keyPrefix: "account-delete",
   keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
 });
+
+function getAuthEmailFooterAddress() {
+  return getSenderAddress(getAuthEmailFrom());
+}
 
 const toPublicUser = (user: UserRecord) => ({
   id: user.id,
@@ -137,7 +142,7 @@ router.post("/register", enforceBlockedList, registerLimiter, async (req, res, n
       subject: "Verify your email",
       text: `Click to verify: ${verifyUrl}`,
       html: buildVerificationEmail(verifyUrl),
-      from: process.env.EMAIL_FROM_SIGNUP ?? process.env.EMAIL_FROM,
+      from: getAuthEmailFrom(),
     }).catch((err) => console.warn("send verification email failed", err));
     const previewUrl =
       process.env.NODE_ENV !== "production" || !isMailerConfigured ? verifyUrl : undefined;
@@ -383,7 +388,7 @@ router.post("/request-verification", enforceBlockedList, verifyLimiter, async (r
         subject: "Verify your email",
         text: `Click to verify: ${verifyUrl}`,
         html: buildVerificationEmail(verifyUrl),
-        from: process.env.EMAIL_FROM_SIGNUP ?? process.env.EMAIL_FROM,
+        from: getAuthEmailFrom(),
       });
     } catch (err) {
       sent = false;
@@ -446,7 +451,7 @@ router.post("/request-password-reset", enforceBlockedList, resetLimiter, async (
           subject: "Reset your password",
           text: `Reset your password: ${resetUrl}`,
           html: buildPasswordResetEmail(resetUrl),
-          from: process.env.EMAIL_FROM_SIGNUP ?? process.env.EMAIL_FROM,
+          from: getAuthEmailFrom(),
         });
       } catch (err) {
         sent = false;
@@ -678,7 +683,7 @@ function buildEmailShell({
           <div style="font-size:13px; line-height:1.6; color:#475569; word-break:break-all;">${url}</div>
         </div>
         <p style="margin:18px 0 0; font-size:13px; line-height:1.6; color:#64748b;">${secondary}</p>
-        <p style="margin:18px 0 0; font-size:12px; line-height:1.6; color:#94a3b8;">FreeSpace · no-reply@freespace.ie</p>
+        <p style="margin:18px 0 0; font-size:12px; line-height:1.6; color:#94a3b8;">FreeSpace Accounts · ${getAuthEmailFooterAddress()}</p>
       </div>
     </div>
   </div>
