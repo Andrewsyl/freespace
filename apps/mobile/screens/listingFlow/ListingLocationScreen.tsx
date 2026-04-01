@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Keyboard, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import * as Location from "expo-location";
@@ -9,6 +9,7 @@ import { MapPin } from "../../components/MapPin";
 import { LIGHT_MAP_STYLE } from "../../components/mapStyles";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
+import { TextInput as AppTextInput } from "../../components/ui";
 import { colors, radius, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
@@ -234,12 +235,13 @@ export function ListingLocationScreen({ navigation }: Props) {
       <View style={styles.searchShell}>
         <View style={styles.searchField}>
           <Search size={18} color={colors.accent} style={styles.searchIcon} strokeWidth={2.2} />
-          <TextInput
+          <AppTextInput
+            containerStyle={styles.searchInputContainer}
+            variant="embedded"
             style={styles.searchInput}
             value={query}
             onChangeText={setQuery}
             placeholder="Search address"
-            placeholderTextColor="#94a3b8"
           />
           {query ? (
             <Pressable
@@ -451,6 +453,10 @@ const styles = StyleSheet.create({
   },
   searchIcon: {
     marginRight: 10,
+  },
+  searchInputContainer: {
+    flex: 1,
+    marginBottom: 0,
   },
   searchInput: {
     color: colors.text,

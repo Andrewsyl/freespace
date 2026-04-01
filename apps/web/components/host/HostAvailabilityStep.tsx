@@ -1,5 +1,6 @@
 "use client";
 
+import { TextAreaField } from "../ui";
 import type { HostStepProps } from "./types";
 
 const QUICK_PRESETS = [
@@ -24,17 +25,14 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
           </button>
         ))}
       </div>
-      <div className="space-y-2">
-        <label className="text-sm font-semibold text-slate-800">Describe when the space is available</label>
-        <textarea
-          value={data.availabilityText}
-          onChange={(e) => onUpdate({ availabilityText: e.target.value })}
-          rows={4}
-          placeholder="Example: Available 24/7, please call on arrival for gate code."
-          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
-        />
-        <p className="text-xs text-slate-500">This text appears on your listing. Keep it simple and clear.</p>
-      </div>
+      <TextAreaField
+        label="Describe when the space is available"
+        value={data.availabilityText}
+        onChange={(e) => onUpdate({ availabilityText: e.target.value })}
+        rows={4}
+        placeholder="Example: Available 24/7, please call on arrival for gate code."
+        hint="This text appears on your listing. Keep it simple and clear."
+      />
     </div>
   );
 }

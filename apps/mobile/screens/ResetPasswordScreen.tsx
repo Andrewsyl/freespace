@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,6 +15,7 @@ import { requestPasswordReset, resetPassword } from "../api";
 import type { RootStackParamList } from "../types";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { TextInput as AppTextInput } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPassword">;
 
@@ -128,14 +128,13 @@ export function ResetPasswordScreen({ navigation }: Props) {
                   }}
                 >
                   <Text style={styles.label}>Email</Text>
-                  <TextInput
-                    style={styles.input}
+                  <AppTextInput
+                    containerStyle={styles.fieldInput}
                     value={email}
                     onChangeText={setEmail}
                     autoCapitalize="none"
                     keyboardType="email-address"
                     placeholder="you@example.com"
-                    placeholderTextColor="#94a3b8"
                     onFocus={() => scrollToField(emailFieldY.current)}
                   />
                 </View>
@@ -170,13 +169,12 @@ export function ResetPasswordScreen({ navigation }: Props) {
                   }}
                 >
                   <Text style={styles.label}>Reset token</Text>
-                  <TextInput
-                    style={styles.input}
+                  <AppTextInput
+                    containerStyle={styles.fieldInput}
                     value={token}
                     onChangeText={setToken}
                     autoCapitalize="none"
                     placeholder="Paste the token from your email"
-                    placeholderTextColor="#94a3b8"
                     onFocus={() => scrollToField(tokenFieldY.current)}
                   />
                 </View>
@@ -187,13 +185,12 @@ export function ResetPasswordScreen({ navigation }: Props) {
                   }}
                 >
                   <Text style={styles.label}>New password</Text>
-                  <TextInput
-                    style={styles.input}
+                  <AppTextInput
+                    containerStyle={styles.fieldInput}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
                     placeholder="••••••••"
-                    placeholderTextColor="#94a3b8"
                     onFocus={() => scrollToField(passwordFieldY.current)}
                   />
                 </View>
@@ -204,13 +201,12 @@ export function ResetPasswordScreen({ navigation }: Props) {
                   }}
                 >
                   <Text style={styles.label}>Confirm password</Text>
-                  <TextInput
-                    style={styles.input}
+                  <AppTextInput
+                    containerStyle={styles.fieldInput}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry
                     placeholder="••••••••"
-                    placeholderTextColor="#94a3b8"
                     onFocus={() => scrollToField(confirmPasswordFieldY.current)}
                   />
                 </View>
@@ -274,15 +270,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 6,
   },
-  input: {
-    backgroundColor: colors.appBg,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    color: colors.text,
-    fontSize: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+  fieldInput: {
+    marginBottom: 0,
   },
   previewRow: {
     flexDirection: "row",

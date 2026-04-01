@@ -146,7 +146,21 @@ export function ProfileScreen({ navigation }: Props) {
         <Card style={styles.section} noPadding>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("Favorites")}
+            onPress={() => navigation.push("PersonalInfo")}
+          >
+            <MaterialIcons name="person-outline" size={24} color="#111827" />
+            <View style={styles.rowText}>
+              <Text style={styles.rowTitle}>Personal information</Text>
+              <Text style={styles.rowSubtitle}>{user.name?.trim() || "Name, phone number, email"}</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+          </Pressable>
+        </Card>
+
+        <Card style={styles.section} noPadding>
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            onPress={() => navigation.push("Favorites")}
           >
             <MaterialIcons name="favorite-border" size={24} color="#111827" />
             <View style={styles.rowText}>
@@ -157,7 +171,7 @@ export function ProfileScreen({ navigation }: Props) {
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("Settings")}
+            onPress={() => navigation.push("Settings")}
           >
             <MaterialIcons name="settings" size={24} color="#111827" />
             <View style={styles.rowText}>
@@ -172,18 +186,7 @@ export function ProfileScreen({ navigation }: Props) {
         <Card style={styles.section} noPadding>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("PersonalInfo")}
-          >
-            <MaterialIcons name="person-outline" size={24} color="#111827" />
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>Personal information</Text>
-              <Text style={styles.rowSubtitle}>Name, phone number, email</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("Payments")}
+            onPress={() => navigation.push("Payments")}
           >
             <MaterialIcons name="credit-card" size={24} color="#111827" />
             <View style={styles.rowText}>
@@ -194,7 +197,7 @@ export function ProfileScreen({ navigation }: Props) {
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("VehicleType")}
+            onPress={() => navigation.push("VehicleType")}
           >
             <MaterialIcons name="directions-car" size={24} color="#111827" />
             <View style={styles.rowText}>
@@ -235,7 +238,7 @@ export function ProfileScreen({ navigation }: Props) {
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("LoginSecurity")}
+            onPress={() => navigation.push("LoginSecurity")}
           >
             <MaterialIcons name="lock-outline" size={24} color="#111827" />
             <View style={styles.rowText}>
@@ -293,7 +296,7 @@ export function ProfileScreen({ navigation }: Props) {
         <Card style={styles.section} noPadding>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("CreateListingFlow")}
+            onPress={() => navigation.push("CreateListingFlow")}
           >
             <MaterialIcons name="add-business" size={24} color="#111827" />
             <View style={styles.rowText}>
@@ -304,7 +307,7 @@ export function ProfileScreen({ navigation }: Props) {
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("Listings")}
+            onPress={() => navigation.push("Listings")}
           >
             <MaterialIcons name="home-work" size={24} color="#111827" />
             <View style={styles.rowText}>

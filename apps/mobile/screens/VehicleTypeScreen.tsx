@@ -2,13 +2,11 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
   Platform,
 } from "react-native";
@@ -16,10 +14,10 @@ import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
 import { updateMe } from "../api";
 import { useAuth } from "../auth";
-import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
+import { SectionHeader, TextInput as AppTextInput } from "../components/ui";
 import type { RootStackParamList } from "../types";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = NativeStackScreenProps<RootStackParamList, "VehicleType">;
 
@@ -234,6 +232,7 @@ function formatIrishPlateInput(raw: string) {
 }
 
 export function VehicleTypeScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { token, user, setAuthUser } = useAuth();
   const scrollRef = useRef<ScrollView | null>(null);
   const brandFieldY = useRef(0);
@@ -290,7 +289,7 @@ export function VehicleTypeScreen({ navigation }: Props) {
         vehiclePlate: plate.trim() ? plate.trim().toUpperCase() : null,
       });
       await setAuthUser(response.user);
-      navigation.goBack();
+      navigation.navigate("Tabs", { screen: "Profile" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save vehicle");
     } finally {
@@ -311,191 +310,190 @@ export function VehicleTypeScreen({ navigation }: Props) {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
-        <View style={styles.topBar}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => navigation.navigate("Tabs", { screen: "Profile" })}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={20} color={colors.text} />
+            <Text style={styles.backText}>Back</Text>
           </Pressable>
           <Text style={styles.title}>My vehicle</Text>
-          <View style={styles.backButton} />
+          <Text style={styles.subtitle}>Your vehicle details</Text>
         </View>
 
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.heroCard}>
-            {selectedMake ? <VehicleBrandLogo make={selectedMake} size={24} /> : null}
-            <Image
-              source={require("../assets/illustrations/vehicle-type.png")}
-              style={styles.heroIllustration}
-              resizeMode="contain"
+          <View style={styles.sheet}>
+            <SectionHeader
+              title="Vehicle details"
+              subtitle="Save your car brand, model, color, and registration so bookings use the right vehicle."
             />
-            <Text style={styles.heroTitle}>Add your car</Text>
-            <Text style={styles.heroBody}>
-              Save your car brand, model, color, and registration so bookings use the right vehicle.
-            </Text>
-          </View>
 
-        <View
-          style={styles.card}
-          onLayout={(event) => {
-            brandFieldY.current = event.nativeEvent.layout.y;
-          }}
-        >
-          <Text style={styles.sectionLabel}>Car brand</Text>
-          <TextInput
-            value={brandQuery}
-            onChangeText={(value) => {
-              setBrandQuery(value);
-              if (value !== selectedMake) {
-                setSelectedMake("");
-                setSelectedModel("");
-                setModelQuery("");
-              }
-            }}
-            onFocus={() => {
-              setBrandFocused(true);
-              scrollToField(brandFieldY.current);
-            }}
-            onBlur={() => setTimeout(() => setBrandFocused(false), 120)}
-            placeholder="Search car brand"
-            style={styles.autoInput}
-            autoCapitalize="words"
-            autoCorrect={false}
-            placeholderTextColor={colors.textMuted}
-          />
-          {brandFocused ? (
-            <View style={styles.suggestionList}>
-              {filteredMakes.slice(0, 8).map((make) => (
-                <Pressable
-                  key={make}
-                  style={styles.suggestionRow}
-                  onPress={() => {
-                    setSelectedMake(make);
-                    setBrandQuery(make);
+            <View
+              style={styles.section}
+              onLayout={(event) => {
+                brandFieldY.current = event.nativeEvent.layout.y;
+              }}
+            >
+              <Text style={styles.sectionLabel}>Car brand</Text>
+              <AppTextInput
+                containerStyle={styles.autoInputContainer}
+                value={brandQuery}
+                onChangeText={(value) => {
+                  setBrandQuery(value);
+                  if (value !== selectedMake) {
+                    setSelectedMake("");
                     setSelectedModel("");
                     setModelQuery("");
-                    setBrandFocused(false);
-                  }}
-                >
-                  <Text style={styles.suggestionText}>{make}</Text>
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
-        </View>
-
-        <View
-          style={styles.card}
-          onLayout={(event) => {
-            modelFieldY.current = event.nativeEvent.layout.y;
-          }}
-        >
-          <Text style={styles.sectionLabel}>Model</Text>
-          <TextInput
-            value={modelQuery}
-            onChangeText={(value) => {
-              setModelQuery(value);
-              if (value !== selectedModel) setSelectedModel("");
-            }}
-            onFocus={() => {
-              if (selectedMake) {
-                setModelFocused(true);
-                scrollToField(modelFieldY.current);
-              }
-            }}
-            onBlur={() => setTimeout(() => setModelFocused(false), 120)}
-            placeholder={selectedMake ? "Search model" : "Select brand first"}
-            style={[styles.autoInput, !selectedMake && styles.autoInputDisabled]}
-            autoCapitalize="words"
-            autoCorrect={false}
-            editable={!!selectedMake}
-            placeholderTextColor={colors.textMuted}
-          />
-          {modelFocused && selectedMake ? (
-            <View style={styles.suggestionList}>
-              {filteredModels.slice(0, 8).map((model) => (
-                <Pressable
-                  key={model}
-                  style={styles.suggestionRow}
-                  onPress={() => {
-                    setSelectedModel(model);
-                    setModelQuery(model);
-                    setModelFocused(false);
-                  }}
-                >
-                  <Text style={styles.suggestionText}>{model}</Text>
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
-        </View>
-
-        <View
-          style={styles.card}
-          onLayout={(event) => {
-            colorFieldY.current = event.nativeEvent.layout.y;
-          }}
-        >
-          <Text style={styles.sectionLabel}>Color</Text>
-          <View style={styles.select}>
-            <Picker
-              selectedValue={selectedColor || ""}
-              onValueChange={(value) => setSelectedColor(String(value || ""))}
-              style={styles.picker}
-              dropdownIconColor={colors.textMuted}
-            >
-              <Picker.Item label="Select color" value="" color={colors.textMuted} />
-              {VEHICLE_COLORS.map((color) => (
-                <Picker.Item key={color} label={color} value={color} />
-              ))}
-            </Picker>
-          </View>
-        </View>
-
-        <View
-          style={styles.card}
-          onLayout={(event) => {
-            plateFieldY.current = event.nativeEvent.layout.y;
-          }}
-        >
-          <Text style={styles.sectionLabel}>Registration plate</Text>
-          <View style={[styles.regRow, plateFocused && styles.regRowFocused]}>
-            <View style={styles.plateCountry} />
-            <View style={styles.regDetails}>
-              <TextInput
-                value={plate}
-                onChangeText={(value) => setPlate(formatIrishPlateInput(value))}
-                placeholder="Enter reg plate"
-                autoCapitalize="characters"
-                autoCorrect={false}
-                textAlign="center"
-                style={[styles.regInput, styles.regInputText]}
-                onFocus={() => {
-                  setPlateFocused(true);
-                  scrollToField(plateFieldY.current);
+                  }
                 }}
-                onBlur={() => setPlateFocused(false)}
-                placeholderTextColor={colors.textMuted}
+                onFocus={() => {
+                  setBrandFocused(true);
+                  scrollToField(brandFieldY.current);
+                }}
+                onBlur={() => setTimeout(() => setBrandFocused(false), 120)}
+                placeholder="Search car brand"
+                style={styles.autoInput}
+                autoCapitalize="words"
+                autoCorrect={false}
               />
+              {brandFocused ? (
+                <View style={styles.suggestionList}>
+                  {filteredMakes.slice(0, 8).map((make) => (
+                    <Pressable
+                      key={make}
+                      style={styles.suggestionRow}
+                      onPress={() => {
+                        setSelectedMake(make);
+                        setBrandQuery(make);
+                        setSelectedModel("");
+                        setModelQuery("");
+                        setBrandFocused(false);
+                      }}
+                    >
+                      <Text style={styles.suggestionText}>{make}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : null}
             </View>
+
+            <View
+              style={styles.section}
+              onLayout={(event) => {
+                modelFieldY.current = event.nativeEvent.layout.y;
+              }}
+            >
+              <Text style={styles.sectionLabel}>Model</Text>
+              <AppTextInput
+                containerStyle={styles.autoInputContainer}
+                value={modelQuery}
+                onChangeText={(value) => {
+                  setModelQuery(value);
+                  if (value !== selectedModel) setSelectedModel("");
+                }}
+                onFocus={() => {
+                  if (selectedMake) {
+                    setModelFocused(true);
+                    scrollToField(modelFieldY.current);
+                  }
+                }}
+                onBlur={() => setTimeout(() => setModelFocused(false), 120)}
+                placeholder={selectedMake ? "Search model" : "Select brand first"}
+                style={[styles.autoInput, !selectedMake && styles.autoInputDisabled]}
+                autoCapitalize="words"
+                autoCorrect={false}
+                editable={!!selectedMake}
+              />
+              {modelFocused && selectedMake ? (
+                <View style={styles.suggestionList}>
+                  {filteredModels.slice(0, 8).map((model) => (
+                    <Pressable
+                      key={model}
+                      style={styles.suggestionRow}
+                      onPress={() => {
+                        setSelectedModel(model);
+                        setModelQuery(model);
+                        setModelFocused(false);
+                      }}
+                    >
+                      <Text style={styles.suggestionText}>{model}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : null}
+            </View>
+
+            <View
+              style={styles.section}
+              onLayout={(event) => {
+                colorFieldY.current = event.nativeEvent.layout.y;
+              }}
+            >
+              <Text style={styles.sectionLabel}>Color</Text>
+              <View style={styles.select}>
+                <Picker
+                  selectedValue={selectedColor || ""}
+                  onValueChange={(value) => setSelectedColor(String(value || ""))}
+                  style={styles.picker}
+                  dropdownIconColor={colors.textMuted}
+                >
+                  <Picker.Item label="Select color" value="" color={colors.textMuted} />
+                  {VEHICLE_COLORS.map((color) => (
+                    <Picker.Item key={color} label={color} value={color} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+
+            <View
+              style={styles.section}
+              onLayout={(event) => {
+                plateFieldY.current = event.nativeEvent.layout.y;
+              }}
+            >
+              <Text style={styles.sectionLabel}>Registration plate</Text>
+              <View style={[styles.regRow, plateFocused && styles.regRowFocused]}>
+                <View style={styles.plateCountry} />
+                <View style={styles.regDetails}>
+                  <AppTextInput
+                    containerStyle={styles.regInputContainer}
+                    variant="embedded"
+                    value={plate}
+                    onChangeText={(value) => setPlate(formatIrishPlateInput(value))}
+                    placeholder="Enter reg plate"
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    textAlign="center"
+                    style={[styles.regInput, styles.regInputText]}
+                    onFocus={() => {
+                      setPlateFocused(true);
+                      scrollToField(plateFieldY.current);
+                    }}
+                    onBlur={() => setPlateFocused(false)}
+                  />
+                </View>
+              </View>
+            </View>
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <Pressable
+              style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
+              onPress={handleSave}
+              disabled={!canSave}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.saveButtonText}>Save vehicle</Text>
+              )}
+            </Pressable>
           </View>
-        </View>
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <Pressable
-          style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={!canSave}
-        >
-          {saving ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>Save vehicle</Text>
-          )}
-        </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -507,80 +505,57 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.appBg,
   },
-  topBar: {
-    alignItems: "center",
-    backgroundColor: colors.headerTint,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.screenX,
-    paddingVertical: 10,
-  },
   backButton: {
     alignItems: "center",
-    height: 32,
-    justifyContent: "center",
-    width: 40,
+    flexDirection: "row",
+    gap: 4,
   },
-  title: {
-    ...textStyles.sectionTitle,
+  backText: {
+    ...textStyles.body,
     color: colors.text,
+  },
+  header: {
+    paddingHorizontal: spacing.screenX,
+    paddingTop: spacing.screenY,
+    paddingBottom: spacing.md,
   },
   content: {
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 14,
-    paddingBottom: 28,
+    paddingBottom: spacing.xl,
   },
-  heroCard: {
-    alignItems: "center",
+  sheet: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: radius.card,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
     borderWidth: 1,
-    marginBottom: 14,
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-    paddingTop: 14,
+    flex: 1,
+    padding: spacing.xl,
     ...cardShadow,
   },
-  heroIllustration: {
-    height: 132,
-    marginBottom: 10,
-    width: "100%",
+  title: {
+    ...textStyles.screenTitle,
+    marginBottom: spacing.xs,
+    marginTop: spacing.xs,
   },
-  heroTitle: {
-    ...textStyles.titleSmall,
-    color: colors.text,
-    textAlign: "center",
+  subtitle: {
+    ...textStyles.subtitle,
   },
-  heroBody: {
-    ...textStyles.body,
-    color: colors.textMuted,
-    marginTop: 6,
-    textAlign: "center",
-  },
-  card: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: radius.card,
-    borderWidth: 1,
+  section: {
     marginBottom: 14,
-    padding: 14,
-    ...cardShadow,
   },
   sectionLabel: {
     ...textStyles.sectionTitle,
     color: colors.text,
     marginBottom: 10,
   },
+  autoInputContainer: {
+    marginBottom: 0,
+  },
   autoInput: {
-    backgroundColor: "#FCFEFD",
-    borderColor: "#D7DEE7",
-    borderRadius: 16,
-    borderWidth: 1,
-    ...textStyles.bodyStrong,
+    ...textStyles.body,
     color: colors.text,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 0,
+    paddingVertical: 12,
   },
   autoInputDisabled: {
     opacity: 0.55,
@@ -638,6 +613,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#003399",
     justifyContent: "center",
     width: 34,
+  },
+  regInputContainer: {
+    marginBottom: 0,
+    flex: 1,
   },
   regInput: {
     backgroundColor: "transparent",

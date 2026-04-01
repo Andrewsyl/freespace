@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ImageUploader } from "../ImageUploader";
+import { TextField } from "../ui";
 import type { HostStepProps } from "./types";
 import { buildTitleFromDraft } from "./utils";
 
@@ -58,12 +59,12 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
           })}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <input
+          <TextField
             type="text"
             value={customAmenity}
             onChange={(e) => setCustomAmenity(e.target.value)}
             placeholder="Add your own"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none sm:w-64"
+            wrapperClassName="w-full sm:w-64"
           />
           <button
             type="button"

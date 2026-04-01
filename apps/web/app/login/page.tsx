@@ -7,6 +7,7 @@ import Link from "next/link";
 import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../../components/AuthProvider";
 import { requestVerification } from "../../lib/api";
+import { TextField } from "../../components/ui";
 
 export default function LoginPage() {
   return (
@@ -50,26 +51,20 @@ function LoginPageContent() {
 
         <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.08)]">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-              Email
-              <input
-                required
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-11 rounded-xl border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-              Password
-              <input
-                required
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-11 rounded-xl border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
-              />
-            </label>
+            <TextField
+              required
+              type="email"
+              label="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <TextField
+              required
+              type="password"
+              label="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
             <div className="text-right">
               <Link href="/reset-password" className="text-sm font-semibold text-brand-700">
                 Forgot password?

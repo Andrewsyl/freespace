@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   CarFront,
@@ -14,6 +14,7 @@ import {
 } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
+import { TextInput as AppTextInput } from "../../components/ui";
 import { colors, radius, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
@@ -185,10 +186,10 @@ export function ListingDetailsScreen({ navigation }: Props) {
 
         {draft.requiresAccessCode ? (
           <>
-            <TextInput
+            <AppTextInput
+              containerStyle={styles.inputContainer}
               style={styles.input}
               placeholder="Enter access code or instructions"
-              placeholderTextColor="#9ca3af"
               value={draft.accessCode}
               onChangeText={(value) =>
                 setDraft((prev) => ({
@@ -212,10 +213,10 @@ export function ListingDetailsScreen({ navigation }: Props) {
         <Text style={styles.subtitle}>
           Add short directions the driver should only need after booking, for example which gate to use or where to park.
         </Text>
-        <TextInput
+        <AppTextInput
+          containerStyle={styles.inputContainer}
           style={styles.input}
           placeholder="Example: Enter through the left gate and use the marked bay beside the hedge."
-          placeholderTextColor="#9ca3af"
           value={draft.arrivalInstructions}
           onChangeText={(value) =>
             setDraft((prev) => ({
@@ -351,6 +352,9 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
+  },
+  inputContainer: {
+    marginBottom: 0,
   },
   input: {
     backgroundColor: colors.cardBg,

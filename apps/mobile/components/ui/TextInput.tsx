@@ -7,13 +7,14 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { colors, fields } from "../../styles/theme";
+import { colors, spacing, textStyles } from "../../styles/theme";
 
 interface AppTextInputProps extends TextInputProps {
   label?: string;
   error?: string;
   helpText?: string;
   containerStyle?: ViewStyle;
+  variant?: "signup" | "embedded";
 }
 
 export function TextInput({
@@ -22,18 +23,23 @@ export function TextInput({
   helpText,
   containerStyle,
   style,
+  variant = "signup",
+  multiline,
   ...props
 }: AppTextInputProps) {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View style={[styles.container, variant === "embedded" && styles.containerEmbedded, containerStyle]}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <RNTextInput
         {...props}
+        multiline={multiline}
         style={[
           styles.input,
-          isFocused && styles.inputFocused,
+          variant === "embedded" ? styles.inputEmbedded : styles.inputSignup,
+          multiline && styles.inputMultiline,
+          isFocused && (variant === "embedded" ? styles.inputEmbeddedFocused : styles.inputFocused),
           error && styles.inputError,
           style,
         ]}
@@ -45,7 +51,7 @@ export function TextInput({
           setIsFocused(false);
           props.onBlur?.(event);
         }}
-        placeholderTextColor={fields.placeholderTextColor}
+        placeholderTextColor={colors.textSoft}
       />
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
       {!error && helpText ? <Text style={styles.helpText}>{helpText}</Text> : null}
@@ -55,25 +61,63 @@ export function TextInput({
 
 const styles = StyleSheet.create({
   container: {
-    ...fields.container,
+    marginBottom: spacing.md,
+  },
+  containerEmbedded: {
+    marginBottom: 0,
   },
   label: {
-    ...fields.label,
+    color: colors.textSoft,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: "Inter-Medium",
+    fontWeight: "500",
+    marginBottom: spacing.xs,
   },
   input: {
-    ...fields.input,
-    ...fields.inputText,
+    color: colors.text,
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: "Inter-Regular",
+    fontWeight: "400",
+  },
+  inputSignup: {
+    backgroundColor: "transparent",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    minHeight: 48,
+    paddingHorizontal: 0,
+    paddingVertical: 12,
+  },
+  inputEmbedded: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    minHeight: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   inputFocused: {
-    ...fields.inputFocused,
+    borderBottomColor: colors.accent,
+  },
+  inputEmbeddedFocused: {
+    borderBottomColor: "transparent",
   },
   inputError: {
-    ...fields.inputError,
+    borderBottomColor: colors.danger,
+  },
+  inputMultiline: {
+    minHeight: 96,
+    paddingTop: 12,
+    textAlignVertical: "top",
   },
   helpText: {
-    ...fields.helpText,
+    ...textStyles.meta,
+    color: colors.textMuted,
+    marginTop: spacing.xxs,
   },
   errorText: {
-    ...fields.errorText,
+    ...textStyles.meta,
+    color: colors.danger,
+    marginTop: spacing.xxs,
   },
 });

@@ -1,10 +1,11 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CalendarDays, Info } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
+import { TextInput as AppTextInput } from "../../components/ui";
 import { colors, radius, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
@@ -62,13 +63,14 @@ export function ListingPriceScreen({ navigation }: Props) {
           <Text style={styles.inputLabel}>Daily rate</Text>
           <View style={styles.priceInputRow}>
             <Text style={styles.currencySymbol}>€</Text>
-            <TextInput
+            <AppTextInput
+              containerStyle={styles.priceInputContainer}
+              variant="embedded"
               style={styles.priceInput}
               value={dailyPrice > 0 ? String(dailyPrice) : ""}
               keyboardType="decimal-pad"
               onChangeText={handlePriceChange}
               placeholder="22"
-              placeholderTextColor="#cbd5e1"
             />
             <Text style={styles.perDayText}>per day</Text>
           </View>
@@ -167,6 +169,10 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginRight: 8,
+  },
+  priceInputContainer: {
+    flex: 1,
+    marginBottom: 0,
   },
   priceInput: {
     color: colors.text,

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { sendSupportMessage } from "../api";
@@ -7,6 +7,7 @@ import { useAuth } from "../auth";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
+import { TextInput as AppTextInput } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Support">;
 
@@ -109,13 +110,14 @@ export function SupportScreen({ navigation, route }: Props) {
             </View>
             <View style={styles.field}>
               <Text style={styles.label}>Message</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
+              <AppTextInput
+                containerStyle={styles.fieldInput}
+                style={styles.textArea}
                 value={message}
                 onChangeText={setMessage}
                 placeholder="Tell us what happened and include any booking details."
-                placeholderTextColor="#94a3b8"
                 multiline
+                textAlignVertical="top"
               />
             </View>
             <Pressable style={styles.primaryButton} onPress={handleSubmit} disabled={submitting}>
@@ -209,16 +211,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 6,
   },
-  input: {
-    backgroundColor: colors.appBg,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    color: colors.text,
-    fontSize: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    textAlignVertical: "top",
+  fieldInput: {
+    marginBottom: 0,
   },
   select: {
     backgroundColor: colors.appBg,

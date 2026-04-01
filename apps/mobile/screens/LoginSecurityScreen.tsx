@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MaterialIcons } from "@expo/vector-icons";
 import { changePassword, deleteAccount, logoutAllSessions } from "../api";
@@ -12,6 +12,7 @@ import { colors, spacing, textStyles } from "../styles/theme";
 type Props = NativeStackScreenProps<RootStackParamList, "LoginSecurity">;
 
 export function LoginSecurityScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { token, logout, user } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -103,8 +104,14 @@ export function LoginSecurityScreen({ navigation }: Props) {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Pressable
+            style={styles.backButton}
+            onPress={() => navigation.navigate("Tabs", { screen: "Profile" })}
+          >
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
             <Text style={styles.backText}>Back</Text>
           </Pressable>
@@ -121,7 +128,7 @@ export function LoginSecurityScreen({ navigation }: Props) {
             </View>
           ) : null}
 
-          <Card style={styles.card}>
+          <View style={styles.sheet}>
             <SectionHeader title="Change password" subtitle="Update your password for this account." />
             <AppTextInput
               label="Current password"
@@ -147,7 +154,7 @@ export function LoginSecurityScreen({ navigation }: Props) {
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {message ? <Text style={styles.notice}>{message}</Text> : null}
             <Button title="Update password" onPress={handleChangePassword} disabled={saving} loading={saving} />
-          </Card>
+          </View>
 
           <Card style={styles.card} noPadding>
             <Pressable style={styles.row} onPress={handleLogoutAll}>
@@ -179,9 +186,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.appBg,
   },
   content: {
-    paddingHorizontal: spacing.screenX,
-    paddingTop: spacing.screenY,
     paddingBottom: spacing.xl,
+  },
+  sheet: {
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+    padding: spacing.xl,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 3,
+    marginHorizontal: spacing.screenX,
   },
   backButton: {
     alignItems: "center",
@@ -189,12 +209,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 6,
     marginBottom: spacing.sm,
+    paddingHorizontal: spacing.screenX,
+    paddingTop: spacing.screenY,
   },
   backText: {
     ...textStyles.bodyStrong,
     color: colors.text,
   },
   header: {
+    paddingHorizontal: spacing.screenX,
     marginBottom: spacing.md,
   },
   title: {
@@ -210,6 +233,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: spacing.md,
+    marginHorizontal: spacing.screenX,
     padding: spacing.md,
   },
   suspendedTitle: {
@@ -223,16 +247,19 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: spacing.md,
+    marginHorizontal: spacing.screenX,
   },
   error: {
     ...textStyles.meta,
     color: colors.danger,
     marginBottom: spacing.sm,
+    marginHorizontal: spacing.screenX,
   },
   notice: {
     ...textStyles.meta,
     color: colors.accent,
     marginBottom: spacing.sm,
+    marginHorizontal: spacing.screenX,
   },
   row: {
     alignItems: "center",

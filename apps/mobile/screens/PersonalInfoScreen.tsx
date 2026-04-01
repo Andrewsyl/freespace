@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../auth";
@@ -21,6 +21,7 @@ import { colors, radius, spacing, textStyles } from "../styles/theme";
 type Props = NativeStackScreenProps<RootStackParamList, "PersonalInfo">;
 
 export function PersonalInfoScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { user, token, setAuthUser } = useAuth();
   const scrollRef = useRef<any>(null);
   const nameFieldY = useRef(0);
@@ -144,11 +145,13 @@ export function PersonalInfoScreen({ navigation }: Props) {
       >
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
           keyboardShouldPersistTaps="handled"
-          style={styles.scrollView}
         >
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Pressable
+            style={styles.backButton}
+            onPress={() => navigation.navigate("Tabs", { screen: "Profile" })}
+          >
             <Ionicons name="arrow-back" size={20} color={colors.text} />
             <Text style={styles.backText}>Back</Text>
           </Pressable>
@@ -158,7 +161,17 @@ export function PersonalInfoScreen({ navigation }: Props) {
             <Text style={styles.subtitle}>Your account details</Text>
           </View>
 
-          <Card>
+          <View style={styles.sheet}>
+            <View style={styles.profileSummary}>
+              <View style={styles.profileIcon}>
+                <Ionicons name="person-outline" size={22} color={colors.accent} />
+              </View>
+              <View style={styles.profileCopy}>
+                <Text style={styles.profileLabel}>Personal information</Text>
+                <Text style={styles.profileName}>{currentName || user?.email || "Your profile"}</Text>
+              </View>
+            </View>
+
             <SectionHeader title="Profile details" subtitle="Keep your driver profile up to date." />
 
             <View
@@ -247,7 +260,7 @@ export function PersonalInfoScreen({ navigation }: Props) {
                 {user?.emailVerified ? "Verified" : "Not verified"}
               </Text>
             </View>
-          </Card>
+          </View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {message ? <Text style={styles.notice}>{message}</Text> : null}
@@ -271,26 +284,66 @@ const styles = StyleSheet.create({
     backgroundColor: colors.appBg,
   },
   content: {
-    paddingTop: spacing.screenY,
     paddingBottom: spacing.xl,
   },
-  scrollView: {
+  sheet: {
     flex: 1,
-    backgroundColor: colors.appBg,
-    paddingHorizontal: spacing.screenX,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    borderWidth: 1,
+    padding: spacing.xl,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 3,
+    marginBottom: spacing.md,
+  },
+  profileSummary: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  profileIcon: {
+    alignItems: "center",
+    backgroundColor: colors.cardBgMuted,
+    borderColor: colors.border,
+    borderRadius: 24,
+    borderWidth: 1,
+    height: 48,
+    justifyContent: "center",
+    width: 48,
+  },
+  profileCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  profileLabel: {
+    ...textStyles.meta,
+    color: colors.textMuted,
+  },
+  profileName: {
+    ...textStyles.titleSmall,
+    color: colors.text,
   },
   backButton: {
+    paddingHorizontal: spacing.screenX,
     alignItems: "center",
     alignSelf: "flex-start",
     flexDirection: "row",
     gap: 6,
     marginBottom: spacing.sm,
+    paddingTop: spacing.screenY,
   },
   backText: {
     ...textStyles.bodyStrong,
     color: colors.text,
   },
   header: {
+    paddingHorizontal: spacing.screenX,
     marginBottom: spacing.md,
   },
   title: {
@@ -363,15 +416,18 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: spacing.md,
+    marginHorizontal: spacing.screenX,
   },
   notice: {
     ...textStyles.meta,
     color: colors.accent,
     marginTop: spacing.sm,
+    marginHorizontal: spacing.screenX,
   },
   error: {
     ...textStyles.meta,
     color: colors.danger,
     marginTop: spacing.sm,
+    marginHorizontal: spacing.screenX,
   },
 });

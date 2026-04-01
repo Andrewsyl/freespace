@@ -1,5 +1,6 @@
 import React from "react";
 import { ScrollView, ScrollViewProps, StyleSheet, View, ViewProps } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { spacing, surfaces } from "../../styles/theme";
 
 type ScreenProps = ViewProps & {
@@ -8,12 +9,18 @@ type ScreenProps = ViewProps & {
 };
 
 export function Screen({ children, style, scroll = false, scrollProps, ...props }: ScreenProps) {
+  const insets = useSafeAreaInsets();
+
   if (scroll) {
     return (
       <ScrollView
         {...scrollProps}
         style={[styles.screen, style]}
-        contentContainerStyle={[styles.scrollContent, scrollProps?.contentContainerStyle]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) },
+          scrollProps?.contentContainerStyle,
+        ]}
       >
         {children}
       </ScrollView>

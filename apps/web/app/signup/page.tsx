@@ -6,6 +6,7 @@ import Link from "next/link";
 import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../../components/AuthProvider";
 import { requestPhoneVerification, verifyPhone } from "../../lib/api";
+import { TextField } from "../../components/ui";
 
 export default function SignupPage() {
   const { signUp, signInWithGoogle, loading, error, token, setUser } = useAuth();
@@ -60,37 +61,28 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {phoneStep === "form" && (
               <>
-                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-                  Email
-                  <input
-                    required
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-11 rounded-xl border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-                  Password
-                  <input
-                    required
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 rounded-xl border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-                  Phone (optional)
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+353871234567"
-                    className="h-11 rounded-xl border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
-                  />
-                  <span className="text-xs text-slate-500">Use E.164 format, e.g. +353871234567</span>
-                </label>
+                <TextField
+                  required
+                  type="email"
+                  label="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <TextField
+                  required
+                  type="password"
+                  label="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <TextField
+                  type="tel"
+                  label="Phone (optional)"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+353871234567"
+                  hint="Use E.164 format, e.g. +353871234567"
+                />
                 <button type="submit" className="btn-primary w-full" disabled={loading || smsLoading}>
                   {loading ? "Creating..." : "Create account"}
                 </button>
@@ -102,16 +94,13 @@ export default function SignupPage() {
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
                   Enter the 6-digit code sent to {phone}.
                 </div>
-                <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-                  Verification code
-                  <input
-                    required
-                    inputMode="numeric"
-                    value={smsCode}
-                    onChange={(e) => setSmsCode(e.target.value)}
-                    className="h-11 rounded-xl border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
-                  />
-                </label>
+                <TextField
+                  required
+                  label="Verification code"
+                  inputMode="numeric"
+                  value={smsCode}
+                  onChange={(e) => setSmsCode(e.target.value)}
+                />
                 <button
                   type="button"
                   className="btn-primary w-full"
