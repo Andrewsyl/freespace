@@ -11,10 +11,12 @@ export async function reportOperationalAlert({
   source,
   title,
   payload,
+  sendEmail = true,
 }: {
   source: string;
   title: string;
   payload?: OperationalAlertPayload;
+  sendEmail?: boolean;
 }) {
   await insertEventLog({
     eventType: "operational_alert",
@@ -42,7 +44,7 @@ export async function reportOperationalAlert({
     }
   }
 
-  if (supportEmail && isMailerConfigured) {
+  if (sendEmail && supportEmail && isMailerConfigured) {
     try {
       await sendMail({
         to: supportEmail,

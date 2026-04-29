@@ -8,6 +8,7 @@ const levelOrder: Record<LogLevel, number> = {
 };
 
 const currentLevel = (process.env.EXPO_PUBLIC_LOG_LEVEL ?? "info") as LogLevel;
+const runtimeAppEnv = process.env.APP_ENV?.trim().toLowerCase() ?? (__DEV__ ? "local" : "production");
 
 function shouldLog(level: LogLevel) {
   return levelOrder[level] >= levelOrder[currentLevel];
@@ -99,13 +100,18 @@ async function reportClientError(payload: {
   stack?: string;
   isFatal?: boolean;
 }) {
+  if (__DEV__ || runtimeAppEnv !== "production") return;
   const apiBase = process.env.EXPO_PUBLIC_API_BASE;
   if (!apiBase) return;
   try {
     await fetch(`${apiBase}/api/support/client-error`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        appEnv: runtimeAppEnv,
+        runtimeUrl: apiBase,
+      }),
     });
   } catch {
     // Keep crash reporting fire-and-forget.

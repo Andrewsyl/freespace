@@ -35,6 +35,8 @@ const clientErrorSchema = z.object({
   message: z.string().trim().min(1).max(2000),
   stack: z.string().trim().max(12000).optional(),
   isFatal: z.boolean().optional(),
+  appEnv: z.string().trim().min(1).max(40).optional(),
+  runtimeUrl: z.string().trim().max(2000).optional(),
 });
 
 router.post("/", requireAuth, enforceBlockedList, supportLimiter, async (req, res, next) => {
@@ -85,10 +87,17 @@ router.post("/", requireAuth, enforceBlockedList, supportLimiter, async (req, re
 router.post("/client-error", clientErrorLimiter, async (req, res, next) => {
   try {
     const payload = clientErrorSchema.parse(req.body);
+    const normalizedEnv = payload.appEnv?.trim().toLowerCase();
+    const runtimeUrl = payload.runtimeUrl?.trim().toLowerCase() ?? "";
+    const isNonProdClientReport =
+      normalizedEnv !== "production" ||
+      runtimeUrl.includes("127.0.0.1") ||
+      runtimeUrl.includes("localhost");
     await reportOperationalAlert({
       source: `${payload.source}-client`,
       title: "Client error report",
       payload,
+      sendEmail: !isNonProdClientReport,
     });
     res.json({ ok: true });
   } catch (err) {
