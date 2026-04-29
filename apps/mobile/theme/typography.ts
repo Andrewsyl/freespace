@@ -1,5 +1,8 @@
 import { Platform } from "react-native";
 import { colors } from "./colors";
+import { mobileDesignTokens as designTokens } from "../designTokens";
+
+const type = designTokens.typography;
 
 // Inter font family for both iOS and Android
 // Note: Currently using system fonts as fallback
@@ -28,78 +31,78 @@ export const typography = {
   // Page headers / Screen titles - bold and prominent
   display: {
     fontFamily: fontFamily.semiBold,
-    fontSize: 32,
+    fontSize: type.size.display,
     fontWeight: "800" as const,
-    lineHeight: 38,
+    lineHeight: type.lineHeight.display,
     color: colors.text.primary,
     letterSpacing: -0.5,
   },
   h1: {
     fontFamily: fontFamily.semiBold,
-    fontSize: 28,
+    fontSize: type.size.h1,
     fontWeight: "800" as const,
-    lineHeight: 34,
+    lineHeight: type.lineHeight.h1,
     color: colors.text.primary,
     letterSpacing: -0.4,
   },
   h2: {
     fontFamily: fontFamily.semiBold,
-    fontSize: 20,
+    fontSize: type.size.h2,
     fontWeight: "700" as const,
-    lineHeight: 26,
+    lineHeight: type.lineHeight.h2,
     color: colors.text.primary,
     letterSpacing: -0.2,
   },
   h3: {
     fontFamily: fontFamily.semiBold,
-    fontSize: 18,
+    fontSize: type.size.h3,
     fontWeight: "700" as const,
-    lineHeight: 24,
+    lineHeight: type.lineHeight.h3,
     color: colors.text.primary,
     letterSpacing: -0.1,
   },
   h4: {
     fontFamily: fontFamily.semiBold,
-    fontSize: 16,
+    fontSize: type.size.h4,
     fontWeight: "700" as const,
-    lineHeight: 22,
+    lineHeight: type.lineHeight.h4,
     color: colors.text.primary,
   },
   // Body text - larger and more readable
   body: {
     fontFamily: fontFamily.regular,
-    fontSize: 15,
+    fontSize: type.size.body,
     fontWeight: "400" as const,
-    lineHeight: 22,
+    lineHeight: type.lineHeight.body,
     color: colors.text.primary,
   },
   bodyMedium: {
     fontFamily: fontFamily.medium,
-    fontSize: 15,
+    fontSize: type.size.body,
     fontWeight: "500" as const,
-    lineHeight: 22,
+    lineHeight: type.lineHeight.body,
     color: colors.text.primary,
   },
   bodySmall: {
     fontFamily: fontFamily.regular,
-    fontSize: 14,
+    fontSize: type.size.bodySm,
     fontWeight: "400" as const,
-    lineHeight: 20,
+    lineHeight: type.lineHeight.bodySm,
     color: colors.text.secondary,
   },
   // CTAs and primary actions - bolder
   button: {
     fontFamily: fontFamily.semiBold,
-    fontSize: 16,
+    fontSize: type.size.bodyLg,
     fontWeight: "600" as const,
-    lineHeight: 24,
+    lineHeight: type.lineHeight.bodyLg,
     letterSpacing: 0,
   },
   buttonSmall: {
     fontFamily: fontFamily.semiBold,
-    fontSize: 14,
+    fontSize: type.size.bodySm,
     fontWeight: "600" as const,
-    lineHeight: 20,
+    lineHeight: type.lineHeight.bodySm,
     letterSpacing: 0,
   },
   // Tab labels - slightly bolder
@@ -113,17 +116,17 @@ export const typography = {
   // Supporting text
   caption: {
     fontFamily: fontFamily.regular,
-    fontSize: 12,
+    fontSize: type.size.caption,
     fontWeight: "400" as const,
-    lineHeight: 16,
+    lineHeight: type.lineHeight.caption,
     color: colors.text.tertiary,
   },
   // Labels - bolder for better visibility
   label: {
     fontFamily: fontFamily.medium,
-    fontSize: 13,
+    fontSize: type.size.label,
     fontWeight: "600" as const,
-    lineHeight: 18,
+    lineHeight: type.lineHeight.label,
     letterSpacing: 0.5,
     color: colors.text.secondary,
   },

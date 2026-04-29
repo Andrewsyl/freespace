@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
-import { Animated, BackHandler, Easing, FlatList, Image, InteractionManager, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Animated, BackHandler, Easing, FlatList, InteractionManager, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import LottieView from "lottie-react-native";
@@ -561,13 +561,6 @@ export function HistoryScreen({ navigation, route }: Props) {
                           </View>
                         ) : showPaneEmpty ? (
                           <View style={styles.emptyState}>
-                            <View style={styles.emptyIcon}>
-                              <Image
-                                source={require("../assets/illustrations/city-driver.png")}
-                                style={styles.emptyIllustration}
-                                resizeMode="contain"
-                              />
-                            </View>
                             <Text style={styles.emptyTitle}>
                               {paneTab === "upcoming" ? "No upcoming bookings" : paneTab === "active" ? "No active bookings" : "No past bookings"}
                             </Text>

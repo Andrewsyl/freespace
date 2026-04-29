@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -157,11 +156,6 @@ export function PaymentsScreen() {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <View style={styles.emptyState}>
-          <Image
-            source={require("../assets/illustrations/navigation.png")}
-            style={styles.emptyIllustration}
-            resizeMode="contain"
-          />
           <Text style={styles.title}>Payments</Text>
           <Text style={styles.subtitle}>Sign in to manage cards and view charges.</Text>
         </View>
@@ -223,11 +217,6 @@ export function PaymentsScreen() {
           ) : null}
           {methods.length === 0 && !loading ? (
             <View style={styles.emptyRow}>
-              <Image
-                source={require("../assets/illustrations/navigation.png")}
-                style={styles.inlineIllustration}
-                resizeMode="contain"
-              />
               <Text style={styles.emptyText}>No cards saved yet.</Text>
             </View>
           ) : (
@@ -271,11 +260,6 @@ export function PaymentsScreen() {
         <View style={styles.section}>
           {formattedHistory.length === 0 ? (
             <View style={styles.emptyRow}>
-              <Image
-                source={require("../assets/illustrations/navigation.png")}
-                style={styles.inlineIllustration}
-                resizeMode="contain"
-              />
               <Text style={styles.emptyText}>No payments yet.</Text>
             </View>
           ) : (
@@ -530,11 +514,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
-  inlineIllustration: {
-    width: 150,
-    height: 96,
-    marginBottom: 10,
-  },
   emptyText: {
     color: colors.textMuted,
     fontSize: 13,
@@ -545,10 +524,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
-  },
-  emptyIllustration: {
-    width: 220,
-    height: 150,
-    marginBottom: 18,
   },
 });

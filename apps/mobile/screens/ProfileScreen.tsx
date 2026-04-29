@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -104,11 +104,6 @@ export function ProfileScreen({ navigation }: Props) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
         <Screen style={styles.emptyState}>
-          <Image
-            source={require("../assets/illustrations/by-my-car.png")}
-            style={styles.emptyIllustration}
-            resizeMode="contain"
-          />
           <Text style={styles.title}>Account settings</Text>
           <Text style={styles.subtitle}>Sign in to manage your profile and security.</Text>
           <Button style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")} title="Sign in" />

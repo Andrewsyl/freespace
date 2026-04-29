@@ -92,7 +92,6 @@ export default function MapSection({
   const pendingCaptures = useRef(new Set<string>());
   const localMapRef = useRef<MapView | null>(null);
   const lastRegionRef = useRef<MapRegion>(region ?? initialRegion);
-  const lastSelectedIdRef = useRef<string | null | undefined>(undefined);
   const lastTapRef = useRef<{
     ids: string[];
     key: string;
@@ -184,26 +183,6 @@ export default function MapSection({
     });
   }, [labelKeys, pinImages]);
 
-  useEffect(() => {
-    if (!selectedId || lastSelectedIdRef.current === selectedId) return;
-    lastSelectedIdRef.current = selectedId;
-    const selected = nextResults.find((listing) => listing.id === selectedId);
-    if (!selected || typeof selected.latitude !== "number" || typeof selected.longitude !== "number") {
-      return;
-    }
-    const map = localMapRef.current;
-    if (!map) return;
-    const regionRef = lastRegionRef.current ?? initialRegion;
-    map.animateToRegion(
-      {
-        latitude: selected.latitude,
-        longitude: selected.longitude,
-        latitudeDelta: regionRef.latitudeDelta,
-        longitudeDelta: regionRef.longitudeDelta,
-      },
-      280
-    );
-  }, [selectedId, nextResults, initialRegion]);
   const getPinKey = (label: string, selected: boolean) =>
     `${label}|${selected ? "selected" : "default"}|${PIN_STYLE_VERSION}|${priceKey ?? "base"}`;
   return (
@@ -294,14 +273,14 @@ export default function MapSection({
         {pinsReady
           ? (freezeMarkers ? renderedResultsRef.current : nextResults).map((listing) => {
           const isSelected = selectedId === listing.id;
+          const price = priceForListing ? priceForListing(listing) : Number(listing.price_per_day);
           const label =
             pinLabelById[listing.id] ??
-            `€${formatPinPrice(
-              priceForListing ? priceForListing(listing) : listing.price_per_day
-            )}`;
+            `€${formatPinPrice(price)}`;
+          const isSoldOut = label === "Sold out";
           const pinKey = getPinKey(label, isSelected);
           const pinImage = pinImages[pinKey];
-          if (!pinImage) return null;
+          if (!isSelected && !pinImage) return null;
           return (
             <Marker
               key={`marker-${listing.id}-${isSelected ? "sel" : "def"}-${PIN_STYLE_VERSION}`}
@@ -309,9 +288,9 @@ export default function MapSection({
                 latitude: listing.latitude as number,
                 longitude: listing.longitude as number,
               }}
-              tracksViewChanges={false}
+              tracksViewChanges={isSelected}
               anchor={{ x: 0.5, y: 1 }}
-              centerOffset={{ x: 0, y: 0 }}
+              centerOffset={{ x: 0, y: isSelected ? -3 : 0 }}
               onPress={(e) => {
                 // Airbnb-style: Always handle marker press and prevent map press
                 e?.stopPropagation?.();
@@ -320,12 +299,14 @@ export default function MapSection({
               // Airbnb-style: Selected pins always on top with high z-index
               // Unselected pins have lower but varied z-index to prevent stacking issues
               zIndex={isSelected ? 10000 : 100 + listing.id.charCodeAt(0)}
-              image={{ uri: pinImage }}
+              image={isSelected ? undefined : { uri: pinImage }}
               pinColor="transparent"
               // Airbnb-style: Markers are always tappable
               tappable={true}
               stopPropagation={true}
-            />
+            >
+              {isSelected ? <MapPricePin price={price} selected soldOut={isSoldOut} /> : null}
+            </Marker>
           );
         })
           : null}

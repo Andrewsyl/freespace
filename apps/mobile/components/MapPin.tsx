@@ -13,12 +13,19 @@ export function MapPin({
     <View style={styles.container} pointerEvents="box-none" onLayout={onLayout}>
       <View style={styles.hitArea} pointerEvents="none" />
       <View style={styles.pinWrapper} pointerEvents="none">
-        <View style={[styles.pinCircle, selected && styles.pinCircleActive, selected && styles.pinCircleSelected]}>
+        <View
+          style={[
+            styles.pinCircle,
+            selected && styles.pinCircleActive,
+            selected && styles.pinCircleSelected,
+          ]}
+        >
           {label ? (
             <Text style={[styles.pinLabel, selected && styles.pinLabelActive]}>{label}</Text>
           ) : null}
         </View>
         <View style={[styles.pinTail, selected && styles.pinTailActive]} />
+        <View style={styles.pinShadow} />
       </View>
     </View>
   );
@@ -30,32 +37,22 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   hitArea: {
-    height: 60,
-    left: -12,
+    height: 52,
+    left: -10,
     position: "absolute",
-    top: -12,
-    width: 60,
+    top: -10,
+    width: 52,
   },
   pinWrapper: {
     alignItems: "center",
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 3,
   },
   pinCircle: {
     alignItems: "center",
     backgroundColor: "#ff385c",
-    borderRadius: 18,
-    height: 36,
+    borderRadius: 15,
+    height: 30,
     justifyContent: "center",
-    width: 36,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 10,
-    elevation: 4,
+    width: 30,
   },
   pinCircleActive: {
     backgroundColor: "#0f172a",
@@ -65,7 +62,7 @@ const styles = StyleSheet.create({
   },
   pinLabel: {
     color: "#ffffff",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
   },
   pinLabelActive: {
@@ -73,16 +70,23 @@ const styles = StyleSheet.create({
   },
   pinTail: {
     borderLeftColor: "transparent",
-    borderLeftWidth: 8,
+    borderLeftWidth: 7,
     borderRightColor: "transparent",
-    borderRightWidth: 8,
+    borderRightWidth: 7,
     borderTopColor: "#ff385c",
-    borderTopWidth: 12,
+    borderTopWidth: 10,
     height: 0,
-    marginTop: -4,
+    marginTop: -3,
     width: 0,
   },
   pinTailActive: {
     borderTopColor: "#0f172a",
+  },
+  pinShadow: {
+    backgroundColor: "rgba(15, 23, 42, 0.18)",
+    borderRadius: 999,
+    height: 5,
+    marginTop: -2,
+    width: 14,
   },
 });

@@ -181,6 +181,7 @@ export function SearchScreen({ navigation }: Props) {
     radiusKm: string;
   } | null>(null);
   const [showSearchArea, setShowSearchArea] = useState(false);
+  const [renderSearchArea, setRenderSearchArea] = useState(false);
   const isProgrammaticMoveRef = useRef(false);
   const { user } = useAuth();
   const { launchComplete } = useAppLaunch();
@@ -190,6 +191,7 @@ export function SearchScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(0)).current;
   const searchAnim = useRef(new Animated.Value(0)).current;
+  const searchAreaOpacity = useRef(new Animated.Value(0)).current;
   const searchOverlayOpacity = useMemo(
     () =>
       searchAnim.interpolate({
@@ -233,6 +235,30 @@ export function SearchScreen({ navigation }: Props) {
   const historyLoadedRef = useRef(false);
   const HISTORY_KEY = "searchHistory";
   const MAP_REGION_KEY = "search.mapRegion";
+
+  useEffect(() => {
+    if (showSearchArea && pendingSearch) {
+      setRenderSearchArea(true);
+      Animated.timing(searchAreaOpacity, {
+        toValue: 1,
+        duration: 120,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start();
+      return;
+    }
+
+    Animated.timing(searchAreaOpacity, {
+      toValue: 0,
+      duration: 120,
+      easing: Easing.in(Easing.quad),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        setRenderSearchArea(false);
+      }
+    });
+  }, [pendingSearch, searchAreaOpacity, showSearchArea]);
 
   useEffect(() => {
     let active = true;
@@ -932,7 +958,13 @@ export function SearchScreen({ navigation }: Props) {
         Math.sin(dLng / 2) ** 2;
     const distanceM = 2 * R * Math.asin(Math.sqrt(a));
     // Reduced threshold from 350m to 200m for more responsive "Search this area" (JustPark style)
-    if (distanceM < 200) return;
+    if (distanceM < 200) {
+      if (showSearchArea || pendingSearch) {
+        setShowSearchArea(false);
+        setPendingSearch(null);
+      }
+      return;
+    }
 
     const nextLat = nextRegion.latitude.toFixed(6);
     const nextLng = nextRegion.longitude.toFixed(6);
@@ -1087,8 +1119,11 @@ export function SearchScreen({ navigation }: Props) {
               </Pressable>
             </View>
           </View>
-          {showSearchArea && pendingSearch ? (
-            <View style={styles.searchAreaWrap} pointerEvents="box-none">
+          {renderSearchArea && pendingSearch ? (
+            <Animated.View
+              style={[styles.searchAreaWrap, { opacity: searchAreaOpacity }]}
+              pointerEvents="box-none"
+            >
               <Pressable
                 style={styles.searchAreaButton}
                 onPress={() => {
@@ -1110,7 +1145,7 @@ export function SearchScreen({ navigation }: Props) {
                 <Ionicons name="refresh" size={14} color="#ffffff" />
                 <Text style={styles.searchAreaText}>Search this area</Text>
               </Pressable>
-            </View>
+            </Animated.View>
           ) : null}
           {loading ? (
             <View style={styles.searchLoadingBubble}>

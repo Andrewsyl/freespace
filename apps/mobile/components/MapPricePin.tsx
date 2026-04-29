@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Ellipse, Path } from "react-native-svg";
 
 type MapPricePinProps = {
   price: number;
@@ -16,13 +16,13 @@ export function MapPricePin({ price, selected = false, soldOut = false }: MapPri
 
   const dimensions = useMemo(() => {
     const textLength = priceText.length;
-    const baseWidth = soldOut ? 58 : 46;
-    const extraWidth = soldOut ? 0 : Math.max(0, (textLength - 3) * 7);
+    const baseWidth = soldOut ? 50 : 40;
+    const extraWidth = soldOut ? 0 : Math.max(0, (textLength - 3) * 6);
     const width = Math.max(baseWidth, baseWidth + extraWidth);
-    const bubbleHeight = soldOut ? 20 : 28;
-    const tailHeight = soldOut ? 4 : 5;
+    const bubbleHeight = soldOut ? 18 : 24;
+    const tailHeight = soldOut ? 4 : 4;
     const totalHeight = bubbleHeight + tailHeight;
-    const tailWidth = soldOut ? 8 : 8;
+    const tailWidth = soldOut ? 7 : 7;
 
     return { width, bubbleHeight, tailHeight, totalHeight, tailWidth };
   }, [priceText, soldOut]);
@@ -56,34 +56,20 @@ export function MapPricePin({ price, selected = false, soldOut = false }: MapPri
     `.trim();
   }, [width, bubbleHeight, tailHeight, tailWidth, radius, padding]);
 
-  const bubbleShadowPath = useMemo(() => {
-    const w = width;
-    const h = bubbleHeight;
-    const r = radius;
-    const p = padding;
-
-    return `
-      M ${r + p} ${p}
-      L ${w - r + p} ${p}
-      A ${r} ${r} 0 0 1 ${w + p} ${r + p}
-      A ${r} ${r} 0 0 1 ${w - r + p} ${h + p}
-      L ${r + p} ${h + p}
-      A ${r} ${r} 0 0 1 ${p} ${r + p}
-      A ${r} ${r} 0 0 1 ${r + p} ${p}
-      Z
-    `.trim();
-  }, [width, bubbleHeight, radius, padding]);
-
   const viewBoxWidth = width + padding * 2;
   const viewBoxHeight = totalHeight + padding * 2;
+  const shadowCx = viewBoxWidth / 2;
+  const shadowCy = viewBoxHeight - 2;
 
   return (
     <View style={[styles.container, { width: viewBoxWidth, height: viewBoxHeight }]}>
       <Svg width={viewBoxWidth} height={viewBoxHeight} viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}>
-        <Path
-          d={bubbleShadowPath}
-          fill="rgba(15, 23, 42, 0.16)"
-          transform="translate(0 4)"
+        <Ellipse
+          cx={shadowCx}
+          cy={shadowCy}
+          rx={Math.max(6, width * 0.16)}
+          ry={2.6}
+          fill="rgba(15, 23, 42, 0.18)"
         />
         <Path
           d={pinPath}
@@ -120,12 +106,12 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    bottom: 6,
+    bottom: 5,
     alignItems: "center",
     justifyContent: "center",
   },
   priceText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "700",
     letterSpacing: -0.2,
     fontFamily: "Poppins-Bold",
@@ -135,6 +121,6 @@ const styles = StyleSheet.create({
   },
   priceTextSoldOut: {
     color: "#94A3B8",
-    fontSize: 9,
+    fontSize: 8,
   },
 });

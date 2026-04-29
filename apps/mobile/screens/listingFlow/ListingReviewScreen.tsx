@@ -1,7 +1,7 @@
 import { CommonActions } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import LottieView from "lottie-react-native";
@@ -233,11 +233,6 @@ export function ListingReviewScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
       <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="never">
-        <Image
-          source={require("../../assets/illustrations/by-my-car.png")}
-          style={styles.heroIllustration}
-          resizeMode="contain"
-        />
         <Text style={styles.kicker}>
           {listingId ? "Review & update" : "Review & publish"}
         </Text>

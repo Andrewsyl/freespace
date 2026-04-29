@@ -5,6 +5,8 @@ const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, "../..");
 const config = getDefaultConfig(projectRoot);
 
+config.watchFolders = [workspaceRoot];
+
 // Prevent Metro from resolving React from the workspace root, which can
 // cause duplicate React copies and invalid hook calls.
 config.resolver.nodeModulesPaths = [

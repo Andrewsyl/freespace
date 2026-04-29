@@ -20,9 +20,28 @@ if (env.SENTRY_DSN) {
 const app = createApp();
 const port = env.PORT;
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`API listening on http://localhost:${port}`);
   void logRuntimeHealthChecks();
+});
+
+server.on("error", (error: NodeJS.ErrnoException) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(`[startup] Port ${port} is already in use. Stop the existing API process before starting another one.`);
+    if (env.NODE_ENV === "production") {
+      void reportOperationalAlert({
+        source: "api-process",
+        title: "API port already in use",
+        payload: {
+          port,
+          message: error.message,
+        },
+      });
+    }
+    process.exit(1);
+  }
+
+  throw error;
 });
 
 process.on("unhandledRejection", (reason) => {

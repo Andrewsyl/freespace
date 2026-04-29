@@ -65,11 +65,6 @@ export function ListingsScreen({ navigation }: Props) {
 
   const emptyListingsState = (
     <View style={styles.card}>
-      <Image
-        source={require("../assets/illustrations/parking-host.png")}
-        style={styles.emptyIllustration}
-        resizeMode="contain"
-      />
       <Text style={styles.cardTitle}>No listings yet</Text>
       <Text style={styles.cardBody}>
         Create a listing to start earning from your parking space.
@@ -166,11 +161,6 @@ export function ListingsScreen({ navigation }: Props) {
         <ScrollView contentContainerStyle={styles.content}>
           {!user ? (
             <View style={styles.card}>
-              <Image
-                source={require("../assets/illustrations/by-my-car.png")}
-                style={styles.emptyIllustration}
-                resizeMode="contain"
-              />
               <Text style={styles.cardTitle}>Sign in to host</Text>
               <Text style={styles.cardBody}>
                 Log in to manage listings and start earning from your space.

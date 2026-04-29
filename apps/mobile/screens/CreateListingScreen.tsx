@@ -1,7 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useState } from "react";
 import {
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -88,11 +87,6 @@ export function CreateListingScreen({ navigation }: Props) {
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.heroCard}>
-            <Image
-              source={require("../assets/illustrations/parking-host.png")}
-              style={styles.heroIllustration}
-              resizeMode="contain"
-            />
             <Text style={styles.heroTitle}>List your space</Text>
             <Text style={styles.heroBody}>
               Add the key details now. You can refine pricing, photos, and availability later.
