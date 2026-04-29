@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+function isLocalApiBase(url: string) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(
+    url
+  );
+}
+
 const webEnvSchema = z
   .object({
     NEXT_PUBLIC_API_BASE: z.string().url("NEXT_PUBLIC_API_BASE must be a valid URL"),
@@ -17,15 +23,15 @@ const webEnvSchema = z
     BASIC_AUTH_PASS: z.string().optional(),
   })
   .superRefine((value, ctx) => {
-    const apiUsesLocalhost = /^https?:\/\/(127\.0\.0\.1|localhost)/.test(value.NEXT_PUBLIC_API_BASE);
-    if (!apiUsesLocalhost && !value.NEXT_PUBLIC_API_BASE.startsWith("https://")) {
+    const apiUsesLocalNetwork = isLocalApiBase(value.NEXT_PUBLIC_API_BASE);
+    if (!apiUsesLocalNetwork && !value.NEXT_PUBLIC_API_BASE.startsWith("https://")) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["NEXT_PUBLIC_API_BASE"],
         message: "NEXT_PUBLIC_API_BASE must use https outside localhost",
       });
     }
-    if (value.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith("pk_live_") && apiUsesLocalhost) {
+    if (value.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith("pk_live_") && apiUsesLocalNetwork) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"],

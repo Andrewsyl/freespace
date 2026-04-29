@@ -774,6 +774,7 @@ export async function setEmailVerified(userId: string, verified: boolean) {
 
 export async function updateUserProfile({
   userId,
+  email,
   fullName,
   phone,
   vehicleMake,
@@ -782,6 +783,7 @@ export async function updateUserProfile({
   vehiclePlate,
 }: {
   userId: string;
+  email?: string | null;
   fullName?: string | null;
   phone?: string | null;
   vehicleMake?: string | null;
@@ -793,6 +795,13 @@ export async function updateUserProfile({
   const values: any[] = [];
   let idx = 1;
 
+  if (email !== undefined) {
+    fields.push(`email = $${idx++}`);
+    values.push(email);
+    fields.push(`email_verified = false`);
+    fields.push(`verification_token = null`);
+    fields.push(`verification_expires = null`);
+  }
   if (fullName !== undefined) {
     fields.push(`full_name = $${idx++}`);
     values.push(fullName);

@@ -4,7 +4,7 @@ export const colors = {
     secondary: "#FFFFFF",
     tertiary: "#F3F4F6",
     accent: "#F0FDF4",
-    splash: "#F8F1E7",
+    splash: "#2ECC8F",
   },
   surface: "#FFFFFF",
   primary: {

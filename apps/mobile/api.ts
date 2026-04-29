@@ -475,6 +475,7 @@ export async function getMe(token: string) {
 export async function updateMe(
   token: string,
   payload: {
+    email?: string | null;
     name?: string | null;
     phone?: string | null;
     vehicleMake?: string | null;
@@ -494,7 +495,7 @@ export async function updateMe(
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, "Failed to update profile"));
   }
-  return (await response.json()) as { user: AuthResponse["user"] };
+  return (await response.json()) as { user: AuthResponse["user"]; previewUrl?: string };
 }
 
 export async function requestPhoneVerification(token: string, phone: string) {

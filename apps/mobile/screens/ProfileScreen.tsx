@@ -148,7 +148,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.push("PersonalInfo")}
           >
-            <MaterialIcons name="person-outline" size={24} color="#111827" />
+            <View style={styles.personIconShell}>
+              <Ionicons name="person-outline" size={18} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>Personal information</Text>
               <Text style={styles.rowSubtitle}>{user.name?.trim() || "Name, phone number, email"}</Text>
@@ -476,6 +478,16 @@ const styles = StyleSheet.create({
   },
   rowPressed: {
     backgroundColor: colors.appBg,
+  },
+  personIconShell: {
+    alignItems: "center",
+    backgroundColor: colors.cardBgMuted,
+    borderColor: colors.border,
+    borderRadius: 20,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
   },
   toggleTrack: {
     backgroundColor: colors.border,

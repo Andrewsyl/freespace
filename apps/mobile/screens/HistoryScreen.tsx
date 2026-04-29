@@ -646,7 +646,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...textStyles.title,
-    color: "#ffffff",
+    color: colors.text,
   },
   mapCtaBanner: {
     alignItems: "center",
@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.35)",
+    borderBottomColor: colors.border,
   },
   tab: {
     flex: 1,
@@ -718,12 +718,12 @@ const styles = StyleSheet.create({
   },
   tabText: {
     ...textStyles.bodyStrong,
-    color: "rgba(255,255,255,0.8)",
+    color: colors.textMuted,
     fontSize: 15,
     letterSpacing: 0.2,
   },
   tabTextActive: {
-    color: "#ffffff",
+    color: colors.text,
     fontWeight: "700",
   },
   tabIndicator: {
@@ -732,7 +732,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: "33.33%",
     height: 2,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.text,
     borderTopLeftRadius: 2,
     borderTopRightRadius: 2,
   },

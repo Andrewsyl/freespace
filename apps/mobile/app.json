@@ -21,7 +21,7 @@
         {
           "image": "./assets/splash-freespace.png",
           "resizeMode": "contain",
-          "backgroundColor": "#FCFCFB",
+          "backgroundColor": "#2ECC8F",
           "imageWidth": 250
         }
       ],
@@ -44,7 +44,7 @@
     "splash": {
       "image": "./assets/splash-freespace.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FCFCFB"
+      "backgroundColor": "#2ECC8F"
     },
     "android": {
       "userInterfaceStyle": "light",
@@ -66,11 +66,11 @@
     },
     "androidStatusBar": {
       "translucent": true,
-      "backgroundColor": "#FCFCFB",
+      "backgroundColor": "#2ECC8F",
       "barStyle": "dark-content"
     },
     "androidNavigationBar": {
-      "backgroundColor": "#FCFCFB",
+      "backgroundColor": "#2ECC8F",
       "barStyle": "dark-content"
     },
     "ios": {

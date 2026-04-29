@@ -580,8 +580,11 @@ router.put("/me", requireAuth, accountWriteLimiter, async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const existingUser = await findUserById(userId);
+    if (!existingUser) return res.status(404).json({ message: "User not found" });
     const payload = z
       .object({
+        email: z.string().trim().email().nullable().optional(),
         name: z.string().trim().min(1).max(120).nullable().optional(),
         phone: z.string().trim().min(6).max(32).nullable().optional(),
         vehicleMake: z.string().trim().min(1).max(80).nullable().optional(),
@@ -597,8 +600,16 @@ router.put("/me", requireAuth, accountWriteLimiter, async (req, res, next) => {
           .optional(),
       })
       .parse(req.body);
+    const normalizedEmail = payload.email === undefined ? undefined : payload.email?.toLowerCase() ?? null;
+    if (normalizedEmail && normalizedEmail !== existingUser.email) {
+      const existingEmail = await findUserByEmail(normalizedEmail);
+      if (existingEmail && existingEmail.id !== userId) {
+        return res.status(409).json({ message: "Email already registered" });
+      }
+    }
     const user = await updateUserProfile({
       userId,
+      email: normalizedEmail,
       fullName: payload.name,
       phone: payload.phone,
       vehicleMake: payload.vehicleMake,
@@ -607,7 +618,27 @@ router.put("/me", requireAuth, accountWriteLimiter, async (req, res, next) => {
       vehiclePlate: payload.vehiclePlate ? payload.vehiclePlate.toUpperCase() : payload.vehiclePlate,
     });
     if (!user) return res.status(404).json({ message: "User not found" });
-    res.json({ user: toPublicUser(user) });
+    let previewUrl: string | undefined;
+    if (normalizedEmail && normalizedEmail !== existingUser.email) {
+      const token = generateVerificationToken();
+      const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
+      await setVerificationToken(user.id, hashToken(token), expires);
+      const verifyUrl = `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/verify?token=${token}`;
+      try {
+        await sendMail({
+          to: user.email,
+          subject: "Verify your email",
+          text: `Click to verify: ${verifyUrl}`,
+          html: buildVerificationEmail(verifyUrl),
+          from: getAuthEmailFrom(),
+        });
+        previewUrl =
+          process.env.NODE_ENV !== "production" || !isMailerConfigured ? verifyUrl : undefined;
+      } catch (err) {
+        console.warn("send verification email failed", err);
+      }
+    }
+    res.json({ user: toPublicUser(user), previewUrl });
   } catch (error) {
     next(error);
   }
