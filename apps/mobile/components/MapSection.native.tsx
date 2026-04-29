@@ -23,7 +23,7 @@ type ListingResult = {
 type ViewShotRef = InstanceType<typeof ViewShot>;
 
 type MapRegion = Region;
-const PIN_STYLE_VERSION = "v16";
+const PIN_STYLE_VERSION = "v17";
 const METERS_PER_DEGREE_LAT = 111_000;
 const toRad = (value: number) => (value * Math.PI) / 180;
 const distanceMeters = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
@@ -277,10 +277,9 @@ export default function MapSection({
           const label =
             pinLabelById[listing.id] ??
             `€${formatPinPrice(price)}`;
-          const isSoldOut = label === "Sold out";
           const pinKey = getPinKey(label, isSelected);
           const pinImage = pinImages[pinKey];
-          if (!isSelected && !pinImage) return null;
+          if (!pinImage) return null;
           return (
             <Marker
               key={`marker-${listing.id}-${isSelected ? "sel" : "def"}-${PIN_STYLE_VERSION}`}
@@ -288,9 +287,9 @@ export default function MapSection({
                 latitude: listing.latitude as number,
                 longitude: listing.longitude as number,
               }}
-              tracksViewChanges={isSelected}
+              tracksViewChanges={false}
               anchor={{ x: 0.5, y: 1 }}
-              centerOffset={{ x: 0, y: isSelected ? -3 : 0 }}
+              centerOffset={{ x: 0, y: isSelected ? -2 : 0 }}
               onPress={(e) => {
                 // Airbnb-style: Always handle marker press and prevent map press
                 e?.stopPropagation?.();
@@ -299,14 +298,12 @@ export default function MapSection({
               // Airbnb-style: Selected pins always on top with high z-index
               // Unselected pins have lower but varied z-index to prevent stacking issues
               zIndex={isSelected ? 10000 : 100 + listing.id.charCodeAt(0)}
-              image={isSelected ? undefined : { uri: pinImage }}
+              image={{ uri: pinImage }}
               pinColor="transparent"
               // Airbnb-style: Markers are always tappable
               tappable={true}
               stopPropagation={true}
-            >
-              {isSelected ? <MapPricePin price={price} selected soldOut={isSoldOut} /> : null}
-            </Marker>
+            />
           );
         })
           : null}
