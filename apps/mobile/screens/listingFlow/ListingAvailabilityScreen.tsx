@@ -13,6 +13,7 @@ import {
 import DatePicker from "react-native-date-picker";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronRight, X } from "lucide-react-native";
+import { Button } from "../../components/ui";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
 import { cardShadow, colors, radius, spacing, textStyles } from "../../styles/theme";
@@ -317,13 +318,7 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
         ) : null}
       </ScrollView>
       <View style={styles.footer}>
-        <Pressable
-          style={[styles.primaryButton, !canSave && styles.primaryButtonDisabled]}
-          onPress={() => navigation.navigate("ListingPrice")}
-          disabled={!canSave}
-        >
-          <Text style={styles.primaryButtonText}>Continue</Text>
-        </Pressable>
+        <Button title="Continue" onPress={() => navigation.navigate("ListingPrice")} disabled={!canSave} />
       </View>
       {customVisible ? (
         <Modal animationType="slide" transparent>
@@ -385,16 +380,14 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
                   );
                 })}
               </ScrollView>
-              <Pressable
-                style={[styles.primaryButton, weekdays.length === 0 && styles.primaryButtonDisabled]}
+              <Button
+                title="Confirm"
                 onPress={() => {
                   setPreset("custom");
                   setCustomVisible(false);
                 }}
                 disabled={weekdays.length === 0}
-              >
-                <Text style={styles.primaryButtonText}>Confirm</Text>
-              </Pressable>
+              />
             </View>
           </View>
         </Modal>
@@ -535,22 +528,6 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     borderTopWidth: 1,
     padding: 16,
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: 14,
-    minHeight: 44,
-    paddingVertical: 14,
-  },
-  primaryButtonDisabled: {
-    backgroundColor: "#cbd5e1",
-  },
-  primaryButtonText: {
-    color: colors.cardBg,
-    fontSize: 15,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
   },
   modalBackdrop: {
     flex: 1,

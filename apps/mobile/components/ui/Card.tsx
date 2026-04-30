@@ -7,11 +7,26 @@ interface CardProps {
   style?: ViewStyle;
   noPadding?: boolean;
   muted?: boolean;
+  readingInset?: boolean;
 }
 
-export function Card({ children, style, noPadding = false, muted = false }: CardProps) {
+export function Card({
+  children,
+  style,
+  noPadding = false,
+  muted = false,
+  readingInset = false,
+}: CardProps) {
   return (
-    <View style={[styles.card, muted ? styles.cardMuted : styles.cardDefault, noPadding && styles.noPadding, style]}>
+    <View
+      style={[
+        styles.card,
+        muted ? styles.cardMuted : styles.cardDefault,
+        noPadding && styles.noPadding,
+        readingInset && styles.readingInset,
+        style,
+      ]}
+    >
       {children}
     </View>
   );
@@ -29,5 +44,8 @@ const styles = StyleSheet.create({
   },
   noPadding: {
     padding: 0,
+  },
+  readingInset: {
+    paddingHorizontal: spacing.card + spacing.readingInset,
   },
 });

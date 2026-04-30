@@ -75,6 +75,11 @@ export const mobileDesignTokens = {
     pill: 999,
     full: 9999,
   },
+  layout: {
+    screenX: 18,
+    cardPadding: 18,
+    readingInset: 6,
+  },
   shadow: {
     color: "#0f172a",
     cardNative: {

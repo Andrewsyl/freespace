@@ -9,6 +9,7 @@ fi
 ENV_NAME="$1"
 shift
 ENV_FILE=".env.${ENV_NAME}"
+EXPLICIT_API_BASE="${EXPO_PUBLIC_API_BASE:-}"
 
 if [ "$ENV_NAME" = "local" ]; then
   ENV_FILE=".env.local.source"
@@ -28,9 +29,22 @@ set -a
 . "$ENV_FILE"
 set +a
 
+if [ -n "$EXPLICIT_API_BASE" ]; then
+  export EXPO_PUBLIC_API_BASE="$EXPLICIT_API_BASE"
+fi
+
 # Expo loads .env.local by default and it can override shell exports in dev-client flows.
 # Force selected env file into .env.local before starting (except local -> local).
 cp "$ENV_FILE" .env.local
+
+if [ -n "$EXPLICIT_API_BASE" ]; then
+  if grep -q '^EXPO_PUBLIC_API_BASE=' .env.local; then
+    sed -i.bak "s#^EXPO_PUBLIC_API_BASE=.*#EXPO_PUBLIC_API_BASE=$EXPLICIT_API_BASE#" .env.local
+  else
+    printf '\nEXPO_PUBLIC_API_BASE=%s\n' "$EXPLICIT_API_BASE" >> .env.local
+  fi
+  rm -f .env.local.bak
+fi
 
 echo "[env] APP_ENV=$APP_ENV"
 echo "[env] EXPO_PUBLIC_API_BASE=${EXPO_PUBLIC_API_BASE:-}"

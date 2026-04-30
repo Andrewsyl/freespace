@@ -13,6 +13,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { CardField, useStripe } from "@stripe/stripe-react-native";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
+import { BackButton, Button } from "../components/ui";
 import {
   createPaymentMethodSetupIntent,
   deletePaymentMethod,
@@ -166,10 +167,7 @@ export function PaymentsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <MaterialIcons name="arrow-back" size={20} color="#111827" />
-          <Text style={styles.backText}>Back</Text>
-        </Pressable>
+        <BackButton onPress={() => navigation.goBack()} />
         <View style={styles.header}>
           <Text style={styles.title}>Payments</Text>
           <Text style={styles.subtitle}>Manage cards and review your booking charges.</Text>
@@ -188,9 +186,12 @@ export function PaymentsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Payment methods</Text>
-            <Pressable style={styles.addButton} onPress={handleAddCard}>
-              <Text style={styles.addButtonText}>{showAdd ? "Close" : "Add card"}</Text>
-            </Pressable>
+            <Button
+              title={showAdd ? "Close" : "Add card"}
+              onPress={handleAddCard}
+              size="small"
+              style={styles.addButton}
+            />
           </View>
           {showAdd ? (
             <View style={styles.addCardPanel}>
@@ -204,15 +205,12 @@ export function PaymentsScreen() {
                 style={styles.cardFieldContainer}
                 onCardChange={(details) => setCardComplete(!!details.complete)}
               />
-              <Pressable
-                style={[styles.saveButton, (!cardComplete || adding) && styles.saveButtonDisabled]}
+              <Button
+                title={adding ? "Saving..." : "Save card"}
                 onPress={handleSaveCard}
                 disabled={!cardComplete || adding}
-              >
-                <Text style={styles.saveButtonText}>
-                  {adding ? "Saving..." : "Save card"}
-                </Text>
-              </Pressable>
+                style={styles.saveButton}
+              />
             </View>
           ) : null}
           {methods.length === 0 && !loading ? (
@@ -300,18 +298,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screenX,
     paddingBottom: 32,
     paddingTop: 16,
-  },
-  backButton: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    gap: 6,
-    marginBottom: 16,
-  },
-  backText: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "500",
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -402,15 +388,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   addButton: {
-    backgroundColor: colors.accent,
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  addButtonText: {
-    color: "#ffffff",
-    fontSize: 12,
-    fontWeight: "600",
+    minHeight: 38,
   },
   addCardPanel: {
     borderBottomColor: colors.border,
@@ -436,19 +414,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   saveButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: 10,
     minHeight: 44,
-    paddingVertical: 12,
-  },
-  saveButtonDisabled: {
-    backgroundColor: colors.textSoft,
-  },
-  saveButtonText: {
-    color: "#ffffff",
-    fontSize: 14,
-    fontWeight: "600",
   },
   row: {
     alignItems: "center",

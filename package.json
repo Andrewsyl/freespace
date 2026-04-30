@@ -49,6 +49,9 @@
   "dependencies": {
     "@radix-ui/react-select": "^2.2.6",
     "framer-motion": "^12.36.0",
-    "recharts": "^3.8.0"
+    "recharts": "^3.8.0",
+    "expo": "~54.0.33",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   }
 }

@@ -3,19 +3,17 @@ import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { createListing } from "../api";
 import { useAuth } from "../auth";
+import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 import type { RootStackParamList } from "../types";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
-import { ArrowLeft } from "lucide-react-native";
 
 type Props = NativeStackScreenProps<any, any>;
 
@@ -75,11 +73,9 @@ export function CreateListingScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.topBar}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <ArrowLeft size={22} color={colors.text} strokeWidth={2} />
-        </Pressable>
+        <BackButton onPress={() => navigation.goBack()} />
         <Text style={styles.topTitle}>List a space</Text>
-        <View style={styles.backButton} />
+        <View style={styles.topBarSpacer} />
       </View>
       <KeyboardAvoidingView
         style={styles.flex}
@@ -102,79 +98,79 @@ export function CreateListingScreen({ navigation }: Props) {
 
             <View style={styles.field}>
               <Text style={styles.label}>Title</Text>
-              <TextInput
-                style={styles.input}
+              <AppTextInput
+                variant="form"
+                containerStyle={styles.fieldInput}
                 value={title}
                 onChangeText={setTitle}
                 placeholder="Private driveway near city centre"
-                placeholderTextColor="#94a3b8"
               />
             </View>
             <View style={styles.field}>
               <Text style={styles.label}>Address</Text>
-              <TextInput
-                style={styles.input}
+              <AppTextInput
+                variant="form"
+                containerStyle={styles.fieldInput}
                 value={address}
                 onChangeText={setAddress}
                 placeholder="123 Example Street, Dublin"
-                placeholderTextColor="#94a3b8"
               />
             </View>
             <View style={styles.row}>
               <View style={styles.fieldHalf}>
                 <Text style={styles.label}>Price / day</Text>
-                <TextInput
-                  style={styles.input}
+                <AppTextInput
+                  variant="form"
+                  containerStyle={styles.fieldInput}
                   value={pricePerDay}
                   onChangeText={setPricePerDay}
                   keyboardType="decimal-pad"
                   placeholder="22"
-                  placeholderTextColor="#94a3b8"
                 />
               </View>
               <View style={styles.fieldHalf}>
                 <Text style={styles.label}>Availability</Text>
-                <TextInput
-                  style={styles.input}
+                <AppTextInput
+                  variant="form"
+                  containerStyle={styles.fieldInput}
                   value={availabilityText}
                   onChangeText={setAvailabilityText}
                   placeholder="Available now"
-                  placeholderTextColor="#94a3b8"
                 />
               </View>
             </View>
             <View style={styles.row}>
               <View style={styles.fieldHalf}>
                 <Text style={styles.label}>Latitude</Text>
-                <TextInput
-                  style={styles.input}
+                <AppTextInput
+                  variant="form"
+                  containerStyle={styles.fieldInput}
                   value={latitude}
                   onChangeText={setLatitude}
                   keyboardType="decimal-pad"
                   placeholder="53.3498"
-                  placeholderTextColor="#94a3b8"
                 />
               </View>
               <View style={styles.fieldHalf}>
                 <Text style={styles.label}>Longitude</Text>
-                <TextInput
-                  style={styles.input}
+                <AppTextInput
+                  variant="form"
+                  containerStyle={styles.fieldInput}
                   value={longitude}
                   onChangeText={setLongitude}
                   keyboardType="decimal-pad"
                   placeholder="-6.2603"
-                  placeholderTextColor="#94a3b8"
                 />
               </View>
             </View>
             <View style={styles.field}>
               <Text style={styles.label}>Image URL (optional)</Text>
-              <TextInput
-                style={styles.input}
+              <AppTextInput
+                variant="form"
+                containerStyle={styles.fieldInput}
                 value={imageUrl}
                 onChangeText={setImageUrl}
                 placeholder="https://..."
-                placeholderTextColor="#94a3b8"
                 autoCapitalize="none"
               />
             </View>
@@ -182,11 +178,12 @@ export function CreateListingScreen({ navigation }: Props) {
         </ScrollView>
       </KeyboardAvoidingView>
       <View style={styles.footer}>
-        <Pressable style={styles.primaryButton} onPress={handleCreate} disabled={submitting}>
-          <Text style={styles.primaryButtonText}>
-            {submitting ? "Creating..." : "Publish listing"}
-          </Text>
-        </Pressable>
+        <Button
+          title={submitting ? "Creating..." : "Publish listing"}
+          onPress={handleCreate}
+          disabled={submitting}
+          loading={submitting}
+        />
       </View>
     </SafeAreaView>
   );
@@ -207,29 +204,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screenX,
     paddingTop: 8,
   },
-  backButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  backCircle: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 32,
-    width: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.cardBg,
-  },
-  backIcon: {
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 14,
-    textAlign: "center",
-    fontWeight: "600",
+  topBarSpacer: {
+    height: 34,
+    width: 34,
   },
   topTitle: {
     color: colors.text,
@@ -312,22 +289,15 @@ const styles = StyleSheet.create({
   fieldHalf: {
     flex: 1,
   },
+  fieldInput: {
+    marginBottom: 0,
+  },
   label: {
     color: colors.textMuted,
     fontSize: 12,
     fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
     marginBottom: 6,
-  },
-  input: {
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    color: colors.text,
-    fontSize: 14,
-    fontFamily: "Poppins-Regular",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
   },
   row: {
     flexDirection: "row",
@@ -338,17 +308,5 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     borderTopWidth: 1,
     padding: 16,
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: 14,
-    paddingVertical: 14,
-  },
-  primaryButtonText: {
-    color: colors.cardBg,
-    fontSize: 15,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
   },
 });

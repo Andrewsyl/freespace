@@ -3,7 +3,7 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-na
 import { SafeAreaView } from "react-native-safe-area-context";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import type { RootStackParamList } from "../types";
-import { Ionicons } from "@expo/vector-icons";
+import { BackButton } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Legal">;
 
@@ -38,10 +38,7 @@ export function LegalScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={20} color={colors.text} />
-          <Text style={styles.backText}>Back</Text>
-        </Pressable>
+        <BackButton onPress={() => navigation.goBack()} />
         <Text style={styles.title}>Terms & privacy</Text>
         <Text style={styles.subtitle}>Policies, support, and company details</Text>
 
@@ -117,18 +114,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.appBg,
-  },
-  backButton: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    gap: 6,
-    marginBottom: 16,
-  },
-  backText: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "500",
   },
   title: {
     color: colors.text,

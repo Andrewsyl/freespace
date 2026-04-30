@@ -23,21 +23,21 @@ export function SectionHeader({ title, subtitle, trailing, style }: SectionHeade
 
 const styles = StyleSheet.create({
   row: {
-    alignItems: "flex-end",
+    alignItems: "flex-start",
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   copy: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
   title: {
     ...textStyles.sectionTitle,
     color: colors.text,
   },
   subtitle: {
-    ...textStyles.meta,
+    ...textStyles.sectionIntro,
     color: colors.textMuted,
   },
 });

@@ -7,7 +7,7 @@ import { useAuth } from "../auth";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
-import { TextInput as AppTextInput } from "../components/ui";
+import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Support">;
 
@@ -70,10 +70,7 @@ export function SupportScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={20} color={colors.text} />
-            <Text style={styles.backText}>Back</Text>
-          </Pressable>
+          <BackButton onPress={() => navigation.goBack()} />
           <View style={styles.header}>
             <Text style={styles.title}>Contact us</Text>
             <Text style={styles.subtitle}>
@@ -120,11 +117,11 @@ export function SupportScreen({ navigation, route }: Props) {
                 textAlignVertical="top"
               />
             </View>
-            <Pressable style={styles.primaryButton} onPress={handleSubmit} disabled={submitting}>
-              <Text style={styles.primaryButtonText}>
-                {submitting ? "Sending..." : "Send message"}
-              </Text>
-            </Pressable>
+            <Button
+              title={submitting ? "Sending..." : "Send message"}
+              onPress={handleSubmit}
+              disabled={submitting}
+            />
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {success ? <Text style={styles.success}>{success}</Text> : null}
           </View>
@@ -167,18 +164,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screenX,
     paddingBottom: 32,
     paddingTop: 16,
-  },
-  backButton: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    gap: 6,
-    marginBottom: 16,
-  },
-  backText: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "500",
   },
   header: {
     marginBottom: 18,
@@ -273,18 +258,6 @@ const styles = StyleSheet.create({
   },
   textArea: {
     minHeight: 140,
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: radius.card,
-    paddingVertical: 12,
-    marginTop: 6,
-  },
-  primaryButtonText: {
-    color: "#ffffff",
-    fontSize: 14,
-    fontWeight: "600",
   },
   error: {
     color: "#b42318",

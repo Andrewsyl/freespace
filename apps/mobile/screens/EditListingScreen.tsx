@@ -3,11 +3,9 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,9 +13,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { deleteListing, getListing, updateListing } from "../api";
 import { useAuth } from "../auth";
 import { Toast } from "../components/Toast";
+import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 import type { RootStackParamList } from "../types";
-import { colors, radius, spacing } from "../styles/theme";
-import { ArrowLeft } from "lucide-react-native";
+import { colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "EditListing">;
 
@@ -117,11 +115,9 @@ export function EditListingScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <Toast message={toast ?? ""} variant="success" visible={!!toast} />
       <View style={styles.topBar}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <ArrowLeft size={22} color={colors.text} strokeWidth={2} />
-        </Pressable>
+        <BackButton onPress={() => navigation.goBack()} />
         <Text style={styles.topTitle}>Edit listing</Text>
-        <View style={styles.backButton} />
+        <View style={styles.topBarSpacer} />
       </View>
       {loading ? (
         <View style={styles.centered}>
@@ -132,17 +128,18 @@ export function EditListingScreen({ navigation, route }: Props) {
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <View style={styles.field}>
             <Text style={styles.label}>Title</Text>
-            <TextInput style={styles.input} value={title} onChangeText={setTitle} />
+            <AppTextInput variant="form" containerStyle={styles.fieldInput} value={title} onChangeText={setTitle} />
           </View>
           <View style={styles.field}>
             <Text style={styles.label}>Address</Text>
-            <TextInput style={styles.input} value={address} onChangeText={setAddress} />
+            <AppTextInput variant="form" containerStyle={styles.fieldInput} value={address} onChangeText={setAddress} />
           </View>
           <View style={styles.row}>
             <View style={styles.fieldHalf}>
               <Text style={styles.label}>Price / day</Text>
-              <TextInput
-                style={styles.input}
+              <AppTextInput
+                variant="form"
+                containerStyle={styles.fieldInput}
                 value={pricePerDay}
                 onChangeText={setPricePerDay}
                 keyboardType="decimal-pad"
@@ -150,32 +147,33 @@ export function EditListingScreen({ navigation, route }: Props) {
             </View>
             <View style={styles.fieldHalf}>
               <Text style={styles.label}>Availability</Text>
-              <TextInput
-                style={styles.input}
+              <AppTextInput
+                variant="form"
+                containerStyle={styles.fieldInput}
                 value={availabilityText}
                 onChangeText={setAvailabilityText}
                 placeholder="Available every day"
-                placeholderTextColor="#94a3b8"
               />
             </View>
           </View>
-          <View style={styles.row}>
+          <View style={styles.field}>
             <Text style={styles.label}>Image URL</Text>
-            <TextInput
-              style={styles.input}
+            <AppTextInput
+              variant="form"
+              containerStyle={styles.fieldInput}
               value={imageUrl}
               onChangeText={setImageUrl}
               autoCapitalize="none"
             />
           </View>
-          <Pressable style={styles.primaryButton} onPress={handleSave} disabled={saving}>
-            <Text style={styles.primaryButtonText}>
-              {saving ? "Saving..." : "Save changes"}
-            </Text>
-          </Pressable>
-          <Pressable style={styles.deleteButton} onPress={handleDelete}>
-            <Text style={styles.deleteButtonText}>Delete listing</Text>
-          </Pressable>
+          <Button
+            title={saving ? "Saving..." : "Save changes"}
+            onPress={handleSave}
+            disabled={saving}
+            loading={saving}
+            style={styles.primaryButton}
+          />
+          <Button title="Delete listing" variant="ghost" onPress={handleDelete} style={styles.deleteButton} />
         </ScrollView>
       )}
     </SafeAreaView>
@@ -194,29 +192,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screenX,
     paddingTop: 8,
   },
-  backButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  backCircle: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 32,
-    width: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.cardBg,
-  },
-  backIcon: {
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 14,
-    textAlign: "center",
-    fontWeight: "600",
+  topBarSpacer: {
+    height: 34,
+    width: 34,
   },
   topTitle: {
     color: colors.text,
@@ -233,51 +211,23 @@ const styles = StyleSheet.create({
   fieldHalf: {
     flex: 1,
   },
+  fieldInput: {
+    marginBottom: 0,
+  },
   row: {
     flexDirection: "row",
     gap: 12,
   },
   label: {
+    ...textStyles.meta,
     color: colors.textMuted,
-    fontSize: 12,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
     marginBottom: 6,
   },
-  input: {
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    color: colors.text,
-    fontSize: 14,
-    fontFamily: "Poppins-Regular",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
   primaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: 14,
     marginTop: 20,
-    paddingVertical: 14,
-  },
-  primaryButtonText: {
-    color: colors.cardBg,
-    fontSize: 15,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
   },
   deleteButton: {
-    alignItems: "center",
-    borderRadius: 12,
     marginTop: 12,
-    paddingVertical: 12,
-  },
-  deleteButtonText: {
-    color: colors.danger,
-    fontSize: 13,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
   },
   centered: {
     flex: 1,
@@ -285,13 +235,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   error: {
+    ...textStyles.meta,
     backgroundColor: "#fef2f2",
     borderColor: "#fecaca",
     borderRadius: 12,
     borderWidth: 1,
     color: colors.danger,
-    fontSize: 12,
-    fontFamily: "Poppins-Regular",
     marginBottom: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,

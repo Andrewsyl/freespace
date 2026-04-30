@@ -14,8 +14,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { requestPasswordReset, resetPassword } from "../api";
 import type { RootStackParamList } from "../types";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
-import { Ionicons } from "@expo/vector-icons";
-import { TextInput as AppTextInput } from "../components/ui";
+import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPassword">;
 
@@ -138,28 +137,31 @@ export function ResetPasswordScreen({ navigation }: Props) {
                     onFocus={() => scrollToField(emailFieldY.current)}
                   />
                 </View>
-                <Pressable style={styles.primaryButton} onPress={handleRequest} disabled={submitting}>
-                  <Text style={styles.primaryButtonText}>
-                    {submitting ? "Sending..." : "Send reset link"}
-                  </Text>
-                </Pressable>
+                <Button
+                  title={submitting ? "Sending..." : "Send reset link"}
+                  onPress={handleRequest}
+                  disabled={submitting}
+                  loading={submitting}
+                  style={styles.primaryButton}
+                />
               </>
             ) : (
               <>
                 {previewUrl ? (
                   <View style={styles.previewRow}>
-                    <Pressable
+                    <Button
+                      title="Open reset link"
+                      size="medium"
                       style={styles.linkButton}
                       onPress={() => Linking.openURL(previewUrl)}
-                    >
-                      <Text style={styles.linkButtonText}>Open reset link</Text>
-                    </Pressable>
-                    <Pressable
+                    />
+                    <Button
+                      title="Use token"
+                      variant="secondary"
+                      size="medium"
                       style={styles.secondaryButton}
                       onPress={() => setToken(extractToken(previewUrl))}
-                    >
-                      <Text style={styles.secondaryButtonText}>Use token</Text>
-                    </Pressable>
+                    />
                   </View>
                 ) : null}
                 <View
@@ -210,20 +212,20 @@ export function ResetPasswordScreen({ navigation }: Props) {
                     onFocus={() => scrollToField(confirmPasswordFieldY.current)}
                   />
                 </View>
-                <Pressable style={styles.primaryButton} onPress={handleReset} disabled={submitting}>
-                  <Text style={styles.primaryButtonText}>
-                    {submitting ? "Updating..." : "Update password"}
-                  </Text>
-                </Pressable>
+                <Button
+                  title={submitting ? "Updating..." : "Update password"}
+                  onPress={handleReset}
+                  disabled={submitting}
+                  loading={submitting}
+                  style={styles.primaryButton}
+                />
               </>
             )}
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {notice ? <Text style={styles.notice}>{notice}</Text> : null}
           </View>
 
-          <Pressable style={styles.ghostButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </Pressable>
+          <BackButton style={styles.ghostButton} onPress={() => navigation.goBack()} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -280,58 +282,16 @@ const styles = StyleSheet.create({
   },
   linkButton: {
     flex: 1,
-    borderRadius: 12,
-    backgroundColor: colors.text,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  linkButtonText: {
-    color: colors.cardBg,
-    fontWeight: "600",
   },
   primaryButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
     marginTop: 4,
   },
-  primaryButtonText: {
-    color: colors.cardBg,
-    fontSize: 16,
-    fontWeight: "600",
-  },
   secondaryButton: {
-    borderRadius: 12,
-    backgroundColor: colors.appBg,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: "center",
-  },
-  secondaryButtonText: {
-    color: colors.text,
-    fontWeight: "600",
+    flex: 1,
   },
   ghostButton: {
-    alignItems: "center",
+    alignSelf: "center",
     marginTop: 20,
-  },
-  backCircle: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 32,
-    width: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.cardBg,
-  },
-  backIcon: {
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 14,
-    textAlign: "center",
-    fontWeight: "600",
   },
   error: {
     color: colors.danger,

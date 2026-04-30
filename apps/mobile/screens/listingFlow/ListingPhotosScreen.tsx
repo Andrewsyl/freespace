@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { getListingImageUploadUrl } from "../../api";
 import { useAuth } from "../../auth";
+import { Button } from "../../components/ui";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
 import { colors, spacing, textStyles } from "../../styles/theme";
@@ -174,19 +175,17 @@ export function ListingPhotosScreen({ navigation }: Props) {
         ) : null}
       </ScrollView>
       <View style={styles.footer}>
-        <Pressable
-          style={[
-            styles.primaryButton,
-            (!hasPhoto || uploading) && styles.primaryButtonDisabled,
-          ]}
+        <Button
+          title="Continue"
           onPress={() => navigation.navigate("ListingReview")}
           disabled={!hasPhoto || uploading}
-        >
-          <Text style={styles.primaryButtonText}>Continue</Text>
-        </Pressable>
-        <Pressable style={styles.secondaryButton} onPress={() => navigation.navigate("ListingReview")}>
-          <Text style={styles.secondaryButtonText}>Skip for now</Text>
-        </Pressable>
+        />
+        <Button
+          title="Skip for now"
+          variant="secondary"
+          onPress={() => navigation.navigate("ListingReview")}
+          style={styles.secondaryButton}
+        />
       </View>
     </SafeAreaView>
   );
@@ -280,34 +279,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     padding: 16,
   },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: 14,
-    paddingVertical: 14,
-  },
-  primaryButtonDisabled: {
-    backgroundColor: "#cbd5e1",
-  },
-  primaryButtonText: {
-    color: colors.cardBg,
-    fontSize: 15,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
-  },
   secondaryButton: {
-    alignItems: "center",
-    borderRadius: 14,
     marginTop: 10,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  secondaryButtonText: {
-    color: colors.accent,
-    fontSize: 13,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
   },
   errorText: {
     color: colors.danger,

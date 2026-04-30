@@ -18,7 +18,7 @@ import { useAuth } from "../auth";
 import { requestEmailVerification } from "../api";
 import type { RootStackParamList } from "../types";
 import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
-import { Button, TextInput as AppTextInput } from "../components/ui";
+import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
@@ -171,10 +171,7 @@ export function SignInScreen({ navigation }: Props) {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Ionicons name="chevron-back" size={20} color={colors.accent} />
-              <Text style={styles.backText}>Back</Text>
-            </Pressable>
+            <BackButton onPress={() => navigation.goBack()} />
           </View>
 
           <View style={styles.card}>
@@ -351,15 +348,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screenX,
     paddingTop: spacing.screenY,
     paddingBottom: spacing.sm,
-  },
-  backButton: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 4,
-  },
-  backText: {
-    ...textStyles.bodyStrong,
-    color: colors.accent,
   },
   card: {
     flex: 1,

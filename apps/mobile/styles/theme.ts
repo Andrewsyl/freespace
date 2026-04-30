@@ -39,22 +39,27 @@ export const spacing = {
   md: designTokens.spacing.md,
   lg: designTokens.spacing.lg,
   xl: designTokens.spacing.xl,
-  screenX: designTokens.spacing.lg,
+  screenX: designTokens.layout.screenX,
   screenY: designTokens.spacing.md,
-  card: 18,
+  card: designTokens.layout.cardPadding,
   gap: designTokens.spacing.sm,
+  readingInset: designTokens.layout.readingInset,
 };
 
 export const radius = {
-  sm: designTokens.radius.md,
-  md: designTokens.radius.lg,
-  card: 18,
+  sm: designTokens.radius.sm,
+  md: designTokens.radius.md,
+  card: 14,
   lg: 22,
   pill: designTokens.radius.pill,
 };
 
 export const cardShadow = {
-  ...designTokens.shadow.cardNative,
+  shadowColor: "#0f172a",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.05,
+  shadowRadius: 10,
+  elevation: 2,
 };
 
 export const textStyles = {
@@ -91,17 +96,24 @@ export const textStyles = {
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: type.size.body,
-    lineHeight: 21,
+    fontSize: 15,
+    lineHeight: 20,
     fontFamily: "Poppins-SemiBold",
     fontWeight: "600" as const,
     letterSpacing: -0.2,
+  },
+  sectionIntro: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: "Poppins-Regular",
+    fontWeight: "400" as const,
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: type.size.bodySm,
     lineHeight: 21,
-    fontFamily: "Poppins-Regular",
+    fontFamily: "Inter-Regular",
     fontWeight: "400" as const,
   },
   body: {
@@ -170,7 +182,7 @@ export const surfaces = {
     ...cardShadow,
   },
   cardMuted: {
-    backgroundColor: colors.cardBgMuted,
+    backgroundColor: "#F3F4F6",
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: radius.card,
@@ -190,30 +202,48 @@ export const fields = {
     marginBottom: spacing.md,
   },
   label: {
-    ...textStyles.label,
     color: colors.textSoft,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: "Inter-Medium",
+    fontWeight: "500" as const,
     marginBottom: spacing.xs,
   },
   input: {
-    backgroundColor: "#fcfefd",
-    borderColor: color.border.field,
+    backgroundColor: "transparent",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    minHeight: 48,
+    paddingHorizontal: 0,
+    paddingVertical: 12,
+  },
+  inputNeutral: {
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: radius.md,
-    minHeight: 54,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   inputFocused: {
-    borderColor: colors.accent,
-    shadowColor: colors.accent,
-    ...designTokens.shadow.focusNative,
+    borderBottomColor: colors.accent,
   },
   inputError: {
-    borderColor: colors.danger,
+    borderBottomColor: colors.danger,
   },
   inputText: {
-    ...textStyles.bodyStrong,
     color: colors.text,
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: "Inter-Regular",
+    fontWeight: "400" as const,
+  },
+  inputNeutralText: {
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: "Poppins-Regular",
+    fontWeight: "400" as const,
   },
   placeholderTextColor: colors.textMuted,
   helpText: {
@@ -231,7 +261,7 @@ export const fields = {
 export const buttons = {
   primary: {
     backgroundColor: colors.accent,
-    borderRadius: radius.md,
+    borderRadius: 14,
     minHeight: 54,
     paddingHorizontal: spacing.lg,
     paddingVertical: 15,
@@ -240,9 +270,9 @@ export const buttons = {
   },
   secondary: {
     backgroundColor: colors.cardBg,
-    borderColor: colors.borderStrong,
+    borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: radius.md,
+    borderRadius: 14,
     minHeight: 54,
     paddingHorizontal: spacing.lg,
     paddingVertical: 15,
@@ -250,7 +280,7 @@ export const buttons = {
     justifyContent: "center" as const,
   },
   ghost: {
-    borderRadius: radius.md,
+    borderRadius: 14,
     minHeight: 48,
     paddingHorizontal: spacing.md,
     paddingVertical: 12,

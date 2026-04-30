@@ -96,11 +96,11 @@ const styles = StyleSheet.create({
     ...buttons.secondary,
     backgroundColor: "transparent",
     borderColor: colors.accent,
-    borderWidth: 1.5,
+    borderWidth: 1.25,
   },
   ghost: {
     ...buttons.ghost,
-    backgroundColor: "transparent",
+    backgroundColor: "#F0FDF4",
   },
   small: {
     minHeight: 42,

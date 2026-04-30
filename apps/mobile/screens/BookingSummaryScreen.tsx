@@ -13,10 +13,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
-  Switch,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useStripe } from "@stripe/stripe-react-native";
@@ -36,7 +33,7 @@ import { getNotificationImageAttachment } from "../notifications";
 import { BookingProgressBar } from "../components/BookingProgressBar";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
-import { Button } from "../components/ui";
+import { BackButton, Button, SectionHeader, TextInput as AppTextInput } from "../components/ui";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { formatDateLabel, formatTimeLabel } from "../utils/dateFormat";
 
@@ -433,23 +430,17 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
       >
       <View style={styles.progressHeader}>
-        <TouchableOpacity
+        <BackButton
           onPress={() => navigation.goBack()}
           style={styles.progressBackButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          disabled={bookingBusy || bookingConfirmed}
-        >
-            <View style={styles.backCircle}>
-              <Ionicons name="arrow-back" size={12} color={colors.text} />
-            </View>
-        </TouchableOpacity>
+        />
         <View style={styles.progressTitleRow}>
           <Text style={styles.progressTitle}>Booking Confirmation</Text>
         </View>
@@ -562,40 +553,44 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               plateSectionYRef.current = event.nativeEvent.layout.y;
             }}
           >
-            <View style={styles.vehicleCardHeader}>
+            <SectionHeader
+              title="Vehicle"
+              subtitle={
+                vehicleMake && vehicleColor
+                  ? `${vehicleMake} · ${vehicleColor}`
+                  : vehicleMake || "Add your vehicle details"
+              }
+              trailing={
+                <Button
+                  title={vehicleMake ? "Edit" : "Add"}
+                  variant="ghost"
+                  size="small"
+                  style={styles.vehicleEditButton}
+                  onPress={() => navigation.navigate("VehicleType")}
+                />
+              }
+            />
+            {vehicleMake ? (
               <View style={styles.vehicleCardInfo}>
-                {vehicleMake ? <VehicleBrandLogo make={vehicleMake} size={20} /> : null}
+                <VehicleBrandLogo make={vehicleMake} size={20} />
                 <View style={styles.vehicleCardText}>
-                  <Text style={styles.fieldLabel}>Vehicle</Text>
-                  <Text style={styles.vehicleCardMeta}>
-                    {vehicleMake && vehicleColor
-                      ? `${vehicleMake} · ${vehicleColor}`
-                      : vehicleMake || "Add your vehicle details"}
-                  </Text>
+                  {user?.vehicleType ? <Text style={styles.vehicleTypeText}>{user.vehicleType}</Text> : null}
                 </View>
               </View>
-              <Pressable
-                style={styles.vehicleEditButton}
-                onPress={() => navigation.navigate("VehicleType")}
-              >
-                <Text style={styles.vehicleEditButtonText}>
-                  {vehicleMake ? "Edit" : "Add"}
-                </Text>
-              </Pressable>
-            </View>
-            {user?.vehicleType ? <Text style={styles.vehicleTypeText}>{user.vehicleType}</Text> : null}
+            ) : null}
             <Text style={styles.fieldLabel}>Vehicle registration</Text>
             <View style={styles.regRow}>
               <View style={styles.plateCountry} />
               <View style={styles.regDetails}>
-                <TextInput
+                <AppTextInput
+                  variant="embedded"
                   value={vehiclePlate}
                   onChangeText={(value) => setVehiclePlate(formatIrishPlateInput(value))}
                   placeholder="Enter reg plate"
-                  placeholderTextColor="#94a3b8"
                   autoCapitalize="characters"
                   autoCorrect={false}
                   textAlign="center"
+                  containerStyle={styles.regInputContainer}
                   style={styles.regInput}
                   onFocus={() => {
                     setPlateFocused(true);
@@ -613,7 +608,11 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           </View>
 
           <View style={styles.priceCard}>
-            <Text style={styles.fieldLabel}>Price breakdown</Text>
+            <SectionHeader
+              title="Price breakdown"
+              subtitle="No hidden fees will be added after checkout."
+              style={styles.priceHeader}
+            />
             <View style={styles.priceBreakdownRow}>
               <Text style={styles.priceBreakdownLabel}>Parking fee</Text>
               <Text style={styles.priceBreakdownValue}>€{Math.round(pricing.parkingFee)}</Text>
@@ -626,7 +625,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               <Text style={styles.priceBreakdownTotalLabel}>Total due today</Text>
               <Text style={styles.priceBreakdownTotalValue}>€{Math.round(pricing.finalPrice)}</Text>
             </View>
-            <Text style={styles.priceBreakdownHelp}>No hidden fees will be added after checkout.</Text>
           </View>
 
           {paymentFailed ? (
@@ -644,26 +642,23 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         </View>
       )}
       {listing && user && !plateFocused ? (
-        <View style={[styles.footerBar, { paddingBottom: 12 + insets.bottom }]}>
+        <View style={[styles.footerBar, { paddingBottom: Math.max(insets.bottom, 22) }]}>
           <Text style={styles.footerDisclosure}>
             FreeSpace is the booking marketplace. Hosts manage the physical space and site rules.
           </Text>
-          <TouchableOpacity
-            style={[
-              styles.footerButton,
-              (bookingBusy || bookingConfirmed) && styles.footerButtonDisabled,
-            ]}
+          <Button
+            style={styles.footerButton}
             onPress={handlePayment}
             disabled={bookingBusy || bookingConfirmed}
-          >
-            <Text style={styles.footerButtonText}>
-              {bookingBusy
+            loading={bookingBusy}
+            title={
+              bookingBusy
                 ? confirmingBooking
                   ? "Finalizing..."
                   : "Processing..."
-                : `Pay and reserve • €${Math.round(pricing.finalPrice)}`}
-            </Text>
-          </TouchableOpacity>
+                : `Pay and reserve • €${Math.round(pricing.finalPrice)}`
+            }
+          />
         </View>
       ) : null}
       {pickerVisible ? (
@@ -756,6 +751,7 @@ const styles = StyleSheet.create({
     left: spacing.screenX,
     top: 10,
     zIndex: 2,
+    marginBottom: 0,
   },
   progressTitleRow: {
     alignItems: "center",
@@ -769,9 +765,9 @@ const styles = StyleSheet.create({
     fontSize: 17,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.screenX,
     paddingBottom: 180,
-    paddingTop: 4,
+    paddingTop: spacing.xs,
   },
   divider: {
     height: 1,
@@ -1094,41 +1090,30 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     ...cardShadow,
   },
-  vehicleCardHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
   vehicleCardInfo: {
     alignItems: "center",
     flexDirection: "row",
     flexShrink: 1,
     gap: 10,
+    marginBottom: 12,
   },
   vehicleCardText: {
     flexShrink: 1,
   },
-  vehicleCardMeta: {
-    ...textStyles.bodyMedium,
-    color: colors.text,
-    marginTop: -6,
-  },
   vehicleTypeText: {
     ...textStyles.meta,
     color: colors.textMuted,
-    marginBottom: 12,
   },
   vehicleEditButton: {
-    backgroundColor: colors.accentSoft,
-    borderRadius: radius.pill,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    minHeight: 36,
   },
-  vehicleEditButtonText: {
-    ...textStyles.meta,
-    color: colors.accent,
-    fontFamily: "Poppins-SemiBold",
+  regInputContainer: {
+    marginBottom: 0,
+    flex: 1,
+  },
+  priceHeader: {
+    marginBottom: spacing.sm,
   },
   priceCard: {
     backgroundColor: colors.cardBg,
@@ -1175,11 +1160,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: -0.3,
   },
-  priceBreakdownHelp: {
-    ...textStyles.meta,
-    marginTop: 8,
-    lineHeight: 18,
-  },
   regRow: {
     flexDirection: "row",
     borderRadius: 8,
@@ -1213,6 +1193,7 @@ const styles = StyleSheet.create({
     fontFamily: "UKNumberPlate",
     letterSpacing: 1,
     textTransform: "uppercase",
+    paddingHorizontal: 0,
     paddingVertical: 0,
     includeFontPadding: false,
   },
@@ -1295,8 +1276,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.appBg,
-    paddingHorizontal: 16,
+    backgroundColor: colors.cardBg,
+    paddingHorizontal: spacing.screenX,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: "#E5E7EB",
@@ -1313,25 +1294,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   footerButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 999,
-    paddingVertical: 15,
-    paddingHorizontal: 24,
     minHeight: 56,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 16,
-    elevation: 3,
-  },
-  footerButtonDisabled: {
-    backgroundColor: "#E5E7EB",
-  },
-  footerButtonText: {
-    ...textStyles.button,
-    letterSpacing: 0.2,
+    marginBottom: 16,
   },
   successOverlay: {
     ...StyleSheet.absoluteFillObject,
