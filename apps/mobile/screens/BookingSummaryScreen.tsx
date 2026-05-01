@@ -474,42 +474,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <View style={styles.summaryCard}>
-            <View style={styles.summaryMapWrap}>
-              {Platform.OS !== "ios" && staticMapUrl && !staticMapFailed ? (
-                <Image
-                  source={{ uri: staticMapUrl }}
-                  style={styles.summaryMap}
-                  resizeMode="cover"
-                  onError={(event) => {
-                    setStaticMapFailed(true);
-                    console.warn("[BookingSummary] Static map failed", event.nativeEvent);
-                  }}
-                  onLoad={() => {
-                    console.log("[BookingSummary] Static map loaded");
-                  }}
-                />
-              ) : mapCoords ? (
-                <MapView
-                  provider={PROVIDER_GOOGLE}
-                  style={styles.summaryMap}
-                  region={{
-                    latitude: mapCoords.latitude,
-                    longitude: mapCoords.longitude,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }}
-                  pointerEvents="none"
-                >
-                  <Marker coordinate={mapCoords} />
-                </MapView>
-              ) : (
-                <View style={styles.summaryMapPlaceholder}>
-                  <Text style={styles.summaryMapPlaceholderText}>Map preview unavailable</Text>
-                </View>
-              )}
-            </View>
-
             <View style={styles.summaryHeader}>
+              <Text style={styles.summaryEyebrow}>Booking summary</Text>
               <Text style={styles.listingTitle}>{listing.title || "Adam House Car Park"}</Text>
               <View style={styles.addressRow}>
                 <Ionicons name="location-sharp" size={14} color={colors.textMuted} />
@@ -519,30 +485,48 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               </View>
             </View>
 
-            <View style={styles.sessionTable}>
-              <View style={styles.sessionTableRow}>
-                <View style={styles.sessionTableLabelCell}>
-                  <Text style={styles.sessionTableLabel}>Duration</Text>
+            <View style={styles.summaryMetricsWrap}>
+              <View style={styles.summaryMetrics}>
+                <View style={styles.summaryMetricCell}>
+                  <Text style={styles.summaryMetricLabel}>Duration</Text>
+                  <Text style={styles.summaryMetricValue}>
+                    {durationHours} {durationHours === 1 ? "hour" : "hours"}
+                  </Text>
                 </View>
-                <View style={styles.sessionTableValueCell}>
-                  <Text style={styles.sessionTableValue}>{durationHours} hours</Text>
+                <View style={styles.summaryMetricDivider} />
+                <View style={styles.summaryMetricCell}>
+                  <Text style={styles.summaryMetricLabel}>Fee</Text>
+                  <Text style={styles.summaryMetricValue}>€{Math.round(pricing.finalPrice)}</Text>
+                </View>
+                <View style={styles.summaryMetricDivider} />
+                <View style={styles.summaryMetricCell}>
+                  <Text style={styles.summaryMetricLabel}>Vehicle</Text>
+                  <Text style={styles.summaryMetricValue} numberOfLines={1}>
+                    {vehicleMake || "Add vehicle"}
+                  </Text>
                 </View>
               </View>
-              <View style={styles.sessionTableRow}>
-                <View style={styles.sessionTableLabelCell}>
-                  <Text style={styles.sessionTableLabel}>Start time</Text>
+            </View>
+
+            <View style={styles.bookingTimeCard}>
+              <View style={styles.bookingTimeRow}>
+                <Pressable style={styles.bookingTimeColumn} onPress={() => openPicker("start")}>
+                  <Text style={styles.bookingTimeLabel}>From</Text>
+                  <View style={styles.bookingTimeField}>
+                    <Text style={styles.bookingTimeValue}>{formatDateTimeLabel(start)}</Text>
+                    <Ionicons name="chevron-down" size={16} color="#0f766e" />
+                  </View>
+                </Pressable>
+                <View style={styles.bookingTimeArrow}>
+                  <Ionicons name="arrow-forward" size={18} color="#22a06b" />
                 </View>
-                <View style={styles.sessionTableValueCell}>
-                  <Text style={styles.sessionTableValue}>{formatDateTimeLabel(start)}</Text>
-                </View>
-              </View>
-              <View style={styles.sessionTableRowLast}>
-                <View style={styles.sessionTableLabelCell}>
-                  <Text style={styles.sessionTableLabel}>End time</Text>
-                </View>
-                <View style={styles.sessionTableValueCell}>
-                  <Text style={styles.sessionTableValue}>{formatDateTimeLabel(end)}</Text>
-                </View>
+                <Pressable style={styles.bookingTimeColumn} onPress={() => openPicker("end")}>
+                  <Text style={styles.bookingTimeLabel}>Until</Text>
+                  <View style={styles.bookingTimeField}>
+                    <Text style={styles.bookingTimeValue}>{formatDateTimeLabel(end)}</Text>
+                    <Ionicons name="chevron-down" size={16} color="#0f766e" />
+                  </View>
+                </Pressable>
               </View>
             </View>
           </View>
@@ -648,6 +632,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           </Text>
           <Button
             style={styles.footerButton}
+            textStyle={styles.footerButtonText}
             onPress={handlePayment}
             disabled={bookingBusy || bookingConfirmed}
             loading={bookingBusy}
@@ -754,8 +739,8 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   pageTitleBlock: {
-    paddingTop: 14,
-    paddingBottom: 14,
+    paddingTop: 12,
+    paddingBottom: 16,
   },
   pageTitle: {
     color: "#15171A",
@@ -768,7 +753,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: spacing.screenX,
     paddingBottom: 180,
-    paddingTop: spacing.xs,
+    paddingTop: spacing.sm,
   },
   divider: {
     height: 1,
@@ -794,14 +779,29 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   listingTitle: {
-    ...textStyles.titleSmall,
-    marginBottom: 6,
+    color: "#15171A",
+    fontSize: 25,
+    lineHeight: 30,
+    fontFamily: "Inter-Medium",
+    fontWeight: "500",
+    letterSpacing: -0.35,
+    marginBottom: 8,
+  },
+  summaryEyebrow: {
+    color: "#667085",
+    fontSize: 9,
+    lineHeight: 13,
+    fontFamily: "Inter-SemiBold",
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 10,
   },
   addressRow: {
     alignItems: "center",
     flexDirection: "row",
     gap: 8,
-    marginTop: 6,
+    marginTop: 0,
   },
   addressDot: {
     backgroundColor: colors.textSoft,
@@ -810,166 +810,114 @@ const styles = StyleSheet.create({
     width: 6,
   },
   addressText: {
-    ...textStyles.bodyMedium,
+    color: "#667085",
+    fontSize: 13,
+    lineHeight: 19,
+    fontFamily: "Inter-Regular",
+    fontWeight: "400",
   },
   summaryHeader: {
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingTop: 16,
+    paddingBottom: 14,
   },
   summaryCard: {
     backgroundColor: colors.cardBg,
-    borderRadius: radius.card,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 16,
+    marginBottom: 18,
     ...cardShadow,
     overflow: "hidden",
   },
-  summaryMapWrap: {
-    backgroundColor: "transparent",
+  summaryMetricsWrap: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
-  summaryMap: {
-    width: "100%",
-    height: 122,
-    borderRadius: 0,
-    backgroundColor: "transparent",
-  },
-  summaryMapPlaceholder: {
-    width: "100%",
-    height: 122,
-    backgroundColor: "#E5E7EB",
+  summaryMetrics: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-  },
-  summaryMapPlaceholderText: {
-    ...textStyles.meta,
-    color: colors.textSoft,
-  },
-  summaryCode: {
-    alignSelf: "flex-start",
-    borderWidth: 2,
-    borderColor: "#22a06b",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginBottom: 10,
-  },
-  summaryCodeText: {
-    color: "#111827",
-    fontWeight: "700",
-    fontFamily: "Poppins-Bold",
-    fontSize: 16,
-    letterSpacing: 0.6,
-  },
-  sectionCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: radius.card,
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    marginBottom: 16,
-    ...cardShadow,
+    borderColor: "rgba(17,24,39,0.07)",
+    borderRadius: 10,
+    paddingVertical: 8,
   },
-  sectionLabel: {
-    ...textStyles.sectionTitle,
-    marginBottom: 12,
-  },
-  sessionRow: {
-    flexDirection: "row",
+  summaryMetricCell: {
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    flex: 1,
+    paddingHorizontal: 8,
   },
-  sessionLabel: {
-    ...textStyles.bodyMedium,
+  summaryMetricLabel: {
+    color: "#9CA3AF",
+    fontSize: 9,
+    lineHeight: 13,
+    fontFamily: "Inter-SemiBold",
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+    marginBottom: 3,
+  },
+  summaryMetricValue: {
+    color: "#15171A",
     fontSize: 13,
+    lineHeight: 17,
+    fontFamily: "Inter-SemiBold",
+    fontWeight: "600",
+    textAlign: "center",
   },
-  sessionValue: {
-    ...textStyles.bodyStrong,
+  summaryMetricDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: "rgba(17,24,39,0.07)",
   },
-  sessionTable: {
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+  bookingTimeCard: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
-  sessionTableRow: {
+  bookingTimeRow: {
     flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    minHeight: 52,
+    alignItems: "center",
   },
-  sessionTableRowLast: {
-    flexDirection: "row",
-    minHeight: 52,
-  },
-  sessionTableLabelCell: {
-    width: "46%",
-    justifyContent: "center",
-    paddingHorizontal: 14,
-    borderRightWidth: 1,
-    borderRightColor: "#E5E7EB",
-  },
-  sessionTableValueCell: {
+  bookingTimeColumn: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "flex-end",
-    paddingHorizontal: 14,
   },
-  sessionTableLabel: {
-    ...textStyles.bodyMedium,
-    color: "#374151",
+  bookingTimeLabel: {
+    color: "#667085",
+    fontSize: 10,
+    lineHeight: 14,
+    fontFamily: "Inter-Medium",
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 0.65,
+    marginBottom: 6,
+    paddingHorizontal: 12,
   },
-  sessionTableValue: {
-    ...textStyles.bodyStrong,
-    fontSize: 15,
-    textAlign: "right",
-  },
-  dateRow: {
-    flexDirection: "row",
+  bookingTimeField: {
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 10,
-  },
-  dateColumn: {
-    flex: 1,
-  },
-  dateLabel: {
-    ...textStyles.label,
-    marginBottom: 6,
-  },
-  dateTimePill: {
-    alignItems: "center",
-    backgroundColor: "#F7FFFB",
-    borderColor: "#D1D5DB",
+    backgroundColor: "#FFFFFF",
+    borderColor: "rgba(17,24,39,0.10)",
     borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 8,
+    minHeight: 54,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  dateTimeText: {
-    ...textStyles.bodyStrong,
+  bookingTimeValue: {
+    color: "#15171A",
     fontSize: 13,
+    lineHeight: 18,
+    fontFamily: "Inter-SemiBold",
+    fontWeight: "600",
     flex: 1,
   },
-  durationPill: {
+  bookingTimeArrow: {
+    width: 32,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f3f4f6",
-    borderColor: "#e5e7eb",
-    borderRadius: 999,
-    borderWidth: 1,
-    width: 38,
-    height: 38,
-  },
-  durationValue: {
-    fontSize: 13,
-    fontWeight: "700",
-    fontFamily: "Poppins-SemiBold",
-    color: colors.text,
   },
   rowBetween: {
     flexDirection: "row",
@@ -1067,8 +1015,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   fieldLabel: {
-    ...textStyles.sectionTitle,
-    marginBottom: 12,
+    color: "#15171A",
+    fontSize: 16,
+    lineHeight: 21,
+    fontFamily: "Inter-Bold",
+    fontWeight: "700",
+    letterSpacing: -0.35,
+    marginBottom: 14,
   },
   fieldInput: {
     backgroundColor: colors.cardBgMuted,
@@ -1083,12 +1036,12 @@ const styles = StyleSheet.create({
   },
   regCard: {
     backgroundColor: colors.cardBg,
-    borderRadius: radius.card,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 18,
     ...cardShadow,
   },
   vehicleCardInfo: {
@@ -1096,7 +1049,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexShrink: 1,
     gap: 10,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   vehicleCardText: {
     flexShrink: 1,
@@ -1114,23 +1067,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   priceHeader: {
-    marginBottom: spacing.sm,
+    marginBottom: 12,
   },
   priceCard: {
     backgroundColor: colors.cardBg,
-    borderRadius: radius.card,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 18,
     ...cardShadow,
   },
   priceBreakdownRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
@@ -1138,32 +1091,48 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 10,
-    paddingBottom: 4,
+    paddingTop: 12,
+    paddingBottom: 2,
   },
   priceBreakdownLabel: {
-    ...textStyles.bodyMedium,
+    color: "#667085",
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: "Inter-Regular",
+    fontWeight: "400",
   },
   priceBreakdownValue: {
-    ...textStyles.bodyStrong,
+    color: "#15171A",
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: "Inter-SemiBold",
+    fontWeight: "600",
   },
   priceBreakdownMuted: {
-    ...textStyles.bodyMedium,
+    color: "#667085",
     fontSize: 13,
+    lineHeight: 18,
+    fontFamily: "Inter-Regular",
+    fontWeight: "400",
   },
   priceBreakdownTotalLabel: {
-    ...textStyles.bodyStrong,
+    color: "#15171A",
+    fontSize: 15,
+    lineHeight: 20,
+    fontFamily: "Inter-SemiBold",
+    fontWeight: "600",
   },
   priceBreakdownTotalValue: {
-    color: colors.text,
-    fontSize: 22,
-    fontFamily: "Poppins-Bold",
+    color: "#15171A",
+    fontSize: 28,
+    lineHeight: 32,
+    fontFamily: "Inter-Bold",
     fontWeight: "700",
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
   },
   regRow: {
     flexDirection: "row",
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#D1D5DB",
     overflow: "hidden",
@@ -1225,10 +1194,10 @@ const styles = StyleSheet.create({
   noticeCard: {
     backgroundColor: colors.cardBg,
     borderColor: "#fee2e2",
-    borderRadius: radius.card,
+    borderRadius: 18,
     borderWidth: 1,
-    marginTop: 16,
-    padding: spacing.card,
+    marginTop: 2,
+    padding: 16,
   },
   noticeTitle: {
     ...textStyles.bodyStrong,
@@ -1279,7 +1248,7 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: colors.cardBg,
     paddingHorizontal: spacing.screenX,
-    paddingTop: 12,
+    paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: "#E5E7EB",
     shadowColor: "#111827",
@@ -1291,12 +1260,21 @@ const styles = StyleSheet.create({
   footerDisclosure: {
     ...textStyles.meta,
     lineHeight: 18,
-    marginBottom: 10,
+    marginBottom: 12,
     textAlign: "center",
   },
   footerButton: {
-    minHeight: 56,
+    minHeight: 54,
     marginBottom: 16,
+    borderRadius: 999,
+    backgroundColor: '#0E8E62',
+  },
+  footerButtonText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
   },
   successOverlay: {
     ...StyleSheet.absoluteFillObject,

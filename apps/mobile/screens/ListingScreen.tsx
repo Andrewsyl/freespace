@@ -1,13 +1,9 @@
-import { CommonActions } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  InteractionManager,
-  Linking,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,37 +12,22 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import Animated, {
-  Extrapolate,
-  interpolate,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-} from "react-native-reanimated";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Circle, Path, Rect } from "react-native-svg";
 import LottieView from "lottie-react-native";
 import DatePicker from "react-native-date-picker";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
-import { useStripe } from "@stripe/stripe-react-native";
-import * as Notifications from "expo-notifications";
 import {
-  confirmBookingPayment,
-  createBookingPaymentIntent,
   getListing,
   listListingReviews,
   type ListingReview,
 } from "../api";
 import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
-import { logError, logInfo } from "../logger";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  formatDateLabel,
-  formatTimeLabel,
   formatDateTimeLabel,
   formatReviewDate,
 } from "../utils/dateFormat";
@@ -58,9 +39,6 @@ import {
   Fence,
   IdCard,
   KeyRound,
-  Star,
-  User,
-  Image as ImageIcon,
 } from "lucide-react-native";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Listing">;
@@ -125,9 +103,8 @@ const FeatureIcon = ({ type, size = 26 }: { type: string; size?: number }) => {
 
 export function ListingScreen({ navigation, route }: Props) {
   const { id, from, to, booking } = route.params;
-  const { token, login, register, loading: authLoading, user } = useAuth();
+  const { login, register, loading: authLoading, user } = useAuth();
   const { isFavorite, toggle } = useFavorites();
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const [listing, setListing] = useState<ListingDetail | null>(null);
@@ -347,18 +324,6 @@ export function ListingScreen({ navigation, route }: Props) {
   const aboutPreview =
     aboutText.length > 140 ? `${aboutText.slice(0, 140).trim()}...` : aboutText;
 
-  // Add dummy data for new fields (remove this once backend is ready)
-  const description = listing?.description ?? "Secure off-street parking space in a quiet residential area. The space is well-lit and monitored 24/7 with CCTV cameras. Perfect for daily commuters or long-term parking needs. Easy access from main road with clear signage.";
-  const vehicleSizeSuitability = (listing?.vehicle_size_suitability || listing?.vehicleSizeSuitability) ?? "Suitable for: Compact cars, Sedans, Small SUVs (up to 4.8m length)";
-  const accessDirections = (listing?.access_directions || listing?.accessDirections) ?? "1. Enter through the main gate on Oak Street\n2. Turn left at the first intersection\n3. The parking space is number 24, located on the right side\n4. Access code will be provided after booking\n5. Gate opens automatically with the code";
-
-  const hostName = "Andrew";
-  const hostInitials = hostName
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
   const hasReviews = (listing?.rating_count ?? 0) > 0 && typeof listing?.rating === "number";
   const spaceTypeLabel = useMemo(() => {
     const rawType =
@@ -378,36 +343,11 @@ export function ListingScreen({ navigation, route }: Props) {
     if (lower.includes("street")) return "Street";
     return "Parking space";
   }, [listing]);
-  const hostRating = hasReviews && listing?.rating ? listing.rating.toFixed(1) : null;
-  const hostReviews = hasReviews ? listing?.rating_count ?? 0 : 0;
-  const heroHeight = Math.round(width * 0.6);
+  const heroHeight = Math.round(width * 0.8);
   const heroTapHeight = Math.max(0, heroHeight - 40);
   const distanceLabel = listing?.distance_m
     ? `${(listing.distance_m / 1000).toFixed(1)} km`
     : "0.8 km";
-  const isTodayBooking = useMemo(() => {
-    const now = new Date();
-    return startAt.toDateString() === now.toDateString();
-  }, [startAt]);
-  const timeWindowLabel = `${formatTimeLabel(startAt)} - ${formatTimeLabel(endAt)}`;
-  const openDirections = () => {
-    if (!listing?.latitude || !listing?.longitude) return;
-    const label = encodeURIComponent(listing.title ?? "Parking");
-    const iosUrl = `http://maps.apple.com/?ll=${listing.latitude},${listing.longitude}&q=${label}`;
-    const androidUrl = `geo:${listing.latitude},${listing.longitude}?q=${listing.latitude},${listing.longitude}(${label})`;
-    const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${listing.latitude},${listing.longitude}`;
-    const url = Platform.OS === "ios" ? iosUrl : androidUrl;
-    void Linking.openURL(url).catch(() => {
-      void Linking.openURL(fallbackUrl).catch(() => undefined);
-    });
-  };
-  const quickChips = useMemo(() => {
-    const base = featureRows.slice(0, 3);
-    if (!base.some((chip) => chip.toLowerCase().includes("24/7"))) {
-      base.unshift("24/7");
-    }
-    return base.slice(0, 4);
-  }, [featureRows]);
   const extendOffer = useMemo(() => {
     const dayPrice = listing?.price_per_day != null ? Number(listing.price_per_day) : null;
     if (dayPrice == null || Number.isNaN(dayPrice)) return null;
@@ -539,7 +479,7 @@ export function ListingScreen({ navigation, route }: Props) {
               style={styles.scrollContainer}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{
-                paddingTop: heroHeight - 40,
+                paddingTop: heroHeight - 20,
                 paddingBottom: 24,
               }}
               scrollEventThrottle={16}
@@ -559,11 +499,12 @@ export function ListingScreen({ navigation, route }: Props) {
                   <View style={styles.infoRow}>
                     <Ionicons name="car-outline" size={17} color="#9CA3AF" />
                     <Text style={styles.infoRowText}>{spaceTypeLabel}</Text>
-                    <View style={styles.infoRowDot} />
-                    <View style={[styles.availDot, listing.is_available === false && styles.availDotOff]} />
-                    <Text style={[styles.infoRowAvail, listing.is_available === false && styles.infoRowAvailOff]}>
-                      {listing.is_available === false ? "Unavailable" : "Available"}
-                    </Text>
+                    <View style={[styles.availabilityPill, listing.is_available === false && styles.availabilityPillOff]}>
+                      <View style={[styles.availDot, listing.is_available === false && styles.availDotOff]} />
+                      <Text style={[styles.availabilityPillText, listing.is_available === false && styles.availabilityPillTextOff]}>
+                        {listing.is_available === false ? "Unavailable" : "Available"}
+                      </Text>
+                    </View>
                   </View>
                   <View style={styles.infoRow}>
                     <Ionicons name="star" size={16} color="#12916C" />
@@ -576,25 +517,7 @@ export function ListingScreen({ navigation, route }: Props) {
                   </View>
                 </View>
               </View>
-
-              <View style={styles.summaryStripWrap}>
-                <View style={styles.summaryStrip}>
-                  <View style={styles.summaryCell}>
-                    <Text style={styles.summaryLabel}>Duration</Text>
-                    <Text style={styles.summaryValue}>{priceSummary?.durationLabel ?? "--"}</Text>
-                  </View>
-                  <View style={styles.summaryDivider} />
-                  <View style={styles.summaryCell}>
-                    <Text style={styles.summaryLabel}>Fee</Text>
-                    <Text style={styles.summaryValue}>€{priceSummary?.total ?? "--"}</Text>
-                  </View>
-                  <View style={styles.summaryDivider} />
-                  <View style={styles.summaryCell}>
-                    <Text style={styles.summaryLabel}>Distance</Text>
-                    <Text style={styles.summaryValue}>{distanceLabel}</Text>
-                  </View>
-                </View>
-              </View>
+              <View style={styles.sectionDivider} />
 
               {/* Date/Time Picker Row */}
               <View style={styles.timePickerSection}>
@@ -654,36 +577,9 @@ export function ListingScreen({ navigation, route }: Props) {
                 </View>
               </View>
 
-              <Pressable style={styles.locationCard} onPress={openDirections}>
-                <View style={styles.locationIconWrap}>
-                  <Ionicons name="location-outline" size={24} color="#0E8E62" />
-                </View>
-                <View style={styles.locationCopy}>
-                  <Text style={styles.locationTitle} numberOfLines={1}>
-                    {listing.address || "Location unavailable"}
-                  </Text>
-                  <Text style={styles.locationSubtitle}>Get directions to this space</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={22} color="#111827" />
-              </Pressable>
-
-              {/* Description */}
-              <View style={[styles.sectionBlock, { paddingHorizontal: 16 }]}>
-                <Text style={styles.sectionTitle}>About this parking space</Text>
-                <Text style={styles.sectionBody}>
-                  {showFullAbout ? aboutText : aboutPreview}
-                </Text>
-                {aboutText.length > 140 ? (
-                  <Pressable onPress={() => setShowFullAbout((prev) => !prev)}>
-                    <Text style={styles.readMore}>
-                      {showFullAbout ? "Read less →" : "Read more →"}
-                    </Text>
-                  </Pressable>
-                ) : null}
-              </View>
               <View style={styles.sectionDivider} />
 
-              {/* Opening Hours */}
+              {/* Availability */}
               <View style={[styles.sectionBlock, { paddingHorizontal: 16 }]}>
                 <Text style={styles.sectionTitle}>Availability</Text>
                 {isOpen24 && !hasWeeklyAvailability ? (
@@ -725,6 +621,23 @@ export function ListingScreen({ navigation, route }: Props) {
                 )}
               </View>
               <View style={styles.sectionDivider} />
+
+              {/* About */}
+              <View style={[styles.sectionBlock, { paddingHorizontal: 16 }]}>
+                <Text style={styles.sectionTitle}>About this space</Text>
+                <Text style={styles.sectionBody}>
+                  {showFullAbout ? aboutText : aboutPreview}
+                </Text>
+                {aboutText.length > 140 ? (
+                  <Pressable onPress={() => setShowFullAbout((prev) => !prev)}>
+                    <Text style={styles.readMore}>
+                      {showFullAbout ? "Read less →" : "Read more →"}
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+              <View style={styles.sectionDivider} />
+
               {/* Features */}
               <View style={styles.featuresSection}>
                 <Text style={styles.sectionTitle}>What's included</Text>
@@ -740,7 +653,7 @@ export function ListingScreen({ navigation, route }: Props) {
               </View>
               <View style={styles.sectionDivider} />
 
-              {/* Content Sections */}
+              {/* Reviews */}
               <View style={styles.contentSections}>
                 <View style={styles.sectionBlock}>
                   <View style={styles.reviewHeaderRow}>
@@ -815,7 +728,6 @@ export function ListingScreen({ navigation, route }: Props) {
                 {!user && (
                   <>
                     <View style={styles.dividerLine} />
-
                     <View style={styles.authCard}>
                       <Text style={styles.authTitle}>Sign in to book</Text>
                       <TextInput
@@ -1708,7 +1620,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
-    paddingTop: 14,
+    paddingTop: 8,
     paddingBottom: 12,
     paddingHorizontal: 0,
   },
@@ -1729,9 +1641,9 @@ const styles = StyleSheet.create({
   },
   heroTitleBlock: {
     paddingHorizontal: 16,
-    paddingTop: 2,
-    paddingBottom: 14,
-    gap: 8,
+    paddingTop: 12,
+    paddingBottom: 12,
+    gap: 4,
   },
   cardTitle: {
     fontFamily: "Inter-Medium",
@@ -1742,7 +1654,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.35,
   },
   infoRows: {
-    gap: 7,
+    gap: 4,
   },
   infoRow: {
     flexDirection: 'row',
@@ -1794,9 +1706,12 @@ const styles = StyleSheet.create({
   availabilityPill: {
     borderRadius: 999,
     backgroundColor: "#E7F7F0",
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   availabilityPillOff: {
     backgroundColor: "#FEECEC",
@@ -1830,16 +1745,15 @@ const styles = StyleSheet.create({
   },
   summaryStripWrap: {
     marginHorizontal: 16,
-    marginBottom: 10,
+    marginBottom: 6,
   },
   summaryStrip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#0E8E62',
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.07)',
-    paddingVertical: 8,
+    borderWidth: 0,
+    paddingVertical: 6,
   },
   summaryCell: {
     flex: 1,
@@ -1849,7 +1763,7 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontFamily: "Inter-SemiBold",
-    color: '#9CA3AF',
+    color: 'rgba(255,255,255,0.65)',
     fontSize: 9,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -1858,11 +1772,11 @@ const styles = StyleSheet.create({
   summaryDivider: {
     width: 1,
     height: 28,
-    backgroundColor: 'rgba(17,24,39,0.07)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   summaryValue: {
     fontFamily: "Inter-SemiBold",
-    color: '#15171A',
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -1931,13 +1845,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: "#E9EDF2",
     borderBottomWidth: 1,
     borderBottomColor: "#E9EDF2",
-    marginTop: 8,
-    marginBottom: 10,
+    marginTop: 2,
+    marginBottom: 0,
   },
   locationIconWrap: {
     width: 34,
@@ -1999,7 +1913,8 @@ const styles = StyleSheet.create({
   },
   timePickerSection: {
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
   timePickerWrapper: {
     overflow: "hidden",
@@ -2105,6 +2020,38 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontFamily: "Inter-Bold",
   },
+  tabBar: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    padding: 3,
+  },
+  tabItem: {
+    flex: 1,
+    paddingVertical: 7,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  tabItemActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tabLabel: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#9CA3AF',
+  },
+  tabLabelActive: {
+    color: '#15171A',
+  },
   tabContent: {
     flex: 1,
   },
@@ -2117,8 +2064,8 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   sectionBlock: {
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
   sectionDivider: {
     height: 1,
@@ -2188,28 +2135,28 @@ const styles = StyleSheet.create({
   sectionBody: {
     fontFamily: "Inter-Regular",
     fontSize: 15,
-    lineHeight: 23,
+    lineHeight: 22,
     color: '#374151',
     fontWeight: '400',
-    marginTop: 8,
+    marginTop: 4,
   },
   readMore: {
     fontFamily: "Inter-SemiBold",
     fontSize: 12,
     fontWeight: '600',
     color: '#0E8E62',
-    marginTop: 12,
+    marginTop: 8,
   },
   featuresGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginTop: 14,
+    marginTop: 10,
   },
   featuresSection: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    paddingTop: 16,
+    paddingBottom: 12,
+    paddingTop: 12,
   },
   featureIconCard: {
     width: '47.5%',
@@ -2219,7 +2166,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    paddingVertical: 18,
+    paddingVertical: 12,
     paddingHorizontal: 8,
   },
   featureIconLabel: {
@@ -2292,8 +2239,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     borderRadius: 14,
     borderWidth: 0,
-    padding: 16,
-    marginTop: 12,
+    padding: 12,
+    marginTop: 6,
   },
   availabilityCardLeft: {
     gap: 2,
@@ -2403,7 +2350,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 0,
   },
   reviewSummary: {
     flexDirection: "row",
@@ -2422,7 +2369,7 @@ const styles = StyleSheet.create({
     color: "#6B7280",
   },
   reviewCarouselWrap: {
-    marginTop: 12,
+    marginTop: 6,
   },
   reviewCarousel: {
     paddingRight: 12,
