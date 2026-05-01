@@ -5,7 +5,9 @@ import {
   ActivityIndicator,
   Image,
   InteractionManager,
+  Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -27,7 +29,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import LottieView from "lottie-react-native";
 import DatePicker from "react-native-date-picker";
-import MapView, { Marker } from "react-native-maps";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import { useStripe } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
@@ -76,6 +77,18 @@ const getFeatureIconType = (label: string) => {
   return "sheltered";
 };
 
+const getFeatureSubLabel = (label: string) => {
+  const normalized = label.toLowerCase();
+  if (normalized.includes("cctv") || normalized.includes("camera")) return "Monitored 24/7";
+  if (normalized.includes("ev") || normalized.includes("charger") || normalized.includes("charging")) return "Available on-site";
+  if (normalized.includes("shelter") || normalized.includes("covered") || normalized.includes("roof")) return "Sheltered space";
+  if (normalized.includes("gate") || normalized.includes("gated") || normalized.includes("barrier")) return "Secured access";
+  if (normalized.includes("code") || normalized.includes("keypad") || normalized.includes("entry")) return "Code access";
+  if (normalized.includes("permit")) return "Required";
+  if (normalized.includes("low") || normalized.includes("clearance")) return "Under 2.1m";
+  return "Included";
+};
+
 const getAddressWithoutHouseNumber = (address: string) => {
   const parts = address
     .split(",")
@@ -87,10 +100,9 @@ const getAddressWithoutHouseNumber = (address: string) => {
   return normalizedParts.join(", ");
 };
 
-const FeatureIcon = ({ type }: { type: string }) => {
-  const stroke = "#15171A";
-  const size = 22;
-  const sw = 1.75;
+const FeatureIcon = ({ type, size = 26 }: { type: string; size?: number }) => {
+  const stroke = "#0f172a";
+  const sw = 1.8;
   switch (type) {
     case "low":
       return <ArrowDownUp size={size} color={stroke} strokeWidth={sw} />;
@@ -373,6 +385,22 @@ export function ListingScreen({ navigation, route }: Props) {
   const distanceLabel = listing?.distance_m
     ? `${(listing.distance_m / 1000).toFixed(1)} km`
     : "0.8 km";
+  const isTodayBooking = useMemo(() => {
+    const now = new Date();
+    return startAt.toDateString() === now.toDateString();
+  }, [startAt]);
+  const timeWindowLabel = `${formatTimeLabel(startAt)} - ${formatTimeLabel(endAt)}`;
+  const openDirections = () => {
+    if (!listing?.latitude || !listing?.longitude) return;
+    const label = encodeURIComponent(listing.title ?? "Parking");
+    const iosUrl = `http://maps.apple.com/?ll=${listing.latitude},${listing.longitude}&q=${label}`;
+    const androidUrl = `geo:${listing.latitude},${listing.longitude}?q=${listing.latitude},${listing.longitude}(${label})`;
+    const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${listing.latitude},${listing.longitude}`;
+    const url = Platform.OS === "ios" ? iosUrl : androidUrl;
+    void Linking.openURL(url).catch(() => {
+      void Linking.openURL(fallbackUrl).catch(() => undefined);
+    });
+  };
   const quickChips = useMemo(() => {
     const base = featureRows.slice(0, 3);
     if (!base.some((chip) => chip.toLowerCase().includes("24/7"))) {
@@ -464,14 +492,11 @@ export function ListingScreen({ navigation, route }: Props) {
                 </View>
               )}
 
-              {imageUrls.length > 1 ? (
-                <View style={styles.dotsRow}>
-                  {imageUrls.map((_, index) => (
-                    <View
-                      key={`dot-${index}`}
-                      style={[styles.dot, index === 0 && styles.dotActive]}
-                    />
-                  ))}
+              {imageUrls.length > 0 ? (
+                <View style={styles.photoCounterChip}>
+                  <Text style={styles.photoCounterText}>
+                    {String(activeImageIndex + 1).padStart(2, '0')} / {String(imageUrls.length).padStart(2, '0')}
+                  </Text>
                 </View>
               ) : null}
             </View>
@@ -528,66 +553,59 @@ export function ListingScreen({ navigation, route }: Props) {
             >
               <View style={styles.contentWrap}>
                 <View style={styles.contentCard}>
-              {/* Title Section */}
-              <View style={styles.titleSection}>
-                <Text style={styles.cardTitle}>{listing.title}</Text>
-                <View style={styles.metaRow}>
+              <View style={styles.heroTitleBlock}>
+                <View style={styles.titleChipRow}>
                   <View style={styles.typeChip}>
                     <Text style={styles.typeChipText}>{spaceTypeLabel}</Text>
                   </View>
-                  <View style={styles.metaInline}>
-                    <Ionicons name="location-outline" size={15} color="#6B7280" />
-                    <Text style={styles.metaInlineText} numberOfLines={1}>
-                      {areaLabel}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.ratingRow}>
-                  <View style={styles.ratingBadge}>
-                    <Ionicons name="star" size={13} color="#F2A73B" />
-                    <Text style={styles.rating}>
-                      {hasReviews ? listing.rating?.toFixed(1) : "0.0"}
-                    </Text>
-                  </View>
-                  <Text style={styles.reviewCount}>
-                    {listing.rating_count ?? 0} reviews
-                  </Text>
-                  <View style={styles.ratingDotSeparator} />
-                  <View style={styles.availabilityInline}>
-                    <View
-                      style={[
-                        styles.availabilityDot,
-                        listing.is_available === false && styles.availabilityDotOff,
-                      ]}
-                    />
+                  <View
+                    style={[
+                      styles.availabilityPill,
+                      listing.is_available === false && styles.availabilityPillOff,
+                    ]}
+                  >
                     <Text
                       style={[
-                        styles.availabilityText,
-                        listing.is_available === false && styles.availabilityTextOff,
+                        styles.availabilityPillText,
+                        listing.is_available === false && styles.availabilityPillTextOff,
                       ]}
                     >
                       {listing.is_available === false ? "Unavailable" : "Available now"}
                     </Text>
                   </View>
                 </View>
-                {priceSummary ? (
-                  <View style={styles.summaryStrip}>
-                    <View style={styles.summaryCell}>
-                      <Text style={styles.summaryLabel}>Total duration</Text>
-                      <Text style={styles.summaryValue}>{priceSummary.durationLabel}</Text>
-                    </View>
-                    <View style={styles.summaryDivider} />
-                    <View style={styles.summaryCell}>
-                      <Text style={styles.summaryLabel}>Parking fee</Text>
-                      <Text style={styles.summaryValue}>€{priceSummary.total}</Text>
-                    </View>
-                    <View style={styles.summaryDivider} />
-                    <View style={styles.summaryCell}>
-                      <Text style={styles.summaryLabel}>To destination</Text>
-                      <Text style={styles.summaryValue}>{distanceLabel}</Text>
-                    </View>
+                <Text style={styles.cardTitle}>{listing.title}</Text>
+                <View style={styles.metaRow}>
+                  <View style={styles.ratingInline}>
+                    <Ionicons name="star" size={14} color="#12916C" />
+                    <Text style={styles.rating}>{hasReviews ? listing.rating?.toFixed(1) : "0.0"}</Text>
+                    <Text style={styles.reviewCount}>({listing.rating_count ?? 0})</Text>
                   </View>
-                ) : null}
+                  <View style={styles.metaDotSep} />
+                  <View style={styles.metaInline}>
+                    <Ionicons name="location-outline" size={13} color="#6B7280" />
+                    <Text style={styles.metaInlineText} numberOfLines={1}>{areaLabel}</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.summaryStripWrap}>
+                <View style={styles.summaryStrip}>
+                  <View style={styles.summaryCell}>
+                    <Text style={styles.summaryLabel}>Duration</Text>
+                    <Text style={styles.summaryValue}>{priceSummary?.durationLabel ?? "--"}</Text>
+                  </View>
+                  <View style={styles.summaryDivider} />
+                  <View style={styles.summaryCell}>
+                    <Text style={styles.summaryLabel}>Fee</Text>
+                    <Text style={styles.summaryValue}>€{priceSummary?.total ?? "--"}</Text>
+                  </View>
+                  <View style={styles.summaryDivider} />
+                  <View style={styles.summaryCell}>
+                    <Text style={styles.summaryLabel}>Distance</Text>
+                    <Text style={styles.summaryValue}>{distanceLabel}</Text>
+                  </View>
+                </View>
               </View>
 
               {/* Date/Time Picker Row */}
@@ -601,12 +619,12 @@ export function ListingScreen({ navigation, route }: Props) {
                           <Text style={styles.dateTimeValue}>{formatDateTimeLabel(startAt)}</Text>
                         </View>
                         <View style={styles.timePickerChevron}>
-                          <Ionicons name="chevron-down" size={14} color="#15B27D" />
+                          <Ionicons name="chevron-down" size={16} color="#0f766e" />
                         </View>
                       </View>
                     </Pressable>
                     <View style={styles.timePickerArrow}>
-                      <Ionicons name="arrow-forward" size={16} color="#15B27D" />
+                      <Ionicons name="arrow-forward" size={18} color="#22a06b" />
                     </View>
                     <Pressable style={styles.timePickerColumn} onPress={() => openPicker("end")}>
                       <View style={styles.timePickerField}>
@@ -615,7 +633,7 @@ export function ListingScreen({ navigation, route }: Props) {
                           <Text style={styles.dateTimeValue}>{formatDateTimeLabel(endAt)}</Text>
                         </View>
                         <View style={styles.timePickerChevron}>
-                          <Ionicons name="chevron-down" size={14} color="#15B27D" />
+                          <Ionicons name="chevron-down" size={16} color="#0f766e" />
                         </View>
                       </View>
                     </Pressable>
@@ -627,23 +645,43 @@ export function ListingScreen({ navigation, route }: Props) {
                         setEndAt(new Date(extendOffer.endOfDay));
                       }}
                     >
-                      <View style={styles.offerLeft}>
-                        <View style={styles.offerIcon}>
+                      <View style={styles.offerContent}>
+                        <LinearGradient
+                          colors={['#15B27D', '#0E8E62']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.offerBoltCircle}
+                        >
                           <Ionicons name="flash" size={12} color="#fff" />
-                        </View>
+                        </LinearGradient>
                         <Text style={styles.offerText}>
                           Extend to <Text style={styles.offerTextBold}>23:59</Text> for only <Text style={styles.offerTextBold}>€{extendOffer.extra}</Text>
                         </Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.7)" />
+                      <View style={styles.offerChevron}>
+                        <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
+                      </View>
                     </Pressable>
                   ) : null}
                 </View>
               </View>
 
+              <Pressable style={styles.locationCard} onPress={openDirections}>
+                <View style={styles.locationIconWrap}>
+                  <Ionicons name="location-outline" size={24} color="#0E8E62" />
+                </View>
+                <View style={styles.locationCopy}>
+                  <Text style={styles.locationTitle} numberOfLines={1}>
+                    {listing.address || "Location unavailable"}
+                  </Text>
+                  <Text style={styles.locationSubtitle}>Get directions to this space</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={22} color="#111827" />
+              </Pressable>
+
               {/* Description */}
-              <View style={[styles.sectionBlock, styles.sectionReadingBlock]}>
-                <Text style={styles.sectionTitle}>Description</Text>
+              <View style={[styles.sectionBlock, { paddingHorizontal: 20 }]}>
+                <Text style={styles.sectionTitle}>About this parking space</Text>
                 <Text style={styles.sectionBody}>
                   {showFullAbout ? aboutText : aboutPreview}
                 </Text>
@@ -658,105 +696,75 @@ export function ListingScreen({ navigation, route }: Props) {
               <View style={styles.sectionDivider} />
 
               {/* Opening Hours */}
-              <View style={[styles.sectionBlock, styles.sectionReadingBlock]}>
-                <View style={styles.hoursHeaderRow}>
-                  <Text style={[styles.sectionTitle, styles.hoursSectionTitle]}>
-                    Space Availability
-                  </Text>
-                </View>
-                <Text style={styles.sectionIntro}>Weekly opening hours for this space.</Text>
-                {(() => {
-                  const todayLabel = new Date().toLocaleDateString(undefined, {
-                    weekday: "long",
-                  });
-                  const rows = hasWeeklyAvailability
-                    ? openingHours
-                    : [{ day: "Availability", hours: availabilityFallbackText }];
-                  return rows.map((row) => {
-                    const isToday = row.day === todayLabel;
-                    const label = row.day;
-                    const highlightToday = hasWeeklyAvailability && isToday;
-                    return (
-                      <View
-                        key={row.day}
-                        style={[styles.hoursRow, highlightToday && styles.hoursRowToday]}
-                      >
-                        <View style={styles.hoursRowLeft}>
-                          {highlightToday && <View style={styles.hoursDot} />}
-                          <Text style={[styles.hoursDay, highlightToday && styles.hoursDayToday]}>
-                            {label}
-                          </Text>
+              <View style={[styles.sectionBlock, { paddingHorizontal: 20 }]}>
+                <Text style={styles.sectionTitle}>Availability</Text>
+                {isOpen24 && !hasWeeklyAvailability ? (
+                  <View style={styles.availabilityCard}>
+                    <View style={styles.availabilityCardLeft}>
+                      <Text style={styles.availabilityOpenLabel}>Open now</Text>
+                      <Text style={styles.availabilityOpenValue}>24/7</Text>
+                    </View>
+                    <View style={styles.availabilityDayStrip}>
+                      {['M','T','W','T','F','S','S'].map((day, i) => {
+                        const todayDow = new Date().getDay();
+                        const mappedDow = [1,2,3,4,5,6,0][i];
+                        const isToday = mappedDow === todayDow;
+                        return (
+                          <View key={i} style={[styles.availabilityDayCell, isToday && styles.availabilityDayCellToday]}>
+                            <Text style={[styles.availabilityDayLabel, isToday && styles.availabilityDayLabelToday]}>{day}</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </View>
+                ) : (
+                  (() => {
+                    const todayLabel = new Date().toLocaleDateString(undefined, { weekday: "long" });
+                    const rows = hasWeeklyAvailability
+                      ? openingHours
+                      : [{ day: "Availability", hours: availabilityFallbackText }];
+                    return rows.map((row) => {
+                      const isToday = row.day === todayLabel;
+                      const highlightToday = hasWeeklyAvailability && isToday;
+                      return (
+                        <View key={row.day} style={[styles.hoursRow, highlightToday && styles.hoursRowToday]}>
+                          <Text style={[styles.hoursDay, highlightToday && styles.hoursDayToday]}>{row.day}</Text>
+                          <Text style={[styles.hoursValue, highlightToday && styles.hoursValueToday]}>{row.hours}</Text>
                         </View>
-                        <Text style={[styles.hoursValue, highlightToday && styles.hoursValueToday]}>
-                          {row.hours}
-                        </Text>
-                      </View>
-                    );
-                  });
-                })()}
+                      );
+                    });
+                  })()
+                )}
               </View>
               <View style={styles.sectionDivider} />
               {/* Features */}
-              <View style={[styles.sectionBlock, styles.sectionReadingBlock]}>
-                <Text style={styles.sectionTitle}>Features</Text>
-                <Text style={styles.sectionIntro}>What this space includes.</Text>
+              <View style={styles.featuresSection}>
+                <Text style={styles.sectionTitle}>What's included</Text>
                 <View style={styles.featuresGrid}>
-                  {featureLabels.slice(0, 4).map((feature) => {
-                    const type = getFeatureIconType(feature);
-                    const subLabels: Record<string, string> = {
-                      cctv: "Monitored 24/7",
-                      sheltered: "Sheltered space",
-                      ev: "Type 2, 7-22 kW",
-                      gated: "Gate w/ keypad",
-                      code: "Secure entry",
-                      permit: "Required",
-                      low: "Height limit",
-                    };
-                    return (
-                      <View key={feature} style={styles.featureIconCard}>
-                        <View style={styles.featureIconTile}>
-                          <FeatureIcon type={type} />
-                        </View>
-                        <View>
-                          <Text style={styles.featureIconLabel}>{feature}</Text>
-                          <Text style={styles.featureIconSub}>{subLabels[type] || ""}</Text>
-                        </View>
-                      </View>
-                    );
-                  })}
+                  {featureLabels.slice(0, 6).map((feature) => (
+                    <View key={feature} style={styles.featureIconCard}>
+                      <FeatureIcon type={getFeatureIconType(feature)} size={28} />
+                      <Text style={styles.featureIconLabel}>{feature}</Text>
+                      <Text style={styles.featureIconSub}>{getFeatureSubLabel(feature)}</Text>
+                    </View>
+                  ))}
                 </View>
               </View>
               <View style={styles.sectionDivider} />
 
               {/* Content Sections */}
               <View style={styles.contentSections}>
-                <View style={[styles.sectionBlock, styles.sectionReadingBlock]}>
+                <View style={styles.sectionBlock}>
                   <View style={styles.reviewHeaderRow}>
                     <Text style={styles.sectionTitle}>Reviews</Text>
-                    {reviews.length > 2 && (
-                      <Pressable onPress={() => navigation.navigate("ListingReviews", { id, rating: listing.rating ?? 0, ratingCount: listing.rating_count ?? reviews.length })}>
-                        <Text style={styles.reviewSeeAll}>See all</Text>
-                      </Pressable>
-                    )}
-                  </View>
-                  {/* Rating summary block */}
-                  <View style={styles.reviewSummaryBlock}>
-                    <View style={styles.reviewRatingLarge}>
-                      <Text style={styles.reviewRatingNumber}>{hasReviews ? listing.rating?.toFixed(2) : "0.00"}</Text>
-                      <Text style={styles.reviewRatingMax}>/ 5</Text>
-                    </View>
-                    <View style={styles.reviewStarsBlock}>
-                      <View style={styles.reviewStarsRowLarge}>
-                        {[0, 1, 2, 3, 4].map((idx) => (
-                          <Ionicons
-                            key={`summary-star-${idx}`}
-                            name="star"
-                            size={13}
-                            color={idx < Math.round(listing.rating ?? 0) ? "#F2A73B" : "#D7D3CB"}
-                          />
-                        ))}
-                      </View>
-                      <Text style={styles.reviewBasedOn}>Based on {listing.rating_count ?? 0} reviews</Text>
+                    <View style={styles.reviewSummary}>
+                      <Ionicons name="star" size={14} color="#F59E0B" />
+                      <Text style={styles.reviewSummaryText}>
+                        {hasReviews ? listing.rating?.toFixed(2) : "0.00"}
+                      </Text>
+                      <Text style={styles.reviewSummaryCount}>
+                        • {listing.rating_count ?? 0} Reviews
+                      </Text>
                     </View>
                   </View>
                   {reviewsLoading ? (
@@ -764,41 +772,52 @@ export function ListingScreen({ navigation, route }: Props) {
                       <ActivityIndicator />
                     </View>
                   ) : reviews.length ? (
-                    <View style={styles.reviewCardsContainer}>
-                      {reviews.slice(0, 2).map((review) => {
-                        const authorName = (review as { author_name?: string }).author_name ?? review.authorName ?? "Guest";
-                        const initial = authorName.charAt(0).toUpperCase();
-                        return (
-                          <View key={review.id} style={styles.reviewCardNew}>
-                            <View style={styles.reviewCardHeader}>
-                              <View style={styles.reviewCardLeft}>
-                                <View style={styles.reviewAvatar}>
-                                  <Text style={styles.reviewAvatarText}>{initial}</Text>
-                                </View>
-                                <View style={styles.reviewAuthorBlock}>
-                                  <Text style={styles.reviewAuthorName}>{authorName}</Text>
-                                  <Text style={styles.reviewTime}>
-                                    {formatReviewDate(
-                                      new Date((review as { created_at?: string }).created_at ?? review.createdAt)
-                                    )}
-                                  </Text>
-                                </View>
-                              </View>
-                              <View style={styles.reviewStarsSmall}>
+                    <View style={styles.reviewCarouselWrap}>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.reviewCarousel}
+                      >
+                        {reviews.slice(0, 6).map((review) => (
+                          <View key={review.id} style={styles.reviewCardWide}>
+                            <View style={styles.reviewCardTop}>
+                              <View style={styles.reviewStarsRow}>
                                 {[0, 1, 2, 3, 4].map((idx) => (
                                   <Ionicons
                                     key={`${review.id}-star-${idx}`}
                                     name="star"
-                                    size={11}
-                                    color={idx < Math.round(review.rating) ? "#F2A73B" : "#D7D3CB"}
+                                    size={14}
+                                    color={idx < Math.round(review.rating) ? "#F59E0B" : "#E5E7EB"}
                                   />
                                 ))}
+                                <Text style={styles.reviewAge}>
+                                  {formatReviewDate(
+                                    new Date((review as { created_at?: string }).created_at ?? review.createdAt)
+                                  )}
+                                </Text>
                               </View>
+                              <Text style={styles.reviewAuthor}>
+                                {(review as { author_name?: string }).author_name ?? review.authorName ?? "Guest"}
+                              </Text>
                             </View>
-                            <Text style={styles.reviewBody}>{review.comment}</Text>
+                            <Text style={styles.reviewComment}>{review.comment}</Text>
                           </View>
-                        );
-                      })}
+                        ))}
+                      </ScrollView>
+                      <Pressable
+                        style={styles.reviewCta}
+                        onPress={() =>
+                          navigation.navigate("ListingReviews", {
+                            id,
+                            rating: listing.rating ?? 0,
+                            ratingCount: listing.rating_count ?? reviews.length,
+                          })
+                        }
+                      >
+                        <Text style={styles.reviewCtaText}>
+                          Show all {listing.rating_count ?? reviews.length} reviews
+                        </Text>
+                      </Pressable>
                     </View>
                   ) : (
                     <Text style={styles.reviewComment}>No reviews yet.</Text>
@@ -857,13 +876,10 @@ export function ListingScreen({ navigation, route }: Props) {
 
             {/* Fixed Bottom Button */}
             {priceSummary && user ? (
-              <View style={[styles.bottomBar, { paddingBottom: 16 + insets.bottom }]}>
+              <View style={[styles.bottomBar, { paddingBottom: 24 + insets.bottom }]}>
                 <View style={styles.priceInfo}>
-                  <View style={styles.priceRow}>
-                    <Text style={styles.priceAmount}>€{priceSummary.total}</Text>
-                    <Text style={styles.priceTotal}>total</Text>
-                  </View>
-                  <Text style={styles.priceDuration}>{priceSummary.durationLabel} · incl. fees</Text>
+                  <Text style={styles.priceAmount}>€{priceSummary.total}</Text>
+                  <Text style={styles.priceDuration}>{priceSummary.durationLabel}</Text>
                 </View>
                 {listing?.is_available === false || showBookingMode ? (
                   <Pressable style={[styles.bookButton, styles.bookButtonDisabled]} disabled>
@@ -884,9 +900,11 @@ export function ListingScreen({ navigation, route }: Props) {
                     }}
                     disabled={authLoading}
                   >
-                    <Text style={styles.bookButtonText}>
-                      {navigatingToBooking ? "Opening..." : "Book Now"}
-                    </Text>
+                    <View style={styles.bookButtonGradient}>
+                      <Text style={styles.bookButtonText}>
+                        {navigatingToBooking ? "Opening..." : "Book Now"}
+                      </Text>
+                    </View>
                   </Pressable>
                 )}
               </View>
@@ -970,7 +988,7 @@ export function ListingScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: '#FFFFFF',
     flex: 1,
   },
   scrollContainer: {
@@ -1428,7 +1446,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-  reviewBodyLegacy1: {
+  reviewBody: {
     color: colors.textMuted,
     fontSize: 13,
     lineHeight: 19,
@@ -1657,31 +1675,31 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   backButtonRound: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#FFFFFF',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.96)',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 16,
+    elevation: 6,
   },
   favoriteButtonRound: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#FFFFFF',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.96)',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
     shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 16,
+    elevation: 6,
   },
   favoriteIcon: {
     color: '#111827',
@@ -1698,12 +1716,12 @@ const styles = StyleSheet.create({
   },
   contentCard: {
     flex: 1,
-    backgroundColor: '#F4F3EF',
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 12,
+    paddingHorizontal: 0,
   },
   contentCardSpacer: {
     height: 120,
@@ -1720,127 +1738,245 @@ const styles = StyleSheet.create({
     backgroundColor: "#d1d5db",
     marginBottom: 12,
   },
-  titleSection: {
-    paddingBottom: 0,
+  heroTitleBlock: {
+    paddingHorizontal: 20,
+    paddingBottom: 18,
+    gap: 12,
+  },
+  titleChipRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
   },
   cardTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 26,
-    fontWeight: '700',
+    fontFamily: "Inter-SemiBold",
+    fontSize: 29,
+    fontWeight: '600',
     color: '#15171A',
-    lineHeight: 30,
-    letterSpacing: -0.6,
-    marginBottom: 0,
+    lineHeight: 33,
+    letterSpacing: -0.55,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginTop: 12,
-    flexWrap: "wrap",
+    gap: 8,
+    flexWrap: 'wrap',
+    marginTop: 2,
+  },
+  ratingInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  metaDotSep: {
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#9AA0A8',
+    opacity: 0.6,
+  },
+  availabilityInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
   typeChip: {
     borderRadius: 999,
-    backgroundColor: "#F1E9DD",
-    paddingHorizontal: 10,
+    backgroundColor: "#F2F4F7",
+    paddingHorizontal: 11,
     paddingVertical: 5,
+    alignSelf: 'flex-start',
   },
   typeChipText: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 12,
-    color: "#7A5A2E",
+    fontFamily: "Inter-SemiBold",
+    fontSize: 9,
+    color: "#667085",
     fontWeight: "600",
-    letterSpacing: 0,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  availabilityPill: {
+    borderRadius: 999,
+    backgroundColor: "#E7F7F0",
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    alignSelf: "flex-start",
+  },
+  availabilityPillOff: {
+    backgroundColor: "#FEECEC",
+  },
+  availabilityPillText: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#0E8E62",
+    letterSpacing: 0.35,
+  },
+  availabilityPillTextOff: {
+    color: "#A12D2F",
   },
   metaInline: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 4,
     flex: 1,
     minWidth: 0,
   },
   metaInlineText: {
-    fontFamily: "Poppins-Medium",
-    fontSize: 13.5,
-    color: '#6B7280',
-    fontWeight: '500',
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    color: '#667085',
+    fontWeight: '400',
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 12,
-    marginBottom: 0,
+    gap: 6,
+    marginTop: 0,
+    marginBottom: 2,
     flexWrap: "wrap",
-  },
-  ratingDotSeparator: {
-    width: 3,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: "rgba(20,23,26,0.08)",
   },
   ratingBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: "#FCEFD6",
+    gap: 4,
+    backgroundColor: "#FFF8E8",
     borderRadius: 999,
-    paddingHorizontal: 9,
+    paddingHorizontal: 8,
     paddingVertical: 4,
   },
+  summaryStripWrap: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+  },
   summaryStrip: {
-    flexDirection: "row",
-    alignItems: "stretch",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(20,23,26,0.06)",
-    marginTop: 14,
-    overflow: "hidden",
+    borderColor: 'rgba(17,24,39,0.08)',
+    paddingVertical: 10,
   },
   summaryCell: {
     flex: 1,
-    alignItems: "flex-start",
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    alignItems: 'center',
+    paddingHorizontal: 8,
     gap: 4,
   },
   summaryLabel: {
-    fontFamily: "Poppins-Medium",
-    color: "#6B7280",
-    fontSize: 11,
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
+    fontFamily: "Inter-SemiBold",
+    color: '#667085',
+    fontSize: 9,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
   },
   summaryDivider: {
     width: 1,
-    backgroundColor: "rgba(20,23,26,0.06)",
-    marginVertical: 14,
+    height: 30,
+    backgroundColor: 'rgba(17,24,39,0.08)',
   },
   summaryValue: {
-    fontFamily: "Poppins-SemiBold",
-    color: "#15171A",
-    fontSize: 17,
-    fontWeight: "700",
-    letterSpacing: -0.2,
+    fontFamily: "Inter-SemiBold",
+    color: '#15171A',
+    fontSize: 14,
+    fontWeight: '600',
   },
   rating: {
-    fontFamily: "Poppins-Bold",
+    fontFamily: "Inter-SemiBold",
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#15171A',
   },
   reviewCount: {
-    fontFamily: "Poppins-Medium",
-    fontSize: 13,
-    fontWeight: "500",
-    color: '#6B7280',
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    color: '#667085',
   },
-  availabilityInline: {
+  quickInfoCard: {
+    marginHorizontal: 20,
+    marginBottom: 18,
+    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(17,24,39,0.08)",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  quickInfoRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 12,
+  },
+  quickInfoCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  quickInfoPrimary: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#15171A",
+    marginBottom: 2,
+  },
+  quickInfoSecondary: {
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    color: "#667085",
+  },
+  todayPill: {
+    borderRadius: 999,
+    backgroundColor: "#136F63",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  todayPillText: {
+    fontFamily: "Inter-Bold",
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 0.15,
+  },
+  locationCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#E9EDF2",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E9EDF2",
+    marginTop: 8,
+    marginBottom: 10,
+  },
+  locationIconWrap: {
+    width: 34,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  locationCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  locationTitle: {
+    fontFamily: "Inter-Medium",
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#136F63",
+    marginBottom: 3,
+  },
+  locationSubtitle: {
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    color: "#667085",
   },
   availabilityDot: {
     width: 7,
@@ -1852,9 +1988,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#930D13",
   },
   availabilityText: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 13,
-    fontWeight: "600",
+    fontFamily: "Poppins-Medium",
+    fontSize: 12,
+    fontWeight: '600',
     color: "#0E8E62",
   },
   availabilityTextOff: {
@@ -1880,101 +2016,112 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   timePickerSection: {
-    paddingTop: 20,
-    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
   },
   timePickerWrapper: {
     overflow: "hidden",
-    borderRadius: 14,
-    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "rgba(20,23,26,0.06)",
+    borderColor: 'rgba(20,23,26,0.08)',
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   timePickerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
   },
   timePickerField: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
-    paddingHorizontal: 14,
+    gap: 10,
+    paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "rgba(21,178,125,0.25)",
-    backgroundColor: "#F7FFFC",
-    flex: 1,
+    borderColor: 'rgba(20,23,26,0.10)',
+    backgroundColor: "#FFFFFF",
+    overflow: "hidden",
   },
   timePickerChevron: {
-    width: 20,
-    height: 20,
+    width: 16,
+    height: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(21,178,125,0.1)",
-    borderRadius: 10,
   },
   timePickerColumn: {
     flex: 1,
   },
   timePickerArrow: {
-    width: 24,
+    width: 32,
     alignItems: "center",
     justifyContent: "center",
   },
   dateTimeLabel: {
-    fontFamily: "Poppins-Medium",
-    fontSize: 11,
+    fontFamily: "Inter-Medium",
+    fontSize: 10,
     color: '#6B7280',
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+    letterSpacing: 0.65,
+    fontWeight: '600',
     marginBottom: 3,
   },
   dateTimeValue: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 14,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 13,
     fontWeight: '600',
     color: '#15171A',
-    letterSpacing: -0.2,
   },
   offerBar: {
-    backgroundColor: "#15202B",
-    paddingVertical: 12,
+    backgroundColor: '#15202B',
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
   },
-  offerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
+  offerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
+    justifyContent: 'center',
+    paddingRight: 14,
   },
-  offerIcon: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: "#15B27D",
-    alignItems: "center",
-    justifyContent: "center",
+  offerBoltCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  offerChevron: {
+    position: 'absolute',
+    right: 16,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
   },
   offerText: {
     color: "#ffffff",
-    fontSize: 13.5,
-    fontWeight: "500",
-    letterSpacing: 0,
+    fontSize: 12,
+    fontWeight: "400",
+    fontFamily: "Inter-Regular",
+    lineHeight: 18,
   },
   offerTextBold: {
+    color: "#ffffff",
     fontWeight: "700",
-  },
-  offerChevron: {
-    opacity: 0.7,
+    fontFamily: "Inter-Bold",
   },
   tabContent: {
     flex: 1,
@@ -1984,29 +2131,23 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   contentSections: {
+    paddingHorizontal: 20,
     paddingTop: 0,
   },
   sectionBlock: {
-    paddingTop: 24,
-    paddingBottom: 24,
-  },
-  sectionReadingBlock: {
-    paddingHorizontal: 0,
+    paddingTop: 22,
+    paddingBottom: 22,
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: "rgba(20,23,26,0.08)",
-    marginHorizontal: 0,
+    backgroundColor: '#EBEBEB',
+    marginHorizontal: 20,
   },
   hoursRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 10,
-  },
-  hoursRowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
+    paddingVertical: 6,
   },
   hoursHeaderRow: {
     flexDirection: "row",
@@ -2015,47 +2156,40 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   hoursToggleText: {
-    fontFamily: "Poppins-Medium",
+    fontFamily: "Inter-SemiBold",
     color: colors.accent,
     fontSize: 12,
     fontWeight: "600",
   },
   hoursSectionTitle: {
-    // Inherits from sectionTitle
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#111827",
   },
   hoursRowToday: {
-    backgroundColor: "#E8F6EF",
-    borderRadius: 10,
-    marginHorizontal: -12,
-    paddingHorizontal: 12,
+    backgroundColor: "#E5F6EE",
+    borderRadius: 0,
+    marginHorizontal: -20,
+    paddingHorizontal: 20,
   },
   hoursDay: {
-    fontFamily: "Poppins-Medium",
-    fontSize: 14.5,
-    color: "#15171A",
-    fontWeight: "500",
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    color: "#111827",
+    fontWeight: "400",
   },
   hoursDayToday: {
     color: "#0E8E62",
-    fontWeight: "600",
-  },
-  hoursDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 4,
-    backgroundColor: "#15B27D",
-    marginRight: 10,
   },
   hoursValue: {
-    fontFamily: "Poppins-Medium",
-    fontSize: 13.5,
-    color: "#3A3D43",
+    fontFamily: "Inter-Medium",
+    fontSize: 12,
+    color: "#6B7280",
     fontWeight: "500",
-    letterSpacing: -0.2,
   },
   hoursValueToday: {
     color: "#0E8E62",
-    fontWeight: "600",
   },
   dividerLine: {
     height: 1,
@@ -2063,32 +2197,24 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   sectionTitle: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16.5,
-    fontWeight: '600',
+    fontFamily: "Inter-Bold",
+    fontSize: 17,
+    fontWeight: '700',
     color: '#15171A',
-    letterSpacing: -0.35,
+    letterSpacing: -0.45,
     marginBottom: 0,
   },
   sectionBody: {
-    fontFamily: "Poppins-Regular",
-    fontSize: 14.5,
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
     lineHeight: 23,
-    color: '#3A3D43',
+    color: '#475467',
     fontWeight: '400',
-    marginTop: 10,
-  },
-  sectionIntro: {
-    fontFamily: "Poppins-Regular",
-    fontSize: 13.5,
-    lineHeight: 20,
-    color: "#6B7280",
-    marginTop: 6,
-    marginBottom: 16,
+    marginTop: 12,
   },
   readMore: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 14,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 12,
     fontWeight: '600',
     color: '#0E8E62',
     marginTop: 12,
@@ -2096,39 +2222,156 @@ const styles = StyleSheet.create({
   featuresGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: 8,
+    marginTop: 14,
+  },
+  featuresSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 22,
+    paddingTop: 22,
   },
   featureIconCard: {
-    width: "47%",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "rgba(20,23,26,0.06)",
-    borderRadius: 14,
-    padding: 14,
-    flexDirection: "column",
-    gap: 12,
-  },
-  featureIconTile: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: "#F4F3EF",
+    width: '47.5%',
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 0,
     alignItems: "center",
     justifyContent: "center",
+    gap: 4,
+    paddingVertical: 18,
+    paddingHorizontal: 8,
   },
   featureIconLabel: {
-    fontSize: 14.5,
+    fontSize: 12,
     color: "#15171A",
-    fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
-    letterSpacing: -0.2,
+    fontWeight: "500",
+    fontFamily: "Inter-Medium",
+    textAlign: "center",
+    marginTop: 4,
   },
   featureIconSub: {
-    fontSize: 12.5,
+    fontSize: 10,
     color: "#6B7280",
-    fontWeight: "500",
+    fontWeight: "400",
+    fontFamily: "Inter-Regular",
+    textAlign: "center",
+  },
+  featuresList: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(20,23,26,0.08)',
+    overflow: 'hidden',
+    marginTop: 12,
+  },
+  featureListRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  featureListRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(20,23,26,0.08)',
+  },
+  featureListIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EDEBE4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  featureListLabel: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#15171A',
+    fontFamily: "Inter-Medium",
+  },
+  featureCheck: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#E5F6EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureCheckText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0E8E62',
+  },
+  availabilityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 14,
+    borderWidth: 0,
+    padding: 16,
+    marginTop: 12,
+  },
+  availabilityCardLeft: {
+    gap: 2,
+  },
+  availabilityOpenLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#0E8E62',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    fontFamily: "Inter-SemiBold",
+  },
+  availabilityOpenValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#15171A',
+    fontFamily: "Inter-Bold",
+    letterSpacing: -0.35,
+  },
+  availabilityDayStrip: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  availabilityDayCell: {
+    flex: 1,
+    aspectRatio: 0.85,
+    borderRadius: 6,
+    backgroundColor: '#E8E8E8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  availabilityDayCellToday: {
+    backgroundColor: '#15B27D',
+  },
+  availabilityDayLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#6B7280',
     fontFamily: "Poppins-Medium",
-    marginTop: 3,
+  },
+  availabilityDayLabelToday: {
+    color: '#FFFFFF',
+  },
+  photoCounterChip: {
+    position: 'absolute',
+    bottom: 12,
+    left: 20,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  photoCounterText: {
+    fontFamily: "Poppins-Medium",
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#ffffff',
+    letterSpacing: 0.8,
   },
   hostCard: {
     flexDirection: 'row',
@@ -2173,157 +2416,44 @@ const styles = StyleSheet.create({
   },
   reviewList: {
     gap: 18,
-    marginTop: 12,
+    marginTop: 14,
   },
   reviewHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   reviewSummary: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-  reviewSummaryInline: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 12,
-  },
   reviewSummaryText: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 12,
-    fontWeight: "700",
+    fontFamily: "Inter-SemiBold",
+    fontSize: 13,
+    fontWeight: "600",
     color: "#111827",
   },
   reviewSummaryCount: {
-    fontFamily: "Poppins-Regular",
+    fontFamily: "Inter-Regular",
     fontSize: 12,
     color: "#6B7280",
-  },
-  reviewSeeAll: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 13.5,
-    fontWeight: "600",
-    color: "#0E8E62",
-  },
-  reviewSummaryBlock: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  reviewRatingLarge: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 4,
-  },
-  reviewRatingNumber: {
-    fontFamily: "Poppins-Bold",
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#15171A",
-    letterSpacing: -0.5,
-  },
-  reviewRatingMax: {
-    fontFamily: "Poppins-Medium",
-    fontSize: 14,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  reviewStarsBlock: {
-    flexDirection: "column",
-    gap: 4,
-  },
-  reviewStarsRowLarge: {
-    flexDirection: "row",
-    gap: 2,
-  },
-  reviewBasedOn: {
-    fontFamily: "Poppins-Regular",
-    fontSize: 12,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  reviewCardsContainer: {
-    flexDirection: "column",
-    gap: 10,
-  },
-  reviewCardNew: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "rgba(20,23,26,0.06)",
-    borderRadius: 14,
-    padding: 14,
-    flexDirection: "column",
-    gap: 8,
-  },
-  reviewCardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  reviewCardLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  reviewAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#F1E9DD",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  reviewAvatarText: {
-    fontFamily: "Poppins-Bold",
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#7A5A2E",
-  },
-  reviewAuthorBlock: {
-    flexDirection: "column",
-    gap: 1,
-  },
-  reviewAuthorName: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 13.5,
-    fontWeight: "600",
-    color: "#15171A",
-  },
-  reviewTime: {
-    fontFamily: "Poppins-Regular",
-    fontSize: 11.5,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  reviewStarsSmall: {
-    flexDirection: "row",
-    gap: 1.5,
-  },
-  reviewBody: {
-    fontFamily: "Poppins-Regular",
-    fontSize: 13.5,
-    lineHeight: 20,
-    color: "#3A3D43",
   },
   reviewCarouselWrap: {
-    marginTop: 8,
+    marginTop: 12,
   },
   reviewCarousel: {
+    paddingRight: 12,
     gap: 12,
   },
   reviewCardWide: {
-    width: 228,
+    width: 250,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    padding: 12,
-    borderRadius: 12,
+    borderColor: 'rgba(20,23,26,0.08)',
+    padding: 14,
+    borderRadius: 14,
   },
   reviewCardTop: {
     marginBottom: 8,
@@ -2334,31 +2464,33 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   reviewAge: {
-    fontFamily: "Poppins-Regular",
+    fontFamily: "Inter-Regular",
     marginLeft: 6,
     fontSize: 11,
     color: "#6B7280",
   },
   reviewAuthor: {
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Inter-Medium",
     marginTop: 6,
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "500",
     color: "#111827",
   },
   reviewCta: {
-    marginTop: 12,
+    marginTop: 16,
     borderWidth: 1,
-    borderColor: "#A7F3D0",
-    borderRadius: 12,
-    paddingVertical: 10,
+    borderColor: 'rgba(14,142,98,0.25)',
+    borderRadius: 999,
+    paddingVertical: 12,
     alignItems: "center",
-    backgroundColor: "#F0FDF4",
+    backgroundColor: "#FFFFFF",
   },
   reviewCtaText: {
-    color: colors.accent,
+    color: '#0E8E62',
     fontSize: 12,
     fontWeight: "600",
+    fontFamily: "Inter-SemiBold",
+    letterSpacing: 0.15,
   },
   reviewCard: {
     backgroundColor: '#FFFFFF',
@@ -2514,73 +2646,63 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FBFAF7',
+    backgroundColor: '#FFFFFF',
     paddingTop: 14,
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 0,
+    elevation: 4,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(20,23,26,0.06)',
+    borderTopColor: '#EBEBEB',
   },
   priceInfo: {
-    flexDirection: "column",
-    gap: 2,
-  },
-  priceRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 6,
+    flex: 1,
   },
   priceFrom: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6B7280',
     marginBottom: 2,
   },
   priceAmount: {
-    fontFamily: "Poppins-Bold",
+    fontFamily: "Inter-Bold",
     fontSize: 24,
     fontWeight: '700',
     color: '#15171A',
-    letterSpacing: -0.2,
-  },
-  priceTotal: {
-    fontFamily: "Poppins-Medium",
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '500',
+    letterSpacing: -0.5,
   },
   priceDuration: {
-    fontFamily: "Poppins-Regular",
+    fontFamily: "Inter-Regular",
     fontSize: 12,
     color: '#6B7280',
-    fontWeight: '500',
+    fontWeight: '400',
   },
   bookButton: {
+    overflow: 'hidden',
+    borderRadius: 999,
     flex: 1,
-    maxWidth: 200,
-    height: 52,
-    backgroundColor: '#15B27D',
-    borderRadius: 14,
+    maxWidth: 180,
+    backgroundColor: '#0E8E62',
+  },
+  bookButtonGradient: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: 'rgba(21,178,125,0.35)',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 1,
-    shadowRadius: 16,
-    elevation: 4,
   },
   bookButtonText: {
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Inter-SemiBold",
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#FFFFFF',
     letterSpacing: -0.2,
   },
   bookButtonDisabled: {
     backgroundColor: '#E5E7EB',
-    shadowOpacity: 0,
   },
   bookButtonDisabledText: {
     fontFamily: "Poppins-Medium",
