@@ -554,37 +554,25 @@ export function ListingScreen({ navigation, route }: Props) {
               <View style={styles.contentWrap}>
                 <View style={styles.contentCard}>
               <View style={styles.heroTitleBlock}>
-                <View style={styles.titleChipRow}>
-                  <View style={styles.typeChip}>
-                    <Text style={styles.typeChipText}>{spaceTypeLabel}</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.availabilityPill,
-                      listing.is_available === false && styles.availabilityPillOff,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.availabilityPillText,
-                        listing.is_available === false && styles.availabilityPillTextOff,
-                      ]}
-                    >
-                      {listing.is_available === false ? "Unavailable" : "Available now"}
+                <Text style={styles.cardTitle}>{listing.title}</Text>
+                <View style={styles.infoRows}>
+                  <View style={styles.infoRow}>
+                    <Ionicons name="car-outline" size={17} color="#9CA3AF" />
+                    <Text style={styles.infoRowText}>{spaceTypeLabel}</Text>
+                    <View style={styles.infoRowDot} />
+                    <View style={[styles.availDot, listing.is_available === false && styles.availDotOff]} />
+                    <Text style={[styles.infoRowAvail, listing.is_available === false && styles.infoRowAvailOff]}>
+                      {listing.is_available === false ? "Unavailable" : "Available"}
                     </Text>
                   </View>
-                </View>
-                <Text style={styles.cardTitle}>{listing.title}</Text>
-                <View style={styles.metaRow}>
-                  <View style={styles.ratingInline}>
-                    <Ionicons name="star" size={14} color="#12916C" />
-                    <Text style={styles.rating}>{hasReviews ? listing.rating?.toFixed(1) : "0.0"}</Text>
-                    <Text style={styles.reviewCount}>({listing.rating_count ?? 0})</Text>
+                  <View style={styles.infoRow}>
+                    <Ionicons name="star" size={16} color="#12916C" />
+                    <Text style={styles.infoRowRating}>{hasReviews ? listing.rating?.toFixed(1) : "0.0"}</Text>
+                    <Text style={styles.infoRowMuted}>({listing.rating_count ?? 0} reviews)</Text>
                   </View>
-                  <View style={styles.metaDotSep} />
-                  <View style={styles.metaInline}>
-                    <Ionicons name="location-outline" size={13} color="#6B7280" />
-                    <Text style={styles.metaInlineText} numberOfLines={1}>{areaLabel}</Text>
+                  <View style={styles.infoRow}>
+                    <Ionicons name="location-outline" size={17} color="#9CA3AF" />
+                    <Text style={styles.infoRowText} numberOfLines={1}>{areaLabel}</Text>
                   </View>
                 </View>
               </View>
@@ -680,7 +668,7 @@ export function ListingScreen({ navigation, route }: Props) {
               </Pressable>
 
               {/* Description */}
-              <View style={[styles.sectionBlock, { paddingHorizontal: 20 }]}>
+              <View style={[styles.sectionBlock, { paddingHorizontal: 16 }]}>
                 <Text style={styles.sectionTitle}>About this parking space</Text>
                 <Text style={styles.sectionBody}>
                   {showFullAbout ? aboutText : aboutPreview}
@@ -696,7 +684,7 @@ export function ListingScreen({ navigation, route }: Props) {
               <View style={styles.sectionDivider} />
 
               {/* Opening Hours */}
-              <View style={[styles.sectionBlock, { paddingHorizontal: 20 }]}>
+              <View style={[styles.sectionBlock, { paddingHorizontal: 16 }]}>
                 <Text style={styles.sectionTitle}>Availability</Text>
                 {isOpen24 && !hasWeeklyAvailability ? (
                   <View style={styles.availabilityCard}>
@@ -1717,9 +1705,9 @@ const styles = StyleSheet.create({
   contentCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 22,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    paddingTop: 14,
     paddingBottom: 12,
     paddingHorizontal: 0,
   },
@@ -1739,62 +1727,68 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   heroTitleBlock: {
-    paddingHorizontal: 20,
-    paddingBottom: 18,
-    gap: 12,
-  },
-  titleChipRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 2,
+    paddingBottom: 14,
     gap: 8,
-    flexWrap: "wrap",
   },
   cardTitle: {
-    fontFamily: "Inter-SemiBold",
-    fontSize: 29,
-    fontWeight: '600',
+    fontFamily: "Inter-Bold",
+    fontSize: 26,
+    fontWeight: '700',
     color: '#15171A',
-    lineHeight: 33,
-    letterSpacing: -0.55,
+    lineHeight: 31,
+    letterSpacing: -0.5,
   },
-  metaRow: {
+  infoRows: {
+    gap: 7,
+  },
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    flexWrap: 'wrap',
-    marginTop: 2,
   },
-  ratingInline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  infoRowText: {
+    fontFamily: "Inter-Regular",
+    fontSize: 15,
+    color: '#15171A',
+    fontWeight: '400',
+    flex: 1,
   },
-  metaDotSep: {
+  infoRowRating: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#15171A',
+  },
+  infoRowMuted: {
+    fontFamily: "Inter-Regular",
+    fontSize: 15,
+    color: '#6B7280',
+  },
+  infoRowDot: {
     width: 3,
     height: 3,
     borderRadius: 2,
-    backgroundColor: '#9AA0A8',
-    opacity: 0.6,
+    backgroundColor: '#D1D5DB',
   },
-  availabilityInline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  typeChip: {
-    borderRadius: 999,
-    backgroundColor: "#F2F4F7",
-    paddingHorizontal: 11,
-    paddingVertical: 5,
-    alignSelf: 'flex-start',
-  },
-  typeChipText: {
+  infoRowAvail: {
     fontFamily: "Inter-SemiBold",
-    fontSize: 9,
-    color: "#667085",
-    fontWeight: "600",
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#12916C',
+  },
+  infoRowAvailOff: {
+    color: '#B91C1C',
+  },
+  availDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#12916C',
+  },
+  availDotOff: {
+    backgroundColor: '#EF4444',
   },
   availabilityPill: {
     borderRadius: 999,
@@ -1816,19 +1810,6 @@ const styles = StyleSheet.create({
   availabilityPillTextOff: {
     color: "#A12D2F",
   },
-  metaInline: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    flex: 1,
-    minWidth: 0,
-  },
-  metaInlineText: {
-    fontFamily: "Inter-Regular",
-    fontSize: 12,
-    color: '#667085',
-    fontWeight: '400',
-  },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1847,27 +1828,27 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   summaryStripWrap: {
-    marginHorizontal: 20,
-    marginBottom: 16,
+    marginHorizontal: 16,
+    marginBottom: 10,
   },
   summaryStrip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    borderRadius: 16,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
-    paddingVertical: 10,
+    borderColor: 'rgba(17,24,39,0.07)',
+    paddingVertical: 8,
   },
   summaryCell: {
     flex: 1,
     alignItems: 'center',
     paddingHorizontal: 8,
-    gap: 4,
+    gap: 3,
   },
   summaryLabel: {
     fontFamily: "Inter-SemiBold",
-    color: '#667085',
+    color: '#9CA3AF',
     fontSize: 9,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -1875,25 +1856,25 @@ const styles = StyleSheet.create({
   },
   summaryDivider: {
     width: 1,
-    height: 30,
-    backgroundColor: 'rgba(17,24,39,0.08)',
+    height: 28,
+    backgroundColor: 'rgba(17,24,39,0.07)',
   },
   summaryValue: {
     fontFamily: "Inter-SemiBold",
     color: '#15171A',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   rating: {
     fontFamily: "Inter-SemiBold",
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#15171A',
   },
   reviewCount: {
     fontFamily: "Inter-Regular",
-    fontSize: 12,
-    color: '#667085',
+    fontSize: 14,
+    color: '#6B7280',
   },
   quickInfoCard: {
     marginHorizontal: 20,
@@ -1948,8 +1929,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     borderTopWidth: 1,
     borderTopColor: "#E9EDF2",
     borderBottomWidth: 1,
@@ -2016,7 +1997,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   timePickerSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 10,
   },
   timePickerWrapper: {
@@ -2131,17 +2112,16 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   contentSections: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 0,
   },
   sectionBlock: {
-    paddingTop: 22,
-    paddingBottom: 22,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   sectionDivider: {
     height: 1,
     backgroundColor: '#EBEBEB',
-    marginHorizontal: 20,
   },
   hoursRow: {
     flexDirection: "row",
@@ -2170,8 +2150,8 @@ const styles = StyleSheet.create({
   hoursRowToday: {
     backgroundColor: "#E5F6EE",
     borderRadius: 0,
-    marginHorizontal: -20,
-    paddingHorizontal: 20,
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
   },
   hoursDay: {
     fontFamily: "Inter-Regular",
@@ -2201,16 +2181,16 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: '#15171A',
-    letterSpacing: -0.45,
+    letterSpacing: -0.2,
     marginBottom: 0,
   },
   sectionBody: {
     fontFamily: "Inter-Regular",
-    fontSize: 14,
+    fontSize: 15,
     lineHeight: 23,
-    color: '#475467',
+    color: '#374151',
     fontWeight: '400',
-    marginTop: 12,
+    marginTop: 8,
   },
   readMore: {
     fontFamily: "Inter-SemiBold",
@@ -2226,9 +2206,9 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   featuresSection: {
-    paddingHorizontal: 20,
-    paddingBottom: 22,
-    paddingTop: 22,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingTop: 16,
   },
   featureIconCard: {
     width: '47.5%',
