@@ -441,9 +441,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           onPress={() => navigation.goBack()}
           style={styles.progressBackButton}
         />
-        <View style={styles.progressTitleRow}>
-          <Text style={styles.progressTitle}>Booking Confirmation</Text>
-        </View>
         <BookingProgressBar currentStep={bookingBusy || confirmingBooking ? 3 : 2} />
       </View>
       {loadingListing ? (
@@ -471,6 +468,9 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
+          <View style={styles.pageTitleBlock}>
+            <Text style={styles.pageTitle}>Booking Confirmation</Text>
+          </View>
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <View style={styles.summaryCard}>
@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
   progressHeader: {
     backgroundColor: "#FFFFFF",
     paddingTop: 8,
-    paddingBottom: 0,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
@@ -753,16 +753,17 @@ const styles = StyleSheet.create({
     zIndex: 2,
     marginBottom: 0,
   },
-  progressTitleRow: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 64,
-    paddingTop: 6,
-    paddingBottom: 8,
+  pageTitleBlock: {
+    paddingTop: 14,
+    paddingBottom: 14,
   },
-  progressTitle: {
-    ...textStyles.sectionTitle,
-    fontSize: 17,
+  pageTitle: {
+    color: "#15171A",
+    fontSize: 28,
+    lineHeight: 32,
+    fontFamily: "Inter-Medium",
+    fontWeight: "500",
+    letterSpacing: -0.45,
   },
   scrollContent: {
     paddingHorizontal: spacing.screenX,

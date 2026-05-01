@@ -484,7 +484,7 @@ export function ListingScreen({ navigation, route }: Props) {
               {imageUrls.length ? (
                 <Image
                   source={{ uri: imageUrls[0] }}
-                  style={[styles.heroImage, { width, height: heroHeight }]}
+                  style={[styles.heroImage, { width, height: heroHeight + 44, top: 12 }]}
                 />
               ) : (
                 <View style={[styles.heroPlaceholder, { height: heroHeight }]}>
@@ -862,8 +862,8 @@ export function ListingScreen({ navigation, route }: Props) {
               </View>
             </ScrollView>
 
-            {/* Fixed Bottom Button */}
-            {priceSummary && user ? (
+              {/* Fixed Bottom Button */}
+              {priceSummary && user ? (
               <View style={[styles.bottomBar, { paddingBottom: 24 + insets.bottom }]}>
                 <View style={styles.priceInfo}>
                   <Text style={styles.priceAmount}>€{priceSummary.total}</Text>
@@ -1037,6 +1037,7 @@ const styles = StyleSheet.create({
   heroImage: {
     height: 240,
     width: "100%",
+    position: "relative",
   },
   heroPlaceholder: {
     alignItems: "center",
@@ -1733,12 +1734,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cardTitle: {
-    fontFamily: "Inter-Bold",
-    fontSize: 26,
-    fontWeight: '700',
+    fontFamily: "Inter-Medium",
+    fontSize: 25,
+    fontWeight: '500',
     color: '#15171A',
-    lineHeight: 31,
-    letterSpacing: -0.5,
+    lineHeight: 30,
+    letterSpacing: -0.35,
   },
   infoRows: {
     gap: 7,
@@ -2642,11 +2643,6 @@ const styles = StyleSheet.create({
   },
   priceInfo: {
     flex: 1,
-  },
-  priceFrom: {
-    fontSize: 11,
-    color: '#6B7280',
-    marginBottom: 2,
   },
   priceAmount: {
     fontFamily: "Inter-Bold",
