@@ -36,6 +36,7 @@ import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import { BackButton, Button, SectionHeader, TextInput as AppTextInput } from "../components/ui";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { formatDateLabel, formatTimeLabel } from "../utils/dateFormat";
+import { calculateListingTotal } from "../utils/pricing";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingSummary">;
 
@@ -197,17 +198,10 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     lastMapKeyRef.current = mapCoordsKey;
     setStaticMapVersion((prev) => prev + 1);
   }, [mapCoordsKey]);
-  const durationHours = useMemo(() => {
-    const ms = Math.max(0, end.getTime() - start.getTime());
-    return Math.max(1, Math.ceil(ms / (1000 * 60 * 60)));
-  }, [end, start]);
-
   const priceSummary = useMemo(() => {
     if (!listing) return null;
-    const hourlyRate = listing.price_per_day / 24;
-    const total = Math.round(hourlyRate * durationHours);
-    return { total, totalCents: total * 100 };
-  }, [durationHours, listing]);
+    return calculateListingTotal(listing, start, end);
+  }, [end, listing, start]);
 
   const pricing = useMemo(() => {
     const parkingFee = priceSummary?.total ?? 0;
@@ -490,7 +484,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 <View style={styles.summaryMetricCell}>
                   <Text style={styles.summaryMetricLabel}>Duration</Text>
                   <Text style={styles.summaryMetricValue}>
-                    {durationHours} {durationHours === 1 ? "hour" : "hours"}
+                    {priceSummary?.durationLabel ?? "--"}
                   </Text>
                 </View>
                 <View style={styles.summaryMetricDivider} />

@@ -10,6 +10,7 @@ import {
   TruckIcon,
 } from "@heroicons/react/24/outline";
 import { getListing, listListingReviews } from "../../../lib/api";
+import { formatListingPriceLine } from "../../../lib/pricing";
 import type { Listing } from "../../../components/ListingCard";
 import { ListingMap } from "./MapSection";
 import { WalkTime } from "./WalkTime";
@@ -115,7 +116,7 @@ export default async function ListingDetailPage({
                   {listing.address}
                 </p>
                 <div className="flex flex-wrap gap-2 pt-2 text-xs font-semibold text-slate-600">
-                  <span className="rounded-full bg-slate-100 px-3 py-1">€{listing.pricePerDay} / day</span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1">{formatListingPriceLine(listing)}</span>
                   <span className="rounded-full bg-slate-100 px-3 py-1">Availability: {listing.availability}</span>
                   <span className="rounded-full bg-slate-100 px-3 py-1">
                     {listing.permissionDeclared ? "Permission verified" : "Permission pending"}
@@ -208,7 +209,12 @@ export default async function ListingDetailPage({
             <aside className="space-y-4">
               <div className="sticky top-6 space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Book this space</p>
-                <BookingSelector listingId={listing.id} pricePerDay={listing.pricePerDay} />
+                <BookingSelector
+                  listingId={listing.id}
+                  pricePerDay={listing.pricePerDay}
+                  pricePerHour={listing.pricePerHour}
+                  rateType={listing.rateType}
+                />
                 {!listing.hostStripeAccountId && (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                     Host payouts are not set up yet. You can still proceed for demo, but live payments require host onboarding.

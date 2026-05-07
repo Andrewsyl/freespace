@@ -121,7 +121,9 @@ function authHeaders(token?: string): Record<string, string> {
 export type CreateListingInput = {
   title: string;
   address: string;
+  rateType?: "hourly" | "daily";
   pricePerDay: number;
+  pricePerHour?: number | null;
   availabilityText: string;
   latitude: number;
   longitude: number;
@@ -446,6 +448,8 @@ export type ListingDetail = {
   title: string;
   address: string;
   pricePerDay: number;
+  pricePerHour?: number | null;
+  rateType?: "hourly" | "daily" | null;
   availability: string;
   amenities?: string[];
   imageUrls?: string[];

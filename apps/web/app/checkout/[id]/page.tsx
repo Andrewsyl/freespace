@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createBooking, getListing, type ListingDetail } from "../../../lib/api";
+import { calculateListingTotal, formatListingPriceLine } from "../../../lib/pricing";
 import { useAuth } from "../../../components/AuthProvider";
 import { SlimNav } from "../../../components/SlimNav";
 
@@ -24,12 +25,15 @@ export default function CheckoutPage() {
 
   const startDateTime = useMemo(() => new Date(`${date}T${startTime}:00`), [date, startTime]);
   const endDateTime = useMemo(() => new Date(`${date}T${endTime}:00`), [date, endTime]);
+  const pricing = useMemo(
+    () => (listing ? calculateListingTotal(listing, startDateTime, endDateTime) : null),
+    [endDateTime, listing, startDateTime]
+  );
   const durationHours = useMemo(() => {
     const diff = endDateTime.getTime() - startDateTime.getTime();
     return Math.max(1, Math.ceil(diff / (1000 * 60 * 60)));
   }, [endDateTime, startDateTime]);
-  const billingDays = useMemo(() => Math.max(1, Math.ceil(durationHours / 24)), [durationHours]);
-  const totalPrice = useMemo(() => (listing ? listing.pricePerDay * billingDays : 0), [billingDays, listing]);
+  const totalPrice = pricing?.total ?? 0;
   const parkingFee = totalPrice;
   const platformFeeLabel = "Included";
 
@@ -52,7 +56,7 @@ export default function CheckoutPage() {
     try {
       const from = `${date}T${startTime}:00Z`;
       const to = `${date}T${endTime}:00Z`;
-      const amountCents = Math.max(1, listing.pricePerDay * billingDays) * 100; // simple day rate
+      const amountCents = Math.max(1, Math.round(totalPrice * 100));
       const res = await createBooking(
         {
           listingId: listing.id,
@@ -195,11 +199,13 @@ export default function CheckoutPage() {
             <div className="mt-4 space-y-3 text-sm text-slate-600">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold tracking-wide text-slate-400">HOST RATE</span>
-                <span className="text-sm font-semibold text-slate-900">€{listing.pricePerDay} / day</span>
+                <span className="text-sm font-semibold text-slate-900">{formatListingPriceLine(listing)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold tracking-wide text-slate-400">BILLING PERIOD</span>
-                <span className="text-sm font-semibold text-slate-900">{billingDays} day(s)</span>
+                <span className="text-sm font-semibold text-slate-900">
+                  {pricing?.billingCount ?? 0} {pricing?.billingUnit ?? "day"}{pricing?.billingCount === 1 ? "" : "s"}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold tracking-wide text-slate-400">PARKING FEE</span>

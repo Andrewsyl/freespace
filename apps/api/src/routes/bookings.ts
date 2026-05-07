@@ -46,6 +46,26 @@ import "../loadEnv.js";
 import { generateVerificationToken, hashPassword } from "../lib/auth.js";
 
 const router = Router();
+
+function calculateListingChargeCents(input: {
+  rateType?: string | null;
+  pricePerDay: number;
+  pricePerHour?: number | null;
+  startTime: Date;
+  endTime: Date;
+}) {
+  const durationHours = Math.max(
+    1,
+    Math.ceil((input.endTime.getTime() - input.startTime.getTime()) / (1000 * 60 * 60))
+  );
+
+  if (input.rateType === "hourly" && input.pricePerHour != null) {
+    return Math.max(1, Math.round(Number(input.pricePerHour) * durationHours * 100));
+  }
+
+  const billingDays = Math.max(1, Math.ceil(durationHours / 24));
+  return Math.max(1, Math.round(Number(input.pricePerDay) * billingDays * 100));
+}
 const bookingLimiter = createRateLimiter({
   windowMs: 5 * 60 * 1000,
   max: 10,
@@ -536,14 +556,29 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
         maxBookingsPerDay: settings.maxBookingsPerDay,
       });
     }
-    if (recent.total_cents + payload.amountCents > settings.maxAmountPerDayCents) {
+    const listingWithHost = await getListingWithHostAccount(payload.listingId);
+    if (!listingWithHost) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
+    const expectedAmountCents = calculateListingChargeCents({
+      rateType: listingWithHost.rateType,
+      pricePerDay: listingWithHost.pricePerDay,
+      pricePerHour: listingWithHost.pricePerHour,
+      startTime: new Date(payload.from),
+      endTime: new Date(payload.to),
+    });
+    if (payload.amountCents !== expectedAmountCents) {
+      return res.status(400).json({ message: "Booking price is out of date. Please refresh and try again." });
+    }
+
+    if (recent.total_cents + expectedAmountCents > settings.maxAmountPerDayCents) {
       if (enforceFraud) {
         return res.status(429).json({ message: "Daily booking limit reached." });
       }
       console.warn("[fraud] booking spend above threshold", {
         userId: driverId,
         totalCents: recent.total_cents,
-        attemptedCents: payload.amountCents,
+        attemptedCents: expectedAmountCents,
         maxAmountPerDayCents: settings.maxAmountPerDayCents,
       });
     }
@@ -561,15 +596,14 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
       return res.status(409).json({ message: "Time slot already booked" });
     }
 
-    const listingWithHost = await getListingWithHostAccount(payload.listingId);
     const driver = await findUserById(driverId);
     const payoutAvailableAt = new Date(
       new Date(payload.from).getTime() + 24 * 60 * 60 * 1000
     );
 
-    const platformFeeCents = Math.round(payload.amountCents * payload.platformFeePercent);
+    const platformFeeCents = Math.round(expectedAmountCents * payload.platformFeePercent);
     const session = await createCheckoutSession({
-      amount: payload.amountCents,
+      amount: expectedAmountCents,
       currency: payload.currency,
       listingId: payload.listingId,
       hostStripeAccountId: listingWithHost?.hostStripeAccountId ?? null,
@@ -586,7 +620,7 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
         listingId: payload.listingId,
         from: payload.from,
         to: payload.to,
-        amountCents: payload.amountCents,
+        amountCents: expectedAmountCents,
         currency: payload.currency,
       }),
     });
@@ -612,7 +646,7 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
         to: payload.to,
         stripePaymentIntentId: session.payment_intent as string,
         checkoutSessionId: session.id,
-        amountCents: payload.amountCents,
+        amountCents: expectedAmountCents,
         currency: payload.currency,
         platformFeeCents,
         payoutAvailableAt,
@@ -696,14 +730,29 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
         maxBookingsPerDay: settings.maxBookingsPerDay,
       });
     }
-    if (recent.total_cents + payload.amountCents > settings.maxAmountPerDayCents) {
+    const listingWithHost = await getListingWithHostAccount(payload.listingId);
+    if (!listingWithHost) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
+    const expectedAmountCents = calculateListingChargeCents({
+      rateType: listingWithHost.rateType,
+      pricePerDay: listingWithHost.pricePerDay,
+      pricePerHour: listingWithHost.pricePerHour,
+      startTime: new Date(payload.from),
+      endTime: new Date(payload.to),
+    });
+    if (payload.amountCents !== expectedAmountCents) {
+      return res.status(400).json({ message: "Booking price is out of date. Please refresh and try again." });
+    }
+
+    if (recent.total_cents + expectedAmountCents > settings.maxAmountPerDayCents) {
       if (enforceFraud) {
         return res.status(429).json({ message: "Daily booking limit reached." });
       }
       console.warn("[fraud] booking spend above threshold", {
         userId: driverId,
         totalCents: recent.total_cents,
-        attemptedCents: payload.amountCents,
+        attemptedCents: expectedAmountCents,
         maxAmountPerDayCents: settings.maxAmountPerDayCents,
       });
     }
@@ -724,7 +773,6 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
     const user = await findUserById(driverId);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
 
-    const listingWithHost = await getListingWithHostAccount(payload.listingId);
     const payoutAvailableAt = new Date(
       new Date(payload.from).getTime() + 24 * 60 * 60 * 1000
     );
@@ -734,9 +782,9 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
       { apiVersion: "2024-06-20" }
     );
 
-    const platformFeeCents = Math.round(payload.amountCents * payload.platformFeePercent);
+    const platformFeeCents = Math.round(expectedAmountCents * payload.platformFeePercent);
     const intentParams: any = {
-      amount: payload.amountCents,
+      amount: expectedAmountCents,
       currency: payload.currency,
       customer: customerId,
       automatic_payment_methods: { enabled: true, allow_redirects: "never" },
@@ -745,7 +793,7 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
         driver_id: driverId,
         platform_fee_cents: String(platformFeeCents),
         host_account_id: listingWithHost?.hostStripeAccountId ?? "",
-        amount_cents: String(payload.amountCents),
+        amount_cents: String(expectedAmountCents),
         currency: payload.currency,
         manual_review: settings.manualReview ? "true" : "false",
         source: "payment_intent",
@@ -759,7 +807,7 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
         listingId: payload.listingId,
         from: payload.from,
         to: payload.to,
-        amountCents: payload.amountCents,
+        amountCents: expectedAmountCents,
         currency: payload.currency,
       }),
     });
@@ -772,7 +820,7 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
         to: payload.to,
         stripePaymentIntentId: intent.id,
         checkoutSessionId: null,
-        amountCents: payload.amountCents,
+        amountCents: expectedAmountCents,
         currency: payload.currency,
         platformFeeCents,
         payoutAvailableAt,
@@ -868,12 +916,13 @@ router.post("/portal", enforceBlockedList, portalBookingLimiter, async (req, res
       return res.status(404).json({ message: "Listing not found" });
     }
 
-    const durationHours = Math.max(
-      1,
-      Math.ceil((endAt.getTime() - startAt.getTime()) / (1000 * 60 * 60))
-    );
-    const billingDays = Math.max(1, Math.ceil(durationHours / 24));
-    const amountCents = Math.max(1, Math.round(listingWithHost.pricePerDay * billingDays * 100));
+    const amountCents = calculateListingChargeCents({
+      rateType: listingWithHost.rateType,
+      pricePerDay: listingWithHost.pricePerDay,
+      pricePerHour: listingWithHost.pricePerHour,
+      startTime: startAt,
+      endTime: endAt,
+    });
     const platformFeePercent = 0.1;
     const platformFeeCents = Math.round(amountCents * platformFeePercent);
     const payoutAvailableAt = new Date(startAt.getTime() + 24 * 60 * 60 * 1000);
@@ -967,18 +1016,22 @@ router.post("/:id/extend-intent", requireAuth, enforceBlockedList, bookingLimite
       return res.status(409).json({ message: "Time slot already booked" });
     }
 
-    const durationHours = Math.max(
-      1,
-      Math.ceil((requestedEnd.getTime() - startTime.getTime()) / (1000 * 60 * 60))
-    );
-    const currentHours = Math.max(
-      1,
-      Math.ceil((currentEnd.getTime() - startTime.getTime()) / (1000 * 60 * 60))
-    );
-    const hourlyRateCents = (booking.price_per_day * 100) / 24;
-    const newTotalCents = Math.max(0, Math.round(hourlyRateCents * durationHours));
+    const newTotalCents = calculateListingChargeCents({
+      rateType: booking.rate_type,
+      pricePerDay: booking.price_per_day,
+      pricePerHour: booking.price_per_hour,
+      startTime,
+      endTime: requestedEnd,
+    });
     const currentTotalCents =
-      booking.amount_cents ?? Math.max(0, Math.round(hourlyRateCents * currentHours));
+      booking.amount_cents ??
+      calculateListingChargeCents({
+        rateType: booking.rate_type,
+        pricePerDay: booking.price_per_day,
+        pricePerHour: booking.price_per_hour,
+        startTime,
+        endTime: currentEnd,
+      });
     const effectiveTotalCents = Math.max(currentTotalCents, newTotalCents);
     const additionalAmountCents = effectiveTotalCents - currentTotalCents;
 
@@ -1157,18 +1210,22 @@ router.post("/:id/change-intent", requireAuth, enforceBlockedList, bookingLimite
       return res.status(409).json({ message: "Time slot already booked" });
     }
 
-    const durationHours = Math.max(
-      1,
-      Math.ceil((requestedEnd.getTime() - requestedStart.getTime()) / (1000 * 60 * 60))
-    );
-    const currentHours = Math.max(
-      1,
-      Math.ceil((currentEnd.getTime() - new Date(booking.start_time).getTime()) / (1000 * 60 * 60))
-    );
-    const hourlyRateCents = (booking.price_per_day * 100) / 24;
-    const newTotalCents = Math.max(0, Math.round(hourlyRateCents * durationHours));
+    const newTotalCents = calculateListingChargeCents({
+      rateType: booking.rate_type,
+      pricePerDay: booking.price_per_day,
+      pricePerHour: booking.price_per_hour,
+      startTime: requestedStart,
+      endTime: requestedEnd,
+    });
     const currentTotalCents =
-      booking.amount_cents ?? Math.max(0, Math.round(hourlyRateCents * currentHours));
+      booking.amount_cents ??
+      calculateListingChargeCents({
+        rateType: booking.rate_type,
+        pricePerDay: booking.price_per_day,
+        pricePerHour: booking.price_per_hour,
+        startTime: new Date(booking.start_time),
+        endTime: currentEnd,
+      });
     const effectiveTotalCents = Math.max(currentTotalCents, newTotalCents);
     const additionalAmountCents = effectiveTotalCents - currentTotalCents;
 

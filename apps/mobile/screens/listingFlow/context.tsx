@@ -24,7 +24,9 @@ export type ListingDraft = {
     weekdays: string[];
     dayTimeRanges?: Record<string, { start: string; end: string }>;
   };
+  rateType: "hourly" | "daily";
   pricePerDay: string;
+  pricePerHour: string;
   photos: string[];
 };
 

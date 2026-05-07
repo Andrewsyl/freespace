@@ -9,6 +9,20 @@ if (!connectionString) {
 
 export const pool = new Pool({ connectionString });
 
+type ListingRateType = "hourly" | "daily";
+
+function mapListingRateType(raw: unknown): ListingRateType {
+  return raw === "hourly" ? "hourly" : "daily";
+}
+
+function mapListingPricing(row: { price_per_day: number | string; price_per_hour?: number | string | null; rate_type?: string | null }) {
+  return {
+    rateType: mapListingRateType(row.rate_type),
+    pricePerDay: Number(row.price_per_day),
+    pricePerHour: row.price_per_hour == null ? null : Number(row.price_per_hour),
+  };
+}
+
 type ReviewRole = "driver_review" | "host_review";
 
 export type UserRecord = {
@@ -58,6 +72,8 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       title,
       address,
       price_per_day,
+      price_per_hour,
+      rate_type,
       rating,
       rating_count,
       availability_text,
@@ -169,7 +185,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       id: row.id,
       title: row.title,
       address: row.address,
-      pricePerDay: row.price_per_day,
+      ...mapListingPricing(row),
       rating: Number(row.rating ?? 5),
       ratingCount: Number(row.rating_count ?? 0),
       availability: row.availability_text,
@@ -187,7 +203,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       id: row.id,
       title: row.title,
       address: row.address,
-      pricePerDay: row.price_per_day,
+      ...mapListingPricing(row),
       rating: Number(row.rating ?? 5),
       ratingCount: Number(row.rating_count ?? 0),
       availability: row.availability_text,
@@ -257,6 +273,8 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
       title,
       address,
       price_per_day,
+      price_per_hour,
+      rate_type,
       rating,
       rating_count,
       availability_text,
@@ -319,7 +337,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
       id: row.id,
       title: row.title,
       address: row.address,
-      pricePerDay: row.price_per_day,
+      ...mapListingPricing(row),
       rating: Number(row.rating ?? 5),
       ratingCount: Number(row.rating_count ?? 0),
       availability: row.availability_text,
@@ -337,7 +355,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
       id: row.id,
       title: row.title,
       address: row.address,
-      pricePerDay: row.price_per_day,
+      ...mapListingPricing(row),
       rating: Number(row.rating ?? 5),
       ratingCount: Number(row.rating_count ?? 0),
       availability: row.availability_text,
@@ -353,7 +371,9 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
 export type NewListing = {
   title: string;
   address: string;
+  rateType: ListingRateType;
   pricePerDay: number;
+  pricePerHour?: number | null;
   availabilityText: string;
   hostId: string;
   hostStripeAccountId?: string | null;
@@ -371,7 +391,9 @@ export async function createListing(listing: NewListing) {
     INSERT INTO listings (
       title,
       address,
+      rate_type,
       price_per_day,
+      price_per_hour,
       availability_text,
       host_id,
       amenities,
@@ -381,13 +403,15 @@ export async function createListing(listing: NewListing) {
       arrival_instructions,
       permission_declared
     )
-    VALUES ($1, $2, $3, $4, $5, $6, ST_SetSRID(ST_MakePoint($7, $8), 4326), $9, $10, $11, $12)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, ST_SetSRID(ST_MakePoint($9, $10), 4326), $11, $12, $13, $14)
     RETURNING id;
   `;
   const params = [
     listing.title,
     listing.address,
+    listing.rateType,
     listing.pricePerDay,
+    listing.pricePerHour ?? null,
     listing.availabilityText,
     listing.hostId,
     listing.amenities ?? [],
@@ -854,6 +878,8 @@ export async function listListingsByHost(hostId: string) {
         title,
         address,
         price_per_day,
+        price_per_hour,
+        rate_type,
         availability_text,
         image_urls,
         access_code,
@@ -893,7 +919,7 @@ export async function listListingsByHost(hostId: string) {
     id: row.id,
     title: row.title,
     address: row.address,
-    pricePerDay: row.price_per_day,
+    ...mapListingPricing(row),
     availability: row.availability_text,
     imageUrls: row.image_urls ?? [],
     accessCode: row.access_code ?? null,
@@ -927,6 +953,8 @@ export async function updateListingForHost({
   title,
   address,
   pricePerDay,
+  pricePerHour,
+  rateType,
   availabilityText,
   latitude,
   longitude,
@@ -941,6 +969,8 @@ export async function updateListingForHost({
   title?: string;
   address?: string;
   pricePerDay?: number;
+  pricePerHour?: number | null;
+  rateType?: ListingRateType;
   availabilityText?: string;
   latitude?: number;
   longitude?: number;
@@ -962,9 +992,17 @@ export async function updateListingForHost({
     fields.push(`address = $${idx++}`);
     values.push(address);
   }
+  if (typeof rateType === "string") {
+    fields.push(`rate_type = $${idx++}`);
+    values.push(rateType);
+  }
   if (typeof pricePerDay === "number") {
     fields.push(`price_per_day = $${idx++}`);
     values.push(pricePerDay);
+  }
+  if (pricePerHour !== undefined) {
+    fields.push(`price_per_hour = $${idx++}`);
+    values.push(pricePerHour);
   }
   if (typeof availabilityText === "string") {
     fields.push(`availability_text = $${idx++}`);
@@ -1074,6 +1112,8 @@ export async function getListingById(listingId: string) {
         title,
         address,
         price_per_day,
+        price_per_hour,
+        rate_type,
         availability_text,
         image_urls,
         amenities,
@@ -1126,7 +1166,7 @@ export async function getListingById(listingId: string) {
     id: row.id,
     title: row.title,
     address: row.address,
-    pricePerDay: row.price_per_day,
+    ...mapListingPricing(row),
     availability: row.availability_text,
     amenities: row.amenities ?? [],
     imageUrls: row.image_urls ?? [],
@@ -1202,6 +1242,8 @@ export async function getListingByIdWithAvailability(
         title,
         address,
         price_per_day,
+        price_per_hour,
+        rate_type,
         availability_text,
         image_urls,
         amenities,
@@ -1256,7 +1298,7 @@ export async function getListingByIdWithAvailability(
     id: row.id,
     title: row.title,
     address: row.address,
-    pricePerDay: row.price_per_day,
+    ...mapListingPricing(row),
     availability: row.availability_text,
     amenities: row.amenities ?? [],
     imageUrls: row.image_urls ?? [],
@@ -1304,6 +1346,8 @@ export async function listFavoritesByUser(userId: string) {
       l.title,
       l.address,
       l.price_per_day,
+      l.price_per_hour,
+      l.rate_type,
       l.availability_text,
       l.amenities,
       l.rating,
@@ -1323,7 +1367,7 @@ export async function listFavoritesByUser(userId: string) {
     id: row.id,
     title: row.title,
     address: row.address,
-    pricePerDay: row.price_per_day,
+    ...mapListingPricing(row),
     availability: row.availability_text,
     amenities: row.amenities ?? [],
     imageUrls: row.image_urls ?? [],
@@ -1609,6 +1653,8 @@ export async function getListingWithHostAccount(listingId: string) {
       l.title,
       l.address,
       l.price_per_day,
+      l.price_per_hour,
+      l.rate_type,
       l.availability_text,
       l.amenities,
       l.host_id,
@@ -1632,7 +1678,7 @@ export async function getListingWithHostAccount(listingId: string) {
     id: row.id,
     title: row.title,
     address: row.address,
-    pricePerDay: row.price_per_day,
+    ...mapListingPricing(row),
     availability: row.availability_text,
     amenities: row.amenities ?? [],
     hostId: row.host_id,
@@ -2072,7 +2118,9 @@ export async function getBookingForExtension({
       b.amount_cents,
       b.currency,
       b.status,
-      l.price_per_day
+      l.price_per_day,
+      l.price_per_hour,
+      l.rate_type
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
     WHERE b.id = $1
@@ -2090,6 +2138,8 @@ export async function getBookingForExtension({
         currency: string | null;
         status: string | null;
         price_per_day: number;
+        price_per_hour: number | null;
+        rate_type: ListingRateType;
       }
     | undefined;
 }

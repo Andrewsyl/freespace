@@ -18,6 +18,7 @@ import type { ListingSummary, RootStackParamList } from "../types";
 import { cardShadow, colors, radius, spacing } from "../styles/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useGlobalLoading } from "../components/GlobalLoading";
+import { formatListingPriceLine } from "../utils/pricing";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Listings">;
 
@@ -252,7 +253,7 @@ export function ListingsScreen({ navigation }: Props) {
                         {listing.address}
                       </Text>
                       <View style={styles.listFooter}>
-                        <Text style={styles.listPrice}>€{listing.price_per_day} / day</Text>
+                        <Text style={styles.listPrice}>{formatListingPriceLine(listing)}</Text>
                         <Pressable
                           style={styles.deleteButton}
                           onPress={() => handleDelete(listing.id)}

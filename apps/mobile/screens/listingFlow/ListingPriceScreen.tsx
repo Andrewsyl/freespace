@@ -1,12 +1,18 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { CalendarDays, Info } from "lucide-react-native";
+import { CalendarDays, Clock3 } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
-import { TextInput as AppTextInput } from "../../components/ui";
-import { colors, radius, spacing, textStyles } from "../../styles/theme";
+import { colors, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
   ListingPrice: undefined;
@@ -15,98 +21,155 @@ type FlowStackParamList = {
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingPrice">;
 
+const DEFAULT_HOURLY = 2.5;
+const DEFAULT_DAILY = 15;
+const WEEKLY_DAY_MULTIPLIER = 5;
+const MONTHLY_DAY_MULTIPLIER = 20;
+
+function roundMoney(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function sanitizeMoneyInput(value: string) {
+  const normalized = value.replace(",", ".").replace(/[^\d.]/g, "");
+  const [whole, ...rest] = normalized.split(".");
+  const decimal = rest.join("").slice(0, 2);
+  return decimal.length ? `${whole}.${decimal}` : whole;
+}
+
+function formatMoney(value: number) {
+  return roundMoney(value).toFixed(2);
+}
+
+function parseMoney(value: string) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) && parsed > 0 ? roundMoney(parsed) : null;
+}
+
+function PricingRow({
+  icon,
+  label,
+  value,
+  editable = true,
+  onChangeText,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  editable?: boolean;
+  onChangeText?: (next: string) => void;
+}) {
+  return (
+    <View style={styles.priceRow}>
+      <View style={styles.priceRowLabelWrap}>
+        {icon}
+        <Text style={styles.priceRowLabel}>{label}</Text>
+      </View>
+      <Text style={styles.currency}>€</Text>
+      <View style={[styles.inputShell, !editable && styles.inputShellReadonly]}>
+        {editable ? (
+          <TextInput
+            style={styles.priceInput}
+            value={value}
+            onChangeText={onChangeText}
+            keyboardType="decimal-pad"
+            placeholder="0.00"
+            placeholderTextColor="#9CA3AF"
+          />
+        ) : (
+          <Text style={styles.readonlyValue}>{value}</Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
 export function ListingPriceScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
-  const recommendedPrice = 22;
-  const [dailyPrice, setDailyPrice] = useState(() => {
-    const parsed = Number.parseFloat(draft.pricePerDay);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : recommendedPrice;
-  });
+
+  const initialHourly = parseMoney(draft.pricePerHour) ?? DEFAULT_HOURLY;
+  const initialDaily = parseMoney(draft.pricePerDay) ?? DEFAULT_DAILY;
+
+  const [hourlyPrice, setHourlyPrice] = useState(formatMoney(initialHourly));
+  const [dailyPrice, setDailyPrice] = useState(formatMoney(initialDaily));
+
+  const hourlyValue = parseMoney(hourlyPrice) ?? 0;
+  const dailyValue = parseMoney(dailyPrice) ?? 0;
+  const weeklyValue = useMemo(
+    () => formatMoney(dailyValue * WEEKLY_DAY_MULTIPLIER),
+    [dailyValue]
+  );
+  const monthlyValue = useMemo(
+    () => formatMoney(dailyValue * MONTHLY_DAY_MULTIPLIER),
+    [dailyValue]
+  );
 
   useEffect(() => {
-    const parsed = Number.parseFloat(draft.pricePerDay);
-    if (Number.isFinite(parsed) && parsed > 0) {
-      setDailyPrice(parsed);
-    }
-  }, [draft.pricePerDay]);
+    setDraft((prev) => ({
+      ...prev,
+      rateType: prev.rateType ?? "hourly",
+      pricePerHour: hourlyPrice,
+      pricePerDay: dailyPrice,
+    }));
+  }, [dailyPrice, hourlyPrice, setDraft]);
 
-  useEffect(() => {
-    if (dailyPrice > 0) {
-      setDraft((prev) => ({ ...prev, pricePerDay: String(dailyPrice) }));
-    }
-  }, [dailyPrice, setDraft]);
+  const handleHourlyChange = (next: string) => {
+    setHourlyPrice(sanitizeMoneyInput(next));
+  };
 
-  const monthlyEstimate = Math.round(dailyPrice * 20);
-
-  const handlePriceChange = (value: string) => {
-    const sanitized = value.replace(/[^0-9.]/g, "");
-    const parsed = Number.parseFloat(sanitized);
-    if (!Number.isFinite(parsed)) {
-      setDailyPrice(0);
-      return;
-    }
-    const nextDaily = Number(parsed.toFixed(2));
-    setDailyPrice(nextDaily);
+  const handleDailyChange = (next: string) => {
+    setDailyPrice(sanitizeMoneyInput(next));
   };
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.kicker}>Set your price</Text>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Text style={styles.kicker}>Space pricing</Text>
         <StepProgress current={5} total={7} />
-        <Text style={styles.title}>How much will you charge?</Text>
+
+        <Text style={styles.title}>Set the space pricing</Text>
         <Text style={styles.subtitle}>
-          You can always change this later
+          Set realistic parking prices for short and long stays. Hourly and daily are your real bookable rates. Weekly and monthly are guidance values based on the daily price.
         </Text>
 
-        <View style={styles.priceInputCard}>
-          <Text style={styles.inputLabel}>Daily rate</Text>
-          <View style={styles.priceInputRow}>
-            <Text style={styles.currencySymbol}>€</Text>
-            <AppTextInput
-              containerStyle={styles.priceInputContainer}
-              variant="embedded"
-              style={styles.priceInput}
-              value={dailyPrice > 0 ? String(dailyPrice) : ""}
-              keyboardType="decimal-pad"
-              onChangeText={handlePriceChange}
-              placeholder="22"
-            />
-            <Text style={styles.perDayText}>per day</Text>
-          </View>
+        <View style={styles.card}>
+          <PricingRow
+            icon={<Clock3 size={22} color="#15171A" strokeWidth={2.2} />}
+            label="Hourly"
+            value={hourlyPrice}
+            onChangeText={handleHourlyChange}
+          />
+          <PricingRow
+            icon={<CalendarDays size={22} color="#15171A" strokeWidth={2.2} />}
+            label="Daily"
+            value={dailyPrice}
+            onChangeText={handleDailyChange}
+          />
+          <PricingRow
+            icon={<CalendarDays size={22} color="#15171A" strokeWidth={2.2} />}
+            label="Weekly"
+            value={weeklyValue}
+            editable={false}
+          />
+          <PricingRow
+            icon={<CalendarDays size={22} color="#15171A" strokeWidth={2.2} />}
+            label="Monthly"
+            value={monthlyValue}
+            editable={false}
+          />
         </View>
 
-        <View style={styles.estimateCard}>
-          <View style={styles.estimateRow}>
-            <CalendarDays size={18} color={colors.accent} strokeWidth={2.2} />
-            <Text style={styles.estimateLabel}>Monthly estimate</Text>
-          </View>
-          <Text style={styles.estimateValue}>€{monthlyEstimate}</Text>
-          <Text style={styles.estimateHint}>Based on ~20 days booked per month</Text>
-        </View>
-
-        <View style={styles.infoCard}>
-          <View style={styles.infoIconCircle}>
-            <Info size={18} color={colors.accent} strokeWidth={2.2} />
-          </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoTitle}>Recommended: €{recommendedPrice}/day</Text>
-            <Text style={styles.infoText}>
-              Similar spaces nearby earn around €{Math.round(recommendedPrice * 20)}/month
-            </Text>
-          </View>
+        <View style={styles.noteCard}>
+          <Text style={styles.noteTitle}>How this works</Text>
+          <Text style={styles.noteBody}>
+            Drivers booking short stays will see your hourly price. Longer stays can use your daily price instead of an unrealistic hourly rollover.
+          </Text>
         </View>
       </ScrollView>
+
       <View style={styles.footer}>
-        <Pressable
-          style={[
-            styles.primaryButton,
-            dailyPrice === 0 && styles.primaryButtonDisabled,
-          ]}
-          onPress={() => navigation.navigate("ListingPhotos")}
-          disabled={dailyPrice === 0}
-        >
-          <Text style={styles.primaryButtonText}>Continue</Text>
+        <Pressable style={styles.continueBtn} onPress={() => navigation.navigate("ListingPhotos")}>
+          <Text style={styles.continueBtnText}>Continue</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -119,160 +182,130 @@ const styles = StyleSheet.create({
     backgroundColor: colors.appBg,
   },
   content: {
-    padding: spacing.screenX,
-    paddingBottom: 140,
+    paddingHorizontal: spacing.screenX,
     paddingTop: 0,
+    paddingBottom: 140,
   },
   kicker: textStyles.kicker,
   title: {
     color: colors.text,
-    fontSize: 22,
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Inter-SemiBold",
+    fontSize: 31,
     fontWeight: "600",
-    marginTop: 6,
+    letterSpacing: -0.7,
+    lineHeight: 36,
+    marginTop: 12,
   },
   subtitle: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontFamily: "Poppins-Regular",
-    marginTop: 6,
-    lineHeight: 20,
-  },
-  priceInputCard: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginTop: 24,
-    padding: 20,
-  },
-  inputLabel: {
-    color: colors.text,
+    color: "#475467",
+    fontFamily: "Inter-Regular",
     fontSize: 16,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
-    marginBottom: 14,
+    fontWeight: "400",
+    lineHeight: 27,
+    marginTop: 18,
   },
-  priceInputRow: {
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "rgba(17,24,39,0.08)",
+    borderRadius: 20,
+    borderWidth: 1,
+    marginTop: 34,
+    overflow: "hidden",
+  },
+  priceRow: {
     alignItems: "center",
-    backgroundColor: "#f8fafc",
-    borderColor: "#e2e8f0",
-    borderRadius: 14,
-    borderWidth: 2,
     flexDirection: "row",
+    gap: 14,
+    minHeight: 90,
+    paddingHorizontal: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(17,24,39,0.06)",
+  },
+  priceRowLabelWrap: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: 14,
+  },
+  priceRowLabel: {
+    color: "#15171A",
+    fontFamily: "Inter-Medium",
+    fontSize: 17,
+    fontWeight: "500",
+  },
+  currency: {
+    color: "#15171A",
+    fontFamily: "Inter-SemiBold",
+    fontSize: 24,
+    fontWeight: "600",
+    marginRight: 2,
+  },
+  inputShell: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "rgba(17,24,39,0.12)",
+    borderRadius: 12,
+    borderWidth: 1,
+    minWidth: 124,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  inputShellReadonly: {
+    backgroundColor: "#F8FAFC",
+  },
+  priceInput: {
+    color: "#15171A",
+    fontFamily: "Inter-Medium",
+    fontSize: 19,
+    fontWeight: "500",
+    padding: 0,
+  },
+  readonlyValue: {
+    color: "#15171A",
+    fontFamily: "Inter-Medium",
+    fontSize: 19,
+    fontWeight: "500",
+  },
+  noteCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 16,
+    marginTop: 18,
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
-  currencySymbol: {
-    color: colors.text,
-    fontSize: 28,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
-    marginRight: 8,
-  },
-  priceInputContainer: {
-    flex: 1,
-    marginBottom: 0,
-  },
-  priceInput: {
-    color: colors.text,
-    flex: 1,
-    fontSize: 36,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
-    padding: 0,
-  },
-  perDayText: {
-    color: colors.textMuted,
+  noteTitle: {
+    color: "#15171A",
+    fontFamily: "Inter-SemiBold",
     fontSize: 14,
-    fontFamily: "Poppins-SemiBold",
     fontWeight: "600",
+    marginBottom: 6,
   },
-  estimateCard: {
-    backgroundColor: "#e9fbf6",
-    borderColor: "#b8efe3",
-    borderRadius: 16,
-    borderWidth: 1,
-    marginTop: 16,
-    padding: 18,
-  },
-  estimateRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 8,
-  },
-  estimateLabel: {
-    color: colors.text,
-    fontSize: 14,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
-  },
-  estimateValue: {
-    color: colors.text,
-    fontSize: 28,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
-  },
-  estimateHint: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontFamily: "Poppins-Regular",
-    marginTop: 4,
-  },
-  infoCard: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 14,
-    marginTop: 16,
-    padding: 16,
-  },
-  infoIconCircle: {
-    alignItems: "center",
-    backgroundColor: "#e9fbf6",
-    borderRadius: 999,
-    height: 40,
-    justifyContent: "center",
-    width: 40,
-  },
-  infoContent: {
-    flex: 1,
-    gap: 4,
-  },
-  infoTitle: {
-    color: colors.text,
-    fontSize: 14,
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
-  },
-  infoText: {
-    color: colors.textMuted,
+  noteBody: {
+    color: "#667085",
+    fontFamily: "Inter-Regular",
     fontSize: 13,
-    fontFamily: "Poppins-Regular",
-    lineHeight: 19,
+    fontWeight: "400",
+    lineHeight: 20,
   },
   footer: {
-    backgroundColor: colors.cardBg,
-    borderTopColor: colors.border,
+    backgroundColor: colors.appBg,
+    borderTopColor: "rgba(17,24,39,0.06)",
     borderTopWidth: 1,
-    padding: 16,
+    paddingHorizontal: spacing.screenX,
+    paddingTop: 16,
+    paddingBottom: 20,
   },
-  primaryButton: {
+  continueBtn: {
     alignItems: "center",
-    backgroundColor: colors.accent,
+    backgroundColor: "#14A44D",
     borderRadius: 14,
-    paddingVertical: 16,
+    justifyContent: "center",
+    minHeight: 56,
   },
-  primaryButtonDisabled: {
-    backgroundColor: "#cbd5e1",
-  },
-  primaryButtonText: {
-    color: colors.cardBg,
-    fontSize: 16,
-    fontFamily: "Poppins-SemiBold",
+  continueBtnText: {
+    color: "#FFFFFF",
+    fontFamily: "Inter-SemiBold",
+    fontSize: 18,
     fontWeight: "600",
+    letterSpacing: -0.2,
   },
 });

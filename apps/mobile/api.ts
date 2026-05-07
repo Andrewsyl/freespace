@@ -92,6 +92,8 @@ export async function searchListings(params: SearchParams) {
     title: space.title,
     address: space.address,
     price_per_day: space.price_per_day ?? space.pricePerDay,
+    price_per_hour: space.price_per_hour ?? space.pricePerHour ?? null,
+    rate_type: space.rate_type ?? space.rateType ?? "daily",
     is_available: space.is_available ?? space.isAvailable ?? null,
     rating: space.rating,
     rating_count: space.rating_count ?? space.ratingCount,
@@ -131,6 +133,8 @@ export async function getListing(
   return {
     ...listing,
     price_per_day: listing.price_per_day ?? listing.pricePerDay,
+    price_per_hour: listing.price_per_hour ?? listing.pricePerHour ?? null,
+    rate_type: listing.rate_type ?? listing.rateType ?? "daily",
     is_available: listing.is_available ?? listing.isAvailable ?? null,
     rating_count: listing.rating_count ?? listing.ratingCount,
     availability_text: listing.availability_text ?? listing.availability,
@@ -909,7 +913,9 @@ export async function createListing(payload: {
   token: string;
   title: string;
   address: string;
+  rateType?: "hourly" | "daily";
   pricePerDay: number;
+  pricePerHour?: number | null;
   availabilityText: string;
   latitude: number;
   longitude: number;
@@ -928,7 +934,9 @@ export async function createListing(payload: {
     body: JSON.stringify({
       title: payload.title,
       address: payload.address,
+      rateType: payload.rateType ?? "daily",
       pricePerDay: payload.pricePerDay,
+      pricePerHour: payload.pricePerHour ?? undefined,
       availabilityText: payload.availabilityText,
       latitude: payload.latitude,
       longitude: payload.longitude,
@@ -961,6 +969,8 @@ export async function listHostListings(token: string) {
     title: listing.title,
     address: listing.address,
     price_per_day: listing.price_per_day ?? listing.pricePerDay,
+    price_per_hour: listing.price_per_hour ?? listing.pricePerHour ?? null,
+    rate_type: listing.rate_type ?? listing.rateType ?? "daily",
     availability_text: listing.availability_text ?? listing.availability,
     image_urls: listing.image_urls ?? listing.imageUrls ?? [],
     amenities: listing.amenities ?? [],
@@ -976,7 +986,9 @@ export async function updateListing(payload: {
   listingId: string;
   title: string;
   address: string;
+  rateType?: "hourly" | "daily";
   pricePerDay: number;
+  pricePerHour?: number | null;
   availabilityText: string;
   imageUrls?: string[];
   amenities?: string[];
@@ -993,7 +1005,9 @@ export async function updateListing(payload: {
     body: JSON.stringify({
       title: payload.title,
       address: payload.address,
+      rateType: payload.rateType ?? "daily",
       pricePerDay: payload.pricePerDay,
+      pricePerHour: payload.pricePerHour ?? undefined,
       availabilityText: payload.availabilityText,
       imageUrls: payload.imageUrls ?? [],
       amenities: payload.amenities ?? [],

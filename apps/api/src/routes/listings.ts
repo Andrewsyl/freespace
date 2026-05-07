@@ -21,6 +21,46 @@ import { enforceBlockedList, getFraudSettings, getUserRiskProfile, shouldEnforce
 import { createRateLimiter } from "../middleware/rateLimit.js";
 
 const router = Router();
+const DEFAULT_DAILY_HOURS = 8;
+
+function roundMoney(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+const rateTypeSchema = z.enum(["hourly", "daily"]);
+
+function normalizeListingPricing(input: {
+  rateType?: "hourly" | "daily";
+  pricePerDay?: number;
+  pricePerHour?: number;
+}) {
+  const hasDay = typeof input.pricePerDay === "number" && Number.isFinite(input.pricePerDay) && input.pricePerDay > 0;
+  const hasHour = typeof input.pricePerHour === "number" && Number.isFinite(input.pricePerHour) && input.pricePerHour > 0;
+
+  if (!hasDay && !hasHour) {
+    throw new z.ZodError([
+      {
+        code: z.ZodIssueCode.custom,
+        path: ["pricePerDay"],
+        message: "Provide at least an hourly or daily price",
+      },
+    ]);
+  }
+
+  const rateType = input.rateType ?? (hasHour ? "hourly" : "daily");
+  const normalizedHourly = hasHour
+    ? roundMoney(input.pricePerHour!)
+    : roundMoney((input.pricePerDay ?? 0) / DEFAULT_DAILY_HOURS);
+  const normalizedDaily = hasDay
+    ? roundMoney(input.pricePerDay!)
+    : roundMoney((input.pricePerHour ?? 0) * DEFAULT_DAILY_HOURS);
+
+  return {
+    rateType,
+    pricePerDay: normalizedDaily,
+    pricePerHour: normalizedHourly,
+  };
+}
 
 const searchLimiter = createRateLimiter({
   windowMs: 60 * 1000,
@@ -97,7 +137,9 @@ router.post("/image-upload-url", requireAuth, enforceBlockedList, listingWriteLi
 const createListingSchema = z.object({
   title: z.string().trim().min(3).max(80),
   address: z.string().trim().min(3).max(200),
-  pricePerDay: z.coerce.number().positive().max(100000),
+  rateType: rateTypeSchema.default("daily"),
+  pricePerDay: z.coerce.number().positive().max(100000).optional(),
+  pricePerHour: z.coerce.number().positive().max(100000).optional(),
   availabilityText: z.string().trim().min(3).max(240),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
@@ -111,7 +153,7 @@ const createListingSchema = z.object({
 router.post("/", requireAuth, enforceBlockedList, listingWriteLimiter, async (req, res, next) => {
   try {
     const payload = createListingSchema.parse(req.body);
-    const pricePerDay = Math.max(1, Math.round(payload.pricePerDay));
+    const pricing = normalizeListingPricing(payload);
     const hostId = req.user?.userId;
     if (!hostId) return res.status(401).json({ message: "Unauthorized" });
     const gate = await requireActiveHost(hostId);
@@ -134,7 +176,9 @@ router.post("/", requireAuth, enforceBlockedList, listingWriteLimiter, async (re
 
     const created = await createListing({
       ...payload,
-      pricePerDay,
+      rateType: pricing.rateType,
+      pricePerDay: pricing.pricePerDay,
+      pricePerHour: pricing.pricePerHour,
       hostId,
       latitude,
       longitude,
@@ -232,7 +276,9 @@ router.get("/:id", async (req, res, next) => {
 const updateListingSchema = z.object({
   title: z.string().trim().min(3).max(80).optional(),
   address: z.string().trim().min(3).max(200).optional(),
+  rateType: rateTypeSchema.optional(),
   pricePerDay: z.coerce.number().positive().max(100000).optional(),
+  pricePerHour: z.coerce.number().positive().max(100000).optional(),
   availabilityText: z.string().trim().min(3).max(240).optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
@@ -251,16 +297,20 @@ router.patch("/:id", requireAuth, listingWriteLimiter, async (req, res, next) =>
     const ownerId = await getListingHostId(listingId);
     if (ownerId !== hostId) return res.status(403).json({ message: "Forbidden" });
     const payload = updateListingSchema.parse(req.body);
-    const pricePerDay =
-      typeof payload.pricePerDay === "number"
-        ? Math.max(1, Math.round(payload.pricePerDay))
-        : undefined;
+    const pricing =
+      payload.rateType ||
+      typeof payload.pricePerDay === "number" ||
+      typeof payload.pricePerHour === "number"
+        ? normalizeListingPricing(payload)
+        : null;
     const updated = await updateListingForHost({
       listingId,
       hostId,
       title: payload.title,
       address: payload.address,
-      pricePerDay,
+      rateType: pricing?.rateType,
+      pricePerDay: pricing?.pricePerDay,
+      pricePerHour: pricing?.pricePerHour,
       availabilityText: payload.availabilityText,
       latitude: payload.latitude,
       longitude: payload.longitude,

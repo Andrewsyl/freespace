@@ -12,6 +12,8 @@ type ListingResult = {
   title: string;
   address: string;
   price_per_day: number;
+  price_per_hour?: number | null;
+  rate_type?: "hourly" | "daily" | null;
   latitude?: number | null;
   longitude?: number | null;
 };

@@ -26,6 +26,7 @@ export function ListingReviewScreen({ navigation }: Props) {
   const rootNavigation = navigation.getParent();
   const canPublish =
     draft.spaceType.trim().length > 0 &&
+    draft.pricePerHour.trim().length > 0 &&
     draft.pricePerDay.trim().length > 0 &&
     draft.location.address.trim().length > 0;
 
@@ -45,7 +46,9 @@ export function ListingReviewScreen({ navigation }: Props) {
       setError(listingId ? "Sign in to update your space." : "Sign in to publish your space.");
       return;
     }
-    if (!draft.spaceType || !draft.pricePerDay || !draft.permissionDeclared) {
+    const hasHourlyPrice = draft.pricePerHour.trim().length > 0;
+    const hasDailyPrice = draft.pricePerDay.trim().length > 0;
+    if (!draft.spaceType || !hasHourlyPrice || !hasDailyPrice || !draft.permissionDeclared) {
       setError("Complete the required steps first.");
       return;
     }
@@ -60,6 +63,9 @@ export function ListingReviewScreen({ navigation }: Props) {
         ...(coverUrl ? [coverUrl] : []),
         ...draft.photos.filter(Boolean),
       ];
+      const parsedHourly = Number.parseFloat(draft.pricePerHour);
+      const parsedDaily = Number.parseFloat(draft.pricePerDay);
+      const inferredRateType = parsedHourly != null ? "hourly" : "daily";
       if (listingId) {
         await updateListing({
           token,
@@ -68,7 +74,9 @@ export function ListingReviewScreen({ navigation }: Props) {
             ? `${draft.spaceType} parking`
             : "Parking space",
           address: draft.location.address || "Dublin",
-          pricePerDay: Number.parseFloat(draft.pricePerDay),
+          rateType: inferredRateType,
+          pricePerDay: parsedDaily,
+          pricePerHour: parsedHourly,
           availabilityText: draft.availability.detail,
           imageUrls,
           amenities: draft.accessOptions,
@@ -83,7 +91,9 @@ export function ListingReviewScreen({ navigation }: Props) {
             ? `${draft.spaceType} parking`
             : "Parking space",
           address: draft.location.address || "Dublin",
-          pricePerDay: Number.parseFloat(draft.pricePerDay),
+          rateType: inferredRateType,
+          pricePerDay: parsedDaily,
+          pricePerHour: parsedHourly,
           availabilityText: draft.availability.detail,
           latitude: draft.location.latitude,
           longitude: draft.location.longitude,

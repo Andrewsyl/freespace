@@ -31,6 +31,7 @@ import {
   formatDateTimeLabel,
   formatReviewDate,
 } from "../utils/dateFormat";
+import { calculateListingTotal, getListingRateType } from "../utils/pricing";
 import {
   ArrowDownUp,
   Cctv,
@@ -189,22 +190,7 @@ export function ListingScreen({ navigation, route }: Props) {
 
   const priceSummary = useMemo(() => {
     if (!listing) return null;
-    const ms = Math.max(0, endAt.getTime() - startAt.getTime());
-    const hours = ms / (1000 * 60 * 60);
-    const roundedHours = Math.max(1, Math.ceil(hours));
-    const hourlyRate = listing.price_per_day / 24;
-    const total = Math.round(hourlyRate * roundedHours);
-
-    // Format duration label
-    let durationLabel: string;
-    if (hours < 24) {
-      durationLabel = `${roundedHours} ${roundedHours === 1 ? 'hour' : 'hours'}`;
-    } else {
-      const days = Math.max(1, Math.ceil(hours / 24));
-      durationLabel = `${days} ${days === 1 ? 'day' : 'days'}`;
-    }
-
-    return { total, totalCents: total * 100, durationLabel };
+    return calculateListingTotal(listing, startAt, endAt);
   }, [listing, startAt, endAt]);
 
   const showBottomBar = !!(priceSummary && user);
@@ -349,15 +335,17 @@ export function ListingScreen({ navigation, route }: Props) {
     ? `${(listing.distance_m / 1000).toFixed(1)} km`
     : "0.8 km";
   const extendOffer = useMemo(() => {
-    const dayPrice = listing?.price_per_day != null ? Number(listing.price_per_day) : null;
-    if (dayPrice == null || Number.isNaN(dayPrice)) return null;
+    if (!listing) return null;
+    if (getListingRateType(listing) !== "hourly") return null;
+    const hourlyPrice =
+      listing.price_per_hour != null ? Number(listing.price_per_hour) : null;
+    if (hourlyPrice == null || Number.isNaN(hourlyPrice)) return null;
     const endOfDay = new Date(endAt);
     endOfDay.setHours(23, 59, 0, 0);
     if (endAt >= endOfDay) return null;
     const ms = Math.max(0, endOfDay.getTime() - endAt.getTime());
     const hours = Math.max(1, Math.round(ms / (1000 * 60 * 60)));
-    const hourly = dayPrice / 24;
-    const extra = hourly * hours;
+    const extra = hourlyPrice * hours;
     const discountRate = 0.25;
     const discountedExtra = extra * (1 - discountRate);
     const savings = extra - discountedExtra;
@@ -368,7 +356,7 @@ export function ListingScreen({ navigation, route }: Props) {
       extra: roundedExtra.toString(),
       endOfDay,
     };
-  }, [listing?.price_per_day, endAt]);
+  }, [listing, endAt]);
 
   const handleLogin = async () => {
     setAuthError(null);

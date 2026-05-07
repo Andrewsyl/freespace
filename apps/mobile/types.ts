@@ -57,6 +57,8 @@ export type ListingSummary = {
   title: string;
   address: string;
   price_per_day: number;
+  price_per_hour?: number | null;
+  rate_type?: "hourly" | "daily" | null;
   is_available?: boolean | null;
   rating?: number | null;
   rating_count?: number | null;

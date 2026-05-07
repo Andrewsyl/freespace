@@ -29,6 +29,7 @@ import { useFavorites } from "../favorites";
 import MapSection from "../components/MapSection";
 import { MapBottomCard } from "../components/MapBottomCard";
 import { LIGHT_MAP_STYLE } from "../components/mapStyles";
+import { calculateListingTotal } from "../utils/pricing";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { getListing, searchListings } from "../api";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
@@ -973,20 +974,11 @@ export function SearchScreen({ navigation }: Props) {
     setShowSearchArea(true);
   };
 
-  const durationHours = useMemo(() => {
-    const ms = Math.max(0, endAt.getTime() - startAt.getTime());
-    const hours = ms / (1000 * 60 * 60);
-    return Math.max(1, Math.ceil(hours));
-  }, [startAt, endAt]);
-
   const priceForListing = useCallback(
     (listing: ListingSummary) => {
-      const day = Number(listing.price_per_day);
-      const hourly = Number.isFinite(day) ? day / 24 : 0;
-      const total = hourly * durationHours;
-      return Math.max(0, Math.round(total));
+      return calculateListingTotal(listing, startAt, endAt).total;
     },
-    [durationHours]
+    [endAt, startAt]
   );
   const priceKey = useMemo(
     () => `${startAt.getTime()}-${endAt.getTime()}`,
@@ -1176,10 +1168,10 @@ export function SearchScreen({ navigation }: Props) {
             isAvailable={selectedListing.is_available !== false}
             isFavorite={isFavorite(selectedListing.id)}
             onToggleFavorite={() => toggle(selectedListing)}
-            onPress={() => navigation.navigate("Listing", { id: selectedListing.id, from, to })}
+            onPress={() => { setSelectedId(null); navigation.navigate("Listing", { id: selectedListing.id, from, to }); }}
             bottomOffset={10}
             horizontalInset={16}
-            onReserve={() => navigation.navigate("Listing", { id: selectedListing.id, from, to })}
+            onReserve={() => { setSelectedId(null); navigation.navigate("Listing", { id: selectedListing.id, from, to }); }}
             dismissing={dismissingCard}
           />
         ) : null}

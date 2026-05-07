@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { formatListingPriceLine } from "../../../lib/pricing";
 
 type Day = {
   date: string;
@@ -35,10 +36,14 @@ export function BookingSelector({
   listingId,
   bookedDates = [],
   pricePerDay,
+  pricePerHour,
+  rateType,
 }: {
   listingId: string;
   bookedDates?: string[];
   pricePerDay?: number;
+  pricePerHour?: number | null;
+  rateType?: "hourly" | "daily" | null;
 }) {
   const days = useMemo(() => buildDays(bookedDates), [bookedDates]);
   const defaultDay = days.find((d) => !d.disabled)?.date ?? days[0]?.date;
@@ -51,7 +56,13 @@ export function BookingSelector({
   return (
     <div className="card space-y-4">
       <div className="flex items-center justify-between">
-        <div className="text-xl font-semibold text-slate-900">€{pricePerDay ?? ""}</div>
+        <div className="text-xl font-semibold text-slate-900">
+          {formatListingPriceLine({
+            pricePerDay: pricePerDay ?? 0,
+            pricePerHour: pricePerHour ?? null,
+            rateType: rateType ?? "daily",
+          })}
+        </div>
         <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6b7280]">Session</span>
       </div>
 
