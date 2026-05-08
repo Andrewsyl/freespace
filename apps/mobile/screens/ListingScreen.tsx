@@ -307,9 +307,6 @@ export function ListingScreen({ navigation, route }: Props) {
       hours: availabilityFallbackText,
     };
   });
-  const aboutPreview =
-    aboutText.length > 140 ? `${aboutText.slice(0, 140).trim()}...` : aboutText;
-
   const hasReviews = (listing?.rating_count ?? 0) > 0 && typeof listing?.rating === "number";
   const spaceTypeLabel = useMemo(() => {
     const rawType =
@@ -412,14 +409,13 @@ export function ListingScreen({ navigation, route }: Props) {
               {imageUrls.length ? (
                 <Image
                   source={{ uri: imageUrls[0] }}
-                  style={[styles.heroImage, { width, height: heroHeight + 44, top: 12 }]}
+                  style={{ width, height: heroHeight + insets.top }}
                 />
               ) : (
-                <View style={[styles.heroPlaceholder, { height: heroHeight }]}>
+                <View style={[styles.heroPlaceholder, { height: heroHeight + insets.top }]}>
                   <Text style={styles.heroPlaceholderText}>No image</Text>
                 </View>
               )}
-
               {imageUrls.length > 0 ? (
                 <View style={styles.photoCounterChip}>
                   <Text style={styles.photoCounterText}>
@@ -483,165 +479,175 @@ export function ListingScreen({ navigation, route }: Props) {
                 <View style={styles.contentCard}>
               <View style={styles.heroTitleBlock}>
                 <Text style={styles.cardTitle}>{listing.title}</Text>
-                <View style={styles.infoRows}>
-                  <View style={styles.infoRow}>
-                    <Ionicons name="car-outline" size={17} color="#9CA3AF" />
-                    <Text style={styles.infoRowText}>{spaceTypeLabel}</Text>
-                    <View style={[styles.availabilityPill, listing.is_available === false && styles.availabilityPillOff]}>
-                      <View style={[styles.availDot, listing.is_available === false && styles.availDotOff]} />
-                      <Text style={[styles.availabilityPillText, listing.is_available === false && styles.availabilityPillTextOff]}>
-                        {listing.is_available === false ? "Unavailable" : "Available"}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <Ionicons name="star" size={16} color="#12916C" />
-                    <Text style={styles.infoRowRating}>{hasReviews ? listing.rating?.toFixed(1) : "0.0"}</Text>
-                    <Text style={styles.infoRowMuted}>({listing.rating_count ?? 0} reviews)</Text>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <Ionicons name="location-outline" size={17} color="#9CA3AF" />
-                    <Text style={styles.infoRowText} numberOfLines={1}>{areaLabel}</Text>
-                  </View>
+                <View style={styles.ratingRow}>
+                  <Ionicons name="star" size={13} color="#FFB800" />
+                  <Text style={styles.infoRowRating}>{hasReviews ? listing.rating?.toFixed(1) : '0.0'}</Text>
+                  <Text style={styles.infoRowMuted}>({listing.rating_count ?? 0} reviews)</Text>
                 </View>
               </View>
+              <View style={styles.sectionDivider} />
+
+              {/* Meta row: distance · km · open status */}
+              <View style={styles.metaInfoSection}>
+                <View style={styles.metaInfoRow}>
+                  <Ionicons name="walk-outline" size={14} color="#9CA3AF" />
+                  <Text style={styles.metaInfoText}>{listing.distance_m ? `${Math.max(1, Math.round(listing.distance_m / 1000 * 12))} Mins` : '5 Mins'}</Text>
+                  <View style={styles.metaInfoDot} />
+                  <Ionicons name="location-outline" size={14} color="#9CA3AF" />
+                  <Text style={styles.metaInfoText}>{distanceLabel}</Text>
+                  <View style={styles.metaInfoDot} />
+                  <Ionicons name="checkmark-circle" size={14} color="#1FBA4C" />
+                  <Text style={styles.metaOpenText}>{listing.is_available === false ? 'Closed' : 'Open'}</Text>
+                </View>
+                <View style={styles.metaInfoRow}>
+                  <Ionicons name="location-outline" size={14} color="#9CA3AF" />
+                  <Text style={styles.metaAddressText} numberOfLines={1}>{areaLabel}</Text>
+                </View>
+              </View>
+
               <View style={styles.sectionDivider} />
 
               {/* Date/Time Picker Row */}
-              <View style={styles.timePickerSection}>
-                <View style={styles.timePickerWrapper}>
-                  <View style={styles.timePickerCard}>
-                    <Pressable style={styles.timePickerColumn} onPress={() => openPicker("start")}>
-                      <View style={styles.timePickerField}>
-                        <View>
-                          <Text style={styles.dateTimeLabel}>From</Text>
-                          <Text style={styles.dateTimeValue}>{formatDateTimeLabel(startAt)}</Text>
-                        </View>
-                        <View style={styles.timePickerChevron}>
-                          <Ionicons name="chevron-down" size={16} color="#0f766e" />
-                        </View>
-                      </View>
-                    </Pressable>
-                    <View style={styles.timePickerArrow}>
-                      <Ionicons name="arrow-forward" size={18} color="#22a06b" />
-                    </View>
-                    <Pressable style={styles.timePickerColumn} onPress={() => openPicker("end")}>
-                      <View style={styles.timePickerField}>
-                        <View>
-                          <Text style={styles.dateTimeLabel}>Until</Text>
-                          <Text style={styles.dateTimeValue}>{formatDateTimeLabel(endAt)}</Text>
-                        </View>
-                        <View style={styles.timePickerChevron}>
-                          <Ionicons name="chevron-down" size={16} color="#0f766e" />
-                        </View>
-                      </View>
-                    </Pressable>
-                  </View>
-                  {extendOffer ? (
-                    <Pressable
-                      style={styles.offerBar}
-                      onPress={() => {
-                        setEndAt(new Date(extendOffer.endOfDay));
-                      }}
-                    >
-                      <View style={styles.offerContent}>
-                        <LinearGradient
-                          colors={['#15B27D', '#0E8E62']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.offerBoltCircle}
-                        >
-                          <Ionicons name="flash" size={12} color="#fff" />
-                        </LinearGradient>
-                        <Text style={styles.offerText}>
-                          Extend to <Text style={styles.offerTextBold}>23:59</Text> for only <Text style={styles.offerTextBold}>€{extendOffer.extra}</Text>
-                        </Text>
-                      </View>
-                      <View style={styles.offerChevron}>
-                        <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
-                      </View>
-                    </Pressable>
-                  ) : null}
-                </View>
-              </View>
-
-              <View style={styles.sectionDivider} />
-
-              {/* Availability */}
-              <View style={[styles.sectionBlock, { paddingHorizontal: 16 }]}>
-                <Text style={styles.sectionTitle}>Availability</Text>
-                {isOpen24 && !hasWeeklyAvailability ? (
-                  <View style={styles.availabilityCard}>
-                    <View style={styles.availabilityCardLeft}>
-                      <Text style={styles.availabilityOpenLabel}>Open now</Text>
-                      <Text style={styles.availabilityOpenValue}>24/7</Text>
-                    </View>
-                    <View style={styles.availabilityDayStrip}>
-                      {['M','T','W','T','F','S','S'].map((day, i) => {
-                        const todayDow = new Date().getDay();
-                        const mappedDow = [1,2,3,4,5,6,0][i];
-                        const isToday = mappedDow === todayDow;
-                        return (
-                          <View key={i} style={[styles.availabilityDayCell, isToday && styles.availabilityDayCellToday]}>
-                            <Text style={[styles.availabilityDayLabel, isToday && styles.availabilityDayLabelToday]}>{day}</Text>
+                  <View style={styles.timePickerSection}>
+                    <View style={styles.timePickerWrapper}>
+                      <View style={styles.timePickerCard}>
+                        <Pressable style={styles.timePickerColumn} onPress={() => openPicker("start")}>
+                          <View style={styles.timePickerField}>
+                            <View>
+                              <Text style={styles.dateTimeLabel}>From</Text>
+                              <Text style={styles.dateTimeValue}>{formatDateTimeLabel(startAt)}</Text>
+                            </View>
+                            <View style={styles.timePickerChevron}>
+                              <Ionicons name="chevron-down" size={16} color="#1FBA4C" />
+                            </View>
                           </View>
-                        );
-                      })}
+                        </Pressable>
+                        <View style={styles.timePickerArrow}>
+                          <Ionicons name="arrow-forward" size={16} color="#1FBA4C" />
+                        </View>
+                        <Pressable style={styles.timePickerColumn} onPress={() => openPicker("end")}>
+                          <View style={styles.timePickerField}>
+                            <View>
+                              <Text style={styles.dateTimeLabel}>Until</Text>
+                              <Text style={styles.dateTimeValue}>{formatDateTimeLabel(endAt)}</Text>
+                            </View>
+                            <View style={styles.timePickerChevron}>
+                              <Ionicons name="chevron-down" size={16} color="#1FBA4C" />
+                            </View>
+                          </View>
+                        </Pressable>
+                      </View>
+                      {extendOffer ? (
+                        <Pressable
+                          style={styles.offerBar}
+                          onPress={() => {
+                            setEndAt(new Date(extendOffer.endOfDay));
+                          }}
+                        >
+                          <View style={styles.offerContent}>
+                            <LinearGradient
+                              colors={['#1FBA4C', '#19A03F']}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                              style={styles.offerBoltCircle}
+                            >
+                              <Ionicons name="flash" size={12} color="#fff" />
+                            </LinearGradient>
+                            <Text style={styles.offerText}>
+                              Extend to <Text style={styles.offerTextBold}>23:59</Text> for only <Text style={styles.offerTextBold}>€{extendOffer.extra}</Text>
+                            </Text>
+                          </View>
+                          <View style={styles.offerChevron}>
+                            <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
+                          </View>
+                        </Pressable>
+                      ) : null}
                     </View>
                   </View>
-                ) : (
-                  (() => {
-                    const todayLabel = new Date().toLocaleDateString(undefined, { weekday: "long" });
-                    const rows = hasWeeklyAvailability
-                      ? openingHours
-                      : [{ day: "Availability", hours: availabilityFallbackText }];
-                    return rows.map((row) => {
-                      const isToday = row.day === todayLabel;
-                      const highlightToday = hasWeeklyAvailability && isToday;
-                      return (
-                        <View key={row.day} style={[styles.hoursRow, highlightToday && styles.hoursRowToday]}>
-                          <Text style={[styles.hoursDay, highlightToday && styles.hoursDayToday]}>{row.day}</Text>
-                          <Text style={[styles.hoursValue, highlightToday && styles.hoursValueToday]}>{row.hours}</Text>
+
+                  <View style={styles.sectionDivider} />
+
+                  {/* Availability */}
+                  <View style={[styles.sectionBlock, { paddingHorizontal: 20 }]}>
+                    <Text style={styles.sectionTitle}>Availability</Text>
+                    {isOpen24 && !hasWeeklyAvailability ? (
+                      <View style={styles.availabilityCard}>
+                        <View style={styles.availabilityCardLeft}>
+                          <Text style={styles.availabilityOpenLabel}>Open now</Text>
+                          <Text style={styles.availabilityOpenValue}>24/7</Text>
                         </View>
-                      );
-                    });
-                  })()
-                )}
-              </View>
-              <View style={styles.sectionDivider} />
+                        <View style={styles.availabilityDayStrip}>
+                          {['M','T','W','T','F','S','S'].map((day, i) => {
+                            const todayDow = new Date().getDay();
+                            const mappedDow = [1,2,3,4,5,6,0][i];
+                            const isToday = mappedDow === todayDow;
+                            return (
+                              <View key={i} style={[styles.availabilityDayCell, isToday && styles.availabilityDayCellToday]}>
+                                <Text style={[styles.availabilityDayLabel, isToday && styles.availabilityDayLabelToday]}>{day}</Text>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    ) : (
+                      (() => {
+                        const todayLabel = new Date().toLocaleDateString(undefined, { weekday: "long" });
+                        const rows = hasWeeklyAvailability
+                          ? openingHours
+                          : [{ day: "Availability", hours: availabilityFallbackText }];
+                        return rows.map((row) => {
+                          const isToday = row.day === todayLabel;
+                          const highlightToday = hasWeeklyAvailability && isToday;
+                          return (
+                            <View key={row.day} style={[styles.hoursRow, highlightToday && styles.hoursRowToday]}>
+                              <Text style={[styles.hoursDay, highlightToday && styles.hoursDayToday]}>{row.day}</Text>
+                              <Text style={[styles.hoursValue, highlightToday && styles.hoursValueToday]}>{row.hours}</Text>
+                            </View>
+                          );
+                        });
+                      })()
+                    )}
+                  </View>
+                  <View style={styles.sectionDivider} />
 
-              {/* About */}
-              <View style={[styles.sectionBlock, { paddingHorizontal: 16 }]}>
-                <Text style={styles.sectionTitle}>About this space</Text>
-                <Text style={styles.sectionBody}>
-                  {showFullAbout ? aboutText : aboutPreview}
-                </Text>
-                {aboutText.length > 140 ? (
-                  <Pressable onPress={() => setShowFullAbout((prev) => !prev)}>
-                    <Text style={styles.readMore}>
-                      {showFullAbout ? "Read less →" : "Read more →"}
+                  {/* About */}
+                  <Pressable
+                    style={[styles.sectionBlock, { paddingHorizontal: 20 }]}
+                    onPress={() => {
+                      if (aboutText.length > 140) {
+                        setShowFullAbout((prev) => !prev);
+                      }
+                    }}
+                  >
+                    <Text style={styles.sectionTitle}>About this space</Text>
+                    <Text
+                      style={styles.sectionBody}
+                      numberOfLines={showFullAbout ? undefined : 2}
+                    >
+                      {aboutText}
                     </Text>
+                    {aboutText.length > 140 ? (
+                      <Text style={styles.readMore}>
+                        {showFullAbout ? "Read less →" : "Read more →"}
+                      </Text>
+                    ) : null}
                   </Pressable>
-                ) : null}
-              </View>
-              <View style={styles.sectionDivider} />
+                  <View style={styles.sectionDivider} />
 
-              {/* Features */}
-              <View style={styles.featuresSection}>
-                <Text style={styles.sectionTitle}>What's included</Text>
-                <View style={styles.featuresGrid}>
-                  {featureLabels.slice(0, 6).map((feature) => (
-                    <View key={feature} style={styles.featureIconCard}>
-                      <FeatureIcon type={getFeatureIconType(feature)} size={28} />
-                      <Text style={styles.featureIconLabel}>{feature}</Text>
-                      <Text style={styles.featureIconSub}>{getFeatureSubLabel(feature)}</Text>
+                  {/* Features */}
+                  <View style={styles.featuresSection}>
+                    <Text style={styles.sectionTitle}>What's included</Text>
+                    <View style={styles.featuresList2}>
+                      {featureLabels.slice(0, 6).map((feature) => (
+                        <View key={feature} style={styles.featureRow2}>
+                          <FeatureIcon type={getFeatureIconType(feature)} size={26} />
+                          <Text style={styles.featureLabel2}>{feature}</Text>
+                        </View>
+                      ))}
                     </View>
-                  ))}
-                </View>
-              </View>
-              <View style={styles.sectionDivider} />
+                  </View>
+                  <View style={styles.sectionDivider} />
 
-              {/* Reviews */}
               <View style={styles.contentSections}>
                 <View style={styles.sectionBlock}>
                   <View style={styles.reviewHeaderRow}>
@@ -766,6 +772,7 @@ export function ListingScreen({ navigation, route }: Props) {
               {priceSummary && user ? (
               <View style={[styles.bottomBar, { paddingBottom: 24 + insets.bottom }]}>
                 <View style={styles.priceInfo}>
+                  <Text style={styles.priceLabel}>Total Price</Text>
                   <Text style={styles.priceAmount}>€{priceSummary.total}</Text>
                   <Text style={styles.priceDuration}>{priceSummary.durationLabel}</Text>
                 </View>
@@ -876,7 +883,7 @@ export function ListingScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     flex: 1,
   },
   scrollContainer: {
@@ -1606,9 +1613,9 @@ const styles = StyleSheet.create({
   contentCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    paddingTop: 8,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 0,
     paddingBottom: 12,
     paddingHorizontal: 0,
   },
@@ -1616,7 +1623,7 @@ const styles = StyleSheet.create({
     height: 120,
   },
   contentWrap: {
-    marginTop: -12,
+    marginTop: -20,
     zIndex: 2,
   },
   sheetHandle: {
@@ -1628,18 +1635,56 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   heroTitleBlock: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    gap: 4,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 20,
+    gap: 10,
   },
   cardTitle: {
-    fontFamily: "Inter-Medium",
-    fontSize: 25,
-    fontWeight: '500',
-    color: '#15171A',
-    lineHeight: 30,
-    letterSpacing: -0.35,
+    fontFamily: "Inter-Bold",
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111111',
+    lineHeight: 34,
+    letterSpacing: -0.3,
+  },
+  cardSubtitle: {
+    fontFamily: "Inter-Regular",
+    fontSize: 15,
+    fontWeight: '400',
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  ratingBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
+    marginTop: 4,
+  },
+  ratingBlockCell: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  ratingBlockNumber: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0D0D0D',
+  },
+  ratingBlockStars: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  ratingBlockLabel: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  ratingBlockDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: '#E5E7EB',
   },
   infoRows: {
     gap: 4,
@@ -1658,14 +1703,14 @@ const styles = StyleSheet.create({
   },
   infoRowRating: {
     fontFamily: "Inter-SemiBold",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#15171A',
   },
   infoRowMuted: {
     fontFamily: "Inter-Regular",
-    fontSize: 15,
-    color: '#6B7280',
+    fontSize: 14,
+    color: '#9CA3AF',
   },
   infoRowDot: {
     width: 3,
@@ -1718,7 +1763,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 0,
     marginBottom: 2,
     flexWrap: "wrap",
   },
@@ -1900,21 +1944,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   timePickerSection: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 14,
   },
   timePickerWrapper: {
-    overflow: "hidden",
-    borderRadius: 16,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: 'rgba(20,23,26,0.08)',
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    overflow: "visible",
+    borderRadius: 0,
+    backgroundColor: "transparent",
   },
   timePickerCard: {
     flexDirection: 'row',
@@ -1932,8 +1969,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(20,23,26,0.10)',
-    backgroundColor: "#FFFFFF",
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: "#435062",
     overflow: "hidden",
   },
   timePickerChevron: {
@@ -1953,7 +1990,7 @@ const styles = StyleSheet.create({
   dateTimeLabel: {
     fontFamily: "Inter-Medium",
     fontSize: 10,
-    color: '#6B7280',
+    color: 'rgba(255,255,255,0.58)',
     textTransform: 'uppercase',
     letterSpacing: 0.65,
     fontWeight: '600',
@@ -1963,7 +2000,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter-SemiBold",
     fontSize: 13,
     fontWeight: '600',
-    color: '#15171A',
+    color: '#FFFFFF',
   },
   offerBar: {
     backgroundColor: '#15202B',
@@ -2048,12 +2085,12 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   contentSections: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 0,
   },
   sectionBlock: {
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   sectionDivider: {
     height: 1,
@@ -2084,10 +2121,10 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   hoursRowToday: {
-    backgroundColor: "#E5F6EE",
+    backgroundColor: "#E7F8EC",
     borderRadius: 0,
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
+    marginHorizontal: -20,
+    paddingHorizontal: 20,
   },
   hoursDay: {
     fontFamily: "Inter-Regular",
@@ -2114,25 +2151,25 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: "Inter-Bold",
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#15171A',
-    letterSpacing: -0.2,
+    color: '#0D0D0D',
+    letterSpacing: -0.1,
     marginBottom: 0,
   },
   sectionBody: {
     fontFamily: "Inter-Regular",
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#374151',
+    fontSize: 14,
+    lineHeight: 21,
+    color: '#6B7280',
     fontWeight: '400',
-    marginTop: 4,
+    marginTop: 6,
   },
   readMore: {
     fontFamily: "Inter-SemiBold",
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#0E8E62',
+    color: '#1FBA4C',
     marginTop: 8,
   },
   featuresGrid: {
@@ -2142,9 +2179,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   featuresSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    paddingTop: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    paddingTop: 16,
   },
   featureIconCard: {
     width: '47.5%',
@@ -2171,6 +2208,22 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     fontFamily: "Inter-Regular",
     textAlign: "center",
+  },
+  featuresList2: {
+    marginTop: 12,
+  },
+  featureRow2: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 18,
+    paddingVertical: 14,
+  },
+  featureLabel2: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#1A1A1A',
+    flex: 1,
   },
   featuresList: {
     backgroundColor: '#FFFFFF',
@@ -2619,6 +2672,139 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-Medium",
     fontSize: 16,
     fontWeight: '700',
+    color: '#9CA3AF',
+  },
+  titleBlockInner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  titleBlockLeft: {
+    flex: 1,
+    gap: 6,
+    minWidth: 0,
+  },
+  spaceTypePill: {
+    borderRadius: 999,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#1FBA4C',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    alignSelf: 'flex-start',
+  },
+  spaceTypePillText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1FBA4C',
+  },
+  sendBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#1FBA4C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  listingTabsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 28,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EBEBEB',
+  },
+  listingTabItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    marginBottom: -1,
+  },
+  listingTabItemActive: {
+    borderBottomColor: '#1FBA4C',
+  },
+  listingTabLabel: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#9CA3AF',
+  },
+  listingTabLabelActive: {
+    color: '#101418',
+  },
+  metaInfoSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    gap: 10,
+  },
+  metaInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  metaInfoText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1A1A1A',
+  },
+  metaInfoDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#A8AEB5',
+  },
+  metaOpenText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1FBA4C',
+  },
+  metaAddressText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#7A8089',
+    flex: 1,
+  },
+  priceLabel: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '400',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 1,
+  },
+  galleryTab: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  galleryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  galleryThumb: {
+    width: '48.5%',
+    aspectRatio: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+  },
+  galleryThumbImage: {
+    width: '100%',
+    height: '100%',
+  },
+  galleryEmpty: {
+    paddingVertical: 48,
+    alignItems: 'center',
+  },
+  galleryEmptyText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
     color: '#9CA3AF',
   },
 });

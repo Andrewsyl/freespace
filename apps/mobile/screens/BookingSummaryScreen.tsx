@@ -30,7 +30,6 @@ import {
 import { useAuth } from "../auth";
 import { logError, logInfo } from "../logger";
 import { getNotificationImageAttachment } from "../notifications";
-import { BookingProgressBar } from "../components/BookingProgressBar";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import { BackButton, Button, SectionHeader, TextInput as AppTextInput } from "../components/ui";
@@ -435,7 +434,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           onPress={() => navigation.goBack()}
           style={styles.progressBackButton}
         />
-        <BookingProgressBar currentStep={bookingBusy || confirmingBooking ? 3 : 2} />
       </View>
       {loadingListing ? (
         <View style={styles.centered}>
@@ -508,17 +506,17 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                   <Text style={styles.bookingTimeLabel}>From</Text>
                   <View style={styles.bookingTimeField}>
                     <Text style={styles.bookingTimeValue}>{formatDateTimeLabel(start)}</Text>
-                    <Ionicons name="chevron-down" size={16} color="#0f766e" />
+                    <Ionicons name="chevron-down" size={16} color="#1FBA4C" />
                   </View>
                 </Pressable>
                 <View style={styles.bookingTimeArrow}>
-                  <Ionicons name="arrow-forward" size={18} color="#22a06b" />
+                  <Ionicons name="arrow-forward" size={18} color="#1FBA4C" />
                 </View>
                 <Pressable style={styles.bookingTimeColumn} onPress={() => openPicker("end")}>
                   <Text style={styles.bookingTimeLabel}>Until</Text>
                   <View style={styles.bookingTimeField}>
                     <Text style={styles.bookingTimeValue}>{formatDateTimeLabel(end)}</Text>
-                    <Ionicons name="chevron-down" size={16} color="#0f766e" />
+                    <Ionicons name="chevron-down" size={16} color="#1FBA4C" />
                   </View>
                 </Pressable>
               </View>
@@ -531,56 +529,55 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               plateSectionYRef.current = event.nativeEvent.layout.y;
             }}
           >
-            <SectionHeader
-              title="Vehicle"
-              subtitle={
-                vehicleMake && vehicleColor
-                  ? `${vehicleMake} · ${vehicleColor}`
-                  : vehicleMake || "Add your vehicle details"
-              }
-              trailing={
-                <Button
-                  title={vehicleMake ? "Edit" : "Add"}
-                  variant="ghost"
-                  size="small"
-                  style={styles.vehicleEditButton}
-                  onPress={() => navigation.navigate("VehicleType")}
-                />
-              }
-            />
             {vehicleMake ? (
-              <View style={styles.vehicleCardInfo}>
-                <VehicleBrandLogo make={vehicleMake} size={20} />
-                <View style={styles.vehicleCardText}>
-                  {user?.vehicleType ? <Text style={styles.vehicleTypeText}>{user.vehicleType}</Text> : null}
-                </View>
+              <View style={styles.vehicleLogoColumn}>
+                <VehicleBrandLogo make={vehicleMake} size={32} />
               </View>
             ) : null}
-            <Text style={styles.fieldLabel}>Vehicle registration</Text>
-            <View style={styles.regRow}>
-              <View style={styles.plateCountry} />
-              <View style={styles.regDetails}>
-                <AppTextInput
-                  variant="embedded"
-                  value={vehiclePlate}
-                  onChangeText={(value) => setVehiclePlate(formatIrishPlateInput(value))}
-                  placeholder="Enter reg plate"
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                  textAlign="center"
-                  containerStyle={styles.regInputContainer}
-                  style={styles.regInput}
-                  onFocus={() => {
-                    setPlateFocused(true);
-                    if (plateScrollTimeoutRef.current) clearTimeout(plateScrollTimeoutRef.current);
-                    plateScrollTimeoutRef.current = setTimeout(() => {
-                      scrollPlateIntoView();
-                    }, Platform.OS === "android" ? 180 : 60);
-                  }}
-                  onBlur={() => {
-                    setPlateFocused(false);
-                  }}
-                />
+            <View style={styles.vehicleContent}>
+              <SectionHeader
+                title="Vehicle"
+                subtitle={
+                  vehicleMake && vehicleColor
+                    ? `${vehicleMake} · ${vehicleColor}`
+                    : vehicleMake || "Add your vehicle details"
+                }
+                trailing={
+                  <Button
+                    title={vehicleMake ? "Edit" : "Add"}
+                    variant="ghost"
+                    size="small"
+                    style={styles.vehicleEditButton}
+                    onPress={() => navigation.navigate("VehicleType")}
+                  />
+                }
+                style={styles.vehicleSectionHeader}
+              />
+              <View style={styles.regRow}>
+                <View style={styles.plateCountry} />
+                <View style={styles.regDetails}>
+                  <AppTextInput
+                    variant="embedded"
+                    value={vehiclePlate}
+                    onChangeText={(value) => setVehiclePlate(formatIrishPlateInput(value))}
+                    placeholder="Enter reg plate"
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    textAlign="center"
+                    containerStyle={styles.regInputContainer}
+                    style={styles.regInput}
+                    onFocus={() => {
+                      setPlateFocused(true);
+                      if (plateScrollTimeoutRef.current) clearTimeout(plateScrollTimeoutRef.current);
+                      plateScrollTimeoutRef.current = setTimeout(() => {
+                        scrollPlateIntoView();
+                      }, Platform.OS === "android" ? 180 : 60);
+                    }}
+                    onBlur={() => {
+                      setPlateFocused(false);
+                    }}
+                  />
+                </View>
               </View>
             </View>
           </View>
@@ -621,9 +618,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       )}
       {listing && user && !plateFocused ? (
         <View style={[styles.footerBar, { paddingBottom: Math.max(insets.bottom, 22) }]}>
-          <Text style={styles.footerDisclosure}>
-            FreeSpace is the booking marketplace. Hosts manage the physical space and site rules.
-          </Text>
           <Button
             style={styles.footerButton}
             textStyle={styles.footerButtonText}
@@ -722,8 +716,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     paddingTop: 8,
     paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
   },
   progressBackButton: {
     position: "absolute",
@@ -733,19 +725,19 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   pageTitleBlock: {
-    paddingTop: 12,
+    paddingTop: 20,
     paddingBottom: 16,
   },
   pageTitle: {
     color: "#15171A",
-    fontSize: 28,
+    fontSize: 24,
     lineHeight: 32,
-    fontFamily: "Inter-Medium",
-    fontWeight: "500",
-    letterSpacing: -0.45,
+    fontFamily: "Inter-Bold",
+    fontWeight: "700",
+    letterSpacing: -0.5,
   },
   scrollContent: {
-    paddingHorizontal: spacing.screenX,
+    paddingHorizontal: 20,
     paddingBottom: 180,
     paddingTop: spacing.sm,
   },
@@ -783,7 +775,7 @@ const styles = StyleSheet.create({
   },
   summaryEyebrow: {
     color: "#667085",
-    fontSize: 9,
+    fontSize: 11,
     lineHeight: 13,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
@@ -844,7 +836,7 @@ const styles = StyleSheet.create({
   },
   summaryMetricLabel: {
     color: "#9CA3AF",
-    fontSize: 9,
+    fontSize: 10,
     lineHeight: 13,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
@@ -956,13 +948,13 @@ const styles = StyleSheet.create({
   totalDueLabel: {
     fontSize: 13,
     fontWeight: "700",
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Inter-SemiBold",
     color: "#6B7280",
   },
   totalDueValue: {
     fontSize: 28,
     fontWeight: "800",
-    fontFamily: "Poppins-Bold",
+    fontFamily: "Inter-Bold",
     color: colors.text,
     letterSpacing: -0.3,
   },
@@ -993,13 +985,13 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     fontSize: 12,
     fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Inter-SemiBold",
   },
   breakdownValue: {
     color: colors.text,
     fontSize: 12,
     fontWeight: "700",
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Inter-SemiBold",
   },
   trustRow: {
     paddingHorizontal: 16,
@@ -1009,13 +1001,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   fieldLabel: {
-    color: "#15171A",
-    fontSize: 16,
-    lineHeight: 21,
-    fontFamily: "Inter-Bold",
-    fontWeight: "700",
-    letterSpacing: -0.35,
-    marginBottom: 14,
+    color: "#6B7280",
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: "Inter-SemiBold",
+    fontWeight: "600",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    marginBottom: 8,
   },
   fieldInput: {
     backgroundColor: colors.cardBgMuted,
@@ -1033,20 +1026,27 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
     marginBottom: 18,
+    flexDirection: "row",
+    overflow: "hidden",
     ...cardShadow,
   },
-  vehicleCardInfo: {
+  vehicleLogoColumn: {
+    width: 72,
     alignItems: "center",
-    flexDirection: "row",
-    flexShrink: 1,
-    gap: 10,
-    marginBottom: 16,
+    justifyContent: "center",
+    backgroundColor: "#F8FAFC",
+    borderRightWidth: 1,
+    borderRightColor: colors.border,
   },
-  vehicleCardText: {
-    flexShrink: 1,
+  vehicleContent: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 12,
+  },
+  vehicleSectionHeader: {
+    marginBottom: 8,
   },
   vehicleTypeText: {
     ...textStyles.meta,
@@ -1233,7 +1233,7 @@ const styles = StyleSheet.create({
   pickerDoneText: {
     color: colors.accent,
     fontWeight: "600",
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Inter-SemiBold",
   },
   footerBar: {
     position: 'absolute',
@@ -1250,12 +1250,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 4,
-  },
-  footerDisclosure: {
-    ...textStyles.meta,
-    lineHeight: 18,
-    marginBottom: 12,
-    textAlign: "center",
   },
   footerButton: {
     minHeight: 54,
@@ -1311,7 +1305,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: "#b42318",
     fontSize: 12,
-    fontFamily: "Poppins-Regular",
+    fontFamily: "Inter-Regular",
     marginBottom: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,

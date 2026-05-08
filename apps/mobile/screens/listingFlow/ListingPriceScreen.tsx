@@ -103,6 +103,19 @@ export function ListingPriceScreen({ navigation }: Props) {
     () => formatMoney(dailyValue * MONTHLY_DAY_MULTIPLIER),
     [dailyValue]
   );
+  const dailyCapFromHourly = useMemo(
+    () => (hourlyValue > 0 ? roundMoney(hourlyValue * 24) : 0),
+    [hourlyValue]
+  );
+  const pricingWarning = useMemo(() => {
+    if (hourlyValue <= 0 || dailyValue <= 0) return null;
+    if (dailyValue > dailyCapFromHourly) {
+      return `Your daily price is higher than 24 hours at your hourly rate (€${formatMoney(
+        dailyCapFromHourly
+      )}). Longer stays should usually be cheaper or equal.`;
+    }
+    return null;
+  }, [dailyCapFromHourly, dailyValue, hourlyValue]);
 
   useEffect(() => {
     setDraft((prev) => ({
@@ -145,6 +158,14 @@ export function ListingPriceScreen({ navigation }: Props) {
             value={dailyPrice}
             onChangeText={handleDailyChange}
           />
+          {pricingWarning ? (
+            <View style={styles.inlineWarningWrap}>
+              <View style={styles.warningCard}>
+                <Text style={styles.warningTitle}>Check your pricing</Text>
+                <Text style={styles.warningBody}>{pricingWarning}</Text>
+              </View>
+            </View>
+          ) : null}
           <PricingRow
             icon={<CalendarDays size={22} color="#15171A" strokeWidth={2.2} />}
             label="Weekly"
@@ -281,6 +302,33 @@ const styles = StyleSheet.create({
   },
   noteBody: {
     color: "#667085",
+    fontFamily: "Inter-Regular",
+    fontSize: 13,
+    fontWeight: "400",
+    lineHeight: 20,
+  },
+  warningCard: {
+    backgroundColor: "#FFF7ED",
+    borderColor: "#F6AD55",
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  inlineWarningWrap: {
+    paddingHorizontal: 18,
+    paddingTop: 0,
+    paddingBottom: 16,
+  },
+  warningTitle: {
+    color: "#9A3412",
+    fontFamily: "Inter-SemiBold",
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  warningBody: {
+    color: "#9A3412",
     fontFamily: "Inter-Regular",
     fontSize: 13,
     fontWeight: "400",

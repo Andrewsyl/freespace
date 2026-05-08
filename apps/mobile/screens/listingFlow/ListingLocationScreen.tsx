@@ -457,6 +457,7 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flex: 1,
     marginBottom: 0,
+    justifyContent: "center",
   },
   searchInput: {
     color: colors.text,
@@ -464,6 +465,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Poppins-Medium",
     fontWeight: "500",
+    lineHeight: 20,
+    minHeight: 24,
+    includeFontPadding: false,
+    paddingVertical: 0,
   },
   clearButton: {
     alignItems: "center",

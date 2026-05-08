@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import * as Notifications from "expo-notifications";
-import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
+import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Constants from "expo-constants";
@@ -204,7 +204,7 @@ function AppShell() {
       {showEnvBadge ? <EnvironmentBadge env={normalizedAppEnv} /> : null}
       {shouldShowLegalGate ? <LegalGate /> : null}
       <GlobalLoadingOverlay />
-      <StatusBar barStyle="dark-content" translucent={false} backgroundColor="#FCFCFB" />
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
     </>
   );
 }
@@ -219,16 +219,22 @@ function EnvironmentBadge({ env }: { env: string }) {
   );
 }
 
+const TransparentTheme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: 'transparent' } };
+
 function AppNavigator() {
   return (
     <>
-      <NavigationContainer ref={navigationRef}>
+      <NavigationContainer ref={navigationRef} theme={TransparentTheme}>
         <Stack.Navigator
           screenOptions={{ headerShown: false }}
           initialRouteName="Tabs"
         >
           <Stack.Screen name="Tabs" component={MainTabs} />
-          <Stack.Screen name="Listing" component={ListingScreen} />
+          <Stack.Screen
+            name="Listing"
+            component={ListingScreen}
+            options={{ contentStyle: { backgroundColor: 'transparent' }, statusBarTranslucent: true }}
+          />
           <Stack.Screen name="Listings" component={ListingsScreen} />
           <Stack.Screen name="BookingSummary" component={BookingSummaryScreen} />
           <Stack.Screen name="VehicleType" component={VehicleTypeScreen} />
