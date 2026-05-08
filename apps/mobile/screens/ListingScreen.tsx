@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  StatusBar,
   Text,
   TextInput,
   useWindowDimensions,
@@ -213,12 +214,13 @@ export function ListingScreen({ navigation, route }: Props) {
         setEndAt(bumped);
       }
       setStartAt(next);
-      return;
+      return nextEnd;
     }
     const minEnd = new Date(startAt);
     minEnd.setHours(minEnd.getHours() + 1);
     const safeEnd = next < minEnd ? minEnd : next;
     setEndAt(safeEnd);
+    return safeEnd;
   };
 
   const imageUrls = useMemo(() => {
@@ -289,7 +291,6 @@ export function ListingScreen({ navigation, route }: Props) {
     { label: "Saturday", dow: 6 },
     { label: "Sunday", dow: 0 },
   ];
-  const todayDow = new Date().getDay();
   const openingHours = weekdayOrder.map(({ label, dow }) => {
     if (hasWeeklyAvailability) {
       const entry = availabilityEntries.find((item) =>
@@ -299,15 +300,13 @@ export function ListingScreen({ navigation, route }: Props) {
         return {
           day: label,
           hours: `${formatHour(entry.startsAt)} - ${formatHour(entry.endsAt)}`,
-          isToday: dow === todayDow,
         };
       }
-      return { day: label, hours: "Closed", isToday: dow === todayDow };
+      return { day: label, hours: "Closed" };
     }
     return {
       day: label,
       hours: availabilityFallbackText,
-      isToday: dow === todayDow,
     };
   });
   const hasReviews = (listing?.rating_count ?? 0) > 0 && typeof listing?.rating === "number";
@@ -396,6 +395,7 @@ export function ListingScreen({ navigation, route }: Props) {
 
   return (
     <>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         {loading ? (
           <View style={styles.centered}>
@@ -407,6 +407,7 @@ export function ListingScreen({ navigation, route }: Props) {
           </View>
         ) : listing ? (
           <>
+            <View style={[styles.statusBarFill, { height: insets.top }]} />
             {/* Content Card */}
             <View style={[styles.heroFixed, { height: heroHeight + insets.top, top: 0 }]}>
               {imageUrls.length ? (
@@ -470,7 +471,7 @@ export function ListingScreen({ navigation, route }: Props) {
                 paddingBottom: bottomBarSpacer,
               }}
             >
-              <View style={[styles.taxiPage, { paddingTop: heroHeight }]}>
+              <View style={[styles.taxiPage, { paddingTop: heroHeight - 84 }]}>
                 <View style={styles.taxiSheet}>
                   <View style={styles.taxiHandle} />
 
@@ -490,7 +491,7 @@ export function ListingScreen({ navigation, route }: Props) {
                       </View>
                     )}
                     <View style={styles.taxiSummaryCopy}>
-                      <Text style={styles.taxiSummaryTitle}>{spaceTypeLabel}</Text>
+                      <Text style={styles.taxiSummaryTitle} numberOfLines={2}>{listing.title}</Text>
                       <Text style={styles.taxiSummarySub}>{areaLabel}</Text>
                       <View style={styles.taxiSummaryRating}>
                         {[0, 1, 2, 3, 4].map((idx) => (
@@ -540,12 +541,11 @@ export function ListingScreen({ navigation, route }: Props) {
                         <Text style={styles.taxiRouteValue}>{formatDateTimeLabel(endAt)}</Text>
                       </View>
                     </View>
+                    <Pressable style={styles.taxiTimeEditButton} onPress={() => openPicker("start")}>
+                      <Ionicons name="create-outline" size={16} color="#2F855A" />
+                      <Text style={styles.taxiTimeEditButtonText}>Edit</Text>
+                    </Pressable>
                   </View>
-
-                  <Pressable style={styles.taxiSecondaryButton} onPress={() => openPicker("start")}>
-                    <Ionicons name="time-outline" size={18} color="#45C36F" />
-                    <Text style={styles.taxiSecondaryButtonText}>Edit booking time</Text>
-                  </Pressable>
 
                   {extendOffer ? (
                     <Pressable
@@ -587,32 +587,7 @@ export function ListingScreen({ navigation, route }: Props) {
 
                     <View style={styles.taxiDetailCard}>
                       <Text style={styles.taxiSectionTitle}>Availability</Text>
-                      <View style={styles.taxiAvailabilityList}>
-                        {openingHours.map((entry) => (
-                          <View
-                            key={entry.day}
-                            style={[
-                              styles.taxiAvailabilityRow,
-                              entry.isToday ? styles.taxiAvailabilityRowToday : null,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.taxiAvailabilityDay,
-                              ]}
-                            >
-                              {entry.day}
-                            </Text>
-                            <Text
-                              style={[
-                                styles.taxiAvailabilityHours,
-                              ]}
-                            >
-                              {entry.hours}
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
+                      <Text style={styles.taxiBodyText}>{availabilityFallbackText}</Text>
                     </View>
 
                     <View style={styles.taxiDetailCard}>
@@ -771,9 +746,15 @@ export function ListingScreen({ navigation, route }: Props) {
                 <Pressable
                   style={styles.pickerDone}
                   onPress={() => {
+                    const currentField = pickerField;
                     const picked =
                       draftDate ?? (pickerField === "start" ? startAt : endAt);
-                    applyPickedDate(picked);
+                    const resolvedDate = applyPickedDate(picked);
+                    if (currentField === "start") {
+                      setPickerField("end");
+                      setDraftDate(resolvedDate);
+                      return;
+                    }
                     setPickerVisible(false);
                     setDraftDate(null);
                   }}
@@ -835,8 +816,16 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     flex: 1,
   },
+  statusBarFill: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(15,23,42,0.48)",
+    zIndex: 1,
+  },
   taxiPage: {
-    paddingHorizontal: 0,
+    paddingHorizontal: 10,
     gap: 0,
   },
   taxiSheet: {
@@ -987,6 +976,24 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 0,
   },
+  taxiTimeEditButton: {
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 38,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: "#ECFBF2",
+    marginLeft: 8,
+  },
+  taxiTimeEditButtonText: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2F855A",
+  },
   taxiRouteRow: {
     minHeight: 34,
     justifyContent: "center",
@@ -1084,31 +1091,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     color: "#64748B",
-  },
-  taxiAvailabilityList: {
-    gap: 10,
-  },
-  taxiAvailabilityRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  taxiAvailabilityRowToday: {
-    backgroundColor: "#F4FBF7",
-    borderRadius: 12,
-  },
-  taxiAvailabilityDay: {
-    fontFamily: "Inter-Medium",
-    fontSize: 14,
-    color: "#1F2937",
-    flex: 1,
-  },
-  taxiAvailabilityHours: {
-    fontFamily: "Inter-Regular",
-    fontSize: 13,
-    color: "#64748B",
-    textAlign: "right",
   },
   taxiFeatureStack: {
     gap: 10,
@@ -1855,7 +1837,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   favoriteIconActive: {
-    color: '#F4B400',
+    color: '#111827',
   },
   favAnimOverlay: {
     position: 'absolute',

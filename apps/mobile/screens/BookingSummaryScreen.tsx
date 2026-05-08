@@ -12,7 +12,9 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  StatusBar,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -66,6 +68,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const { id, from, to } = route.params;
   const { token, user } = useAuth();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [loadingListing, setLoadingListing] = useState(true);
@@ -178,6 +181,12 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       mapCenter
     )}&key=${mapsKey}&v=${encodeURIComponent(cacheBuster)}`;
   }, [mapsKey, mapCenter, staticMapVersion]);
+  const heroHeight = Math.round(width * 0.64);
+  const heroImage = useMemo(() => {
+    if (listing?.image_urls?.length) return listing.image_urls[0];
+    if (staticMapUrl) return staticMapUrl;
+    return null;
+  }, [listing?.image_urls, staticMapUrl]);
 
   useEffect(() => {
     setStaticMapFailed(false);
@@ -423,18 +432,14 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <SafeAreaView style={styles.container} edges={[]}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
       >
-      <View style={styles.progressHeader}>
-        <BackButton
-          onPress={() => navigation.goBack()}
-          style={styles.progressBackButton}
-        />
-      </View>
       {loadingListing ? (
         <View style={styles.centered}>
           <ActivityIndicator size="small" color="#2ECC8F" />
@@ -455,169 +460,186 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           </View>
         </View>
       ) : listing ? (
-        <ScrollView
-          ref={scrollRef}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.pageTitleBlock}>
-            <Text style={styles.pageTitle}>Booking Confirmation</Text>
-          </View>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <View style={styles.summaryCard}>
-            <View style={styles.summaryHeader}>
-              <Text style={styles.summaryEyebrow}>Booking summary</Text>
-              <Text style={styles.listingTitle}>{listing.title || "Adam House Car Park"}</Text>
-              <View style={styles.addressRow}>
-                <Ionicons name="location-sharp" size={14} color={colors.textMuted} />
-                <Text style={styles.addressText}>
-                  {listing.address || "24 Adam Street, Dublin"}
-                </Text>
+        <>
+          <View style={[styles.statusBarFill, { height: insets.top }]} />
+          <View style={[styles.heroFixed, { height: heroHeight + insets.top }]}>
+            {heroImage ? (
+              <Image source={{ uri: heroImage }} style={{ width, height: heroHeight + insets.top }} />
+            ) : (
+              <View style={[styles.heroPlaceholder, { height: heroHeight + insets.top }]}>
+                <Text style={styles.heroPlaceholderText}>No image</Text>
               </View>
-            </View>
-
-            <View style={styles.summaryMetricsWrap}>
-              <View style={styles.summaryMetrics}>
-                <View style={styles.summaryMetricCell}>
-                  <Text style={styles.summaryMetricLabel}>Duration</Text>
-                  <Text style={styles.summaryMetricValue}>
-                    {priceSummary?.durationLabel ?? "--"}
-                  </Text>
-                </View>
-                <View style={styles.summaryMetricDivider} />
-                <View style={styles.summaryMetricCell}>
-                  <Text style={styles.summaryMetricLabel}>Fee</Text>
-                  <Text style={styles.summaryMetricValue}>€{Math.round(pricing.finalPrice)}</Text>
-                </View>
-                <View style={styles.summaryMetricDivider} />
-                <View style={styles.summaryMetricCell}>
-                  <Text style={styles.summaryMetricLabel}>Vehicle</Text>
-                  <Text style={styles.summaryMetricValue} numberOfLines={1}>
-                    {vehicleMake || "Add vehicle"}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.bookingTimeCard}>
-              <View style={styles.bookingTimeRow}>
-                <Pressable style={styles.bookingTimeColumn} onPress={() => openPicker("start")}>
-                  <Text style={styles.bookingTimeLabel}>From</Text>
-                  <View style={styles.bookingTimeField}>
-                    <Text style={styles.bookingTimeValue}>{formatDateTimeLabel(start)}</Text>
-                    <Ionicons name="chevron-down" size={16} color="#1FBA4C" />
-                  </View>
-                </Pressable>
-                <View style={styles.bookingTimeArrow}>
-                  <Ionicons name="arrow-forward" size={18} color="#1FBA4C" />
-                </View>
-                <Pressable style={styles.bookingTimeColumn} onPress={() => openPicker("end")}>
-                  <Text style={styles.bookingTimeLabel}>Until</Text>
-                  <View style={styles.bookingTimeField}>
-                    <Text style={styles.bookingTimeValue}>{formatDateTimeLabel(end)}</Text>
-                    <Ionicons name="chevron-down" size={16} color="#1FBA4C" />
-                  </View>
-                </Pressable>
-              </View>
-            </View>
+            )}
           </View>
 
-          <View
-            style={styles.regCard}
-            onLayout={(event) => {
-              plateSectionYRef.current = event.nativeEvent.layout.y;
-            }}
+          <View style={[styles.headerOverlay, { top: insets.top + 8 }]}>
+            <BackButton onPress={() => navigation.goBack()} style={styles.heroBackButton} />
+          </View>
+
+          <ScrollView
+            ref={scrollRef}
+            contentContainerStyle={[styles.scrollContent, { paddingTop: heroHeight }]}
+            keyboardShouldPersistTaps="handled"
           >
-            {vehicleMake ? (
-              <View style={styles.vehicleLogoColumn}>
-                <VehicleBrandLogo make={vehicleMake} size={32} />
-              </View>
-            ) : null}
-            <View style={styles.vehicleContent}>
-              <SectionHeader
-                title="Vehicle"
-                subtitle={
-                  vehicleMake && vehicleColor
-                    ? `${vehicleMake} · ${vehicleColor}`
-                    : vehicleMake || "Add your vehicle details"
-                }
-                trailing={
-                  <Button
-                    title={vehicleMake ? "Edit" : "Add"}
-                    variant="ghost"
-                    size="small"
-                    style={styles.vehicleEditButton}
-                    onPress={() => navigation.navigate("VehicleType")}
-                  />
-                }
-                style={styles.vehicleSectionHeader}
-              />
-              <View style={styles.regRow}>
-                <View style={styles.plateCountry} />
-                <View style={styles.regDetails}>
-                  <AppTextInput
-                    variant="embedded"
-                    value={vehiclePlate}
-                    onChangeText={(value) => setVehiclePlate(formatIrishPlateInput(value))}
-                    placeholder="Enter reg plate"
-                    autoCapitalize="characters"
-                    autoCorrect={false}
-                    textAlign="center"
-                    containerStyle={styles.regInputContainer}
-                    style={styles.regInput}
-                    onFocus={() => {
-                      setPlateFocused(true);
-                      if (plateScrollTimeoutRef.current) clearTimeout(plateScrollTimeoutRef.current);
-                      plateScrollTimeoutRef.current = setTimeout(() => {
-                        scrollPlateIntoView();
-                      }, Platform.OS === "android" ? 180 : 60);
+            <View style={styles.bookingPage}>
+              <View style={styles.bookingSheet}>
+                <View style={styles.bookingHandle} />
+                {error ? <Text style={styles.error}>{error}</Text> : null}
+
+                <View style={styles.pageTitleBlock}>
+                  <Text style={styles.pageTitle}>Confirm booking</Text>
+                </View>
+
+                <View style={styles.summaryCard}>
+                  <View style={styles.summaryHeader}>
+                    <Text style={styles.listingTitle}>{listing.title || "Adam House Car Park"}</Text>
+                    <View style={styles.addressRow}>
+                      <Ionicons name="location-sharp" size={14} color={colors.textMuted} />
+                      <Text style={styles.addressText}>
+                        {listing.address || "24 Adam Street, Dublin"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.summaryMetricsWrap}>
+                    <View style={styles.summaryMetrics}>
+                      <View style={styles.summaryMetricCell}>
+                        <Text style={styles.summaryMetricLabel}>Duration</Text>
+                        <Text style={styles.summaryMetricValue}>
+                          {priceSummary?.durationLabel ?? "--"}
+                        </Text>
+                      </View>
+                      <View style={styles.summaryMetricDivider} />
+                      <View style={styles.summaryMetricCell}>
+                        <Text style={styles.summaryMetricLabel}>Fee</Text>
+                        <Text style={styles.summaryMetricValue}>€{Math.round(pricing.finalPrice)}</Text>
+                      </View>
+                      <View style={styles.summaryMetricDivider} />
+                      <View style={styles.summaryMetricCell}>
+                        <Text style={styles.summaryMetricLabel}>Vehicle</Text>
+                        <Text style={styles.summaryMetricValue} numberOfLines={1}>
+                          {vehicleMake || "Add vehicle"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.bookingTimeCard}>
+                    <View style={styles.bookingRouteCard}>
+                      <View style={styles.bookingRouteTrack}>
+                        <View style={styles.bookingRouteDotStart} />
+                        <View style={styles.bookingRouteLine} />
+                        <View style={styles.bookingRouteDotEnd} />
+                      </View>
+                      <View style={styles.bookingRouteContent}>
+                        <View style={styles.bookingRouteRow}>
+                          <Text style={styles.bookingRouteValue}>{formatDateTimeLabel(start)}</Text>
+                        </View>
+                        <View style={styles.bookingRouteSpacer} />
+                        <View style={styles.bookingRouteRow}>
+                          <Text style={styles.bookingRouteValue}>{formatDateTimeLabel(end)}</Text>
+                        </View>
+                      </View>
+                      <Pressable style={styles.bookingTimeEditButton} onPress={() => openPicker("start")}>
+                        <Ionicons name="create-outline" size={16} color="#2F855A" />
+                        <Text style={styles.bookingTimeEditText}>Edit</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.sheetSectionStack}>
+                  <View
+                    style={styles.regCard}
+                    onLayout={(event) => {
+                      plateSectionYRef.current = event.nativeEvent.layout.y;
                     }}
-                    onBlur={() => {
-                      setPlateFocused(false);
-                    }}
-                  />
+                  >
+                    {vehicleMake ? (
+                      <View style={styles.vehicleLogoColumn}>
+                        <VehicleBrandLogo make={vehicleMake} size={32} />
+                      </View>
+                    ) : null}
+                    <View style={styles.vehicleContent}>
+                      <SectionHeader
+                        title="Vehicle"
+                        subtitle={vehicleMake && vehicleColor ? `${vehicleMake} · ${vehicleColor}` : undefined}
+                        trailing={
+                          <Button
+                            title={vehicleMake ? "Edit" : "Add"}
+                            variant="ghost"
+                            size="small"
+                            style={styles.vehicleEditButton}
+                            onPress={() => navigation.navigate("VehicleType")}
+                          />
+                        }
+                        style={styles.vehicleSectionHeader}
+                      />
+                      <View style={styles.regRow}>
+                        <View style={styles.plateCountry} />
+                        <View style={styles.regDetails}>
+                          <AppTextInput
+                            variant="embedded"
+                            value={vehiclePlate}
+                            onChangeText={(value) => setVehiclePlate(formatIrishPlateInput(value))}
+                            placeholder="Enter reg plate"
+                            autoCapitalize="characters"
+                            autoCorrect={false}
+                            textAlign="center"
+                            containerStyle={styles.regInputContainer}
+                            style={styles.regInput}
+                            onFocus={() => {
+                              setPlateFocused(true);
+                              if (plateScrollTimeoutRef.current) clearTimeout(plateScrollTimeoutRef.current);
+                              plateScrollTimeoutRef.current = setTimeout(() => {
+                                scrollPlateIntoView();
+                              }, Platform.OS === "android" ? 180 : 60);
+                            }}
+                            onBlur={() => {
+                              setPlateFocused(false);
+                            }}
+                          />
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.priceCard}>
+                    <SectionHeader title="Price" style={styles.priceHeader} />
+                    <View style={styles.priceBreakdownRow}>
+                      <Text style={styles.priceBreakdownLabel}>Parking fee</Text>
+                      <Text style={styles.priceBreakdownValue}>€{Math.round(pricing.parkingFee)}</Text>
+                    </View>
+                    <View style={styles.priceBreakdownRow}>
+                      <Text style={styles.priceBreakdownLabel}>Platform fee</Text>
+                      <Text style={styles.priceBreakdownMuted}>Included</Text>
+                    </View>
+                    <View style={styles.priceBreakdownRowLast}>
+                      <Text style={styles.priceBreakdownTotalLabel}>Total due today</Text>
+                      <Text style={styles.priceBreakdownTotalValue}>€{Math.round(pricing.finalPrice)}</Text>
+                    </View>
+                  </View>
+
+                  {paymentFailed ? (
+                    <View style={styles.noticeCard}>
+                      <Text style={styles.noticeTitle}>Payment didn’t go through</Text>
+                      <Text style={styles.noticeText}>
+                        {paymentFailureMessage ?? "Please try again or use another payment method."}
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
               </View>
             </View>
-          </View>
-
-          <View style={styles.priceCard}>
-            <SectionHeader
-              title="Price breakdown"
-              subtitle="No hidden fees will be added after checkout."
-              style={styles.priceHeader}
-            />
-            <View style={styles.priceBreakdownRow}>
-              <Text style={styles.priceBreakdownLabel}>Parking fee</Text>
-              <Text style={styles.priceBreakdownValue}>€{Math.round(pricing.parkingFee)}</Text>
-            </View>
-            <View style={styles.priceBreakdownRow}>
-              <Text style={styles.priceBreakdownLabel}>Platform fee</Text>
-              <Text style={styles.priceBreakdownMuted}>Included</Text>
-            </View>
-            <View style={styles.priceBreakdownRowLast}>
-              <Text style={styles.priceBreakdownTotalLabel}>Total due today</Text>
-              <Text style={styles.priceBreakdownTotalValue}>€{Math.round(pricing.finalPrice)}</Text>
-            </View>
-          </View>
-
-          {paymentFailed ? (
-            <View style={styles.noticeCard}>
-              <Text style={styles.noticeTitle}>Payment didn’t go through</Text>
-              <Text style={styles.noticeText}>
-                {paymentFailureMessage ?? "Please try again or use another payment method."}
-              </Text>
-            </View>
-          ) : null}
-        </ScrollView>
+          </ScrollView>
+        </>
       ) : (
         <View style={styles.centered}>
           <Text style={styles.error}>Listing not found.</Text>
         </View>
       )}
       {listing && user && !plateFocused ? (
-        <View style={[styles.footerBar, { paddingBottom: Math.max(insets.bottom, 22) }]}>
+        <View style={[styles.footerBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
           <Button
             style={styles.footerButton}
             textStyle={styles.footerButtonText}
@@ -673,17 +695,78 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       ) : null}
       {bookingConfirmed ? <View style={styles.successOverlay} pointerEvents="none" /> : null}
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.appBg,
+    backgroundColor: "transparent",
   },
   keyboardAvoid: {
     flex: 1,
+  },
+  statusBarFill: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(15,23,42,0.48)",
+    zIndex: 1,
+  },
+  heroFixed: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    overflow: "hidden",
+    zIndex: 0,
+  },
+  heroPlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#CBD5E1",
+  },
+  heroPlaceholderText: {
+    color: "#475569",
+    fontFamily: "Inter-Medium",
+  },
+  headerOverlay: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    zIndex: 2,
+  },
+  heroBackButton: {
+    marginBottom: 0,
+  },
+  bookingPage: {
+    paddingHorizontal: 10,
+    gap: 0,
+  },
+  bookingSheet: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    marginTop: -34,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 26,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.12,
+    shadowRadius: 30,
+    elevation: 10,
+  },
+  bookingHandle: {
+    width: 54,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: "#D8DEE8",
+    alignSelf: "center",
+    marginBottom: 18,
   },
   topBar: {
     alignItems: "center",
@@ -713,9 +796,7 @@ const styles = StyleSheet.create({
     width: 120,
   },
   progressHeader: {
-    backgroundColor: "#FFFFFF",
-    paddingTop: 8,
-    paddingBottom: 10,
+    display: "none",
   },
   progressBackButton: {
     position: "absolute",
@@ -725,21 +806,20 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   pageTitleBlock: {
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingTop: 0,
+    paddingBottom: 8,
   },
   pageTitle: {
-    color: "#15171A",
-    fontSize: 24,
-    lineHeight: 32,
-    fontFamily: "Inter-Bold",
-    fontWeight: "700",
-    letterSpacing: -0.5,
+    color: "#0F172A",
+    fontSize: 22,
+    lineHeight: 27,
+    fontFamily: "Inter-SemiBold",
+    fontWeight: "600",
+    letterSpacing: -0.35,
   },
   scrollContent: {
-    paddingHorizontal: 20,
     paddingBottom: 180,
-    paddingTop: spacing.sm,
+    paddingTop: 0,
   },
   divider: {
     height: 1,
@@ -766,22 +846,12 @@ const styles = StyleSheet.create({
   },
   listingTitle: {
     color: "#15171A",
-    fontSize: 25,
-    lineHeight: 30,
+    fontSize: 22,
+    lineHeight: 27,
     fontFamily: "Inter-Medium",
     fontWeight: "500",
-    letterSpacing: -0.35,
-    marginBottom: 8,
-  },
-  summaryEyebrow: {
-    color: "#667085",
-    fontSize: 11,
-    lineHeight: 13,
-    fontFamily: "Inter-SemiBold",
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 10,
+    letterSpacing: -0.25,
+    marginBottom: 6,
   },
   addressRow: {
     alignItems: "center",
@@ -804,29 +874,33 @@ const styles = StyleSheet.create({
   },
   summaryHeader: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 14,
+    paddingTop: 14,
+    paddingBottom: 10,
   },
   summaryCard: {
     backgroundColor: colors.cardBg,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 18,
-    ...cardShadow,
+    borderColor: "#E2E8F0",
+    marginBottom: 14,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 22,
+    elevation: 4,
     overflow: "hidden",
   },
   summaryMetricsWrap: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 10,
   },
   summaryMetrics: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: "rgba(17,24,39,0.07)",
-    borderRadius: 10,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
     paddingVertical: 8,
   },
   summaryMetricCell: {
@@ -859,51 +933,74 @@ const styles = StyleSheet.create({
   },
   bookingTimeCard: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 14,
   },
-  bookingTimeRow: {
+  bookingRouteCard: {
     flexDirection: "row",
-    alignItems: "center",
+    gap: 14,
   },
-  bookingTimeColumn: {
+  bookingRouteTrack: {
+    alignItems: "center",
+    width: 18,
+    paddingTop: 6,
+  },
+  bookingRouteDotStart: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#45C36F",
+    borderWidth: 4,
+    borderColor: "#DDF7E7",
+  },
+  bookingRouteLine: {
+    width: 2,
     flex: 1,
+    minHeight: 36,
+    backgroundColor: "#45C36F",
+    marginVertical: 4,
   },
-  bookingTimeLabel: {
-    color: "#667085",
-    fontSize: 10,
-    lineHeight: 14,
-    fontFamily: "Inter-Medium",
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.65,
-    marginBottom: 6,
-    paddingHorizontal: 12,
-  },
-  bookingTimeField: {
-    alignItems: "center",
-    justifyContent: "space-between",
+  bookingRouteDotEnd: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: "#FFFFFF",
-    borderColor: "rgba(17,24,39,0.10)",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 8,
-    minHeight: 54,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderWidth: 2,
+    borderColor: "#45C36F",
   },
-  bookingTimeValue: {
-    color: "#15171A",
-    fontSize: 13,
-    lineHeight: 18,
+  bookingRouteContent: {
+    flex: 1,
+    gap: 0,
+  },
+  bookingRouteRow: {
+    minHeight: 34,
+    justifyContent: "center",
+  },
+  bookingRouteSpacer: {
+    height: 18,
+  },
+  bookingRouteValue: {
+    fontFamily: "Inter-Medium",
+    fontSize: 15,
+    lineHeight: 21,
+    color: "#334155",
+  },
+  bookingTimeEditButton: {
+    alignSelf: "center",
+    minHeight: 38,
+    borderRadius: 999,
+    backgroundColor: "#ECFBF2",
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginLeft: 8,
+  },
+  bookingTimeEditText: {
+    color: "#2F855A",
+    fontSize: 14,
+    lineHeight: 17,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
-    flex: 1,
-  },
-  bookingTimeArrow: {
-    width: 32,
-    alignItems: "center",
-    justifyContent: "center",
   },
   rowBetween: {
     flexDirection: "row",
@@ -1022,14 +1119,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   regCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 18,
+    backgroundColor: "transparent",
+    borderRadius: 0,
+    borderTopWidth: 1,
+    borderTopColor: "#EDF2F7",
+    marginBottom: 0,
     flexDirection: "row",
     overflow: "hidden",
-    ...cardShadow,
+    paddingVertical: 14,
   },
   vehicleLogoColumn: {
     width: 72,
@@ -1037,16 +1134,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#F8FAFC",
     borderRightWidth: 1,
-    borderRightColor: colors.border,
+    borderRightColor: "#EDF2F7",
   },
   vehicleContent: {
     flex: 1,
     paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: 2,
+    paddingBottom: 2,
   },
   vehicleSectionHeader: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   vehicleTypeText: {
     ...textStyles.meta,
@@ -1061,17 +1158,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   priceHeader: {
-    marginBottom: 12,
+    marginBottom: 6,
   },
   priceCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginBottom: 18,
-    ...cardShadow,
+    backgroundColor: "transparent",
+    borderRadius: 0,
+    borderTopWidth: 1,
+    borderTopColor: "#EDF2F7",
+    paddingHorizontal: 0,
+    paddingVertical: 14,
+    marginBottom: 0,
   },
   priceBreakdownRow: {
     flexDirection: "row",
@@ -1126,11 +1222,11 @@ const styles = StyleSheet.create({
   },
   regRow: {
     flexDirection: "row",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: "#3D6FB6",
     overflow: "hidden",
-    backgroundColor: colors.cardBg,
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
   },
   regDetails: {
@@ -1142,7 +1238,7 @@ const styles = StyleSheet.create({
   plateCountry: {
     width: 34,
     alignSelf: "stretch",
-    backgroundColor: "#003399",
+    backgroundColor: "#3D6FB6",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1186,11 +1282,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   noticeCard: {
-    backgroundColor: colors.cardBg,
-    borderColor: "#fee2e2",
+    backgroundColor: "#FFF7F7",
+    borderColor: "#FECACA",
     borderRadius: 18,
     borderWidth: 1,
-    marginTop: 2,
+    marginTop: 14,
     padding: 16,
   },
   noticeTitle: {
@@ -1251,11 +1347,14 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
   },
+  sheetSectionStack: {
+    gap: 0,
+  },
   footerButton: {
     minHeight: 54,
-    marginBottom: 16,
+    marginBottom: 0,
     borderRadius: 999,
-    backgroundColor: '#0E8E62',
+    backgroundColor: '#0F172A',
   },
   footerButtonText: {
     fontFamily: 'Inter-SemiBold',
