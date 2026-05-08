@@ -18,12 +18,28 @@ export function getListingUnitLabel(listing: ListingWithPricing) {
   return getListingRateType(listing) === "hourly" ? "hr" : "day";
 }
 
+function formatElapsedDurationLabel(durationHours: number) {
+  if (durationHours < 24) {
+    return `${durationHours} hour${durationHours === 1 ? "" : "s"}`;
+  }
+
+  const fullDays = Math.floor(durationHours / 24);
+  const remainingHours = durationHours % 24;
+
+  if (remainingHours === 0) {
+    return `${fullDays} day${fullDays === 1 ? "" : "s"}`;
+  }
+
+  return `${fullDays}d ${remainingHours}h`;
+}
+
 export function calculateListingTotal(listing: ListingWithPricing, start: Date, end: Date) {
   const durationHours = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60)));
+  const durationLabel = formatElapsedDurationLabel(durationHours);
   if (getListingRateType(listing) === "hourly") {
     return {
       total: getListingUnitPrice(listing) * durationHours,
-      durationLabel: `${durationHours} hour${durationHours === 1 ? "" : "s"}`,
+      durationLabel,
       billingCount: durationHours,
       billingUnit: "hour",
     };
@@ -32,7 +48,7 @@ export function calculateListingTotal(listing: ListingWithPricing, start: Date, 
   const billingDays = Math.max(1, Math.ceil(durationHours / 24));
   return {
     total: getListingUnitPrice(listing) * billingDays,
-    durationLabel: `${billingDays} day${billingDays === 1 ? "" : "s"}`,
+    durationLabel,
     billingCount: billingDays,
     billingUnit: "day",
   };

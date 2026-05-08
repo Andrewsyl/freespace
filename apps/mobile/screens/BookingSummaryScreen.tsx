@@ -14,7 +14,6 @@ import {
   StyleSheet,
   StatusBar,
   Text,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,7 +21,6 @@ import { useStripe } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
 import DatePicker from "react-native-date-picker";
 import { Ionicons } from "@expo/vector-icons";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import {
   confirmBookingPayment,
@@ -68,7 +66,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const { id, from, to } = route.params;
   const { token, user } = useAuth();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [loadingListing, setLoadingListing] = useState(true);
@@ -81,7 +78,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleColor, setVehicleColor] = useState("");
   const [vehiclePlate, setVehiclePlate] = useState("");
-  const [staticMapFailed, setStaticMapFailed] = useState(false);
   const [startAt, setStartAt] = useState(() => new Date(from));
   const [endAt, setEndAt] = useState(() => new Date(to));
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -156,56 +152,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
   const start = useMemo(() => startAt, [startAt]);
   const end = useMemo(() => endAt, [endAt]);
-  const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-  const mapCenter =
-    listing?.latitude && listing?.longitude
-      ? `${listing.latitude},${listing.longitude}`
-      : null;
-  const mapCoords = useMemo(() => {
-    if (typeof listing?.latitude !== "number" || typeof listing?.longitude !== "number") {
-      return null;
-    }
-    return { latitude: listing.latitude, longitude: listing.longitude };
-  }, [listing?.latitude, listing?.longitude]);
-  const mapCoordsKey = mapCoords
-    ? `${mapCoords.latitude.toFixed(6)},${mapCoords.longitude.toFixed(6)}`
-    : null;
-  const lastMapKeyRef = useRef<string | null>(null);
-  const [staticMapVersion, setStaticMapVersion] = useState(0);
-  const staticMapUrl = useMemo(() => {
-    if (!mapsKey || !mapCenter) return null;
-    const cacheBuster = `${staticMapVersion}`;
-    return `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(
-      mapCenter
-    )}&zoom=16&size=640x280&scale=2&format=png&maptype=roadmap&markers=color:0x10B981|${encodeURIComponent(
-      mapCenter
-    )}&key=${mapsKey}&v=${encodeURIComponent(cacheBuster)}`;
-  }, [mapsKey, mapCenter, staticMapVersion]);
-  const heroHeight = Math.round(width * 0.64);
-  const heroImage = useMemo(() => {
-    if (listing?.image_urls?.length) return listing.image_urls[0];
-    if (staticMapUrl) return staticMapUrl;
-    return null;
-  }, [listing?.image_urls, staticMapUrl]);
-
-  useEffect(() => {
-    setStaticMapFailed(false);
-    if (mapCoords) {
-      console.log("[BookingSummary] Map coords", mapCoords);
-    } else {
-      console.warn("[BookingSummary] Missing map coords");
-    }
-    if (staticMapUrl) {
-      console.log("[BookingSummary] Static map URL", staticMapUrl);
-    }
-  }, [staticMapUrl, mapCoords]);
-
-  useEffect(() => {
-    if (!mapCoordsKey) return;
-    if (lastMapKeyRef.current === mapCoordsKey) return;
-    lastMapKeyRef.current = mapCoordsKey;
-    setStaticMapVersion((prev) => prev + 1);
-  }, [mapCoordsKey]);
   const priceSummary = useMemo(() => {
     if (!listing) return null;
     return calculateListingTotal(listing, start, end);
@@ -433,8 +379,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
   return (
     <>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={styles.container} edges={[]}>
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -461,40 +407,23 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         </View>
       ) : listing ? (
         <>
-          <View style={[styles.statusBarFill, { height: insets.top }]} />
-          <View style={[styles.heroFixed, { height: heroHeight + insets.top }]}>
-            {heroImage ? (
-              <Image source={{ uri: heroImage }} style={{ width, height: heroHeight + insets.top }} />
-            ) : (
-              <View style={[styles.heroPlaceholder, { height: heroHeight + insets.top }]}>
-                <Text style={styles.heroPlaceholderText}>No image</Text>
-              </View>
-            )}
-          </View>
-
-          <View style={[styles.headerOverlay, { top: insets.top + 8 }]}>
-            <BackButton onPress={() => navigation.goBack()} style={styles.heroBackButton} />
+          <View style={styles.bookingTopBar}>
+            <BackButton onPress={() => navigation.goBack()} style={styles.bookingTopBarBack} />
+            <Text style={styles.bookingTopBarTitle}>Review booking</Text>
+            <View style={styles.bookingTopBarSpacer} />
           </View>
 
           <ScrollView
             ref={scrollRef}
-            contentContainerStyle={[styles.scrollContent, { paddingTop: heroHeight }]}
+            contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.bookingPage}>
-              <View style={styles.bookingSheet}>
-                <View style={styles.bookingHandle} />
                 {error ? <Text style={styles.error}>{error}</Text> : null}
-
-                <View style={styles.pageTitleBlock}>
-                  <Text style={styles.pageTitle}>Confirm booking</Text>
-                </View>
-
                 <View style={styles.summaryCard}>
                   <View style={styles.summaryHeader}>
-                    <Text style={styles.listingTitle}>{listing.title || "Adam House Car Park"}</Text>
-                    <View style={styles.addressRow}>
-                      <Ionicons name="location-sharp" size={14} color={colors.textMuted} />
+                    <View style={styles.summaryHeaderContent}>
+                      <Text style={styles.listingTitle}>{listing.title || "Adam House Car Park"}</Text>
                       <Text style={styles.addressText}>
                         {listing.address || "24 Adam Street, Dublin"}
                       </Text>
@@ -511,20 +440,20 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                       </View>
                       <View style={styles.summaryMetricDivider} />
                       <View style={styles.summaryMetricCell}>
-                        <Text style={styles.summaryMetricLabel}>Fee</Text>
+                        <Text style={styles.summaryMetricLabel}>Total</Text>
                         <Text style={styles.summaryMetricValue}>€{Math.round(pricing.finalPrice)}</Text>
-                      </View>
-                      <View style={styles.summaryMetricDivider} />
-                      <View style={styles.summaryMetricCell}>
-                        <Text style={styles.summaryMetricLabel}>Vehicle</Text>
-                        <Text style={styles.summaryMetricValue} numberOfLines={1}>
-                          {vehicleMake || "Add vehicle"}
-                        </Text>
                       </View>
                     </View>
                   </View>
 
                   <View style={styles.bookingTimeCard}>
+                    <View style={styles.bookingSectionHeaderRow}>
+                      <Text style={styles.bookingSectionTitle}>Your times</Text>
+                      <Pressable style={styles.bookingTimeEditButton} onPress={() => openPicker("start")}>
+                        <Ionicons name="create-outline" size={16} color="#0F172A" />
+                        <Text style={styles.bookingTimeEditText}>Edit</Text>
+                      </Pressable>
+                    </View>
                     <View style={styles.bookingRouteCard}>
                       <View style={styles.bookingRouteTrack}>
                         <View style={styles.bookingRouteDotStart} />
@@ -540,10 +469,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                           <Text style={styles.bookingRouteValue}>{formatDateTimeLabel(end)}</Text>
                         </View>
                       </View>
-                      <Pressable style={styles.bookingTimeEditButton} onPress={() => openPicker("start")}>
-                        <Ionicons name="create-outline" size={16} color="#2F855A" />
-                        <Text style={styles.bookingTimeEditText}>Edit</Text>
-                      </Pressable>
                     </View>
                   </View>
                 </View>
@@ -629,7 +554,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                     </View>
                   ) : null}
                 </View>
-              </View>
             </View>
           </ScrollView>
         </>
@@ -639,21 +563,27 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         </View>
       )}
       {listing && user && !plateFocused ? (
-        <View style={[styles.footerBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-          <Button
-            style={styles.footerButton}
-            textStyle={styles.footerButtonText}
+        <View style={[styles.footerBar, { paddingBottom: 18 + insets.bottom }]}>
+          <View style={styles.footerPriceBlock}>
+            <Text style={styles.footerPriceLabel}>Total price</Text>
+            <Text style={styles.footerPriceValue}>€{Math.round(pricing.finalPrice)}</Text>
+            <Text style={styles.footerPriceMeta}>{priceSummary?.durationLabel ?? ""}</Text>
+          </View>
+          <Pressable
+            style={[styles.footerButton, (bookingBusy || bookingConfirmed) && styles.footerButtonDisabled]}
             onPress={handlePayment}
             disabled={bookingBusy || bookingConfirmed}
-            loading={bookingBusy}
-            title={
-              bookingBusy
-                ? confirmingBooking
-                  ? "Finalizing..."
-                  : "Processing..."
-                : `Pay and reserve • €${Math.round(pricing.finalPrice)}`
-            }
-          />
+          >
+            <View style={styles.footerButtonPill}>
+              {bookingBusy ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.footerButtonText}>
+                  {confirmingBooking ? "Finalizing..." : "PAY"}
+                </Text>
+              )}
+            </View>
+          </Pressable>
         </View>
       ) : null}
       {pickerVisible ? (
@@ -703,26 +633,10 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "transparent",
+    backgroundColor: "#F8FAFC",
   },
   keyboardAvoid: {
     flex: 1,
-  },
-  statusBarFill: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(15,23,42,0.48)",
-    zIndex: 1,
-  },
-  heroFixed: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    overflow: "hidden",
-    zIndex: 0,
   },
   heroPlaceholder: {
     alignItems: "center",
@@ -733,40 +647,31 @@ const styles = StyleSheet.create({
     color: "#475569",
     fontFamily: "Inter-Medium",
   },
-  headerOverlay: {
-    position: "absolute",
-    left: 20,
-    right: 20,
-    zIndex: 2,
+  bookingTopBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 6,
+    backgroundColor: "#F8FAFC",
   },
-  heroBackButton: {
+  bookingTopBarBack: {
     marginBottom: 0,
   },
+  bookingTopBarTitle: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 17,
+    lineHeight: 22,
+    color: "#111827",
+    letterSpacing: -0.2,
+  },
+  bookingTopBarSpacer: {
+    width: 40,
+  },
   bookingPage: {
-    paddingHorizontal: 10,
-    gap: 0,
-  },
-  bookingSheet: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    marginTop: -34,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 26,
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.12,
-    shadowRadius: 30,
-    elevation: 10,
-  },
-  bookingHandle: {
-    width: 54,
-    height: 5,
-    borderRadius: 999,
-    backgroundColor: "#D8DEE8",
-    alignSelf: "center",
-    marginBottom: 18,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
   },
   topBar: {
     alignItems: "center",
@@ -805,21 +710,9 @@ const styles = StyleSheet.create({
     zIndex: 2,
     marginBottom: 0,
   },
-  pageTitleBlock: {
-    paddingTop: 0,
-    paddingBottom: 8,
-  },
-  pageTitle: {
-    color: "#0F172A",
-    fontSize: 22,
-    lineHeight: 27,
-    fontFamily: "Inter-SemiBold",
-    fontWeight: "600",
-    letterSpacing: -0.35,
-  },
   scrollContent: {
     paddingBottom: 180,
-    paddingTop: 0,
+    paddingTop: 4,
   },
   divider: {
     height: 1,
@@ -847,23 +740,11 @@ const styles = StyleSheet.create({
   listingTitle: {
     color: "#15171A",
     fontSize: 22,
-    lineHeight: 27,
+    lineHeight: 28,
     fontFamily: "Inter-Medium",
     fontWeight: "500",
     letterSpacing: -0.25,
-    marginBottom: 6,
-  },
-  addressRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 0,
-  },
-  addressDot: {
-    backgroundColor: colors.textSoft,
-    borderRadius: 999,
-    height: 6,
-    width: 6,
+    marginBottom: 4,
   },
   addressText: {
     color: "#667085",
@@ -873,26 +754,53 @@ const styles = StyleSheet.create({
     fontWeight: "400",
   },
   summaryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
     paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 10,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  summaryThumb: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: "#E8EEF5",
+  },
+  summaryHeaderContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  summaryRatingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+    flexWrap: "wrap",
+  },
+  summaryRatingText: {
+    fontFamily: "Inter-Medium",
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#6B7280",
+    marginLeft: 4,
   },
   summaryCard: {
     backgroundColor: colors.cardBg,
-    borderRadius: 18,
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    marginBottom: 14,
+    marginBottom: 10,
     shadowColor: "#0F172A",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 22,
-    elevation: 4,
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 3,
     overflow: "hidden",
   },
   summaryMetricsWrap: {
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingBottom: 8,
   },
   summaryMetrics: {
     flexDirection: "row",
@@ -901,12 +809,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
     borderRadius: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   summaryMetricCell: {
     alignItems: "center",
     flex: 1,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
   },
   summaryMetricLabel: {
     color: "#9CA3AF",
@@ -916,12 +824,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.7,
-    marginBottom: 3,
+    marginBottom: 2,
   },
   summaryMetricValue: {
     color: "#15171A",
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: 14,
+    lineHeight: 18,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     textAlign: "center",
@@ -933,11 +841,31 @@ const styles = StyleSheet.create({
   },
   bookingTimeCard: {
     paddingHorizontal: 16,
-    paddingBottom: 14,
+    paddingBottom: 12,
+  },
+  bookingSectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  bookingSectionTitle: {
+    color: "#111827",
+    fontSize: 16,
+    lineHeight: 21,
+    fontFamily: "Inter-SemiBold",
+    fontWeight: "600",
+    letterSpacing: -0.2,
   },
   bookingRouteCard: {
     flexDirection: "row",
     gap: 14,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    backgroundColor: "#FFFFFF",
   },
   bookingRouteTrack: {
     alignItems: "center",
@@ -986,9 +914,9 @@ const styles = StyleSheet.create({
   },
   bookingTimeEditButton: {
     alignSelf: "center",
-    minHeight: 38,
+    minHeight: 36,
     borderRadius: 999,
-    backgroundColor: "#ECFBF2",
+    backgroundColor: "#F3F4F6",
     paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -996,7 +924,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   bookingTimeEditText: {
-    color: "#2F855A",
+    color: "#0F172A",
     fontSize: 14,
     lineHeight: 17,
     fontFamily: "Inter-SemiBold",
@@ -1119,14 +1047,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   regCard: {
-    backgroundColor: "transparent",
-    borderRadius: 0,
-    borderTopWidth: 1,
-    borderTopColor: "#EDF2F7",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
     marginBottom: 0,
     flexDirection: "row",
     overflow: "hidden",
-    paddingVertical: 14,
+    paddingVertical: 12,
   },
   vehicleLogoColumn: {
     width: 72,
@@ -1134,7 +1062,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#F8FAFC",
     borderRightWidth: 1,
-    borderRightColor: "#EDF2F7",
+    borderRightColor: "#EEF2F7",
   },
   vehicleContent: {
     flex: 1,
@@ -1143,7 +1071,7 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   vehicleSectionHeader: {
-    marginBottom: 6,
+    marginBottom: 10,
   },
   vehicleTypeText: {
     ...textStyles.meta,
@@ -1158,22 +1086,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   priceHeader: {
-    marginBottom: 6,
+    marginBottom: 10,
   },
   priceCard: {
-    backgroundColor: "transparent",
-    borderRadius: 0,
-    borderTopWidth: 1,
-    borderTopColor: "#EDF2F7",
-    paddingHorizontal: 0,
-    paddingVertical: 14,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     marginBottom: 0,
   },
   priceBreakdownRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
@@ -1181,7 +1109,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 12,
+    paddingTop: 10,
     paddingBottom: 2,
   },
   priceBreakdownLabel: {
@@ -1336,25 +1264,64 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.cardBg,
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 14,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 22,
+    paddingTop: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+    borderTopColor: "#F0F0F0",
     shadowColor: "#111827",
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  footerPriceBlock: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  footerPriceLabel: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 14,
+    lineHeight: 18,
+    color: "#111827",
+    textDecorationLine: "underline",
+  },
+  footerPriceValue: {
+    fontFamily: "Inter-Bold",
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginTop: 4,
+    letterSpacing: -0.6,
+  },
+  footerPriceMeta: {
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    color: "#94A3B8",
+    fontWeight: "400",
+    marginTop: 4,
   },
   sheetSectionStack: {
-    gap: 0,
+    gap: 10,
   },
   footerButton: {
-    minHeight: 54,
     marginBottom: 0,
+    minWidth: 178,
+  },
+  footerButtonDisabled: {
+    opacity: 0.55,
+  },
+  footerButtonPill: {
+    minHeight: 58,
+    minWidth: 178,
     borderRadius: 999,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#0E8E62',
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 28,
   },
   footerButtonText: {
     fontFamily: 'Inter-SemiBold',

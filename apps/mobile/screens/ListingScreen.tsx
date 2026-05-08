@@ -476,7 +476,7 @@ export function ListingScreen({ navigation, route }: Props) {
                   <View style={styles.taxiHandle} />
 
                   <Pressable
-                    style={styles.taxiSummaryCard}
+                    style={styles.airSummaryHeaderRow}
                     onPress={() => {
                       if (!imageUrls.length) return;
                       setViewerIndex(0);
@@ -484,49 +484,53 @@ export function ListingScreen({ navigation, route }: Props) {
                     }}
                   >
                     {imageUrls.length ? (
-                      <Image source={{ uri: imageUrls[0] }} style={styles.taxiSummaryAvatar} />
+                      <Image source={{ uri: imageUrls[0] }} style={styles.airSummaryThumb} />
                     ) : (
-                      <View style={[styles.taxiSummaryAvatar, styles.taxiSummaryAvatarPlaceholder]}>
+                      <View style={[styles.airSummaryThumb, styles.taxiSummaryAvatarPlaceholder]}>
                         <Ionicons name="image-outline" size={24} color="#9AA4B5" />
                       </View>
                     )}
-                    <View style={styles.taxiSummaryCopy}>
-                      <Text style={styles.taxiSummaryTitle} numberOfLines={2}>{listing.title}</Text>
-                      <Text style={styles.taxiSummarySub}>{areaLabel}</Text>
-                      <View style={styles.taxiSummaryRating}>
-                        {[0, 1, 2, 3, 4].map((idx) => (
-                          <Ionicons
-                            key={`summary-star-${idx}`}
-                            name="star"
-                            size={13}
-                            color="#F7BE38"
-                          />
-                        ))}
-                        <Text style={styles.taxiSummaryRatingText}>
+                    <View style={styles.airSummaryHeaderContent}>
+                      <Text style={styles.airSummaryTitle} numberOfLines={2}>
+                        {listing.title}
+                      </Text>
+                      <Text style={styles.airSummarySub}>{areaLabel}</Text>
+                      <View style={styles.airReviewSummaryLine}>
+                        <View style={styles.airSummaryStars}>
+                          {[0, 1, 2, 3, 4].map((idx) => (
+                            <Ionicons
+                              key={`summary-star-${idx}`}
+                              name="star"
+                              size={15}
+                              color="#F7BE38"
+                            />
+                          ))}
+                        </View>
+                        <Text style={styles.airReviewSummarySecondary}>
                           {hasReviews ? listing.rating?.toFixed(1) : "0.0"} rating
                         </Text>
                       </View>
                     </View>
                   </Pressable>
 
-                  <View style={styles.taxiStatsRow}>
-                    <View style={styles.taxiStat}>
-                      <Ionicons name="location-outline" size={15} color="#45C36F" />
-                      <Text style={styles.taxiStatText}>{distanceLabel}</Text>
+                  <View style={styles.airStatsPills}>
+                    <View style={styles.airStatPill}>
+                      <Ionicons name="time-outline" size={14} color="#0F172A" />
+                      <Text style={styles.airStatPillText}>{priceSummary?.durationLabel ?? "2 hours"}</Text>
                     </View>
-                    <View style={styles.taxiStat}>
-                      <Ionicons name="time-outline" size={15} color="#45C36F" />
-                      <Text style={styles.taxiStatText}>{priceSummary?.durationLabel ?? "2 hours"}</Text>
+                    <View style={styles.airStatPill}>
+                      <Ionicons name="cash-outline" size={14} color="#0F172A" />
+                      <Text style={styles.airStatPillText}>€{priceSummary?.total ?? 0}</Text>
                     </View>
-                    <View style={styles.taxiStat}>
-                      <Ionicons name="cash-outline" size={15} color="#45C36F" />
-                      <Text style={styles.taxiStatText}>€{priceSummary?.total ?? 0}</Text>
+                    <View style={styles.airStatPill}>
+                      <Ionicons name="location-outline" size={14} color="#0F172A" />
+                      <Text style={styles.airStatPillText}>{distanceLabel}</Text>
                     </View>
                   </View>
 
                   <View style={styles.taxiDivider} />
 
-                  <View style={styles.taxiRouteCard}>
+                  <View style={styles.airRouteCard}>
                     <View style={styles.taxiRouteTrack}>
                       <View style={styles.taxiRouteDotStart} />
                       <View style={styles.taxiRouteLine} />
@@ -541,9 +545,9 @@ export function ListingScreen({ navigation, route }: Props) {
                         <Text style={styles.taxiRouteValue}>{formatDateTimeLabel(endAt)}</Text>
                       </View>
                     </View>
-                    <Pressable style={styles.taxiTimeEditButton} onPress={() => openPicker("start")}>
-                      <Ionicons name="create-outline" size={16} color="#2F855A" />
-                      <Text style={styles.taxiTimeEditButtonText}>Edit</Text>
+                    <Pressable style={styles.airTimeEditButton} onPress={() => openPicker("start")}>
+                      <Ionicons name="create-outline" size={16} color="#0F172A" />
+                      <Text style={styles.airTimeEditButtonText}>Edit</Text>
                     </Pressable>
                   </View>
 
@@ -690,9 +694,9 @@ export function ListingScreen({ navigation, route }: Props) {
 
               {/* Fixed Bottom Button */}
               {priceSummary && user ? (
-              <View style={[styles.bottomBar, { paddingBottom: 24 + insets.bottom }]}>
+              <View style={[styles.airBottomBar, { paddingBottom: 18 + insets.bottom }]}>
                 <View style={styles.priceInfo}>
-                  <Text style={styles.priceLabel}>Total Price</Text>
+                  <Text style={styles.airPriceLabel}>From €{priceSummary.total}</Text>
                   <Text style={styles.priceAmount}>€{priceSummary.total}</Text>
                   <Text style={styles.priceDuration}>{priceSummary.durationLabel}</Text>
                 </View>
@@ -715,7 +719,7 @@ export function ListingScreen({ navigation, route }: Props) {
                     }}
                     disabled={authLoading}
                   >
-                    <View style={styles.bookButtonGradient}>
+                    <View style={styles.airBookButton}>
                       <Text style={styles.bookButtonText}>
                         {navigatingToBooking ? "Opening..." : "Book Now"}
                       </Text>
@@ -850,6 +854,82 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 18,
   },
+  airSummaryHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    paddingHorizontal: 4,
+    marginBottom: 14,
+  },
+  airSummaryThumb: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: "#E8EEF5",
+  },
+  airSummaryHeaderContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  airSummaryTitle: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: -0.45,
+    textAlign: "left",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  airSummarySub: {
+    fontFamily: "Inter-Regular",
+    fontSize: 13,
+    lineHeight: 19,
+    color: "#6B7280",
+    textAlign: "left",
+    marginBottom: 12,
+  },
+  airSummaryStars: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  airReviewSummaryLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 0,
+    flexWrap: "wrap",
+  },
+  airReviewSummarySecondary: {
+    fontFamily: "Inter-Medium",
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#6B7280",
+  },
+  airStatsPills: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 10,
+    marginBottom: 18,
+  },
+  airStatPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  airStatPillText: {
+    fontFamily: "Inter-Medium",
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#111827",
+  },
   taxiHeaderBlock: {
     gap: 8,
     marginBottom: 18,
@@ -939,6 +1019,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#EDF2F7",
     marginBottom: 18,
   },
+  airRouteCard: {
+    flexDirection: "row",
+    gap: 14,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: "#FFFFFF",
+  },
   taxiRouteCard: {
     flexDirection: "row",
     gap: 14,
@@ -993,6 +1084,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#2F855A",
+  },
+  airTimeEditButton: {
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 36,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: "#F3F4F6",
+    marginLeft: 8,
+  },
+  airTimeEditButtonText: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 14,
+    lineHeight: 18,
+    color: "#111827",
   },
   taxiRouteRow: {
     minHeight: 34,
@@ -1681,6 +1790,41 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 8,
+  },
+  airBottomBar: {
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 22,
+    paddingTop: 16,
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  airPriceLabel: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    lineHeight: 20,
+    color: "#111827",
+    textDecorationLine: "underline",
+  },
+  airBookButton: {
+    minHeight: 58,
+    minWidth: 178,
+    borderRadius: 999,
+    backgroundColor: "#0E8E62",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 28,
   },
   bottomPrice: {
     color: colors.text,
