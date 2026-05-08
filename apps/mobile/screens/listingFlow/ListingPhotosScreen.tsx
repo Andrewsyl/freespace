@@ -17,7 +17,7 @@ import { useAuth } from "../../auth";
 import { Button } from "../../components/ui";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
-import { colors, spacing, textStyles } from "../../styles/theme";
+import { cardShadow, colors, spacing, textStyles } from "../../styles/theme";
 import { Plus, X } from "lucide-react-native";
 
 type FlowStackParamList = {
@@ -201,28 +201,34 @@ const styles = StyleSheet.create({
     paddingBottom: 160,
     paddingTop: 0,
   },
-  kicker: textStyles.kicker,
+  kicker: {
+    ...textStyles.kicker,
+    fontFamily: "Inter-SemiBold",
+  },
   title: {
     color: colors.text,
-    fontSize: 22,
-    fontFamily: "Poppins-SemiBold",
+    fontSize: 28,
+    lineHeight: 34,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
-    marginTop: 6,
+    marginTop: 12,
+    letterSpacing: -0.6,
   },
   subtitle: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontFamily: "Poppins-Regular",
-    marginTop: 6,
-    lineHeight: 20,
+    color: "#667085",
+    fontSize: 15,
+    fontFamily: "Inter-Regular",
+    marginTop: 10,
+    lineHeight: 24,
   },
   uploadButton: {
     alignItems: "center",
     backgroundColor: colors.accent,
-    borderRadius: 14,
-    marginTop: 18,
-    minHeight: 50,
+    borderRadius: 16,
+    marginTop: 22,
+    minHeight: 56,
     justifyContent: "center",
+    ...cardShadow,
   },
   uploadButtonDisabled: {
     opacity: 0.85,
@@ -234,29 +240,30 @@ const styles = StyleSheet.create({
   },
   uploadButtonText: {
     color: colors.cardBg,
-    fontSize: 15,
-    fontFamily: "Poppins-SemiBold",
+    fontSize: 16,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   uploadHint: {
     color: colors.textSoft,
     fontSize: 12,
-    fontFamily: "Poppins-Regular",
-    marginTop: 8,
+    fontFamily: "Inter-Regular",
+    marginTop: 10,
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
-    marginTop: 14,
+    gap: 12,
+    marginTop: 18,
   },
   photoCard: {
     width: "48%",
     aspectRatio: 1.2,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: "hidden",
     backgroundColor: "#e5e7eb",
     position: "relative",
+    ...cardShadow,
   },
   photoImage: {
     width: "100%",
@@ -275,9 +282,11 @@ const styles = StyleSheet.create({
   },
   footer: {
     backgroundColor: colors.cardBg,
-    borderTopColor: colors.border,
+    borderTopColor: "rgba(17, 24, 39, 0.08)",
     borderTopWidth: 1,
-    padding: 16,
+    paddingHorizontal: spacing.screenX,
+    paddingTop: 14,
+    paddingBottom: 18,
   },
   secondaryButton: {
     marginTop: 10,
@@ -285,7 +294,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.danger,
     fontSize: 12,
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     marginTop: 10,
   },

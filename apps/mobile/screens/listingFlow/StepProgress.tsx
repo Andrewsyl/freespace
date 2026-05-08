@@ -26,7 +26,7 @@ export function StepProgress({ current, total }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    marginTop: 8,
+    marginTop: 12,
   },
   row: {
     alignItems: "center",
@@ -34,23 +34,23 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   label: {
-    color: colors.textMuted,
+    color: colors.textSoft,
     fontSize: 12,
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Inter-Medium",
     fontWeight: "600",
-    letterSpacing: 0.6,
+    letterSpacing: 0.2,
   },
   percent: {
     color: colors.textSoft,
     fontSize: 11,
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   bar: {
-    backgroundColor: colors.border,
+    backgroundColor: "rgba(17, 24, 39, 0.08)",
     borderRadius: radius.pill,
-    height: 4,
-    marginTop: 8,
+    height: 6,
+    marginTop: 10,
     overflow: "hidden",
   },
   barFill: {

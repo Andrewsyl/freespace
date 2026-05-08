@@ -6,8 +6,8 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { changePassword, deleteAccount, logoutAllSessions } from "../api";
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
-import { Button, Card, SectionHeader, TextInput as AppTextInput } from "../components/ui";
-import { colors, spacing, textStyles } from "../styles/theme";
+import { Button, TextInput as AppTextInput } from "../components/ui";
+import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "LoginSecurity">;
 
@@ -128,8 +128,9 @@ export function LoginSecurityScreen({ navigation }: Props) {
             </View>
           ) : null}
 
-          <View style={styles.sheet}>
-            <SectionHeader title="Change password" subtitle="Update your password for this account." />
+          <View style={styles.group}>
+            <Text style={styles.groupLabel}>Change password</Text>
+            <Text style={styles.groupHelp}>Update your password for this account.</Text>
             <AppTextInput
               label="Current password"
               value={currentPassword}
@@ -156,7 +157,8 @@ export function LoginSecurityScreen({ navigation }: Props) {
             <Button title="Update password" onPress={handleChangePassword} disabled={saving} loading={saving} />
           </View>
 
-          <Card style={styles.card} noPadding>
+          <View style={styles.group}>
+            <Text style={styles.groupLabel}>Account access</Text>
             <Pressable style={styles.row} onPress={handleLogoutAll}>
               <MaterialIcons name="logout" size={22} color={colors.danger} />
               <View style={styles.textWrap}>
@@ -173,7 +175,7 @@ export function LoginSecurityScreen({ navigation }: Props) {
               </View>
               <MaterialIcons name="chevron-right" size={20} color={colors.textSoft} />
             </Pressable>
-          </Card>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -188,20 +190,19 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing.xl,
   },
-  sheet: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    borderWidth: 1,
-    marginBottom: spacing.md,
-    padding: spacing.xl,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
+  group: {
+    marginBottom: 18,
     marginHorizontal: spacing.screenX,
+  },
+  groupLabel: {
+    ...textStyles.sectionTitle,
+    color: colors.text,
+    marginBottom: 10,
+  },
+  groupHelp: {
+    ...textStyles.meta,
+    color: colors.textMuted,
+    marginBottom: 12,
   },
   backButton: {
     alignItems: "center",
@@ -218,14 +219,16 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.screenX,
-    marginBottom: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
   },
   title: {
     ...textStyles.screenTitle,
+    marginBottom: spacing.xs,
+    marginTop: spacing.xs,
   },
   subtitle: {
     ...textStyles.subtitle,
-    marginTop: 4,
   },
   suspendedBanner: {
     backgroundColor: "#FEF2F2",
@@ -245,28 +248,25 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 4,
   },
-  card: {
-    marginBottom: spacing.md,
-    marginHorizontal: spacing.screenX,
-  },
   error: {
     ...textStyles.meta,
     color: colors.danger,
     marginBottom: spacing.sm,
-    marginHorizontal: spacing.screenX,
   },
   notice: {
     ...textStyles.meta,
     color: colors.accent,
     marginBottom: spacing.sm,
-    marginHorizontal: spacing.screenX,
   },
   row: {
     alignItems: "center",
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
     flexDirection: "row",
     gap: 12,
+    marginBottom: 12,
     paddingHorizontal: 14,
     paddingVertical: 16,
   },

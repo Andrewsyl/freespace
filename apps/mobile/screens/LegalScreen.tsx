@@ -36,11 +36,13 @@ export function LegalScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
         <BackButton onPress={() => navigation.goBack()} />
-        <Text style={styles.title}>Terms & privacy</Text>
-        <Text style={styles.subtitle}>Policies, support, and company details</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Terms & privacy</Text>
+          <Text style={styles.subtitle}>Policies, support, and company details</Text>
+        </View>
 
         <Text style={styles.sectionKicker}>Legal</Text>
         <Text style={styles.sectionTitle}>FreeSpace policies</Text>
@@ -54,6 +56,7 @@ export function LegalScreen({ navigation }: Props) {
             <Text style={styles.cardBody}>{policy.description}</Text>
             <Pressable style={styles.cardAction} onPress={() => openPolicy(policy.slug)}>
               <Text style={styles.cardActionText}>Open policy</Text>
+              <Text style={styles.cardActionChevron}>›</Text>
             </Pressable>
           </View>
         ))}
@@ -73,6 +76,7 @@ export function LegalScreen({ navigation }: Props) {
             onPress={() => openEmail("GDPR data export request")}
           >
             <Text style={styles.cardActionText}>Request export</Text>
+            <Text style={styles.cardActionChevron}>›</Text>
           </Pressable>
         </View>
 
@@ -88,6 +92,7 @@ export function LegalScreen({ navigation }: Props) {
             <Text style={[styles.cardActionText, styles.cardActionTextDanger]}>
               Request deletion
             </Text>
+            <Text style={[styles.cardActionChevron, styles.cardActionTextDanger]}>›</Text>
           </Pressable>
         </View>
 
@@ -103,6 +108,7 @@ export function LegalScreen({ navigation }: Props) {
           </Text>
           <Pressable style={styles.cardAction} onPress={() => openEmail("Support request")}>
             <Text style={styles.cardActionText}>Email support</Text>
+            <Text style={styles.cardActionChevron}>›</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -114,6 +120,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.appBg,
+  },
+  header: {
+    paddingBottom: spacing.md,
   },
   title: {
     color: colors.text,
@@ -149,10 +158,11 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.cardBg,
-    borderRadius: radius.card,
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
     marginTop: 16,
     padding: spacing.card,
-    ...cardShadow,
   },
   cardTitle: {
     color: colors.text,
@@ -166,23 +176,27 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   cardAction: {
+    alignItems: "center",
     alignSelf: "flex-start",
-    backgroundColor: "#ecfdf3",
-    borderRadius: 999,
+    flexDirection: "row",
+    gap: 8,
     marginTop: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
   },
   cardActionDanger: {
-    backgroundColor: "#fee2e2",
   },
   cardActionText: {
-    color: "#2ECC8F",
-    fontSize: 12,
-    fontWeight: "600",
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "500",
   },
   cardActionTextDanger: {
     color: "#b42318",
+  },
+  cardActionChevron: {
+    color: colors.textSoft,
+    fontSize: 18,
+    lineHeight: 18,
+    marginTop: -1,
   },
   footnote: {
     color: colors.textSoft,

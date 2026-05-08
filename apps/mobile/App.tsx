@@ -268,26 +268,29 @@ function MainTabs() {
   const baseTabBarStyle = {
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+    borderTopColor: "#F1F5F9",
     shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 6,
-    paddingTop: 6,
-    paddingBottom: Math.max(8, insets.bottom),
-    height: 58 + Math.max(8, insets.bottom),
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 5,
+    paddingTop: 10,
+    paddingBottom: Math.max(10, insets.bottom),
+    height: 64 + Math.max(10, insets.bottom),
   };
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.brand.teal,
-        tabBarInactiveTintColor: colors.text.muted,
+        tabBarActiveTintColor: "#111827",
+        tabBarInactiveTintColor: "#9CA3AF",
         tabBarStyle: baseTabBarStyle,
         tabBarLabelStyle: {
-          ...textStyles.tabLabel,
-          marginTop: 1,
+          fontFamily: "Inter-Medium",
+          fontSize: 11,
+          lineHeight: 14,
+          letterSpacing: 0,
+          marginTop: 2,
         },
         tabBarButton: (props) => <BottomTabButton {...props} />,
       }}

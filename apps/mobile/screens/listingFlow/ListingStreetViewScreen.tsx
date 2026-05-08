@@ -11,7 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import { StepProgress } from "./StepProgress";
 import { useListingFlow } from "./context";
-import { colors, radius, spacing, textStyles } from "../../styles/theme";
+import { cardShadow, colors, radius, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
   ListingStreetView: undefined;
@@ -144,29 +144,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screenX,
     paddingTop: 0,
   },
-  kicker: textStyles.kicker,
+  kicker: {
+    ...textStyles.kicker,
+    fontFamily: "Inter-SemiBold",
+  },
   title: {
     color: colors.text,
-    fontSize: 22,
-    fontFamily: "Poppins-SemiBold",
+    fontSize: 26,
+    lineHeight: 31,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
-    marginTop: 6,
+    marginTop: 10,
+    letterSpacing: -0.6,
   },
   subtitle: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontFamily: "Poppins-Regular",
-    marginTop: 6,
-    lineHeight: 20,
+    color: "#667085",
+    fontSize: 14,
+    fontFamily: "Inter-Regular",
+    marginTop: 8,
+    lineHeight: 22,
   },
   viewer: {
     marginTop: 16,
     marginHorizontal: spacing.screenX,
-    borderRadius: radius.card,
+    borderRadius: 22,
     overflow: "hidden",
-    borderColor: colors.border,
+    borderColor: "rgba(17, 24, 39, 0.08)",
     borderWidth: 1,
-    height: 320,
+    height: 288,
+    ...cardShadow,
   },
   webView: {
     flex: 1,
@@ -180,41 +186,47 @@ const styles = StyleSheet.create({
   },
   webFallbackText: {
     color: colors.textMuted,
-    fontSize: 13,
-    fontFamily: "Poppins-Regular",
+    fontSize: 14,
+    fontFamily: "Inter-Regular",
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 22,
   },
   footer: {
     marginTop: "auto",
-    padding: spacing.screenX,
-    gap: 10,
+    paddingHorizontal: spacing.screenX,
+    paddingTop: 14,
+    paddingBottom: 14,
+    gap: 8,
   },
   primaryButton: {
     alignItems: "center",
     backgroundColor: colors.accent,
-    borderRadius: 14,
-    paddingVertical: 14,
+    borderRadius: 16,
+    minHeight: 52,
+    justifyContent: "center",
+    ...cardShadow,
   },
   primaryButtonDisabled: {
     backgroundColor: "#cbd5e1",
   },
   primaryButtonText: {
     color: colors.cardBg,
-    fontSize: 15,
-    fontFamily: "Poppins-SemiBold",
+    fontSize: 16,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
+    letterSpacing: -0.2,
   },
   secondaryButton: {
     alignItems: "center",
     backgroundColor: colors.appBg,
-    borderRadius: 14,
-    paddingVertical: 14,
+    borderRadius: 16,
+    minHeight: 46,
+    justifyContent: "center",
   },
   secondaryButtonText: {
     color: colors.textMuted,
     fontSize: 14,
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
 });

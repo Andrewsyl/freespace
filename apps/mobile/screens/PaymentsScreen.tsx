@@ -165,7 +165,7 @@ export function PaymentsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
         <BackButton onPress={() => navigation.goBack()} />
         <View style={styles.header}>
@@ -184,74 +184,75 @@ export function PaymentsScreen() {
         ) : null}
 
         <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Payment methods</Text>
-            <Button
-              title={showAdd ? "Close" : "Add card"}
-              onPress={handleAddCard}
-              size="small"
-              style={styles.addButton}
-            />
-          </View>
-          {showAdd ? (
-            <View style={styles.addCardPanel}>
-              <Text style={styles.addCardLabel}>Card details</Text>
-              <CardField
-                postalCodeEnabled={false}
-                placeholders={{
-                  number: "4242 4242 4242 4242",
-                }}
-                cardStyle={styles.cardField}
-                style={styles.cardFieldContainer}
-                onCardChange={(details) => setCardComplete(!!details.complete)}
-              />
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Payment methods</Text>
               <Button
-                title={adding ? "Saving..." : "Save card"}
-                onPress={handleSaveCard}
-                disabled={!cardComplete || adding}
-                style={styles.saveButton}
+                title={showAdd ? "Close" : "Add card"}
+                onPress={handleAddCard}
+                size="small"
+                style={styles.addButton}
               />
             </View>
-          ) : null}
-          {methods.length === 0 && !loading ? (
-            <View style={styles.emptyRow}>
-              <Text style={styles.emptyText}>No cards saved yet.</Text>
-            </View>
-          ) : (
-            methods.map((method) => (
-              <View key={method.id} style={styles.row}>
-                <MaterialIcons name="credit-card" size={24} color="#111827" />
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>
-                    {method.brand?.toUpperCase() || "CARD"} •••• {method.last4}
-                  </Text>
-                  <Text style={styles.rowSubtitle}>
-                    Expires {method.exp_month}/{String(method.exp_year).slice(-2)}
-                    {method.is_default ? " • Default" : ""}
-                  </Text>
-                </View>
-                <View style={styles.rowActions}>
-                  {!method.is_default ? (
-                    <Pressable
-                      style={styles.rowActionButton}
-                      onPress={() => handleSetDefault(method.id)}
-                    >
-                      <Text style={styles.rowActionText}>Default</Text>
-                    </Pressable>
-                  ) : (
-                    <Text style={styles.rowStatus}>Default</Text>
-                  )}
-                  <Pressable
-                    style={[styles.rowActionButton, styles.rowDelete]}
-                    onPress={() => handleDelete(method.id)}
-                  >
-                    <Text style={styles.rowDeleteText}>Remove</Text>
-                  </Pressable>
-                </View>
+            {showAdd ? (
+              <View style={styles.addCardPanel}>
+                <Text style={styles.addCardLabel}>Card details</Text>
+                <CardField
+                  postalCodeEnabled={false}
+                  placeholders={{
+                    number: "4242 4242 4242 4242",
+                  }}
+                  cardStyle={styles.cardField}
+                  style={styles.cardFieldContainer}
+                  onCardChange={(details) => setCardComplete(!!details.complete)}
+                />
+                <Button
+                  title={adding ? "Saving..." : "Save card"}
+                  onPress={handleSaveCard}
+                  disabled={!cardComplete || adding}
+                  style={styles.saveButton}
+                />
               </View>
-            ))
-          )}
+            ) : null}
+            {methods.length === 0 && !loading ? (
+              <View style={styles.emptyRow}>
+                <Text style={styles.emptyText}>No cards saved yet.</Text>
+              </View>
+            ) : (
+              methods.map((method) => (
+                <View key={method.id} style={styles.row}>
+                  <MaterialIcons name="credit-card" size={24} color="#111827" />
+                  <View style={styles.rowText}>
+                    <Text style={styles.rowTitle}>
+                      {method.brand?.toUpperCase() || "CARD"} •••• {method.last4}
+                    </Text>
+                    <Text style={styles.rowSubtitle}>
+                      Expires {method.exp_month}/{String(method.exp_year).slice(-2)}
+                      {method.is_default ? " • Default" : ""}
+                    </Text>
+                  </View>
+                  <View style={styles.rowActions}>
+                    {!method.is_default ? (
+                      <Pressable
+                        style={styles.rowActionButton}
+                        onPress={() => handleSetDefault(method.id)}
+                      >
+                        <Text style={styles.rowActionText}>Default</Text>
+                      </Pressable>
+                    ) : (
+                      <Text style={styles.rowStatus}>Default</Text>
+                    )}
+                    <Pressable
+                      style={[styles.rowActionButton, styles.rowDelete]}
+                      onPress={() => handleDelete(method.id)}
+                    >
+                      <Text style={styles.rowDeleteText}>Remove</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))
+            )}
         </View>
+
         <Text style={styles.poweredBy}>Powered by Stripe</Text>
 
         <Text style={styles.sectionHeader}>Payment history</Text>
@@ -354,11 +355,10 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: radius.card,
+    borderRadius: 16,
     borderWidth: 1,
     marginBottom: 18,
     overflow: "hidden",
-    ...cardShadow,
   },
   sectionHeader: {
     color: colors.text,

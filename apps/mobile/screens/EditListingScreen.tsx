@@ -15,7 +15,7 @@ import { useAuth } from "../auth";
 import { Toast } from "../components/Toast";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 import type { RootStackParamList } from "../types";
-import { colors, spacing, textStyles } from "../styles/theme";
+import { cardShadow, colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "EditListing">;
 
@@ -126,6 +126,7 @@ export function EditListingScreen({ navigation, route }: Props) {
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
           {error ? <Text style={styles.error}>{error}</Text> : null}
+          <View style={styles.formCard}>
           <View style={styles.field}>
             <Text style={styles.label}>Title</Text>
             <AppTextInput variant="form" containerStyle={styles.fieldInput} value={title} onChangeText={setTitle} />
@@ -166,6 +167,7 @@ export function EditListingScreen({ navigation, route }: Props) {
               autoCapitalize="none"
             />
           </View>
+          </View>
           <Button
             title={saving ? "Saving..." : "Save changes"}
             onPress={handleSave}
@@ -190,7 +192,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: spacing.screenX,
-    paddingTop: 8,
+    paddingTop: 10,
+    paddingBottom: 6,
   },
   topBarSpacer: {
     height: 34,
@@ -198,15 +201,17 @@ const styles = StyleSheet.create({
   },
   topTitle: {
     color: colors.text,
-    fontSize: 16,
-    fontFamily: "Poppins-SemiBold",
+    fontSize: 17,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
+    letterSpacing: -0.2,
   },
   content: {
     padding: spacing.screenX,
+    paddingBottom: 40,
   },
   field: {
-    marginTop: 14,
+    marginTop: 18,
   },
   fieldHalf: {
     flex: 1,
@@ -216,15 +221,20 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    gap: 12,
+    gap: 14,
+    marginTop: 2,
   },
   label: {
-    ...textStyles.meta,
-    color: colors.textMuted,
-    marginBottom: 6,
+    color: colors.textSoft,
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: "Inter-SemiBold",
+    fontWeight: "600",
+    marginBottom: 8,
+    letterSpacing: 0.2,
   },
   primaryButton: {
-    marginTop: 20,
+    marginTop: 24,
   },
   deleteButton: {
     marginTop: 12,
@@ -244,5 +254,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  formCard: {
+    backgroundColor: colors.cardBg,
+    borderColor: "rgba(17, 24, 39, 0.08)",
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+    ...cardShadow,
   },
 });

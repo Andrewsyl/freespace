@@ -67,7 +67,7 @@ export function SupportScreen({ navigation, route }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <BackButton onPress={() => navigation.goBack()} />
@@ -181,11 +181,10 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.cardBg,
-    borderRadius: radius.card,
-    borderWidth: 1,
     borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
     padding: spacing.card,
-    ...cardShadow,
   },
   field: {
     marginBottom: 14,
@@ -201,9 +200,9 @@ const styles = StyleSheet.create({
   },
   select: {
     backgroundColor: colors.appBg,
+    borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
-    borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 12,
     flexDirection: "row",

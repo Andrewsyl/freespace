@@ -5,6 +5,7 @@ import {
   Image,
   Modal,
   Pressable,
+  Share,
   ScrollView,
   StyleSheet,
   StatusBar,
@@ -393,6 +394,17 @@ export function ListingScreen({ navigation, route }: Props) {
     }
   };
 
+  const handleShare = async () => {
+    if (!listing) return;
+    try {
+      await Share.share({
+        message: `${listing.title}${listing.address ? ` · ${listing.address}` : ""}`,
+      });
+    } catch {
+      // Ignore share-sheet cancellations and platform share failures.
+    }
+  };
+
   return (
     <>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
@@ -434,20 +446,25 @@ export function ListingScreen({ navigation, route }: Props) {
               <Pressable style={styles.backButtonRound} onPress={() => navigation.goBack()}>
                 <Ionicons name="arrow-back" size={24} color="#111827" />
               </Pressable>
-              <Pressable style={styles.favoriteButtonRound} onPress={handleToggleFavorite}>
-                <Text style={[styles.favoriteIcon, isFavorite(id) && styles.favoriteIconActive]}>
-                  {isFavorite(id) ? "♥︎" : "♡"}
-                </Text>
-                {showFavAnim ? (
-                  <LottieView
-                    source={require("../assets/Heart fav.json")}
-                    autoPlay
-                    loop={false}
-                    onAnimationFinish={() => setShowFavAnim(false)}
-                    style={styles.favAnimOverlay}
-                  />
-                ) : null}
-              </Pressable>
+              <View style={styles.headerActions}>
+                <Pressable style={styles.favoriteButtonRound} onPress={handleShare}>
+                  <Ionicons name="share-social-outline" size={20} color="#111827" />
+                </Pressable>
+                <Pressable style={styles.favoriteButtonRound} onPress={handleToggleFavorite}>
+                  <Text style={[styles.favoriteIcon, isFavorite(id) && styles.favoriteIconActive]}>
+                    {isFavorite(id) ? "♥︎" : "♡"}
+                  </Text>
+                  {showFavAnim ? (
+                    <LottieView
+                      source={require("../assets/Heart fav.json")}
+                      autoPlay
+                      loop={false}
+                      onAnimationFinish={() => setShowFavAnim(false)}
+                      style={styles.favAnimOverlay}
+                    />
+                  ) : null}
+                </Pressable>
+              </View>
             </View>
 
             <Pressable
@@ -825,7 +842,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(15,23,42,0.48)",
+    backgroundColor: "rgba(15,23,42,0.54)",
     zIndex: 1,
   },
   taxiPage: {
@@ -1946,38 +1963,44 @@ const styles = StyleSheet.create({
     right: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: "center",
     zIndex: 2,
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
   backButtonRound: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.96)',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
     elevation: 6,
   },
   favoriteButtonRound: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.96)',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
     shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
     elevation: 6,
   },
   favoriteIcon: {
     color: '#111827',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
   favoriteIconActive: {
