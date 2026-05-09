@@ -167,7 +167,7 @@ export function PersonalInfoScreen({ navigation }: Props) {
         >
           <Pressable
             style={styles.backButton}
-            onPress={() => navigation.navigate("Tabs", { screen: "Profile" })}
+            onPress={() => navigation.goBack()}
           >
             <Ionicons name="arrow-back" size={20} color={colors.text} />
             <Text style={styles.backText}>Back</Text>

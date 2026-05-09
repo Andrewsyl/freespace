@@ -141,7 +141,7 @@ export function ProfileScreen({ navigation }: Props) {
         <Card style={styles.section} noPadding>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.push("PersonalInfo")}
+            onPress={() => navigation.navigate("PersonalInfo")}
           >
             <View style={styles.personIconShell}>
               <Ionicons name="person-outline" size={18} color={colors.accent} />
@@ -157,7 +157,7 @@ export function ProfileScreen({ navigation }: Props) {
         <Card style={styles.section} noPadding>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.push("Favorites")}
+            onPress={() => navigation.navigate("Favorites")}
           >
             <MaterialIcons name="favorite-border" size={24} color="#111827" />
             <View style={styles.rowText}>
@@ -168,7 +168,7 @@ export function ProfileScreen({ navigation }: Props) {
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.push("Settings")}
+            onPress={() => navigation.navigate("Settings")}
           >
             <MaterialIcons name="settings" size={24} color="#111827" />
             <View style={styles.rowText}>
@@ -183,7 +183,7 @@ export function ProfileScreen({ navigation }: Props) {
         <Card style={styles.section} noPadding>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.push("Payments")}
+            onPress={() => navigation.navigate("Payments")}
           >
             <MaterialIcons name="credit-card" size={24} color="#111827" />
             <View style={styles.rowText}>
@@ -194,7 +194,7 @@ export function ProfileScreen({ navigation }: Props) {
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.push("VehicleType")}
+            onPress={() => navigation.navigate("VehicleType")}
           >
             <MaterialIcons name="directions-car" size={24} color="#111827" />
             <View style={styles.rowText}>
@@ -235,7 +235,7 @@ export function ProfileScreen({ navigation }: Props) {
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.push("LoginSecurity")}
+            onPress={() => navigation.navigate("LoginSecurity")}
           >
             <MaterialIcons name="lock-outline" size={24} color="#111827" />
             <View style={styles.rowText}>
@@ -293,7 +293,7 @@ export function ProfileScreen({ navigation }: Props) {
         <Card style={styles.section} noPadding>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.push("CreateListingFlow")}
+            onPress={() => navigation.navigate("CreateListingFlow")}
           >
             <MaterialIcons name="add-business" size={24} color="#111827" />
             <View style={styles.rowText}>
@@ -304,7 +304,7 @@ export function ProfileScreen({ navigation }: Props) {
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.push("Listings")}
+            onPress={() => navigation.navigate("Listings")}
           >
             <MaterialIcons name="home-work" size={24} color="#111827" />
             <View style={styles.rowText}>
