@@ -52,17 +52,17 @@ describe("BookingSummaryScreen", () => {
       <GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider>
     );
 
-    await waitFor(() => expect(getByText("Booking Confirmation")).toBeTruthy());
+    await waitFor(() => expect(getByText("Review booking")).toBeTruthy());
   });
 
-  it("starts payment when tapping the reserve button", async () => {
+  it("starts payment when tapping the pay button", async () => {
     const { getByText } = render(
       <GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider>
     );
     const user = userEvent.setup();
 
-    await waitFor(() => expect(getByText(/Pay and reserve/i)).toBeTruthy());
-    await user.press(getByText(/Pay and reserve/i));
+    await waitFor(() => expect(getByText(/^PAY$/i)).toBeTruthy());
+    await user.press(getByText(/^PAY$/i));
 
     const api = require("../api");
     await waitFor(() => expect(api.createBookingPaymentIntent).toHaveBeenCalled());
