@@ -5,8 +5,10 @@ import {
   Image,
   Modal,
   Pressable,
+  Share,
   ScrollView,
   StyleSheet,
+  StatusBar,
   Text,
   TextInput,
   useWindowDimensions,
@@ -213,12 +215,13 @@ export function ListingScreen({ navigation, route }: Props) {
         setEndAt(bumped);
       }
       setStartAt(next);
-      return;
+      return nextEnd;
     }
     const minEnd = new Date(startAt);
     minEnd.setHours(minEnd.getHours() + 1);
     const safeEnd = next < minEnd ? minEnd : next;
     setEndAt(safeEnd);
+    return safeEnd;
   };
 
   const imageUrls = useMemo(() => {
@@ -391,8 +394,20 @@ export function ListingScreen({ navigation, route }: Props) {
     }
   };
 
+  const handleShare = async () => {
+    if (!listing) return;
+    try {
+      await Share.share({
+        message: `${listing.title}${listing.address ? ` · ${listing.address}` : ""}`,
+      });
+    } catch {
+      // Ignore share-sheet cancellations and platform share failures.
+    }
+  };
+
   return (
     <>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         {loading ? (
           <View style={styles.centered}>
@@ -404,6 +419,7 @@ export function ListingScreen({ navigation, route }: Props) {
           </View>
         ) : listing ? (
           <>
+            <View style={[styles.statusBarFill, { height: insets.top }]} />
             {/* Content Card */}
             <View style={[styles.heroFixed, { height: heroHeight + insets.top, top: 0 }]}>
               {imageUrls.length ? (
@@ -430,20 +446,25 @@ export function ListingScreen({ navigation, route }: Props) {
               <Pressable style={styles.backButtonRound} onPress={() => navigation.goBack()}>
                 <Ionicons name="arrow-back" size={24} color="#111827" />
               </Pressable>
-              <Pressable style={styles.favoriteButtonRound} onPress={handleToggleFavorite}>
-                <Text style={[styles.favoriteIcon, isFavorite(id) && styles.favoriteIconActive]}>
-                  {isFavorite(id) ? "♥︎" : "♡"}
-                </Text>
-                {showFavAnim ? (
-                  <LottieView
-                    source={require("../assets/Heart fav.json")}
-                    autoPlay
-                    loop={false}
-                    onAnimationFinish={() => setShowFavAnim(false)}
-                    style={styles.favAnimOverlay}
-                  />
-                ) : null}
-              </Pressable>
+              <View style={styles.headerActions}>
+                <Pressable style={styles.favoriteButtonRound} onPress={handleShare}>
+                  <Ionicons name="share-social-outline" size={20} color="#111827" />
+                </Pressable>
+                <Pressable style={styles.favoriteButtonRound} onPress={handleToggleFavorite}>
+                  <Text style={[styles.favoriteIcon, isFavorite(id) && styles.favoriteIconActive]}>
+                    {isFavorite(id) ? "♥︎" : "♡"}
+                  </Text>
+                  {showFavAnim ? (
+                    <LottieView
+                      source={require("../assets/Heart fav.json")}
+                      autoPlay
+                      loop={false}
+                      onAnimationFinish={() => setShowFavAnim(false)}
+                      style={styles.favAnimOverlay}
+                    />
+                  ) : null}
+                </Pressable>
+              </View>
             </View>
 
             <Pressable
@@ -463,226 +484,165 @@ export function ListingScreen({ navigation, route }: Props) {
               style={styles.scrollContainer}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{
-                paddingTop: heroHeight - 20,
-                paddingBottom: 24,
-              }}
-              scrollEventThrottle={16}
-              onScroll={(event) => {
-                const y = event.nativeEvent.contentOffset.y;
-                const shouldEnable = y < 12;
-                if (shouldEnable !== heroTapEnabled) {
-                  setHeroTapEnabled(shouldEnable);
-                }
+                paddingTop: insets.top + 12,
+                paddingBottom: bottomBarSpacer,
               }}
             >
-              <View style={styles.contentWrap}>
-                <View style={styles.contentCard}>
-              <View style={styles.heroTitleBlock}>
-                <Text style={styles.cardTitle}>{listing.title}</Text>
-                <View style={styles.ratingRow}>
-                  <Ionicons name="star" size={13} color="#FFB800" />
-                  <Text style={styles.infoRowRating}>{hasReviews ? listing.rating?.toFixed(1) : '0.0'}</Text>
-                  <Text style={styles.infoRowMuted}>({listing.rating_count ?? 0} reviews)</Text>
-                </View>
-              </View>
-              <View style={styles.sectionDivider} />
+              <View style={[styles.taxiPage, { paddingTop: heroHeight - 84 }]}>
+                <View style={styles.taxiSheet}>
+                  <View style={styles.taxiHandle} />
 
-              {/* Meta row: distance · km · open status */}
-              <View style={styles.metaInfoSection}>
-                <View style={styles.metaInfoRow}>
-                  <Ionicons name="walk-outline" size={14} color="#9CA3AF" />
-                  <Text style={styles.metaInfoText}>{listing.distance_m ? `${Math.max(1, Math.round(listing.distance_m / 1000 * 12))} Mins` : '5 Mins'}</Text>
-                  <View style={styles.metaInfoDot} />
-                  <Ionicons name="location-outline" size={14} color="#9CA3AF" />
-                  <Text style={styles.metaInfoText}>{distanceLabel}</Text>
-                  <View style={styles.metaInfoDot} />
-                  <Ionicons name="checkmark-circle" size={14} color="#1FBA4C" />
-                  <Text style={styles.metaOpenText}>{listing.is_available === false ? 'Closed' : 'Open'}</Text>
-                </View>
-                <View style={styles.metaInfoRow}>
-                  <Ionicons name="location-outline" size={14} color="#9CA3AF" />
-                  <Text style={styles.metaAddressText} numberOfLines={1}>{areaLabel}</Text>
-                </View>
-              </View>
-
-              <View style={styles.sectionDivider} />
-
-              {/* Date/Time Picker Row */}
-                  <View style={styles.timePickerSection}>
-                    <View style={styles.timePickerWrapper}>
-                      <View style={styles.timePickerCard}>
-                        <Pressable style={styles.timePickerColumn} onPress={() => openPicker("start")}>
-                          <View style={styles.timePickerField}>
-                            <View>
-                              <Text style={styles.dateTimeLabel}>From</Text>
-                              <Text style={styles.dateTimeValue}>{formatDateTimeLabel(startAt)}</Text>
-                            </View>
-                            <View style={styles.timePickerChevron}>
-                              <Ionicons name="chevron-down" size={16} color="#1FBA4C" />
-                            </View>
-                          </View>
-                        </Pressable>
-                        <View style={styles.timePickerArrow}>
-                          <Ionicons name="arrow-forward" size={16} color="#1FBA4C" />
-                        </View>
-                        <Pressable style={styles.timePickerColumn} onPress={() => openPicker("end")}>
-                          <View style={styles.timePickerField}>
-                            <View>
-                              <Text style={styles.dateTimeLabel}>Until</Text>
-                              <Text style={styles.dateTimeValue}>{formatDateTimeLabel(endAt)}</Text>
-                            </View>
-                            <View style={styles.timePickerChevron}>
-                              <Ionicons name="chevron-down" size={16} color="#1FBA4C" />
-                            </View>
-                          </View>
-                        </Pressable>
-                      </View>
-                      {extendOffer ? (
-                        <Pressable
-                          style={styles.offerBar}
-                          onPress={() => {
-                            setEndAt(new Date(extendOffer.endOfDay));
-                          }}
-                        >
-                          <View style={styles.offerContent}>
-                            <LinearGradient
-                              colors={['#1FBA4C', '#19A03F']}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 1 }}
-                              style={styles.offerBoltCircle}
-                            >
-                              <Ionicons name="flash" size={12} color="#fff" />
-                            </LinearGradient>
-                            <Text style={styles.offerText}>
-                              Extend to <Text style={styles.offerTextBold}>23:59</Text> for only <Text style={styles.offerTextBold}>€{extendOffer.extra}</Text>
-                            </Text>
-                          </View>
-                          <View style={styles.offerChevron}>
-                            <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.5)" />
-                          </View>
-                        </Pressable>
-                      ) : null}
-                    </View>
-                  </View>
-
-                  <View style={styles.sectionDivider} />
-
-                  {/* Availability */}
-                  <View style={[styles.sectionBlock, { paddingHorizontal: 20 }]}>
-                    <Text style={styles.sectionTitle}>Availability</Text>
-                    {isOpen24 && !hasWeeklyAvailability ? (
-                      <View style={styles.availabilityCard}>
-                        <View style={styles.availabilityCardLeft}>
-                          <Text style={styles.availabilityOpenLabel}>Open now</Text>
-                          <Text style={styles.availabilityOpenValue}>24/7</Text>
-                        </View>
-                        <View style={styles.availabilityDayStrip}>
-                          {['M','T','W','T','F','S','S'].map((day, i) => {
-                            const todayDow = new Date().getDay();
-                            const mappedDow = [1,2,3,4,5,6,0][i];
-                            const isToday = mappedDow === todayDow;
-                            return (
-                              <View key={i} style={[styles.availabilityDayCell, isToday && styles.availabilityDayCellToday]}>
-                                <Text style={[styles.availabilityDayLabel, isToday && styles.availabilityDayLabelToday]}>{day}</Text>
-                              </View>
-                            );
-                          })}
-                        </View>
-                      </View>
-                    ) : (
-                      (() => {
-                        const todayLabel = new Date().toLocaleDateString(undefined, { weekday: "long" });
-                        const rows = hasWeeklyAvailability
-                          ? openingHours
-                          : [{ day: "Availability", hours: availabilityFallbackText }];
-                        return rows.map((row) => {
-                          const isToday = row.day === todayLabel;
-                          const highlightToday = hasWeeklyAvailability && isToday;
-                          return (
-                            <View key={row.day} style={[styles.hoursRow, highlightToday && styles.hoursRowToday]}>
-                              <Text style={[styles.hoursDay, highlightToday && styles.hoursDayToday]}>{row.day}</Text>
-                              <Text style={[styles.hoursValue, highlightToday && styles.hoursValueToday]}>{row.hours}</Text>
-                            </View>
-                          );
-                        });
-                      })()
-                    )}
-                  </View>
-                  <View style={styles.sectionDivider} />
-
-                  {/* About */}
                   <Pressable
-                    style={[styles.sectionBlock, { paddingHorizontal: 20 }]}
+                    style={styles.airSummaryHeaderRow}
                     onPress={() => {
-                      if (aboutText.length > 140) {
-                        setShowFullAbout((prev) => !prev);
-                      }
+                      if (!imageUrls.length) return;
+                      setViewerIndex(0);
+                      setShowImageViewer(true);
                     }}
                   >
-                    <Text style={styles.sectionTitle}>About this space</Text>
-                    <Text
-                      style={styles.sectionBody}
-                      numberOfLines={showFullAbout ? undefined : 2}
-                    >
-                      {aboutText}
-                    </Text>
-                    {aboutText.length > 140 ? (
-                      <Text style={styles.readMore}>
-                        {showFullAbout ? "Read less →" : "Read more →"}
+                    {imageUrls.length ? (
+                      <Image source={{ uri: imageUrls[0] }} style={styles.airSummaryThumb} />
+                    ) : (
+                      <View style={[styles.airSummaryThumb, styles.taxiSummaryAvatarPlaceholder]}>
+                        <Ionicons name="image-outline" size={24} color="#9AA4B5" />
+                      </View>
+                    )}
+                    <View style={styles.airSummaryHeaderContent}>
+                      <Text style={styles.airSummaryTitle} numberOfLines={2}>
+                        {listing.title}
                       </Text>
-                    ) : null}
-                  </Pressable>
-                  <View style={styles.sectionDivider} />
-
-                  {/* Features */}
-                  <View style={styles.featuresSection}>
-                    <Text style={styles.sectionTitle}>What's included</Text>
-                    <View style={styles.featuresList2}>
-                      {featureLabels.slice(0, 6).map((feature) => (
-                        <View key={feature} style={styles.featureRow2}>
-                          <FeatureIcon type={getFeatureIconType(feature)} size={26} />
-                          <Text style={styles.featureLabel2}>{feature}</Text>
+                      <Text style={styles.airSummarySub}>{areaLabel}</Text>
+                      <View style={styles.airReviewSummaryLine}>
+                        <View style={styles.airSummaryStars}>
+                          {[0, 1, 2, 3, 4].map((idx) => (
+                            <Ionicons
+                              key={`summary-star-${idx}`}
+                              name="star"
+                              size={15}
+                              color="#F7BE38"
+                            />
+                          ))}
                         </View>
-                      ))}
+                        <Text style={styles.airReviewSummarySecondary}>
+                          {hasReviews ? listing.rating?.toFixed(1) : "0.0"} rating
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                  <View style={styles.sectionDivider} />
+                  </Pressable>
 
-              <View style={styles.contentSections}>
-                <View style={styles.sectionBlock}>
-                  <View style={styles.reviewHeaderRow}>
-                    <Text style={styles.sectionTitle}>Reviews</Text>
-                    <View style={styles.reviewSummary}>
-                      <Ionicons name="star" size={14} color="#F59E0B" />
-                      <Text style={styles.reviewSummaryText}>
-                        {hasReviews ? listing.rating?.toFixed(2) : "0.00"}
-                      </Text>
-                      <Text style={styles.reviewSummaryCount}>
-                        • {listing.rating_count ?? 0} Reviews
-                      </Text>
+                  <View style={styles.airStatsPills}>
+                    <View style={styles.airStatPill}>
+                      <Ionicons name="time-outline" size={14} color="#0F172A" />
+                      <Text style={styles.airStatPillText}>{priceSummary?.durationLabel ?? "2 hours"}</Text>
+                    </View>
+                    <View style={styles.airStatPill}>
+                      <Ionicons name="cash-outline" size={14} color="#0F172A" />
+                      <Text style={styles.airStatPillText}>€{priceSummary?.total ?? 0}</Text>
+                    </View>
+                    <View style={styles.airStatPill}>
+                      <Ionicons name="location-outline" size={14} color="#0F172A" />
+                      <Text style={styles.airStatPillText}>{distanceLabel}</Text>
                     </View>
                   </View>
-                  {reviewsLoading ? (
-                    <View style={styles.centered}>
-                      <ActivityIndicator />
+
+                  <View style={styles.taxiDivider} />
+
+                  <View style={styles.airRouteCard}>
+                    <View style={styles.taxiRouteTrack}>
+                      <View style={styles.taxiRouteDotStart} />
+                      <View style={styles.taxiRouteLine} />
+                      <View style={styles.taxiRouteDotEnd} />
                     </View>
-                  ) : reviews.length ? (
-                    <View style={styles.reviewCarouselWrap}>
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.reviewCarousel}
-                      >
-                        {reviews.slice(0, 6).map((review) => (
-                          <View key={review.id} style={styles.reviewCardWide}>
-                            <View style={styles.reviewCardTop}>
+                    <View style={styles.taxiRouteContent}>
+                      <View style={styles.taxiRouteRow}>
+                        <Text style={styles.taxiRouteValue}>{formatDateTimeLabel(startAt)}</Text>
+                      </View>
+                      <View style={styles.taxiRouteSpacer} />
+                      <View style={styles.taxiRouteRow}>
+                        <Text style={styles.taxiRouteValue}>{formatDateTimeLabel(endAt)}</Text>
+                      </View>
+                    </View>
+                    <Pressable style={styles.airTimeEditButton} onPress={() => openPicker("start")}>
+                      <Ionicons name="create-outline" size={16} color="#0F172A" />
+                      <Text style={styles.airTimeEditButtonText}>Edit</Text>
+                    </Pressable>
+                  </View>
+
+                  {extendOffer ? (
+                    <Pressable
+                      style={styles.taxiPromoCard}
+                      onPress={() => setEndAt(new Date(extendOffer.endOfDay))}
+                    >
+                      <Ionicons name="flash" size={18} color="#45C36F" />
+                      <Text style={styles.taxiPromoText}>
+                        Extend to 23:59 for only €{extendOffer.extra}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+
+                  <View style={styles.taxiDivider} />
+
+                  <View style={styles.taxiPaymentRows}>
+                    <View style={styles.taxiPaymentRow}>
+                      <Text style={styles.taxiPaymentLabel}>Payment option</Text>
+                      <Text style={styles.taxiPaymentValue}>Pay at confirmation</Text>
+                    </View>
+                    <View style={styles.taxiPaymentRow}>
+                      <Text style={styles.taxiPaymentLabel}>Total price</Text>
+                      <Text style={styles.taxiPaymentTotal}>€{priceSummary?.total ?? 0}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.taxiSectionStack}>
+                    <Pressable
+                      style={styles.taxiDetailCard}
+                      onPress={() => {
+                        if (aboutText.length > 140) setShowFullAbout((prev) => !prev);
+                      }}
+                    >
+                      <Text style={styles.taxiSectionTitle}>About this space</Text>
+                      <Text style={styles.taxiBodyText} numberOfLines={showFullAbout ? undefined : 3}>
+                        {aboutText}
+                      </Text>
+                    </Pressable>
+
+                    <View style={styles.taxiDetailCard}>
+                      <Text style={styles.taxiSectionTitle}>Availability</Text>
+                      <Text style={styles.taxiBodyText}>{availabilityFallbackText}</Text>
+                    </View>
+
+                    <View style={styles.taxiDetailCard}>
+                      <Text style={styles.taxiSectionTitle}>Included features</Text>
+                      <View style={styles.taxiFeatureStack}>
+                        {featureLabels.slice(0, 4).map((feature) => (
+                          <View key={feature} style={styles.taxiFeatureRow}>
+                            <FeatureIcon type={getFeatureIconType(feature)} size={18} />
+                            <View style={styles.taxiFeatureCopy}>
+                              <Text style={styles.taxiFeatureTitle}>{feature}</Text>
+                              <Text style={styles.taxiFeatureSub}>{getFeatureSubLabel(feature)}</Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+
+                    <View style={styles.taxiDetailCard}>
+                      <Text style={styles.taxiSectionTitle}>Reviews</Text>
+                      {reviewsLoading ? (
+                        <View style={styles.centered}>
+                          <ActivityIndicator />
+                        </View>
+                      ) : reviews.length ? (
+                        <View style={styles.taxiReviewStack}>
+                          {reviews.slice(0, 3).map((review) => (
+                            <View key={review.id} style={styles.taxiReviewCard}>
                               <View style={styles.reviewStarsRow}>
                                 {[0, 1, 2, 3, 4].map((idx) => (
                                   <Ionicons
                                     key={`${review.id}-star-${idx}`}
                                     name="star"
                                     size={14}
-                                    color={idx < Math.round(review.rating) ? "#F59E0B" : "#E5E7EB"}
+                                    color={idx < Math.round(review.rating) ? "#F7BE38" : "#E5E7EB"}
                                   />
                                 ))}
                                 <Text style={styles.reviewAge}>
@@ -694,34 +654,17 @@ export function ListingScreen({ navigation, route }: Props) {
                               <Text style={styles.reviewAuthor}>
                                 {(review as { author_name?: string }).author_name ?? review.authorName ?? "Guest"}
                               </Text>
+                              <Text style={styles.reviewComment}>{review.comment}</Text>
                             </View>
-                            <Text style={styles.reviewComment}>{review.comment}</Text>
-                          </View>
-                        ))}
-                      </ScrollView>
-                      <Pressable
-                        style={styles.reviewCta}
-                        onPress={() =>
-                          navigation.navigate("ListingReviews", {
-                            id,
-                            rating: listing.rating ?? 0,
-                            ratingCount: listing.rating_count ?? reviews.length,
-                          })
-                        }
-                      >
-                        <Text style={styles.reviewCtaText}>
-                          Show all {listing.rating_count ?? reviews.length} reviews
-                        </Text>
-                      </Pressable>
+                          ))}
+                        </View>
+                      ) : (
+                        <Text style={styles.taxiBodyText}>No reviews yet.</Text>
+                      )}
                     </View>
-                  ) : (
-                    <Text style={styles.reviewComment}>No reviews yet.</Text>
-                  )}
-                </View>
+                  </View>
 
-                {!user && (
-                  <>
-                    <View style={styles.dividerLine} />
+                  {!user && (
                     <View style={styles.authCard}>
                       <Text style={styles.authTitle}>Sign in to book</Text>
                       <TextInput
@@ -759,20 +702,18 @@ export function ListingScreen({ navigation, route }: Props) {
                         </Pressable>
                       </View>
                     </View>
-                  </>
-                )}
+                  )}
+                </View>
 
                 <View style={styles.contentCardSpacer} />
-              </View>
-                </View>
               </View>
             </ScrollView>
 
               {/* Fixed Bottom Button */}
               {priceSummary && user ? (
-              <View style={[styles.bottomBar, { paddingBottom: 24 + insets.bottom }]}>
+              <View style={[styles.airBottomBar, { paddingBottom: 18 + insets.bottom }]}>
                 <View style={styles.priceInfo}>
-                  <Text style={styles.priceLabel}>Total Price</Text>
+                  <Text style={styles.airPriceLabel}>From €{priceSummary.total}</Text>
                   <Text style={styles.priceAmount}>€{priceSummary.total}</Text>
                   <Text style={styles.priceDuration}>{priceSummary.durationLabel}</Text>
                 </View>
@@ -795,7 +736,7 @@ export function ListingScreen({ navigation, route }: Props) {
                     }}
                     disabled={authLoading}
                   >
-                    <View style={styles.bookButtonGradient}>
+                    <View style={styles.airBookButton}>
                       <Text style={styles.bookButtonText}>
                         {navigatingToBooking ? "Opening..." : "Book Now"}
                       </Text>
@@ -826,9 +767,15 @@ export function ListingScreen({ navigation, route }: Props) {
                 <Pressable
                   style={styles.pickerDone}
                   onPress={() => {
+                    const currentField = pickerField;
                     const picked =
                       draftDate ?? (pickerField === "start" ? startAt : endAt);
-                    applyPickedDate(picked);
+                    const resolvedDate = applyPickedDate(picked);
+                    if (currentField === "start") {
+                      setPickerField("end");
+                      setDraftDate(resolvedDate);
+                      return;
+                    }
                     setPickerVisible(false);
                     setDraftDate(null);
                   }}
@@ -889,6 +836,419 @@ const styles = StyleSheet.create({
   scrollContainer: {
     backgroundColor: "transparent",
     flex: 1,
+  },
+  statusBarFill: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(15,23,42,0.54)",
+    zIndex: 1,
+  },
+  taxiPage: {
+    paddingHorizontal: 10,
+    gap: 0,
+  },
+  taxiSheet: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    marginTop: -34,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 26,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.12,
+    shadowRadius: 30,
+    elevation: 10,
+  },
+  taxiHandle: {
+    width: 54,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: "#D8DEE8",
+    alignSelf: "center",
+    marginBottom: 18,
+  },
+  airSummaryHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    paddingHorizontal: 4,
+    marginBottom: 14,
+  },
+  airSummaryThumb: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: "#E8EEF5",
+  },
+  airSummaryHeaderContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  airSummaryTitle: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: -0.45,
+    textAlign: "left",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  airSummarySub: {
+    fontFamily: "Inter-Regular",
+    fontSize: 13,
+    lineHeight: 19,
+    color: "#6B7280",
+    textAlign: "left",
+    marginBottom: 12,
+  },
+  airSummaryStars: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  airReviewSummaryLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 0,
+    flexWrap: "wrap",
+  },
+  airReviewSummarySecondary: {
+    fontFamily: "Inter-Medium",
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#6B7280",
+  },
+  airStatsPills: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 10,
+    marginBottom: 18,
+  },
+  airStatPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  airStatPillText: {
+    fontFamily: "Inter-Medium",
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#111827",
+  },
+  taxiHeaderBlock: {
+    gap: 8,
+    marginBottom: 18,
+  },
+  taxiTitle: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 22,
+    fontWeight: "600",
+    lineHeight: 28,
+    letterSpacing: -0.45,
+    color: "#0F172A",
+  },
+  taxiHeaderCopy: {
+    fontFamily: "Inter-Regular",
+    fontSize: 13,
+    lineHeight: 20,
+    color: "#94A3B8",
+    maxWidth: "88%",
+  },
+  taxiSummaryCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginBottom: 18,
+  },
+  taxiSummaryAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#E8EEF5",
+  },
+  taxiSummaryAvatarPlaceholder: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  taxiSummaryCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  taxiSummaryTitle: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 18,
+    fontWeight: "600",
+    lineHeight: 24,
+    color: "#111827",
+    marginBottom: 2,
+  },
+  taxiSummarySub: {
+    fontFamily: "Inter-Regular",
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#94A3B8",
+    marginBottom: 6,
+  },
+  taxiSummaryRating: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  taxiSummaryRatingText: {
+    fontFamily: "Inter-Medium",
+    fontSize: 12,
+    color: "#94A3B8",
+    marginLeft: 3,
+  },
+  taxiStatsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 18,
+  },
+  taxiStat: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  taxiStatText: {
+    fontFamily: "Inter-Medium",
+    fontSize: 14,
+    color: "#334155",
+  },
+  taxiDivider: {
+    height: 1,
+    backgroundColor: "#EDF2F7",
+    marginBottom: 18,
+  },
+  airRouteCard: {
+    flexDirection: "row",
+    gap: 14,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: "#FFFFFF",
+  },
+  taxiRouteCard: {
+    flexDirection: "row",
+    gap: 14,
+    marginBottom: 18,
+  },
+  taxiRouteTrack: {
+    alignItems: "center",
+    width: 18,
+    paddingTop: 6,
+  },
+  taxiRouteDotStart: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#45C36F",
+    borderWidth: 4,
+    borderColor: "#DDF7E7",
+  },
+  taxiRouteLine: {
+    width: 2,
+    flex: 1,
+    minHeight: 36,
+    backgroundColor: "#45C36F",
+    marginVertical: 4,
+  },
+  taxiRouteDotEnd: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#45C36F",
+  },
+  taxiRouteContent: {
+    flex: 1,
+    gap: 0,
+  },
+  taxiTimeEditButton: {
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 38,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: "#ECFBF2",
+    marginLeft: 8,
+  },
+  taxiTimeEditButtonText: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2F855A",
+  },
+  airTimeEditButton: {
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 36,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: "#F3F4F6",
+    marginLeft: 8,
+  },
+  airTimeEditButtonText: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 14,
+    lineHeight: 18,
+    color: "#111827",
+  },
+  taxiRouteRow: {
+    minHeight: 34,
+    justifyContent: "center",
+  },
+  taxiRouteSpacer: {
+    height: 18,
+  },
+  taxiRouteValue: {
+    fontFamily: "Inter-Medium",
+    fontSize: 15,
+    lineHeight: 21,
+    color: "#334155",
+  },
+  taxiSecondaryButton: {
+    backgroundColor: "#ECFBF2",
+    borderRadius: 999,
+    minHeight: 54,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 14,
+  },
+  taxiSecondaryButtonText: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2F855A",
+  },
+  taxiPromoCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 18,
+  },
+  taxiPromoText: {
+    flex: 1,
+    fontFamily: "Inter-Medium",
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#334155",
+  },
+  taxiPaymentRows: {
+    gap: 14,
+  },
+  taxiPaymentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  taxiPaymentLabel: {
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    color: "#64748B",
+  },
+  taxiPaymentValue: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1E293B",
+  },
+  taxiPaymentTotal: {
+    fontFamily: "Inter-Bold",
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  taxiSectionStack: {
+    gap: 0,
+    marginTop: 18,
+  },
+  taxiDetailCard: {
+    backgroundColor: "transparent",
+    borderRadius: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 18,
+    borderTopWidth: 1,
+    borderTopColor: "#EDF2F7",
+  },
+  taxiSectionTitle: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 10,
+    letterSpacing: -0.2,
+  },
+  taxiBodyText: {
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    lineHeight: 21,
+    color: "#64748B",
+  },
+  taxiFeatureStack: {
+    gap: 10,
+  },
+  taxiFeatureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 4,
+  },
+  taxiFeatureCopy: {
+    flex: 1,
+  },
+  taxiFeatureTitle: {
+    fontFamily: "Inter-Medium",
+    fontSize: 14,
+    color: "#1F2937",
+  },
+  taxiFeatureSub: {
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    color: "#94A3B8",
+    marginTop: 2,
+  },
+  taxiReviewStack: {
+    gap: 10,
+  },
+  taxiReviewCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
   topBar: {
     alignItems: "center",
@@ -1217,7 +1577,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#F3F4F6',
   },
-  sectionStack: {
+  sectionStackLegacy1: {
     marginTop: 6,
   },
   featuresGridLegacy1: {
@@ -1448,6 +1808,41 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
+  airBottomBar: {
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 22,
+    paddingTop: 16,
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  airPriceLabel: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    lineHeight: 20,
+    color: "#111827",
+    textDecorationLine: "underline",
+  },
+  airBookButton: {
+    minHeight: 58,
+    minWidth: 178,
+    borderRadius: 999,
+    backgroundColor: "#0E8E62",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 28,
+  },
   bottomPrice: {
     color: colors.text,
     fontSize: 28,
@@ -1568,42 +1963,48 @@ const styles = StyleSheet.create({
     right: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: "center",
     zIndex: 2,
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
   backButtonRound: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.96)',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
     elevation: 6,
   },
   favoriteButtonRound: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.96)',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
     shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
     elevation: 6,
   },
   favoriteIcon: {
     color: '#111827',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
   favoriteIconActive: {
-    color: '#2ECC8F',
+    color: '#111827',
   },
   favAnimOverlay: {
     position: 'absolute',
@@ -1612,18 +2013,18 @@ const styles = StyleSheet.create({
   },
   contentCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    backgroundColor: '#F6F5F2',
+    borderTopLeftRadius: 34,
+    borderTopRightRadius: 34,
     paddingTop: 0,
-    paddingBottom: 12,
+    paddingBottom: 18,
     paddingHorizontal: 0,
   },
   contentCardSpacer: {
     height: 120,
   },
   contentWrap: {
-    marginTop: -20,
+    marginTop: -28,
     zIndex: 2,
   },
   sheetHandle: {
@@ -1631,22 +2032,58 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 999,
-    backgroundColor: "#d1d5db",
-    marginBottom: 12,
+    backgroundColor: "#F0D57A",
+    marginBottom: 14,
   },
   heroTitleBlock: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingHorizontal: 24,
+    paddingTop: 32,
     paddingBottom: 20,
     gap: 10,
   },
+  heroTagRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 6,
+  },
+  heroTag: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#EFE8D8",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  heroTagText: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#8B6500",
+    letterSpacing: 0.2,
+  },
+  heroTagAlt: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#EFE8D8",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  heroTagAltText: {
+    fontFamily: "Inter-Medium",
+    fontSize: 11,
+    fontWeight: "500",
+    color: "#635B4A",
+    letterSpacing: 0.15,
+  },
   cardTitle: {
-    fontFamily: "Inter-Bold",
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#111111',
-    lineHeight: 34,
-    letterSpacing: -0.3,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 27,
+    fontWeight: '600',
+    color: '#171717',
+    lineHeight: 32,
+    letterSpacing: -0.45,
   },
   cardSubtitle: {
     fontFamily: "Inter-Regular",
@@ -1654,6 +2091,13 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#6B7280',
     textAlign: 'center',
+  },
+  heroSubAddress: {
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    color: "#70695D",
+    lineHeight: 20,
+    marginTop: 2,
   },
   ratingBlock: {
     flexDirection: 'row',
@@ -1762,9 +2206,32 @@ const styles = StyleSheet.create({
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 2,
+    gap: 5,
+    marginBottom: 4,
     flexWrap: "wrap",
+  },
+  metaPillRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 4,
+  },
+  metaPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#EFE8D8",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  metaPillText: {
+    fontFamily: "Inter-Medium",
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#594F39",
   },
   ratingBadge: {
     flexDirection: "row",
@@ -1776,16 +2243,22 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   summaryStripWrap: {
-    marginHorizontal: 16,
-    marginBottom: 6,
+    marginHorizontal: 24,
+    marginBottom: 10,
   },
   summaryStrip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0E8E62',
-    borderRadius: 10,
-    borderWidth: 0,
-    paddingVertical: 6,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#EFE8D8',
+    paddingVertical: 14,
+    shadowColor: '#111111',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 18,
+    elevation: 1,
   },
   summaryCell: {
     flex: 1,
@@ -1795,7 +2268,7 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontFamily: "Inter-SemiBold",
-    color: 'rgba(255,255,255,0.65)',
+    color: '#9B7B1D',
     fontSize: 9,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -1804,11 +2277,11 @@ const styles = StyleSheet.create({
   summaryDivider: {
     width: 1,
     height: 28,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: '#EEDB94',
   },
   summaryValue: {
     fontFamily: "Inter-SemiBold",
-    color: '#FFFFFF',
+    color: '#1C1C1C',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -1824,19 +2297,19 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   quickInfoCard: {
-    marginHorizontal: 20,
-    marginBottom: 18,
-    borderRadius: 18,
+    marginHorizontal: 24,
+    marginBottom: 10,
+    borderRadius: 24,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "rgba(17,24,39,0.08)",
-    paddingHorizontal: 16,
+    borderColor: "#F0D57A",
+    paddingHorizontal: 18,
     paddingVertical: 16,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowColor: '#111111',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 18,
+    elevation: 1,
   },
   quickInfoRow: {
     flexDirection: "row",
@@ -1849,15 +2322,15 @@ const styles = StyleSheet.create({
   },
   quickInfoPrimary: {
     fontFamily: "Inter-SemiBold",
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
-    color: "#15171A",
+    color: "#1A1A1A",
     marginBottom: 2,
   },
   quickInfoSecondary: {
     fontFamily: "Inter-Regular",
     fontSize: 12,
-    color: "#667085",
+    color: "#776F60",
   },
   todayPill: {
     borderRadius: 999,
@@ -1898,13 +2371,13 @@ const styles = StyleSheet.create({
     fontFamily: "Inter-Medium",
     fontSize: 15,
     fontWeight: "500",
-    color: "#136F63",
+    color: "#B88400",
     marginBottom: 3,
   },
   locationSubtitle: {
     fontFamily: "Inter-Regular",
     fontSize: 12,
-    color: "#667085",
+    color: "#726E63",
   },
   availabilityDot: {
     width: 7,
@@ -1944,20 +2417,28 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   timePickerSection: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 14,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 18,
   },
   timePickerWrapper: {
     overflow: "visible",
-    borderRadius: 0,
-    backgroundColor: "transparent",
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#EFE8D8",
+    padding: 10,
+    shadowColor: '#111111',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 18,
+    elevation: 1,
   },
   timePickerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 8,
   },
   timePickerField: {
@@ -1967,10 +2448,10 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: "#435062",
+    borderColor: '#EEE7D6',
+    backgroundColor: "#FAFAF8",
     overflow: "hidden",
   },
   timePickerChevron: {
@@ -1990,7 +2471,7 @@ const styles = StyleSheet.create({
   dateTimeLabel: {
     fontFamily: "Inter-Medium",
     fontSize: 10,
-    color: 'rgba(255,255,255,0.58)',
+    color: '#8F7A36',
     textTransform: 'uppercase',
     letterSpacing: 0.65,
     fontWeight: '600',
@@ -2000,16 +2481,20 @@ const styles = StyleSheet.create({
     fontFamily: "Inter-SemiBold",
     fontSize: 13,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#1C1C1C',
   },
   offerBar: {
-    backgroundColor: '#15202B',
-    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#F0D57A',
+    marginTop: 8,
   },
   offerContent: {
     flexDirection: 'row',
@@ -2034,14 +2519,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   offerText: {
-    color: "#ffffff",
+    color: "#2C2B25",
     fontSize: 12,
     fontWeight: "400",
     fontFamily: "Inter-Regular",
     lineHeight: 18,
   },
   offerTextBold: {
-    color: "#ffffff",
+    color: "#111111",
     fontWeight: "700",
     fontFamily: "Inter-Bold",
   },
@@ -2085,16 +2570,32 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   contentSections: {
-    paddingHorizontal: 20,
-    paddingTop: 0,
+    paddingHorizontal: 24,
+    paddingTop: 14,
+  },
+  sectionStack: {
+    gap: 14,
   },
   sectionBlock: {
     paddingTop: 16,
     paddingBottom: 16,
   },
+  sectionSurface: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    borderWidth: 1,
+    borderColor: "#EFE8D8",
+    shadowColor: "#111111",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 18,
+    elevation: 1,
+  },
   sectionDivider: {
     height: 1,
-    backgroundColor: '#EBEBEB',
+    backgroundColor: '#EFE8D7',
   },
   hoursRow: {
     flexDirection: "row",
@@ -2121,7 +2622,7 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   hoursRowToday: {
-    backgroundColor: "#E7F8EC",
+    backgroundColor: "#FFF7DB",
     borderRadius: 0,
     marginHorizontal: -20,
     paddingHorizontal: 20,
@@ -2133,7 +2634,7 @@ const styles = StyleSheet.create({
     fontWeight: "400",
   },
   hoursDayToday: {
-    color: "#0E8E62",
+    color: "#A47A00",
   },
   hoursValue: {
     fontFamily: "Inter-Medium",
@@ -2142,7 +2643,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   hoursValueToday: {
-    color: "#0E8E62",
+    color: "#A47A00",
   },
   dividerLine: {
     height: 1,
@@ -2150,18 +2651,18 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   sectionTitle: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "Inter-SemiBold",
     fontSize: 16,
-    fontWeight: '700',
-    color: '#0D0D0D',
-    letterSpacing: -0.1,
+    fontWeight: '600',
+    color: '#171717',
+    letterSpacing: -0.2,
     marginBottom: 0,
   },
   sectionBody: {
     fontFamily: "Inter-Regular",
     fontSize: 14,
     lineHeight: 21,
-    color: '#6B7280',
+    color: '#5F5A4F',
     fontWeight: '400',
     marginTop: 6,
   },
@@ -2169,7 +2670,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter-SemiBold",
     fontSize: 13,
     fontWeight: '600',
-    color: '#1FBA4C',
+    color: '#B88400',
     marginTop: 8,
   },
   featuresGrid: {
@@ -2211,17 +2712,34 @@ const styles = StyleSheet.create({
   },
   featuresList2: {
     marginTop: 12,
+    borderRadius: 18,
+    overflow: "hidden",
+    backgroundColor: "#FAFAF8",
   },
   featureRow2: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 18,
     paddingVertical: 14,
+    paddingHorizontal: 4,
+  },
+  featureRow2Border: {
+    borderTopWidth: 1,
+    borderTopColor: "#EEE7D6",
+  },
+  featureIconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#FFF6D8",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   featureLabel2: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    fontWeight: '400',
+    fontFamily: 'Inter-Medium',
+    fontSize: 15,
+    fontWeight: '500',
     color: '#1A1A1A',
     flex: 1,
   },
@@ -2277,10 +2795,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 14,
-    borderWidth: 0,
-    padding: 12,
+    backgroundColor: '#FAFAF8',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#EEE7D6',
+    padding: 14,
     marginTop: 6,
   },
   availabilityCardLeft: {
@@ -2391,7 +2910,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 0,
+    marginBottom: 4,
   },
   reviewSummary: {
     flexDirection: "row",
@@ -2410,7 +2929,7 @@ const styles = StyleSheet.create({
     color: "#6B7280",
   },
   reviewCarouselWrap: {
-    marginTop: 6,
+    marginTop: 10,
   },
   reviewCarousel: {
     paddingRight: 12,
@@ -2418,11 +2937,11 @@ const styles = StyleSheet.create({
   },
   reviewCardWide: {
     width: 250,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FAFAF8",
     borderWidth: 1,
-    borderColor: 'rgba(20,23,26,0.08)',
+    borderColor: '#EEE7D6',
     padding: 14,
-    borderRadius: 14,
+    borderRadius: 18,
   },
   reviewCardTop: {
     marginBottom: 8,
@@ -2448,14 +2967,14 @@ const styles = StyleSheet.create({
   reviewCta: {
     marginTop: 16,
     borderWidth: 1,
-    borderColor: 'rgba(14,142,98,0.25)',
+    borderColor: '#F0D57A',
     borderRadius: 999,
     paddingVertical: 12,
     alignItems: "center",
     backgroundColor: "#FFFFFF",
   },
   reviewCtaText: {
-    color: '#0E8E62',
+    color: '#8B6500',
     fontSize: 12,
     fontWeight: "600",
     fontFamily: "Inter-SemiBold",
@@ -2627,22 +3146,22 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 4,
     borderTopWidth: 1,
-    borderTopColor: '#EBEBEB',
+    borderTopColor: '#EEF2F7',
   },
   priceInfo: {
     flex: 1,
   },
   priceAmount: {
     fontFamily: "Inter-Bold",
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#15171A',
-    letterSpacing: -0.5,
+    color: '#0F172A',
+    letterSpacing: -0.6,
   },
   priceDuration: {
     fontFamily: "Inter-Regular",
     fontSize: 12,
-    color: '#6B7280',
+    color: '#94A3B8',
     fontWeight: '400',
   },
   bookButton: {
@@ -2650,7 +3169,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     flex: 1,
     maxWidth: 180,
-    backgroundColor: '#0E8E62',
+    backgroundColor: '#0F172A',
   },
   bookButtonGradient: {
     paddingVertical: 14,
@@ -2748,7 +3267,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
     fontSize: 14,
     fontWeight: '500',
-    color: '#1A1A1A',
+    color: '#1C1C1C',
   },
   metaInfoDot: {
     width: 3,
@@ -2760,13 +3279,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     fontSize: 14,
     fontWeight: '600',
-    color: '#1FBA4C',
+    color: '#B88400',
   },
   metaAddressText: {
     fontFamily: 'Inter-Regular',
     fontSize: 13,
     fontWeight: '400',
-    color: '#7A8089',
+    color: '#7C766A',
     flex: 1,
   },
   priceLabel: {

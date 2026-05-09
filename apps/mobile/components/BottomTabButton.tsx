@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useRef } from "react";
 import type { GestureResponderEvent } from "react-native";
 import { Animated, Pressable, StyleSheet, View } from "react-native";
-import { colors, radius } from "../styles/theme";
+import { radius } from "../styles/theme";
 
 type Props = {
   children: ReactNode;
@@ -12,29 +12,29 @@ type Props = {
 export function BottomTabButton({ children, onPress, accessibilityState }: Props) {
   const focused = accessibilityState?.selected;
   const scale = useRef(new Animated.Value(1)).current;
-  const opacity = useRef(new Animated.Value(focused ? 1 : 0.8)).current;
-  const bgOpacity = useRef(new Animated.Value(focused ? 1 : 0)).current;
+  const opacity = useRef(new Animated.Value(focused ? 1 : 0.78)).current;
+  const lift = useRef(new Animated.Value(focused ? -1 : 0)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.spring(scale, {
-        toValue: focused ? 1.02 : 1,
+        toValue: focused ? 1.01 : 1,
         useNativeDriver: false,
         friction: 7,
         tension: 40,
       }),
       Animated.timing(opacity, {
-        toValue: focused ? 1 : 0.8,
+        toValue: focused ? 1 : 0.78,
         duration: 200,
         useNativeDriver: false,
       }),
-      Animated.timing(bgOpacity, {
-        toValue: focused ? 1 : 0,
+      Animated.timing(lift, {
+        toValue: focused ? -1 : 0,
         duration: 180,
         useNativeDriver: false,
       }),
     ]).start();
-  }, [focused, scale, opacity, bgOpacity]);
+  }, [focused, scale, opacity, lift]);
 
   const handlePressIn = () => {
     Animated.spring(scale, {
@@ -65,19 +65,12 @@ export function BottomTabButton({ children, onPress, accessibilityState }: Props
         style={[
           styles.item,
           {
-            transform: [{ scale }],
+            transform: [{ scale }, { translateY: lift }],
             opacity,
-            backgroundColor: bgOpacity.interpolate({
-              inputRange: [0, 1],
-              outputRange: ["rgba(255,255,255,0)", colors.accentSoft],
-            }),
-            borderColor: bgOpacity.interpolate({
-              inputRange: [0, 1],
-              outputRange: ["rgba(229,231,235,0)", "#CDEFE2"],
-            }),
           },
         ]}
       >
+        <View style={[styles.indicator, focused && styles.indicatorActive]} />
         {children}
       </Animated.View>
     </Pressable>
@@ -85,15 +78,24 @@ export function BottomTabButton({ children, onPress, accessibilityState }: Props
 }
 
 const styles = StyleSheet.create({
+  indicator: {
+    width: 18,
+    height: 2,
+    borderRadius: 999,
+    backgroundColor: "transparent",
+    marginBottom: 4,
+  },
+  indicatorActive: {
+    backgroundColor: "#111827",
+  },
   item: {
     alignItems: "center",
     borderRadius: radius.pill,
-    borderWidth: 1,
-    gap: 3,
+    gap: 2,
     justifyContent: "center",
-    minWidth: 84,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    minWidth: 78,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
   },
   pressable: {
     alignItems: "center",

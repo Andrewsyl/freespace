@@ -3,10 +3,10 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleShee
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MaterialIcons } from "@expo/vector-icons";
-import { changePassword, deleteAccount, logoutAllSessions } from "../api";
+import { changePassword, deleteAccount, logoutAllSessions, requestPasswordReset } from "../api";
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
-import { Button, Card, SectionHeader, TextInput as AppTextInput } from "../components/ui";
+import { Button, TextInput as AppTextInput } from "../components/ui";
 import { colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "LoginSecurity">;
@@ -14,10 +14,14 @@ type Props = NativeStackScreenProps<RootStackParamList, "LoginSecurity">;
 export function LoginSecurityScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { token, logout, user } = useAuth();
+  const isPasswordLogin = (user?.authProvider ?? "password") === "password";
+  const authProviderLabel =
+    user?.authProvider === "google" ? "Google" : user?.authProvider === "facebook" ? "Facebook" : "Email";
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
+  const [sendingSetupEmail, setSendingSetupEmail] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,6 +46,21 @@ export function LoginSecurityScreen({ navigation }: Props) {
         },
       ]
     );
+  };
+
+  const handleSendPasswordSetup = async () => {
+    if (!user?.email) return;
+    setSendingSetupEmail(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await requestPasswordReset(user.email);
+      setMessage(`Password setup email sent to ${user.email}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not send password setup email");
+    } finally {
+      setSendingSetupEmail(false);
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -110,7 +129,7 @@ export function LoginSecurityScreen({ navigation }: Props) {
         >
           <Pressable
             style={styles.backButton}
-            onPress={() => navigation.navigate("Tabs", { screen: "Profile" })}
+            onPress={() => navigation.goBack()}
           >
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
             <Text style={styles.backText}>Back</Text>
@@ -128,35 +147,69 @@ export function LoginSecurityScreen({ navigation }: Props) {
             </View>
           ) : null}
 
-          <View style={styles.sheet}>
-            <SectionHeader title="Change password" subtitle="Update your password for this account." />
-            <AppTextInput
-              label="Current password"
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              secureTextEntry
-              placeholder="Enter current password"
-            />
-            <AppTextInput
-              label="New password"
-              value={newPassword}
-              onChangeText={setNewPassword}
-              secureTextEntry
-              placeholder="Enter new password"
-            />
-            <AppTextInput
-              label="Confirm new password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              placeholder="Confirm new password"
-            />
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            {message ? <Text style={styles.notice}>{message}</Text> : null}
-            <Button title="Update password" onPress={handleChangePassword} disabled={saving} loading={saving} />
+          <View style={styles.group}>
+            <Text style={styles.groupLabel}>{isPasswordLogin ? "Change password" : "Sign-in method"}</Text>
+            {isPasswordLogin ? (
+              <>
+                <Text style={styles.groupHelp}>Update your password for this account.</Text>
+                <Text style={styles.fieldLabel}>Current password</Text>
+                <AppTextInput
+                  containerStyle={styles.editInputContainer}
+                  style={styles.editInput}
+                  value={currentPassword}
+                  onChangeText={setCurrentPassword}
+                  secureTextEntry
+                  placeholder="Enter current password"
+                />
+                <Text style={styles.fieldLabel}>New password</Text>
+                <AppTextInput
+                  containerStyle={styles.editInputContainer}
+                  style={styles.editInput}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry
+                  placeholder="Enter new password"
+                />
+                <Text style={styles.fieldLabel}>Confirm new password</Text>
+                <AppTextInput
+                  containerStyle={styles.editInputContainer}
+                  style={styles.editInput}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                  placeholder="Confirm new password"
+                />
+                {error ? <Text style={styles.error}>{error}</Text> : null}
+                {message ? <Text style={styles.notice}>{message}</Text> : null}
+                <Button title="Update password" onPress={handleChangePassword} disabled={saving} loading={saving} />
+              </>
+            ) : (
+              <>
+                <View style={styles.providerRow}>
+                  <View style={styles.providerIconWrap}>
+                    <MaterialIcons name="shield" size={18} color={colors.text} />
+                  </View>
+                  <View style={styles.textWrap}>
+                    <Text style={styles.rowTitle}>Signed in with {authProviderLabel}</Text>
+                    <Text style={styles.rowSubtitle}>
+                      You don’t need an app password when you use {authProviderLabel} sign-in.
+                    </Text>
+                  </View>
+                </View>
+                {error ? <Text style={styles.error}>{error}</Text> : null}
+                {message ? <Text style={styles.notice}>{message}</Text> : null}
+                <Button
+                  title="Send password setup email"
+                  onPress={handleSendPasswordSetup}
+                  disabled={sendingSetupEmail}
+                  loading={sendingSetupEmail}
+                />
+              </>
+            )}
           </View>
 
-          <Card style={styles.card} noPadding>
+          <View style={styles.group}>
+            <Text style={styles.groupLabel}>Account access</Text>
             <Pressable style={styles.row} onPress={handleLogoutAll}>
               <MaterialIcons name="logout" size={22} color={colors.danger} />
               <View style={styles.textWrap}>
@@ -173,7 +226,7 @@ export function LoginSecurityScreen({ navigation }: Props) {
               </View>
               <MaterialIcons name="chevron-right" size={20} color={colors.textSoft} />
             </Pressable>
-          </Card>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -188,20 +241,34 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing.xl,
   },
-  sheet: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    borderWidth: 1,
-    marginBottom: spacing.md,
-    padding: spacing.xl,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
+  group: {
+    marginBottom: 18,
     marginHorizontal: spacing.screenX,
+  },
+  groupLabel: {
+    ...textStyles.sectionTitle,
+    color: colors.text,
+    marginBottom: 10,
+  },
+  groupHelp: {
+    ...textStyles.meta,
+    color: colors.textMuted,
+    marginBottom: 12,
+  },
+  fieldLabel: {
+    ...textStyles.sectionTitle,
+    color: colors.text,
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  editInputContainer: {
+    marginBottom: 14,
+  },
+  editInput: {
+    ...textStyles.body,
+    color: colors.text,
+    paddingHorizontal: 0,
+    paddingVertical: 12,
   },
   backButton: {
     alignItems: "center",
@@ -218,14 +285,16 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.screenX,
-    marginBottom: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
   },
   title: {
     ...textStyles.screenTitle,
+    marginBottom: spacing.xs,
+    marginTop: spacing.xs,
   },
   subtitle: {
     ...textStyles.subtitle,
-    marginTop: 4,
   },
   suspendedBanner: {
     backgroundColor: "#FEF2F2",
@@ -245,29 +314,35 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 4,
   },
-  card: {
-    marginBottom: spacing.md,
-    marginHorizontal: spacing.screenX,
-  },
   error: {
     ...textStyles.meta,
     color: colors.danger,
     marginBottom: spacing.sm,
-    marginHorizontal: spacing.screenX,
   },
   notice: {
     ...textStyles.meta,
     color: colors.accent,
     marginBottom: spacing.sm,
-    marginHorizontal: spacing.screenX,
+  },
+  providerRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: spacing.md,
+    paddingVertical: 6,
+  },
+  providerIconWrap: {
+    alignItems: "center",
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: 14,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
   },
   row: {
     alignItems: "center",
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
     flexDirection: "row",
     gap: 12,
-    paddingHorizontal: 14,
     paddingVertical: 16,
   },
   textWrap: {

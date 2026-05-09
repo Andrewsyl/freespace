@@ -12,6 +12,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  StatusBar,
   Text,
   View,
 } from "react-native";
@@ -20,7 +21,6 @@ import { useStripe } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
 import DatePicker from "react-native-date-picker";
 import { Ionicons } from "@expo/vector-icons";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import {
   confirmBookingPayment,
@@ -28,7 +28,7 @@ import {
   getListing,
 } from "../api";
 import { useAuth } from "../auth";
-import { logError, logInfo } from "../logger";
+import { logError, logInfo, logWarn } from "../logger";
 import { getNotificationImageAttachment } from "../notifications";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
@@ -78,7 +78,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleColor, setVehicleColor] = useState("");
   const [vehiclePlate, setVehiclePlate] = useState("");
-  const [staticMapFailed, setStaticMapFailed] = useState(false);
   const [startAt, setStartAt] = useState(() => new Date(from));
   const [endAt, setEndAt] = useState(() => new Date(to));
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -153,50 +152,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
   const start = useMemo(() => startAt, [startAt]);
   const end = useMemo(() => endAt, [endAt]);
-  const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-  const mapCenter =
-    listing?.latitude && listing?.longitude
-      ? `${listing.latitude},${listing.longitude}`
-      : null;
-  const mapCoords = useMemo(() => {
-    if (typeof listing?.latitude !== "number" || typeof listing?.longitude !== "number") {
-      return null;
-    }
-    return { latitude: listing.latitude, longitude: listing.longitude };
-  }, [listing?.latitude, listing?.longitude]);
-  const mapCoordsKey = mapCoords
-    ? `${mapCoords.latitude.toFixed(6)},${mapCoords.longitude.toFixed(6)}`
-    : null;
-  const lastMapKeyRef = useRef<string | null>(null);
-  const [staticMapVersion, setStaticMapVersion] = useState(0);
-  const staticMapUrl = useMemo(() => {
-    if (!mapsKey || !mapCenter) return null;
-    const cacheBuster = `${staticMapVersion}`;
-    return `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(
-      mapCenter
-    )}&zoom=16&size=640x280&scale=2&format=png&maptype=roadmap&markers=color:0x10B981|${encodeURIComponent(
-      mapCenter
-    )}&key=${mapsKey}&v=${encodeURIComponent(cacheBuster)}`;
-  }, [mapsKey, mapCenter, staticMapVersion]);
-
-  useEffect(() => {
-    setStaticMapFailed(false);
-    if (mapCoords) {
-      console.log("[BookingSummary] Map coords", mapCoords);
-    } else {
-      console.warn("[BookingSummary] Missing map coords");
-    }
-    if (staticMapUrl) {
-      console.log("[BookingSummary] Static map URL", staticMapUrl);
-    }
-  }, [staticMapUrl, mapCoords]);
-
-  useEffect(() => {
-    if (!mapCoordsKey) return;
-    if (lastMapKeyRef.current === mapCoordsKey) return;
-    lastMapKeyRef.current = mapCoordsKey;
-    setStaticMapVersion((prev) => prev + 1);
-  }, [mapCoordsKey]);
   const priceSummary = useMemo(() => {
     if (!listing) return null;
     return calculateListingTotal(listing, start, end);
@@ -247,10 +202,20 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     });
   }, []);
 
+  const isAmbiguousPaymentSheetResultError = (message?: string | null) =>
+    typeof message === "string" &&
+    message.toLowerCase().includes("failed to retrieve a paymentsheetresult");
+
   const scheduleBookingReminders = useCallback(async () => {
     if (!listing) return;
-    const permissions = await Notifications.getPermissionsAsync();
-    if (!permissions.granted) return;
+    let permissions = await Notifications.getPermissionsAsync();
+    if (!permissions.granted && permissions.canAskAgain) {
+      permissions = await Notifications.requestPermissionsAsync();
+    }
+    if (!permissions.granted) {
+      logWarn("Booking reminders skipped: notification permission not granted");
+      return;
+    }
 
     const nowMs = Date.now();
     const startReminder = new Date(start.getTime() - 60 * 60 * 1000);
@@ -262,6 +227,10 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         content: {
           title: "Booking starts soon",
           body: `${listing.title} starts in 1 hour.`,
+          data: {
+            type: "booking_reminder",
+            historyTab: "upcoming",
+          },
           attachments,
         },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: startReminder },
@@ -274,11 +243,41 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         content: {
           title: "Booking ending soon",
           body: `${listing.title} ends in 30 minutes.`,
+          data: {
+            type: "booking_reminder",
+            historyTab: "active",
+          },
           attachments,
         },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: endReminder },
       });
     }
+  }, [end, listing, start]);
+
+  const scheduleBookingConfirmationNotification = useCallback(async () => {
+    if (!listing) return;
+    let permissions = await Notifications.getPermissionsAsync();
+    if (!permissions.granted && permissions.canAskAgain) {
+      permissions = await Notifications.requestPermissionsAsync();
+    }
+    if (!permissions.granted) {
+      logWarn("Booking confirmation notification skipped: permission not granted");
+      return;
+    }
+    const attachments = await getNotificationImageAttachment();
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Booking confirmed",
+        body: `${listing.title} · ${formatTimeLabel(start)} - ${formatTimeLabel(end)}`,
+        data: {
+          listingId: listing.id,
+          type: "booking_confirmed",
+          historyTab: start.getTime() <= Date.now() && Date.now() < end.getTime() ? "active" : "upcoming",
+        },
+        attachments,
+      },
+      trigger: null,
+    });
   }, [end, listing, start]);
 
   const handlePayment = async () => {
@@ -309,9 +308,13 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         customerEphemeralKeySecret: payment.ephemeralKeySecret,
         paymentIntentClientSecret: payment.paymentIntentClientSecret,
         allowsDelayedPaymentMethods: false,
-        returnURL: "carparking://stripe-redirect",
       });
       if (initResult.error) {
+        logWarn("Payment sheet init failed", {
+          paymentIntentId,
+          code: initResult.error.code,
+          message: initResult.error.message,
+        });
         if (paymentIntentId) {
           try {
             await confirmBookingPayment({ paymentIntentId, status: "canceled", token });
@@ -325,6 +328,72 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       }
       const presentResult = await presentPaymentSheet();
       if (presentResult.error) {
+        logWarn("Payment sheet present failed", {
+          paymentIntentId,
+          code: presentResult.error.code,
+          message: presentResult.error.message,
+        });
+        const isAmbiguousResult = isAmbiguousPaymentSheetResultError(presentResult.error.message);
+        if (isAmbiguousResult && paymentIntentId) {
+          logWarn("Payment sheet result was ambiguous; attempting booking confirmation recovery", {
+            paymentIntentId,
+            code: presentResult.error.code,
+            message: presentResult.error.message,
+          });
+          try {
+            setConfirmingBooking(true);
+            await confirmBookingPayment({ paymentIntentId, token });
+            didConfirm = true;
+            setBookingConfirmed(true);
+            setConfirmingBooking(false);
+            resetGlobalLoading();
+            const nowMs = Date.now();
+            const startMs = Date.parse(from);
+            const endMs = Date.parse(to);
+            const initialTab =
+              Number.isFinite(startMs) &&
+              Number.isFinite(endMs) &&
+              startMs <= nowMs &&
+              nowMs < endMs
+                ? "active"
+                : "upcoming";
+            void scheduleBookingConfirmationNotification().catch((notificationError) => {
+              logWarn("Immediate booking confirmation notification failed", {
+                message: notificationError instanceof Error ? notificationError.message : String(notificationError),
+              });
+            });
+            void scheduleBookingReminders().catch((notificationError) => {
+              logWarn("Booking reminder scheduling failed", {
+                message: notificationError instanceof Error ? notificationError.message : String(notificationError),
+              });
+            });
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: "Tabs",
+                    params: {
+                      screen: "History",
+                      params: {
+                        showSuccess: true,
+                        refreshToken: Date.now(),
+                        initialTab,
+                      },
+                    },
+                  },
+                ],
+              })
+            );
+            return;
+          } catch (recoveryError) {
+            logWarn("Payment sheet recovery confirmation failed", {
+              paymentIntentId,
+              message: recoveryError instanceof Error ? recoveryError.message : String(recoveryError),
+            });
+            setConfirmingBooking(false);
+          }
+        }
         if (paymentIntentId) {
           try {
             await confirmBookingPayment({ paymentIntentId, status: "canceled", token });
@@ -339,7 +408,9 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         }
         setPaymentFailed(true);
         setPaymentFailureMessage(
-          presentResult.error.message ?? "Payment failed. Please try again."
+          isAmbiguousResult
+            ? "We couldn't confirm the payment result. Please check your booking history before trying again."
+            : presentResult.error.message ?? "Payment failed. Please try again."
         );
         return;
       }
@@ -381,6 +452,16 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         nowMs < endMs
           ? "active"
           : "upcoming";
+      void scheduleBookingConfirmationNotification().catch((notificationError) => {
+        logWarn("Immediate booking confirmation notification failed", {
+          message: notificationError instanceof Error ? notificationError.message : String(notificationError),
+        });
+      });
+      void scheduleBookingReminders().catch((notificationError) => {
+        logWarn("Booking reminder scheduling failed", {
+          message: notificationError instanceof Error ? notificationError.message : String(notificationError),
+        });
+      });
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
@@ -399,9 +480,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           ],
         })
       );
-      void scheduleBookingReminders().catch(() => {
-        // Reminder failures shouldn't block the success flow.
-      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Booking failed";
       logError("Booking error", { message });
@@ -423,18 +501,14 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <>
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
       >
-      <View style={styles.progressHeader}>
-        <BackButton
-          onPress={() => navigation.goBack()}
-          style={styles.progressBackButton}
-        />
-      </View>
       {loadingListing ? (
         <View style={styles.centered}>
           <ActivityIndicator size="small" color="#2ECC8F" />
@@ -455,183 +529,184 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           </View>
         </View>
       ) : listing ? (
-        <ScrollView
-          ref={scrollRef}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.pageTitleBlock}>
-            <Text style={styles.pageTitle}>Booking Confirmation</Text>
-          </View>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <View style={styles.summaryCard}>
-            <View style={styles.summaryHeader}>
-              <Text style={styles.summaryEyebrow}>Booking summary</Text>
-              <Text style={styles.listingTitle}>{listing.title || "Adam House Car Park"}</Text>
-              <View style={styles.addressRow}>
-                <Ionicons name="location-sharp" size={14} color={colors.textMuted} />
-                <Text style={styles.addressText}>
-                  {listing.address || "24 Adam Street, Dublin"}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.summaryMetricsWrap}>
-              <View style={styles.summaryMetrics}>
-                <View style={styles.summaryMetricCell}>
-                  <Text style={styles.summaryMetricLabel}>Duration</Text>
-                  <Text style={styles.summaryMetricValue}>
-                    {priceSummary?.durationLabel ?? "--"}
-                  </Text>
-                </View>
-                <View style={styles.summaryMetricDivider} />
-                <View style={styles.summaryMetricCell}>
-                  <Text style={styles.summaryMetricLabel}>Fee</Text>
-                  <Text style={styles.summaryMetricValue}>€{Math.round(pricing.finalPrice)}</Text>
-                </View>
-                <View style={styles.summaryMetricDivider} />
-                <View style={styles.summaryMetricCell}>
-                  <Text style={styles.summaryMetricLabel}>Vehicle</Text>
-                  <Text style={styles.summaryMetricValue} numberOfLines={1}>
-                    {vehicleMake || "Add vehicle"}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.bookingTimeCard}>
-              <View style={styles.bookingTimeRow}>
-                <Pressable style={styles.bookingTimeColumn} onPress={() => openPicker("start")}>
-                  <Text style={styles.bookingTimeLabel}>From</Text>
-                  <View style={styles.bookingTimeField}>
-                    <Text style={styles.bookingTimeValue}>{formatDateTimeLabel(start)}</Text>
-                    <Ionicons name="chevron-down" size={16} color="#1FBA4C" />
-                  </View>
-                </Pressable>
-                <View style={styles.bookingTimeArrow}>
-                  <Ionicons name="arrow-forward" size={18} color="#1FBA4C" />
-                </View>
-                <Pressable style={styles.bookingTimeColumn} onPress={() => openPicker("end")}>
-                  <Text style={styles.bookingTimeLabel}>Until</Text>
-                  <View style={styles.bookingTimeField}>
-                    <Text style={styles.bookingTimeValue}>{formatDateTimeLabel(end)}</Text>
-                    <Ionicons name="chevron-down" size={16} color="#1FBA4C" />
-                  </View>
-                </Pressable>
-              </View>
-            </View>
+        <>
+          <View style={styles.bookingTopBar}>
+            <BackButton onPress={() => navigation.goBack()} style={styles.bookingTopBarBack} />
+            <Text style={styles.bookingTopBarTitle}>Review booking</Text>
+            <View style={styles.bookingTopBarSpacer} />
           </View>
 
-          <View
-            style={styles.regCard}
-            onLayout={(event) => {
-              plateSectionYRef.current = event.nativeEvent.layout.y;
-            }}
+          <ScrollView
+            ref={scrollRef}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
           >
-            {vehicleMake ? (
-              <View style={styles.vehicleLogoColumn}>
-                <VehicleBrandLogo make={vehicleMake} size={32} />
-              </View>
-            ) : null}
-            <View style={styles.vehicleContent}>
-              <SectionHeader
-                title="Vehicle"
-                subtitle={
-                  vehicleMake && vehicleColor
-                    ? `${vehicleMake} · ${vehicleColor}`
-                    : vehicleMake || "Add your vehicle details"
-                }
-                trailing={
-                  <Button
-                    title={vehicleMake ? "Edit" : "Add"}
-                    variant="ghost"
-                    size="small"
-                    style={styles.vehicleEditButton}
-                    onPress={() => navigation.navigate("VehicleType")}
-                  />
-                }
-                style={styles.vehicleSectionHeader}
-              />
-              <View style={styles.regRow}>
-                <View style={styles.plateCountry} />
-                <View style={styles.regDetails}>
-                  <AppTextInput
-                    variant="embedded"
-                    value={vehiclePlate}
-                    onChangeText={(value) => setVehiclePlate(formatIrishPlateInput(value))}
-                    placeholder="Enter reg plate"
-                    autoCapitalize="characters"
-                    autoCorrect={false}
-                    textAlign="center"
-                    containerStyle={styles.regInputContainer}
-                    style={styles.regInput}
-                    onFocus={() => {
-                      setPlateFocused(true);
-                      if (plateScrollTimeoutRef.current) clearTimeout(plateScrollTimeoutRef.current);
-                      plateScrollTimeoutRef.current = setTimeout(() => {
-                        scrollPlateIntoView();
-                      }, Platform.OS === "android" ? 180 : 60);
-                    }}
-                    onBlur={() => {
-                      setPlateFocused(false);
-                    }}
-                  />
+            <View style={styles.bookingPage}>
+                {error ? <Text style={styles.error}>{error}</Text> : null}
+                <View style={styles.summaryCard}>
+                  <View style={styles.summaryHeader}>
+                    <View style={styles.summaryHeaderContent}>
+                      <Text style={styles.listingTitle}>{listing.title || "Adam House Car Park"}</Text>
+                      <Text style={styles.addressText}>
+                        {listing.address || "24 Adam Street, Dublin"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.summaryMetricsWrap}>
+                    <View style={styles.summaryMetrics}>
+                      <View style={styles.summaryMetricCell}>
+                        <Text style={styles.summaryMetricLabel}>Duration</Text>
+                        <Text style={styles.summaryMetricValue}>
+                          {priceSummary?.durationLabel ?? "--"}
+                        </Text>
+                      </View>
+                      <View style={styles.summaryMetricDivider} />
+                      <View style={styles.summaryMetricCell}>
+                        <Text style={styles.summaryMetricLabel}>Total</Text>
+                        <Text style={styles.summaryMetricValue}>€{Math.round(pricing.finalPrice)}</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.bookingTimeCard}>
+                    <View style={styles.bookingSectionHeaderRow}>
+                      <Text style={styles.bookingSectionTitle}>Your times</Text>
+                      <Pressable style={styles.bookingTimeEditButton} onPress={() => openPicker("start")}>
+                        <Ionicons name="create-outline" size={16} color="#0F172A" />
+                        <Text style={styles.bookingTimeEditText}>Edit</Text>
+                      </Pressable>
+                    </View>
+                    <View style={styles.bookingRouteCard}>
+                      <View style={styles.bookingRouteTrack}>
+                        <View style={styles.bookingRouteDotStart} />
+                        <View style={styles.bookingRouteLine} />
+                        <View style={styles.bookingRouteDotEnd} />
+                      </View>
+                      <View style={styles.bookingRouteContent}>
+                        <View style={styles.bookingRouteRow}>
+                          <Text style={styles.bookingRouteValue}>{formatDateTimeLabel(start)}</Text>
+                        </View>
+                        <View style={styles.bookingRouteSpacer} />
+                        <View style={styles.bookingRouteRow}>
+                          <Text style={styles.bookingRouteValue}>{formatDateTimeLabel(end)}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </View>
-          </View>
 
-          <View style={styles.priceCard}>
-            <SectionHeader
-              title="Price breakdown"
-              subtitle="No hidden fees will be added after checkout."
-              style={styles.priceHeader}
-            />
-            <View style={styles.priceBreakdownRow}>
-              <Text style={styles.priceBreakdownLabel}>Parking fee</Text>
-              <Text style={styles.priceBreakdownValue}>€{Math.round(pricing.parkingFee)}</Text>
-            </View>
-            <View style={styles.priceBreakdownRow}>
-              <Text style={styles.priceBreakdownLabel}>Platform fee</Text>
-              <Text style={styles.priceBreakdownMuted}>Included</Text>
-            </View>
-            <View style={styles.priceBreakdownRowLast}>
-              <Text style={styles.priceBreakdownTotalLabel}>Total due today</Text>
-              <Text style={styles.priceBreakdownTotalValue}>€{Math.round(pricing.finalPrice)}</Text>
-            </View>
-          </View>
+                <View style={styles.sheetSectionStack}>
+                  <View
+                    style={styles.regCard}
+                    onLayout={(event) => {
+                      plateSectionYRef.current = event.nativeEvent.layout.y;
+                    }}
+                  >
+                    {vehicleMake ? (
+                      <View style={styles.vehicleLogoColumn}>
+                        <VehicleBrandLogo make={vehicleMake} size={32} />
+                      </View>
+                    ) : null}
+                    <View style={styles.vehicleContent}>
+                      <SectionHeader
+                        title="Vehicle"
+                        subtitle={vehicleMake && vehicleColor ? `${vehicleMake} · ${vehicleColor}` : undefined}
+                        trailing={
+                          <Button
+                            title={vehicleMake ? "Edit" : "Add"}
+                            variant="ghost"
+                            size="small"
+                            style={styles.vehicleEditButton}
+                            onPress={() => navigation.navigate("VehicleType")}
+                          />
+                        }
+                        style={styles.vehicleSectionHeader}
+                      />
+                      <View style={styles.regRow}>
+                        <View style={styles.plateCountry} />
+                        <View style={styles.regDetails}>
+                          <AppTextInput
+                            variant="embedded"
+                            value={vehiclePlate}
+                            onChangeText={(value) => setVehiclePlate(formatIrishPlateInput(value))}
+                            placeholder="Enter reg plate"
+                            autoCapitalize="characters"
+                            autoCorrect={false}
+                            textAlign="center"
+                            containerStyle={styles.regInputContainer}
+                            style={styles.regInput}
+                            onFocus={() => {
+                              setPlateFocused(true);
+                              if (plateScrollTimeoutRef.current) clearTimeout(plateScrollTimeoutRef.current);
+                              plateScrollTimeoutRef.current = setTimeout(() => {
+                                scrollPlateIntoView();
+                              }, Platform.OS === "android" ? 180 : 60);
+                            }}
+                            onBlur={() => {
+                              setPlateFocused(false);
+                            }}
+                          />
+                        </View>
+                      </View>
+                    </View>
+                  </View>
 
-          {paymentFailed ? (
-            <View style={styles.noticeCard}>
-              <Text style={styles.noticeTitle}>Payment didn’t go through</Text>
-              <Text style={styles.noticeText}>
-                {paymentFailureMessage ?? "Please try again or use another payment method."}
-              </Text>
+                  <View style={styles.priceCard}>
+                    <SectionHeader title="Price" style={styles.priceHeader} />
+                    <View style={styles.priceBreakdownRow}>
+                      <Text style={styles.priceBreakdownLabel}>Parking fee</Text>
+                      <Text style={styles.priceBreakdownValue}>€{Math.round(pricing.parkingFee)}</Text>
+                    </View>
+                    <View style={styles.priceBreakdownRow}>
+                      <Text style={styles.priceBreakdownLabel}>Platform fee</Text>
+                      <Text style={styles.priceBreakdownMuted}>Included</Text>
+                    </View>
+                    <View style={styles.priceBreakdownRowLast}>
+                      <Text style={styles.priceBreakdownTotalLabel}>Total due today</Text>
+                      <Text style={styles.priceBreakdownTotalValue}>€{Math.round(pricing.finalPrice)}</Text>
+                    </View>
+                  </View>
+
+                  {paymentFailed ? (
+                    <View style={styles.noticeCard}>
+                      <Text style={styles.noticeTitle}>Payment didn’t go through</Text>
+                      <Text style={styles.noticeText}>
+                        {paymentFailureMessage ?? "Please try again or use another payment method."}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
             </View>
-          ) : null}
-        </ScrollView>
+          </ScrollView>
+        </>
       ) : (
         <View style={styles.centered}>
           <Text style={styles.error}>Listing not found.</Text>
         </View>
       )}
       {listing && user && !plateFocused ? (
-        <View style={[styles.footerBar, { paddingBottom: Math.max(insets.bottom, 22) }]}>
-          <Button
-            style={styles.footerButton}
-            textStyle={styles.footerButtonText}
+        <View style={[styles.footerBar, { paddingBottom: 18 + insets.bottom }]}>
+          <View style={styles.footerPriceBlock}>
+            <Text style={styles.footerPriceLabel}>Total price</Text>
+            <Text style={styles.footerPriceValue}>€{Math.round(pricing.finalPrice)}</Text>
+            <Text style={styles.footerPriceMeta}>{priceSummary?.durationLabel ?? ""}</Text>
+          </View>
+          <Pressable
+            style={[styles.footerButton, (bookingBusy || bookingConfirmed) && styles.footerButtonDisabled]}
             onPress={handlePayment}
             disabled={bookingBusy || bookingConfirmed}
-            loading={bookingBusy}
-            title={
-              bookingBusy
-                ? confirmingBooking
-                  ? "Finalizing..."
-                  : "Processing..."
-                : `Pay and reserve • €${Math.round(pricing.finalPrice)}`
-            }
-          />
+          >
+            <View style={styles.footerButtonPill}>
+              {bookingBusy ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.footerButtonText}>
+                  {confirmingBooking ? "Finalizing..." : "PAY"}
+                </Text>
+              )}
+            </View>
+          </Pressable>
         </View>
       ) : null}
       {pickerVisible ? (
@@ -673,17 +748,53 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       ) : null}
       {bookingConfirmed ? <View style={styles.successOverlay} pointerEvents="none" /> : null}
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.appBg,
+    backgroundColor: "#F8FAFC",
   },
   keyboardAvoid: {
     flex: 1,
+  },
+  heroPlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#CBD5E1",
+  },
+  heroPlaceholderText: {
+    color: "#475569",
+    fontFamily: "Inter-Medium",
+  },
+  bookingTopBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 6,
+    backgroundColor: "#F8FAFC",
+  },
+  bookingTopBarBack: {
+    marginBottom: 0,
+  },
+  bookingTopBarTitle: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 17,
+    lineHeight: 22,
+    color: "#111827",
+    letterSpacing: -0.2,
+  },
+  bookingTopBarSpacer: {
+    width: 40,
+  },
+  bookingPage: {
+    paddingHorizontal: 16,
+    paddingBottom: 14,
   },
   topBar: {
     alignItems: "center",
@@ -713,9 +824,7 @@ const styles = StyleSheet.create({
     width: 120,
   },
   progressHeader: {
-    backgroundColor: "#FFFFFF",
-    paddingTop: 8,
-    paddingBottom: 10,
+    display: "none",
   },
   progressBackButton: {
     position: "absolute",
@@ -724,22 +833,9 @@ const styles = StyleSheet.create({
     zIndex: 2,
     marginBottom: 0,
   },
-  pageTitleBlock: {
-    paddingTop: 20,
-    paddingBottom: 16,
-  },
-  pageTitle: {
-    color: "#15171A",
-    fontSize: 24,
-    lineHeight: 32,
-    fontFamily: "Inter-Bold",
-    fontWeight: "700",
-    letterSpacing: -0.5,
-  },
   scrollContent: {
-    paddingHorizontal: 20,
     paddingBottom: 180,
-    paddingTop: spacing.sm,
+    paddingTop: 4,
   },
   divider: {
     height: 1,
@@ -766,34 +862,12 @@ const styles = StyleSheet.create({
   },
   listingTitle: {
     color: "#15171A",
-    fontSize: 25,
-    lineHeight: 30,
+    fontSize: 22,
+    lineHeight: 28,
     fontFamily: "Inter-Medium",
     fontWeight: "500",
-    letterSpacing: -0.35,
-    marginBottom: 8,
-  },
-  summaryEyebrow: {
-    color: "#667085",
-    fontSize: 11,
-    lineHeight: 13,
-    fontFamily: "Inter-SemiBold",
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 10,
-  },
-  addressRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 0,
-  },
-  addressDot: {
-    backgroundColor: colors.textSoft,
-    borderRadius: 999,
-    height: 6,
-    width: 6,
+    letterSpacing: -0.25,
+    marginBottom: 4,
   },
   addressText: {
     color: "#667085",
@@ -803,36 +877,67 @@ const styles = StyleSheet.create({
     fontWeight: "400",
   },
   summaryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 14,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  summaryThumb: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: "#E8EEF5",
+  },
+  summaryHeaderContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  summaryRatingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+    flexWrap: "wrap",
+  },
+  summaryRatingText: {
+    fontFamily: "Inter-Medium",
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#6B7280",
+    marginLeft: 4,
   },
   summaryCard: {
     backgroundColor: colors.cardBg,
-    borderRadius: 18,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 18,
-    ...cardShadow,
+    borderColor: "#E2E8F0",
+    marginBottom: 10,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 3,
     overflow: "hidden",
   },
   summaryMetricsWrap: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
   },
   summaryMetrics: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: "rgba(17,24,39,0.07)",
-    borderRadius: 10,
-    paddingVertical: 8,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    paddingVertical: 6,
   },
   summaryMetricCell: {
     alignItems: "center",
     flex: 1,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
   },
   summaryMetricLabel: {
     color: "#9CA3AF",
@@ -842,12 +947,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.7,
-    marginBottom: 3,
+    marginBottom: 2,
   },
   summaryMetricValue: {
     color: "#15171A",
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: 14,
+    lineHeight: 18,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     textAlign: "center",
@@ -859,51 +964,94 @@ const styles = StyleSheet.create({
   },
   bookingTimeCard: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
-  bookingTimeRow: {
+  bookingSectionHeaderRow: {
     flexDirection: "row",
-    alignItems: "center",
-  },
-  bookingTimeColumn: {
-    flex: 1,
-  },
-  bookingTimeLabel: {
-    color: "#667085",
-    fontSize: 10,
-    lineHeight: 14,
-    fontFamily: "Inter-Medium",
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.65,
-    marginBottom: 6,
-    paddingHorizontal: 12,
-  },
-  bookingTimeField: {
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#FFFFFF",
-    borderColor: "rgba(17,24,39,0.10)",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 8,
-    minHeight: 54,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    marginBottom: 10,
   },
-  bookingTimeValue: {
-    color: "#15171A",
-    fontSize: 13,
-    lineHeight: 18,
+  bookingSectionTitle: {
+    color: "#111827",
+    fontSize: 16,
+    lineHeight: 21,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
-    flex: 1,
+    letterSpacing: -0.2,
   },
-  bookingTimeArrow: {
-    width: 32,
+  bookingRouteCard: {
+    flexDirection: "row",
+    gap: 14,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    backgroundColor: "#FFFFFF",
+  },
+  bookingRouteTrack: {
     alignItems: "center",
+    width: 18,
+    paddingTop: 6,
+  },
+  bookingRouteDotStart: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#45C36F",
+    borderWidth: 4,
+    borderColor: "#DDF7E7",
+  },
+  bookingRouteLine: {
+    width: 2,
+    flex: 1,
+    minHeight: 36,
+    backgroundColor: "#45C36F",
+    marginVertical: 4,
+  },
+  bookingRouteDotEnd: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#45C36F",
+  },
+  bookingRouteContent: {
+    flex: 1,
+    gap: 0,
+  },
+  bookingRouteRow: {
+    minHeight: 34,
     justifyContent: "center",
+  },
+  bookingRouteSpacer: {
+    height: 18,
+  },
+  bookingRouteValue: {
+    fontFamily: "Inter-Medium",
+    fontSize: 15,
+    lineHeight: 21,
+    color: "#334155",
+  },
+  bookingTimeEditButton: {
+    alignSelf: "center",
+    minHeight: 36,
+    borderRadius: 999,
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginLeft: 8,
+  },
+  bookingTimeEditText: {
+    color: "#0F172A",
+    fontSize: 14,
+    lineHeight: 17,
+    fontFamily: "Inter-SemiBold",
+    fontWeight: "600",
   },
   rowBetween: {
     flexDirection: "row",
@@ -1022,14 +1170,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   regCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 18,
+    borderColor: "#E5E7EB",
+    marginBottom: 0,
     flexDirection: "row",
     overflow: "hidden",
-    ...cardShadow,
+    paddingVertical: 12,
   },
   vehicleLogoColumn: {
     width: 72,
@@ -1037,16 +1185,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#F8FAFC",
     borderRightWidth: 1,
-    borderRightColor: colors.border,
+    borderRightColor: "#EEF2F7",
   },
   vehicleContent: {
     flex: 1,
     paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: 2,
+    paddingBottom: 2,
   },
   vehicleSectionHeader: {
-    marginBottom: 8,
+    marginBottom: 10,
   },
   vehicleTypeText: {
     ...textStyles.meta,
@@ -1061,23 +1209,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   priceHeader: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   priceCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "#E5E7EB",
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginBottom: 18,
-    ...cardShadow,
+    paddingVertical: 12,
+    marginBottom: 0,
   },
   priceBreakdownRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
@@ -1085,7 +1232,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 12,
+    paddingTop: 10,
     paddingBottom: 2,
   },
   priceBreakdownLabel: {
@@ -1126,11 +1273,11 @@ const styles = StyleSheet.create({
   },
   regRow: {
     flexDirection: "row",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: "#3D6FB6",
     overflow: "hidden",
-    backgroundColor: colors.cardBg,
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
   },
   regDetails: {
@@ -1142,7 +1289,7 @@ const styles = StyleSheet.create({
   plateCountry: {
     width: 34,
     alignSelf: "stretch",
-    backgroundColor: "#003399",
+    backgroundColor: "#3D6FB6",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1186,11 +1333,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   noticeCard: {
-    backgroundColor: colors.cardBg,
-    borderColor: "#fee2e2",
+    backgroundColor: "#FFF7F7",
+    borderColor: "#FECACA",
     borderRadius: 18,
     borderWidth: 1,
-    marginTop: 2,
+    marginTop: 14,
     padding: 16,
   },
   noticeTitle: {
@@ -1240,22 +1387,64 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.cardBg,
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 14,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 22,
+    paddingTop: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+    borderTopColor: "#F0F0F0",
     shadowColor: "#111827",
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  footerPriceBlock: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  footerPriceLabel: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 14,
+    lineHeight: 18,
+    color: "#111827",
+    textDecorationLine: "underline",
+  },
+  footerPriceValue: {
+    fontFamily: "Inter-Bold",
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginTop: 4,
+    letterSpacing: -0.6,
+  },
+  footerPriceMeta: {
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    color: "#94A3B8",
+    fontWeight: "400",
+    marginTop: 4,
+  },
+  sheetSectionStack: {
+    gap: 10,
   },
   footerButton: {
-    minHeight: 54,
-    marginBottom: 16,
+    marginBottom: 0,
+    minWidth: 178,
+  },
+  footerButtonDisabled: {
+    opacity: 0.55,
+  },
+  footerButtonPill: {
+    minHeight: 58,
+    minWidth: 178,
     borderRadius: 999,
     backgroundColor: '#0E8E62',
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 28,
   },
   footerButtonText: {
     fontFamily: 'Inter-SemiBold',

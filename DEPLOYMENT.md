@@ -1,37 +1,64 @@
 # Deployment Guide
 
-This repo supports `local`, `dev`, `qa`, and `production` environments.
+This repo supports `local`, `dev`, `qa`, and `production`.
 
-## 1) Database (Neon / Postgres with PostGIS)
+Current production shape:
+- API: AWS ECS Fargate behind `https://api.freespace.ie`
+- Web: deployed separately from the main branch after build verification
+- Mobile: Expo / EAS builds for Android and iOS
 
-1. Create a Postgres database.
-2. Enable PostGIS:
+## 1. Database
+
+Use Postgres with PostGIS enabled:
+
 ```sql
 CREATE EXTENSION IF NOT EXISTS postgis;
 ```
-3. Save the connection string as `DATABASE_URL`.
 
-## 2) Run migrations (from your machine)
+Set `DATABASE_URL` for the target environment.
+
+## 2. Run Migrations
 
 From repo root:
+
 ```bash
 export DATABASE_URL='YOUR_DATABASE_URL'
-for f in db/migrations/*.sql; do psql "$DATABASE_URL" -f "$f" || break; done
+for f in db/migrations/*.sql; do
+  psql "$DATABASE_URL" -f "$f" || break
+done
 ```
 
-## 3) Render deploy (Blueprint)
+For production ECS usage, prefer the one-off task flow documented in:
 
-1. Push this repo to GitHub.
-2. In Render, create a **Blueprint** and point it to this repo.
-3. Render reads `render.yaml` and creates:
-   - `carpark-api`
-   - `carpark-web`
-4. Fill all env vars marked `sync: false` in Render.
+- [docs/deploy/ecs-fargate-api.md](docs/deploy/ecs-fargate-api.md)
 
-### Required API env vars
+## 3. API Deployment (AWS ECS Fargate)
+
+Production API deploys are handled by GitHub Actions:
+
+- workflow: `.github/workflows/deploy-api.yml`
+- cluster: `freespace-prod`
+- service: `freespace-api-v2`
+- hostname: `https://api.freespace.ie`
+
+The workflow:
+- builds the API Docker image
+- pushes to ECR
+- updates the ECS task definition
+- deploys the new revision
+- runs post-deploy smoke checks
+
+For infrastructure details, secrets, rollback, and one-off migration commands, use:
+
+- [docs/deploy/ecs-fargate-api.md](docs/deploy/ecs-fargate-api.md)
+
+## 4. Required API Environment Variables
+
+At minimum:
 - `DATABASE_URL`
 - `JWT_SECRET`
-- `WEB_BASE_URL` (your deployed web URL)
+- `WEB_BASE_URL`
+- `ENFORCE_HTTPS=true` in production
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `GOOGLE_MAPS_API_KEY`
@@ -40,30 +67,50 @@ for f in db/migrations/*.sql; do psql "$DATABASE_URL" -f "$f" || break; done
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 
-### Important flag
-- Keep `STRIPE_CONNECT_ENABLED=false` unless your Stripe account has Connect enabled.
+Optional but recommended:
+- `SENTRY_DSN`
+- `ERROR_REPORT_WEBHOOK_URL`
+- email / support provider secrets you actively use
 
-## 4) Verify API
+## 5. Verify API
 
-After deploy:
+After deployment:
+
 ```bash
-curl https://YOUR_API_URL/health
-```
-Expected:
-```json
-{"ok":true}
+curl https://api.freespace.ie/health
+npm run smoke:post-deploy
 ```
 
-## 5) Mobile environment setup
+Current smoke checks verify:
+- `/health`
+- API root
+- listing search
+- listing detail from search results
+- expected `401` on unauthenticated auth/booking routes
 
-Create one env file per target in `apps/mobile`:
+## 6. Web Deployment
 
-- `.env.local` (local API)
-- `.env.dev` (shared cloud dev API)
-- `.env.qa` (staging/QA API)
-- `.env.production` (live API)
+Web deployment is verified in CI and deployed separately from the main branch.
 
-Start from templates:
+CI currently:
+- installs dependencies
+- builds the Next.js app with production-like env vars
+
+Before public launch, also verify live web routes manually:
+- `/`
+- `/login`
+- `/legal`
+- `/contact`
+
+## 7. Mobile Environment Setup
+
+Per-environment files live in `apps/mobile`:
+- `.env.local`
+- `.env.dev`
+- `.env.qa`
+- `.env.production`
+
+Examples:
 
 ```bash
 cp apps/mobile/.env.local.example apps/mobile/.env.local
@@ -72,81 +119,52 @@ cp apps/mobile/.env.qa.example apps/mobile/.env.qa
 cp apps/mobile/.env.production.example apps/mobile/.env.production
 ```
 
-`apps/mobile/app.config.js` now reads `APP_ENV` and loads `.env.<APP_ENV>`.
-Mobile npm scripts also disable Expo auto dotenv loading, so `.env.local` no longer overrides `dev/qa/production`.
+`apps/mobile/app.config.js` reads `APP_ENV` and loads `.env.<APP_ENV>`.
 
-Examples:
+## 8. Mobile EAS Profiles
 
-```bash
-# Local Android emulator -> local API
-cd apps/mobile && npm run android:local
-
-# Local iOS simulator -> local API
-cd apps/mobile && npm run ios:local
-```
-
-For real Android devices on local backend, use your LAN IP in `.env.local` (not `10.0.2.2`).
-
-## 6) API environment setup
-
-Use separate env vars and separate infrastructure for each cloud target:
-
-- `dev`: separate Beanstalk env, DB, bucket
-- `qa`: separate Beanstalk env, DB, bucket
-- `production`: separate Beanstalk env, DB, bucket
-
-Templates:
-
-- `apps/api/.env.local.example`
-- `apps/api/.env.dev.example`
-- `apps/api/.env.qa.example`
-- `apps/api/.env.production.example`
-
-On Elastic Beanstalk, set these as **Environment properties** (do not rely on files).
-
-## 7) EAS build profiles
-
-`apps/mobile/eas.json` is mapped as:
-
+`apps/mobile/eas.json` maps:
 - `development` -> `APP_ENV=dev`
 - `qa` -> `APP_ENV=qa`
 - `preview` -> `APP_ENV=qa`
 - `production` -> `APP_ENV=production`
 
-Build commands:
+Typical commands:
 
 ```bash
 cd apps/mobile
 npx eas build --platform android --profile qa
 npx eas build --platform android --profile production
+npx eas build --platform ios --profile production
 ```
 
-## 8) Legacy quick setup (single env)
+Important:
+- production mobile must use a live Stripe publishable key before public launch
+- release screenshots and builds must not show dev badges or debug UI
 
-Copy `apps/mobile/.env.example` to `apps/mobile/.env` and set:
-- `EXPO_PUBLIC_API_BASE=https://YOUR_API_URL`
-- `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...`
-- `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=...`
+## 9. Local Mobile Testing
 
-## 9) EAS test build (internal distribution)
+Examples:
 
-From `apps/mobile`:
 ```bash
-npx eas login
-npx eas init
-npx eas build --platform android --profile preview
+cd apps/mobile && npm run android:local
+cd apps/mobile && npm run ios:local
 ```
 
-Install the APK from the EAS build link and test on device.
+For a real Android device against local API:
 
-## 10) Production mobile build
-
-When staging is good:
 ```bash
-npx eas build --platform android --profile production
+adb reverse tcp:4000 tcp:4000
 ```
 
-Optionally submit to store:
-```bash
-npx eas submit --platform android --profile production
-```
+If `adb reverse` is unreliable, use your LAN IP instead.
+
+## 10. Release Checklist
+
+Before public launch:
+- run migrations in the live DB
+- verify production Stripe keys are in live mode
+- run Android and iOS release candidates on real devices
+- validate booking, payment, refund, and payout onboarding flows
+- capture final store screenshots
+- rerun post-deploy smoke checks after the final release deploy

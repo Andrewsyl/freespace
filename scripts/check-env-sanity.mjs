@@ -14,10 +14,14 @@ const loadIfExists = (filePath) => {
 };
 
 loadIfExists(path.join(root, ".env"));
-loadIfExists(path.join(root, ".env.local"));
+if (mode === "local") {
+  loadIfExists(path.join(root, ".env.local"));
+}
 loadIfExists(path.join(root, "apps/api/.env"));
 loadIfExists(path.join(root, `apps/api/.env.${mode}`));
-loadIfExists(path.join(root, "apps/web/.env.local"));
+loadIfExists(
+  path.join(root, "apps/web", mode === "local" ? ".env.local" : `.env.${mode}`)
+);
 loadIfExists(path.join(root, "apps/mobile/.env"));
 loadIfExists(
   path.join(root, "apps/mobile", mode === "local" ? ".env.local.source" : `.env.${mode}`)
@@ -91,6 +95,18 @@ if (mode !== "production" && stripeSecretMode === "live") {
 if (mode === "production") {
   if (!env.WEB_BASE_URL.startsWith("https://")) {
     console.error("Production WEB_BASE_URL must use https.");
+    process.exit(1);
+  }
+  if (mobileStripeMode !== "live") {
+    console.error("Production mobile Stripe publishable key must be a live key.");
+    process.exit(1);
+  }
+  if (webStripeMode && webStripeMode !== "live") {
+    console.error("Production web Stripe publishable key must be a live key.");
+    process.exit(1);
+  }
+  if (stripeSecretMode && stripeSecretMode !== "live") {
+    console.error("Production API Stripe secret key must be a live key.");
     process.exit(1);
   }
   if (env.ENFORCE_HTTPS !== "true") {

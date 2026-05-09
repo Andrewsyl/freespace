@@ -9,11 +9,13 @@ type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 
 export function SettingsScreen({ navigation }: Props) {
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
         <BackButton onPress={() => navigation.goBack()} />
-        <Text style={styles.title}>Settings</Text>
-        <Text style={styles.subtitle}>Preferences and defaults</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Settings</Text>
+          <Text style={styles.subtitle}>Preferences and defaults</Text>
+        </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Preferences</Text>
@@ -35,6 +37,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.appBg,
     flex: 1,
   },
+  header: {
+    paddingBottom: spacing.md,
+  },
   title: {
     color: colors.text,
     fontSize: 30,
@@ -55,10 +60,10 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: radius.card,
+    borderRadius: 16,
     borderWidth: 1,
     padding: spacing.card,
-    ...cardShadow,
+    marginBottom: 14,
   },
   cardTitle: {
     color: colors.text,

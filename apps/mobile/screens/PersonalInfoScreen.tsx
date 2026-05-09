@@ -16,8 +16,8 @@ import * as Linking from "expo-linking";
 import { useAuth } from "../auth";
 import { getMe, requestPhoneVerification, updateMe, verifyPhone } from "../api";
 import type { RootStackParamList } from "../types";
-import { Button, Card, SectionHeader, TextInput as AppTextInput } from "../components/ui";
-import { colors, radius, spacing, textStyles } from "../styles/theme";
+import { Button, TextInput as AppTextInput } from "../components/ui";
+import { cardShadow, colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PersonalInfo">;
 
@@ -35,8 +35,6 @@ export function PersonalInfoScreen({ navigation }: Props) {
   const [sendingCode, setSendingCode] = useState(false);
   const [verifyingCode, setVerifyingCode] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [editingName, setEditingName] = useState(false);
-  const [editingEmail, setEditingEmail] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [showPhoneVerify, setShowPhoneVerify] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -60,8 +58,6 @@ export function PersonalInfoScreen({ navigation }: Props) {
     setName(user?.name ?? "");
     setEmail(user?.email ?? "");
     setPhone(user?.phone ?? "");
-    setEditingName(false);
-    setEditingEmail(false);
     setShowPhoneVerify(false);
     setVerificationCode("");
     setPreviewUrl(null);
@@ -108,12 +104,6 @@ export function PersonalInfoScreen({ navigation }: Props) {
         setShowPhoneVerify(false);
         setVerificationCode("");
       }
-      if (emailChanged) {
-        setEditingEmail(false);
-      }
-      if (currentName !== originalName) {
-        setEditingName(false);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save profile");
     } finally {
@@ -126,9 +116,9 @@ export function PersonalInfoScreen({ navigation }: Props) {
     setSendingCode(true);
     setMessage(null);
     setError(null);
+    setShowPhoneVerify(true);
     try {
       await requestPhoneVerification(token, currentPhone);
-      setShowPhoneVerify(true);
       setMessage("Verification code sent");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send verification code");
@@ -177,7 +167,7 @@ export function PersonalInfoScreen({ navigation }: Props) {
         >
           <Pressable
             style={styles.backButton}
-            onPress={() => navigation.navigate("Tabs", { screen: "Profile" })}
+            onPress={() => navigation.goBack()}
           >
             <Ionicons name="arrow-back" size={20} color={colors.text} />
             <Text style={styles.backText}>Back</Text>
@@ -189,78 +179,60 @@ export function PersonalInfoScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.sheet}>
-            <View style={styles.profileSummary}>
-              <View style={styles.profileIcon}>
-                <Ionicons name="person-outline" size={22} color={colors.accent} />
-              </View>
-              <View style={styles.profileCopy}>
-                <Text style={styles.profileLabel}>Personal information</Text>
-                <Text style={styles.profileName}>{savedName || user?.email || "Your profile"}</Text>
-              </View>
-            </View>
-
-            <SectionHeader title="Profile details" subtitle="Keep your driver profile up to date." />
-
             <View
-              style={styles.editableRow}
+              style={styles.section}
               onLayout={(event) => {
                 nameFieldY.current = event.nativeEvent.layout.y;
               }}
             >
-              <View style={styles.emailRowHeader}>
-                <Text style={styles.emailLabel}>Name</Text>
-                {!editingName ? (
-                  <Pressable onPress={() => setEditingName(true)} hitSlop={10}>
-                    <Text style={styles.emailEditButton}>Edit</Text>
-                  </Pressable>
-                ) : null}
-              </View>
-              {editingName ? (
-                <AppTextInput
-                  value={name}
-                  onChangeText={setName}
-                  placeholder="Enter your name"
-                  onFocus={() => scrollToField(nameFieldY.current)}
-                />
-              ) : (
-                <Text style={styles.emailValue}>{savedName || "Not set"}</Text>
-              )}
+              <Text style={styles.sectionLabel}>Name</Text>
+              <AppTextInput
+                containerStyle={styles.editInputContainer}
+                style={styles.editInput}
+                value={name}
+                onChangeText={setName}
+                placeholder="Enter your name"
+                onFocus={() => scrollToField(nameFieldY.current)}
+              />
             </View>
 
-            <View style={styles.editableRow}>
-              <View style={styles.emailRowHeader}>
-                <Text style={styles.emailLabel}>Email</Text>
-                {!editingEmail ? (
-                  <Pressable onPress={() => setEditingEmail(true)} hitSlop={10}>
-                    <Text style={styles.emailEditButton}>Edit</Text>
-                  </Pressable>
-                ) : null}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Email address</Text>
+              <AppTextInput
+                containerStyle={styles.editInputContainer}
+                style={styles.editInput}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Enter your email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                onFocus={() => scrollToField(nameFieldY.current)}
+              />
+              <View style={styles.statusMetaRow}>
+                <View style={styles.statusRow}>
+                  {user?.emailVerified ? (
+                    <>
+                      <Ionicons name="checkmark-circle" size={15} color="#0E8E62" />
+                      <Text style={styles.statusOk}>Verified</Text>
+                    </>
+                  ) : (
+                    <Text style={styles.statusMuted}>Not verified</Text>
+                  )}
+                </View>
               </View>
-              {editingEmail ? (
-                <AppTextInput
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="Enter your email"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  onFocus={() => scrollToField(nameFieldY.current)}
-                />
-              ) : (
-                <Text style={styles.emailValue}>{user?.email ?? "Not set"}</Text>
-              )}
-              <Text style={[styles.verifyBadge, styles.emailVerifyBadge, user?.emailVerified ? styles.verifyBadgeOk : styles.verifyBadgePending]}>
-                {user?.emailVerified ? "Email verified" : "Email not verified"}
-              </Text>
             </View>
 
             <View
+              style={styles.section}
               onLayout={(event) => {
                 phoneFieldY.current = event.nativeEvent.layout.y;
               }}
             >
+              <Text style={styles.sectionLabel}>Phone number</Text>
               <AppTextInput
-                label="Phone number"
+                containerStyle={styles.editInputContainer}
+                style={styles.editInput}
                 value={phone}
                 onChangeText={setPhone}
                 placeholder="Enter phone number"
@@ -269,14 +241,18 @@ export function PersonalInfoScreen({ navigation }: Props) {
               />
 
               <View style={styles.phoneStatusRow}>
-                <Text
-                  style={[
-                    styles.verifyBadge,
-                    phoneVerified ? styles.verifyBadgeOk : styles.verifyBadgePending,
-                  ]}
-                >
-                  {phoneVerified ? "Phone verified" : currentPhone ? "Phone not verified" : "No phone added"}
-                </Text>
+                <View style={styles.statusRow}>
+                  {phoneVerified ? (
+                    <>
+                      <Ionicons name="checkmark-circle" size={15} color="#0E8E62" />
+                      <Text style={styles.statusOk}>Verified</Text>
+                    </>
+                  ) : (
+                    <Text style={styles.statusMuted}>
+                      {currentPhone ? "Not verified" : "No phone added"}
+                    </Text>
+                  )}
+                </View>
                 {currentPhone ? (
                   <Pressable
                     style={[styles.inlineButton, (sendingCode || saving || loading) && styles.inlineButtonDisabled]}
@@ -290,17 +266,17 @@ export function PersonalInfoScreen({ navigation }: Props) {
                 ) : null}
               </View>
 
-              {(showPhoneVerify || (!!currentPhone && !phoneVerified && !phoneChanged)) ? (
+              {showPhoneVerify ? (
                 <View style={styles.verifyPanel}>
-                  <Text style={styles.verifyHelp}>
-                    Enter the 6-digit code sent to {currentPhone}.
-                  </Text>
+                  <Text style={styles.verifyHelp}>Enter the 6-digit code sent to {currentPhone}.</Text>
                   <View
                     onLayout={(event) => {
                       verifyFieldY.current = event.nativeEvent.layout.y;
                     }}
                   >
                     <AppTextInput
+                      containerStyle={styles.editInputContainer}
+                      style={styles.verifyInput}
                       label="Verification code"
                       value={verificationCode}
                       onChangeText={setVerificationCode}
@@ -349,150 +325,126 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing.xl,
   },
-  sheet: {
-    flex: 1,
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    borderWidth: 1,
-    padding: spacing.xl,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
-    marginBottom: spacing.md,
-  },
-  profileSummary: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  profileIcon: {
-    alignItems: "center",
-    backgroundColor: colors.cardBgMuted,
-    borderColor: colors.border,
-    borderRadius: 24,
-    borderWidth: 1,
-    height: 48,
-    justifyContent: "center",
-    width: 48,
-  },
-  profileCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  profileLabel: {
-    ...textStyles.meta,
-    color: colors.textMuted,
-  },
-  profileName: {
-    ...textStyles.titleSmall,
-    color: colors.text,
-  },
   backButton: {
-    paddingHorizontal: spacing.screenX,
     alignItems: "center",
     alignSelf: "flex-start",
     flexDirection: "row",
-    gap: 6,
-    marginBottom: spacing.sm,
-    paddingTop: spacing.screenY,
+    gap: 4,
+    marginLeft: spacing.screenX,
+    marginTop: spacing.screenY,
   },
   backText: {
-    ...textStyles.bodyStrong,
+    ...textStyles.body,
     color: colors.text,
   },
   header: {
     paddingHorizontal: spacing.screenX,
-    marginBottom: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
   },
   title: {
     ...textStyles.screenTitle,
+    marginBottom: spacing.xs,
+    marginTop: spacing.xs,
   },
   subtitle: {
     ...textStyles.subtitle,
-    marginTop: 4,
+  },
+  sheet: {
+    backgroundColor: "transparent",
+    flex: 1,
+    paddingHorizontal: spacing.screenX,
+  },
+  section: {
+    marginBottom: 18,
+  },
+  sectionLabel: {
+    ...textStyles.sectionTitle,
+    color: colors.text,
+    marginBottom: 10,
   },
   phoneStatusRow: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 10,
-    marginTop: spacing.xs,
+    justifyContent: "space-between",
     marginBottom: spacing.sm,
+    marginTop: 10,
   },
-  verifyBadge: {
-    alignSelf: "flex-start",
-    borderRadius: radius.pill,
-    fontSize: 12,
-    fontWeight: "600",
-    overflow: "hidden",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  statusRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
   },
-  verifyBadgeOk: {
-    backgroundColor: "#D1FAE5",
-    color: "#065f46",
+  statusMetaRow: {
+    marginTop: 10,
   },
-  verifyBadgePending: {
-    backgroundColor: "#FEF3C7",
-    color: "#92400E",
+  statusOk: {
+    color: "#0E8E62",
+    fontFamily: "Inter-Medium",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  statusMuted: {
+    color: "#6B7280",
+    fontFamily: "Inter-Regular",
+    fontSize: 13,
+    lineHeight: 18,
   },
   inlineButton: {
-    backgroundColor: "#ECFDF5",
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderColor: "#E5E7EB",
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
   },
   inlineButtonDisabled: {
     opacity: 0.7,
   },
   inlineButtonText: {
-    ...textStyles.meta,
-    color: colors.accent,
+    color: "#111111",
+    fontFamily: "Inter-Medium",
+    fontSize: 13,
+    lineHeight: 18,
   },
   verifyPanel: {
     gap: spacing.xs,
-    marginTop: spacing.xs,
+    marginTop: 10,
   },
   verifyHelp: {
-    ...textStyles.meta,
-    color: colors.textMuted,
+    color: "#6B7280",
+    fontFamily: "Inter-Regular",
+    fontSize: 13,
+    lineHeight: 19,
   },
-  editableRow: {
-    marginBottom: spacing.md,
+  editInputContainer: {
+    marginBottom: 0,
   },
-  emailRowHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: spacing.xs,
-  },
-  emailLabel: {
-    ...textStyles.label,
-    color: colors.textSoft,
-    marginBottom: spacing.xxs,
-  },
-  emailValue: {
-    ...textStyles.bodyStrong,
+  editInput: {
+    ...textStyles.body,
     color: colors.text,
+    paddingHorizontal: 0,
+    paddingVertical: 12,
   },
-  emailVerifyBadge: {
-    marginTop: spacing.xs,
-  },
-  emailEditButton: {
-    ...textStyles.meta,
-    color: colors.textMuted,
+  verifyInput: {
+    ...textStyles.body,
+    color: colors.text,
+    backgroundColor: colors.cardBg,
+    borderColor: "#D7DEE7",
+    borderRadius: 16,
+    borderWidth: 1,
+    minHeight: 56,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   saveButton: {
-    marginTop: spacing.md,
     marginHorizontal: spacing.screenX,
+    marginTop: spacing.lg,
   },
   notice: {
-    ...textStyles.meta,
     color: colors.accent,
+    fontFamily: "Inter-Medium",
+    fontSize: 13,
+    lineHeight: 19,
     marginTop: spacing.sm,
     marginHorizontal: spacing.screenX,
   },
@@ -502,12 +454,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   previewLinkText: {
-    ...textStyles.meta,
     color: colors.accent,
+    fontFamily: "Inter-Medium",
+    fontSize: 13,
+    lineHeight: 19,
   },
   error: {
-    ...textStyles.meta,
     color: colors.danger,
+    fontFamily: "Inter-Medium",
+    fontSize: 13,
+    lineHeight: 19,
     marginTop: spacing.sm,
     marginHorizontal: spacing.screenX,
   },

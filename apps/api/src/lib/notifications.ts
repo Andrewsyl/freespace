@@ -14,8 +14,16 @@ type PushPayload = {
   data?: Record<string, unknown>;
 };
 
+type PushSendResult = {
+  attempted: number;
+  ok: number;
+  error: number;
+};
+
 export async function sendPushNotification({ tokens, title, body, data }: PushPayload) {
-  if (!tokens.length) return;
+  if (!tokens.length) {
+    return { attempted: 0, ok: 0, error: 0 } satisfies PushSendResult;
+  }
 
   const messages = tokens
     .filter((token) => Expo.isExpoPushToken(token))
@@ -27,24 +35,40 @@ export async function sendPushNotification({ tokens, title, body, data }: PushPa
       data,
     }));
 
-  if (!messages.length) return;
+  if (!messages.length) {
+    return { attempted: 0, ok: 0, error: 0 } satisfies PushSendResult;
+  }
 
   try {
     if (process.env.PUSH_LOGGING === "true") {
       console.log(`Push send: ${messages.length} message(s)`);
     }
     const tickets = await expo.sendPushNotificationsAsync(messages);
+    let ok = 0;
+    let error = 0;
     if (process.env.PUSH_LOGGING === "true") {
       for (const ticket of tickets) {
         if (ticket.status === "error") {
+          error += 1;
           console.warn("Push ticket error", ticket.message, ticket.details);
         } else {
+          ok += 1;
           console.log("Push ticket ok", ticket.id ?? "no-id");
         }
       }
+    } else {
+      for (const ticket of tickets) {
+        if (ticket.status === "error") {
+          error += 1;
+        } else {
+          ok += 1;
+        }
+      }
     }
+    return { attempted: messages.length, ok, error } satisfies PushSendResult;
   } catch (error) {
     console.warn("Push send failed", error);
+    return { attempted: messages.length, ok: 0, error: messages.length } satisfies PushSendResult;
   }
 }
 
@@ -67,6 +91,7 @@ export async function processScheduledNotifications(limit = 50) {
   let sent = 0;
   for (const item of due) {
     const userTokens = tokensByUser.get(item.user_id) ?? [];
+    let shouldMarkSent = userTokens.length === 0;
     if (userTokens.length) {
       const title =
         item.type === "booking_start_soon"
@@ -80,7 +105,7 @@ export async function processScheduledNotifications(limit = 50) {
           : item.type === "booking_end_soon"
             ? "Your booking ends in 30 minutes."
             : "How was your parking? Leave a quick review.";
-      await sendPushNotification({
+      const result = await sendPushNotification({
         tokens: userTokens,
         title,
         body,
@@ -90,9 +115,22 @@ export async function processScheduledNotifications(limit = 50) {
           ...(item.payload ?? {}),
         },
       });
+      shouldMarkSent = result.ok > 0;
+      if (!shouldMarkSent && process.env.PUSH_LOGGING === "true") {
+        console.warn("Push processor: leaving notification unsent for retry", {
+          notificationId: item.id,
+          bookingId: item.booking_id,
+          type: item.type,
+          attempted: result.attempted,
+          ok: result.ok,
+          error: result.error,
+        });
+      }
     }
-    await markScheduledNotificationSent(item.id);
-    sent += 1;
+    if (shouldMarkSent) {
+      await markScheduledNotificationSent(item.id);
+      sent += 1;
+    }
   }
 
   if (process.env.PUSH_LOGGING === "true") {

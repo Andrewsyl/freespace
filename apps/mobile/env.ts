@@ -1,3 +1,5 @@
+import Constants from "expo-constants";
+
 const must = (value: string | undefined, name: string) => {
   if (!value) {
     throw new Error(`${name} is required`);
@@ -10,7 +12,10 @@ const stripeKey = must(
   process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY,
   "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY"
 );
-const appEnv = process.env.APP_ENV?.trim().toLowerCase();
+const appEnv =
+  (Constants.expoConfig as { extra?: { appEnv?: string } } | null)?.extra?.appEnv?.trim().toLowerCase() ??
+  process.env.APP_ENV?.trim().toLowerCase() ??
+  (__DEV__ ? "local" : "production");
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN?.trim();
 
 if (!/^https?:\/\//.test(apiBase)) {
@@ -47,7 +52,7 @@ if (sentryDsn) {
 
 export const mobileEnv = {
   apiBase,
-  appEnv: process.env.APP_ENV,
+  appEnv,
   easProjectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
   googleIosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
   googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,

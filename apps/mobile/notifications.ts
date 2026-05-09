@@ -1,19 +1,13 @@
 import { Asset } from "expo-asset";
 import type { NotificationContentInput } from "expo-notifications";
 
-let cachedNotificationImageUri: string | null = null;
-
 export async function getNotificationImageAttachment(): Promise<
   NotificationContentInput["attachments"]
 > {
-  if (cachedNotificationImageUri) {
-    return [{ identifier: "red_car", url: cachedNotificationImageUri, type: "image/png" }];
-  }
-
-  const asset = Asset.fromModule(require("./assets/red_car.png"));
+  const asset = Asset.fromModule(require("./assets/car-illustration.png"));
   await asset.downloadAsync();
-  cachedNotificationImageUri = asset.localUri ?? asset.uri ?? null;
-  if (!cachedNotificationImageUri) return [];
+  const notificationImageUri = asset.localUri ?? asset.uri ?? null;
+  if (!notificationImageUri) return [];
 
-  return [{ identifier: "red_car", url: cachedNotificationImageUri, type: "image/png" }];
+  return [{ identifier: "booking_car", url: notificationImageUri, type: "image/png" }];
 }

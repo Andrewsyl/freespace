@@ -1,4 +1,4 @@
-package com.andrewsyl.carparking.dev
+package com.andrewsyl.carparking
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
