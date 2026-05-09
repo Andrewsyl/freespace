@@ -141,7 +141,12 @@ describe("bookings routes", () => {
     db.poolQuery.mockResolvedValue({ rowCount: 0, rows: [] });
     db.createBooking.mockResolvedValue({ id: "booking-1" });
     db.findUserById.mockResolvedValue({ id: "user-1", email: "driver@example.com" });
-    db.getListingWithHostAccount.mockResolvedValue({ hostStripeAccountId: null });
+    db.getListingWithHostAccount.mockResolvedValue({
+      hostStripeAccountId: null,
+      rateType: "daily",
+      pricePerDay: 12,
+      pricePerHour: null,
+    });
 
     stripeMocks.customersList.mockResolvedValue({ data: [] });
     stripeMocks.customersCreate.mockResolvedValue({ id: "cus_123" });
@@ -209,6 +214,12 @@ describe("bookings routes", () => {
       created_at: "2026-03-01T00:00:00.000Z",
     });
     db.getRecentBookingStats.mockResolvedValue({ count: 0, total_cents: 0 });
+    db.getListingWithHostAccount.mockResolvedValue({
+      hostStripeAccountId: null,
+      rateType: "daily",
+      pricePerDay: 12,
+      pricePerHour: null,
+    });
     db.poolQuery.mockResolvedValue({ rowCount: 1, rows: [{ exists: true }] });
 
     const { createApp } = await import("../src/app.js");
@@ -247,7 +258,13 @@ describe("bookings routes", () => {
     db.poolQuery.mockResolvedValue({ rowCount: 0, rows: [] });
     db.createBooking.mockResolvedValue({ id: "booking-1" });
     db.findUserById.mockResolvedValue({ id: "user-1", email: "driver@example.com" });
-    db.getListingWithHostAccount.mockResolvedValue({ hostStripeAccountId: null, title: "Test listing" });
+    db.getListingWithHostAccount.mockResolvedValue({
+      hostStripeAccountId: null,
+      title: "Test listing",
+      rateType: "daily",
+      pricePerDay: 12,
+      pricePerHour: null,
+    });
     stripeMocks.createCheckoutSession.mockResolvedValue({
       id: "cs_123",
       url: "https://checkout.test/cs_123",
