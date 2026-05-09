@@ -286,7 +286,7 @@ export async function createHostPayoutLink(payload: {
   if (!response.ok) {
     throw new Error(`Payout setup failed (${response.status})`);
   }
-  return (await response.json()) as { accountId: string; onboardingUrl: string | null };
+  return (await response.json()) as { accountId: string; onboardingUrl: string | null; mock?: boolean };
 }
 
 export async function runHostPayouts(token: string) {
@@ -738,7 +738,7 @@ export async function cancelBooking(payload: { token: string; bookingId: string 
     },
   });
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response, "Booking cancelation failed"));
+    throw new Error(await readErrorMessage(response, "Booking cancellation failed"));
   }
   return (await response.json()) as {
     ok: true;

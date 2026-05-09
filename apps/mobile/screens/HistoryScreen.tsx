@@ -286,7 +286,9 @@ export function HistoryScreen({ navigation, route }: Props) {
   const active = bookings.filter(
     (booking) => new Date(booking.startTime) <= now && new Date(booking.endTime) >= now && booking.status !== "canceled"
   );
-  const past = bookings.filter((booking) => new Date(booking.endTime) < now);
+  const past = bookings.filter(
+    (booking) => booking.status === "canceled" || new Date(booking.endTime) < now
+  );
   const visiblePast = past.slice(0, pastVisibleCount);
   const hasMorePast = past.length > pastVisibleCount;
 

@@ -49,7 +49,7 @@ export function ReviewScreen({ navigation, route }: Props) {
 
   const end = new Date(booking.endTime);
   const canReview = booking.status === "confirmed" && end.getTime() <= Date.now();
-  const showReviewNotice = !canReview && booking.status !== "cancelled";
+  const showReviewNotice = !canReview && booking.status !== "canceled";
 
   const ratingPrompt = useMemo(() => {
     if (rating >= 4) return "Awesome! What did you like?";

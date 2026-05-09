@@ -30,7 +30,7 @@ export type PayoutHistoryItem = {
   amount: number; // net cents
   gross_amount?: number;
   platform_fee?: number;
-  status: "paid" | "pending" | "failed" | "cancelled";
+  status: "paid" | "pending" | "failed" | "canceled";
   arrival_date?: string;
   created_at: string;
   bookings_count?: number;

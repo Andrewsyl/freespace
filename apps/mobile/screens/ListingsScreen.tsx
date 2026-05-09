@@ -10,7 +10,6 @@ import {
   getHostEarningsSummary,
   getHostPayoutStatus,
   listHostListings,
-  runHostPayouts,
   type HostPayoutStatus,
 } from "../api";
 import { useAuth } from "../auth";
@@ -33,6 +32,7 @@ export function ListingsScreen({ navigation }: Props) {
   const [payoutStatus, setPayoutStatus] = useState<HostPayoutStatus | null>(null);
   const [payoutBusy, setPayoutBusy] = useState(false);
   const { show: showGlobalLoading, hide: hideGlobalLoading } = useGlobalLoading();
+  const payoutIsMock = Boolean(payoutStatus?.accountId?.startsWith("acct_mock_"));
 
   const loadListings = useCallback(async () => {
     if (!token) return;
@@ -48,9 +48,6 @@ export function ListingsScreen({ navigation }: Props) {
       setListings(data);
       setEarnings(summary);
       setPayoutStatus(payout);
-      if (payout.payoutsEnabled) {
-        void runHostPayouts(token);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load listings");
     } finally {
@@ -90,6 +87,16 @@ export function ListingsScreen({ navigation }: Props) {
       });
       if (link.onboardingUrl) {
         await Linking.openURL(link.onboardingUrl);
+      } else if (link.mock || link.accountId.startsWith("acct_mock_")) {
+        Alert.alert(
+          "Payout setup unavailable",
+          "Stripe Connect is not fully enabled in this environment yet, so host payout onboarding can't open here."
+        );
+      } else {
+        Alert.alert(
+          "Payout setup unavailable",
+          "We couldn't open the payout onboarding link right now. Please try again in a moment."
+        );
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not start payout setup");
@@ -97,6 +104,26 @@ export function ListingsScreen({ navigation }: Props) {
       setPayoutBusy(false);
     }
   }, [payoutStatus?.accountId, token]);
+
+  const payoutStatusMessage = (() => {
+    if (!payoutStatus) return null;
+    if (payoutStatus.payoutsEnabled) {
+      return "Payouts are active. Transfers will arrive automatically.";
+    }
+    if (payoutIsMock) {
+      return "Payout onboarding is not available in this environment yet.";
+    }
+    if (payoutStatus.requirementsDue.length > 0) {
+      return "Stripe still needs a few details before payouts can be enabled.";
+    }
+    if (payoutStatus.detailsSubmitted) {
+      return "Your details were submitted. Stripe is still reviewing the payout account.";
+    }
+    if (payoutStatus.accountId) {
+      return "Finish payout setup to receive earnings.";
+    }
+    return "Connect Stripe to receive host payouts.";
+  })();
 
   const handleDelete = useCallback(
     (listingId: string) => {
@@ -205,12 +232,14 @@ export function ListingsScreen({ navigation }: Props) {
                   <Ionicons name="card-outline" size={16} color={colors.accent} />
                   <Text style={styles.payoutTitle}>Payouts</Text>
                 </View>
-                <Text style={styles.payoutBody}>
-                  {payoutStatus.payoutsEnabled
-                    ? "Payouts are active. Transfers will arrive automatically."
-                    : "Finish payout setup to receive earnings."}
-                </Text>
-                {!payoutStatus.payoutsEnabled ? (
+                <Text style={styles.payoutBody}>{payoutStatusMessage}</Text>
+                {payoutStatus.requirementsDue.length > 0 ? (
+                  <Text style={styles.payoutHint}>
+                    Missing: {payoutStatus.requirementsDue.slice(0, 3).join(", ")}
+                    {payoutStatus.requirementsDue.length > 3 ? "..." : ""}
+                  </Text>
+                ) : null}
+                {!payoutStatus.payoutsEnabled && !payoutIsMock ? (
                   <Pressable
                     style={[styles.primaryButton, payoutBusy && styles.primaryButtonDisabled]}
                     onPress={handlePayoutSetup}
@@ -446,6 +475,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     marginTop: 6,
+  },
+  payoutHint: {
+    color: colors.textSoft,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 8,
   },
   list: {
     gap: spacing.gap,

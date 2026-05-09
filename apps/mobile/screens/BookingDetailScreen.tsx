@@ -54,7 +54,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   const isInProgress = start.getTime() <= now && end.getTime() > now && localStatus === "confirmed";
   const isCanceled = localStatus === "canceled";
   const isRefunded = localRefundStatus === "succeeded";
-  const canReview = end.getTime() <= now && booking.status === "confirmed";
+  const canReview = end.getTime() <= now && localStatus === "confirmed";
   const [reviewed, setReviewed] = useState(false);
   const [reviewedRating, setReviewedRating] = useState<number | null>(null);
 
@@ -107,7 +107,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     !checkedInAt &&
     Date.now() >= start.getTime() - 15 * 60 * 1000 &&
     Date.now() <= end.getTime();
-  const canBookAgain = !isUpcoming && !isInProgress;
+  const canBookAgain = isCanceled || (!isUpcoming && !isInProgress);
   const showArrivalInfo =
     (isUpcoming || isInProgress || canReview) &&
     (Boolean(booking.arrivalInstructions?.trim()) || Boolean(booking.accessCode?.trim()));
@@ -412,7 +412,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         ) : null}
 
         {/* Action Buttons */}
-        {isUpcoming && localStatus !== "cancelled" ? (
+        {isUpcoming && localStatus !== "canceled" ? (
           <>
             {canCheckIn ? (
               <TouchableOpacity style={styles.actionBtn} onPress={handleCheckIn}>
