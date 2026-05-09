@@ -28,7 +28,7 @@ import {
   getListing,
 } from "../api";
 import { useAuth } from "../auth";
-import { logError, logInfo } from "../logger";
+import { logError, logInfo, logWarn } from "../logger";
 import { getNotificationImageAttachment } from "../notifications";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
@@ -202,10 +202,20 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     });
   }, []);
 
+  const isAmbiguousPaymentSheetResultError = (message?: string | null) =>
+    typeof message === "string" &&
+    message.toLowerCase().includes("failed to retrieve a paymentsheetresult");
+
   const scheduleBookingReminders = useCallback(async () => {
     if (!listing) return;
-    const permissions = await Notifications.getPermissionsAsync();
-    if (!permissions.granted) return;
+    let permissions = await Notifications.getPermissionsAsync();
+    if (!permissions.granted && permissions.canAskAgain) {
+      permissions = await Notifications.requestPermissionsAsync();
+    }
+    if (!permissions.granted) {
+      logWarn("Booking reminders skipped: notification permission not granted");
+      return;
+    }
 
     const nowMs = Date.now();
     const startReminder = new Date(start.getTime() - 60 * 60 * 1000);
@@ -217,6 +227,10 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         content: {
           title: "Booking starts soon",
           body: `${listing.title} starts in 1 hour.`,
+          data: {
+            type: "booking_reminder",
+            historyTab: "upcoming",
+          },
           attachments,
         },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: startReminder },
@@ -229,11 +243,41 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         content: {
           title: "Booking ending soon",
           body: `${listing.title} ends in 30 minutes.`,
+          data: {
+            type: "booking_reminder",
+            historyTab: "active",
+          },
           attachments,
         },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: endReminder },
       });
     }
+  }, [end, listing, start]);
+
+  const scheduleBookingConfirmationNotification = useCallback(async () => {
+    if (!listing) return;
+    let permissions = await Notifications.getPermissionsAsync();
+    if (!permissions.granted && permissions.canAskAgain) {
+      permissions = await Notifications.requestPermissionsAsync();
+    }
+    if (!permissions.granted) {
+      logWarn("Booking confirmation notification skipped: permission not granted");
+      return;
+    }
+    const attachments = await getNotificationImageAttachment();
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Booking confirmed",
+        body: `${listing.title} · ${formatTimeLabel(start)} - ${formatTimeLabel(end)}`,
+        data: {
+          listingId: listing.id,
+          type: "booking_confirmed",
+          historyTab: start.getTime() <= Date.now() && Date.now() < end.getTime() ? "active" : "upcoming",
+        },
+        attachments,
+      },
+      trigger: null,
+    });
   }, [end, listing, start]);
 
   const handlePayment = async () => {
@@ -264,9 +308,13 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         customerEphemeralKeySecret: payment.ephemeralKeySecret,
         paymentIntentClientSecret: payment.paymentIntentClientSecret,
         allowsDelayedPaymentMethods: false,
-        returnURL: "carparking://stripe-redirect",
       });
       if (initResult.error) {
+        logWarn("Payment sheet init failed", {
+          paymentIntentId,
+          code: initResult.error.code,
+          message: initResult.error.message,
+        });
         if (paymentIntentId) {
           try {
             await confirmBookingPayment({ paymentIntentId, status: "canceled", token });
@@ -280,6 +328,72 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       }
       const presentResult = await presentPaymentSheet();
       if (presentResult.error) {
+        logWarn("Payment sheet present failed", {
+          paymentIntentId,
+          code: presentResult.error.code,
+          message: presentResult.error.message,
+        });
+        const isAmbiguousResult = isAmbiguousPaymentSheetResultError(presentResult.error.message);
+        if (isAmbiguousResult && paymentIntentId) {
+          logWarn("Payment sheet result was ambiguous; attempting booking confirmation recovery", {
+            paymentIntentId,
+            code: presentResult.error.code,
+            message: presentResult.error.message,
+          });
+          try {
+            setConfirmingBooking(true);
+            await confirmBookingPayment({ paymentIntentId, token });
+            didConfirm = true;
+            setBookingConfirmed(true);
+            setConfirmingBooking(false);
+            resetGlobalLoading();
+            const nowMs = Date.now();
+            const startMs = Date.parse(from);
+            const endMs = Date.parse(to);
+            const initialTab =
+              Number.isFinite(startMs) &&
+              Number.isFinite(endMs) &&
+              startMs <= nowMs &&
+              nowMs < endMs
+                ? "active"
+                : "upcoming";
+            void scheduleBookingConfirmationNotification().catch((notificationError) => {
+              logWarn("Immediate booking confirmation notification failed", {
+                message: notificationError instanceof Error ? notificationError.message : String(notificationError),
+              });
+            });
+            void scheduleBookingReminders().catch((notificationError) => {
+              logWarn("Booking reminder scheduling failed", {
+                message: notificationError instanceof Error ? notificationError.message : String(notificationError),
+              });
+            });
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: "Tabs",
+                    params: {
+                      screen: "History",
+                      params: {
+                        showSuccess: true,
+                        refreshToken: Date.now(),
+                        initialTab,
+                      },
+                    },
+                  },
+                ],
+              })
+            );
+            return;
+          } catch (recoveryError) {
+            logWarn("Payment sheet recovery confirmation failed", {
+              paymentIntentId,
+              message: recoveryError instanceof Error ? recoveryError.message : String(recoveryError),
+            });
+            setConfirmingBooking(false);
+          }
+        }
         if (paymentIntentId) {
           try {
             await confirmBookingPayment({ paymentIntentId, status: "canceled", token });
@@ -294,7 +408,9 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         }
         setPaymentFailed(true);
         setPaymentFailureMessage(
-          presentResult.error.message ?? "Payment failed. Please try again."
+          isAmbiguousResult
+            ? "We couldn't confirm the payment result. Please check your booking history before trying again."
+            : presentResult.error.message ?? "Payment failed. Please try again."
         );
         return;
       }
@@ -336,6 +452,16 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         nowMs < endMs
           ? "active"
           : "upcoming";
+      void scheduleBookingConfirmationNotification().catch((notificationError) => {
+        logWarn("Immediate booking confirmation notification failed", {
+          message: notificationError instanceof Error ? notificationError.message : String(notificationError),
+        });
+      });
+      void scheduleBookingReminders().catch((notificationError) => {
+        logWarn("Booking reminder scheduling failed", {
+          message: notificationError instanceof Error ? notificationError.message : String(notificationError),
+        });
+      });
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
@@ -354,9 +480,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           ],
         })
       );
-      void scheduleBookingReminders().catch(() => {
-        // Reminder failures shouldn't block the success flow.
-      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Booking failed";
       logError("Booking error", { message });

@@ -192,7 +192,6 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         customerEphemeralKeySecret: result.ephemeralKeySecret,
         paymentIntentClientSecret: result.paymentIntentClientSecret,
         allowsDelayedPaymentMethods: false,
-        returnURL: "carparking://stripe-redirect",
       });
       if (initResult.error) {
         setExtendError("We couldn't start the extension payment.");

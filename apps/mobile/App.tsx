@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import * as Notifications from "expo-notifications";
-import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from "@react-navigation/native";
+import { NavigationContainer, CommonActions, DefaultTheme, createNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Constants from "expo-constants";
@@ -63,6 +63,11 @@ import { radius, spacing as appSpacing, textStyles } from "./styles/theme";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
+
+type BookingNotificationData = {
+  type?: string;
+  historyTab?: "upcoming" | "active" | "past";
+};
 
 enableScreens(false);
 void SplashScreen.preventAutoHideAsync();
@@ -155,7 +160,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <View style={styles.app}>
-        <StripeProvider publishableKey={stripeKey} urlScheme="carparking">
+        <StripeProvider publishableKey={stripeKey}>
           <AuthProvider>
             <FavoritesProvider>
               <GlobalLoadingProvider>
@@ -222,6 +227,40 @@ function EnvironmentBadge({ env }: { env: string }) {
 const TransparentTheme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: 'transparent' } };
 
 function AppNavigator() {
+  useEffect(() => {
+    const openNotificationTarget = (
+      data: BookingNotificationData | Record<string, unknown> | null | undefined
+    ) => {
+      if (!data || typeof data !== "object") return;
+      if (data.type !== "booking_confirmed" && data.type !== "booking_reminder") return;
+      const initialTab =
+        data.historyTab === "active" || data.historyTab === "past" ? data.historyTab : "upcoming";
+      navigationRef.dispatch(
+        CommonActions.navigate({
+          name: "Tabs",
+          params: {
+            screen: "History",
+            params: {
+              initialTab,
+              refreshToken: Date.now(),
+            },
+          } as RootStackParamList["Tabs"],
+        })
+      );
+    };
+
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (!response || !navigationRef.isReady()) return;
+      openNotificationTarget(response.notification.request.content.data as BookingNotificationData);
+    });
+
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      openNotificationTarget(response.notification.request.content.data as BookingNotificationData);
+    });
+
+    return () => subscription.remove();
+  }, []);
+
   return (
     <>
       <NavigationContainer ref={navigationRef} theme={TransparentTheme}>

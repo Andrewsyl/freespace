@@ -1,3 +1,5 @@
+import Constants from "expo-constants";
+
 type LogLevel = "debug" | "info" | "warn" | "error";
 
 const levelOrder: Record<LogLevel, number> = {
@@ -8,7 +10,10 @@ const levelOrder: Record<LogLevel, number> = {
 };
 
 const currentLevel = (process.env.EXPO_PUBLIC_LOG_LEVEL ?? "info") as LogLevel;
-const runtimeAppEnv = process.env.APP_ENV?.trim().toLowerCase() ?? (__DEV__ ? "local" : "production");
+const runtimeAppEnv =
+  (Constants.expoConfig as { extra?: { appEnv?: string } } | null)?.extra?.appEnv?.trim().toLowerCase() ??
+  process.env.APP_ENV?.trim().toLowerCase() ??
+  (__DEV__ ? "local" : "production");
 
 function shouldLog(level: LogLevel) {
   return levelOrder[level] >= levelOrder[currentLevel];

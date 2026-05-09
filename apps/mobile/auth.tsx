@@ -28,6 +28,7 @@ type AuthUser = {
   termsAcceptedAt?: string | null;
   privacyVersion?: string | null;
   privacyAcceptedAt?: string | null;
+  authProvider?: "password" | "google" | "facebook";
 };
 
 type AuthContextValue = {
@@ -79,6 +80,25 @@ const decodeJwtPayload = (token: string): JwtPayload | null => {
 const needsLegalAcceptance = (candidate: AuthUser | null) =>
   !!candidate && (!candidate.termsVersion || !candidate.privacyVersion);
 
+const withAuthProvider = (
+  candidate: AuthUser | null,
+  authProvider?: AuthUser["authProvider"]
+): AuthUser | null => (candidate ? { ...candidate, authProvider: authProvider ?? candidate.authProvider } : candidate);
+
+const inferStoredAuthProvider = async (candidate: AuthUser | null): Promise<AuthUser | null> => {
+  if (!candidate || candidate.authProvider) return candidate;
+  try {
+    const googleUser = GoogleSignin.getCurrentUser();
+    const googleEmail = googleUser?.user?.email?.toLowerCase();
+    if (googleEmail && candidate.email.toLowerCase() === googleEmail) {
+      return { ...candidate, authProvider: "google" };
+    }
+  } catch {
+    // Ignore provider inference failures and fall back to existing behavior.
+  }
+  return candidate;
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -93,6 +113,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
       const storedUser = await AsyncStorage.getItem(USER_KEY);
       const storedRefreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+      const parsedStoredUser = await inferStoredAuthProvider(
+        storedUser ? (JSON.parse(storedUser) as AuthUser) : null
+      );
       if (storedToken) {
         const payload = decodeJwtPayload(storedToken);
         const expiresAt = payload?.exp ? payload.exp * 1000 : null;
@@ -100,13 +123,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (storedRefreshToken) {
             try {
               const refreshed = await refreshSession(storedRefreshToken);
+              const nextUser = withAuthProvider(refreshed.user, parsedStoredUser?.authProvider);
               setToken(refreshed.token);
-              setUser(refreshed.user);
+              setUser(nextUser);
               setLegalPromptRequired(false);
               const nextRefreshToken = refreshed.refreshToken ?? storedRefreshToken;
               setRefreshToken(nextRefreshToken);
               await AsyncStorage.setItem(TOKEN_KEY, refreshed.token);
-              await AsyncStorage.setItem(USER_KEY, JSON.stringify(refreshed.user));
+              await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
               await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
               setLoading(false);
               return;
@@ -134,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       setToken(storedToken);
-      setUser(storedUser ? (JSON.parse(storedUser) as AuthUser) : null);
+      setUser(parsedStoredUser);
       setLegalPromptRequired(false);
       setRefreshToken(storedRefreshToken);
       setLoading(false);
@@ -144,33 +168,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const response = await apiLogin(email, password);
+    const nextUser = withAuthProvider(response.user, "password");
     setToken(response.token);
-    setUser(response.user);
-    setLegalPromptRequired(needsLegalAcceptance(response.user));
+    setUser(nextUser);
+    setLegalPromptRequired(needsLegalAcceptance(nextUser));
     const nextRefreshToken = response.refreshToken ?? null;
     setRefreshToken(nextRefreshToken);
     await AsyncStorage.setItem(TOKEN_KEY, response.token);
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(response.user));
+    await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
     if (nextRefreshToken) {
       await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
     }
-    return response.user;
+    return nextUser as AuthUser;
   }, []);
 
   const register = useCallback(
     async (email: string, password: string, legal: { termsVersion: string; privacyVersion: string }) => {
       const response = await apiRegister(email, password, legal);
+      const nextUser = withAuthProvider(response.user, "password");
       setToken(response.token);
-      setUser(response.user);
-      setLegalPromptRequired(needsLegalAcceptance(response.user));
+      setUser(nextUser);
+      setLegalPromptRequired(needsLegalAcceptance(nextUser));
       const nextRefreshToken = response.refreshToken ?? null;
       setRefreshToken(nextRefreshToken);
       await AsyncStorage.setItem(TOKEN_KEY, response.token);
-      await AsyncStorage.setItem(USER_KEY, JSON.stringify(response.user));
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
       if (nextRefreshToken) {
         await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
       }
-      return { previewUrl: response.previewUrl ?? null, user: response.user };
+      return { previewUrl: response.previewUrl ?? null, user: nextUser as AuthUser };
     },
     []
   );
@@ -212,17 +238,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider === "google"
         ? await oauthLoginGoogle(tokenValue)
         : await oauthLoginFacebook(tokenValue);
+    const nextUser = withAuthProvider(response.user, provider);
     setToken(response.token);
-    setUser(response.user);
-    setLegalPromptRequired(needsLegalAcceptance(response.user));
+    setUser(nextUser);
+    setLegalPromptRequired(needsLegalAcceptance(nextUser));
     const nextRefreshToken = response.refreshToken ?? null;
     setRefreshToken(nextRefreshToken);
     await AsyncStorage.setItem(TOKEN_KEY, response.token);
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(response.user));
+    await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
     if (nextRefreshToken) {
       await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
     }
-    return response.user;
+    return nextUser as AuthUser;
   }, []);
 
   const acceptLegal = useCallback(
@@ -231,12 +258,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error("No active session");
       }
       const response = await apiAcceptLegal(token, payload);
-      setUser(response.user);
+      const nextUser = withAuthProvider(response.user, user?.authProvider);
+      setUser(nextUser);
       setLegalPromptRequired(false);
-      await AsyncStorage.setItem(USER_KEY, JSON.stringify(response.user));
-      return response.user;
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+      return nextUser as AuthUser;
     },
-    [token]
+    [token, user?.authProvider]
   );
 
   const setAuthUser = useCallback(async (nextUser: AuthUser) => {
@@ -267,13 +295,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshTimerRef.current = setTimeout(async () => {
         try {
           const refreshed = await refreshSession(refreshToken);
+          const nextUser = withAuthProvider(refreshed.user, user?.authProvider);
           setToken(refreshed.token);
-          setUser(refreshed.user);
+          setUser(nextUser);
           setLegalPromptRequired(false);
           const nextRefreshToken = refreshed.refreshToken ?? refreshToken;
           setRefreshToken(nextRefreshToken);
           await AsyncStorage.setItem(TOKEN_KEY, refreshed.token);
-          await AsyncStorage.setItem(USER_KEY, JSON.stringify(refreshed.user));
+          await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
           await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
         } catch {
           void logout();

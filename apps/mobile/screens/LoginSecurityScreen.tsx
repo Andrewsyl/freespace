@@ -3,21 +3,25 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleShee
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MaterialIcons } from "@expo/vector-icons";
-import { changePassword, deleteAccount, logoutAllSessions } from "../api";
+import { changePassword, deleteAccount, logoutAllSessions, requestPasswordReset } from "../api";
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
 import { Button, TextInput as AppTextInput } from "../components/ui";
-import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
+import { colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "LoginSecurity">;
 
 export function LoginSecurityScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { token, logout, user } = useAuth();
+  const isPasswordLogin = (user?.authProvider ?? "password") === "password";
+  const authProviderLabel =
+    user?.authProvider === "google" ? "Google" : user?.authProvider === "facebook" ? "Facebook" : "Email";
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
+  const [sendingSetupEmail, setSendingSetupEmail] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,6 +46,21 @@ export function LoginSecurityScreen({ navigation }: Props) {
         },
       ]
     );
+  };
+
+  const handleSendPasswordSetup = async () => {
+    if (!user?.email) return;
+    setSendingSetupEmail(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await requestPasswordReset(user.email);
+      setMessage(`Password setup email sent to ${user.email}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not send password setup email");
+    } finally {
+      setSendingSetupEmail(false);
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -110,7 +129,7 @@ export function LoginSecurityScreen({ navigation }: Props) {
         >
           <Pressable
             style={styles.backButton}
-            onPress={() => navigation.navigate("Tabs", { screen: "Profile" })}
+            onPress={() => navigation.goBack()}
           >
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
             <Text style={styles.backText}>Back</Text>
@@ -129,32 +148,64 @@ export function LoginSecurityScreen({ navigation }: Props) {
           ) : null}
 
           <View style={styles.group}>
-            <Text style={styles.groupLabel}>Change password</Text>
-            <Text style={styles.groupHelp}>Update your password for this account.</Text>
-            <AppTextInput
-              label="Current password"
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              secureTextEntry
-              placeholder="Enter current password"
-            />
-            <AppTextInput
-              label="New password"
-              value={newPassword}
-              onChangeText={setNewPassword}
-              secureTextEntry
-              placeholder="Enter new password"
-            />
-            <AppTextInput
-              label="Confirm new password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              placeholder="Confirm new password"
-            />
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            {message ? <Text style={styles.notice}>{message}</Text> : null}
-            <Button title="Update password" onPress={handleChangePassword} disabled={saving} loading={saving} />
+            <Text style={styles.groupLabel}>{isPasswordLogin ? "Change password" : "Sign-in method"}</Text>
+            {isPasswordLogin ? (
+              <>
+                <Text style={styles.groupHelp}>Update your password for this account.</Text>
+                <Text style={styles.fieldLabel}>Current password</Text>
+                <AppTextInput
+                  containerStyle={styles.editInputContainer}
+                  style={styles.editInput}
+                  value={currentPassword}
+                  onChangeText={setCurrentPassword}
+                  secureTextEntry
+                  placeholder="Enter current password"
+                />
+                <Text style={styles.fieldLabel}>New password</Text>
+                <AppTextInput
+                  containerStyle={styles.editInputContainer}
+                  style={styles.editInput}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry
+                  placeholder="Enter new password"
+                />
+                <Text style={styles.fieldLabel}>Confirm new password</Text>
+                <AppTextInput
+                  containerStyle={styles.editInputContainer}
+                  style={styles.editInput}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                  placeholder="Confirm new password"
+                />
+                {error ? <Text style={styles.error}>{error}</Text> : null}
+                {message ? <Text style={styles.notice}>{message}</Text> : null}
+                <Button title="Update password" onPress={handleChangePassword} disabled={saving} loading={saving} />
+              </>
+            ) : (
+              <>
+                <View style={styles.providerRow}>
+                  <View style={styles.providerIconWrap}>
+                    <MaterialIcons name="shield" size={18} color={colors.text} />
+                  </View>
+                  <View style={styles.textWrap}>
+                    <Text style={styles.rowTitle}>Signed in with {authProviderLabel}</Text>
+                    <Text style={styles.rowSubtitle}>
+                      You don’t need an app password when you use {authProviderLabel} sign-in.
+                    </Text>
+                  </View>
+                </View>
+                {error ? <Text style={styles.error}>{error}</Text> : null}
+                {message ? <Text style={styles.notice}>{message}</Text> : null}
+                <Button
+                  title="Send password setup email"
+                  onPress={handleSendPasswordSetup}
+                  disabled={sendingSetupEmail}
+                  loading={sendingSetupEmail}
+                />
+              </>
+            )}
           </View>
 
           <View style={styles.group}>
@@ -203,6 +254,21 @@ const styles = StyleSheet.create({
     ...textStyles.meta,
     color: colors.textMuted,
     marginBottom: 12,
+  },
+  fieldLabel: {
+    ...textStyles.sectionTitle,
+    color: colors.text,
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  editInputContainer: {
+    marginBottom: 14,
+  },
+  editInput: {
+    ...textStyles.body,
+    color: colors.text,
+    paddingHorizontal: 0,
+    paddingVertical: 12,
   },
   backButton: {
     alignItems: "center",
@@ -258,16 +324,25 @@ const styles = StyleSheet.create({
     color: colors.accent,
     marginBottom: spacing.sm,
   },
-  row: {
+  providerRow: {
     alignItems: "center",
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 16,
-    borderWidth: 1,
     flexDirection: "row",
     gap: 12,
-    marginBottom: 12,
-    paddingHorizontal: 14,
+    marginBottom: spacing.md,
+    paddingVertical: 6,
+  },
+  providerIconWrap: {
+    alignItems: "center",
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: 14,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  row: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 12,
     paddingVertical: 16,
   },
   textWrap: {

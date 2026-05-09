@@ -78,7 +78,7 @@ export function SupportScreen({ navigation, route }: Props) {
             </Text>
           </View>
 
-          <View style={styles.card}>
+          <View style={styles.form}>
             <View style={styles.field}>
               <Text style={styles.label}>Subject</Text>
               <Pressable
@@ -122,9 +122,10 @@ export function SupportScreen({ navigation, route }: Props) {
               onPress={handleSubmit}
               disabled={submitting}
             />
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            {success ? <Text style={styles.success}>{success}</Text> : null}
           </View>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {success ? <Text style={styles.success}>{success}</Text> : null}
 
         </ScrollView>
         <Modal transparent visible={subjectOpen} animationType="fade" onRequestClose={() => setSubjectOpen(false)}>
@@ -175,48 +176,38 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   subtitle: {
-    color: colors.textMuted,
-    fontSize: 14,
-    marginTop: 6,
+    ...textStyles.subtitle,
   },
-  card: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: spacing.card,
+  form: {
+    marginTop: 2,
   },
   field: {
-    marginBottom: 14,
+    marginBottom: 18,
   },
   label: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
-    marginBottom: 6,
+    ...textStyles.sectionTitle,
+    color: colors.text,
+    marginBottom: 10,
   },
   fieldInput: {
     marginBottom: 0,
   },
   select: {
-    backgroundColor: colors.appBg,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    borderRadius: 16,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   selectText: {
+    ...textStyles.body,
     color: colors.text,
-    fontSize: 14,
-    fontWeight: "600",
   },
   selectPlaceholder: {
     color: colors.textSoft,
-    fontWeight: "500",
   },
   selectChevron: {
     color: colors.textSoft,
@@ -256,18 +247,24 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   textArea: {
+    ...textStyles.body,
+    color: colors.text,
     minHeight: 140,
+    paddingHorizontal: 0,
+    paddingVertical: 12,
   },
   error: {
-    color: "#b42318",
-    fontSize: 12,
+    color: colors.danger,
+    fontFamily: "Inter-Medium",
+    fontSize: 13,
+    lineHeight: 19,
     marginTop: 12,
-    textAlign: "center",
   },
   success: {
     color: colors.accent,
-    fontSize: 12,
+    fontFamily: "Inter-Medium",
+    fontSize: 13,
+    lineHeight: 19,
     marginTop: 12,
-    textAlign: "center",
   },
 });
