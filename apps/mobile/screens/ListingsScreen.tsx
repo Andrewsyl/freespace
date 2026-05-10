@@ -13,6 +13,7 @@ import {
   type HostPayoutStatus,
 } from "../api";
 import { useAuth } from "../auth";
+import { useToastOnMessage } from "../components/GlobalToast";
 import type { ListingSummary, RootStackParamList } from "../types";
 import { cardShadow, colors, radius, spacing } from "../styles/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -33,6 +34,8 @@ export function ListingsScreen({ navigation }: Props) {
   const [payoutBusy, setPayoutBusy] = useState(false);
   const { show: showGlobalLoading, hide: hideGlobalLoading } = useGlobalLoading();
   const payoutIsMock = Boolean(payoutStatus?.accountId?.startsWith("acct_mock_"));
+
+  useToastOnMessage(error, { variant: "danger" });
 
   const loadListings = useCallback(async () => {
     if (!token) return;
@@ -199,7 +202,6 @@ export function ListingsScreen({ navigation }: Props) {
             </View>
           ) : (
             <>
-            {error ? <Text style={styles.error}>{error}</Text> : null}
             {loading && listings.length === 0 ? (
               <Text style={styles.muted}>Loading listings…</Text>
             ) : null}
@@ -380,17 +382,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 6,
     textAlign: "center",
-  },
-  error: {
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
-    borderRadius: 12,
-    borderWidth: 1,
-    color: colors.danger,
-    fontSize: 12,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
   },
   muted: {
     color: colors.textMuted,

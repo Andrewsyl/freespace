@@ -31,6 +31,7 @@ import { useAuth } from "../auth";
 import { logError, logInfo, logWarn } from "../logger";
 import { getNotificationImageAttachment } from "../notifications";
 import { useGlobalLoading } from "../components/GlobalLoading";
+import { useToastOnMessage } from "../components/GlobalToast";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import { BackButton, Button, SectionHeader, TextInput as AppTextInput } from "../components/ui";
 import type { ListingDetail, RootStackParamList } from "../types";
@@ -94,6 +95,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       if (plateScrollTimeoutRef.current) clearTimeout(plateScrollTimeoutRef.current);
     };
   }, []);
+
+  useToastOnMessage(error, { variant: "danger" });
 
   useEffect(() => {
     let active = true;
@@ -542,7 +545,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.bookingPage}>
-                {error ? <Text style={styles.error}>{error}</Text> : null}
                 <View style={styles.summaryCard}>
                   <View style={styles.summaryHeader}>
                     <View style={styles.summaryHeaderContent}>

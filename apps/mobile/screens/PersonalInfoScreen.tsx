@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
 import { useAuth } from "../auth";
 import { getMe, requestPhoneVerification, updateMe, verifyPhone } from "../api";
+import { useToastOnMessage } from "../components/GlobalToast";
 import type { RootStackParamList } from "../types";
 import { Button, TextInput as AppTextInput } from "../components/ui";
 import { cardShadow, colors, spacing, textStyles } from "../styles/theme";
@@ -53,6 +54,9 @@ export function PersonalInfoScreen({ navigation }: Props) {
   const phoneChanged = currentPhone !== originalPhone;
   const phoneVerified = !!user?.phoneVerified && currentPhone === originalPhone;
   const emailChanged = currentEmail !== originalEmail;
+
+  useToastOnMessage(error, { variant: "danger" });
+  useToastOnMessage(message, { variant: "success" });
 
   useEffect(() => {
     setName(user?.name ?? "");
@@ -296,8 +300,6 @@ export function PersonalInfoScreen({ navigation }: Props) {
             </View>
           </View>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          {message ? <Text style={styles.notice}>{message}</Text> : null}
           {previewUrl ? (
             <Pressable style={styles.previewLink} onPress={() => Linking.openURL(previewUrl)}>
               <Text style={styles.previewLinkText}>Open verification link</Text>
@@ -440,14 +442,6 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.screenX,
     marginTop: spacing.lg,
   },
-  notice: {
-    color: colors.accent,
-    fontFamily: "Inter-Medium",
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: spacing.sm,
-    marginHorizontal: spacing.screenX,
-  },
   previewLink: {
     alignItems: "center",
     marginTop: spacing.xs,
@@ -458,13 +452,5 @@ const styles = StyleSheet.create({
     fontFamily: "Inter-Medium",
     fontSize: 13,
     lineHeight: 19,
-  },
-  error: {
-    color: colors.danger,
-    fontFamily: "Inter-Medium",
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: spacing.sm,
-    marginHorizontal: spacing.screenX,
   },
 });

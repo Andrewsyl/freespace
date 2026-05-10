@@ -55,6 +55,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BottomTabButton } from "./components/BottomTabButton";
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { GlobalLoadingProvider, useGlobalLoading } from "./components/GlobalLoading";
+import { GlobalToastProvider } from "./components/GlobalToast";
 import { mobileEnv } from "./env";
 import { installGlobalErrorLogging } from "./logger";
 import { colors } from "./theme/colors";
@@ -164,9 +165,11 @@ export default function App() {
           <AuthProvider>
             <FavoritesProvider>
               <GlobalLoadingProvider>
-                <AppLaunchContext.Provider value={appLaunchValue}>
-                  <AppShell />
-                </AppLaunchContext.Provider>
+                <GlobalToastProvider>
+                  <AppLaunchContext.Provider value={appLaunchValue}>
+                    <AppShell />
+                  </AppLaunchContext.Provider>
+                </GlobalToastProvider>
               </GlobalLoadingProvider>
             </FavoritesProvider>
           </AuthProvider>

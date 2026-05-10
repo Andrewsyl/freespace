@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { sendSupportMessage } from "../api";
 import { useAuth } from "../auth";
+import { useToastOnMessage } from "../components/GlobalToast";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,6 +25,9 @@ export function SupportScreen({ navigation, route }: Props) {
     null
   );
   const selectRef = useRef<View | null>(null);
+
+  useToastOnMessage(error, { variant: "danger" });
+  useToastOnMessage(success, { variant: "success" });
 
   const subjectOptions = [
     "Booking issue",
@@ -123,9 +127,6 @@ export function SupportScreen({ navigation, route }: Props) {
               disabled={submitting}
             />
           </View>
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          {success ? <Text style={styles.success}>{success}</Text> : null}
 
         </ScrollView>
         <Modal transparent visible={subjectOpen} animationType="fade" onRequestClose={() => setSubjectOpen(false)}>
@@ -252,19 +253,5 @@ const styles = StyleSheet.create({
     minHeight: 140,
     paddingHorizontal: 0,
     paddingVertical: 12,
-  },
-  error: {
-    color: colors.danger,
-    fontFamily: "Inter-Medium",
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 12,
-  },
-  success: {
-    color: colors.accent,
-    fontFamily: "Inter-Medium",
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 12,
   },
 });

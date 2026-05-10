@@ -13,6 +13,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { CardField, useStripe } from "@stripe/stripe-react-native";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
+import { useToastOnMessage } from "../components/GlobalToast";
 import { BackButton, Button } from "../components/ui";
 import {
   createPaymentMethodSetupIntent,
@@ -37,6 +38,8 @@ export function PaymentsScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [cardComplete, setCardComplete] = useState(false);
   const [adding, setAdding] = useState(false);
+
+  useToastOnMessage(error, { variant: "danger" });
 
   const loadData = useCallback(async () => {
     if (!token) return;
@@ -173,7 +176,6 @@ export function PaymentsScreen() {
           <Text style={styles.subtitle}>Manage cards and review your booking charges.</Text>
         </View>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
         {loading ? (
           <View style={styles.loadingOverlay} pointerEvents="none">
             <View style={styles.loadingBadge}>
@@ -330,17 +332,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 15,
     marginTop: 6,
-  },
-  error: {
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
-    borderRadius: 12,
-    borderWidth: 1,
-    color: "#b42318",
-    fontSize: 12,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
   },
   muted: {
     color: colors.textMuted,

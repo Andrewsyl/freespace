@@ -12,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { deleteListing, getListing, updateListing } from "../api";
 import { useAuth } from "../auth";
-import { Toast } from "../components/Toast";
+import { useToastOnMessage } from "../components/GlobalToast";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 import type { RootStackParamList } from "../types";
 import { cardShadow, colors, spacing, textStyles } from "../styles/theme";
@@ -31,6 +31,9 @@ export function EditListingScreen({ navigation, route }: Props) {
   const [pricePerDay, setPricePerDay] = useState("");
   const [availabilityText, setAvailabilityText] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+
+  useToastOnMessage(error, { variant: "danger" });
+  useToastOnMessage(toast, { variant: "success" });
 
   useEffect(() => {
     const load = async () => {
@@ -113,7 +116,6 @@ export function EditListingScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <Toast message={toast ?? ""} variant="success" visible={!!toast} />
       <View style={styles.topBar}>
         <BackButton onPress={() => navigation.goBack()} />
         <Text style={styles.topTitle}>Edit listing</Text>
@@ -125,7 +127,6 @@ export function EditListingScreen({ navigation, route }: Props) {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
           <View style={styles.formCard}>
           <View style={styles.field}>
             <Text style={styles.label}>Title</Text>

@@ -3,7 +3,8 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 def appEnv = (findProperty('appEnv') ?: System.getenv('APP_ENV') ?: 'local').toString().toLowerCase()
 def isDevLikeEnv = ["local", "dev"].contains(appEnv)
-def resolvedAndroidPackage = isDevLikeEnv ? "com.andrewsyl.carparking.dev" : "com.andrewsyl.carparking"
+def baseAndroidPackage = "com.andrewsyl.carparking"
+def resolvedAndroidPackage = isDevLikeEnv ? "${baseAndroidPackage}.dev" : baseAndroidPackage
 def isDebugTask = gradle.startParameter.taskNames.any { task ->
     task.toLowerCase().contains("debug")
 }
@@ -97,7 +98,7 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace resolvedAndroidPackage
+    namespace baseAndroidPackage
     defaultConfig {
         applicationId resolvedAndroidPackage
         minSdkVersion rootProject.ext.minSdkVersion
@@ -146,12 +147,14 @@ def autolinkingEntryPoint = file("$buildDir/generated/autolinking/src/main/java/
 def fixAutolinkingPackageName = tasks.register("fixAutolinkingPackageName") {
     dependsOn("generateAutolinkingPackageList")
     doLast {
-        if (isDevLikeEnv || !autolinkingEntryPoint.exists()) {
+        if (!autolinkingEntryPoint.exists()) {
             return
         }
 
         def contents = autolinkingEntryPoint.getText("UTF-8")
-        def updated = contents.replace(".BuildConfig", "com.andrewsyl.carparking.BuildConfig")
+        def updated = contents
+            .replace("${baseAndroidPackage}${baseAndroidPackage}.BuildConfig", "${baseAndroidPackage}.BuildConfig")
+            .replaceAll(/(?<![A-Za-z0-9_\.])\.BuildConfig/, "${baseAndroidPackage}.BuildConfig")
         if (updated != contents) {
             autolinkingEntryPoint.write(updated, "UTF-8")
         }
@@ -159,7 +162,12 @@ def fixAutolinkingPackageName = tasks.register("fixAutolinkingPackageName") {
 }
 
 tasks.matching { task ->
-    task.name in ["compileReleaseJavaWithJavac", "compileReleaseKotlin"]
+    task.name in [
+        "compileDebugJavaWithJavac",
+        "compileDebugKotlin",
+        "compileReleaseJavaWithJavac",
+        "compileReleaseKotlin",
+    ]
 }.configureEach {
     dependsOn(fixAutolinkingPackageName)
 }

@@ -8,6 +8,7 @@ import LottieView from "lottie-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { listMyBookings, type BookingSummary } from "../api";
 import { useAuth } from "../auth";
+import { useToastOnMessage } from "../components/GlobalToast";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import { BookingCard } from "../components/BookingCard";
@@ -47,6 +48,8 @@ export function HistoryScreen({ navigation, route }: Props) {
   const skipNextFocusReload = useRef(false);
   const [revealBookings, setRevealBookings] = useState(true);
   const [bookingTransitioning, setBookingTransitioning] = useState(false);
+
+  useToastOnMessage(error, { variant: "danger" });
 
   useFocusEffect(
     useCallback(() => {
@@ -543,7 +546,6 @@ export function HistoryScreen({ navigation, route }: Props) {
                       </View>
                     ) : (
                       <>
-                        {error ? <Text style={styles.error}>{error}</Text> : null}
                         {showPaneSkeleton ? (
                           <View style={styles.skeletonList}>
                             {[0, 1, 2].map((item) => (
@@ -863,17 +865,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: "center",
     marginBottom: 24,
-  },
-  error: {
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
-    borderRadius: 12,
-    borderWidth: 1,
-    color: "#b42318",
-    fontSize: 12,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
   },
   primaryButton: {
     alignItems: "center",

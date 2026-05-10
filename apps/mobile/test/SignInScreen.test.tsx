@@ -1,5 +1,6 @@
 import React from "react";
-import { render, userEvent } from "@testing-library/react-native";
+import { render, userEvent, waitFor } from "@testing-library/react-native";
+import { GlobalToastProvider } from "../components/GlobalToast";
 import { SignInScreen } from "../screens/SignInScreen";
 
 jest.mock("../auth", () => ({
@@ -28,7 +29,9 @@ const route = { key: "SignIn", name: "SignIn", params: undefined };
 describe("SignInScreen", () => {
   it("renders the sign-in header", () => {
     const { getAllByText, getByText } = render(
-      <SignInScreen navigation={navigation as any} route={route as any} />
+      <GlobalToastProvider>
+        <SignInScreen navigation={navigation as any} route={route as any} />
+      </GlobalToastProvider>
     );
 
     expect(getAllByText(/sign in/i).length).toBeGreaterThan(0);
@@ -37,7 +40,9 @@ describe("SignInScreen", () => {
 
   it("shows a validation error for invalid email on sign-in", async () => {
     const { getByPlaceholderText, getByText, getByTestId } = render(
-      <SignInScreen navigation={navigation as any} route={route as any} />
+      <GlobalToastProvider>
+        <SignInScreen navigation={navigation as any} route={route as any} />
+      </GlobalToastProvider>
     );
     const user = userEvent.setup();
 
@@ -45,12 +50,14 @@ describe("SignInScreen", () => {
     await user.type(getByPlaceholderText("••••••••"), "123456");
     await user.press(getByTestId("sign-in-button"));
 
-    expect(getByText("Enter a valid email address.")).toBeTruthy();
+    await waitFor(() => expect(getByText("Enter a valid email address.")).toBeTruthy());
   });
 
   it("requires terms acceptance before creating an account", async () => {
     const { getByPlaceholderText, getByText } = render(
-      <SignInScreen navigation={navigation as any} route={route as any} />
+      <GlobalToastProvider>
+        <SignInScreen navigation={navigation as any} route={route as any} />
+      </GlobalToastProvider>
     );
     const user = userEvent.setup();
 

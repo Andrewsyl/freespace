@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { requestPasswordReset, resetPassword } from "../api";
+import { useToastOnMessage } from "../components/GlobalToast";
 import type { RootStackParamList } from "../types";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
@@ -33,6 +34,9 @@ export function ResetPasswordScreen({ navigation }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  useToastOnMessage(error, { variant: "danger" });
+  useToastOnMessage(notice, { variant: "info" });
 
   const extractToken = (url: string) => {
     const match = url.match(/token=([^&]+)/);
@@ -221,8 +225,6 @@ export function ResetPasswordScreen({ navigation }: Props) {
                 />
               </>
             )}
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            {notice ? <Text style={styles.notice}>{notice}</Text> : null}
           </View>
 
           <BackButton style={styles.ghostButton} onPress={() => navigation.goBack()} />
@@ -292,15 +294,5 @@ const styles = StyleSheet.create({
   ghostButton: {
     alignSelf: "center",
     marginTop: 20,
-  },
-  error: {
-    color: colors.danger,
-    fontSize: 13,
-    marginTop: 12,
-  },
-  notice: {
-    color: colors.accent,
-    fontSize: 13,
-    marginTop: 12,
   },
 });
