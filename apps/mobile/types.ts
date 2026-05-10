@@ -26,7 +26,12 @@ export type RootStackParamList = {
   Welcome: undefined;
   SignIn: undefined;
   Register: undefined;
-  ResetPassword: undefined;
+  ResetPassword:
+    | {
+        token?: string;
+        apiBase?: string;
+      }
+    | undefined;
   Profile: { hideTabBar?: boolean } | undefined;
   PersonalInfo: undefined;
   LoginSecurity: undefined;

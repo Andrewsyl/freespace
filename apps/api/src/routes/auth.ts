@@ -133,6 +133,30 @@ function buildVerificationPreviewUrl(token: string) {
   return buildVerificationAppUrl(token, process.env.PUBLIC_API_BASE_URL?.replace(/\/$/, ""));
 }
 
+function buildPasswordResetUrl(token: string) {
+  if (process.env.NODE_ENV !== "production" && !process.env.PUBLIC_API_BASE_URL) {
+    return buildPasswordResetAppUrl(token);
+  }
+  return `${getPublicApiBaseUrl()}/api/auth/reset-password?token=${encodeURIComponent(token)}`;
+}
+
+function buildPasswordResetAppUrl(token: string, apiBase = process.env.PUBLIC_API_BASE_URL?.replace(/\/$/, "")) {
+  const query = new URLSearchParams({
+    token,
+  });
+  if (apiBase) {
+    query.set("apiBase", apiBase);
+  }
+  return `carparking://reset-password?${query.toString()}`;
+}
+
+function buildPasswordResetPreviewUrl(token: string) {
+  if (process.env.NODE_ENV === "production" && isMailerConfigured) {
+    return undefined;
+  }
+  return buildPasswordResetAppUrl(token, process.env.PUBLIC_API_BASE_URL?.replace(/\/$/, ""));
+}
+
 router.post("/register", enforceBlockedList, registerLimiter, async (req, res, next) => {
   try {
     const { email, password, termsVersion, privacyVersion, phone } = registerSchema.parse(req.body);
@@ -500,7 +524,7 @@ router.post("/request-password-reset", enforceBlockedList, resetLimiter, async (
       const token = generateVerificationToken();
       const expires = new Date(Date.now() + 1000 * 60 * 60); // 1h
       await setPasswordResetToken(user.id, token, expires);
-      const resetUrl = `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/reset-password?token=${token}`;
+      const resetUrl = buildPasswordResetUrl(token);
       let sent = true;
       try {
         await sendMail({
@@ -514,11 +538,37 @@ router.post("/request-password-reset", enforceBlockedList, resetLimiter, async (
         sent = false;
         console.warn("send reset email failed", err);
       }
-      const previewUrl =
-        process.env.NODE_ENV !== "production" || !isMailerConfigured ? resetUrl : undefined;
+      const previewUrl = buildPasswordResetPreviewUrl(token);
       return res.json({ ok: sent, previewUrl });
     }
     res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/reset-password", async (req, res, next) => {
+  try {
+    const token = z.string().parse(req.query.token);
+    const openAppUrl = buildPasswordResetAppUrl(token);
+    const fallbackUrl = buildPasswordResetAppUrl(token);
+    res.type("html").send(
+      buildVerificationLaunchPage({
+        openAppUrl,
+        fallbackUrl,
+        eyebrow: "FreeSpace security",
+        title: "Open FreeSpace to reset your password",
+        body: "We’ll open the app so you can securely choose a new password. If the app does not open, try again from this page on your phone.",
+        primaryLabel: "Open FreeSpace",
+        secondaryLabel: "Try again",
+        steps: [
+          "FreeSpace opens on your phone.",
+          "Choose a new password securely.",
+          "Return to sign in with your new password.",
+        ],
+        footer: "If nothing happens, return to your email and reopen this link on the same device.",
+      })
+    );
   } catch (error) {
     next(error);
   }
@@ -837,12 +887,33 @@ function buildVerificationResultPage({
 function buildVerificationLaunchPage({
   openAppUrl,
   fallbackUrl,
+  eyebrow = "FreeSpace account",
+  title = "Open FreeSpace to finish verification",
+  body = "We’ll open the FreeSpace app and complete your email verification there. If the app does not open, you can finish verification in your browser.",
+  primaryLabel = "Open FreeSpace",
+  secondaryLabel = "Verify in browser",
+  steps = [
+    "FreeSpace opens on your phone.",
+    "Your email is verified securely.",
+    "You return to your account and keep going.",
+  ],
+  footer = "If nothing happens, use the button above or continue in your browser.",
 }: {
   openAppUrl: string;
   fallbackUrl: string;
+  eyebrow?: string;
+  title?: string;
+  body?: string;
+  primaryLabel?: string;
+  secondaryLabel?: string;
+  steps?: string[];
+  footer?: string;
 }) {
   const brandBase = process.env.WEB_BASE_URL?.replace(/\/$/, "") ?? "https://freespace.ie";
   const logoUrl = `${brandBase}/freespace-logo.png`;
+  const stepsMarkup = steps
+    .map((step, index) => `${index + 1}. ${step}<br/>`)
+    .join("");
   return `
   <html>
     <head>
@@ -854,24 +925,22 @@ function buildVerificationLaunchPage({
       <div style="max-width:560px; margin:0 auto; background:#ffffff; border:1px solid #dbe4ee; border-radius:24px; box-shadow:0 18px 45px rgba(15, 23, 42, 0.08); overflow:hidden;">
         <div style="padding:28px; background:linear-gradient(135deg, #eff6ff 0%, #ffffff 58%, #f8fafc 100%); border-bottom:1px solid #e2e8f0;">
           <img src="${logoUrl}" alt="FreeSpace" width="132" height="34" style="display:block; width:132px; height:auto; margin:0 0 16px;" />
-          <div style="font-size:12px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#1d4ed8;">FreeSpace account</div>
-          <h1 style="margin:10px 0 0; font-size:28px; line-height:1.2; font-weight:800; color:#0f172a;">Open FreeSpace to finish verification</h1>
+          <div style="font-size:12px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#1d4ed8;">${eyebrow}</div>
+          <h1 style="margin:10px 0 0; font-size:28px; line-height:1.2; font-weight:800; color:#0f172a;">${title}</h1>
         </div>
         <div style="padding:24px 28px 28px;">
-          <p style="margin:0 0 22px; font-size:15px; line-height:1.7; color:#334155;">We’ll open the FreeSpace app and complete your email verification there. If the app does not open, you can finish verification in your browser.</p>
+          <p style="margin:0 0 22px; font-size:15px; line-height:1.7; color:#334155;">${body}</p>
           <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:20px;">
-            <a href="${openAppUrl}" style="display:inline-block; padding:14px 20px; background:#0f172a; color:#ffffff; border-radius:14px; text-decoration:none; font-size:15px; font-weight:700;">Open FreeSpace</a>
-            <a href="${fallbackUrl}" style="display:inline-block; padding:14px 20px; background:#ffffff; color:#0f172a; border:1px solid #dbe4ee; border-radius:14px; text-decoration:none; font-size:15px; font-weight:700;">Verify in browser</a>
+            <a href="${openAppUrl}" style="display:inline-block; padding:14px 20px; background:#0f172a; color:#ffffff; border-radius:14px; text-decoration:none; font-size:15px; font-weight:700;">${primaryLabel}</a>
+            <a href="${fallbackUrl}" style="display:inline-block; padding:14px 20px; background:#ffffff; color:#0f172a; border:1px solid #dbe4ee; border-radius:14px; text-decoration:none; font-size:15px; font-weight:700;">${secondaryLabel}</a>
           </div>
           <div style="padding:16px 18px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px;">
             <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; margin-bottom:10px;">What happens next</div>
             <div style="font-size:14px; line-height:1.7; color:#475569;">
-              1. FreeSpace opens on your phone.<br/>
-              2. Your email is verified securely.<br/>
-              3. You return to your account and keep going.
+              ${stepsMarkup}
             </div>
           </div>
-          <p style="margin:18px 0 0; font-size:13px; line-height:1.6; color:#64748b;">If nothing happens, use the button above or continue in your browser.</p>
+          <p style="margin:18px 0 0; font-size:13px; line-height:1.6; color:#64748b;">${footer}</p>
         </div>
       </div>
       <script>

@@ -562,8 +562,8 @@ export async function verifyEmailToken(token: string, apiBaseOverride?: string) 
   return (await response.json()) as { ok: boolean };
 }
 
-export async function resetPassword(token: string, password: string) {
-  const response = await fetchWithTimeout(`${baseUrl}/api/auth/reset-password`, {
+export async function resetPassword(token: string, password: string, apiBaseOverride?: string) {
+  const response = await fetchWithTimeout(`${resolveApiBase(apiBaseOverride)}/api/auth/reset-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token, password }),

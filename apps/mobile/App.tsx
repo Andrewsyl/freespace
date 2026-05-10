@@ -282,10 +282,28 @@ function AppNavigator() {
         parsed.path ||
         "";
       const path = pathCandidate.replace(/^\/+/, "");
-      if (path !== "verify-email") return;
       const tokenParam = typeof parsed.queryParams?.token === "string" ? parsed.queryParams.token : null;
       const apiBaseParam =
         typeof parsed.queryParams?.apiBase === "string" ? parsed.queryParams.apiBase : undefined;
+      if (path === "reset-password") {
+        if (!tokenParam) {
+          showError("Reset link is missing its token.");
+          return;
+        }
+        if (navigationRef.isReady()) {
+          navigationRef.dispatch(
+            CommonActions.navigate({
+              name: "ResetPassword",
+              params: {
+                token: tokenParam,
+                apiBase: apiBaseParam,
+              } as RootStackParamList["ResetPassword"],
+            })
+          );
+        }
+        return;
+      }
+      if (path !== "verify-email") return;
       if (!tokenParam) {
         showError("Verification link is missing its token.");
         return;

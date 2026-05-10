@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Linking,
@@ -19,7 +19,7 @@ import { BackButton, Button, TextInput as AppTextInput } from "../components/ui"
 
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPassword">;
 
-export function ResetPasswordScreen({ navigation }: Props) {
+export function ResetPasswordScreen({ navigation, route }: Props) {
   const scrollRef = useRef<ScrollView | null>(null);
   const emailFieldY = useRef(0);
   const tokenFieldY = useRef(0);
@@ -28,15 +28,27 @@ export function ResetPasswordScreen({ navigation }: Props) {
   const [step, setStep] = useState<"request" | "reset">("request");
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
+  const [apiBaseOverride, setApiBaseOverride] = useState<string | undefined>(route.params?.apiBase);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const launchedFromEmailLink = Boolean(route.params?.token);
 
   useToastOnMessage(error, { variant: "danger" });
   useToastOnMessage(notice, { variant: "info" });
+
+  useEffect(() => {
+    if (route.params?.token) {
+      setToken(route.params.token);
+      setStep("reset");
+    }
+    if (route.params?.apiBase) {
+      setApiBaseOverride(route.params.apiBase);
+    }
+  }, [route.params?.apiBase, route.params?.token]);
 
   const extractToken = (url: string) => {
     const match = url.match(/token=([^&]+)/);
@@ -85,7 +97,7 @@ export function ResetPasswordScreen({ navigation }: Props) {
     setError(null);
     setNotice(null);
     try {
-      await resetPassword(token.trim(), password);
+      await resetPassword(token.trim(), password, apiBaseOverride);
       setNotice("Password updated. You can sign in now.");
       navigation.replace("Welcome");
     } catch (err) {
@@ -117,7 +129,9 @@ export function ResetPasswordScreen({ navigation }: Props) {
             <Text style={styles.kicker}>Account</Text>
             <Text style={styles.title}>Reset password</Text>
             <Text style={styles.subtitle}>
-              We will send a secure link to update your password.
+              {step === "request"
+                ? "We will send a secure link to update your password."
+                : "Choose a new password for your account."}
             </Text>
           </View>
 
@@ -151,7 +165,7 @@ export function ResetPasswordScreen({ navigation }: Props) {
               </>
             ) : (
               <>
-                {previewUrl ? (
+                {previewUrl && !launchedFromEmailLink ? (
                   <View style={styles.previewRow}>
                     <Button
                       title="Open reset link"
@@ -168,22 +182,24 @@ export function ResetPasswordScreen({ navigation }: Props) {
                     />
                   </View>
                 ) : null}
-                <View
-                  style={styles.field}
-                  onLayout={(event) => {
-                    tokenFieldY.current = event.nativeEvent.layout.y;
-                  }}
-                >
-                  <Text style={styles.label}>Reset token</Text>
-                  <AppTextInput
-                    containerStyle={styles.fieldInput}
-                    value={token}
-                    onChangeText={setToken}
-                    autoCapitalize="none"
-                    placeholder="Paste the token from your email"
-                    onFocus={() => scrollToField(tokenFieldY.current)}
-                  />
-                </View>
+                {!launchedFromEmailLink ? (
+                  <View
+                    style={styles.field}
+                    onLayout={(event) => {
+                      tokenFieldY.current = event.nativeEvent.layout.y;
+                    }}
+                  >
+                    <Text style={styles.label}>Reset token</Text>
+                    <AppTextInput
+                      containerStyle={styles.fieldInput}
+                      value={token}
+                      onChangeText={setToken}
+                      autoCapitalize="none"
+                      placeholder="Paste the token from your email"
+                      onFocus={() => scrollToField(tokenFieldY.current)}
+                    />
+                  </View>
+                ) : null}
                 <View
                   style={styles.field}
                   onLayout={(event) => {
