@@ -98,9 +98,7 @@ export function PersonalInfoScreen({ navigation }: Props) {
         setMessage(null);
       }
       if (emailChanged && res.previewUrl) {
-        setMessage("Profile saved. Open the verification link below to confirm your new email.");
-      } else if (!emailChanged) {
-        navigation.navigate("Tabs", { screen: "Profile" });
+        setMessage("Profile saved. Check your email to confirm your new address.");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save profile");

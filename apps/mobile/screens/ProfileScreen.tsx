@@ -6,6 +6,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { requestEmailVerification } from "../api";
 import { useAuth } from "../auth";
+import { useGlobalToast } from "../components/GlobalToast";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import { Button, Card, Screen, SectionHeader } from "../components/ui";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
@@ -16,10 +17,9 @@ type Props = NativeStackScreenProps<RootStackParamList, "Profile">;
 
 export function ProfileScreen({ navigation }: Props) {
   const { user, logout } = useAuth();
+  const { showError, showSuccess } = useGlobalToast();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
 
@@ -32,19 +32,17 @@ export function ProfileScreen({ navigation }: Props) {
   const resendVerification = async () => {
     if (!user?.email) return;
     setSending(true);
-    setMessage(null);
-    setError(null);
     try {
       const url = await requestEmailVerification(user.email);
       setPreviewUrl(url);
-      setMessage(
+      showSuccess(
         url
-          ? "Verification link ready. Open it to confirm your email."
-          : "Verification email sent. Check your inbox."
+          ? "Verification email sent. Check your email to confirm your address."
+          : "Verification email sent. Check your email to confirm your address."
       );
       setResendCooldown(30);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send verification email");
+      showError(err instanceof Error ? err.message : "Could not send verification email");
     } finally {
       setSending(false);
     }
@@ -130,8 +128,6 @@ export function ProfileScreen({ navigation }: Props) {
           <Text style={styles.subtitle}>Manage your account info, verification, and security.</Text>
         </View>
 
-        {message ? <Text style={styles.notice}>{message}</Text> : null}
-        {error ? <Text style={styles.error}>{error}</Text> : null}
         {previewUrl ? (
           <Pressable style={styles.linkButton} onPress={() => Linking.openURL(previewUrl)}>
             <Text style={styles.linkButtonText}>Open verification link</Text>
