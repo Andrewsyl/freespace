@@ -30,8 +30,8 @@ jobs:
     name: Detect changed paths
     runs-on: ubuntu-latest
     outputs:
-      api: ${{ steps.filter.outputs.api }}
-      web: ${{ steps.filter.outputs.web }}
+      api: ${{ steps.set.outputs.api }}
+      web: ${{ steps.set.outputs.web }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -98,7 +98,7 @@ jobs:
       - name: Render task definition
         run: |
           aws ecs describe-task-definition \
-            --task-definition freespace-api:6 \
+            --task-definition freespace-api \
             --query taskDefinition > task-definition.json
 
           jq --arg IMAGE "${{ steps.image.outputs.image_uri }}" '
