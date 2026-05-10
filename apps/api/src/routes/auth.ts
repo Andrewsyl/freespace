@@ -110,11 +110,27 @@ function getPublicApiBaseUrl() {
 }
 
 function buildVerificationUrl(token: string) {
+  if (process.env.NODE_ENV !== "production" && !process.env.PUBLIC_API_BASE_URL) {
+    return buildVerificationAppUrl(token);
+  }
   return `${getPublicApiBaseUrl()}/api/auth/verify-email?token=${token}`;
 }
 
-function buildVerificationAppUrl(token: string) {
-  return `carparking://verify-email?token=${encodeURIComponent(token)}`;
+function buildVerificationAppUrl(token: string, apiBase = process.env.PUBLIC_API_BASE_URL?.replace(/\/$/, "")) {
+  const query = new URLSearchParams({
+    token,
+  });
+  if (apiBase) {
+    query.set("apiBase", apiBase);
+  }
+  return `carparking://verify-email?${query.toString()}`;
+}
+
+function buildVerificationPreviewUrl(token: string) {
+  if (process.env.NODE_ENV === "production" && isMailerConfigured) {
+    return undefined;
+  }
+  return buildVerificationAppUrl(token, process.env.PUBLIC_API_BASE_URL?.replace(/\/$/, ""));
 }
 
 router.post("/register", enforceBlockedList, registerLimiter, async (req, res, next) => {
@@ -156,8 +172,7 @@ router.post("/register", enforceBlockedList, registerLimiter, async (req, res, n
       html: buildVerificationEmail(verifyUrl),
       from: getAuthEmailFrom(),
     }).catch((err) => console.warn("send verification email failed", err));
-    const previewUrl =
-      process.env.NODE_ENV !== "production" || !isMailerConfigured ? verifyUrl : undefined;
+    const previewUrl = buildVerificationPreviewUrl(token);
     if (phone && phoneToken) {
       sendSms({
         to: phone,
@@ -437,8 +452,7 @@ router.post("/request-verification", enforceBlockedList, verifyLimiter, async (r
       sent = false;
       console.warn("send verification email failed", err);
     }
-    const previewUrl =
-      process.env.NODE_ENV !== "production" || !isMailerConfigured ? verifyUrl : undefined;
+    const previewUrl = buildVerificationPreviewUrl(token);
     res.json({ ok: sent, previewUrl });
   } catch (error) {
     next(error);
@@ -675,8 +689,7 @@ router.put("/me", requireAuth, accountWriteLimiter, async (req, res, next) => {
           html: buildVerificationEmail(verifyUrl),
           from: getAuthEmailFrom(),
         });
-        previewUrl =
-          process.env.NODE_ENV !== "production" || !isMailerConfigured ? verifyUrl : undefined;
+        previewUrl = buildVerificationPreviewUrl(token);
       } catch (err) {
         console.warn("send verification email failed", err);
       }
@@ -752,9 +765,15 @@ function buildEmailShell({
       <div style="padding:24px 28px 28px;">
         <p style="margin:0 0 22px; font-size:15px; line-height:1.7; color:#334155;">${body}</p>
         <a href="${url}" style="display:inline-block; padding:14px 20px; background:#0f172a; color:#ffffff; border-radius:14px; text-decoration:none; font-size:15px; font-weight:700;">${ctaLabel}</a>
+        <div style="margin:16px 0 0; font-size:13px; line-height:1.6; color:#64748b;">
+          If the button does not work in your email app, use this fallback link:
+        </div>
+        <div style="margin:8px 0 0;">
+          <a href="${url}" style="color:#1d4ed8; font-size:14px; font-weight:700; text-decoration:none; word-break:break-all;">Open fallback link</a>
+        </div>
         <div style="margin:24px 0 0; padding:16px 18px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px;">
           <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; margin-bottom:8px;">Secure link</div>
-          <div style="font-size:13px; line-height:1.6; color:#475569; word-break:break-all;">${url}</div>
+          <a href="${url}" style="font-size:13px; line-height:1.6; color:#475569; text-decoration:none; word-break:break-all;">${url}</a>
         </div>
         <p style="margin:18px 0 0; font-size:13px; line-height:1.6; color:#64748b;">${secondary}</p>
         <p style="margin:18px 0 0; font-size:12px; line-height:1.6; color:#94a3b8;">FreeSpace Accounts · ${getAuthEmailFooterAddress()}</p>
@@ -822,6 +841,8 @@ function buildVerificationLaunchPage({
   openAppUrl: string;
   fallbackUrl: string;
 }) {
+  const brandBase = process.env.WEB_BASE_URL?.replace(/\/$/, "") ?? "https://freespace.ie";
+  const logoUrl = `${brandBase}/freespace-logo.png`;
   return `
   <html>
     <head>
@@ -832,14 +853,25 @@ function buildVerificationLaunchPage({
     <body style="margin:0; padding:32px 16px; background:#f4f7fb; font-family:Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color:#0f172a;">
       <div style="max-width:560px; margin:0 auto; background:#ffffff; border:1px solid #dbe4ee; border-radius:24px; box-shadow:0 18px 45px rgba(15, 23, 42, 0.08); overflow:hidden;">
         <div style="padding:28px; background:linear-gradient(135deg, #eff6ff 0%, #ffffff 58%, #f8fafc 100%); border-bottom:1px solid #e2e8f0;">
+          <img src="${logoUrl}" alt="FreeSpace" width="132" height="34" style="display:block; width:132px; height:auto; margin:0 0 16px;" />
           <div style="font-size:12px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#1d4ed8;">FreeSpace account</div>
-          <h1 style="margin:10px 0 0; font-size:28px; line-height:1.2; font-weight:800; color:#0f172a;">Open the app to verify</h1>
+          <h1 style="margin:10px 0 0; font-size:28px; line-height:1.2; font-weight:800; color:#0f172a;">Open FreeSpace to finish verification</h1>
         </div>
         <div style="padding:24px 28px 28px;">
-          <p style="margin:0 0 22px; font-size:15px; line-height:1.7; color:#334155;">We’ll open FreeSpace and finish verifying your email there. If the app does not open, you can continue in your browser instead.</p>
-          <a href="${openAppUrl}" style="display:inline-block; padding:14px 20px; background:#0f172a; color:#ffffff; border-radius:14px; text-decoration:none; font-size:15px; font-weight:700;">Open FreeSpace</a>
-          <p style="margin:18px 0 0; font-size:13px; line-height:1.6; color:#64748b;">App not available on this device?</p>
-          <a href="${fallbackUrl}" style="display:inline-block; margin-top:8px; color:#1d4ed8; font-size:14px; font-weight:700; text-decoration:none;">Verify in browser instead</a>
+          <p style="margin:0 0 22px; font-size:15px; line-height:1.7; color:#334155;">We’ll open the FreeSpace app and complete your email verification there. If the app does not open, you can finish verification in your browser.</p>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:20px;">
+            <a href="${openAppUrl}" style="display:inline-block; padding:14px 20px; background:#0f172a; color:#ffffff; border-radius:14px; text-decoration:none; font-size:15px; font-weight:700;">Open FreeSpace</a>
+            <a href="${fallbackUrl}" style="display:inline-block; padding:14px 20px; background:#ffffff; color:#0f172a; border:1px solid #dbe4ee; border-radius:14px; text-decoration:none; font-size:15px; font-weight:700;">Verify in browser</a>
+          </div>
+          <div style="padding:16px 18px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px;">
+            <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; margin-bottom:10px;">What happens next</div>
+            <div style="font-size:14px; line-height:1.7; color:#475569;">
+              1. FreeSpace opens on your phone.<br/>
+              2. Your email is verified securely.<br/>
+              3. You return to your account and keep going.
+            </div>
+          </div>
+          <p style="margin:18px 0 0; font-size:13px; line-height:1.6; color:#64748b;">If nothing happens, use the button above or continue in your browser.</p>
         </div>
       </div>
       <script>

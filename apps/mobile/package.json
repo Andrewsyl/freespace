@@ -18,7 +18,8 @@
     "android:local": "./scripts/run-with-env.sh local ./scripts/android-debug-install.sh com.andrewsyl.carparking.dev com.andrewsyl.carparking.MainActivity",
     "android:dev": "./scripts/run-with-env.sh dev ./scripts/android-debug-install.sh com.andrewsyl.carparking.dev com.andrewsyl.carparking.MainActivity",
     "android:qa": "./scripts/run-with-env.sh qa ./scripts/android-debug-install.sh com.andrewsyl.carparking.dev com.andrewsyl.carparking.MainActivity",
-    "android:prod": "./scripts/run-with-env.sh production ./scripts/android-release-install.sh",
+    "android:prod": "printf '%s\n' '[prod] Use npm run eas:prod for a real production-signed Android build. For local checks use npm run android:qa or, if you absolutely need the old debug-signed release APK, ALLOW_DEBUG_SIGNED_RELEASE=1 npm run android:prod:local-debug.' && exit 1",
+    "android:prod:local-debug": "./scripts/run-with-env.sh production ./scripts/android-release-install.sh",
     "android:prod:apk": "./scripts/run-with-env.sh production ./scripts/android-release-install.sh",
     "ios": "expo run:ios",
     "ios:local": "./scripts/run-with-env.sh local expo run:ios",
@@ -31,7 +32,8 @@
     "test:watch": "jest --watch",
     "verify:lanes": "./scripts/check-lanes.sh",
     "eas:qa": "npx -y eas-cli@18.0.4 build --platform android --profile qa --clear-cache",
-    "eas:prod": "npx -y eas-cli@18.0.4 build --platform android --profile production --clear-cache"
+    "eas:prod": "npx -y eas-cli@18.0.4 build --platform android --profile production --clear-cache",
+    "eas:prod:apk": "npx -y eas-cli@18.0.4 build --platform android --profile production-apk --clear-cache"
   },
   "dependencies": {
     "@babel/runtime": "^7.28.4",

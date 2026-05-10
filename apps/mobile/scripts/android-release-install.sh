@@ -4,6 +4,25 @@ set -euo pipefail
 APP_ID="com.andrewsyl.carparking"
 APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
 
+if [ "${ALLOW_DEBUG_SIGNED_RELEASE:-0}" != "1" ]; then
+  cat <<'EOF'
+[prod] Refusing to build a local "production" APK with the debug signing key.
+
+This repo's local Gradle release build is still debug-signed, which is fine for
+basic manual checks but not valid for Google Sign-In or any true production-path
+verification.
+
+Use one of these instead:
+  - npm run eas:prod        # real production-signed Android build
+  - npm run android:qa      # local/non-production testing
+
+If you intentionally want the old debug-signed release APK for a narrow local
+check, rerun with:
+  ALLOW_DEBUG_SIGNED_RELEASE=1 npm run android:prod:local-debug
+EOF
+  exit 1
+fi
+
 echo "[prod] Building release APK..."
 (
   cd android

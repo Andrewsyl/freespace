@@ -14,8 +14,8 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
 import { useAuth } from "../auth";
-import { getMe, requestPhoneVerification, updateMe, verifyPhone } from "../api";
-import { useToastOnMessage } from "../components/GlobalToast";
+import { requestPhoneVerification, updateMe, verifyPhone } from "../api";
+import { useGlobalToast, useToastOnMessage } from "../components/GlobalToast";
 import type { RootStackParamList } from "../types";
 import { Button, TextInput as AppTextInput } from "../components/ui";
 import { cardShadow, colors, spacing, textStyles } from "../styles/theme";
@@ -25,6 +25,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "PersonalInfo">;
 export function PersonalInfoScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { user, token, setAuthUser } = useAuth();
+  const { showSuccess } = useGlobalToast();
   const scrollRef = useRef<any>(null);
   const nameFieldY = useRef(0);
   const phoneFieldY = useRef(0);
@@ -35,7 +36,6 @@ export function PersonalInfoScreen({ navigation }: Props) {
   const [saving, setSaving] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
   const [verifyingCode, setVerifyingCode] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [showPhoneVerify, setShowPhoneVerify] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -67,22 +67,6 @@ export function PersonalInfoScreen({ navigation }: Props) {
     setPreviewUrl(null);
   }, [user?.name, user?.email, user?.phone]);
 
-  useEffect(() => {
-    const run = async () => {
-      if (!token) return;
-      setLoading(true);
-      try {
-        const res = await getMe(token);
-        await setAuthUser(res.user);
-      } catch {
-        // Keep local profile if fetch fails.
-      } finally {
-        setLoading(false);
-      }
-    };
-    void run();
-  }, [token, setAuthUser]);
-
   const onSave = async () => {
     if (!token) return;
     setSaving(true);
@@ -97,16 +81,26 @@ export function PersonalInfoScreen({ navigation }: Props) {
       });
       await setAuthUser(res.user);
       setPreviewUrl(res.previewUrl ?? null);
-      setMessage(
-        emailChanged
-          ? "Profile saved. Check your inbox to verify your new email."
-          : "Profile saved"
-      );
+      const successMessage = emailChanged
+        ? "Personal information updated. Check your inbox to verify your new email."
+        : "Personal information updated.";
+      showSuccess(successMessage);
       if (currentPhone && phoneChanged) {
         setShowPhoneVerify(true);
+        setMessage("Profile saved. Verify your new phone number below.");
       } else if (!currentPhone) {
         setShowPhoneVerify(false);
         setVerificationCode("");
+        setMessage(null);
+      } else {
+        setShowPhoneVerify(false);
+        setVerificationCode("");
+        setMessage(null);
+      }
+      if (emailChanged && res.previewUrl) {
+        setMessage("Profile saved. Open the verification link below to confirm your new email.");
+      } else if (!emailChanged) {
+        navigation.navigate("Tabs", { screen: "Profile" });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save profile");
@@ -259,9 +253,9 @@ export function PersonalInfoScreen({ navigation }: Props) {
                 </View>
                 {currentPhone ? (
                   <Pressable
-                    style={[styles.inlineButton, (sendingCode || saving || loading) && styles.inlineButtonDisabled]}
+                    style={[styles.inlineButton, (sendingCode || saving) && styles.inlineButtonDisabled]}
                     onPress={onSendCode}
-                    disabled={sendingCode || saving || loading}
+                    disabled={sendingCode || saving}
                   >
                     <Text style={styles.inlineButtonText}>
                       {sendingCode ? "Sending..." : phoneVerified ? "Resend code" : "Verify"}
@@ -310,8 +304,8 @@ export function PersonalInfoScreen({ navigation }: Props) {
             style={styles.saveButton}
             title="Save"
             onPress={onSave}
-            disabled={!hasChanges || saving || loading}
-            loading={saving || loading}
+            disabled={!hasChanges || saving}
+            loading={saving}
           />
         </ScrollView>
       </KeyboardAvoidingView>

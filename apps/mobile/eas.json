@@ -60,6 +60,13 @@
         "EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID": "427792130041-s3dlgu4vsq0t7oujuhbev0tgqhvt0dk7.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "742052774291-7ebm33putsqqjjb8h5kebok0214hp38h.apps.googleusercontent.com"
       }
+    },
+    "production-apk": {
+      "extends": "production",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {

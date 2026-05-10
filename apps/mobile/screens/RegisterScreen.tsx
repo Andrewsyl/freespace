@@ -17,6 +17,7 @@ import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-si
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
 import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
+import { logInfo, logWarn } from "../logger";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Register">;
 
@@ -38,6 +39,13 @@ export function RegisterScreen({ navigation }: Props) {
     GoogleSignin.configure({
       webClientId: googleWebClientId || undefined,
       iosClientId: Platform.OS === "ios" ? googleIosClientId || undefined : undefined,
+    });
+    logInfo("Configured Google sign-in", {
+      platform: Platform.OS,
+      screen: "Register",
+      hasWebClientId: Boolean(googleWebClientId),
+      hasIosClientId: Boolean(googleIosClientId),
+      webClientIdSuffix: googleWebClientId ? googleWebClientId.slice(-12) : null,
     });
   }, [googleWebClientId, googleIosClientId]);
 
@@ -79,19 +87,36 @@ export function RegisterScreen({ navigation }: Props) {
   const handleGoogleSignup = async () => {
     setError(null);
     try {
+      logInfo("Google sign-up starting", { screen: "Register" });
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      await GoogleSignin.signIn();
+      logInfo("Google Play Services available", { screen: "Register" });
+      const signInResult = await GoogleSignin.signIn();
+      logInfo("Google account selected", {
+        screen: "Register",
+        email: signInResult?.data?.user?.email ?? null,
+      });
       let idToken: string | null = null;
       try {
         const tokens = await GoogleSignin.getTokens();
         idToken = tokens.idToken ?? null;
+        logInfo("Google tokens received", {
+          screen: "Register",
+          hasIdToken: Boolean(idToken),
+          accessTokenSuffix: tokens.accessToken ? tokens.accessToken.slice(-8) : null,
+        });
       } catch {
         idToken = null;
       }
       if (!idToken) {
+        setError("Google sign-in completed but no ID token was returned.");
         return;
       }
       const authUser = await loginWithOAuth("google", idToken);
+      logInfo("Backend Google OAuth login succeeded", {
+        screen: "Register",
+        userId: authUser.id,
+        email: authUser.email,
+      });
       if (needsLegalAcceptance(authUser)) {
         setError("Please accept Terms & Privacy to continue.");
         return;
@@ -102,6 +127,15 @@ export function RegisterScreen({ navigation }: Props) {
         return;
       }
       const message = err instanceof Error ? err.message : "Google sign-in failed";
+      logWarn("Google sign-up failed", {
+        screen: "Register",
+        code: errorCode || null,
+        message,
+        raw:
+          err && typeof err === "object"
+            ? JSON.parse(JSON.stringify(err, Object.getOwnPropertyNames(err)))
+            : err,
+      });
       setError(errorCode ? `${message} (${errorCode})` : message);
     }
   };

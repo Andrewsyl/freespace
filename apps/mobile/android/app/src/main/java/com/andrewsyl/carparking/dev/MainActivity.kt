@@ -62,4 +62,13 @@ class MainActivity : ReactActivity() {
       // because it's doing more than [Activity.moveTaskToBack] in fact.
       super.invokeDefaultOnBackPressed()
   }
+
+  override fun onUserLeaveHint() {
+    try {
+      super.onUserLeaveHint()
+    } catch (_: NullPointerException) {
+      // ReactActivityDelegate can be null during certain external auth handoffs.
+      // Ignore the callback so Google sign-in can continue instead of crashing.
+    }
+  }
 }

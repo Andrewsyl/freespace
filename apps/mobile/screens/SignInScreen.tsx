@@ -19,6 +19,7 @@ import { requestEmailVerification } from "../api";
 import type { RootStackParamList } from "../types";
 import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
+import { logInfo, logWarn } from "../logger";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
@@ -60,6 +61,12 @@ export function SignInScreen({ navigation }: Props) {
     GoogleSignin.configure({
       webClientId: googleWebClientId || undefined,
       iosClientId: Platform.OS === "ios" ? googleIosClientId || undefined : undefined,
+    });
+    logInfo("Configured Google sign-in", {
+      platform: Platform.OS,
+      hasWebClientId: Boolean(googleWebClientId),
+      hasIosClientId: Boolean(googleIosClientId),
+      webClientIdSuffix: googleWebClientId ? googleWebClientId.slice(-12) : null,
     });
   }, [googleWebClientId, googleIosClientId]);
 
@@ -268,12 +275,28 @@ export function SignInScreen({ navigation }: Props) {
                 setNotice(null);
                 setAuthSuccess(null);
                 try {
+                  logInfo("Google sign-in starting", { screen: "SignIn" });
                   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-                  await GoogleSignin.signIn();
+                  logInfo("Google Play Services available", { screen: "SignIn" });
+                  const signInResult = await GoogleSignin.signIn();
+                  logInfo("Google account selected", {
+                    screen: "SignIn",
+                    email: signInResult?.data?.user?.email ?? null,
+                  });
                   const tokens = await GoogleSignin.getTokens();
+                  logInfo("Google tokens received", {
+                    screen: "SignIn",
+                    hasIdToken: Boolean(tokens.idToken),
+                    accessTokenSuffix: tokens.accessToken ? tokens.accessToken.slice(-8) : null,
+                  });
                   const idToken = tokens.idToken;
                   if (!idToken) throw new Error("Missing Google idToken");
                   const authUser = await loginWithOAuth("google", idToken);
+                  logInfo("Backend Google OAuth login succeeded", {
+                    screen: "SignIn",
+                    userId: authUser.id,
+                    email: authUser.email,
+                  });
                   if (needsLegalAcceptance(authUser)) {
                     setNotice("Please accept Terms & Privacy to continue.");
                     return;
@@ -284,7 +307,15 @@ export function SignInScreen({ navigation }: Props) {
                     err && typeof err === "object" && "code" in err ? String(err.code) : "";
                   if (errorCode === statusCodes.SIGN_IN_CANCELLED) return;
                   const message = err instanceof Error ? err.message : "Google sign-in failed";
-                  console.warn("Google sign-in failed", err);
+                  logWarn("Google sign-in failed", {
+                    screen: "SignIn",
+                    code: errorCode || null,
+                    message,
+                    raw:
+                      err && typeof err === "object"
+                        ? JSON.parse(JSON.stringify(err, Object.getOwnPropertyNames(err)))
+                        : err,
+                  });
                   setError(errorCode ? `${message} (${errorCode})` : message);
                 }
               }}

@@ -1,10 +1,7 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
-def appEnv = (findProperty('appEnv') ?: System.getenv('APP_ENV') ?: 'local').toString().toLowerCase()
-def isDevLikeEnv = ["local", "dev"].contains(appEnv)
 def baseAndroidPackage = "com.andrewsyl.carparking"
-def resolvedAndroidPackage = isDevLikeEnv ? "${baseAndroidPackage}.dev" : baseAndroidPackage
 def isDebugTask = gradle.startParameter.taskNames.any { task ->
     task.toLowerCase().contains("debug")
 }
@@ -100,7 +97,7 @@ android {
 
     namespace baseAndroidPackage
     defaultConfig {
-        applicationId resolvedAndroidPackage
+        applicationId "com.andrewsyl.carparking"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -119,10 +116,12 @@ android {
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
+            applicationIdSuffix ".dev"
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
+            // Local Gradle release builds default to the debug keystore.
+            // EAS cloud builds override this via eas-build.gradle when
+            // credentials.json is present on the remote builder.
             signingConfig signingConfigs.debug
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()

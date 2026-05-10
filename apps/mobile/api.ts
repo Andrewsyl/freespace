@@ -64,6 +64,12 @@ async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit, ti
   }
 }
 
+function resolveApiBase(apiBaseOverride?: string) {
+  const candidate = apiBaseOverride?.trim();
+  if (!candidate) return baseUrl;
+  return candidate.replace(/\/$/, "");
+}
+
 export async function searchListings(params: SearchParams) {
   const radiusKm = Math.min(50, Math.max(0.1, Number(params.radiusKm) || 5));
   const query = new URLSearchParams();
@@ -466,8 +472,8 @@ export async function logoutAllSessions(token: string) {
   return (await response.json()) as { ok: boolean };
 }
 
-export async function getMe(token: string) {
-  const response = await fetch(`${baseUrl}/api/auth/me`, {
+export async function getMe(token: string, apiBaseOverride?: string) {
+  const response = await fetch(`${resolveApiBase(apiBaseOverride)}/api/auth/me`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
@@ -544,8 +550,8 @@ export async function requestPasswordReset(email: string) {
   return (await response.json()) as { ok: boolean; previewUrl?: string };
 }
 
-export async function verifyEmailToken(token: string) {
-  const response = await fetchWithTimeout(`${baseUrl}/api/auth/verify?token=${encodeURIComponent(token)}`, {
+export async function verifyEmailToken(token: string, apiBaseOverride?: string) {
+  const response = await fetchWithTimeout(`${resolveApiBase(apiBaseOverride)}/api/auth/verify?token=${encodeURIComponent(token)}`, {
     headers: {
       Accept: "application/json",
     },

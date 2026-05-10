@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "packageManager": "yarn@1.22.22",
   "engines": {
-    "node": "22.x"
+    "node": "20.x"
   },
   "workspaces": [
     "apps/web",
@@ -18,7 +18,7 @@
     "check:migrations": "node scripts/check-migrations.mjs",
     "dev:web": "npm --workspace apps/web run dev",
     "dev:web:lan": "adb reverse tcp:4000 tcp:4000 || true; LAN_IP=$(ifconfig en0 | awk '/inet /{print $2; exit}'); echo \"LAN_IP=$LAN_IP\"; NEXT_PUBLIC_API_BASE=\"http://$LAN_IP:4000\" npm --workspace apps/web run dev -- --hostname 0.0.0.0 --port 3000",
-    "dev:api:lan": "LAN_IP=$(ifconfig en0 | awk '/inet /{print $2; exit}'); echo \"LAN_IP=$LAN_IP\"; WEB_BASE_URL=\"http://$LAN_IP:3000\" PORT=4000 npm --workspace apps/api run dev",
+    "dev:api:lan": "LAN_IP=$(ifconfig en0 | awk '/inet /{print $2; exit}'); echo \"LAN_IP=$LAN_IP\"; WEB_BASE_URL=\"http://$LAN_IP:3000\" PUBLIC_API_BASE_URL=\"http://$LAN_IP:4000\" PORT=4000 npm --workspace apps/api run dev",
     "dev:api": "npm --workspace apps/api run dev",
     "dev:mobile": "adb reverse tcp:4000 tcp:4000 || true; npm --workspace apps/mobile run start",
     "test:mobile": "npm --workspace apps/mobile run test",

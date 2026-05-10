@@ -31,8 +31,6 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="carparking"/>
-        <data android:scheme="com.googleusercontent.apps.742052774291-32p3r3jcea4oge0uec8aqqe9chi2f79l"/>
-        <data android:scheme="com.googleusercontent.apps.742052774291-7ebm33putsqqjjb8h5kebok0214hp38h"/>
         <data android:scheme="exp+carparking"/>
       </intent-filter>
     </activity>

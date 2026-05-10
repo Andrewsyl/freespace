@@ -277,17 +277,23 @@ function AppNavigator() {
       if (!active || !url || handledUrls.has(url)) return;
       handledUrls.add(url);
       const parsed = Linking.parse(url);
-      const path = parsed.path?.replace(/^\/+/, "") ?? "";
+      const pathCandidate =
+        ("hostname" in parsed && typeof parsed.hostname === "string" && parsed.hostname) ||
+        parsed.path ||
+        "";
+      const path = pathCandidate.replace(/^\/+/, "");
       if (path !== "verify-email") return;
       const tokenParam = typeof parsed.queryParams?.token === "string" ? parsed.queryParams.token : null;
+      const apiBaseParam =
+        typeof parsed.queryParams?.apiBase === "string" ? parsed.queryParams.apiBase : undefined;
       if (!tokenParam) {
         showError("Verification link is missing its token.");
         return;
       }
       try {
-        await verifyEmailToken(tokenParam);
+        await verifyEmailToken(tokenParam, apiBaseParam);
         if (token) {
-          const profile = await getMe(token);
+          const profile = await getMe(token, apiBaseParam);
           await setAuthUser(profile.user);
         }
         showSuccess("Email verified. You can continue in the app.");
