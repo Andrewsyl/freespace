@@ -37,11 +37,11 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   hitArea: {
-    height: 52,
-    left: -10,
+    height: 48,
+    left: -9,
     position: "absolute",
-    top: -10,
-    width: 52,
+    top: -9,
+    width: 48,
   },
   pinWrapper: {
     alignItems: "center",
@@ -49,10 +49,10 @@ const styles = StyleSheet.create({
   pinCircle: {
     alignItems: "center",
     backgroundColor: "#ff385c",
-    borderRadius: 15,
-    height: 30,
+    borderRadius: 13,
+    height: 26,
     justifyContent: "center",
-    width: 30,
+    width: 26,
   },
   pinCircleActive: {
     backgroundColor: "#0f172a",
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   },
   pinLabel: {
     color: "#ffffff",
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "600",
   },
   pinLabelActive: {
@@ -70,13 +70,13 @@ const styles = StyleSheet.create({
   },
   pinTail: {
     borderLeftColor: "transparent",
-    borderLeftWidth: 7,
+    borderLeftWidth: 6,
     borderRightColor: "transparent",
-    borderRightWidth: 7,
+    borderRightWidth: 6,
     borderTopColor: "#ff385c",
-    borderTopWidth: 10,
+    borderTopWidth: 8,
     height: 0,
-    marginTop: -3,
+    marginTop: -2,
     width: 0,
   },
   pinTailActive: {
@@ -85,8 +85,8 @@ const styles = StyleSheet.create({
   pinShadow: {
     backgroundColor: "rgba(15, 23, 42, 0.18)",
     borderRadius: 999,
-    height: 5,
+    height: 4,
     marginTop: -2,
-    width: 14,
+    width: 12,
   },
 });

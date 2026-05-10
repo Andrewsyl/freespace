@@ -16,13 +16,13 @@ export function MapPricePin({ price, selected = false, soldOut = false }: MapPri
 
   const dimensions = useMemo(() => {
     const textLength = priceText.length;
-    const baseWidth = soldOut ? 50 : 40;
-    const extraWidth = soldOut ? 0 : Math.max(0, (textLength - 3) * 6);
+    const baseWidth = soldOut ? 44 : 36;
+    const extraWidth = soldOut ? 0 : Math.max(0, (textLength - 3) * 5);
     const width = Math.max(baseWidth, baseWidth + extraWidth);
-    const bubbleHeight = soldOut ? 18 : 24;
-    const tailHeight = soldOut ? 4 : 4;
+    const bubbleHeight = soldOut ? 16 : 21;
+    const tailHeight = soldOut ? 3 : 4;
     const totalHeight = bubbleHeight + tailHeight;
-    const tailWidth = soldOut ? 7 : 7;
+    const tailWidth = soldOut ? 6 : 6;
 
     return { width, bubbleHeight, tailHeight, totalHeight, tailWidth };
   }, [priceText, soldOut]);
@@ -106,12 +106,12 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    bottom: 5,
+    bottom: 4,
     alignItems: "center",
     justifyContent: "center",
   },
   priceText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
     letterSpacing: -0.2,
     fontFamily: "Poppins-Bold",
@@ -121,6 +121,6 @@ const styles = StyleSheet.create({
   },
   priceTextSoldOut: {
     color: "#94A3B8",
-    fontSize: 8,
+    fontSize: 7,
   },
 });

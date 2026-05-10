@@ -25,7 +25,7 @@ type ListingResult = {
 type ViewShotRef = InstanceType<typeof ViewShot>;
 
 type MapRegion = Region;
-const PIN_STYLE_VERSION = "v17";
+const PIN_STYLE_VERSION = "v18";
 const METERS_PER_DEGREE_LAT = 111_000;
 const toRad = (value: number) => (value * Math.PI) / 180;
 const distanceMeters = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
