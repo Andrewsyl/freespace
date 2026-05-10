@@ -80,6 +80,19 @@ jest.mock("@stripe/stripe-react-native", () => ({
 }));
 
 jest.mock("expo-notifications", () => ({
+  getPermissionsAsync: jest.fn().mockResolvedValue({
+    granted: true,
+    canAskAgain: true,
+    status: "granted",
+  }),
+  requestPermissionsAsync: jest.fn().mockResolvedValue({
+    granted: true,
+    canAskAgain: true,
+    status: "granted",
+  }),
+  SchedulableTriggerInputTypes: {
+    DATE: "date",
+  },
   scheduleNotificationAsync: jest.fn().mockResolvedValue(null),
 }));
 
