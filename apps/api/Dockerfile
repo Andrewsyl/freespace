@@ -5,8 +5,7 @@ ENV NODE_ENV=production
 FROM base AS deps
 COPY package.json yarn.lock ./
 COPY apps/api/package.json apps/api/package.json
-COPY apps/web/package.json apps/web/package.json
-COPY apps/mobile/package.json apps/mobile/package.json
+RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/api']; delete pkg.dependencies; delete pkg.devDependencies; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
 RUN corepack enable && yarn install --frozen-lockfile --production=false
 
 FROM deps AS build
@@ -18,8 +17,7 @@ RUN yarn workspace api build
 FROM base AS runtime
 COPY package.json yarn.lock ./
 COPY apps/api/package.json apps/api/package.json
-COPY apps/web/package.json apps/web/package.json
-COPY apps/mobile/package.json apps/mobile/package.json
+RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.workspaces=['apps/api']; delete pkg.dependencies; delete pkg.devDependencies; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
 RUN corepack enable && yarn install --frozen-lockfile --production=true
 COPY --from=build /app/apps/api/dist apps/api/dist
 COPY db/migrations db/migrations
