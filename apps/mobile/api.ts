@@ -544,6 +544,18 @@ export async function requestPasswordReset(email: string) {
   return (await response.json()) as { ok: boolean; previewUrl?: string };
 }
 
+export async function verifyEmailToken(token: string) {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/verify?token=${encodeURIComponent(token)}`, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "Email verification failed"));
+  }
+  return (await response.json()) as { ok: boolean };
+}
+
 export async function resetPassword(token: string, password: string) {
   const response = await fetchWithTimeout(`${baseUrl}/api/auth/reset-password`, {
     method: "POST",

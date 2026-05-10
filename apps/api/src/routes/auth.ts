@@ -105,6 +105,18 @@ function generateSmsCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+function getPublicApiBaseUrl() {
+  return (process.env.PUBLIC_API_BASE_URL ?? "https://api.freespace.ie").replace(/\/$/, "");
+}
+
+function buildVerificationUrl(token: string) {
+  return `${getPublicApiBaseUrl()}/api/auth/verify-email?token=${token}`;
+}
+
+function buildVerificationAppUrl(token: string) {
+  return `carparking://verify-email?token=${encodeURIComponent(token)}`;
+}
+
 router.post("/register", enforceBlockedList, registerLimiter, async (req, res, next) => {
   try {
     const { email, password, termsVersion, privacyVersion, phone } = registerSchema.parse(req.body);
@@ -136,7 +148,7 @@ router.post("/register", enforceBlockedList, registerLimiter, async (req, res, n
     const refreshExpires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
     await setRefreshToken(user.id, hashToken(refreshToken), refreshExpires);
     // Fire and forget email; if email fails we still allow soft login.
-    const verifyUrl = `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/verify?token=${token}`;
+    const verifyUrl = buildVerificationUrl(token);
     sendMail({
       to: user.email,
       subject: "Verify your email",
@@ -361,12 +373,43 @@ router.get("/verify", async (req, res, next) => {
   try {
     const token = z.string().parse(req.query.token);
     const verified = await verifyUserEmail(token);
-    if (!verified) return res.status(400).json({ message: "Invalid or expired verification link" });
+    const wantsHtml = (req.get("accept") ?? "").includes("text/html");
+    if (!verified) {
+      if (wantsHtml) {
+        return res.status(400).type("html").send(buildVerificationResultPage({
+          title: "Verification link expired",
+          body: "This verification link is invalid or has expired. Return to the app and request a new verification email.",
+        }));
+      }
+      return res.status(400).json({ message: "Invalid or expired verification link" });
+    }
     await insertEventLog({
       eventType: "email_verified",
       payload: { userId: verified.id },
     });
+    if (wantsHtml) {
+      return res.type("html").send(buildVerificationResultPage({
+        title: "Email verified",
+        body: "Your FreeSpace email is now verified. You can return to the app and continue.",
+      }));
+    }
     res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/verify-email", async (req, res, next) => {
+  try {
+    const token = z.string().parse(req.query.token);
+    const openAppUrl = buildVerificationAppUrl(token);
+    const fallbackUrl = `${getPublicApiBaseUrl()}/api/auth/verify?token=${encodeURIComponent(token)}`;
+    res.type("html").send(
+      buildVerificationLaunchPage({
+        openAppUrl,
+        fallbackUrl,
+      })
+    );
   } catch (error) {
     next(error);
   }
@@ -380,7 +423,7 @@ router.post("/request-verification", enforceBlockedList, verifyLimiter, async (r
     const token = generateVerificationToken();
     const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
     await setVerificationToken(user.id, token, expires);
-    const verifyUrl = `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/verify?token=${token}`;
+    const verifyUrl = buildVerificationUrl(token);
     let sent = true;
     try {
       await sendMail({
@@ -623,7 +666,7 @@ router.put("/me", requireAuth, accountWriteLimiter, async (req, res, next) => {
       const token = generateVerificationToken();
       const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
       await setVerificationToken(user.id, hashToken(token), expires);
-      const verifyUrl = `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/verify?token=${token}`;
+      const verifyUrl = buildVerificationUrl(token);
       try {
         await sendMail({
           to: user.email,
@@ -741,4 +784,70 @@ function buildPasswordResetEmail(url: string) {
     url,
     secondary: 'If you did not request a password reset, you can ignore this email and your password will stay unchanged.',
   });
+}
+
+function buildVerificationResultPage({
+  title,
+  body,
+}: {
+  title: string;
+  body: string;
+}) {
+  return `
+  <html>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>${title}</title>
+    </head>
+    <body style="margin:0; padding:32px 16px; background:#f4f7fb; font-family:Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color:#0f172a;">
+      <div style="max-width:560px; margin:0 auto; background:#ffffff; border:1px solid #dbe4ee; border-radius:24px; box-shadow:0 18px 45px rgba(15, 23, 42, 0.08); overflow:hidden;">
+        <div style="padding:28px; background:linear-gradient(135deg, #eff6ff 0%, #ffffff 58%, #f8fafc 100%); border-bottom:1px solid #e2e8f0;">
+          <div style="font-size:12px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#1d4ed8;">FreeSpace account</div>
+          <h1 style="margin:10px 0 0; font-size:28px; line-height:1.2; font-weight:800; color:#0f172a;">${title}</h1>
+        </div>
+        <div style="padding:24px 28px 28px;">
+          <p style="margin:0; font-size:15px; line-height:1.7; color:#334155;">${body}</p>
+        </div>
+      </div>
+    </body>
+  </html>
+  `;
+}
+
+function buildVerificationLaunchPage({
+  openAppUrl,
+  fallbackUrl,
+}: {
+  openAppUrl: string;
+  fallbackUrl: string;
+}) {
+  return `
+  <html>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Open FreeSpace</title>
+    </head>
+    <body style="margin:0; padding:32px 16px; background:#f4f7fb; font-family:Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color:#0f172a;">
+      <div style="max-width:560px; margin:0 auto; background:#ffffff; border:1px solid #dbe4ee; border-radius:24px; box-shadow:0 18px 45px rgba(15, 23, 42, 0.08); overflow:hidden;">
+        <div style="padding:28px; background:linear-gradient(135deg, #eff6ff 0%, #ffffff 58%, #f8fafc 100%); border-bottom:1px solid #e2e8f0;">
+          <div style="font-size:12px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#1d4ed8;">FreeSpace account</div>
+          <h1 style="margin:10px 0 0; font-size:28px; line-height:1.2; font-weight:800; color:#0f172a;">Open the app to verify</h1>
+        </div>
+        <div style="padding:24px 28px 28px;">
+          <p style="margin:0 0 22px; font-size:15px; line-height:1.7; color:#334155;">We’ll open FreeSpace and finish verifying your email there. If the app does not open, you can continue in your browser instead.</p>
+          <a href="${openAppUrl}" style="display:inline-block; padding:14px 20px; background:#0f172a; color:#ffffff; border-radius:14px; text-decoration:none; font-size:15px; font-weight:700;">Open FreeSpace</a>
+          <p style="margin:18px 0 0; font-size:13px; line-height:1.6; color:#64748b;">App not available on this device?</p>
+          <a href="${fallbackUrl}" style="display:inline-block; margin-top:8px; color:#1d4ed8; font-size:14px; font-weight:700; text-decoration:none;">Verify in browser instead</a>
+        </div>
+      </div>
+      <script>
+        window.setTimeout(function () {
+          window.location.replace(${JSON.stringify(openAppUrl)});
+        }, 200);
+      </script>
+    </body>
+  </html>
+  `;
 }

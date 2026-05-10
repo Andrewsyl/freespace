@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import * as Notifications from "expo-notifications";
+import * as Linking from "expo-linking";
 import { NavigationContainer, CommonActions, DefaultTheme, createNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -50,12 +51,13 @@ import { EditListingScreen } from "./screens/EditListingScreen";
 import { SupportScreen } from "./screens/SupportScreen";
 import { AdminScreen } from "./screens/AdminScreen";
 import type { RootStackParamList } from "./types";
-import { registerPushToken } from "./api";
+import { getMe, registerPushToken, verifyEmailToken } from "./api";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomTabButton } from "./components/BottomTabButton";
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { GlobalLoadingProvider, useGlobalLoading } from "./components/GlobalLoading";
 import { GlobalToastProvider } from "./components/GlobalToast";
+import { useGlobalToast } from "./components/GlobalToast";
 import { mobileEnv } from "./env";
 import { installGlobalErrorLogging } from "./logger";
 import { colors } from "./theme/colors";
@@ -230,6 +232,9 @@ function EnvironmentBadge({ env }: { env: string }) {
 const TransparentTheme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: 'transparent' } };
 
 function AppNavigator() {
+  const { token, setAuthUser } = useAuth();
+  const { showError, showSuccess } = useGlobalToast();
+
   useEffect(() => {
     const openNotificationTarget = (
       data: BookingNotificationData | Record<string, unknown> | null | undefined
@@ -263,6 +268,57 @@ function AppNavigator() {
 
     return () => subscription.remove();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    const handledUrls = new Set<string>();
+
+    const handleUrl = async (url: string | null | undefined) => {
+      if (!active || !url || handledUrls.has(url)) return;
+      handledUrls.add(url);
+      const parsed = Linking.parse(url);
+      const path = parsed.path?.replace(/^\/+/, "") ?? "";
+      if (path !== "verify-email") return;
+      const tokenParam = typeof parsed.queryParams?.token === "string" ? parsed.queryParams.token : null;
+      if (!tokenParam) {
+        showError("Verification link is missing its token.");
+        return;
+      }
+      try {
+        await verifyEmailToken(tokenParam);
+        if (token) {
+          const profile = await getMe(token);
+          await setAuthUser(profile.user);
+        }
+        showSuccess("Email verified. You can continue in the app.");
+        if (navigationRef.isReady()) {
+          navigationRef.dispatch(
+            CommonActions.navigate({
+              name: "Tabs",
+              params: {
+                screen: "Profile",
+              } as RootStackParamList["Tabs"],
+            })
+          );
+        }
+      } catch (error) {
+        showError(error instanceof Error ? error.message : "Email verification failed");
+      }
+    };
+
+    void Linking.getInitialURL().then((url) => {
+      void handleUrl(url);
+    });
+
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      void handleUrl(url);
+    });
+
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, [setAuthUser, showError, showSuccess, token]);
 
   return (
     <>
