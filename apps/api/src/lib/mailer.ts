@@ -54,6 +54,11 @@ async function sendViaResend({
   }
 }
 
+function isSesIdentityRejection(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /Email address is not verified/i.test(message) || /Message rejected/i.test(message);
+}
+
 export async function sendMail({
   to,
   subject,
@@ -68,8 +73,16 @@ export async function sendMail({
   from?: string;
 }) {
   if (transport) {
-    await transport.sendMail({ from: from ?? defaultFrom, to, subject, text, html });
-    return;
+    try {
+      await transport.sendMail({ from: from ?? defaultFrom, to, subject, text, html });
+      return;
+    } catch (error) {
+      if (resendApiKey && isSesIdentityRejection(error)) {
+        await sendViaResend({ to, subject, text, html, from });
+        return;
+      }
+      throw error;
+    }
   }
   if (resendApiKey) {
     await sendViaResend({ to, subject, text, html, from });
