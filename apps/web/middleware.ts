@@ -16,6 +16,18 @@ function unauthorized() {
 }
 
 export function middleware(request: NextRequest) {
+  const rawHost =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? request.nextUrl.host;
+  const apexHost = rawHost.split(",")[0]?.trim().toLowerCase().split(":")[0] ?? "";
+
+  if (apexHost === "freespace.ie") {
+    const url = request.nextUrl.clone();
+    url.protocol = "https";
+    url.host = "www.freespace.ie";
+    url.port = "";
+    return NextResponse.redirect(url, 308);
+  }
+
   if (!isAuthConfigured) return NextResponse.next();
 
   const { pathname } = request.nextUrl;
