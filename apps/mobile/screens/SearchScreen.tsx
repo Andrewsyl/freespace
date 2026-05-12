@@ -121,6 +121,16 @@ const formatDateLabel = (date: Date) => {
 const formatTimeLabel = (date: Date) => `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 
 const formatDateTimeLabel = (date: Date) => `${formatDateLabel(date)} · ${formatTimeLabel(date)}`;
+const formatMapCardMetaLine = (fromIso: string, toIso: string, distanceM?: number | null) => {
+  const fromDate = new Date(fromIso);
+  const toDate = new Date(toIso);
+  const dayLabel = formatDateLabel(fromDate);
+  const distanceLabel =
+    typeof distanceM === "number" && Number.isFinite(distanceM)
+      ? `${(distanceM < 1000 ? Math.round(distanceM) : distanceM / 1000).toFixed(distanceM < 1000 ? 0 : 1)} ${distanceM < 1000 ? "m" : "km"}`
+      : null;
+  return `${dayLabel}: ${formatTimeLabel(fromDate)} - ${formatTimeLabel(toDate)}${distanceLabel ? ` | ${distanceLabel}` : ""}`;
+};
 
 export function SearchScreen({ navigation }: Props) {
   const today = useMemo(() => {
@@ -1164,12 +1174,15 @@ export function SearchScreen({ navigation }: Props) {
             rating={selectedListing.rating ?? 0}
             reviewCount={selectedListing.rating_count ?? 0}
             price={`€${priceForListing(selectedListing)}`}
+            subtitle={selectedListing.availability_text?.trim() || "Parking space"}
+            metaLine={formatMapCardMetaLine(from, to, selectedListing.distance_m)}
+            badgeLabel={selectedCardAmenities?.[0] ?? selectedListing.amenities?.[0] ?? null}
             amenities={selectedCardAmenities ?? selectedListing.amenities ?? []}
             isAvailable={selectedListing.is_available !== false}
             isFavorite={isFavorite(selectedListing.id)}
             onToggleFavorite={() => toggle(selectedListing)}
             onPress={() => { setSelectedId(null); navigation.navigate("Listing", { id: selectedListing.id, from, to }); }}
-            bottomOffset={10}
+            bottomOffset={94 + insets.bottom}
             horizontalInset={16}
             onReserve={() => { setSelectedId(null); navigation.navigate("Listing", { id: selectedListing.id, from, to }); }}
             dismissing={dismissingCard}

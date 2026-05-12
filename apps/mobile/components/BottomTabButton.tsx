@@ -12,8 +12,8 @@ type Props = {
 export function BottomTabButton({ children, onPress, accessibilityState }: Props) {
   const focused = accessibilityState?.selected;
   const scale = useRef(new Animated.Value(1)).current;
-  const opacity = useRef(new Animated.Value(focused ? 1 : 0.78)).current;
-  const lift = useRef(new Animated.Value(focused ? -1 : 0)).current;
+  const opacity = useRef(new Animated.Value(focused ? 1 : 0.9)).current;
+  const lift = useRef(new Animated.Value(focused ? -0.5 : 0)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -24,12 +24,12 @@ export function BottomTabButton({ children, onPress, accessibilityState }: Props
         tension: 40,
       }),
       Animated.timing(opacity, {
-        toValue: focused ? 1 : 0.78,
+        toValue: focused ? 1 : 0.9,
         duration: 200,
         useNativeDriver: false,
       }),
       Animated.timing(lift, {
-        toValue: focused ? -1 : 0,
+        toValue: focused ? -0.5 : 0,
         duration: 180,
         useNativeDriver: false,
       }),
@@ -70,7 +70,6 @@ export function BottomTabButton({ children, onPress, accessibilityState }: Props
           },
         ]}
       >
-        <View style={[styles.indicator, focused && styles.indicatorActive]} />
         {children}
       </Animated.View>
     </Pressable>
@@ -78,24 +77,14 @@ export function BottomTabButton({ children, onPress, accessibilityState }: Props
 }
 
 const styles = StyleSheet.create({
-  indicator: {
-    width: 18,
-    height: 2,
-    borderRadius: 999,
-    backgroundColor: "transparent",
-    marginBottom: 4,
-  },
-  indicatorActive: {
-    backgroundColor: "#111827",
-  },
   item: {
     alignItems: "center",
     borderRadius: radius.pill,
-    gap: 2,
+    gap: 1,
     justifyContent: "center",
-    minWidth: 78,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    width: "100%",
+    paddingHorizontal: 4,
+    paddingVertical: 6,
   },
   pressable: {
     alignItems: "center",

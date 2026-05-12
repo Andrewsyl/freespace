@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { Cctv, EvCharger, Fence, Home, KeyRound } from "lucide-react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { cardShadow, colors, radius, textStyles } from "../styles/theme";
 
 type MapBottomCardProps = {
@@ -17,6 +17,9 @@ type MapBottomCardProps = {
   rating: number;
   reviewCount: number;
   price: string;
+  subtitle?: string;
+  metaLine?: string;
+  badgeLabel?: string | null;
   amenities?: string[] | null;
   isAvailable?: boolean;
   isFavorite?: boolean;
@@ -34,7 +37,7 @@ export function MapBottomCard({
   rating,
   reviewCount,
   price,
-  amenities,
+  metaLine,
   isAvailable = true,
   isFavorite,
   onToggleFavorite,
@@ -54,21 +57,6 @@ export function MapBottomCard({
       }),
     [translateAnim]
   );
-  const features = useMemo(() => {
-    const source = amenities ?? [];
-    const normalizeAmenity = (value: string) => {
-      const normalized = value.toLowerCase();
-      if (normalized.includes("cctv") || normalized.includes("camera")) return "CCTV";
-      if (normalized.includes("ev") || normalized.includes("charg")) return "EV charging";
-      if (normalized.includes("gate") || normalized.includes("barrier")) return "Gated";
-      if (normalized.includes("cover") || normalized.includes("shelter") || normalized.includes("roof")) return "Covered";
-      if (normalized.includes("code") || normalized.includes("keypad")) return "Code access";
-      return value.trim();
-    };
-    const unique = Array.from(new Set(source.map(normalizeAmenity).filter(Boolean)));
-    return unique.slice(0, 3);
-  }, [amenities]);
-
   useEffect(() => {
     if (dismissing) {
       // Animate out
@@ -136,57 +124,37 @@ export function MapBottomCard({
             </View>
           ) : null}
 
-          {onToggleFavorite ? (
-            <Pressable
-              style={styles.favoriteButton}
-              onPress={onToggleFavorite}
-              hitSlop={8}
-            >
-              <Text style={[styles.favoriteIcon, isFavorite && styles.favoriteIconActive]}>
-                {isFavorite ? "♥︎" : "♡"}
-              </Text>
-            </Pressable>
-          ) : null}
         </View>
 
         <View style={styles.contentSection}>
-          <Text style={styles.title} numberOfLines={2}>
-            {title}
-          </Text>
-
-          <View style={styles.detailsRow}>
-            {reviewCount > 0 ? (
-              <Text style={styles.detailText}>
-                <Text style={styles.starText}>★</Text> {rating.toFixed(1)} • {reviewCount} reviews
-              </Text>
-            ) : (
-              <Text style={styles.detailText}>
-                <Text style={styles.starText}>★</Text> {rating.toFixed(1)} • New listing
-              </Text>
-            )}
-            {features.length ? (
-              <View style={styles.featuresRow}>
-                {features.map((feature) => (
-                  <View key={feature} style={styles.featureIconWrap}>
-                    {feature === "CCTV" ? <Cctv size={14} color="#111111" strokeWidth={2} /> : null}
-                    {feature === "EV charging" ? (
-                      <EvCharger size={14} color="#111111" strokeWidth={2} />
-                    ) : null}
-                    {feature === "Gated" ? <Fence size={14} color="#111111" strokeWidth={2} /> : null}
-                    {feature === "Code access" ? (
-                      <KeyRound size={14} color="#111111" strokeWidth={2} />
-                    ) : null}
-                    {feature === "Covered" ? <Home size={14} color="#111111" strokeWidth={2} /> : null}
-                  </View>
-                ))}
-              </View>
+          <View style={styles.titleRow}>
+            <Text style={styles.title} numberOfLines={2}>
+              {title}
+            </Text>
+            {onToggleFavorite ? (
+              <Pressable
+                style={styles.inlineFavoriteButton}
+                onPress={onToggleFavorite}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name={isFavorite ? "heart" : "heart-outline"}
+                  size={19}
+                  color={isFavorite ? "#0E8E62" : "#0b7b73"}
+                />
+              </Pressable>
             ) : null}
           </View>
+          {metaLine ? (
+            <Text style={styles.metaLine} numberOfLines={1}>
+              {metaLine}
+            </Text>
+          ) : null}
 
           <View style={styles.dashedDivider} />
 
           <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Reserve now</Text>
+            <Text style={styles.priceLabel}>Price</Text>
             {isAvailable ? (
               <Text style={styles.currentPrice}>{price}</Text>
             ) : (
@@ -202,23 +170,33 @@ export function MapBottomCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.cardBg,
-    borderRadius: 20,
+    borderRadius: 22,
     position: "absolute",
+    borderWidth: 1,
+    borderColor: "#e3e7ea",
     shadowColor: "#111827",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.07,
+    shadowRadius: 16,
+    elevation: 7,
     overflow: "hidden",
+    paddingTop: 4,
+    paddingLeft: 8,
+    paddingRight: 8,
+    paddingBottom: 4,
   },
   cardPress: {
     width: "100%",
   },
   imageContainer: {
     width: "100%",
-    height: 80,
+    height: 102,
     position: "relative",
     backgroundColor: colors.cardBgMuted,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#d6dde2",
+    overflow: "hidden",
   },
   image: {
     width: "100%",
@@ -237,12 +215,12 @@ const styles = StyleSheet.create({
   },
   ratingBadge: {
     position: "absolute",
-    left: 10,
-    bottom: 10,
-    minWidth: 50,
+    right: 10,
+    top: 10,
+    minWidth: 56,
     backgroundColor: "rgba(255, 255, 255, 0.98)",
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: 999,
     alignItems: "center",
     shadowColor: "#0F172A",
@@ -253,87 +231,52 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     color: "#111827",
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 0,
-  },
-  favoriteButton: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "rgba(255,255,255,0.98)",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  favoriteIcon: {
-    fontSize: 14,
-    color: "#111827",
-    fontWeight: "600",
-  },
-  favoriteIconActive: {
-    color: "#0E8E62",
+    fontSize: 13,
+    fontFamily: "PlusJakartaSans-Bold",
+    letterSpacing: -0.2,
   },
   contentSection: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingTop: 8,
-    paddingBottom: 8,
+    paddingBottom: 0,
     backgroundColor: colors.cardBg,
   },
-  title: {
-    fontFamily: "Inter-SemiBold",
-    fontSize: 15,
-    lineHeight: 18,
-    color: "#111827",
-    letterSpacing: -0.2,
-    marginBottom: 4,
-  },
-  detailsRow: {
+  titleRow: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 6,
+    alignItems: "flex-start",
     gap: 8,
+    marginBottom: 0,
   },
-  detailText: {
-    fontFamily: "Inter-Regular",
-    fontSize: 11,
-    lineHeight: 15,
-    color: "#6B7280",
+  title: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 16,
+    lineHeight: 21,
+    color: "#111827",
+    letterSpacing: -0.3,
     flex: 1,
   },
-  featuresRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    flexShrink: 0,
-  },
-  featureIconWrap: {
+  inlineFavoriteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    width: 18,
-    height: 18,
-    backgroundColor: "#FFFFFF",
-    borderColor: "#E5E7EB",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderRadius: 9,
+    borderColor: "#e6ebee",
   },
-  starText: {
-    fontSize: 13,
-    color: "#F7BE38",
-    fontWeight: "800",
+  metaLine: {
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    lineHeight: 16,
+    color: "#4b5563",
+    marginBottom: 3,
   },
   dashedDivider: {
     height: 1,
-    backgroundColor: "#F1F5F9",
-    marginBottom: 8,
+    backgroundColor: "#e8edf0",
+    marginBottom: 4,
+    marginTop: 1,
   },
   priceRow: {
     flexDirection: "row",
@@ -342,12 +285,12 @@ const styles = StyleSheet.create({
   },
   priceLabel: {
     fontFamily: "Inter-Regular",
-    fontSize: 11,
-    lineHeight: 14,
-    color: "#6B7280",
+    fontSize: 11.5,
+    lineHeight: 15,
+    color: "#7a8288",
   },
   currentPrice: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 18,
     lineHeight: 22,
     color: "#111827",

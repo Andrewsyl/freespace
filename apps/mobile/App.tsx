@@ -23,6 +23,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { enableScreens } from "react-native-screens";
+import { CalendarDays, Compass, UserRound } from "lucide-react-native";
 import { AuthProvider, useAuth } from "./auth";
 import { AppLaunchContext } from "./appLaunch";
 import { FavoritesProvider } from "./favorites";
@@ -387,33 +388,46 @@ function AppNavigator() {
 
 function MainTabs() {
   const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(10, insets.bottom + 2);
   const baseTabBarStyle = {
-    backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 5,
-    paddingTop: 10,
-    paddingBottom: Math.max(10, insets.bottom),
-    height: 64 + Math.max(10, insets.bottom),
+    position: "absolute" as const,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    borderTopWidth: 0,
+    shadowOpacity: 0,
+    elevation: 0,
+    paddingTop: 8,
+    paddingBottom: bottomPadding,
+    height: 64 + bottomPadding,
   };
+
+  const renderTabIcon = (
+    focused: boolean,
+    color: string,
+    Icon: typeof Compass | typeof CalendarDays | typeof UserRound
+  ) => (
+    <View style={[styles.navIconShell, focused && styles.navIconShellActive]}>
+      <Icon
+        size={focused ? 20 : 22}
+        color={focused ? "#FFFFFF" : color}
+        strokeWidth={focused ? 2.3 : 2}
+      />
+    </View>
+  );
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#111827",
-        tabBarInactiveTintColor: "#9CA3AF",
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: "#0f7a73",
+        tabBarInactiveTintColor: "#98a4ab",
         tabBarStyle: baseTabBarStyle,
-        tabBarLabelStyle: {
-          fontFamily: "Inter-Medium",
-          fontSize: 11,
-          lineHeight: 14,
-          letterSpacing: 0,
-          marginTop: 2,
-        },
+        tabBarBackground: () => <View style={styles.tabBarChrome} />,
+        tabBarLabelStyle: styles.tabBarLabel,
+        tabBarItemStyle: styles.tabBarItem,
         tabBarButton: (props) => <BottomTabButton {...props} />,
       }}
     >
@@ -425,14 +439,8 @@ function MainTabs() {
             ...baseTabBarStyle,
             display: (route.params as { hideTabBar?: boolean } | undefined)?.hideTabBar ? "none" : "flex",
           },
-          tabBarLabel: "Search",
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons 
-              name={focused ? "search" : "search-outline"} 
-              size={24} 
-              color={color} 
-            />
-          ),
+          tabBarLabel: "Discover",
+          tabBarIcon: ({ focused, color }) => renderTabIcon(focused, color, Compass),
         })}
       />
       <Tab.Screen
@@ -440,27 +448,15 @@ function MainTabs() {
         component={HistoryScreen}
         options={{
           tabBarLabel: "Bookings",
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons 
-              name={focused ? "calendar" : "calendar-outline"} 
-              size={24} 
-              color={color} 
-            />
-          ),
+          tabBarIcon: ({ focused, color }) => renderTabIcon(focused, color, CalendarDays),
         }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
-          tabBarLabel: "Account",
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons 
-              name={focused ? "person" : "person-outline"} 
-              size={24} 
-              color={color} 
-            />
-          ),
+          tabBarLabel: "Profile",
+          tabBarIcon: ({ focused, color }) => renderTabIcon(focused, color, UserRound),
         }}
       />
     </Tab.Navigator>
@@ -605,6 +601,42 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.5,
+  },
+  tabBarChrome: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#edf0f2",
+    shadowColor: "#15232b",
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  tabBarItem: {
+    paddingTop: 2,
+  },
+  tabBarLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+    letterSpacing: -0.1,
+  },
+  navIconShell: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  navIconShellActive: {
+    backgroundColor: "#158a83",
+    shadowColor: "#158a83",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.16,
+    shadowRadius: 8,
+    elevation: 4,
   },
   legalActions: {
     flexDirection: "row",
