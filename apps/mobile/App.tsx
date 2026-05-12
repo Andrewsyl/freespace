@@ -388,31 +388,32 @@ function AppNavigator() {
 function MainTabs() {
   const insets = useSafeAreaInsets();
   const baseTabBarStyle = {
-    backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 5,
-    paddingTop: 10,
-    paddingBottom: Math.max(10, insets.bottom),
-    height: 64 + Math.max(10, insets.bottom),
+    position: "absolute" as const,
+    left: 14,
+    right: 14,
+    bottom: Math.max(10, insets.bottom),
+    backgroundColor: "transparent",
+    borderTopWidth: 0,
+    shadowOpacity: 0,
+    elevation: 0,
+    paddingTop: 8,
+    paddingBottom: 8,
+    height: 80,
   };
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#111827",
-        tabBarInactiveTintColor: "#9CA3AF",
+        tabBarActiveTintColor: "#ffffff",
+        tabBarInactiveTintColor: "rgba(255,255,255,0.85)",
         tabBarStyle: baseTabBarStyle,
+        tabBarBackground: () => <View style={styles.tabBarChrome} />,
         tabBarLabelStyle: {
-          fontFamily: "Inter-Medium",
+          fontFamily: "Inter-SemiBold",
           fontSize: 11,
           lineHeight: 14,
-          letterSpacing: 0,
-          marginTop: 2,
+          letterSpacing: 0.2,
+          marginTop: 4,
         },
         tabBarButton: (props) => <BottomTabButton {...props} />,
       }}
@@ -605,6 +606,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.5,
+  },
+  tabBarChrome: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#32b1a8",
+    borderRadius: 28,
+    shadowColor: "#1b6f69",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 14,
   },
   legalActions: {
     flexDirection: "row",
