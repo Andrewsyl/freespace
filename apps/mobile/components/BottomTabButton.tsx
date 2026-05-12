@@ -79,23 +79,23 @@ export function BottomTabButton({ children, onPress, accessibilityState }: Props
 
 const styles = StyleSheet.create({
   indicator: {
-    width: 22,
-    height: 3,
+    width: 18,
+    height: 2,
     borderRadius: 999,
     backgroundColor: "transparent",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   indicatorActive: {
-    backgroundColor: "#f7f2e8",
+    backgroundColor: "#111827",
   },
   item: {
     alignItems: "center",
     borderRadius: radius.pill,
     gap: 2,
     justifyContent: "center",
-    minWidth: 84,
+    minWidth: 78,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   pressable: {
     alignItems: "center",
