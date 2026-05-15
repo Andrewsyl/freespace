@@ -10,25 +10,25 @@ type MapPricePinProps = {
 
 export function MapPricePin({ price, selected = false, soldOut = false }: MapPricePinProps) {
   const priceText = soldOut ? "Sold out" : `€${price}`;
-  const fill = soldOut ? "#F3F4F6" : selected ? "#10B981" : "#FFFFFF";
-  const stroke = soldOut ? "#D1D5DB" : selected ? "none" : "#1F2937";
-  const textColor = soldOut ? "#6B7280" : selected ? "#FFFFFF" : "#111111";
+  const fill = soldOut ? "#F4F5F6" : selected ? "#147A72" : "#FFFFFF";
+  const stroke = soldOut ? "#D7DDE2" : selected ? "#0F625C" : "#1E293B";
+  const textColor = soldOut ? "#7A8493" : selected ? "#FFFFFF" : "#0F172A";
 
   const dimensions = useMemo(() => {
     const textLength = priceText.length;
-    const baseWidth = soldOut ? 44 : 36;
-    const extraWidth = soldOut ? 0 : Math.max(0, (textLength - 3) * 5);
+    const baseWidth = soldOut ? 52 : 44;
+    const extraWidth = soldOut ? 0 : Math.max(0, (textLength - 3) * 6);
     const width = Math.max(baseWidth, baseWidth + extraWidth);
-    const bubbleHeight = soldOut ? 16 : 21;
-    const tailHeight = soldOut ? 3 : 4;
+    const bubbleHeight = soldOut ? 18 : 24;
+    const tailHeight = soldOut ? 4 : 5;
     const totalHeight = bubbleHeight + tailHeight;
-    const tailWidth = soldOut ? 6 : 6;
+    const tailWidth = soldOut ? 7 : 8;
 
     return { width, bubbleHeight, tailHeight, totalHeight, tailWidth };
   }, [priceText, soldOut]);
 
   const { width, bubbleHeight, tailHeight, totalHeight, tailWidth } = dimensions;
-  const strokeWidth = selected ? 0 : 1.2;
+  const strokeWidth = soldOut ? 1 : 1.35;
   const radius = bubbleHeight / 2;
   const padding = strokeWidth;
 
@@ -67,9 +67,9 @@ export function MapPricePin({ price, selected = false, soldOut = false }: MapPri
         <Ellipse
           cx={shadowCx}
           cy={shadowCy}
-          rx={Math.max(6, width * 0.16)}
-          ry={2.6}
-          fill="rgba(15, 23, 42, 0.18)"
+          rx={Math.max(7, width * 0.16)}
+          ry={2.3}
+          fill="rgba(15, 23, 42, 0.12)"
         />
         <Path
           d={pinPath}
@@ -106,21 +106,21 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    bottom: 4,
+    bottom: 5,
     alignItems: "center",
     justifyContent: "center",
   },
   priceText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "700",
-    letterSpacing: -0.2,
-    fontFamily: "Poppins-Bold",
+    letterSpacing: -0.15,
+    fontFamily: "PlusJakartaSans-Bold",
   },
   priceTextSelected: {
     color: "#FFFFFF",
   },
   priceTextSoldOut: {
-    color: "#94A3B8",
-    fontSize: 7,
+    color: "#7A8493",
+    fontSize: 8,
   },
 });

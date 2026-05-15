@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
-import { colors, radius } from "../../styles/theme";
+import { radius } from "../../styles/theme";
+import { hostFlowColors } from "./hostFlowTheme";
 
 type Props = {
   current: number;
@@ -26,7 +27,7 @@ export function StepProgress({ current, total }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    marginTop: 12,
+    marginTop: 8,
   },
   row: {
     alignItems: "center",
@@ -34,27 +35,27 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   label: {
-    color: colors.textSoft,
+    color: hostFlowColors.textSoft,
     fontSize: 12,
-    fontFamily: "Inter-Medium",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     letterSpacing: 0.2,
   },
   percent: {
-    color: colors.textSoft,
+    color: hostFlowColors.textMuted,
     fontSize: 11,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   bar: {
-    backgroundColor: "rgba(17, 24, 39, 0.08)",
+    backgroundColor: "rgba(63, 174, 166, 0.16)",
     borderRadius: radius.pill,
-    height: 6,
-    marginTop: 10,
+    height: 8,
+    marginTop: 8,
     overflow: "hidden",
   },
   barFill: {
-    backgroundColor: colors.accent,
+    backgroundColor: hostFlowColors.accent,
     borderRadius: radius.pill,
     height: "100%",
   },

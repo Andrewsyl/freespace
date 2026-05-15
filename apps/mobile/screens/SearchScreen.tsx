@@ -1182,7 +1182,7 @@ export function SearchScreen({ navigation }: Props) {
             isFavorite={isFavorite(selectedListing.id)}
             onToggleFavorite={() => toggle(selectedListing)}
             onPress={() => { setSelectedId(null); navigation.navigate("Listing", { id: selectedListing.id, from, to }); }}
-            bottomOffset={94 + insets.bottom}
+            bottomOffset={82 + insets.bottom}
             horizontalInset={16}
             onReserve={() => { setSelectedId(null); navigation.navigate("Listing", { id: selectedListing.id, from, to }); }}
             dismissing={dismissingCard}

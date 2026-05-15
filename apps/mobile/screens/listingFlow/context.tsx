@@ -9,9 +9,12 @@ export type ListingDraft = {
   coverHeading?: number | null;
   coverPitch?: number | null;
   spaceType: string;
+  spaceCount: string;
+  vehicleSize: string;
   accessOptions: string[];
   requiresAccessCode: boolean | null;
   accessCode: string;
+  requiresArrivalInstructions: boolean | null;
   arrivalInstructions: string;
   permissionDeclared: boolean;
   availability: {

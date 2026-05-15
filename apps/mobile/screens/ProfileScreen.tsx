@@ -102,8 +102,8 @@ export function ProfileScreen({ navigation }: Props) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
         <Screen style={styles.emptyState}>
-          <Text style={styles.title}>Account settings</Text>
-          <Text style={styles.subtitle}>Sign in to manage your profile and security.</Text>
+          <Text style={styles.title}>Profile</Text>
+          <Text style={styles.subtitle}>Sign in to manage your profile, bookings, and security.</Text>
           <Button style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")} title="Sign in" />
           <Pressable
             style={styles.ghostButton}
@@ -124,22 +124,41 @@ export function ProfileScreen({ navigation }: Props) {
         scrollProps={{ contentContainerStyle: styles.content as any }}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Account settings</Text>
-          <Text style={styles.subtitle}>Manage your account info, verification, and security.</Text>
+          <Text style={styles.title}>Profile</Text>
+          <Text style={styles.subtitle}>Manage your account, verification, hosting, and support.</Text>
         </View>
 
-        {previewUrl ? (
-          <Pressable style={styles.linkButton} onPress={() => Linking.openURL(previewUrl)}>
-            <Text style={styles.linkButtonText}>Open verification link</Text>
-          </Pressable>
-        ) : null}
+        <Card style={styles.profileCard}>
+          <View style={styles.profileTopRow}>
+            <View style={styles.avatarShell}>
+              <Text style={styles.avatarText}>
+                {user.name?.trim()?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || "U"}
+              </Text>
+            </View>
+            <View style={styles.profileText}>
+              <Text style={styles.profileName}>{user.name?.trim() || "Your account"}</Text>
+              <Text style={styles.profileEmail}>{user.email}</Text>
+            </View>
+            <View style={[styles.statusPill, user.emailVerified ? styles.statusPillVerified : styles.statusPillPending]}>
+              <Text style={[styles.statusPillText, user.emailVerified ? styles.statusPillTextVerified : styles.statusPillTextPending]}>
+                {user.emailVerified ? "Verified" : "Needs verification"}
+              </Text>
+            </View>
+          </View>
+          {previewUrl ? (
+            <Pressable style={styles.linkButton} onPress={() => Linking.openURL(previewUrl)}>
+              <Text style={styles.linkButtonText}>Open verification link</Text>
+            </Pressable>
+          ) : null}
+        </Card>
 
+        <View style={styles.contentBody}>
         <Card style={styles.section} noPadding>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("PersonalInfo")}
           >
-            <View style={styles.personIconShell}>
+            <View style={styles.iconShell}>
               <Ionicons name="person-outline" size={18} color={colors.accent} />
             </View>
             <View style={styles.rowText}>
@@ -155,7 +174,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("Favorites")}
           >
-            <MaterialIcons name="favorite-border" size={24} color="#111827" />
+            <View style={styles.iconShell}>
+              <MaterialIcons name="favorite-border" size={20} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>Favourites</Text>
               <Text style={styles.rowSubtitle}>Saved spaces</Text>
@@ -166,7 +187,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("Settings")}
           >
-            <MaterialIcons name="settings" size={24} color="#111827" />
+            <View style={styles.iconShell}>
+              <MaterialIcons name="settings" size={20} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>Settings</Text>
               <Text style={styles.rowSubtitle}>Preferences</Text>
@@ -181,7 +204,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("Payments")}
           >
-            <MaterialIcons name="credit-card" size={24} color="#111827" />
+            <View style={styles.iconShell}>
+              <MaterialIcons name="credit-card" size={20} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>Payment methods</Text>
               <Text style={styles.rowSubtitle}>Add cards or bank accounts</Text>
@@ -192,7 +217,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("VehicleType")}
           >
-            <MaterialIcons name="directions-car" size={24} color="#111827" />
+            <View style={styles.iconShell}>
+              <MaterialIcons name="directions-car" size={20} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>My vehicle</Text>
               <Text style={styles.rowSubtitle}>
@@ -210,7 +237,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={handleToggleNotifications}
           >
-            <MaterialIcons name="notifications-none" size={24} color="#111827" />
+            <View style={styles.iconShell}>
+              <MaterialIcons name="notifications-none" size={20} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>Notifications</Text>
               <Text style={styles.rowSubtitle}>Trips, reminders, updates</Text>
@@ -233,7 +262,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("LoginSecurity")}
           >
-            <MaterialIcons name="lock-outline" size={24} color="#111827" />
+            <View style={styles.iconShell}>
+              <MaterialIcons name="lock-outline" size={20} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>Login & security</Text>
               <Text style={styles.rowSubtitle}>Password, 2FA, devices</Text>
@@ -244,7 +275,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => showPlaceholder("Promo codes")}
           >
-            <MaterialIcons name="local-offer" size={24} color="#111827" />
+            <View style={styles.iconShell}>
+              <MaterialIcons name="local-offer" size={20} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>Promo codes</Text>
               <Text style={styles.rowSubtitle}>Apply discounts</Text>
@@ -252,11 +285,13 @@ export function ProfileScreen({ navigation }: Props) {
             <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
           </Pressable>
           <View style={styles.row}>
-            <MaterialIcons
-              name={user.emailVerified ? "verified" : "mark-email-unread"}
-              size={24}
-              color="#111827"
-            />
+            <View style={styles.iconShell}>
+              <MaterialIcons
+                name={user.emailVerified ? "verified" : "mark-email-unread"}
+                size={20}
+                color={colors.accent}
+              />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>
                 {user.emailVerified ? "Email verified" : "Verify your email"}
@@ -291,7 +326,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("CreateListingFlow")}
           >
-            <MaterialIcons name="add-business" size={24} color="#111827" />
+            <View style={styles.iconShell}>
+              <MaterialIcons name="add-business" size={20} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>List your space</Text>
               <Text style={styles.rowSubtitle}>Earn from your parking spot</Text>
@@ -302,7 +339,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("Listings")}
           >
-            <MaterialIcons name="home-work" size={24} color="#111827" />
+            <View style={styles.iconShell}>
+              <MaterialIcons name="home-work" size={20} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>Manage spaces</Text>
               <Text style={styles.rowSubtitle}>Edit listings and availability</Text>
@@ -313,7 +352,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => showPlaceholder("Space owner guide")}
           >
-            <MaterialIcons name="menu-book" size={24} color="#111827" />
+            <View style={styles.iconShell}>
+              <MaterialIcons name="menu-book" size={20} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>View our space owner guide</Text>
               <Text style={styles.rowSubtitle}>Best practices and tips</Text>
@@ -328,7 +369,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => showPlaceholder("Help centre")}
           >
-            <MaterialIcons name="help-outline" size={24} color="#111827" />
+            <View style={styles.iconShell}>
+              <MaterialIcons name="help-outline" size={20} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>Help centre</Text>
               <Text style={styles.rowSubtitle}>FAQs and guides</Text>
@@ -339,7 +382,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("Support")}
           >
-            <MaterialIcons name="support-agent" size={24} color="#111827" />
+            <View style={styles.iconShell}>
+              <MaterialIcons name="support-agent" size={20} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>Contact support</Text>
               <Text style={styles.rowSubtitle}>Send a message to our team</Text>
@@ -350,7 +395,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("Legal")}
           >
-            <MaterialIcons name="info-outline" size={24} color="#111827" />
+            <View style={styles.iconShell}>
+              <MaterialIcons name="info-outline" size={20} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>Terms & privacy</Text>
               <Text style={styles.rowSubtitle}>Legal and policies</Text>
@@ -366,7 +413,9 @@ export function ProfileScreen({ navigation }: Props) {
               style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
               onPress={() => navigation.navigate("Admin")}
             >
-              <MaterialIcons name="admin-panel-settings" size={24} color="#111827" />
+              <View style={styles.iconShell}>
+                <MaterialIcons name="admin-panel-settings" size={20} color={colors.accent} />
+              </View>
               <View style={styles.rowText}>
                 <Text style={styles.rowTitle}>Admin panel</Text>
                 <Text style={styles.rowSubtitle}>Moderate users and listings</Text>
@@ -378,7 +427,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("LoginSecurity")}
           >
-            <MaterialIcons name="delete-outline" size={24} color={colors.danger} />
+            <View style={styles.iconShellDanger}>
+              <MaterialIcons name="delete-outline" size={20} color={colors.danger} />
+            </View>
             <View style={styles.rowText}>
               <Text style={[styles.rowTitle, styles.rowTitleDanger]}>Delete account</Text>
               <Text style={styles.rowSubtitle}>Permanently remove your profile, bookings, and listings</Text>
@@ -389,7 +440,9 @@ export function ProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => logout()}
           >
-            <MaterialIcons name="logout" size={24} color="#111827" />
+            <View style={styles.iconShell}>
+              <MaterialIcons name="logout" size={20} color={colors.accent} />
+            </View>
             <View style={styles.rowText}>
               <Text style={styles.rowTitle}>Sign out</Text>
               <Text style={styles.rowSubtitle}>Log out of this device</Text>
@@ -397,6 +450,7 @@ export function ProfileScreen({ navigation }: Props) {
             <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
           </Pressable>
         </Card>
+        </View>
       </Screen>
     </SafeAreaView>
   );
@@ -408,47 +462,100 @@ const styles = StyleSheet.create({
     backgroundColor: colors.appBg,
   },
   content: {
-    paddingBottom: 0,
-    paddingTop: 24,
+    paddingBottom: 28,
+    paddingTop: 20,
   },
   header: {
     marginBottom: 16,
   },
   title: {
     ...textStyles.screenTitle,
-    marginTop: 6,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontWeight: "700",
+    marginTop: 2,
   },
   subtitle: {
     ...textStyles.subtitle,
+    color: colors.textMuted,
     fontSize: 15,
     marginTop: 6,
   },
-  notice: {
-    backgroundColor: "#ecfdf7",
-    borderColor: "#a7f3d0",
-    borderRadius: 12,
+  profileCard: {
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: 20,
     borderWidth: 1,
-    color: "#2ECC8F",
-    fontSize: 12,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    padding: 18,
+    ...cardShadow,
   },
-  error: {
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
-    borderRadius: 12,
+  profileTopRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 12,
+  },
+  avatarShell: {
+    alignItems: "center",
+    backgroundColor: colors.accentSoft,
+    borderColor: "#cdeee0",
+    borderRadius: 24,
     borderWidth: 1,
-    color: "#b42318",
-    fontSize: 12,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    height: 48,
+    justifyContent: "center",
+    width: 48,
+  },
+  avatarText: {
+    color: colors.accent,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  profileText: {
+    flex: 1,
+  },
+  profileName: {
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 18,
+    fontWeight: "700",
+    lineHeight: 22,
+  },
+  profileEmail: {
+    color: colors.textMuted,
+    fontFamily: "Inter-Medium",
+    fontSize: 13,
+    fontWeight: "500",
+    marginTop: 3,
+  },
+  statusPill: {
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  statusPillVerified: {
+    backgroundColor: "#e8faf2",
+  },
+  statusPillPending: {
+    backgroundColor: "#fef3c7",
+  },
+  statusPillText: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  statusPillTextVerified: {
+    color: "#127c63",
+  },
+  statusPillTextPending: {
+    color: "#a16207",
+  },
+  contentBody: {
+    marginTop: 18,
   },
   section: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: radius.card,
+    borderRadius: 20,
     borderWidth: 1,
     marginBottom: 18,
     overflow: "hidden",
@@ -465,23 +572,33 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     paddingHorizontal: 16,
-    paddingVertical: 18,
+    paddingVertical: 16,
   },
   rowPressed: {
-    backgroundColor: colors.appBg,
+    backgroundColor: "#fbfbf9",
   },
-  personIconShell: {
+  iconShell: {
     alignItems: "center",
-    backgroundColor: colors.cardBgMuted,
-    borderColor: colors.border,
-    borderRadius: 20,
+    backgroundColor: "#eef8f4",
+    borderColor: "#d7ece3",
+    borderRadius: 18,
     borderWidth: 1,
-    height: 40,
+    height: 36,
     justifyContent: "center",
-    width: 40,
+    width: 36,
+  },
+  iconShellDanger: {
+    alignItems: "center",
+    backgroundColor: "#fef2f2",
+    borderColor: "#fecaca",
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
   },
   toggleTrack: {
-    backgroundColor: colors.border,
+    backgroundColor: "#dfe6e9",
     borderRadius: radius.pill,
     height: 26,
     padding: 3,
@@ -508,34 +625,45 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   rowTitle: {
-    ...textStyles.bodyStrong,
-    fontSize: 15,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 16,
+    fontWeight: "600",
+    lineHeight: 20,
   },
   rowTitleDanger: {
     color: colors.danger,
   },
   rowSubtitle: {
     ...textStyles.bodyMedium,
-    marginTop: 2,
+    color: colors.textMuted,
+    marginTop: 3,
   },
   inlineButton: {
-    borderColor: "#99f6e4",
+    backgroundColor: "#e9f8f3",
+    borderColor: "#d2eee2",
     borderRadius: 999,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
   inlineButtonText: {
     ...textStyles.meta,
-    color: "#0f766e",
+    color: "#116e63",
   },
   linkButton: {
-    alignItems: "center",
-    marginBottom: 12,
+    alignSelf: "flex-start",
+    backgroundColor: "#f4fbf8",
+    borderColor: "#d7ece3",
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    marginTop: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   linkButtonText: {
     ...textStyles.meta,
-    color: "#0f766e",
+    color: "#116e63",
   },
   inlineStatus: {
     ...textStyles.meta,
@@ -543,6 +671,7 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: "center",
+    backgroundColor: colors.appBg,
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
@@ -565,23 +694,6 @@ const styles = StyleSheet.create({
   ghostButtonText: {
     color: colors.textMuted,
     fontSize: 12,
-    fontWeight: "600",
-  },
-  backCircle: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 32,
-    width: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.cardBg,
-  },
-  backIcon: {
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 14,
-    textAlign: "center",
     fontWeight: "600",
   },
 });

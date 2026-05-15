@@ -104,7 +104,7 @@ export function BookingCard({
         <View style={styles.textContent}>
           <View style={styles.header}>
             <View style={styles.titleSection}>
-              <Text style={styles.reference}>Booking ID: {formatBookingReference(booking.id)}</Text>
+              <Text style={styles.reference}>{formatBookingReference(booking.id)}</Text>
               <Text style={styles.title} numberOfLines={2}>
                 {booking.title}
               </Text>
@@ -113,6 +113,26 @@ export function BookingCard({
               </Text>
             </View>
             <View style={styles.priceGroup}>
+              <View
+                style={[
+                  styles.statusBadge,
+                  statusTone === "canceled" && styles.statusBadgeDanger,
+                ]}
+              >
+                <Ionicons
+                  name={badgeStyle.icon as any}
+                  size={12}
+                  color={statusTone === "canceled" ? colors.danger : "#158a83"}
+                />
+                <Text
+                  style={[
+                    styles.statusBadgeText,
+                    statusTone === "canceled" && styles.statusBadgeTextDanger,
+                  ]}
+                >
+                  {statusLabel}
+                </Text>
+              </View>
               <Text style={styles.priceText}>€{price}</Text>
             </View>
           </View>
@@ -124,26 +144,9 @@ export function BookingCard({
                 {booking.vehiclePlate ? booking.vehiclePlate : "Not selected"}
               </Text>
             </View>
-            <View
-              style={[
-                styles.metaChip,
-                statusTone === "canceled" && styles.metaChipDanger,
-              ]}
-            >
-              <Ionicons
-                name={statusTone === "canceled" ? "close-circle" : "checkmark-circle"}
-                size={14}
-                color={statusTone === "canceled" ? colors.danger : colors.accent}
-              />
-              <Text
-                style={[
-                  styles.metaChipText,
-                  statusTone === "canceled" && styles.metaChipTextDanger,
-                ]}
-              >
-                {secondaryLabel}
-              </Text>
-            </View>
+            <Text style={styles.secondaryMeta} numberOfLines={1}>
+              {secondaryLabel}
+            </Text>
           </View>
         </View>
       </View>
@@ -174,120 +177,147 @@ export function BookingCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 6,
+    backgroundColor: "#fffef9",
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#000000",
+    borderColor: "#e3e7ea",
     overflow: "hidden",
-    padding: 0,
-    shadowOpacity: 0,
-    elevation: 0,
+    padding: 8,
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    elevation: 5,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 8,
+    gap: 10,
   },
   mainContent: {
     flexDirection: "row",
   },
   imageWrap: {
-    width: 104,
-    paddingLeft: 12,
-    paddingTop: 12,
-    paddingBottom: 12,
+    width: 102,
+    paddingLeft: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
     justifyContent: "center",
   },
   thumb: {
-    width: 88,
-    height: 88,
-    borderRadius: 6,
+    width: 84,
+    height: 84,
+    borderRadius: 13,
+    borderWidth: 0.5,
+    borderColor: "#d9dfe4",
   },
   thumbPlaceholder: {
-    width: 88,
-    height: 88,
-    borderRadius: 6,
+    width: 84,
+    height: 84,
+    borderRadius: 13,
     backgroundColor: colors.border,
   },
   reference: {
-    color: colors.textSoft,
-    fontSize: 10,
-    fontWeight: "600",
+    color: "#8a949d",
+    fontSize: 9.5,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
     marginBottom: 4,
   },
   textContent: {
     flex: 1,
-    gap: 10,
-    padding: 16,
+    gap: 8,
+    paddingTop: 4,
+    paddingRight: 4,
+    paddingBottom: 4,
+    paddingLeft: 10,
   },
   titleSection: {
     flex: 1,
   },
   title: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: "700",
-    lineHeight: 18,
+    color: "#111827",
+    fontSize: 17,
+    fontFamily: "PlusJakartaSans-Bold",
+    lineHeight: 22,
+    letterSpacing: -0.35,
   },
   address: {
-    color: colors.textMuted,
+    color: "#4b5563",
     fontSize: 12,
-    marginTop: 2,
+    fontFamily: "Inter-Regular",
+    marginTop: 3,
   },
   priceGroup: {
+    alignItems: "flex-end",
+    justifyContent: "flex-start",
+    gap: 6,
+    paddingTop: 1,
+  },
+  statusBadge: {
     alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: "#eef8f5",
+    borderColor: "#d8ebe5",
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  statusBadgeDanger: {
+    backgroundColor: "#fff1f1",
+    borderColor: "#f4d4d4",
+  },
+  statusBadgeText: {
+    color: "#158a83",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 10.5,
+  },
+  statusBadgeTextDanger: {
+    color: colors.danger,
   },
   priceText: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: "700",
+    color: "#111827",
+    fontSize: 19,
+    fontFamily: "PlusJakartaSans-Bold",
+    letterSpacing: -0.35,
   },
   metaRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 12,
+    gap: 10,
     alignItems: "center",
   },
   metaItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    flex: 1,
   },
   metaText: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: "600",
+    color: "#5d7773",
+    fontSize: 11.5,
+    fontFamily: "Inter-Medium",
   },
-  metaChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#ECFDF5",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  metaChipText: {
-    fontSize: 11,
-    color: colors.accent,
-    fontWeight: "700",
-  },
-  metaChipDanger: {
-    backgroundColor: "#FEE2E2",
-  },
-  metaChipTextDanger: {
-    color: colors.danger,
+  secondaryMeta: {
+    color: "#7a8288",
+    flexShrink: 1,
+    fontFamily: "Inter-Medium",
+    fontSize: 11.5,
+    textAlign: "right",
   },
   timeBlock: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: "#e8edf0",
+    marginTop: 8,
     paddingTop: 10,
-    paddingBottom: 10,
-    paddingHorizontal: 16,
+    paddingBottom: 8,
+    paddingHorizontal: 12,
   },
   timeColumn: {
     flex: 1,
@@ -295,18 +325,21 @@ const styles = StyleSheet.create({
   },
   timeLabel: {
     fontSize: 10,
-    color: colors.textMuted,
-    fontWeight: "600",
+    color: "#7a8288",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    letterSpacing: 0.45,
+    textTransform: "uppercase",
     marginBottom: 4,
   },
   timeValue: {
     fontSize: 14,
-    fontWeight: "700",
-    color: colors.text,
+    fontFamily: "PlusJakartaSans-Bold",
+    color: "#111827",
   },
   timeDate: {
-    fontSize: 11,
-    color: colors.textMuted,
+    fontSize: 10.5,
+    color: "#6b7280",
+    fontFamily: "Inter-Regular",
     marginTop: 2,
   },
   timeArrow: {
@@ -318,15 +351,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    marginTop: 2,
-    paddingTop: 8,
+    marginTop: 0,
+    paddingTop: 9,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingBottom: 10,
+    borderTopColor: "#e8edf0",
+    paddingBottom: 7,
   },
   viewMoreText: {
-    color: colors.accent,
+    color: "#158a83",
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    letterSpacing: -0.1,
   },
 });

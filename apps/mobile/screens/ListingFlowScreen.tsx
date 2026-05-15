@@ -4,12 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { ListingAvailabilityScreen } from "./listingFlow/ListingAvailabilityScreen";
 import { ListingDetailsScreen } from "./listingFlow/ListingDetailsScreen";
+import { ListingFeaturesAccessScreen } from "./listingFlow/ListingFeaturesAccessScreen";
 import { ListingLocationScreen } from "./listingFlow/ListingLocationScreen";
 import { ListingPhotosScreen } from "./listingFlow/ListingPhotosScreen";
 import { ListingPriceScreen } from "./listingFlow/ListingPriceScreen";
 import { ListingReviewScreen } from "./listingFlow/ListingReviewScreen";
 import { ListingStreetViewScreen } from "./listingFlow/ListingStreetViewScreen";
 import { ListingFlowContext, type ListingDraft } from "./listingFlow/context";
+import { hostFlowColors } from "./listingFlow/hostFlowTheme";
 import { getListing, listAvailability } from "../api";
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
@@ -20,6 +22,7 @@ type FlowStackParamList = {
   ListingLocation: undefined;
   ListingStreetView: undefined;
   ListingDetails: undefined;
+  ListingFeaturesAccess: undefined;
   ListingAvailability: undefined;
   ListingPrice: undefined;
   ListingPhotos: undefined;
@@ -37,9 +40,12 @@ const defaultDraft: ListingDraft = {
   coverHeading: null,
   coverPitch: null,
   spaceType: "",
+  spaceCount: "",
+  vehicleSize: "",
   accessOptions: [],
   requiresAccessCode: null,
   accessCode: "",
+  requiresArrivalInstructions: null,
   arrivalInstructions: "",
   permissionDeclared: false,
   availability: {
@@ -102,6 +108,10 @@ export function ListingFlowScreen({ route }: Props) {
             (listing as { space_type?: string; spaceType?: string }).spaceType ??
             listing.title ??
             "",
+          vehicleSize:
+            listing.vehicle_size_suitability ??
+            (listing as { vehicleSizeSuitability?: string | null }).vehicleSizeSuitability ??
+            prev.vehicleSize,
           accessOptions: listing.amenities ?? [],
           accessCode:
             (listing as { access_code?: string; accessCode?: string }).access_code ??
@@ -113,6 +123,15 @@ export function ListingFlowScreen({ route }: Props) {
             (listing as { arrival_instructions?: string; arrivalInstructions?: string })
               .arrivalInstructions ??
             "",
+          requiresArrivalInstructions: Boolean(
+            (
+              (listing as { arrival_instructions?: string; arrivalInstructions?: string })
+                .arrival_instructions ??
+              (listing as { arrival_instructions?: string; arrivalInstructions?: string })
+                .arrivalInstructions ??
+              ""
+            ).trim()
+          ),
           requiresAccessCode: Boolean(
             (
               (listing as { access_code?: string; accessCode?: string }).access_code ??
@@ -226,12 +245,12 @@ export function ListingFlowScreen({ route }: Props) {
             headerBackTitleVisible: false,
             headerTitleAlign: "center",
             headerTintColor: colors.text,
-            headerStyle: { backgroundColor: colors.headerTint },
+            headerStyle: { backgroundColor: hostFlowColors.appBg },
             headerShadowVisible: false,
             headerTitleStyle: {
-              color: colors.text,
-              fontSize: 17,
-              fontFamily: "Poppins-SemiBold",
+              color: hostFlowColors.text,
+              fontSize: 18,
+              fontFamily: "PlusJakartaSans-SemiBold",
               fontWeight: "600",
             },
             headerLeft: () => (
@@ -270,6 +289,11 @@ export function ListingFlowScreen({ route }: Props) {
             options={{ title: "Details" }}
           />
           <Stack.Screen
+            name="ListingFeaturesAccess"
+            component={ListingFeaturesAccessScreen}
+            options={{ title: "Features & access" }}
+          />
+          <Stack.Screen
             name="ListingAvailability"
             component={ListingAvailabilityScreen}
             options={{ title: "Availability" }}
@@ -306,20 +330,29 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.textMuted,
     fontSize: 14,
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     marginTop: 12,
   },
   errorText: {
     color: colors.danger,
     fontSize: 14,
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     textAlign: "center",
   },
   headerBack: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+    shadowColor: "#8A7A57",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 2,
   },
   headerBackCircle: {},
   headerBackIcon: {},

@@ -27,6 +27,7 @@ import { formatTimeLabel } from "../utils/dateFormat";
 import { formatBookingReference } from "../utils/bookingFormat";
 import { ParkingTicket } from "../components/ParkingTicket";
 import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
+import { cardShadow, colors } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingDetail">;
 
@@ -269,7 +270,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <StatusBar style="light" translucent={false} backgroundColor="#2ECC8F" />
+      <StatusBar style="dark" translucent={false} backgroundColor={colors.appBg} />
       <View style={styles.header}>
         <Pressable style={styles.backCircleButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={18} color="#111827" />
@@ -485,29 +486,33 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2ECC8F',
+    backgroundColor: colors.appBg,
   },
 
   header: {
     paddingHorizontal: 24,
-    paddingVertical: 10,
+    paddingTop: 8,
+    paddingBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'transparent',
+    backgroundColor: colors.appBg,
   },
 
   backCircleButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e6eaee',
+    ...cardShadow,
   },
   headerSpacer: {
-    width: 34,
-    height: 34,
+    width: 38,
+    height: 38,
   },
 
   headerLogo: {
@@ -518,7 +523,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 8,
-    paddingBottom: 40,
+    paddingBottom: 44,
   },
   receiptCard: {
     backgroundColor: '#FFFFFF',
@@ -720,18 +725,19 @@ const styles = StyleSheet.create({
   // Review button
   reviewButton: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
+    marginHorizontal: 0,
     marginTop: 16,
     marginBottom: 12,
-    paddingVertical: 16,
+    paddingVertical: 15,
     paddingHorizontal: 20,
-    borderRadius: 16,
+    borderRadius: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    ...cardShadow,
   },
   reviewButtonTopSpacing: {
     marginTop: 20,
@@ -742,6 +748,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
     letterSpacing: -0.2,
+    fontFamily: 'PlusJakartaSans-SemiBold',
   },
   reviewedStars: {
     flexDirection: 'row',
@@ -994,12 +1001,13 @@ const styles = StyleSheet.create({
 
   // Action buttons
   actionBtn: {
-    backgroundColor: '#2ECC8F',
+    backgroundColor: '#147A72',
     paddingVertical: 16,
-    borderRadius: 16,
-    marginHorizontal: 20,
+    borderRadius: 18,
+    marginHorizontal: 0,
     marginTop: 16,
     alignItems: 'center',
+    ...cardShadow,
   },
 
   actionBtnDisabled: {
@@ -1008,38 +1016,43 @@ const styles = StyleSheet.create({
 
   actionBtnText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'PlusJakartaSans-SemiBold',
   },
   bookAgainButton: {
     marginTop: 12,
-    marginHorizontal: 20,
-    backgroundColor: '#2ECC8F',
+    marginHorizontal: 0,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#dce4e8',
     borderRadius: 999,
     paddingVertical: 14,
     alignItems: 'center',
   },
   bookAgainText: {
-    color: '#ffffff',
+    color: '#111827',
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: 'PlusJakartaSans-SemiBold',
   },
 
   dangerButton: {
-    borderWidth: 2,
-    borderColor: '#FCA5A5',
-    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#f6caca',
+    backgroundColor: '#fff7f7',
     paddingVertical: 14,
-    borderRadius: 16,
-    marginHorizontal: 20,
+    borderRadius: 18,
+    marginHorizontal: 0,
     marginTop: 12,
     alignItems: 'center',
   },
 
   dangerButtonText: {
     color: '#DC2626',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
+    fontFamily: 'PlusJakartaSans-SemiBold',
   },
 
   dangerButtonDisabled: {
@@ -1051,28 +1064,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginTop: 12,
-    marginHorizontal: 20,
+    marginHorizontal: 0,
   },
 
   infoCard: {
     marginTop: 16,
-    marginHorizontal: 20,
-    borderRadius: 18,
-    padding: 16,
-    backgroundColor: '#FFFFFF',
+    marginHorizontal: 0,
+    borderRadius: 22,
+    padding: 18,
+    backgroundColor: '#fffef9',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#e5e7eb',
+    ...cardShadow,
   },
   infoCardTitle: {
     color: '#111827',
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     marginBottom: 8,
+    fontFamily: 'PlusJakartaSans-Bold',
   },
   infoCardBody: {
     color: '#4B5563',
     fontSize: 14,
     lineHeight: 22,
+    fontFamily: 'Inter-Regular',
   },
   edgeCaseList: {
     gap: 10,
@@ -1095,22 +1111,30 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     marginBottom: 6,
+    fontFamily: 'Inter-SemiBold',
   },
   accessCodeValue: {
     color: '#111827',
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: 2,
+    fontFamily: 'PlusJakartaSans-Bold',
   },
   secondaryLinkButton: {
     marginTop: 12,
     alignSelf: 'flex-start',
-    paddingVertical: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: '#edf8f4',
+    borderWidth: 1,
+    borderColor: '#d7ece3',
   },
   secondaryLinkButtonText: {
-    color: '#2ECC8F',
-    fontSize: 14,
+    color: '#147A72',
+    fontSize: 13,
     fontWeight: '700',
+    fontFamily: 'PlusJakartaSans-SemiBold',
   },
   helpChips: {
     flexDirection: 'row',
@@ -1119,9 +1143,9 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   helpChip: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#f8fafb',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#e5e7eb',
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -1130,6 +1154,7 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
 
   // Help button
@@ -1140,12 +1165,13 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 16,
     marginTop: 24,
-    marginHorizontal: 20,
+    marginHorizontal: 0,
   },
 
   helpText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#2ECC8F',
+    color: '#147A72',
+    fontFamily: 'PlusJakartaSans-SemiBold',
   },
 });

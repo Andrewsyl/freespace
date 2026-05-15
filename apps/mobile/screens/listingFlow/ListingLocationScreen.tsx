@@ -9,6 +9,7 @@ import { MapPin } from "../../components/MapPin";
 import { LIGHT_MAP_STYLE } from "../../components/mapStyles";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
+import { hostFlowColors, hostFlowShadow } from "./hostFlowTheme";
 import { TextInput as AppTextInput } from "../../components/ui";
 import { colors, radius, spacing, textStyles } from "../../styles/theme";
 
@@ -226,7 +227,7 @@ export function ListingLocationScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
         <Text style={styles.kicker}>Find your space</Text>
-        <StepProgress current={1} total={7} />
+        <StepProgress current={1} total={8} />
         <Text style={styles.title}>Confirm location</Text>
         <Text style={styles.subtitle}>
           Drag the pin to your exact spot. You can change this later.
@@ -410,7 +411,7 @@ export function ListingLocationScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.appBg,
+    backgroundColor: hostFlowColors.appBg,
     flex: 1,
   },
   header: {
@@ -419,42 +420,38 @@ const styles = StyleSheet.create({
   },
   kicker: {
     ...textStyles.kicker,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
   },
   title: {
-    color: colors.text,
-    fontSize: 28,
-    lineHeight: 34,
-    fontFamily: "Inter-SemiBold",
-    fontWeight: "600",
+    color: hostFlowColors.text,
+    fontSize: 26,
+    lineHeight: 31,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontWeight: "700",
     marginTop: 12,
-    letterSpacing: -0.6,
+    letterSpacing: -0.8,
   },
   subtitle: {
-    color: "#667085",
-    fontSize: 15,
+    color: hostFlowColors.textMuted,
+    fontSize: 14,
     fontFamily: "Inter-Regular",
-    marginTop: 10,
-    lineHeight: 24,
+    marginTop: 8,
+    lineHeight: 21,
   },
   searchShell: {
     paddingHorizontal: spacing.screenX,
-    marginTop: 20,
+    marginTop: 14,
   },
   searchField: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderColor: "rgba(17, 24, 39, 0.08)",
+    backgroundColor: hostFlowColors.cardBg,
+    borderColor: hostFlowColors.border,
     borderRadius: 18,
     borderWidth: 1,
     flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    ...hostFlowShadow,
   },
   searchIcon: {
     marginRight: 10,
@@ -465,10 +462,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   searchInput: {
-    color: colors.text,
+    color: hostFlowColors.text,
     flex: 1,
     fontSize: 16,
-    fontFamily: "Inter-Medium",
+    fontFamily: "Inter-Regular",
     fontWeight: "500",
     lineHeight: 22,
     minHeight: 24,
@@ -477,7 +474,7 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     alignItems: "center",
-    backgroundColor: "#f1f5f9",
+    backgroundColor: hostFlowColors.cardBgMuted,
     borderRadius: radius.pill,
     height: 26,
     justifyContent: "center",
@@ -490,18 +487,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   suggestions: {
-    backgroundColor: colors.cardBg,
-    borderColor: "rgba(17, 24, 39, 0.08)",
-    borderRadius: 16,
+    backgroundColor: hostFlowColors.cardBg,
+    borderColor: hostFlowColors.border,
+    borderRadius: 18,
     borderWidth: 1,
     marginHorizontal: spacing.screenX,
     marginTop: 10,
     overflow: "hidden",
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    ...hostFlowShadow,
   },
   suggestionItem: {
     borderBottomColor: "rgba(17, 24, 39, 0.06)",
@@ -510,12 +503,12 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   suggestionText: {
-    color: colors.text,
+    color: hostFlowColors.text,
     fontSize: 14,
     fontFamily: "Inter-Regular",
   },
   suggestionMuted: {
-    color: colors.textSoft,
+    color: hostFlowColors.textSoft,
     fontSize: 12,
     fontFamily: "Inter-Regular",
     paddingHorizontal: 12,
@@ -531,8 +524,8 @@ const styles = StyleSheet.create({
   },
   mapPlaceholder: {
     alignItems: "center",
-    backgroundColor: "#fafbfc",
-    borderColor: "rgba(17, 24, 39, 0.08)",
+    backgroundColor: hostFlowColors.cardBgMuted,
+    borderColor: hostFlowColors.border,
     borderRadius: 22,
     borderStyle: "dashed",
     borderWidth: 2,
@@ -543,8 +536,8 @@ const styles = StyleSheet.create({
   },
   mapPlaceholderIconCircle: {
     alignItems: "center",
-    backgroundColor: "#e9fbf6",
-    borderColor: "#b8efe3",
+    backgroundColor: hostFlowColors.accentSoft,
+    borderColor: hostFlowColors.accentSoftBorder,
     borderRadius: 999,
     borderWidth: 2,
     height: 96,
@@ -556,14 +549,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   mapPlaceholderTitle: {
-    color: colors.text,
+    color: hostFlowColors.text,
     fontSize: 16,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     textAlign: "center",
   },
   mapPlaceholderText: {
-    color: colors.textMuted,
+    color: hostFlowColors.textMuted,
     fontSize: 14,
     fontFamily: "Inter-Regular",
     lineHeight: 22,
@@ -583,13 +576,13 @@ const styles = StyleSheet.create({
     top: 12,
   },
   movePinToggle: {
-    backgroundColor: "rgba(15, 23, 42, 0.9)",
+    backgroundColor: "rgba(24, 52, 47, 0.88)",
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
   movePinToggleActive: {
-    backgroundColor: colors.accent,
+    backgroundColor: hostFlowColors.accent,
   },
   movePinToggleText: {
     color: "#ffffff",
@@ -599,21 +592,21 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   movePinHint: {
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    backgroundColor: "rgba(252, 248, 238, 0.94)",
     borderRadius: 10,
     marginTop: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   movePinHintText: {
-    color: colors.text,
+    color: hostFlowColors.text,
     fontSize: 12,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   addressPrompt: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    borderColor: "rgba(17, 24, 39, 0.08)",
+    backgroundColor: "rgba(252, 248, 238, 0.98)",
+    borderColor: hostFlowColors.border,
     borderRadius: 18,
     borderWidth: 1,
     bottom: 14,
@@ -623,19 +616,19 @@ const styles = StyleSheet.create({
     right: 16,
   },
   addressPromptTitle: {
-    color: colors.text,
+    color: hostFlowColors.text,
     fontSize: 14,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   addressPromptBody: {
-    color: colors.textMuted,
+    color: hostFlowColors.textMuted,
     fontSize: 12,
     fontFamily: "Inter-Regular",
     marginTop: 6,
   },
   addressPromptValue: {
-    color: colors.text,
+    color: hostFlowColors.text,
     fontSize: 13,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
@@ -647,21 +640,22 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   addressPromptGhost: {
-    borderColor: colors.border,
+    backgroundColor: hostFlowColors.cardBg,
+    borderColor: hostFlowColors.border,
     borderRadius: 12,
     borderWidth: 1,
     flex: 1,
     paddingVertical: 10,
   },
   addressPromptGhostText: {
-    color: colors.text,
+    color: hostFlowColors.text,
     fontSize: 12,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     textAlign: "center",
   },
   addressPromptPrimary: {
-    backgroundColor: colors.accent,
+    backgroundColor: hostFlowColors.accent,
     borderRadius: 12,
     flex: 1,
     paddingVertical: 10,
@@ -674,27 +668,27 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   footer: {
-    backgroundColor: colors.cardBg,
-    borderTopColor: "rgba(17, 24, 39, 0.08)",
+    backgroundColor: hostFlowColors.cardBg,
+    borderTopColor: hostFlowColors.border,
     borderTopWidth: 1,
     paddingHorizontal: spacing.screenX,
-    paddingTop: 14,
-    paddingBottom: 18,
+    paddingTop: 10,
+    paddingBottom: 14,
   },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: 16,
-    minHeight: 56,
+    backgroundColor: hostFlowColors.accent,
+    borderRadius: 18,
+    minHeight: 50,
     justifyContent: "center",
   },
   primaryButtonDisabled: {
     backgroundColor: "#d1d5db",
   },
   primaryButtonText: {
-    color: colors.cardBg,
+    color: "#FFFFFF",
     fontSize: 16,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     letterSpacing: -0.2,
   },

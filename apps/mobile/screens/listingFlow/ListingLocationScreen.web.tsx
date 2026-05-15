@@ -108,7 +108,7 @@ export function ListingLocationScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
         <Text style={styles.kicker}>Find your space</Text>
-        <StepProgress current={1} total={7} />
+        <StepProgress current={1} total={8} />
         <Text style={styles.title}>Confirm location</Text>
         <Text style={styles.subtitle}>
           Map preview is available on device. You can still set the address here.

@@ -365,14 +365,7 @@ export function ListingScreen({ navigation, route }: Props) {
                     )}
                   </Pressable>
                 </View>
-                {imageUrls.length > 0 ? (
-                  <View style={styles.photoCounter}>
-                    <Text style={styles.photoCounterText}>
-                      {String(activeImageIndex + 1).padStart(2, "0")} / {String(imageUrls.length).padStart(2, "0")}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
+            </View>
             </View>
 
             <Pressable
@@ -1137,38 +1130,45 @@ const styles = StyleSheet.create({
   // Bottom bar
   bottomBar: {
     position: "absolute", bottom: 0, left: 0, right: 0,
-    backgroundColor: "#32b1a8",
-    borderTopWidth: 0,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#edf0f2",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 16, paddingTop: 14,
     minHeight: 98,
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     gap: 16,
-    shadowColor: "#1b6f69",
-    shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.12, shadowRadius: 16, elevation: 10,
+    shadowColor: "#15232b",
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.05, shadowRadius: 10, elevation: 10,
   },
   bottomLeft: { flex: 1, justifyContent: "center", paddingLeft: 2 },
   bottomLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
-    color: "rgba(255,255,255,0.88)",
+    color: "#7a8288",
     letterSpacing: 0.8,
     marginBottom: 4,
+    textTransform: "uppercase",
   },
   bottomPrice: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 30, color: "#fff", letterSpacing: -0.8, lineHeight: 34,
+    fontSize: 30, color: "#111827", letterSpacing: -0.8, lineHeight: 34,
   },
-  bottomDuration: { fontFamily: "Inter-Regular", fontSize: 12, color: "rgba(255,255,255,0.86)", marginTop: 2 },
+  bottomDuration: { fontFamily: "Inter-Regular", fontSize: 12, color: "#98a4ab", marginTop: 2 },
   reserveBtn: {
-    backgroundColor: "#0f5b55",
-    borderRadius: 22,
+    backgroundColor: "#158a83",
+    borderRadius: 20,
     minHeight: 70,
     paddingVertical: 18, paddingHorizontal: 28, minWidth: 152, alignItems: "center", justifyContent: "center",
+    shadowColor: "#158a83",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.16,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  reserveBtnDisabled: { backgroundColor: colors.border, shadowOpacity: 0 },
+  reserveBtnDisabled: { backgroundColor: colors.border, shadowOpacity: 0, elevation: 0 },
   reserveBtnText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#fff", letterSpacing: -0.2 },
   reserveBtnDisabledText: { fontFamily: "Inter-SemiBold", fontSize: 16, color: colors.textSoft },
 
