@@ -63,11 +63,9 @@ export function BookingCard({
   statusTone,
   dateLabel,
   timeLabel,
-  rating,
   onPress,
 }: Props) {
   const badgeStyle = STATUS_STYLES[statusTone];
-  const ratingValue = typeof rating === "number" ? Math.round(rating) : null;
   const price = Math.round(booking.amountCents / 100);
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const imageUrl =

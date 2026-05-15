@@ -1,4 +1,3 @@
-import React from "react";
 import { render, userEvent, waitFor } from "@testing-library/react-native";
 import { GlobalToastProvider } from "../components/GlobalToast";
 import { SignInScreen } from "../screens/SignInScreen";

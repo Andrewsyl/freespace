@@ -9,7 +9,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { cardShadow, colors, radius, textStyles } from "../styles/theme";
+import { colors, textStyles } from "../styles/theme";
 
 type MapBottomCardProps = {
   title: string;
@@ -24,7 +24,6 @@ type MapBottomCardProps = {
   isAvailable?: boolean;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
-  onReserve: () => void;
   onPress?: () => void;
   bottomOffset?: number;
   horizontalInset?: number;
@@ -41,7 +40,6 @@ export function MapBottomCard({
   isAvailable = true,
   isFavorite,
   onToggleFavorite,
-  onReserve,
   onPress,
   bottomOffset = 0,
   horizontalInset = 0,

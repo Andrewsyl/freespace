@@ -4,9 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
-  Alert,
   Platform,
-  Image,
   KeyboardAvoidingView,
   Modal,
   Pressable,
@@ -182,11 +180,9 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
   const applyPickedDate = (next: Date) => {
     if (pickerField === "start") {
-      let nextEnd = endAt;
       if (next > endAt) {
         const bumped = new Date(next);
         bumped.setHours(bumped.getHours() + 2);
-        nextEnd = bumped;
         setEndAt(bumped);
       }
       setStartAt(next);

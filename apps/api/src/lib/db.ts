@@ -23,8 +23,6 @@ function mapListingPricing(row: { price_per_day: number | string; price_per_hour
   };
 }
 
-type ReviewRole = "driver_review" | "host_review";
-
 export type UserRecord = {
   id: string;
   email: string;
@@ -173,7 +171,6 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
 
   const params = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter];
   try {
-    const query = baseQuery.replace("rating,", "rating,") + "";
     const result = await pool.query(
       baseQuery.replace(
         "availability_text,",

@@ -2,7 +2,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { RootStackParamList } from "../types";
-import { cardShadow, colors, radius, spacing } from "../styles/theme";
+import { colors, spacing } from "../styles/theme";
 import { BackButton } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;

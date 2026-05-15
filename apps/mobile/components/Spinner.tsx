@@ -1,5 +1,5 @@
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { colors, spacing } from "../styles/theme";
+import { colors } from "../styles/theme";
 
 interface SpinnerProps {
   size?: "small" | "medium" | "large";

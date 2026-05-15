@@ -11,7 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import { StepProgress } from "./StepProgress";
 import { useListingFlow } from "./context";
-import { cardShadow, colors, radius, spacing, textStyles } from "../../styles/theme";
+import { cardShadow, colors, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
   ListingStreetView: undefined;

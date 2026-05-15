@@ -12,8 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { createListing } from "../api";
 import { useAuth } from "../auth";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
-import type { RootStackParamList } from "../types";
-import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
+import { cardShadow, colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<any, any>;
 

@@ -58,10 +58,8 @@ export function MobileSearchLayout({
   filters,
   results,
   status,
-  error,
   center,
   selectedListingId,
-  popupListing,
   lockViewport,
   searchAsMove,
   pendingCenter,
@@ -69,13 +67,11 @@ export function MobileSearchLayout({
   areaSearching,
   onSearch,
   onAddressChange,
-  onSelectListing,
   onMarkerSelect,
   onMarkerClick,
   onPopupBook,
   onBoundsChanged,
   onSearchArea,
-  onSearchAsMove,
 }: SharedLayoutProps) {
   const router = useRouter();
   const [searchPanelOpen, setSearchPanelOpen] = useState(false);

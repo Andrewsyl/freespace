@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createBooking, getListing, type ListingDetail } from "../../../lib/api";
 import { calculateListingTotal, formatListingPriceLine } from "../../../lib/pricing";
@@ -10,7 +10,6 @@ import { SlimNav } from "../../../components/SlimNav";
 
 export default function CheckoutPage() {
   const { user, token, loading } = useAuth();
-  const router = useRouter();
   const params = useParams<{ id: string }>();
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "success">("idle");

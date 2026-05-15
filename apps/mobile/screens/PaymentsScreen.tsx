@@ -12,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { CardField, useStripe } from "@stripe/stripe-react-native";
-import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
+import { cardShadow, colors, radius, spacing } from "../styles/theme";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { BackButton, Button } from "../components/ui";
 import {

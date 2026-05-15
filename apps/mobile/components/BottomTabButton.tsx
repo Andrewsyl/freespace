@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useRef } from "react";
 import type { GestureResponderEvent } from "react-native";
-import { Animated, Pressable, StyleSheet, View } from "react-native";
+import { Animated, Pressable, StyleSheet } from "react-native";
 import { radius } from "../styles/theme";
 
 type Props = {

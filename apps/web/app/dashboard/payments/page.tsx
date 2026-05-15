@@ -28,7 +28,6 @@ export default function PaymentsPage() {
   const [status, setStatus] = useState<LoadingState>("idle");
   const [historyStatus, setHistoryStatus] = useState<LoadingState>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [historyError, setHistoryError] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
 
   const loadLocalMethods = () => {
@@ -80,7 +79,6 @@ export default function PaymentsPage() {
     () => async () => {
       if (!token) return;
       setHistoryStatus("loading");
-      setHistoryError(null);
       try {
         const data = await listPaymentHistory(token);
         setHistory(data);
@@ -89,7 +87,6 @@ export default function PaymentsPage() {
         setHistoryStatus("error");
         // Keep UI clean if history is unavailable
         console.warn("Payments history unavailable:", err);
-        setHistoryError(null);
       }
     },
     [token]
@@ -155,7 +152,7 @@ export default function PaymentsPage() {
       await retryPayment(id, token);
       loadHistory();
     } catch (err) {
-      setHistoryError(err instanceof Error ? err.message : "Retry failed");
+      setError(err instanceof Error ? err.message : "Retry failed");
     }
   };
 

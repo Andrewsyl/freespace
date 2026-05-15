@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,7 +17,7 @@ import { requestPhoneVerification, updateMe, verifyPhone } from "../api";
 import { useGlobalToast, useToastOnMessage } from "../components/GlobalToast";
 import type { RootStackParamList } from "../types";
 import { Button, TextInput as AppTextInput } from "../components/ui";
-import { cardShadow, colors, spacing, textStyles } from "../styles/theme";
+import { colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PersonalInfo">;
 
@@ -48,7 +47,6 @@ export function PersonalInfoScreen({ navigation }: Props) {
   const currentName = name.trim();
   const currentEmail = email.trim().toLowerCase();
   const currentPhone = phone.trim();
-  const savedName = originalName || "";
   const hasChanges =
     currentName !== originalName || currentEmail !== originalEmail || currentPhone !== originalPhone;
   const phoneChanged = currentPhone !== originalPhone;

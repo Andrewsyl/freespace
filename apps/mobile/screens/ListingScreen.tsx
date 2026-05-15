@@ -43,18 +43,6 @@ const getFeatureIconType = (label: string) => {
   return "sheltered";
 };
 
-const getFeatureSubLabel = (label: string) => {
-  const n = label.toLowerCase();
-  if (n.includes("cctv") || n.includes("camera")) return "Monitored 24/7";
-  if (n.includes("ev") || n.includes("charger") || n.includes("charging")) return "Available on-site";
-  if (n.includes("shelter") || n.includes("covered") || n.includes("roof")) return "Sheltered space";
-  if (n.includes("gate") || n.includes("gated") || n.includes("barrier")) return "Secured access";
-  if (n.includes("code") || n.includes("keypad") || n.includes("entry")) return "Code access";
-  if (n.includes("permit")) return "Required";
-  if (n.includes("low") || n.includes("clearance")) return "Under 2.1m";
-  return "Included";
-};
-
 const getAddressWithoutHouseNumber = (address: string) => {
   const parts = address.split(",").map((p) => p.trim()).filter(Boolean);
   if (!parts.length) return address;
@@ -93,7 +81,6 @@ export function ListingScreen({ navigation, route }: Props) {
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showFullAbout, setShowFullAbout] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
@@ -232,21 +219,6 @@ export function ListingScreen({ navigation, route }: Props) {
 
   const hasReviews = (listing?.rating_count ?? 0) > 0 && typeof listing?.rating === "number";
   const isAvailable = listing?.is_available !== false;
-
-  const spaceTypeLabel = useMemo(() => {
-    const rawType =
-      (listing as { space_type?: string; spaceType?: string })?.space_type ??
-      (listing as { space_type?: string; spaceType?: string })?.spaceType ??
-      null;
-    if (rawType) return rawType;
-    const title = (listing?.title ?? "").trim();
-    if (/ parking$/i.test(title)) return title.replace(/ parking$/i, "");
-    const lower = title.toLowerCase();
-    if (lower.includes("driveway")) return "Private Driveway";
-    if (lower.includes("garage")) return "Garage";
-    if (lower.includes("car park") || lower.includes("carpark")) return "Car park";
-    return "Parking space";
-  }, [listing]);
 
   const heroHeight = Math.round(width * 0.8);
   const heroTapHeight = Math.max(0, heroHeight - 40);

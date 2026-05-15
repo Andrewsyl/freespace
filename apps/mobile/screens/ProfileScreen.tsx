@@ -9,7 +9,7 @@ import { useAuth } from "../auth";
 import { useGlobalToast } from "../components/GlobalToast";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import { Button, Card, Screen, SectionHeader } from "../components/ui";
-import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
+import { cardShadow, colors, radius, textStyles } from "../styles/theme";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
 

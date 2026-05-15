@@ -40,7 +40,7 @@ export function JustParkAuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const { loginWithOAuth } = useAuth();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
   const needsLegalAcceptance = (candidate: { termsVersion?: string | null; privacyVersion?: string | null }) =>

@@ -1,14 +1,5 @@
 import { notFound } from "next/navigation";
 import { StarIcon, MapPinIcon } from "@heroicons/react/24/solid";
-import {
-  BoltIcon,
-  CameraIcon,
-  HomeIcon,
-  KeyIcon,
-  LockClosedIcon,
-  ShieldCheckIcon,
-  TruckIcon,
-} from "@heroicons/react/24/outline";
 import { getListing, listListingReviews } from "../../../lib/api";
 import { formatListingPriceLine } from "../../../lib/pricing";
 import type { Listing } from "../../../components/ListingCard";
@@ -28,18 +19,6 @@ function formatAreaLabel(address: string) {
   if (!parts.length) return address;
   const first = parts[0].replace(/^\d+[A-Za-z0-9\-\/]*\s+/, "").trim();
   return [first || parts[0], ...parts.slice(1)].join(", ");
-}
-
-function amenityToIcon(label: string) {
-  const normalized = label.toLowerCase();
-  if (normalized.includes("ev") || normalized.includes("charger")) return BoltIcon;
-  if (normalized.includes("cctv") || normalized.includes("camera")) return CameraIcon;
-  if (normalized.includes("covered") || normalized.includes("roof") || normalized.includes("shelter")) return HomeIcon;
-  if (normalized.includes("gated") || normalized.includes("barrier") || normalized.includes("gate")) return LockClosedIcon;
-  if (normalized.includes("permit") || normalized.includes("secure")) return ShieldCheckIcon;
-  if (normalized.includes("code") || normalized.includes("key")) return KeyIcon;
-  if (normalized.includes("van") || normalized.includes("large")) return TruckIcon;
-  return ShieldCheckIcon;
 }
 
 export default async function ListingDetailPage({

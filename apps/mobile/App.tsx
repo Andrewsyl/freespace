@@ -53,7 +53,6 @@ import { SupportScreen } from "./screens/SupportScreen";
 import { AdminScreen } from "./screens/AdminScreen";
 import type { RootStackParamList } from "./types";
 import { getMe, registerPushToken, verifyEmailToken } from "./api";
-import { Ionicons } from "@expo/vector-icons";
 import { BottomTabButton } from "./components/BottomTabButton";
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { GlobalLoadingProvider, useGlobalLoading } from "./components/GlobalLoading";
@@ -62,7 +61,7 @@ import { useGlobalToast } from "./components/GlobalToast";
 import { mobileEnv } from "./env";
 import { installGlobalErrorLogging } from "./logger";
 import { colors } from "./theme/colors";
-import { radius, spacing as appSpacing, textStyles } from "./styles/theme";
+import { radius, spacing as appSpacing } from "./styles/theme";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();

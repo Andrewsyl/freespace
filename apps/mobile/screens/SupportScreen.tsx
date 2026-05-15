@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { sendSupportMessage } from "../api";
@@ -7,7 +7,6 @@ import { useAuth } from "../auth";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import type { RootStackParamList } from "../types";
-import { Ionicons } from "@expo/vector-icons";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Support">;

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Easing,
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -194,11 +193,11 @@ export function SearchScreen({ navigation }: Props) {
   const [showSearchArea, setShowSearchArea] = useState(false);
   const [renderSearchArea, setRenderSearchArea] = useState(false);
   const isProgrammaticMoveRef = useRef(false);
-  const { user } = useAuth();
+  useAuth();
   const { launchComplete } = useAppLaunch();
   const isFocused = useIsFocused();
   const { favorites, isFavorite, toggle } = useFavorites();
-  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+  const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(0)).current;
   const searchAnim = useRef(new Animated.Value(0)).current;
@@ -231,7 +230,6 @@ export function SearchScreen({ navigation }: Props) {
 
   const parsedLat = Number.parseFloat(lat);
   const parsedLng = Number.parseFloat(lng);
-  const usingDefaultCenter = !Number.isFinite(parsedLat) || !Number.isFinite(parsedLng);
   const mapRegion = {
     latitude: Number.isFinite(parsedLat) ? parsedLat : 53.3498,
     longitude: Number.isFinite(parsedLng) ? parsedLng : -6.2603,
@@ -508,11 +506,9 @@ export function SearchScreen({ navigation }: Props) {
 
   const applyPickedDate = (next: Date) => {
     if (pickerField === "start") {
-      let nextEnd = endAt;
       if (next > endAt) {
         const bumped = new Date(next);
         bumped.setHours(bumped.getHours() + 2);
-        nextEnd = bumped;
         setEndAt(bumped);
       }
       setStartAt(next);
@@ -1184,7 +1180,6 @@ export function SearchScreen({ navigation }: Props) {
             onPress={() => { setSelectedId(null); navigation.navigate("Listing", { id: selectedListing.id, from, to }); }}
             bottomOffset={82 + insets.bottom}
             horizontalInset={16}
-            onReserve={() => { setSelectedId(null); navigation.navigate("Listing", { id: selectedListing.id, from, to }); }}
             dismissing={dismissingCard}
           />
         ) : null}

@@ -28,7 +28,6 @@ type DateTimePickerProps = {
   label: "From" | "Until";
   value: Date;
   onChange: (next: Date) => void;
-  minGapMinutes?: number;
 };
 
 export function SearchForm({
@@ -314,7 +313,6 @@ function DateTimePicker({
   label,
   value,
   onChange,
-  minGapMinutes = 120,
   compact = false,
 }: DateTimePickerProps & { compact?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -353,7 +351,6 @@ function DateTimePicker({
     next.setHours(value.getHours(), value.getMinutes(), 0, 0);
     onChange(next);
     if (label === "From") {
-      const endCandidate = addMinutes(next, minGapMinutes);
       onChange(next);
       // Parent handles end adjustment separately
     }

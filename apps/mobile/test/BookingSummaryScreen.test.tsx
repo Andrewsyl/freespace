@@ -1,4 +1,3 @@
-import React from "react";
 import { render, userEvent, waitFor } from "@testing-library/react-native";
 import { BookingSummaryScreen } from "../screens/BookingSummaryScreen";
 import { GlobalLoadingProvider } from "../components/GlobalLoading";

@@ -4,7 +4,6 @@ import Link from "next/link";
 import type { Route } from "next";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthProvider";
-import { deleteAccount } from "../lib/api";
 import { useAppStatus } from "./AppStatusProvider";
 
 const links: { href: Route; label: string; roles?: string[] }[] = [
@@ -19,7 +18,7 @@ const links: { href: Route; label: string; roles?: string[] }[] = [
 ];
 
 export function Navbar() {
-  const { user, token, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { isLoading, error, setError } = useAppStatus();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);

@@ -1,16 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
 import { Animated, BackHandler, Easing, FlatList, InteractionManager, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import LottieView from "lottie-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { listMyBookings, type BookingSummary } from "../api";
 import { useAuth } from "../auth";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { useGlobalLoading } from "../components/GlobalLoading";
-import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
+import { colors, spacing } from "../styles/theme";
 import { BookingCard } from "../components/BookingCard";
 import { Spinner } from "../components/Spinner";
 import type { RootStackParamList } from "../types";
@@ -44,7 +43,6 @@ export function HistoryScreen({ navigation, route }: Props) {
   const newBookingSlideAnim = useRef(new Animated.Value(50)).current;
   const newBookingOpacityAnim = useRef(new Animated.Value(0)).current;
   const lastTabIndexRef = useRef(0);
-  const [tabDirection, setTabDirection] = useState(1);
   const skipNextFocusReload = useRef(false);
   const [revealBookings, setRevealBookings] = useState(true);
   const [bookingTransitioning, setBookingTransitioning] = useState(false);
@@ -159,7 +157,6 @@ export function HistoryScreen({ navigation, route }: Props) {
     setTabSwitchingTo(targetTab);
     segmentAnim.setValue(targetTab === "upcoming" ? 0 : targetTab === "active" ? 1 : 2);
     lastTabIndexRef.current = targetTab === "upcoming" ? 0 : targetTab === "active" ? 1 : 2;
-    setTabDirection(1);
     setRevealBookings(false);
     setBookingTransitioning(true);
     setLoading(false);
@@ -243,10 +240,7 @@ export function HistoryScreen({ navigation, route }: Props) {
 
   useEffect(() => {
     const currentIndex = tab === "upcoming" ? 0 : tab === "active" ? 1 : 2;
-    const prevIndex = lastTabIndexRef.current;
-    const direction = currentIndex >= prevIndex ? 1 : -1;
     lastTabIndexRef.current = currentIndex;
-    setTabDirection(direction);
     tabAnim.setValue(0);
     Animated.timing(tabAnim, {
       toValue: 1,

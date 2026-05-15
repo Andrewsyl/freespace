@@ -126,7 +126,7 @@ const upsertSettingSchema = z.object({
   reason: z.string().trim().max(200).optional(),
 });
 
-router.get("/dashboard", requireAuth, requireAdmin, adminReadLimiter, async (req, res, next) => {
+router.get("/dashboard", requireAuth, requireAdmin, adminReadLimiter, async (_req, res, next) => {
   try {
     const metrics = await getAdminDashboardMetrics();
     res.json({ metrics });
@@ -238,7 +238,7 @@ router.patch("/listings/:id", requireAuth, requireAdmin, adminWriteLimiter, asyn
 });
 
 // TODO: Wire this to a daily cron (e.g. CloudWatch/EventBridge) to automate payouts.
-router.post("/payouts/run", requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
+router.post("/payouts/run", requireAuth, requireAdmin, adminWriteLimiter, async (_req, res, next) => {
   try {
     if (!stripe) return res.json({ processed: 0, skipped: true });
 
@@ -404,7 +404,7 @@ router.patch("/support/:id", requireAuth, requireAdmin, adminWriteLimiter, async
   }
 });
 
-router.get("/settings", requireAuth, requireAdmin, adminReadLimiter, async (req, res, next) => {
+router.get("/settings", requireAuth, requireAdmin, adminReadLimiter, async (_req, res, next) => {
   try {
     const settings = await listAdminSettings();
     res.json({ settings });

@@ -1,4 +1,3 @@
-import React from "react";
 import { render, userEvent } from "@testing-library/react-native";
 import { SearchScreen } from "../screens/SearchScreen";
 import { GlobalLoadingProvider } from "../components/GlobalLoading";
@@ -24,13 +23,11 @@ jest.mock("../api", () => ({
 }));
 
 jest.mock("../components/MapSection", () => {
-  const React = require("react");
   const { View } = require("react-native");
   return () => <View />;
 });
 
 jest.mock("../components/MapBottomCard", () => {
-  const React = require("react");
   const { View } = require("react-native");
   return { MapBottomCard: () => <View /> };
 });

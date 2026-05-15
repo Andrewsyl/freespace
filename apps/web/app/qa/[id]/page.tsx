@@ -41,11 +41,6 @@ function formatDatetime(d: Date): string {
   return `${label}, ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
-function toLocalInputValue(date: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
 export default function QaPortalPage() {
   const params = useParams<{ id: string }>();
   const [listing, setListing] = useState<ListingDetail | null>(null);

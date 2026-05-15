@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
-import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
+import { cardShadow, colors, radius, spacing } from "../styles/theme";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
 

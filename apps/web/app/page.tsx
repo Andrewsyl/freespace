@@ -43,8 +43,6 @@ export default function HomePage() {
   const [date, setDate] = useState(() => defaultFilters.date);
   const [startTime, setStartTime] = useState(defaultFilters.startTime);
   const [endTime, setEndTime] = useState(defaultFilters.endTime);
-  const [heroStyle] = useState<"flat" | "iso" | "line">("line");
-
   const handleSearch = (filters: SearchFilters) => {
     const params = new URLSearchParams({
       location: filters.location,

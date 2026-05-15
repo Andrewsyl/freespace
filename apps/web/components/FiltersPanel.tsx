@@ -6,12 +6,12 @@ import type { SearchFilters } from "./SearchForm";
 export function FiltersPanel({
   initialFilters,
   onApply,
-  onCancel,
+  onCancel: _onCancel,
   onLiveChange,
 }: {
   initialFilters: SearchFilters;
   onApply: (filters: SearchFilters) => void;
-  onCancel: () => void;
+  onCancel?: () => void;
   onLiveChange?: (filters: SearchFilters) => void;
 }) {
   const [pending, setPending] = useState<SearchFilters>(initialFilters);
