@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { getListingImageUploadUrl } from "../../api";
 import { useAuth } from "../../auth";
@@ -32,6 +32,7 @@ const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "i
 
 export function ListingPhotosScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
+  const insets = useSafeAreaInsets();
   const { token } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [uploadLabel, setUploadLabel] = useState<string | null>(null);
@@ -126,7 +127,7 @@ export function ListingPhotosScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.kicker}>Add photos (optional)</Text>
         <StepProgress current={6} total={7} />
@@ -174,17 +175,22 @@ export function ListingPhotosScreen({ navigation }: Props) {
           </View>
         ) : null}
       </ScrollView>
-      <View style={styles.footer}>
+      <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
         <Button
+          size="medium"
           title="Continue"
           onPress={() => navigation.navigate("ListingReview")}
           disabled={!hasPhoto || uploading}
+          style={styles.continueButton}
+          textStyle={styles.continueButtonText}
         />
         <Button
+          size="medium"
           title="Skip for now"
           variant="secondary"
           onPress={() => navigation.navigate("ListingReview")}
           style={styles.secondaryButton}
+          textStyle={styles.continueButtonText}
         />
       </View>
     </SafeAreaView>
@@ -207,8 +213,8 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 26,
+    lineHeight: 31,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     marginTop: 12,
@@ -216,10 +222,10 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: "#667085",
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Inter-Regular",
     marginTop: 10,
-    lineHeight: 24,
+    lineHeight: 22,
   },
   uploadButton: {
     alignItems: "center",
@@ -285,11 +291,24 @@ const styles = StyleSheet.create({
     borderTopColor: "rgba(17, 24, 39, 0.08)",
     borderTopWidth: 1,
     paddingHorizontal: spacing.screenX,
-    paddingTop: 14,
-    paddingBottom: 18,
+    paddingTop: 10,
+    paddingBottom: 2,
+  },
+  continueButton: {
+    borderRadius: 16,
+    minHeight: 48,
+  },
+  continueButtonText: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    fontWeight: "600",
+    letterSpacing: -0.2,
+    lineHeight: 20,
   },
   secondaryButton: {
+    borderRadius: 16,
     marginTop: 10,
+    minHeight: 48,
   },
   errorText: {
     color: colors.danger,

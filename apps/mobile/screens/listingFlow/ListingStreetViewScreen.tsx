@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import { StepProgress } from "./StepProgress";
 import { useListingFlow } from "./context";
@@ -22,6 +22,7 @@ type Props = NativeStackScreenProps<FlowStackParamList, "ListingStreetView">;
 
 export function ListingStreetViewScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
+  const insets = useSafeAreaInsets();
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const webViewRef = useRef<WebView>(null);
   const canUseView = Platform.OS !== "web" && !!mapsKey;
@@ -59,7 +60,7 @@ export function ListingStreetViewScreen({ navigation }: Props) {
   `;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.kicker}>Street view</Text>
         <StepProgress current={2} total={7} />
@@ -105,7 +106,7 @@ export function ListingStreetViewScreen({ navigation }: Props) {
           />
         )}
       </View>
-      <View style={styles.footer}>
+      <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
         <Pressable
           style={[styles.primaryButton, !canUseView && styles.primaryButtonDisabled]}
           onPress={() => {
@@ -194,15 +195,15 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: "auto",
     paddingHorizontal: spacing.screenX,
-    paddingTop: 14,
-    paddingBottom: 14,
+    paddingTop: 10,
+    paddingBottom: 2,
     gap: 8,
   },
   primaryButton: {
     alignItems: "center",
     backgroundColor: colors.accent,
     borderRadius: 16,
-    minHeight: 52,
+    minHeight: 48,
     justifyContent: "center",
     ...cardShadow,
   },
@@ -211,7 +212,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: colors.cardBg,
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     letterSpacing: -0.2,

@@ -48,4 +48,7 @@ const styles = StyleSheet.create({
   readingInset: {
     paddingHorizontal: spacing.card + spacing.readingInset,
   },
+  contentDense: {
+    paddingVertical: spacing.lg,
+  },
 });

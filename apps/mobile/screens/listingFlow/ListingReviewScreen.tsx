@@ -2,7 +2,7 @@ import { CommonActions } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import LottieView from "lottie-react-native";
 import { Check, ChevronRight } from "lucide-react-native";
@@ -36,6 +36,7 @@ type Props = NativeStackScreenProps<FlowStackParamList, "ListingReview">;
 export function ListingReviewScreen({ navigation }: Props) {
   const { draft, setDraft, listingId } = useListingFlow();
   const { token } = useAuth();
+  const insets = useSafeAreaInsets();
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const [submitting, setSubmitting] = useState(false);
   const [published, setPublished] = useState(false);
@@ -241,7 +242,7 @@ export function ListingReviewScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="never">
         <Text style={styles.kicker}>
           {listingId ? "Review & update" : "Review & publish"}
@@ -381,7 +382,7 @@ export function ListingReviewScreen({ navigation }: Props) {
           </Pressable>
         </View>
       </ScrollView>
-      <View style={styles.footer}>
+      <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
         <Pressable
           style={[
             styles.primaryButton,
@@ -441,8 +442,8 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 26,
+    lineHeight: 31,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     marginTop: 12,
@@ -450,10 +451,10 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: "#667085",
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Inter-Regular",
-    marginTop: 10,
-    lineHeight: 24,
+    marginTop: 8,
+    lineHeight: 22,
   },
   guidanceCard: {
     backgroundColor: "#F8FAFC",
@@ -615,8 +616,8 @@ const styles = StyleSheet.create({
     borderTopColor: "rgba(17, 24, 39, 0.08)",
     borderTopWidth: 1,
     paddingHorizontal: spacing.screenX,
-    paddingTop: 14,
-    paddingBottom: 18,
+    paddingTop: 10,
+    paddingBottom: 2,
   },
   successOverlay: {
     alignItems: "center",
@@ -659,7 +660,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.accent,
     borderRadius: 16,
-    minHeight: 56,
+    minHeight: 48,
     justifyContent: "center",
     ...cardShadow,
   },
@@ -677,7 +678,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 16,
     marginTop: 10,
-    minHeight: 48,
+    minHeight: 44,
     justifyContent: "center",
   },
   secondaryButtonText: {

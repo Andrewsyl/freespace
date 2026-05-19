@@ -94,31 +94,33 @@ const styles = StyleSheet.create({
   },
   outline: {
     ...buttons.secondary,
-    backgroundColor: "transparent",
+    backgroundColor: colors.cardBg,
     borderColor: colors.accent,
-    borderWidth: 1.25,
+    borderWidth: 2,
   },
   ghost: {
     ...buttons.ghost,
-    backgroundColor: "#F0FDF4",
+    backgroundColor: colors.accentSoft,
   },
   small: {
-    minHeight: 42,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  medium: {
     minHeight: 48,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  large: {
-    minHeight: 54,
+  medium: {
+    minHeight: 58,
     paddingHorizontal: spacing.lg,
-    paddingVertical: 15,
+    paddingVertical: spacing.md,
+  },
+  large: {
+    minHeight: 64,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
   },
   disabled: {
-    opacity: 0.55,
+    opacity: 1,
+    backgroundColor: colors.border,
+    borderColor: colors.border,
   },
   text: {
     ...textStyles.button,
@@ -136,15 +138,15 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
   smallText: {
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 20,
   },
   mediumText: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 17,
+    lineHeight: 24,
   },
   largeText: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 17,
+    lineHeight: 24,
   },
 });

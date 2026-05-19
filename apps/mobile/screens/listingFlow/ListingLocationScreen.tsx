@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Keyboard, Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import * as Location from "expo-location";
 import { MapPinned, Search, X } from "lucide-react-native";
@@ -34,6 +34,7 @@ type PlaceDetailsResponse = {
 
 export function ListingLocationScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
+  const insets = useSafeAreaInsets();
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const [query, setQuery] = useState(draft.location.address);
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
@@ -224,7 +225,7 @@ export function ListingLocationScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.kicker}>Find your space</Text>
         <StepProgress current={1} total={8} />
@@ -394,7 +395,7 @@ export function ListingLocationScreen({ navigation }: Props) {
           </View>
         )}
       </View>
-      <View style={styles.footer}>
+      <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
         <Pressable
           style={[styles.primaryButton, !mapVisible && styles.primaryButtonDisabled]}
           onPress={() => navigation.navigate("ListingStreetView")}
@@ -426,17 +427,18 @@ const styles = StyleSheet.create({
     color: hostFlowColors.text,
     fontSize: 26,
     lineHeight: 31,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontWeight: "700",
+    fontFamily: "Inter-SemiBold",
+    fontWeight: "600",
     marginTop: 12,
-    letterSpacing: -0.8,
+    letterSpacing: -0.6,
   },
   subtitle: {
     color: hostFlowColors.textMuted,
     fontSize: 14,
     fontFamily: "Inter-Regular",
+    fontWeight: "400",
     marginTop: 8,
-    lineHeight: 21,
+    lineHeight: 22,
   },
   searchShell: {
     paddingHorizontal: spacing.screenX,
@@ -446,11 +448,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: hostFlowColors.cardBg,
     borderColor: hostFlowColors.border,
-    borderRadius: 18,
+    borderRadius: 24,
     borderWidth: 1,
     flexDirection: "row",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     ...hostFlowShadow,
   },
   searchIcon: {
@@ -464,10 +466,10 @@ const styles = StyleSheet.create({
   searchInput: {
     color: hostFlowColors.text,
     flex: 1,
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: "Inter-Regular",
-    fontWeight: "500",
-    lineHeight: 22,
+    fontWeight: "400",
+    lineHeight: 24,
     minHeight: 24,
     includeFontPadding: false,
     paddingVertical: 0,
@@ -489,7 +491,7 @@ const styles = StyleSheet.create({
   suggestions: {
     backgroundColor: hostFlowColors.cardBg,
     borderColor: hostFlowColors.border,
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
     marginHorizontal: spacing.screenX,
     marginTop: 10,
@@ -504,7 +506,7 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     color: hostFlowColors.text,
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: "Inter-Regular",
   },
   suggestionMuted: {
@@ -673,13 +675,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingHorizontal: spacing.screenX,
     paddingTop: 10,
-    paddingBottom: 14,
+    paddingBottom: 2,
   },
   primaryButton: {
     alignItems: "center",
     backgroundColor: hostFlowColors.accent,
-    borderRadius: 18,
-    minHeight: 50,
+    borderRadius: 16,
+    minHeight: 48,
     justifyContent: "center",
   },
   primaryButtonDisabled: {
@@ -687,8 +689,8 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: "#FFFFFF",
-    fontSize: 16,
-    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     letterSpacing: -0.2,
   },

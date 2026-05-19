@@ -37,6 +37,7 @@ const getFeatureIconType = (label: string) => {
   if (n.includes("permit")) return "permit";
   if (n.includes("ev") || n.includes("charger") || n.includes("charging")) return "ev";
   if (n.includes("cctv") || n.includes("camera")) return "cctv";
+  if (n.includes("light")) return "cctv";
   if (n.includes("shelter") || n.includes("covered") || n.includes("roof")) return "sheltered";
   if (n.includes("gate") || n.includes("gated") || n.includes("barrier")) return "gated";
   if (n.includes("code") || n.includes("keypad") || n.includes("entry")) return "code";
@@ -761,7 +762,7 @@ const styles = StyleSheet.create({
   sheetHandle: {
     width: 36, height: 4, borderRadius: 999,
     backgroundColor: colors.borderStrong,
-    alignSelf: "center", marginBottom: 22,
+    alignSelf: "center", marginBottom: 16,
   },
   airSummaryHeaderRow: {
     flexDirection: "row",
@@ -845,7 +846,7 @@ const styles = StyleSheet.create({
   },
 
   // Title block
-  titleBlock: { paddingBottom: 18 },
+  titleBlock: { paddingBottom: 14 },
   typePill: {
     alignSelf: "flex-start",
     backgroundColor: "#dceee8", borderRadius: 999,
@@ -854,10 +855,10 @@ const styles = StyleSheet.create({
   typePillText: { fontFamily: "Inter-SemiBold", fontSize: 11, color: "#0f5b55", letterSpacing: 0.5 },
   titleText: {
     fontFamily: "Poppins-Bold",
-    fontSize: 26, lineHeight: 32, letterSpacing: -0.5,
-    color: "#0f5b55", marginBottom: 10,
+    fontSize: 25, lineHeight: 31, letterSpacing: -0.5,
+    color: "#0f5b55", marginBottom: 8,
   },
-  metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 7, marginBottom: 8 },
+  metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 7, marginBottom: 6 },
   starPill: {
     flexDirection: "row", alignItems: "center", gap: 4,
     backgroundColor: "#FCEFD6", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4,
@@ -879,10 +880,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "#fffaf3",
     borderRadius: 20, borderWidth: 1, borderColor: "#e4dacb",
-    overflow: "hidden", marginBottom: 16,
+    overflow: "hidden", marginBottom: 12,
     ...WARM_SHADOW,
   },
-  statsCell: { flex: 1, paddingVertical: 14, paddingHorizontal: 10, alignItems: "center", gap: 4 },
+  statsCell: { flex: 1, paddingVertical: 12, paddingHorizontal: 10, alignItems: "center", gap: 3 },
   statsCellLabel: {
     fontFamily: "Inter-SemiBold", fontSize: 9,
     color: colors.textSoft, letterSpacing: 0.8, textTransform: "uppercase",
@@ -891,18 +892,18 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Bold", fontSize: 17,
     color: colors.text, letterSpacing: -0.3,
   },
-  statsVDivider: { width: 1, backgroundColor: colors.border, marginVertical: 12 },
+  statsVDivider: { width: 1, backgroundColor: colors.border, marginVertical: 10 },
 
   // Booking time card
   airRouteCard: {
     flexDirection: "row",
     gap: 14,
-    marginBottom: 18,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: "#e3d8c4",
     borderRadius: 26,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 14,
     backgroundColor: "#fffaf3",
   },
   taxiRouteTrack: {
@@ -941,9 +942,7 @@ const styles = StyleSheet.create({
     minHeight: 34,
     justifyContent: "center",
   },
-  taxiRouteSpacer: {
-    height: 18,
-  },
+  taxiRouteSpacer: { height: 12 },
   taxiRouteValue: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15.5,
@@ -976,7 +975,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 12,
     backgroundColor: "#dceee8",
     borderRadius: 22, borderWidth: 1, borderColor: "#c1dfd6",
-    paddingHorizontal: 14, paddingVertical: 12, marginBottom: 4,
+    paddingHorizontal: 14, paddingVertical: 11, marginBottom: 2,
   },
   offerIconWrap: {
     width: 28, height: 28, borderRadius: 14,
@@ -988,10 +987,10 @@ const styles = StyleSheet.create({
 
   // Sections
   sectionDivider: { height: 1, backgroundColor: colors.border, marginHorizontal: -spacing.screenX },
-  section: { paddingVertical: 22 },
+  section: { paddingVertical: 16 },
   sectionTitle: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 21, color: "#114f4a", letterSpacing: -0.45, marginBottom: 14,
+    fontSize: 21, color: "#114f4a", letterSpacing: -0.45, marginBottom: 10,
   },
   sectionBody: { fontFamily: "Inter-Regular", fontSize: 14.5, lineHeight: 24, color: "#4b6b67" },
   readMore: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: "#2caea3", marginTop: 8 },
@@ -1052,7 +1051,7 @@ const styles = StyleSheet.create({
   reviewList: { gap: 12, marginTop: 12 },
   reviewCard: {
     backgroundColor: "#fffdf8",
-    borderRadius: 24, borderWidth: 1, borderColor: "#ece6db", padding: 18,
+    borderRadius: 24, borderWidth: 1, borderColor: "#ece6db", padding: 16,
   },
   reviewCardTop: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   reviewAvatar: {
@@ -1107,8 +1106,8 @@ const styles = StyleSheet.create({
     borderTopColor: "#edf0f2",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    paddingHorizontal: 16, paddingTop: 14,
-    minHeight: 98,
+    paddingHorizontal: 16, paddingTop: 12,
+    minHeight: 90,
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     gap: 16,
     shadowColor: "#15232b",
@@ -1126,14 +1125,14 @@ const styles = StyleSheet.create({
   },
   bottomPrice: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 30, color: "#111827", letterSpacing: -0.8, lineHeight: 34,
+    fontSize: 28, color: "#111827", letterSpacing: -0.8, lineHeight: 32,
   },
   bottomDuration: { fontFamily: "Inter-Regular", fontSize: 12, color: "#98a4ab", marginTop: 2 },
   reserveBtn: {
     backgroundColor: "#158a83",
     borderRadius: 20,
-    minHeight: 70,
-    paddingVertical: 18, paddingHorizontal: 28, minWidth: 152, alignItems: "center", justifyContent: "center",
+    minHeight: 62,
+    paddingVertical: 16, paddingHorizontal: 24, minWidth: 148, alignItems: "center", justifyContent: "center",
     shadowColor: "#158a83",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.16,

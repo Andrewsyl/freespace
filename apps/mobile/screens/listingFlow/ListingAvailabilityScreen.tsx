@@ -222,8 +222,39 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
   const toggleWeekday = (day: string) => {
     setWeekdays((prev) => {
       const exists = prev.includes(day);
-      const next = exists ? prev.filter((item) => item !== day) : [...prev, day];
-      return next;
+      if (exists) {
+        return prev.filter((item) => item !== day);
+      }
+
+      setDayTimeRanges((currentRanges) => {
+        const dayIndex = allDays.indexOf(day as DayCode);
+        const previousSelectedDay =
+          [...prev]
+            .sort((a, b) => allDays.indexOf(a as DayCode) - allDays.indexOf(b as DayCode))
+            .filter((selectedDay) => allDays.indexOf(selectedDay as DayCode) < dayIndex)
+            .at(-1) ??
+          prev.at(-1) ??
+          null;
+
+        if (!previousSelectedDay) {
+          return currentRanges;
+        }
+
+        const previousRange = currentRanges[previousSelectedDay as DayCode];
+        if (!previousRange) {
+          return currentRanges;
+        }
+
+        return {
+          ...currentRanges,
+          [day]: {
+            start: previousRange.start,
+            end: previousRange.end,
+          },
+        };
+      });
+
+      return [...prev, day];
     });
   };
 
@@ -275,7 +306,7 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.kicker}>Availability</Text>
         <StepProgress current={4} total={7} />
@@ -311,14 +342,24 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
           </View>
         </Pressable>
         {preset === "custom" && weekdays.length ? (
-          <Text style={styles.customSummary}>Selected: {availabilitySummary}</Text>
+          <View style={styles.customSummaryCard}>
+            <Text style={styles.customSummaryLabel}>Selected schedule</Text>
+            <Text style={styles.customSummary}>{availabilitySummary}</Text>
+          </View>
         ) : null}
         {!timeWindowValid || !customWindowsValid ? (
           <Text style={styles.warningText}>End time must be after start time.</Text>
         ) : null}
       </ScrollView>
-      <View style={styles.footer}>
-        <Button title="Continue" onPress={() => navigation.navigate("ListingPrice")} disabled={!canSave} />
+      <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
+        <Button
+          size="medium"
+          title="Continue"
+          onPress={() => navigation.navigate("ListingPrice")}
+          disabled={!canSave}
+          style={styles.continueButton}
+          textStyle={styles.continueButtonText}
+        />
       </View>
       {customVisible ? (
         <Modal animationType="slide" transparent>
@@ -438,27 +479,27 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 26,
+    lineHeight: 31,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     marginTop: 12,
     letterSpacing: -0.6,
   },
   subtitle: {
-    color: "#667085",
-    fontSize: 15,
+    color: colors.textMuted,
+    fontSize: 14,
     fontFamily: "Inter-Regular",
-    marginTop: 10,
-    lineHeight: 24,
+    marginTop: 8,
+    lineHeight: 22,
   },
   optionCard: {
     backgroundColor: colors.cardBg,
-    borderColor: "rgba(17, 24, 39, 0.08)",
-    borderRadius: 18,
+    borderColor: colors.border,
+    borderRadius: 24,
     borderWidth: 1,
-    marginTop: 14,
-    padding: 18,
+    marginTop: 16,
+    padding: 24,
     ...cardShadow,
   },
   customRow: {
@@ -470,28 +511,47 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   customSummary: {
+    color: colors.text,
+    fontSize: 14,
+    fontFamily: "Inter-SemiBold",
+    lineHeight: 22,
+    marginTop: 4,
+  },
+  customSummaryCard: {
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  customSummaryLabel: {
     color: colors.textMuted,
     fontSize: 12,
-    fontFamily: "Inter-Regular",
-    marginTop: 10,
-    marginHorizontal: 4,
+    fontFamily: "Inter-SemiBold",
+    fontWeight: "600",
+    letterSpacing: 0.2,
+    textTransform: "uppercase",
   },
   optionCardActive: {
     borderColor: colors.accent,
     borderWidth: 2,
+    backgroundColor: colors.accentSoft,
   },
   optionTitle: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
+    lineHeight: 23,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   optionBody: {
-    color: "#667085",
-    fontSize: 13,
+    color: colors.textMuted,
+    fontSize: 14,
     fontFamily: "Inter-Regular",
     marginTop: 6,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   inlineRow: {
     flexDirection: "row",
@@ -499,17 +559,17 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   timePill: {
-    backgroundColor: colors.appBg,
-    borderColor: "rgba(17, 24, 39, 0.08)",
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
     borderRadius: 14,
     borderWidth: 1,
     flex: 1,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   timePillLabel: {
     color: colors.textMuted,
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     letterSpacing: 0.2,
@@ -517,9 +577,9 @@ const styles = StyleSheet.create({
   timePillValue: {
     color: colors.text,
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
-    fontWeight: "600",
-    marginTop: 6,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontWeight: "700",
+    marginTop: 4,
   },
   warningText: {
     color: colors.danger,
@@ -530,11 +590,22 @@ const styles = StyleSheet.create({
   },
   footer: {
     backgroundColor: colors.cardBg,
-    borderTopColor: "rgba(17, 24, 39, 0.08)",
+    borderTopColor: colors.border,
     borderTopWidth: 1,
     paddingHorizontal: spacing.screenX,
-    paddingTop: 14,
-    paddingBottom: 18,
+    paddingTop: 10,
+    paddingBottom: 2,
+  },
+  continueButton: {
+    borderRadius: 16,
+    minHeight: 48,
+  },
+  continueButtonText: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    fontWeight: "600",
+    letterSpacing: -0.2,
+    lineHeight: 20,
   },
   modalBackdrop: {
     flex: 1,
@@ -544,11 +615,11 @@ const styles = StyleSheet.create({
   modalCard: {
     maxHeight: "92%",
     backgroundColor: colors.cardBg,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     paddingHorizontal: spacing.screenX,
-    paddingTop: 16,
-    paddingBottom: 18,
+    paddingTop: 14,
+    paddingBottom: 14,
   },
   modalHeader: {
     alignItems: "center",
@@ -569,48 +640,48 @@ const styles = StyleSheet.create({
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     paddingHorizontal: 8,
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   modalSubtitle: {
     color: colors.textMuted,
     fontSize: 14,
     fontFamily: "Inter-Regular",
-    marginTop: 12,
+    marginTop: 10,
     lineHeight: 22,
     marginBottom: 8,
   },
   dayList: {
-    paddingBottom: 14,
+    paddingBottom: 10,
   },
   dayRow: {
     borderWidth: 1,
-    borderColor: "rgba(17, 24, 39, 0.08)",
+    borderColor: colors.border,
     borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   dayBlock: {
-    marginTop: 10,
+    marginTop: 8,
   },
   dayTimeRow: {
     flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 4,
+    gap: 8,
+    paddingHorizontal: 2,
   },
   dayLabel: {
     color: colors.text,
     fontSize: 15,
-    fontFamily: "Inter-Medium",
+    fontFamily: "Inter-SemiBold",
   },
   dayToggleTrack: {
     backgroundColor: colors.border,
     borderRadius: radius.pill,
-    height: 26,
-    padding: 3,
-    width: 48,
+    height: 22,
+    padding: 2,
+    width: 40,
   },
   dayToggleTrackActive: {
     backgroundColor: colors.accent,
@@ -618,10 +689,10 @@ const styles = StyleSheet.create({
   dayToggleKnob: {
     backgroundColor: colors.cardBg,
     borderRadius: radius.pill,
-    height: 20,
-    width: 20,
+    height: 18,
+    width: 18,
   },
   dayToggleKnobActive: {
-    marginLeft: 22,
+    marginLeft: 18,
   },
 });

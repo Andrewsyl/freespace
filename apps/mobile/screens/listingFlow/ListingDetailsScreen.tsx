@@ -149,11 +149,11 @@ export function ListingDetailsScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: 132 + Math.max(insets.bottom, 0) },
+          { paddingBottom: 104 + Math.max(insets.bottom, 0) },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -183,13 +183,15 @@ export function ListingDetailsScreen({ navigation }: Props) {
                         setOpenStep("count");
                       }}
                     >
-                      <View style={[styles.typeIconWrap, active && styles.typeIconWrapActive]}>
-                        <SpaceTypeIcon type={type} active={active} />
+                      <View style={styles.typeCardTop}>
+                        <View style={[styles.typeIconWrap, active && styles.typeIconWrapActive]}>
+                          <SpaceTypeIcon type={type} active={active} />
+                        </View>
+                        <View style={[styles.typeCheckBadge, active && styles.typeCheckBadgeActive]}>
+                          {active ? <CircleCheck size={18} color={hostFlowColors.accent} strokeWidth={2.5} /> : null}
+                        </View>
                       </View>
                       <Text style={styles.typeTitle}>{type}</Text>
-                      <View style={[styles.typeCheckBadge, active && styles.typeCheckBadgeActive]}>
-                        {active ? <CircleCheck size={20} color={hostFlowColors.accent} strokeWidth={2.5} /> : null}
-                      </View>
                     </Pressable>
                   );
                 })}
@@ -199,13 +201,13 @@ export function ListingDetailsScreen({ navigation }: Props) {
 
           {draft.spaceType && openStep !== "type" ? (
             <View style={styles.progressiveSection}>
-              <Pressable style={[styles.typeCard, styles.typeCardActive]} onPress={() => setOpenStep("type")}>
+              <Pressable style={[styles.typeCard, styles.typeCardActive, styles.typeCardSelectedRow]} onPress={() => setOpenStep("type")}>
                 <View style={[styles.typeIconWrap, styles.typeIconWrapActive]}>
                   <SpaceTypeIcon type={draft.spaceType} active />
                 </View>
-                <Text style={styles.typeTitle}>{draft.spaceType}</Text>
+                <Text style={styles.typeTitleSelected}>{draft.spaceType}</Text>
                 <View style={[styles.typeCheckBadge, styles.typeCheckBadgeActive]}>
-                  <CircleCheck size={20} color={hostFlowColors.accent} strokeWidth={2.5} />
+                  <CircleCheck size={18} color={hostFlowColors.accent} strokeWidth={2.5} />
                 </View>
               </Pressable>
 
@@ -282,7 +284,7 @@ export function ListingDetailsScreen({ navigation }: Props) {
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
         <Pressable
           style={[styles.primaryButton, !canContinue && styles.primaryButtonDisabled]}
           onPress={() => navigation.navigate("ListingFeaturesAccess")}
@@ -310,9 +312,9 @@ const styles = StyleSheet.create({
     borderColor: hostFlowColors.border,
     borderRadius: 999,
     borderWidth: 1,
-    height: 44,
+    height: 42,
     justifyContent: "center",
-    width: 44,
+    width: 42,
   },
   counterButtonDisabled: {
     opacity: 0.45,
@@ -320,18 +322,18 @@ const styles = StyleSheet.create({
   counterButtonText: {
     color: hostFlowColors.text,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "600",
-    lineHeight: 22,
+    lineHeight: 20,
     textAlign: "center",
     textAlignVertical: "center",
-    marginTop: -2,
+    marginTop: -3,
   },
   counterRow: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 18,
-    marginTop: 16,
+    gap: 14,
+    marginTop: 14,
   },
   counterValueBox: {
     alignItems: "center",
@@ -340,37 +342,39 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     justifyContent: "center",
-    height: 72,
-    width: 96,
+    height: 56,
+    width: 72,
   },
   counterValueText: {
     color: hostFlowColors.text,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: "800",
-    lineHeight: 30,
+    lineHeight: 26,
   },
   footer: {
     backgroundColor: hostFlowColors.cardBg,
-    paddingBottom: 6,
+    borderTopColor: hostFlowColors.border,
+    borderTopWidth: 1,
     paddingHorizontal: spacing.screenX,
     paddingTop: 10,
+    paddingBottom: 2,
   },
   headerBlock: {
     paddingTop: 2,
   },
   heroCard: {
-    marginTop: 10,
-    paddingHorizontal: 2,
+    marginTop: 12,
+    paddingHorizontal: 0,
   },
   inlinePromptTitle: {
-    color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 18,
-    fontWeight: "800",
-    letterSpacing: -0.3,
-    lineHeight: 24,
-    marginTop: 12,
+    color: hostFlowColors.textMuted,
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    fontWeight: "400",
+    letterSpacing: 0,
+    lineHeight: 22,
+    marginTop: 10,
   },
   primaryButton: {
     alignItems: "center",
@@ -384,9 +388,10 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: activeIconColor,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
     fontWeight: "600",
+    letterSpacing: -0.2,
     lineHeight: 20,
   },
   primaryQuestionCardOpen: {
@@ -397,21 +402,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
   },
   primaryQuestionFlow: {
-    marginTop: 16,
+    marginTop: 10,
   },
   progressShell: {
-    paddingHorizontal: 2,
+    paddingHorizontal: 0,
     paddingVertical: 2,
   },
   progressiveSection: {
-    marginTop: 8,
+    marginTop: 6,
   },
   sectionBody: {
     color: hostFlowColors.textMuted,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13.5,
-    fontWeight: "600",
-    lineHeight: 20,
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    fontWeight: "400",
+    lineHeight: 22,
     marginTop: 6,
   },
   sectionHeader: {
@@ -420,50 +425,64 @@ const styles = StyleSheet.create({
   sectionLabel: {
     color: hostFlowColors.textSoft,
     fontFamily: "Inter-SemiBold",
-    fontSize: 10,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "700",
     letterSpacing: 0.5,
-    lineHeight: 13,
+    lineHeight: 18,
   },
   sectionTitle: {
     color: hostFlowColors.text,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "800",
-    letterSpacing: -0.3,
-    lineHeight: 24,
+    letterSpacing: -0.2,
+    lineHeight: 27,
     marginTop: 2,
   },
   stepEyebrow: {
     color: hostFlowColors.accent,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    fontWeight: "600",
-    lineHeight: 14,
-    marginBottom: 2,
+    fontSize: 15,
+    fontWeight: "700",
+    lineHeight: 20,
+    marginBottom: 6,
   },
   title: {
     color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 24,
-    fontWeight: "800",
-    letterSpacing: -0.8,
-    lineHeight: 29,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 26,
+    fontWeight: "600",
+    letterSpacing: -0.6,
+    lineHeight: 31,
   },
   typeCard: {
-    alignItems: "center",
     backgroundColor: hostFlowColors.cardBg,
+    borderColor: hostFlowColors.border,
     borderRadius: 20,
-    flexDirection: "row",
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    borderWidth: 1.5,
+    minHeight: 134,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    width: "48%",
     ...hostFlowShadow,
   },
   typeCardActive: {
-    backgroundColor: hostFlowColors.cardBg,
     borderColor: hostFlowColors.accent,
     borderWidth: 2,
+    backgroundColor: hostFlowColors.accentSoft,
+  },
+  typeCardSelectedRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 12,
+    minHeight: 76,
+    paddingVertical: 14,
+    width: "100%",
+  },
+  typeCardTop: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   typeCheckBadge: {
     alignItems: "center",
@@ -488,47 +507,60 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   typeGrid: {
-    gap: 8,
-    marginTop: 12,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginTop: 14,
   },
   typeIconWrap: {
     alignItems: "center",
     backgroundColor: hostFlowColors.accentSoft,
-    borderRadius: 14,
+    borderRadius: 16,
     flexShrink: 0,
-    height: 40,
+    height: 48,
     justifyContent: "center",
-    width: 40,
+    width: 48,
   },
   typeIconWrapActive: {
     backgroundColor: hostFlowColors.accent,
   },
   typePromptTitle: {
-    color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: -0.45,
-    lineHeight: 24,
+    color: hostFlowColors.textMuted,
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    fontWeight: "400",
+    letterSpacing: 0,
+    lineHeight: 22,
   },
   typeTitle: {
     color: hostFlowColors.text,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 18,
+    fontWeight: "800",
+    lineHeight: 24,
+    letterSpacing: -0.3,
+    marginTop: 24,
+    width: "82%",
+  },
+  typeTitleSelected: {
+    color: hostFlowColors.text,
     flex: 1,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: "800",
-    lineHeight: 20,
+    lineHeight: 24,
+    letterSpacing: -0.3,
   },
   vehicleArtWrap: {
     alignItems: "flex-end",
     flexShrink: 0,
     justifyContent: "center",
-    marginLeft: 10,
-    width: 94,
+    marginLeft: 8,
+    width: 84,
   },
   vehicleArtImage: {
-    height: 56,
-    width: 94,
+    height: 48,
+    width: 84,
   },
   vehicleCard: {
     backgroundColor: hostFlowColors.cardBg,
@@ -536,10 +568,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     flexDirection: "row",
-    minHeight: 96,
+    minHeight: 84,
     overflow: "hidden",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     position: "relative",
     ...hostFlowShadow,
   },
@@ -554,15 +586,15 @@ const styles = StyleSheet.create({
   },
   vehicleExample: {
     color: hostFlowColors.textMuted,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 12,
-    fontWeight: "500",
-    lineHeight: 17,
-    marginTop: 4,
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    fontWeight: "400",
+    lineHeight: 19,
+    marginTop: 3,
   },
   vehicleList: {
     gap: 10,
-    marginTop: 12,
+    marginTop: 14,
   },
   vehicleTextWrap: {
     flex: 1,
@@ -572,8 +604,8 @@ const styles = StyleSheet.create({
   vehicleTitle: {
     color: hostFlowColors.text,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 16,
+    fontSize: 19,
     fontWeight: "800",
-    lineHeight: 21,
+    lineHeight: 24,
   },
 });

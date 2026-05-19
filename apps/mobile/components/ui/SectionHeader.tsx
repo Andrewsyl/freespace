@@ -26,11 +26,12 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: spacing.md,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   copy: {
     flex: 1,
-    gap: 4,
+    gap: spacing.xs,
   },
   title: {
     ...textStyles.sectionTitle,

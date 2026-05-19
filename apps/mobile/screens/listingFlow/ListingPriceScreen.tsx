@@ -8,11 +8,11 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { CalendarDays, Clock3 } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
-import { colors, spacing, textStyles } from "../../styles/theme";
+import { cardShadow, colors, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
   ListingPrice: undefined;
@@ -86,6 +86,7 @@ function PricingRow({
 
 export function ListingPriceScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
+  const insets = useSafeAreaInsets();
 
   const initialHourly = parseMoney(draft.pricePerHour) ?? DEFAULT_HOURLY;
   const initialDaily = parseMoney(draft.pricePerDay) ?? DEFAULT_DAILY;
@@ -135,7 +136,7 @@ export function ListingPriceScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.kicker}>Space pricing</Text>
         <StepProgress current={5} total={7} />
@@ -188,7 +189,7 @@ export function ListingPriceScreen({ navigation }: Props) {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
         <Pressable style={styles.continueBtn} onPress={() => navigation.navigate("ListingPhotos")}>
           <Text style={styles.continueBtnText}>Continue</Text>
         </Pressable>
@@ -205,42 +206,43 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.screenX,
     paddingTop: 0,
-    paddingBottom: 140,
+    paddingBottom: 116,
   },
   kicker: textStyles.kicker,
   title: {
     color: colors.text,
     fontFamily: "Inter-SemiBold",
-    fontSize: 31,
+    fontSize: 26,
     fontWeight: "600",
-    letterSpacing: -0.7,
-    lineHeight: 36,
+    letterSpacing: -0.6,
+    lineHeight: 31,
     marginTop: 12,
   },
   subtitle: {
-    color: "#475467",
+    color: colors.textMuted,
     fontFamily: "Inter-Regular",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "400",
-    lineHeight: 27,
-    marginTop: 18,
+    lineHeight: 22,
+    marginTop: 8,
   },
   card: {
     backgroundColor: "#FFFFFF",
-    borderColor: "rgba(17,24,39,0.08)",
-    borderRadius: 20,
+    borderColor: colors.border,
+    borderRadius: 24,
     borderWidth: 1,
-    marginTop: 34,
+    marginTop: 24,
     overflow: "hidden",
+    ...cardShadow,
   },
   priceRow: {
     alignItems: "center",
     flexDirection: "row",
     gap: 14,
-    minHeight: 90,
-    paddingHorizontal: 18,
+    minHeight: 84,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(17,24,39,0.06)",
+    borderBottomColor: colors.border,
   },
   priceRowLabelWrap: {
     alignItems: "center",
@@ -249,63 +251,63 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   priceRowLabel: {
-    color: "#15171A",
-    fontFamily: "Inter-Medium",
-    fontSize: 17,
-    fontWeight: "500",
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 20,
+    fontWeight: "700",
   },
   currency: {
-    color: "#15171A",
-    fontFamily: "Inter-SemiBold",
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 24,
-    fontWeight: "600",
+    fontWeight: "700",
     marginRight: 2,
   },
   inputShell: {
     backgroundColor: "#FFFFFF",
-    borderColor: "rgba(17,24,39,0.12)",
-    borderRadius: 12,
+    borderColor: colors.borderStrong,
+    borderRadius: 16,
     borderWidth: 1,
     minWidth: 124,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
   inputShellReadonly: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.cardBgMuted,
   },
   priceInput: {
-    color: "#15171A",
-    fontFamily: "Inter-Medium",
-    fontSize: 19,
-    fontWeight: "500",
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 20,
+    fontWeight: "700",
     padding: 0,
   },
   readonlyValue: {
-    color: "#15171A",
-    fontFamily: "Inter-Medium",
-    fontSize: 19,
-    fontWeight: "500",
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 20,
+    fontWeight: "700",
   },
   noteCard: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 16,
+    backgroundColor: colors.accentSoft,
+    borderRadius: 24,
     marginTop: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
   noteTitle: {
-    color: "#15171A",
-    fontFamily: "Inter-SemiBold",
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 6,
+    color: colors.brandDark,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 8,
   },
   noteBody: {
-    color: "#667085",
+    color: colors.textMuted,
     fontFamily: "Inter-Regular",
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: "400",
-    lineHeight: 20,
+    lineHeight: 22,
   },
   warningCard: {
     backgroundColor: "#FFF7ED",
@@ -335,24 +337,24 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   footer: {
-    backgroundColor: colors.appBg,
-    borderTopColor: "rgba(17,24,39,0.06)",
+    backgroundColor: colors.cardBg,
+    borderTopColor: colors.border,
     borderTopWidth: 1,
     paddingHorizontal: spacing.screenX,
-    paddingTop: 16,
-    paddingBottom: 20,
+    paddingTop: 10,
+    paddingBottom: 2,
   },
   continueBtn: {
     alignItems: "center",
-    backgroundColor: "#14A44D",
-    borderRadius: 14,
+    backgroundColor: colors.accent,
+    borderRadius: 16,
     justifyContent: "center",
-    minHeight: 56,
+    minHeight: 48,
   },
   continueBtnText: {
     color: "#FFFFFF",
     fontFamily: "Inter-SemiBold",
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "600",
     letterSpacing: -0.2,
   },

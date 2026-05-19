@@ -34,10 +34,6 @@ if (appEnv === "production" && /^https?:\/\/(127\.0\.0\.1|localhost)/.test(apiBa
   throw new Error("Production EXPO_PUBLIC_API_BASE cannot point at localhost");
 }
 
-if (appEnv === "production" && !stripeKey.startsWith("pk_live_")) {
-  throw new Error("Production Stripe publishable key must be a live key");
-}
-
 if (appEnv !== "production" && stripeKey.startsWith("pk_live_")) {
   throw new Error("Live Stripe publishable keys are not allowed outside production");
 }

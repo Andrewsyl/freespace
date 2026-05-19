@@ -1,9 +1,9 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { LayoutChangeEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRef } from "react";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { CircleCheck, Cctv, Fence, IdCard, Zap } from "lucide-react-native";
+import { ArrowDownUp, CircleCheck, Cctv, Fence, IdCard, Lightbulb, Warehouse, Zap } from "lucide-react-native";
 import { TextInput as AppTextInput } from "../../components/ui";
 import { spacing } from "../../styles/theme";
 import { StepProgress } from "./StepProgress";
@@ -17,7 +17,34 @@ type FlowStackParamList = {
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingFeaturesAccess">;
 
-const accessOptions = ["Gated", "EV charging", "CCTV", "Covered"];
+const accessOptions = [
+  "CCTV",
+  "EV charging",
+  "Sheltered",
+  "Well lit",
+  "Gated access",
+  "Height-friendly",
+];
+const gatedAccessChoices = [
+  {
+    id: "key_fob",
+    label: "Requires a key or security fob",
+    optionValue: "Key or security fob",
+    requiresDetails: true,
+  },
+  {
+    id: "pin_code",
+    label: "Requires a pin code",
+    optionValue: "Pin code",
+    requiresDetails: true,
+  },
+  {
+    id: "special_instructions",
+    label: "Requires special instructions",
+    optionValue: "Special instructions",
+    requiresDetails: true,
+  },
+] as const;
 const transparentColor = "transparent";
 
 function FeatureIcon({ option, active }: { option: string; active: boolean }) {
@@ -26,6 +53,7 @@ function FeatureIcon({ option, active }: { option: string; active: boolean }) {
   const strokeWidth = 2.1;
   switch (option) {
     case "Gated":
+    case "Gated access":
       return <Fence size={size} color={color} strokeWidth={strokeWidth} />;
     case "Permit required":
       return <IdCard size={size} color={color} strokeWidth={strokeWidth} />;
@@ -33,6 +61,12 @@ function FeatureIcon({ option, active }: { option: string; active: boolean }) {
       return <Zap size={size} color={color} strokeWidth={strokeWidth} />;
     case "CCTV":
       return <Cctv size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Sheltered":
+      return <Warehouse size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Well lit":
+      return <Lightbulb size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Height-friendly":
+      return <ArrowDownUp size={size} color={color} strokeWidth={strokeWidth} />;
     case "Covered":
       return (
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -77,39 +111,37 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
-  const accessInputRef = useRef<View>(null);
-  const arrivalInputRef = useRef<View>(null);
-  const hasPermit = draft.accessOptions.includes("Permit required");
+  const accessInputYRef = useRef(0);
+  const arrivalInputYRef = useRef(0);
+  const selectedAccessChoice =
+    gatedAccessChoices.find((choice) => draft.accessOptions.includes(choice.optionValue)) ?? null;
+  const needsAccessDetail = selectedAccessChoice?.requiresDetails ?? false;
   const hasAnsweredAccessControl = draft.requiresAccessCode !== null;
-  const hasAnsweredArrivalInstructions = draft.requiresArrivalInstructions !== null;
-  const hasAccessDetails =
-    draft.requiresAccessCode !== true ||
-    draft.accessCode.trim().length > 0;
-  const hasArrivalInstructionDetails =
-    draft.requiresArrivalInstructions !== true ||
-    draft.arrivalInstructions.trim().length > 0;
+  const isSpecialInstructionsChoice = selectedAccessChoice?.id === "special_instructions";
+  const hasAccessDetails = !needsAccessDetail || (
+    isSpecialInstructionsChoice
+      ? draft.arrivalInstructions.trim().length > 0
+      : draft.accessCode.trim().length > 0
+  );
   const canContinue =
     hasAnsweredAccessControl &&
-    hasAccessDetails &&
-    hasAnsweredArrivalInstructions &&
-    hasArrivalInstructionDetails;
+    (draft.requiresAccessCode === false || selectedAccessChoice !== null) &&
+    hasAccessDetails;
 
-  const scrollInputIntoView = (target: React.RefObject<View | null>) => {
+  const scrollInputIntoView = (targetY: number) => {
     requestAnimationFrame(() => {
       setTimeout(() => {
-        const scrollNode = scrollRef.current?.getInnerViewNode?.() ?? scrollRef.current;
-        if (!target.current || !scrollNode) return;
-        target.current.measureLayout(
-          scrollNode as never,
-          (_x, y, _w, h) => {
-            const offset = Math.max(0, y - 120 + h / 2);
-            scrollRef.current?.scrollTo({ y: offset, animated: true });
-          },
-          () => {}
-        );
+        const offset = Math.max(0, targetY - 140);
+        scrollRef.current?.scrollTo({ y: offset, animated: true });
       }, 180);
     });
   };
+
+  const captureSectionY =
+    (ref: React.MutableRefObject<number>) =>
+    (event: LayoutChangeEvent) => {
+      ref.current = event.nativeEvent.layout.y;
+    };
 
   const toggleAccess = (option: string) => {
     setDraft((prev) => {
@@ -123,23 +155,44 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
     });
   };
 
-  const setPermitRequired = (value: boolean) => {
+  const setAccessChoice = (optionValue: (typeof gatedAccessChoices)[number]["optionValue"]) => {
     setDraft((prev) => {
-      const withoutPermit = prev.accessOptions.filter((item) => item !== "Permit required");
+      const currentChoice = gatedAccessChoices.find((choice) =>
+        prev.accessOptions.includes(choice.optionValue),
+      );
+      if (currentChoice?.optionValue === optionValue) {
+        return {
+          ...prev,
+          accessOptions: prev.accessOptions.filter(
+            (item) => !gatedAccessChoices.some((choice) => choice.optionValue === item),
+          ),
+          accessCode: "",
+          requiresArrivalInstructions: false,
+          arrivalInstructions: "",
+        };
+      }
+      const withoutRestrictedAccess = prev.accessOptions.filter(
+        (item) => !gatedAccessChoices.some((choice) => choice.optionValue === item),
+      );
+      const nextChoice = gatedAccessChoices.find((choice) => choice.optionValue === optionValue) ?? null;
+      const isSpecialInstructions = nextChoice?.id === "special_instructions";
       return {
         ...prev,
-        accessOptions: value ? [...withoutPermit, "Permit required"] : withoutPermit,
+        accessOptions: nextChoice ? [...withoutRestrictedAccess, nextChoice.optionValue] : withoutRestrictedAccess,
+        accessCode: nextChoice?.requiresDetails && !isSpecialInstructions ? prev.accessCode : "",
+        arrivalInstructions: nextChoice?.requiresDetails && isSpecialInstructions ? prev.arrivalInstructions : "",
+        requiresArrivalInstructions: nextChoice?.requiresDetails && isSpecialInstructions ? true : false,
       };
     });
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: 132 + Math.max(insets.bottom, 0) },
+          { paddingBottom: 104 + Math.max(insets.bottom, 0) },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -148,7 +201,6 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
             <StepProgress current={4} total={8} />
           </View>
           <View style={styles.heroCard}>
-            <Text style={styles.stepEyebrow}>Step 4 of 8</Text>
             <Text style={styles.title}>What else should drivers know?</Text>
             <Text style={styles.subtitle}>
               Add the practical details that help drivers trust the space and use it without confusion.
@@ -158,10 +210,135 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
 
         <View style={styles.surfaceCard}>
           <SectionHeader
-            label="FEATURES"
-            title="What does your space have?"
-            body="Highlight the details that make the space easier to understand and easier to trust."
+            label="ACCESS"
+            title="Access instructions"
           />
+
+          <View style={styles.questionStack}>
+            <View style={styles.questionBlock}>
+              <Text style={styles.questionTitle}>Does your space have gated entry or require a key or extra info?</Text>
+              <View style={styles.toggleGroup}>
+                <Pressable
+                  style={[
+                    styles.toggleOption,
+                    draft.requiresAccessCode === false && styles.toggleOptionActive,
+                  ]}
+                  onPress={() =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      requiresAccessCode: false,
+                      accessOptions: prev.accessOptions.filter(
+                        (item) => !gatedAccessChoices.some((choice) => choice.optionValue === item),
+                      ),
+                      accessCode: "",
+                      requiresArrivalInstructions: false,
+                      arrivalInstructions: "",
+                    }))
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.toggleText,
+                      draft.requiresAccessCode === false && styles.toggleTextActive,
+                    ]}
+                  >
+                    No
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.toggleOption,
+                    draft.requiresAccessCode === true && styles.toggleOptionActive,
+                  ]}
+                  onPress={() =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      requiresAccessCode: true,
+                      accessOptions: prev.accessOptions,
+                      requiresArrivalInstructions: prev.requiresArrivalInstructions ?? false,
+                    }))
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.toggleText,
+                      draft.requiresAccessCode === true && styles.toggleTextActive,
+                    ]}
+                  >
+                    Yes
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {draft.requiresAccessCode ? (
+              <View style={styles.questionBlock}>
+                <Text style={styles.questionTitle}>What access feature applies to your space?</Text>
+                <View style={styles.accessChoiceStack}>
+                  {(selectedAccessChoice ? [selectedAccessChoice] : gatedAccessChoices).map((choice) => {
+                    const active = selectedAccessChoice?.id === choice.id;
+                    return (
+                      <Pressable
+                        key={choice.id}
+                        style={[styles.accessChoiceCard, active && styles.accessChoiceCardActive]}
+                        onPress={() => setAccessChoice(choice.optionValue)}
+                      >
+                        <Text style={[styles.accessChoiceText, active && styles.accessChoiceTextActive]}>
+                          {choice.label}
+                        </Text>
+                        {active ? (
+                          <View style={styles.accessChoiceSelectedMeta}>
+                            <CircleCheck size={18} color={hostFlowColors.accent} strokeWidth={2.2} />
+                          </View>
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
+
+            {draft.requiresAccessCode && needsAccessDetail ? (
+              <View onLayout={captureSectionY(accessInputYRef)} style={styles.subCard}>
+                <Text style={styles.questionBody}>
+                  {selectedAccessChoice?.id === "special_instructions"
+                    ? "Please add any special arrival instructions drivers need."
+                    : selectedAccessChoice?.id === "pin_code"
+                    ? "Please add the pin code or explain how drivers will receive it."
+                    : "Please add some information about how to collect the key or fob."}
+                </Text>
+                <AppTextInput
+                  containerStyle={styles.inputContainer}
+                  style={styles.input}
+                  placeholder={
+                    selectedAccessChoice?.id === "special_instructions"
+                      ? "E.g. ring unit 4, wait for the shutter to open, then use the second bay on the right."
+                      : selectedAccessChoice?.id === "pin_code"
+                      ? "E.g. the code will be sent after booking confirmation."
+                      : "E.g. please collect from the property owner who will be at the property on arrival."
+                  }
+                  value={isSpecialInstructionsChoice ? draft.arrivalInstructions : draft.accessCode}
+                  onChangeText={(value) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      ...(isSpecialInstructionsChoice
+                        ? { arrivalInstructions: value }
+                        : { accessCode: value }),
+                    }))
+                  }
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                  maxLength={240}
+                  onFocus={() => scrollInputIntoView(accessInputYRef.current)}
+                />
+              </View>
+            ) : null}
+          </View>
+        </View>
+
+        <View style={styles.surfaceCard}>
+          <SectionHeader label="FEATURES" title="What else does your space offer?" />
           <View style={styles.chipWrap}>
             {accessOptions.map((option) => {
               const active = draft.accessOptions.includes(option);
@@ -185,190 +362,9 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
             })}
           </View>
         </View>
-
-        <View style={styles.surfaceCard}>
-          <SectionHeader
-            label="ACCESS"
-            title="How is your parking space accessed?"
-            body="Only reveal the extra details when the answer is yes."
-          />
-
-          <View style={styles.questionStack}>
-            <View style={styles.questionBlock}>
-              <Text style={styles.questionTitle}>Does your space need access control?</Text>
-              <Text style={styles.questionBody}>For example: a gate code, key fob, or keypad entry.</Text>
-              <View style={styles.toggleGroup}>
-                <Pressable
-                  style={[
-                    styles.toggleOption,
-                    draft.requiresAccessCode === false && styles.toggleOptionActive,
-                  ]}
-                  onPress={() =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      requiresAccessCode: false,
-                      accessCode: "",
-                    }))
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      draft.requiresAccessCode === false && styles.toggleTextActive,
-                    ]}
-                  >
-                    No
-                  </Text>
-                </Pressable>
-                <Pressable
-                  style={[
-                    styles.toggleOption,
-                    draft.requiresAccessCode === true && styles.toggleOptionActive,
-                  ]}
-                  onPress={() =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      requiresAccessCode: true,
-                    }))
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      draft.requiresAccessCode === true && styles.toggleTextActive,
-                    ]}
-                  >
-                    Yes
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-
-            {draft.requiresAccessCode ? (
-              <View ref={accessInputRef} style={styles.subCard}>
-                <AppTextInput
-                  containerStyle={styles.inputContainer}
-                  style={styles.input}
-                  placeholder="Enter access code or instructions"
-                  value={draft.accessCode}
-                  onChangeText={(value) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      accessCode: value,
-                    }))
-                  }
-                  multiline
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                  maxLength={150}
-                  onFocus={() => scrollInputIntoView(accessInputRef)}
-                />
-                <Text style={styles.privacyNote}>
-                  This stays hidden until the booking is confirmed and disappears again when the stay ends.
-                </Text>
-              </View>
-            ) : null}
-
-            <View style={styles.questionBlock}>
-              <Text style={styles.questionTitle}>Does your space require a permit?</Text>
-              <View style={styles.toggleGroup}>
-                <Pressable
-                  style={[styles.toggleOption, !hasPermit && styles.toggleOptionActive]}
-                  onPress={() => setPermitRequired(false)}
-                >
-                  <Text style={[styles.toggleText, !hasPermit && styles.toggleTextActive]}>No</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.toggleOption, hasPermit && styles.toggleOptionActive]}
-                  onPress={() => setPermitRequired(true)}
-                >
-                  <Text style={[styles.toggleText, hasPermit && styles.toggleTextActive]}>Yes</Text>
-                </Pressable>
-              </View>
-            </View>
-
-            <View style={styles.questionBlock}>
-              <Text style={styles.questionTitle}>Do drivers need arrival instructions?</Text>
-              <Text style={styles.questionBody}>
-                Only show this if there is something specific drivers need after booking.
-              </Text>
-              <View style={styles.toggleGroup}>
-                <Pressable
-                  style={[
-                    styles.toggleOption,
-                    draft.requiresArrivalInstructions === false && styles.toggleOptionActive,
-                  ]}
-                  onPress={() =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      requiresArrivalInstructions: false,
-                      arrivalInstructions: "",
-                    }))
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      draft.requiresArrivalInstructions === false && styles.toggleTextActive,
-                    ]}
-                  >
-                    No
-                  </Text>
-                </Pressable>
-                <Pressable
-                  style={[
-                    styles.toggleOption,
-                    draft.requiresArrivalInstructions === true && styles.toggleOptionActive,
-                  ]}
-                  onPress={() =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      requiresArrivalInstructions: true,
-                      arrivalInstructions:
-                        prev.arrivalInstructions.trim().length > 0
-                          ? prev.arrivalInstructions
-                          : "Enter through the left gate and use the marked bay.",
-                    }))
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      draft.requiresArrivalInstructions === true && styles.toggleTextActive,
-                    ]}
-                  >
-                    Yes
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-
-            {draft.requiresArrivalInstructions ? (
-              <View ref={arrivalInputRef} style={styles.subCard}>
-                <AppTextInput
-                  containerStyle={styles.inputContainer}
-                  style={styles.input}
-                  placeholder="Example: Enter through the left gate and use the marked bay beside the hedge."
-                  value={draft.arrivalInstructions}
-                  onChangeText={(value) =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      arrivalInstructions: value,
-                    }))
-                  }
-                  multiline
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                  maxLength={240}
-                  onFocus={() => scrollInputIntoView(arrivalInputRef)}
-                />
-              </View>
-            ) : null}
-          </View>
-        </View>
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
         <Pressable
           style={[styles.primaryButton, !canContinue && styles.primaryButtonDisabled]}
           onPress={() => navigation.navigate("ListingAvailability")}
@@ -386,7 +382,41 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
-    marginTop: 16,
+    marginTop: 14,
+  },
+  accessChoiceCard: {
+    alignItems: "center",
+    backgroundColor: hostFlowColors.cardBg,
+    borderColor: hostFlowColors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 68,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+  },
+  accessChoiceCardActive: {
+    borderColor: hostFlowColors.accent,
+    backgroundColor: hostFlowColors.accentSoft,
+  },
+  accessChoiceStack: {
+    gap: 14,
+    marginTop: 12,
+  },
+  accessChoiceSelectedMeta: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  accessChoiceText: {
+    color: hostFlowColors.text,
+    fontFamily: "Inter-Medium",
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  accessChoiceTextActive: {
+    fontFamily: "Inter-SemiBold",
   },
   container: {
     backgroundColor: hostFlowColors.appBg,
@@ -400,6 +430,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: hostFlowColors.cardBgMuted,
     borderRadius: 999,
+    borderWidth: 1,
+    borderColor: hostFlowColors.border,
     flexDirection: "row",
     gap: 8,
     paddingHorizontal: 14,
@@ -407,6 +439,7 @@ const styles = StyleSheet.create({
   },
   featureChipActive: {
     backgroundColor: hostFlowColors.accentSoft,
+    borderColor: hostFlowColors.accent,
   },
   featureChipText: {
     color: hostFlowColors.textMuted,
@@ -431,15 +464,18 @@ const styles = StyleSheet.create({
   },
   footer: {
     backgroundColor: hostFlowColors.cardBg,
+    borderTopColor: hostFlowColors.border,
+    borderTopWidth: 1,
     paddingHorizontal: spacing.screenX,
-    paddingTop: 12,
+    paddingTop: 10,
+    paddingBottom: 2,
   },
   headerBlock: {
     paddingTop: 6,
   },
   heroCard: {
-    marginTop: 16,
-    paddingHorizontal: 2,
+    marginTop: 14,
+    paddingHorizontal: 0,
   },
   input: {
     backgroundColor: hostFlowColors.cardBg,
@@ -462,18 +498,19 @@ const styles = StyleSheet.create({
   primaryButton: {
     alignItems: "center",
     backgroundColor: hostFlowColors.accent,
-    borderRadius: 18,
+    borderRadius: 16,
     justifyContent: "center",
-    minHeight: 52,
+    minHeight: 48,
   },
   primaryButtonDisabled: {
     opacity: 0.5,
   },
   primaryButtonText: {
     color: hostFlowColors.cardBg,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
     fontWeight: "600",
+    letterSpacing: -0.2,
     lineHeight: 20,
   },
   privacyNote: {
@@ -488,31 +525,31 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   questionBlock: {
-    gap: 8,
+    gap: 6,
   },
   questionBody: {
     color: hostFlowColors.textMuted,
     fontFamily: "Inter-Regular",
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 14,
+    lineHeight: 22,
   },
   questionStack: {
     gap: 18,
-    marginTop: 12,
+    marginTop: 14,
   },
   questionTitle: {
     color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 17,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 20,
     fontWeight: "600",
-    lineHeight: 23,
+    lineHeight: 25,
   },
   sectionBody: {
     color: hostFlowColors.textMuted,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13.5,
-    fontWeight: "600",
-    lineHeight: 20,
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    fontWeight: "400",
+    lineHeight: 22,
     marginTop: 6,
   },
   sectionHeader: {
@@ -521,39 +558,31 @@ const styles = StyleSheet.create({
   sectionLabel: {
     color: hostFlowColors.textSoft,
     fontFamily: "Inter-SemiBold",
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "700",
     letterSpacing: 0.5,
-    lineHeight: 15,
+    lineHeight: 18,
   },
   sectionTitle: {
     color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-Bold",
+    fontFamily: "Inter-SemiBold",
     fontSize: 20,
-    fontWeight: "800",
-    letterSpacing: -0.3,
-    lineHeight: 26,
-    marginTop: 4,
-  },
-  stepEyebrow: {
-    color: hostFlowColors.accent,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
     fontWeight: "600",
-    lineHeight: 16,
-    marginBottom: 8,
+    letterSpacing: -0.4,
+    lineHeight: 25,
+    marginTop: 4,
   },
   subCard: {
     backgroundColor: hostFlowColors.cardBgMuted,
     borderRadius: 18,
-    marginTop: 12,
+    marginTop: 4,
     padding: 12,
   },
   subtitle: {
     color: hostFlowColors.textMuted,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    fontWeight: "600",
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    fontWeight: "400",
     lineHeight: 22,
     marginTop: 8,
   },
@@ -561,42 +590,42 @@ const styles = StyleSheet.create({
     backgroundColor: hostFlowColors.cardBg,
     borderRadius: 24,
     marginTop: 16,
-    padding: 20,
+    padding: 24,
     ...hostFlowShadow,
   },
   title: {
     color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 30,
-    fontWeight: "800",
-    letterSpacing: -0.8,
-    lineHeight: 35,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 26,
+    fontWeight: "600",
+    letterSpacing: -0.6,
+    lineHeight: 31,
   },
   toggleGroup: {
-    backgroundColor: hostFlowColors.cardBgMuted,
-    borderRadius: 14,
     flexDirection: "row",
-    gap: 6,
-    marginTop: 12,
-    padding: 5,
+    gap: 12,
+    marginTop: 14,
   },
   toggleOption: {
     alignItems: "center",
-    backgroundColor: transparentColor,
-    borderRadius: 11,
+    backgroundColor: hostFlowColors.cardBg,
+    borderColor: hostFlowColors.border,
+    borderRadius: 16,
+    borderWidth: 1,
     flex: 1,
     justifyContent: "center",
-    minHeight: 40,
+    minHeight: 52,
   },
   toggleOptionActive: {
-    backgroundColor: hostFlowColors.cardBg,
+    backgroundColor: hostFlowColors.accentSoft,
+    borderColor: hostFlowColors.accent,
   },
   toggleText: {
     color: hostFlowColors.textMuted,
     fontFamily: "Inter-SemiBold",
-    fontSize: 13,
+    fontSize: 17,
     fontWeight: "600",
-    lineHeight: 17,
+    lineHeight: 24,
   },
   toggleTextActive: {
     color: hostFlowColors.text,
