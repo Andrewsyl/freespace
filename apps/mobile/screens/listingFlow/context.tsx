@@ -30,6 +30,7 @@ export type ListingDraft = {
   rateType: "hourly" | "daily";
   pricePerDay: string;
   pricePerHour: string;
+  pricePerMonth: string;
   photos: string[];
 };
 

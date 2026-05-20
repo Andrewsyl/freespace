@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -126,7 +128,12 @@ export function EditListingScreen({ navigation, route }: Props) {
           <ActivityIndicator />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+        >
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.formCard}>
           <View style={styles.field}>
             <Text style={styles.label}>Title</Text>
@@ -178,6 +185,7 @@ export function EditListingScreen({ navigation, route }: Props) {
           />
           <Button title="Delete listing" variant="ghost" onPress={handleDelete} style={styles.deleteButton} />
         </ScrollView>
+        </KeyboardAvoidingView>
       )}
     </SafeAreaView>
   );

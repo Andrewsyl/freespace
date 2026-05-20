@@ -67,6 +67,13 @@
       "android": {
         "buildType": "apk"
       }
+    },
+    "production-ipa": {
+      "extends": "production",
+      "distribution": "store",
+      "ios": {
+        "simulator": false
+      }
     }
   },
   "submit": {

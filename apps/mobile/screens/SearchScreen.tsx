@@ -44,6 +44,25 @@ import { Ionicons } from "@expo/vector-icons";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Search">;
 
+function getListingDisplayTitle(listing: { title: string; address?: string | null; spaceType?: string | null; space_type?: string | null }): string {
+  const rawType = listing.space_type ?? listing.spaceType ?? null;
+  let spaceType = rawType ?? (() => {
+    const title = listing.title.trim();
+    if (/ parking$/i.test(title)) return title.replace(/ parking$/i, "");
+    const lower = title.toLowerCase();
+    if (lower.includes("driveway")) return "Private driveway";
+    if (lower.includes("garage")) return "Garage";
+    if (lower.includes("car park") || lower.includes("carpark")) return "Car park";
+    if (lower.includes("private road")) return "Private road";
+    if (lower.includes("street")) return "Street parking";
+    return "Parking space";
+  })();
+  const street = listing.address
+    ? listing.address.split(",")[0].replace(/^\d+[A-Za-z0-9\-\/]*\s+/, "").trim()
+    : "";
+  return street ? `${spaceType} on ${street}` : listing.title;
+}
+
 type PlaceSuggestion = {
   description: string;
   place_id: string;
@@ -202,6 +221,8 @@ export function SearchScreen({ navigation }: Props) {
   const slideAnim = useRef(new Animated.Value(0)).current;
   const searchAnim = useRef(new Animated.Value(0)).current;
   const searchAreaOpacity = useRef(new Animated.Value(0)).current;
+  const searchAreaTranslateY = useRef(new Animated.Value(8)).current;
+  const showAreaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchOverlayOpacity = useMemo(
     () =>
       searchAnim.interpolate({
@@ -248,26 +269,43 @@ export function SearchScreen({ navigation }: Props) {
   useEffect(() => {
     if (showSearchArea && pendingSearch) {
       setRenderSearchArea(true);
-      Animated.timing(searchAreaOpacity, {
-        toValue: 1,
-        duration: 120,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }).start();
+      searchAreaTranslateY.setValue(10);
+      Animated.parallel([
+        Animated.timing(searchAreaOpacity, {
+          toValue: 1,
+          duration: 180,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.spring(searchAreaTranslateY, {
+          toValue: 0,
+          damping: 20,
+          stiffness: 260,
+          mass: 0.8,
+          useNativeDriver: true,
+        }),
+      ]).start();
       return;
     }
 
-    Animated.timing(searchAreaOpacity, {
-      toValue: 0,
-      duration: 120,
-      easing: Easing.in(Easing.quad),
-      useNativeDriver: true,
-    }).start(({ finished }) => {
+    Animated.parallel([
+      Animated.timing(searchAreaOpacity, {
+        toValue: 0,
+        duration: 140,
+        easing: Easing.in(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(searchAreaTranslateY, {
+        toValue: 6,
+        duration: 140,
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
       if (finished) {
         setRenderSearchArea(false);
       }
     });
-  }, [pendingSearch, searchAreaOpacity, showSearchArea]);
+  }, [pendingSearch, searchAreaOpacity, searchAreaTranslateY, showSearchArea]);
 
   useEffect(() => {
     let active = true;
@@ -392,6 +430,12 @@ export function SearchScreen({ navigation }: Props) {
       paramsOverride?: Partial<SearchParams>,
       options?: { showGlobal?: boolean }
     ) => {
+      if (showAreaTimerRef.current) {
+        clearTimeout(showAreaTimerRef.current);
+        showAreaTimerRef.current = null;
+      }
+      setShowSearchArea(false);
+      setPendingSearch(null);
       let nextResultsSnapshot: ListingSummary[] | null = null;
       const requestId = searchRequestIdRef.current + 1;
       searchRequestIdRef.current = requestId;
@@ -756,7 +800,6 @@ export function SearchScreen({ navigation }: Props) {
   const handleSelectListing = useCallback((id: string | null) => {
     ignoreNextRegionChangeRef.current = true;
     if (id === null && selectedId !== null) {
-      // Animate out before clearing
       setDismissingCard(true);
       setTimeout(() => {
         setSelectedId(null);
@@ -764,8 +807,23 @@ export function SearchScreen({ navigation }: Props) {
       }, 250);
     } else {
       setSelectedId(id);
+      if (id) {
+        const listing = results.find((r) => r.id === id);
+        if (listing?.latitude && listing?.longitude) {
+          const region = currentRegionRef.current;
+          mapRef.current?.animateToRegion(
+            {
+              latitude: listing.latitude,
+              longitude: listing.longitude,
+              latitudeDelta: region?.latitudeDelta ?? 0.012,
+              longitudeDelta: region?.longitudeDelta ?? 0.012,
+            },
+            300
+          );
+        }
+      }
     }
-  }, [selectedId]);
+  }, [selectedId, results]);
 
   useFocusEffect(
     useCallback(() => {
@@ -794,6 +852,12 @@ export function SearchScreen({ navigation }: Props) {
         setLoading(true);
         void runSearch();
       })();
+      return () => {
+        if (showAreaTimerRef.current) {
+          clearTimeout(showAreaTimerRef.current);
+          showAreaTimerRef.current = null;
+        }
+      };
     }, [runSearch])
   );
 
@@ -927,6 +991,13 @@ export function SearchScreen({ navigation }: Props) {
 
   const closeFilters = () => setShowFilters(false);
 
+  const handleRegionChanging = useCallback(() => {
+    if (showAreaTimerRef.current) {
+      clearTimeout(showAreaTimerRef.current);
+      showAreaTimerRef.current = null;
+    }
+  }, []);
+
   const handleRegionChange = (nextRegion: typeof mapRegion) => {
     currentRegionRef.current = nextRegion;
     if (ignoreNextRegionChangeRef.current) {
@@ -943,13 +1014,16 @@ export function SearchScreen({ navigation }: Props) {
     mapRegionSaveTimerRef.current = setTimeout(() => {
       void AsyncStorage.setItem(MAP_REGION_KEY, JSON.stringify(nextRegion));
     }, 350);
-    
-    // Don't show "Search this area" if this was a programmatic map movement
+
     if (isProgrammaticMoveRef.current) {
       isProgrammaticMoveRef.current = false;
+      if (showAreaTimerRef.current) {
+        clearTimeout(showAreaTimerRef.current);
+        showAreaTimerRef.current = null;
+      }
       return;
     }
-    
+
     const last = lastSearchCenterRef.current ?? {
       lat: mapRegion.latitude,
       lng: mapRegion.longitude,
@@ -964,8 +1038,15 @@ export function SearchScreen({ navigation }: Props) {
         Math.cos(toRad(nextRegion.latitude)) *
         Math.sin(dLng / 2) ** 2;
     const distanceM = 2 * R * Math.asin(Math.sqrt(a));
-    // Reduced threshold from 350m to 200m for more responsive "Search this area" (JustPark style)
-    if (distanceM < 200) {
+
+    // Threshold adapts to zoom: show button only after moving 30% of the visible radius.
+    // This prevents the button from firing after tiny pans at city-wide zoom.
+    const visibleRadiusM = radiusKmForRegion(nextRegion) * 1000;
+    if (distanceM < visibleRadiusM * 0.3) {
+      if (showAreaTimerRef.current) {
+        clearTimeout(showAreaTimerRef.current);
+        showAreaTimerRef.current = null;
+      }
       if (showSearchArea || pendingSearch) {
         setShowSearchArea(false);
         setPendingSearch(null);
@@ -973,11 +1054,18 @@ export function SearchScreen({ navigation }: Props) {
       return;
     }
 
+    // Debounce: wait for the map to fully settle before showing the button.
+    if (showAreaTimerRef.current) {
+      clearTimeout(showAreaTimerRef.current);
+    }
     const nextLat = nextRegion.latitude.toFixed(6);
     const nextLng = nextRegion.longitude.toFixed(6);
     const nextRadius = radiusKmForRegion(nextRegion).toFixed(2);
-    setPendingSearch({ lat: nextLat, lng: nextLng, radiusKm: nextRadius });
-    setShowSearchArea(true);
+    showAreaTimerRef.current = setTimeout(() => {
+      showAreaTimerRef.current = null;
+      setPendingSearch({ lat: nextLat, lng: nextLng, radiusKm: nextRadius });
+      setShowSearchArea(true);
+    }, 300);
   };
 
   const priceForListing = useCallback(
@@ -1019,6 +1107,7 @@ export function SearchScreen({ navigation }: Props) {
             provider="google"
             customMapStyle={LIGHT_MAP_STYLE}
             onSelect={handleSelectListing}
+            onRegionChange={handleRegionChanging}
             onRegionChangeComplete={handleRegionChange}
             selectedId={selectedId}
             mapRef={mapRef}
@@ -1046,9 +1135,10 @@ export function SearchScreen({ navigation }: Props) {
                 style={styles.searchInput}
                 value={addressQuery}
                 editable={false}
-                placeholder="Where are you parking?"
+                placeholder="Where to?"
                 placeholderTextColor="#98a2b3"
                 pointerEvents="none"
+                numberOfLines={1}
               />
               {addressQuery ? (
                 <Pressable
@@ -1119,7 +1209,7 @@ export function SearchScreen({ navigation }: Props) {
           </View>
           {renderSearchArea && pendingSearch ? (
             <Animated.View
-              style={[styles.searchAreaWrap, { opacity: searchAreaOpacity }]}
+              style={[styles.searchAreaWrap, { opacity: searchAreaOpacity, transform: [{ translateY: searchAreaTranslateY }] }]}
               pointerEvents="box-none"
             >
               <Pressable
@@ -1165,7 +1255,7 @@ export function SearchScreen({ navigation }: Props) {
         </View>
         {selectedListing ? (
           <MapBottomCard
-            title={selectedListing.title}
+            title={getListingDisplayTitle(selectedListing)}
             imageUrl={selectedListingImage ?? undefined}
             rating={selectedListing.rating ?? 0}
             reviewCount={selectedListing.rating_count ?? 0}
@@ -1487,7 +1577,7 @@ export function SearchScreen({ navigation }: Props) {
                                   <View style={styles.resultIconDot} />
                                 </View>
                                 <View style={styles.resultCopy}>
-                                  <Text style={styles.resultTitle}>{item.title}</Text>
+                                  <Text style={styles.resultTitle}>{getListingDisplayTitle(item)}</Text>
                                   <Text style={styles.resultSubtitle}>{item.address}</Text>
                                 </View>
                               </Pressable>
@@ -1631,7 +1721,7 @@ export function SearchScreen({ navigation }: Props) {
                   >
                     <View style={styles.overlappingItemContent}>
                       <Text style={styles.overlappingItemTitle} numberOfLines={1}>
-                        {listing.title}
+                        {getListingDisplayTitle(listing)}
                       </Text>
                       <Text style={styles.overlappingItemAddress} numberOfLines={1}>
                         {listing.address}
@@ -1728,6 +1818,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     ...textStyles.bodyMedium,
+    fontSize: 14,
+    lineHeight: 18,
     flex: 1,
   },
   clearButton: {
@@ -2181,6 +2273,8 @@ const styles = StyleSheet.create({
   },
   dateTimeValue: {
     ...textStyles.bodyStrong,
+    fontSize: 14,
+    lineHeight: 19,
   },
   dateArrowIcon: {
     marginHorizontal: 4,

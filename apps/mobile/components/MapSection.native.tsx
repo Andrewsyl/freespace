@@ -26,18 +26,6 @@ type ViewShotRef = InstanceType<typeof ViewShot>;
 
 type MapRegion = Region;
 const PIN_STYLE_VERSION = "v20";
-const METERS_PER_DEGREE_LAT = 111_000;
-const toRad = (value: number) => (value * Math.PI) / 180;
-const distanceMeters = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const lat1 = toRad(a.lat);
-  const lat2 = toRad(b.lat);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 2 * 6371000 * Math.asin(Math.sqrt(h));
-};
 const formatPinPrice = (value: number) => {
   return Math.round(value).toString();
 };
@@ -49,6 +37,7 @@ export default function MapSection({
   results,
   onSelect,
   onRegionChangeComplete,
+  onRegionChange,
   selectedId,
   provider,
   mapPadding,
@@ -68,6 +57,7 @@ export default function MapSection({
   style?: object;
   onSelect?: (id: string) => void;
   onRegionChangeComplete?: (nextRegion: MapRegion) => void;
+  onRegionChange?: (nextRegion: MapRegion) => void;
   selectedId?: string | null;
   provider?: "google" | "default";
   mapPadding?: EdgePadding;
@@ -94,12 +84,7 @@ export default function MapSection({
   const pendingCaptures = useRef(new Set<string>());
   const localMapRef = useRef<MapView | null>(null);
   const lastRegionRef = useRef<MapRegion>(region ?? initialRegion);
-  const lastTapRef = useRef<{
-    ids: string[];
-    key: string;
-    index: number;
-    ts: number;
-  } | null>(null);
+  const lastMarkerPressRef = useRef<number>(0);
   const [pinImages, setPinImages] = useState<Record<string, string>>({});
   const pinLabelById = useMemo(
     () =>
@@ -124,10 +109,6 @@ export default function MapSection({
     });
     return keys;
   }, [pinLabelById, priceKey]);
-  const pinsReady = useMemo(
-    () => labelKeys.every((key) => Boolean(pinImages[key])),
-    [labelKeys, pinImages]
-  );
   const providerValue =
     provider === "google"
       ? PROVIDER_GOOGLE
@@ -153,6 +134,10 @@ export default function MapSection({
     renderedResultsRef.current = nextResults;
   }, [nextResults, freezeMarkers]);
   useEffect(() => {
+    // Only evict stale images once every key in the new label set has been captured.
+    // This keeps old pin images alive during the capture gap so pins never flash away.
+    const newSetReady = labelKeys.every((key) => Boolean(pinImages[key]));
+    if (!newSetReady) return;
     setPinImages((prev) => {
       const next: Record<string, string> = {};
       let changed = false;
@@ -165,7 +150,7 @@ export default function MapSection({
       });
       return changed ? next : prev;
     });
-  }, [labelKeys]);
+  }, [labelKeys, pinImages]);
 
   useEffect(() => {
     labelKeys.forEach((key) => {
@@ -198,6 +183,10 @@ export default function MapSection({
         cacheEnabled={Platform.OS !== "android"}
         loadingEnabled
         loadingBackgroundColor="#F9FAFB"
+        onRegionChange={(nextRegion) => {
+          lastRegionRef.current = nextRegion;
+          onRegionChange?.(nextRegion);
+        }}
         onRegionChangeComplete={(nextRegion) => {
           lastRegionRef.current = nextRegion;
           onRegionChangeComplete?.(nextRegion);
@@ -206,74 +195,18 @@ export default function MapSection({
         onMapReady={onMapReady}
         googleMapId={googleMapId}
         customMapStyle={customMapStyle as any}
-        onPress={(event) => {
+        onPress={() => {
           if (!onSelect) return;
-          const { latitude, longitude } = event.nativeEvent.coordinate;
-          const target = { lat: latitude, lng: longitude };
-          const regionRef = region ?? initialRegion;
-          
-          // Airbnb-style: Larger, more forgiving tap threshold that scales with zoom
-          // At close zoom: ~40m, at far zoom: can be 100m+
-          const thresholdM = Math.max(
-            40,
-            Math.min(150, regionRef.latitudeDelta * METERS_PER_DEGREE_LAT * 0.05)
-          );
-          
-          const list = freezeMarkers ? renderedResultsRef.current : nextResults;
-          const candidates: Array<{ listing: ListingResult; distance: number }> = [];
-          
-          list.forEach((listing) => {
-            if (typeof listing.latitude !== "number" || typeof listing.longitude !== "number")
-              return;
-            const dist = distanceMeters(target, {
-              lat: listing.latitude,
-              lng: listing.longitude,
-            });
-            if (dist <= thresholdM) {
-              candidates.push({ listing, distance: dist });
-            }
-          });
-          
-          if (candidates.length === 0) {
-            if (onOverlappingPins) {
-              onOverlappingPins([]);
-            }
-            onSelect(null as any);
-            return;
-          }
-
-          candidates.sort((a, b) => a.distance - b.distance);
-          if (onOverlappingPins) {
-            onOverlappingPins([]);
-          }
-
-          // Airbnb-style: cycle through nearby pins on repeated taps
-          if (candidates.length > 1) {
-            const ids = candidates.map((c) => c.listing.id);
-            const key = [...ids].sort().join("|");
-            const nowMs = Date.now();
-            const last = lastTapRef.current;
-            const isSameSet = !!last && nowMs - last.ts < 1500 && last.key === key;
-            const idsToUse = isSameSet ? last!.ids : ids;
-            const nextIndex = isSameSet ? (last!.index + 1) % idsToUse.length : 0;
-            lastTapRef.current = {
-              ids: idsToUse,
-              key,
-              index: nextIndex,
-              ts: nowMs,
-            };
-            onSelect(idsToUse[nextIndex]);
-            return;
-          }
-
-          onSelect(candidates[0].listing.id);
+          // If a marker was just pressed, ignore this map press to avoid deselecting
+          if (Date.now() - lastMarkerPressRef.current < 400) return;
+          onOverlappingPins?.([]);
+          onSelect(null as any);
         }}
         mapPadding={mapPadding}
         moveOnMarkerPress={false}
         mapType="standard"
       >
-        {pinsReady
-          ? (freezeMarkers ? renderedResultsRef.current : nextResults).map((listing) => {
+        {(freezeMarkers ? renderedResultsRef.current : nextResults).map((listing) => {
           const isSelected = selectedId === listing.id;
           const price = priceForListing ? priceForListing(listing) : Number(listing.price_per_day);
           const label =
@@ -290,16 +223,14 @@ export default function MapSection({
                 longitude: listing.longitude as number,
               }}
               tracksViewChanges={false}
-              anchor={{ x: 0.5, y: 1 }}
+              anchor={{ x: 0.5, y: 0.96 }}
               centerOffset={{ x: 0, y: isSelected ? -2 : 0 }}
               onPress={(e) => {
-                // Airbnb-style: Always handle marker press and prevent map press
                 e?.stopPropagation?.();
+                lastMarkerPressRef.current = Date.now();
                 onSelect?.(listing.id);
               }}
-              // Airbnb-style: Selected pins always on top with high z-index
-              // Unselected pins have lower but varied z-index to prevent stacking issues
-              zIndex={isSelected ? 10000 : 100 + listing.id.charCodeAt(0)}
+              zIndex={isSelected ? 1000000 : Math.round((90 - (listing.latitude as number)) * 10000)}
               image={{ uri: pinImage }}
               pinColor="transparent"
               // Airbnb-style: Markers are always tappable
@@ -307,8 +238,7 @@ export default function MapSection({
               stopPropagation={true}
             />
           );
-        })
-          : null}
+        })}
       </MapView>
       <View style={styles.captureShell} pointerEvents="none">
         {labelKeys.map((key) => {

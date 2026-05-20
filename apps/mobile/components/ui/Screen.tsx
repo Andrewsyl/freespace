@@ -17,8 +17,8 @@ export function Screen({ children, style, scroll = false, scrollProps, ...props 
         style={[styles.screen, style]}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) },
           scrollProps?.contentContainerStyle,
+          { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) },
         ]}
       >
         {children}

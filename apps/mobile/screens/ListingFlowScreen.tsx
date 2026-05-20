@@ -61,6 +61,7 @@ const defaultDraft: ListingDraft = {
   rateType: "daily",
   pricePerDay: "",
   pricePerHour: "",
+  pricePerMonth: "",
   photos: [],
 };
 
@@ -155,6 +156,10 @@ export function ListingFlowScreen({ route }: Props) {
             listing.price_per_day != null ? String(listing.price_per_day) : prev.pricePerDay,
           pricePerHour:
             listing.price_per_hour != null ? String(listing.price_per_hour) : prev.pricePerHour,
+          pricePerMonth:
+            (listing as { price_per_month?: number | null }).price_per_month != null
+              ? String((listing as { price_per_month?: number | null }).price_per_month)
+              : prev.pricePerMonth,
           photos: listing.image_urls ?? prev.photos,
         }));
         if (token) {

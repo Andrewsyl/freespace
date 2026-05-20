@@ -218,8 +218,59 @@ export function ListingScreen({ navigation, route }: Props) {
     return "Check availability";
   }, [isOpen24, listing?.availability_text, listing?.is_available]);
 
+  const availabilityEntries = (listing as { availabilitySchedule?: { startsAt: string; endsAt: string; repeatWeekdays: number[] }[] })?.availabilitySchedule ?? [];
+  const hasWeeklyAvailability = availabilityEntries.some(
+    (entry) => Array.isArray(entry.repeatWeekdays) && entry.repeatWeekdays.length > 0
+  );
+  const formatHour = (value: string) =>
+    new Date(value).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", hour12: true });
+  const weekdayOrder = [
+    { label: "Monday", dow: 1 },
+    { label: "Tuesday", dow: 2 },
+    { label: "Wednesday", dow: 3 },
+    { label: "Thursday", dow: 4 },
+    { label: "Friday", dow: 5 },
+    { label: "Saturday", dow: 6 },
+    { label: "Sunday", dow: 0 },
+  ];
+  const todayDow = new Date().getDay();
+  const openingHours = weekdayOrder.map(({ label, dow }) => {
+    if (hasWeeklyAvailability) {
+      const entry = availabilityEntries.find((item) =>
+        Array.isArray(item.repeatWeekdays) && item.repeatWeekdays.includes(dow)
+      );
+      if (entry) return { day: label, hours: `${formatHour(entry.startsAt)} – ${formatHour(entry.endsAt)}`, isToday: dow === todayDow };
+      return { day: label, hours: "Closed", isToday: dow === todayDow };
+    }
+    return { day: label, hours: availabilityFallbackText, isToday: dow === todayDow };
+  });
+
   const hasReviews = (listing?.rating_count ?? 0) > 0 && typeof listing?.rating === "number";
   const isAvailable = listing?.is_available !== false;
+
+  const spaceTypeLabel = useMemo(() => {
+    const rawType =
+      (listing as { space_type?: string; spaceType?: string })?.space_type ??
+      (listing as { space_type?: string; spaceType?: string })?.spaceType ??
+      null;
+    if (rawType) return rawType;
+    const title = (listing?.title ?? "").trim();
+    if (/ parking$/i.test(title)) return title.replace(/ parking$/i, "");
+    const lower = title.toLowerCase();
+    if (lower.includes("driveway")) return "Private driveway";
+    if (lower.includes("garage")) return "Garage";
+    if (lower.includes("car park") || lower.includes("carpark")) return "Car park";
+    if (lower.includes("private road")) return "Private road";
+    if (lower.includes("street")) return "Street parking";
+    return "Parking space";
+  }, [listing]);
+
+  const displayTitle = useMemo(() => {
+    const street = listing?.address
+      ? listing.address.split(",")[0].replace(/^\d+[A-Za-z0-9\-\/]*\s+/, "").trim()
+      : "";
+    return street ? `${spaceTypeLabel} on ${street}` : (listing?.title ?? "");
+  }, [listing, spaceTypeLabel]);
 
   const heroHeight = Math.round(width * 0.8);
   const heroTapHeight = Math.max(0, heroHeight - 40);
@@ -359,7 +410,7 @@ export function ListingScreen({ navigation, route }: Props) {
                 <View style={styles.sheetHandle} />
 
                 <View style={styles.titleBlock}>
-                  <Text style={styles.titleText}>{listing.title}</Text>
+                  <Text style={styles.titleText}>{displayTitle}</Text>
 
                   <View style={styles.metaRow}>
                     {hasReviews && (
@@ -458,6 +509,27 @@ export function ListingScreen({ navigation, route }: Props) {
                     <Text style={styles.readMore}>{showFullAbout ? "Show less" : "Read more"}</Text>
                   )}
                 </Pressable>
+
+                {/* ── Availability ─────────────────────────── */}
+                <View style={styles.sectionDivider} />
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Available times</Text>
+                  <View style={styles.availabilityList}>
+                    {openingHours.map((entry) => (
+                      <View
+                        key={entry.day}
+                        style={[styles.availabilityRow, entry.isToday && styles.availabilityRowToday]}
+                      >
+                        <Text style={[styles.availabilityDay, entry.isToday && styles.availabilityDayToday]}>
+                          {entry.day}
+                        </Text>
+                        <Text style={[styles.availabilityHours, entry.isToday && styles.availabilityHoursToday]}>
+                          {entry.hours}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
 
                 {/* ── Features (horizontal scroll chips) ───── */}
                 <View style={styles.sectionDivider} />
@@ -987,6 +1059,13 @@ const styles = StyleSheet.create({
 
   // Sections
   sectionDivider: { height: 1, backgroundColor: colors.border, marginHorizontal: -spacing.screenX },
+  availabilityList: { gap: 6, marginTop: 10 },
+  availabilityRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 5 },
+  availabilityRowToday: { backgroundColor: "#F4FBF7", borderRadius: 8, paddingHorizontal: 8, marginHorizontal: -8 },
+  availabilityDay: { fontFamily: "Inter-Medium", fontSize: 14, color: "#1F2937", flex: 1 },
+  availabilityDayToday: { color: "#1a7a4a", fontFamily: "Inter-SemiBold" },
+  availabilityHours: { fontFamily: "Inter-Regular", fontSize: 13, color: "#64748B", textAlign: "right" },
+  availabilityHoursToday: { color: "#1a7a4a" },
   section: { paddingVertical: 16 },
   sectionTitle: {
     fontFamily: "PlusJakartaSans-Bold",

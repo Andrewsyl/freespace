@@ -33,7 +33,8 @@
     "verify:lanes": "./scripts/check-lanes.sh",
     "eas:qa": "npx -y eas-cli@18.0.4 build --platform android --profile qa --clear-cache",
     "eas:prod": "npx -y eas-cli@18.0.4 build --platform android --profile production --clear-cache",
-    "eas:prod:apk": "npx -y eas-cli@18.0.4 build --platform android --profile production-apk --clear-cache"
+    "eas:prod:apk": "npx -y eas-cli@18.0.4 build --platform android --profile production-apk --clear-cache",
+    "eas:prod:ios": "npx -y eas-cli@18.0.4 build --platform ios --profile production-ipa --clear-cache"
   },
   "dependencies": {
     "@babel/runtime": "^7.28.4",

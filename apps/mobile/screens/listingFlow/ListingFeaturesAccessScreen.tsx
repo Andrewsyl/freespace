@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { LayoutChangeEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, LayoutChangeEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRef } from "react";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
@@ -188,6 +188,11 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+      >
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={[
@@ -195,6 +200,7 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
           { paddingBottom: 104 + Math.max(insets.bottom, 0) },
         ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.headerBlock}>
           <View style={styles.progressShell}>
@@ -373,6 +379,7 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
           <Text style={styles.primaryButtonText}>Continue</Text>
         </Pressable>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

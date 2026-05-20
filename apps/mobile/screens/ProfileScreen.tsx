@@ -128,42 +128,20 @@ export function ProfileScreen({ navigation }: Props) {
           <Text style={styles.subtitle}>Manage your account, verification, hosting, and support.</Text>
         </View>
 
-        <Card style={styles.profileCard}>
-          <View style={styles.profileTopRow}>
-            <View style={styles.avatarShell}>
-              <Text style={styles.avatarText}>
-                {user.name?.trim()?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || "U"}
-              </Text>
-            </View>
-            <View style={styles.profileText}>
-              <Text style={styles.profileName}>{user.name?.trim() || "Your account"}</Text>
-              <Text style={styles.profileEmail}>{user.email}</Text>
-            </View>
-            <View style={[styles.statusPill, user.emailVerified ? styles.statusPillVerified : styles.statusPillPending]}>
-              <Text style={[styles.statusPillText, user.emailVerified ? styles.statusPillTextVerified : styles.statusPillTextPending]}>
-                {user.emailVerified ? "Verified" : "Needs verification"}
-              </Text>
-            </View>
-          </View>
-          {previewUrl ? (
-            <Pressable style={styles.linkButton} onPress={() => Linking.openURL(previewUrl)}>
-              <Text style={styles.linkButtonText}>Open verification link</Text>
-            </Pressable>
-          ) : null}
-        </Card>
-
         <View style={styles.contentBody}>
         <Card style={styles.section} noPadding>
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             onPress={() => navigation.navigate("PersonalInfo")}
           >
-            <View style={styles.iconShell}>
-              <Ionicons name="person-outline" size={18} color={colors.accent} />
+            <View style={styles.avatarShell}>
+              <Text style={styles.avatarText}>
+                {user.name?.trim()?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || "U"}
+              </Text>
             </View>
             <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>Personal information</Text>
-              <Text style={styles.rowSubtitle}>{user.name?.trim() || "Name, phone number, email"}</Text>
+              <Text style={styles.rowTitle}>{user.name?.trim() || "Your account"}</Text>
+              <Text style={styles.rowSubtitle}>Profile</Text>
             </View>
             <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
           </Pressable>
@@ -318,6 +296,11 @@ export function ProfileScreen({ navigation }: Props) {
               <Text style={styles.inlineStatus}>Verified</Text>
             )}
           </View>
+          {previewUrl ? (
+            <Pressable style={styles.linkButton} onPress={() => Linking.openURL(previewUrl)}>
+              <Text style={styles.linkButtonText}>Open verification link</Text>
+            </Pressable>
+          ) : null}
         </Card>
 
         <SectionHeader title="Hosting" style={styles.sectionHeaderWrap} />
@@ -462,11 +445,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.appBg,
   },
   content: {
-    paddingBottom: 28,
-    paddingTop: 20,
+    paddingBottom: 20,
+    paddingTop: 14,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   title: {
     ...textStyles.screenTitle,
@@ -478,36 +461,36 @@ const styles = StyleSheet.create({
   subtitle: {
     ...textStyles.subtitle,
     color: colors.textMuted,
-    fontSize: 15,
-    marginTop: 6,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 4,
   },
   profileCard: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
-    padding: 18,
-    ...cardShadow,
+    padding: 14,
   },
   profileTopRow: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 12,
+    gap: 10,
   },
   avatarShell: {
     alignItems: "center",
     backgroundColor: colors.accentSoft,
     borderColor: "#cdeee0",
-    borderRadius: 24,
+    borderRadius: 20,
     borderWidth: 1,
-    height: 48,
+    height: 40,
     justifyContent: "center",
-    width: 48,
+    width: 40,
   },
   avatarText: {
     color: colors.accent,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
   },
   profileText: {
@@ -516,21 +499,21 @@ const styles = StyleSheet.create({
   profileName: {
     color: colors.text,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
     lineHeight: 22,
   },
   profileEmail: {
     color: colors.textMuted,
     fontFamily: "Inter-Medium",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "500",
-    marginTop: 3,
+    marginTop: 2,
   },
   statusPill: {
     borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
   },
   statusPillVerified: {
     backgroundColor: "#e8faf2",
@@ -540,7 +523,7 @@ const styles = StyleSheet.create({
   },
   statusPillText: {
     fontFamily: "Inter-SemiBold",
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "600",
   },
   statusPillTextVerified: {
@@ -550,52 +533,48 @@ const styles = StyleSheet.create({
     color: "#a16207",
   },
   contentBody: {
-    marginTop: 18,
+    marginTop: 14,
   },
   section: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
-    marginBottom: 18,
+    marginBottom: 12,
     overflow: "hidden",
-    ...cardShadow,
   },
   sectionHeaderWrap: {
-    marginBottom: 10,
-    marginTop: 18,
+    marginBottom: 6,
+    marginTop: 14,
   },
   row: {
     alignItems: "center",
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: "row",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    gap: 10,
+    minHeight: 58,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
   },
   rowPressed: {
     backgroundColor: "#fbfbf9",
   },
   iconShell: {
     alignItems: "center",
-    backgroundColor: "#eef8f4",
-    borderColor: "#d7ece3",
-    borderRadius: 18,
-    borderWidth: 1,
-    height: 36,
+    backgroundColor: "transparent",
+    borderRadius: 14,
+    height: 28,
     justifyContent: "center",
-    width: 36,
+    width: 28,
   },
   iconShellDanger: {
     alignItems: "center",
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
-    borderRadius: 18,
-    borderWidth: 1,
-    height: 36,
+    backgroundColor: "transparent",
+    borderRadius: 14,
+    height: 28,
     justifyContent: "center",
-    width: 36,
+    width: 28,
   },
   toggleTrack: {
     backgroundColor: "#dfe6e9",
@@ -622,14 +601,14 @@ const styles = StyleSheet.create({
   rowActions: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
   },
   rowTitle: {
     color: colors.text,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
-    lineHeight: 20,
+    lineHeight: 19,
   },
   rowTitleDanger: {
     color: colors.danger,
@@ -637,15 +616,17 @@ const styles = StyleSheet.create({
   rowSubtitle: {
     ...textStyles.bodyMedium,
     color: colors.textMuted,
-    marginTop: 3,
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 1,
   },
   inlineButton: {
     backgroundColor: "#e9f8f3",
     borderColor: "#d2eee2",
     borderRadius: 999,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   inlineButtonText: {
     ...textStyles.meta,
@@ -657,9 +638,9 @@ const styles = StyleSheet.create({
     borderColor: "#d7ece3",
     borderRadius: radius.pill,
     borderWidth: 1,
-    marginTop: 14,
+    marginTop: 10,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 7,
   },
   linkButtonText: {
     ...textStyles.meta,

@@ -14,7 +14,7 @@ import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
 import { updateMe } from "../api";
 import { useAuth } from "../auth";
-import { SectionHeader, TextInput as AppTextInput } from "../components/ui";
+import { Button, TextInput as AppTextInput } from "../components/ui";
 import type { RootStackParamList } from "../types";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -304,35 +304,31 @@ export function VehicleTypeScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => navigation.navigate("Tabs", { screen: "Profile" })}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={20} color={colors.text} />
-            <Text style={styles.backText}>Back</Text>
-          </Pressable>
-          <Text style={styles.title}>My vehicle</Text>
-          <Text style={styles.subtitle}>Your vehicle details</Text>
-        </View>
-
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.sheet}>
-            <SectionHeader
-              title="Vehicle details"
-              subtitle="Save your car brand, model, color, and registration so bookings use the right vehicle."
-            />
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={20} color={colors.text} />
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
 
+          <View style={styles.header}>
+            <Text style={styles.title}>My vehicle</Text>
+            <Text style={styles.subtitle}>Your vehicle details</Text>
+          </View>
+
+          <View style={styles.sheet}>
             <View
               style={styles.section}
               onLayout={(event) => {
@@ -482,18 +478,15 @@ export function VehicleTypeScreen({ navigation }: Props) {
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
-            <Pressable
-              style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
-              onPress={handleSave}
-              disabled={!canSave}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.saveButtonText}>Save vehicle</Text>
-              )}
-            </Pressable>
           </View>
+
+          <Button
+            style={styles.saveButton}
+            title="Save"
+            onPress={handleSave}
+            disabled={!canSave}
+            loading={saving}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -507,8 +500,11 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: "center",
+    alignSelf: "flex-start",
     flexDirection: "row",
     gap: 4,
+    marginLeft: spacing.screenX,
+    marginTop: spacing.screenY,
   },
   backText: {
     ...textStyles.body,
@@ -516,21 +512,16 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.screenX,
-    paddingTop: spacing.screenY,
-    paddingBottom: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
   },
   content: {
     paddingBottom: spacing.xl,
   },
   sheet: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    borderWidth: 1,
+    backgroundColor: "transparent",
     flex: 1,
-    padding: spacing.xl,
-    ...cardShadow,
+    paddingHorizontal: spacing.screenX,
   },
   title: {
     ...textStyles.screenTitle,
@@ -544,8 +535,12 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sectionLabel: {
-    ...textStyles.sectionTitle,
     color: colors.text,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    fontWeight: "600",
+    letterSpacing: 0.1,
+    lineHeight: 20,
     marginBottom: 10,
   },
   autoInputContainer: {
@@ -643,17 +638,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   saveButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: 16,
-    marginTop: 4,
-    paddingVertical: 15,
-  },
-  saveButtonDisabled: {
-    opacity: 0.55,
-  },
-  saveButtonText: {
-    ...textStyles.button,
-    color: "#fff",
+    marginHorizontal: spacing.screenX,
+    marginTop: spacing.lg,
   },
 });

@@ -1,17 +1,19 @@
 import { useRef, useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { Ionicons } from "@expo/vector-icons";
 import { sendSupportMessage } from "../api";
 import { useAuth } from "../auth";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import type { RootStackParamList } from "../types";
-import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
+import { Button, TextInput as AppTextInput } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Support">;
 
 export function SupportScreen({ navigation, route }: Props) {
+  const insets = useSafeAreaInsets();
   const { token, user } = useAuth();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const [subject, setSubject] = useState(route.params?.prefillSubject ?? "");
@@ -40,6 +42,7 @@ export function SupportScreen({ navigation, route }: Props) {
     "App bug",
     "Other",
   ];
+  const canSubmit = !!token && !!subject && message.trim().length >= 10 && !submitting;
 
   const handleSubmit = async () => {
     if (!token) {
@@ -71,9 +74,15 @@ export function SupportScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <BackButton onPress={() => navigation.goBack()} />
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={20} color={colors.text} />
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
           <View style={styles.header}>
             <Text style={styles.title}>Contact us</Text>
             <Text style={styles.subtitle}>
@@ -86,7 +95,7 @@ export function SupportScreen({ navigation, route }: Props) {
               <Text style={styles.label}>Subject</Text>
               <Pressable
                 ref={selectRef}
-                style={styles.select}
+                style={({ pressed }) => [styles.select, pressed && styles.selectPressed]}
                 onPress={() => {
                   selectRef.current?.measureInWindow((x, y, width, height) => {
                     const menuHeight = Math.min(320, subjectOptions.length * 44 + 52);
@@ -102,10 +111,15 @@ export function SupportScreen({ navigation, route }: Props) {
                 }}
                 accessibilityRole="button"
               >
-                <Text style={[styles.selectText, !subject && styles.selectPlaceholder]}>
-                  {subject || "Select a topic"}
-                </Text>
-                <Text style={styles.selectChevron}>▾</Text>
+                <View style={styles.selectValueWrap}>
+                  <Text style={styles.selectEyebrow}>Topic</Text>
+                  <Text style={[styles.selectText, !subject && styles.selectPlaceholder]}>
+                    {subject || "Select a topic"}
+                  </Text>
+                </View>
+                <View style={styles.selectChevronShell}>
+                  <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
+                </View>
               </Pressable>
             </View>
             <View style={styles.field}>
@@ -123,7 +137,9 @@ export function SupportScreen({ navigation, route }: Props) {
             <Button
               title={submitting ? "Sending..." : "Send message"}
               onPress={handleSubmit}
-              disabled={submitting}
+              disabled={!canSubmit}
+              loading={submitting}
+              style={styles.submitButton}
             />
           </View>
 
@@ -161,31 +177,42 @@ const styles = StyleSheet.create({
     backgroundColor: colors.appBg,
   },
   content: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.screenX,
-    paddingBottom: 32,
-    paddingTop: 16,
+    paddingBottom: spacing.xl,
+  },
+  backButton: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    gap: 4,
+    marginLeft: spacing.screenX,
+    marginTop: spacing.screenY,
+  },
+  backText: {
+    ...textStyles.body,
+    color: colors.text,
   },
   header: {
-    marginBottom: 18,
+    paddingHorizontal: spacing.screenX,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
   },
   title: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: "600",
-    marginTop: 6,
+    ...textStyles.screenTitle,
+    marginBottom: spacing.xs,
+    marginTop: spacing.xs,
   },
   subtitle: {
     ...textStyles.subtitle,
   },
   form: {
-    marginTop: 2,
+    backgroundColor: "transparent",
+    paddingHorizontal: spacing.screenX,
   },
   field: {
     marginBottom: 18,
   },
   label: {
-    ...textStyles.sectionTitle,
+    ...textStyles.titleSmall,
     color: colors.text,
     marginBottom: 10,
   },
@@ -193,14 +220,30 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   select: {
+    alignItems: "center",
+    backgroundColor: colors.cardBg,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: 18,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 13,
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+  },
+  selectPressed: {
+    backgroundColor: "#fbfbf9",
+  },
+  selectValueWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  selectEyebrow: {
+    color: colors.textSoft,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   selectText: {
     ...textStyles.body,
@@ -209,9 +252,13 @@ const styles = StyleSheet.create({
   selectPlaceholder: {
     color: colors.textSoft,
   },
-  selectChevron: {
-    color: colors.textSoft,
-    fontSize: 16,
+  selectChevronShell: {
+    alignItems: "center",
+    backgroundColor: colors.accentSoft,
+    borderRadius: 14,
+    height: 28,
+    justifyContent: "center",
+    width: 28,
   },
   modalBackdrop: {
     flex: 1,
@@ -223,27 +270,32 @@ const styles = StyleSheet.create({
   menuSheet: {
     position: "absolute",
     backgroundColor: colors.cardBg,
-    borderRadius: radius.card,
-    padding: 16,
+    borderColor: colors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 12,
     ...cardShadow,
   },
   modalTitle: {
-    fontSize: 16,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15,
     fontWeight: "600",
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: 10,
+    paddingHorizontal: 4,
   },
   optionRow: {
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 10,
+    borderRadius: 14,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
   },
   optionRowPressed: {
-    backgroundColor: "#f0fdf8",
+    backgroundColor: colors.accentSoft,
   },
   optionText: {
     color: colors.text,
-    fontSize: 14,
+    fontFamily: "Inter-Medium",
+    fontSize: 15,
     fontWeight: "600",
   },
   textArea: {
@@ -252,5 +304,8 @@ const styles = StyleSheet.create({
     minHeight: 140,
     paddingHorizontal: 0,
     paddingVertical: 12,
+  },
+  submitButton: {
+    marginTop: spacing.lg,
   },
 });

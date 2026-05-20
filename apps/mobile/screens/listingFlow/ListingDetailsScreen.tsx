@@ -133,19 +133,13 @@ export function ListingDetailsScreen({ navigation }: Props) {
   }, [confirmedSpaceCount, draft.spaceType]);
 
   const adjustSpaceCount = (delta: number) => {
-    setSpaceCountInput((prev) => {
-      const next = Math.min(MAX_SPACE_COUNT, Math.max(MIN_SPACE_COUNT, prev + delta));
-      setDraft((current) => ({
-        ...current,
-        spaceCount: next > 0 ? String(next) : "",
-      }));
-      if (next > 0) {
-        setOpenStep("vehicle");
-      } else {
-        setOpenStep("count");
-      }
-      return next;
-    });
+    const next = Math.min(MAX_SPACE_COUNT, Math.max(MIN_SPACE_COUNT, spaceCountInput + delta));
+    setSpaceCountInput(next);
+    setDraft((current) => ({
+      ...current,
+      spaceCount: next > 0 ? String(next) : "",
+    }));
+    setOpenStep(next > 0 ? "vehicle" : "count");
   };
 
   return (

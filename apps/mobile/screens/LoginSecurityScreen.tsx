@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { changePassword, deleteAccount, logoutAllSessions, requestPasswordReset } from "../api";
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
@@ -131,7 +131,7 @@ export function LoginSecurityScreen({ navigation }: Props) {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <MaterialIcons name="arrow-back" size={20} color={colors.text} />
+            <Ionicons name="arrow-back" size={20} color={colors.text} />
             <Text style={styles.backText}>Back</Text>
           </Pressable>
 

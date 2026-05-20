@@ -90,11 +90,11 @@ export const textStyles = {
   },
   screenTitle: {
     color: colors.text,
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 26,
+    lineHeight: 31,
     fontFamily: "PlusJakartaSans-ExtraBold",
     fontWeight: "800" as const,
-    letterSpacing: -0.7,
+    letterSpacing: -0.6,
   },
   kicker: {
     color: colors.accent,
