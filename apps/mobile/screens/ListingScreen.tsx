@@ -160,7 +160,7 @@ export function ListingScreen({ navigation, route }: Props) {
   }, [listing, startAt, endAt]);
 
   const showBottomBar = !!(priceSummary && user);
-  const bottomBarSpacer = showBottomBar ? 48 + insets.bottom : 24;
+  const bottomBarSpacer = showBottomBar ? 40 + insets.bottom : 24;
 
   const openPicker = (field: "start" | "end") => {
     setPickerField(field);
