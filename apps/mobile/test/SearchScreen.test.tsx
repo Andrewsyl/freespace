@@ -43,12 +43,13 @@ const navigation = {
 const route = { key: "Search", name: "Search", params: undefined };
 
 describe("SearchScreen", () => {
-  it("renders the search input", () => {
-    const { getByPlaceholderText } = render(
+  it("renders the search bar", () => {
+    const { getByTestId, getByPlaceholderText } = render(
       <GlobalLoadingProvider><SearchScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider>
     );
 
-    expect(getByPlaceholderText(/where are you parking\?/i)).toBeTruthy();
+    expect(getByTestId("search-bar")).toBeTruthy();
+    expect(getByPlaceholderText(/where to\?/i)).toBeTruthy();
   });
 
   it("opens the search sheet when tapping the search bar", async () => {
