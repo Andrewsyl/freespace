@@ -60,8 +60,8 @@ describe("BookingSummaryScreen", () => {
     );
     const user = userEvent.setup();
 
-    await waitFor(() => expect(getByText(/^PAY$/i)).toBeTruthy());
-    await user.press(getByText(/^PAY$/i));
+    await waitFor(() => expect(getByText(/^Book Now$/i)).toBeTruthy());
+    await user.press(getByText(/^Book Now$/i));
 
     const api = require("../api");
     await waitFor(() => expect(api.createBookingPaymentIntent).toHaveBeenCalled());

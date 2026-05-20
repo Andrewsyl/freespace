@@ -9,7 +9,7 @@ import { useAuth } from "../auth";
 import { useGlobalToast } from "../components/GlobalToast";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import { Button, Card, Screen, SectionHeader } from "../components/ui";
-import { cardShadow, colors, radius, textStyles } from "../styles/theme";
+import { colors, radius, spacing, textStyles } from "../styles/theme";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -445,43 +445,31 @@ const styles = StyleSheet.create({
     backgroundColor: colors.appBg,
   },
   content: {
-    paddingBottom: 20,
-    paddingTop: 14,
+    paddingBottom: spacing.xl,
+    paddingTop: 8,
   },
   header: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   title: {
-    ...textStyles.screenTitle,
+    ...textStyles.titleSmall,
     color: colors.text,
     fontFamily: "PlusJakartaSans-Bold",
-    fontWeight: "700",
-    marginTop: 2,
+    fontWeight: "800",
+    marginTop: 0,
   },
   subtitle: {
-    ...textStyles.subtitle,
+    ...textStyles.meta,
     color: colors.textMuted,
     fontSize: 14,
-    lineHeight: 20,
-    marginTop: 4,
-  },
-  profileCard: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 14,
-  },
-  profileTopRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
+    lineHeight: 19,
+    marginTop: 2,
   },
   avatarShell: {
     alignItems: "center",
     backgroundColor: colors.accentSoft,
-    borderColor: "#cdeee0",
-    borderRadius: 20,
+    borderColor: colors.border,
+    borderRadius: 12,
     borderWidth: 1,
     height: 40,
     justifyContent: "center",
@@ -499,21 +487,21 @@ const styles = StyleSheet.create({
   profileName: {
     color: colors.text,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "700",
-    lineHeight: 22,
+    lineHeight: 21,
   },
   profileEmail: {
     color: colors.textMuted,
     fontFamily: "Inter-Medium",
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: "500",
-    marginTop: 2,
+    marginTop: 1,
   },
   statusPill: {
     borderRadius: radius.pill,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
   },
   statusPillVerified: {
     backgroundColor: "#e8faf2",
@@ -523,7 +511,7 @@ const styles = StyleSheet.create({
   },
   statusPillText: {
     fontFamily: "Inter-SemiBold",
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: "600",
   },
   statusPillTextVerified: {
@@ -533,19 +521,19 @@ const styles = StyleSheet.create({
     color: "#a16207",
   },
   contentBody: {
-    marginTop: 14,
+    marginTop: 10,
   },
   section: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 10,
     overflow: "hidden",
   },
   sectionHeaderWrap: {
-    marginBottom: 6,
-    marginTop: 14,
+    marginBottom: 4,
+    marginTop: 12,
   },
   row: {
     alignItems: "center",
@@ -553,31 +541,35 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     flexDirection: "row",
     gap: 10,
-    minHeight: 58,
+    minHeight: 54,
     paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingVertical: 10,
   },
   rowPressed: {
-    backgroundColor: "#fbfbf9",
+    backgroundColor: colors.cardBgMuted,
   },
   iconShell: {
     alignItems: "center",
-    backgroundColor: "transparent",
-    borderRadius: 14,
-    height: 28,
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.border,
+    borderRadius: 10,
+    borderWidth: 1,
+    height: 30,
     justifyContent: "center",
-    width: 28,
+    width: 30,
   },
   iconShellDanger: {
     alignItems: "center",
-    backgroundColor: "transparent",
-    borderRadius: 14,
-    height: 28,
+    backgroundColor: "#fff1f1",
+    borderColor: "#f4d4d4",
+    borderRadius: 10,
+    borderWidth: 1,
+    height: 30,
     justifyContent: "center",
-    width: 28,
+    width: 30,
   },
   toggleTrack: {
-    backgroundColor: "#dfe6e9",
+    backgroundColor: colors.border,
     borderRadius: radius.pill,
     height: 26,
     padding: 3,
@@ -606,9 +598,9 @@ const styles = StyleSheet.create({
   rowTitle: {
     color: colors.text,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: "600",
-    lineHeight: 19,
+    lineHeight: 18,
   },
   rowTitleDanger: {
     color: colors.danger,
@@ -616,26 +608,26 @@ const styles = StyleSheet.create({
   rowSubtitle: {
     ...textStyles.bodyMedium,
     color: colors.textMuted,
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11.5,
+    lineHeight: 15,
     marginTop: 1,
   },
   inlineButton: {
-    backgroundColor: "#e9f8f3",
-    borderColor: "#d2eee2",
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
   },
   inlineButtonText: {
     ...textStyles.meta,
-    color: "#116e63",
+    color: colors.accent,
   },
   linkButton: {
     alignSelf: "flex-start",
-    backgroundColor: "#f4fbf8",
-    borderColor: "#d7ece3",
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
     borderRadius: radius.pill,
     borderWidth: 1,
     marginTop: 10,
@@ -644,11 +636,11 @@ const styles = StyleSheet.create({
   },
   linkButtonText: {
     ...textStyles.meta,
-    color: "#116e63",
+    color: colors.accent,
   },
   inlineStatus: {
     ...textStyles.meta,
-    color: "#2ECC8F",
+    color: colors.accent,
   },
   emptyState: {
     alignItems: "center",
@@ -674,7 +666,7 @@ const styles = StyleSheet.create({
   },
   ghostButtonText: {
     color: colors.textMuted,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
   },
 });
