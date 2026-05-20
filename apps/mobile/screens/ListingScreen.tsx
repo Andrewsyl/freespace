@@ -2,8 +2,11 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
+  Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -14,6 +17,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -85,6 +89,7 @@ export function ListingScreen({ navigation, route }: Props) {
   const [showFullAbout, setShowFullAbout] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [showMapViewer, setShowMapViewer] = useState(false);
   const [showFavAnim, setShowFavAnim] = useState(false);
   const [reviews, setReviews] = useState<ListingReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -152,7 +157,7 @@ export function ListingScreen({ navigation, route }: Props) {
   }, [listing, startAt, endAt]);
 
   const showBottomBar = !!(priceSummary && user);
-  const bottomBarSpacer = showBottomBar ? 144 + insets.bottom : 24;
+  const bottomBarSpacer = showBottomBar ? 48 + insets.bottom : 24;
 
   const openPicker = (field: "start" | "end") => {
     setPickerField(field);
@@ -278,6 +283,15 @@ export function ListingScreen({ navigation, route }: Props) {
   const distanceLabel = listing?.distance_m
     ? `${(listing.distance_m / 1000).toFixed(1)} km`
     : "0.8 km";
+  const latitude = typeof listing?.latitude === "number" ? listing.latitude : null;
+  const longitude = typeof listing?.longitude === "number" ? listing.longitude : null;
+  const hasCoordinates = latitude != null && longitude != null;
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    listing?.address ?? streetViewLocation
+  )}`;
+  const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${encodeURIComponent(
+    streetViewLocation
+  )}`;
 
   const extendOffer = useMemo(() => {
     if (!listing) return null;
@@ -326,6 +340,17 @@ export function ListingScreen({ navigation, route }: Props) {
     try {
       await Share.share({ message: `${listing.title}${listing.address ? ` · ${listing.address}` : ""}` });
     } catch { /* ignore share cancellations */ }
+  };
+
+  const handleOpenMaps = () => {
+    Alert.alert("Open Google Maps", "Open directions to this space?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Open", onPress: () => Linking.openURL(mapsUrl) },
+    ]);
+  };
+
+  const handleOpenStreetView = () => {
+    void Linking.openURL(streetViewUrl);
   };
 
   return (
@@ -431,12 +456,6 @@ export function ListingScreen({ navigation, route }: Props) {
                     </Text>
                   </View>
 
-                  <View style={styles.addressRow}>
-                    <Ionicons name="location-outline" size={13} color={colors.textSoft} />
-                    <Text style={styles.addressText} numberOfLines={1}>{areaLabel}</Text>
-                    <Text style={styles.addressSep}>·</Text>
-                    <Text style={styles.distanceText}>{distanceLabel}</Text>
-                  </View>
                 </View>
 
                 <View style={styles.statsStrip}>
@@ -501,14 +520,62 @@ export function ListingScreen({ navigation, route }: Props) {
                   style={styles.section}
                   onPress={() => { if (aboutText.length > 140) setShowFullAbout((p) => !p); }}
                 >
-                  <Text style={styles.sectionTitle}>About this space</Text>
+                  <Text style={styles.sectionTitle}>About this property</Text>
                   <Text style={styles.sectionBody} numberOfLines={showFullAbout ? undefined : 3}>
                     {aboutText}
                   </Text>
                   {aboutText.length > 140 && (
-                    <Text style={styles.readMore}>{showFullAbout ? "Show less" : "Read more"}</Text>
+                    <Text style={styles.readMore}>{showFullAbout ? "View less" : "View full description"}</Text>
                   )}
                 </Pressable>
+
+                <View style={styles.sectionDivider} />
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>The local area</Text>
+                  <View style={styles.localAreaCard}>
+                    {hasCoordinates ? (
+                      <View style={styles.localAreaMapWrap}>
+                        <MapView
+                          style={styles.localAreaMap}
+                          provider={PROVIDER_GOOGLE}
+                          cacheEnabled={Platform.OS !== "android"}
+                          loadingEnabled
+                          loadingBackgroundColor="#F9FAFB"
+                          scrollEnabled={false}
+                          rotateEnabled={false}
+                          pitchEnabled={false}
+                          zoomEnabled={false}
+                          toolbarEnabled={false}
+                          zoomTapEnabled={false}
+                          moveOnMarkerPress={false}
+                          region={{
+                            latitude,
+                            longitude,
+                            latitudeDelta: 0.0035,
+                            longitudeDelta: 0.0035,
+                          }}
+                          mapType="standard"
+                        >
+                          <Marker
+                            coordinate={{ latitude, longitude }}
+                            tracksViewChanges={false}
+                          />
+                        </MapView>
+                        <Pressable style={styles.mapExpandButton} onPress={() => setShowMapViewer(true)}>
+                          <Ionicons name="expand-outline" size={18} color="#151b1b" />
+                        </Pressable>
+                      </View>
+                    ) : null}
+                    <View style={styles.localAreaButtons}>
+                      <Pressable style={styles.localAreaButtonSecondary} onPress={handleOpenMaps}>
+                        <Text style={styles.localAreaButtonSecondaryText}>Get directions</Text>
+                      </Pressable>
+                      <Pressable style={styles.localAreaButtonSecondary} onPress={handleOpenStreetView}>
+                        <Text style={styles.localAreaButtonSecondaryText}>Street view</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </View>
 
                 {/* ── Availability ─────────────────────────── */}
                 <View style={styles.sectionDivider} />
@@ -552,7 +619,7 @@ export function ListingScreen({ navigation, route }: Props) {
                 {/* ── Guarantee strip ───────────────────────── */}
                 <View style={styles.guaranteeStrip}>
                   <View style={styles.guaranteeIconTile}>
-                    <Ionicons name="shield-checkmark-outline" size={20} color={colors.accent} />
+                    <Ionicons name="shield-checkmark-outline" size={18} color={colors.accent} />
                   </View>
                   <View style={styles.guaranteeCopy}>
                     <Text style={styles.guaranteeTitle}>Pay at confirmation</Text>
@@ -766,6 +833,39 @@ export function ListingScreen({ navigation, route }: Props) {
           />
         </View>
       </Modal>
+
+      <Modal
+        visible={showMapViewer}
+        animationType="slide"
+        onRequestClose={() => setShowMapViewer(false)}
+      >
+        <View style={styles.mapViewerScreen}>
+          <MapView
+            style={StyleSheet.absoluteFill}
+            provider={PROVIDER_GOOGLE}
+            cacheEnabled={Platform.OS !== "android"}
+            loadingEnabled
+            loadingBackgroundColor="#F9FAFB"
+            initialRegion={{
+              latitude: latitude ?? 53.3498,
+              longitude: longitude ?? -6.2603,
+              latitudeDelta: 0.0035,
+              longitudeDelta: 0.0035,
+            }}
+            mapType="standard"
+          >
+            {hasCoordinates ? (
+              <Marker coordinate={{ latitude: latitude!, longitude: longitude! }} tracksViewChanges={false} />
+            ) : null}
+          </MapView>
+          <Pressable
+            style={[styles.viewerClose, styles.mapViewerClose, { top: insets.top + 12 }]}
+            onPress={() => setShowMapViewer(false)}
+          >
+            <Text style={styles.viewerCloseText}>Close</Text>
+          </Pressable>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -821,20 +921,20 @@ const styles = StyleSheet.create({
 
   // Sheet
   sheet: {
-    backgroundColor: "#f7f1e4",
-    borderTopLeftRadius: 30, borderTopRightRadius: 30,
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 26, borderTopRightRadius: 26,
     paddingHorizontal: spacing.screenX,
-    paddingTop: 10, paddingBottom: 40,
-    shadowColor: "#0F4D40",
-    shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 8,
+    paddingTop: 8, paddingBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 6,
   },
   sheetHandle: {
     width: 36, height: 4, borderRadius: 999,
-    backgroundColor: colors.borderStrong,
-    alignSelf: "center", marginBottom: 16,
+    backgroundColor: "#d8dcdf",
+    alignSelf: "center", marginBottom: 18,
   },
   airSummaryHeaderRow: {
     flexDirection: "row",
@@ -926,21 +1026,21 @@ const styles = StyleSheet.create({
   },
   typePillText: { fontFamily: "Inter-SemiBold", fontSize: 11, color: "#0f5b55", letterSpacing: 0.5 },
   titleText: {
-    fontFamily: "Poppins-Bold",
-    fontSize: 25, lineHeight: 31, letterSpacing: -0.5,
-    color: "#0f5b55", marginBottom: 8,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 24, lineHeight: 31, letterSpacing: -0.55,
+    color: "#151b1b", marginBottom: 8,
   },
-  metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 7, marginBottom: 6 },
+  metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 7, marginBottom: 4 },
   starPill: {
     flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: "#FCEFD6", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4,
+    backgroundColor: "transparent", borderRadius: 0, paddingHorizontal: 0, paddingVertical: 0,
   },
-  starPillText: { fontFamily: "Inter-Bold", fontSize: 12, color: "#7A5A2E" },
-  starPillCount: { fontFamily: "Inter-Regular", fontSize: 11, color: "#A07840" },
+  starPillText: { fontFamily: "Inter-Bold", fontSize: 14, color: "#151b1b" },
+  starPillCount: { fontFamily: "Inter-Regular", fontSize: 14, color: "#6b7280" },
   metaDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: colors.borderStrong },
-  availPulseDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent, marginRight: 5 },
+  availPulseDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent, marginRight: 5 },
   availPulseDotOff: { backgroundColor: colors.danger },
-  availText: { fontFamily: "Inter-SemiBold", fontSize: 13, color: colors.accent },
+  availText: { fontFamily: "Inter-SemiBold", fontSize: 14, color: "#0f7f68" },
   availTextOff: { color: colors.danger },
   addressRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   addressText: { fontFamily: "Inter-Regular", fontSize: 13, color: colors.textMuted, flex: 1, flexShrink: 1 },
@@ -950,21 +1050,20 @@ const styles = StyleSheet.create({
   // Stats strip
   statsStrip: {
     flexDirection: "row",
-    backgroundColor: "#fffaf3",
-    borderRadius: 20, borderWidth: 1, borderColor: "#e4dacb",
+    backgroundColor: "#ffffff",
+    borderRadius: 14, borderWidth: 1, borderColor: "#e6e8ea",
     overflow: "hidden", marginBottom: 12,
-    ...WARM_SHADOW,
   },
-  statsCell: { flex: 1, paddingVertical: 12, paddingHorizontal: 10, alignItems: "center", gap: 3 },
+  statsCell: { flex: 1, paddingVertical: 16, paddingHorizontal: 10, alignItems: "center", gap: 4 },
   statsCellLabel: {
-    fontFamily: "Inter-SemiBold", fontSize: 9,
-    color: colors.textSoft, letterSpacing: 0.8, textTransform: "uppercase",
+    fontFamily: "Inter-SemiBold", fontSize: 10,
+    color: "#8b949b", letterSpacing: 0.9, textTransform: "uppercase",
   },
   statsCellValue: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 17,
-    color: colors.text, letterSpacing: -0.3,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 18,
+    color: "#151b1b", letterSpacing: -0.3,
   },
-  statsVDivider: { width: 1, backgroundColor: colors.border, marginVertical: 10 },
+  statsVDivider: { width: 1, backgroundColor: "#eceff1", marginVertical: 10 },
 
   // Booking time card
   airRouteCard: {
@@ -972,11 +1071,11 @@ const styles = StyleSheet.create({
     gap: 14,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: "#e3d8c4",
-    borderRadius: 26,
+    borderColor: "#e8eaeb",
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: "#fffaf3",
+    backgroundColor: "#ffffff",
   },
   taxiRouteTrack: {
     alignItems: "center",
@@ -987,15 +1086,15 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "#45C36F",
+    backgroundColor: "#31b36b",
     borderWidth: 4,
-    borderColor: "#DDF7E7",
+    borderColor: "#ecfaf1",
   },
   taxiRouteLine: {
     width: 2,
     flex: 1,
     minHeight: 36,
-    backgroundColor: "#45C36F",
+    backgroundColor: "#31b36b",
     marginVertical: 4,
   },
   taxiRouteDotEnd: {
@@ -1004,7 +1103,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#FFFFFF",
     borderWidth: 2,
-    borderColor: "#45C36F",
+    borderColor: "#31b36b",
   },
   taxiRouteContent: {
     flex: 1,
@@ -1017,9 +1116,9 @@ const styles = StyleSheet.create({
   taxiRouteSpacer: { height: 12 },
   taxiRouteValue: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15.5,
+    fontSize: 16,
     lineHeight: 21,
-    color: "#235b56",
+    color: "#1f2a2a",
   },
   airTimeEditButton: {
     alignSelf: "center",
@@ -1030,86 +1129,160 @@ const styles = StyleSheet.create({
     minHeight: 36,
     paddingHorizontal: 12,
     borderRadius: 999,
-    backgroundColor: "#f3fbf8",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#d8ebe5",
+    borderColor: "#e0e4e5",
     marginLeft: 8,
   },
   airTimeEditButtonText: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
+    fontSize: 13.5,
     lineHeight: 18,
-    color: "#0f5b55",
+    color: "#4f5b5a",
   },
 
   // Extend offer
   offerCard: {
     flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: "#dceee8",
-    borderRadius: 22, borderWidth: 1, borderColor: "#c1dfd6",
+    backgroundColor: "#ffffff",
+    borderRadius: 12, borderWidth: 1, borderColor: "#e8eaeb",
     paddingHorizontal: 14, paddingVertical: 11, marginBottom: 2,
   },
   offerIconWrap: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: colors.cardBg,
+    backgroundColor: "#f4f7f7",
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
-  offerText: { flex: 1, fontFamily: "Inter-Regular", fontSize: 13, color: colors.text, lineHeight: 19 },
+  offerText: { flex: 1, fontFamily: "Inter-Regular", fontSize: 13, color: "#151b1b", lineHeight: 19 },
   offerTextBold: { fontFamily: "Inter-Bold" },
 
   // Sections
-  sectionDivider: { height: 1, backgroundColor: colors.border, marginHorizontal: -spacing.screenX },
+  sectionDivider: { height: 1, backgroundColor: "#f0f1f2", marginHorizontal: -spacing.screenX },
   availabilityList: { gap: 6, marginTop: 10 },
-  availabilityRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 5 },
-  availabilityRowToday: { backgroundColor: "#F4FBF7", borderRadius: 8, paddingHorizontal: 8, marginHorizontal: -8 },
+  availabilityRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 7 },
+  availabilityRowToday: { backgroundColor: "#f5faf7", borderRadius: 8, paddingHorizontal: 10, marginHorizontal: -8 },
   availabilityDay: { fontFamily: "Inter-Medium", fontSize: 14, color: "#1F2937", flex: 1 },
-  availabilityDayToday: { color: "#1a7a4a", fontFamily: "Inter-SemiBold" },
+  availabilityDayToday: { color: "#15714a", fontFamily: "Inter-SemiBold" },
   availabilityHours: { fontFamily: "Inter-Regular", fontSize: 13, color: "#64748B", textAlign: "right" },
-  availabilityHoursToday: { color: "#1a7a4a" },
-  section: { paddingVertical: 16 },
+  availabilityHoursToday: { color: "#15714a" },
+  section: { paddingVertical: 18 },
   sectionTitle: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 21, color: "#114f4a", letterSpacing: -0.45, marginBottom: 10,
+    fontSize: 20, color: "#151b1b", letterSpacing: -0.35, marginBottom: 14,
   },
-  sectionBody: { fontFamily: "Inter-Regular", fontSize: 14.5, lineHeight: 24, color: "#4b6b67" },
-  readMore: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: "#2caea3", marginTop: 8 },
+  sectionBody: { fontFamily: "Inter-Regular", fontSize: 15, lineHeight: 27, color: "#343c3c" },
+  readMore: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: "#151b1b", marginTop: 10 },
+  localAreaCard: {
+    backgroundColor: "transparent",
+    borderRadius: 0,
+    borderWidth: 0,
+    borderColor: "transparent",
+    padding: 0,
+    gap: 12,
+  },
+  localAreaHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  localAreaHeaderTextWrap: { flex: 1 },
+  localAreaAddress: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 15,
+    lineHeight: 21,
+    color: "#151b1b",
+    letterSpacing: -0.15,
+  },
+  localAreaSub: {
+    marginTop: 4,
+    fontFamily: "Inter-Regular",
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: "#6a7474",
+  },
+  localAreaMap: {
+    width: "100%",
+    height: 180,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e3e7e7",
+    backgroundColor: "#e7ecef",
+  },
+  localAreaMapWrap: {
+    position: "relative",
+  },
+  mapExpandButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 6,
+    backgroundColor: "rgba(255,255,255,0.96)",
+    borderWidth: 1,
+    borderColor: "#e3e7e7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  localAreaButtons: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  localAreaButtonSecondary: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 6,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e0e4e5",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  localAreaButtonSecondaryText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: "#151b1b",
+    letterSpacing: -0.1,
+  },
 
   // Feature chips
   chipsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: 10,
   },
   featureChip: {
     flexDirection: "row", alignItems: "center", gap: 10,
-    backgroundColor: "#fffef9",
-    borderRadius: 24, borderWidth: 1.5, borderColor: "#d8e5df",
-    paddingHorizontal: 16, paddingVertical: 13,
+    backgroundColor: "#ffffff",
+    borderRadius: 8, borderWidth: 1, borderColor: "#e0e4e5",
+    paddingHorizontal: 14, paddingVertical: 14,
     minWidth: "46%",
   },
   featureChipIconWrap: {
-    width: 32, height: 32, borderRadius: 10,
-    backgroundColor: "#ffffff",
+    width: 28, height: 28, borderRadius: 8,
+    backgroundColor: "#fafbfb",
     alignItems: "center", justifyContent: "center",
   },
   featureChipLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13.5, color: "#0f5b55", letterSpacing: -0.15,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13.5, color: "#151b1b", letterSpacing: -0.15,
   },
 
   // Guarantee strip
   guaranteeStrip: {
     flexDirection: "row", alignItems: "center", gap: 14,
-    backgroundColor: "#cfe8e6",
-    borderRadius: 26, paddingHorizontal: 18, paddingVertical: 16, marginBottom: 4,
+    backgroundColor: "#ffffff",
+    borderRadius: 8, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 4,
+    borderWidth: 1, borderColor: "#e8eaeb",
   },
   guaranteeIconTile: {
-    width: 42, height: 42, borderRadius: 14,
-    backgroundColor: "#fffaf3",
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: "#f4f7f7",
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
   guaranteeCopy: { flex: 1 },
-  guaranteeTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#0f5b55", letterSpacing: -0.2 },
-  guaranteeSub: { fontFamily: "Inter-Medium", fontSize: 12.5, color: "#426c68", marginTop: 2 },
+  guaranteeTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#151b1b", letterSpacing: -0.2 },
+  guaranteeSub: { fontFamily: "Inter-Medium", fontSize: 12.5, color: "#6b747b", marginTop: 2 },
 
   // Reviews
   reviewsHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 0 },
@@ -1129,8 +1302,8 @@ const styles = StyleSheet.create({
   ratingPillCount: { fontFamily: "Inter-Regular", fontSize: 11, color: "#A07840" },
   reviewList: { gap: 12, marginTop: 12 },
   reviewCard: {
-    backgroundColor: "#fffdf8",
-    borderRadius: 24, borderWidth: 1, borderColor: "#ece6db", padding: 16,
+    backgroundColor: "#ffffff",
+    borderRadius: 8, borderWidth: 1, borderColor: "#e8eaeb", padding: 15,
   },
   reviewCardTop: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   reviewAvatar: {
@@ -1139,14 +1312,14 @@ const styles = StyleSheet.create({
   },
   reviewAvatarText: { fontFamily: "Inter-Bold", fontSize: 15, color: colors.text },
   reviewMetaBlock: { flex: 1 },
-  reviewAuthorName: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#0f5b55", letterSpacing: -0.18 },
-  reviewDateText: { fontFamily: "Inter-Regular", fontSize: 11.5, color: "#7a918e", marginTop: 1 },
+  reviewAuthorName: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#151b1b", letterSpacing: -0.18 },
+  reviewDateText: { fontFamily: "Inter-Regular", fontSize: 11.5, color: "#798289", marginTop: 1 },
   reviewStarPill: {
     flexDirection: "row", alignItems: "center", gap: 3,
-    backgroundColor: "#dff0ea", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
+    backgroundColor: "#f5f7f7", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
   },
-  reviewStarPillText: { fontFamily: "Inter-Bold", fontSize: 12, color: "#0f5b55" },
-  reviewComment: { fontFamily: "Inter-Regular", fontSize: 13.5, lineHeight: 22, color: "#4b6b67" },
+  reviewStarPillText: { fontFamily: "Inter-Bold", fontSize: 12, color: "#151b1b" },
+  reviewComment: { fontFamily: "Inter-Regular", fontSize: 13.5, lineHeight: 22, color: "#3f4948" },
 
   // Auth card
   authCard: {
@@ -1183,15 +1356,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
     borderTopColor: "#edf0f2",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    paddingHorizontal: 16, paddingTop: 12,
-    minHeight: 90,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 16, paddingTop: 10,
+    minHeight: 86,
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     gap: 16,
     shadowColor: "#15232b",
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.05, shadowRadius: 10, elevation: 10,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.03, shadowRadius: 8, elevation: 8,
   },
   bottomLeft: { flex: 1, justifyContent: "center", paddingLeft: 2 },
   bottomLabel: {
@@ -1204,19 +1377,19 @@ const styles = StyleSheet.create({
   },
   bottomPrice: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 28, color: "#111827", letterSpacing: -0.8, lineHeight: 32,
+    fontSize: 27, color: "#111827", letterSpacing: -0.8, lineHeight: 31,
   },
   bottomDuration: { fontFamily: "Inter-Regular", fontSize: 12, color: "#98a4ab", marginTop: 2 },
   reserveBtn: {
-    backgroundColor: "#158a83",
-    borderRadius: 20,
-    minHeight: 62,
+    backgroundColor: "#148b84",
+    borderRadius: 8,
+    minHeight: 56,
     paddingVertical: 16, paddingHorizontal: 24, minWidth: 148, alignItems: "center", justifyContent: "center",
     shadowColor: "#158a83",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.16,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
   },
   reserveBtnDisabled: { backgroundColor: colors.border, shadowOpacity: 0, elevation: 0 },
   reserveBtnText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#fff", letterSpacing: -0.2 },
@@ -1239,6 +1412,10 @@ const styles = StyleSheet.create({
 
   // Image viewer modal
   viewerBackdrop: { flex: 1, backgroundColor: "rgba(10,25,20,0.97)" },
+  mapViewerScreen: { flex: 1, backgroundColor: "#fff" },
+  mapViewerClose: {
+    backgroundColor: "rgba(20,27,27,0.74)",
+  },
   viewerClose: {
     position: "absolute", right: 16,
     paddingHorizontal: 14, paddingVertical: 8,
