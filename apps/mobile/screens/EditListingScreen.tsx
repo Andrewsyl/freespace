@@ -17,7 +17,7 @@ import { useAuth } from "../auth";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 import type { RootStackParamList } from "../types";
-import { cardShadow, colors, spacing, textStyles } from "../styles/theme";
+import { colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "EditListing">;
 
@@ -201,12 +201,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: spacing.screenX,
-    paddingTop: 10,
-    paddingBottom: 6,
+    paddingTop: 8,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   topBarSpacer: {
-    height: 34,
-    width: 34,
+    height: 40,
+    width: 40,
   },
   topTitle: {
     color: colors.text,
@@ -217,10 +219,10 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.screenX,
-    paddingBottom: 40,
+    paddingBottom: 28,
   },
   field: {
-    marginTop: 18,
+    marginTop: 16,
   },
   fieldHalf: {
     flex: 1,
@@ -230,7 +232,7 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    gap: 14,
+    gap: 12,
     marginTop: 2,
   },
   label: {
@@ -243,10 +245,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   primaryButton: {
-    marginTop: 24,
+    marginTop: 20,
   },
   deleteButton: {
-    marginTop: 12,
+    marginTop: 10,
   },
   centered: {
     flex: 1,
@@ -266,10 +268,9 @@ const styles = StyleSheet.create({
   },
   formCard: {
     backgroundColor: colors.cardBg,
-    borderColor: "rgba(17, 24, 39, 0.08)",
-    borderRadius: 20,
+    borderColor: colors.border,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 20,
-    ...cardShadow,
+    padding: 18,
   },
 });

@@ -9,7 +9,22 @@ export const LIGHT_MAP_STYLE = [
   },
   {
     featureType: "road",
-    elementType: "labels",
+    elementType: "geometry",
+    stylers: [{ color: "#d7dde2" }],
+  },
+  {
+    featureType: "road",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#5f6b76" }],
+  },
+  {
+    featureType: "road",
+    elementType: "labels.icon",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "transit",
+    elementType: "labels.icon",
     stylers: [{ visibility: "off" }],
   },
   {

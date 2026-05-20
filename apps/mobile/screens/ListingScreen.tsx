@@ -27,6 +27,7 @@ import { colors, radius, spacing } from "../styles/theme";
 import { getListing, listListingReviews, type ListingReview } from "../api";
 import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
+import { LIGHT_MAP_STYLE } from "../components/mapStyles";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
 import { formatDateTimeLabel, formatReviewDate } from "../utils/dateFormat";
@@ -555,6 +556,7 @@ export function ListingScreen({ navigation, route }: Props) {
                             longitudeDelta: 0.0035,
                           }}
                           mapType="standard"
+                          customMapStyle={LIGHT_MAP_STYLE}
                         >
                           <Marker
                             coordinate={{ latitude, longitude }}
@@ -853,6 +855,7 @@ export function ListingScreen({ navigation, route }: Props) {
               longitudeDelta: 0.0035,
             }}
             mapType="standard"
+            customMapStyle={LIGHT_MAP_STYLE}
           >
             {hasCoordinates ? (
               <Marker coordinate={{ latitude: latitude!, longitude: longitude! }} tracksViewChanges={false} />

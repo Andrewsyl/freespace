@@ -684,7 +684,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         </View>
       )}
       {listing && user && !plateFocused ? (
-        <View style={[styles.footerBar, { paddingBottom: 18 + insets.bottom }]}>
+        <View style={[styles.footerBar, { paddingBottom: 12 + insets.bottom }]}>
           <View style={styles.footerPriceBlock}>
             <Text style={styles.footerPriceLabel}>TOTAL</Text>
             <Text style={styles.footerPriceValue}>€{Math.round(pricing.finalPrice)}</Text>
@@ -792,7 +792,8 @@ const styles = StyleSheet.create({
   },
   bookingPage: {
     paddingHorizontal: 16,
-    paddingBottom: 14,
+    paddingBottom: 22,
+    paddingTop: 4,
   },
   topBar: {
     alignItems: "center",
@@ -832,8 +833,8 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   scrollContent: {
-    paddingBottom: 120,
-    paddingTop: 6,
+    paddingBottom: 188,
+    paddingTop: 12,
   },
   divider: {
     height: 1,
@@ -1384,7 +1385,7 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 18,
-    paddingTop: 16,
+    paddingTop: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -1412,7 +1413,7 @@ const styles = StyleSheet.create({
   },
   footerPriceValue: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 27,
+    fontSize: 25,
     fontWeight: "700",
     color: "#111827",
     marginTop: 4,
@@ -1423,7 +1424,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#98a4ab",
     fontWeight: "400",
-    marginTop: 4,
+    marginTop: 2,
   },
   sheetSectionStack: {
     gap: 10,
@@ -1436,13 +1437,13 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   footerButtonPill: {
-    minHeight: 56,
-    minWidth: 178,
+    minHeight: 50,
+    minWidth: 172,
     borderRadius: 8,
     backgroundColor: '#158a83',
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 28,
+    paddingHorizontal: 24,
     shadowColor: "#158a83",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
@@ -1451,7 +1452,7 @@ const styles = StyleSheet.create({
   },
   footerButtonText: {
     fontFamily: 'PlusJakartaSans-Bold',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
     letterSpacing: -0.2,

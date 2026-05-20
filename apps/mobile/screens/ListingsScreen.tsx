@@ -15,7 +15,7 @@ import {
 import { useAuth } from "../auth";
 import { useToastOnMessage } from "../components/GlobalToast";
 import type { ListingSummary, RootStackParamList } from "../types";
-import { cardShadow, colors, radius, spacing } from "../styles/theme";
+import { colors, radius, spacing } from "../styles/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { formatListingPriceLine } from "../utils/pricing";
@@ -310,7 +310,7 @@ export function ListingsScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.headerTint,
+    backgroundColor: colors.appBg,
     flex: 1,
   },
   contentWrapper: {
@@ -319,52 +319,57 @@ const styles = StyleSheet.create({
   },
   topBar: {
     alignItems: "center",
-    backgroundColor: colors.headerTint,
+    backgroundColor: colors.appBg,
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: spacing.screenX,
     paddingTop: 8,
-    paddingBottom: 10,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.35)",
+    borderBottomColor: colors.border,
   },
   backButton: {
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: radius.pill,
-    backgroundColor: "rgba(255,255,255,0.9)",
-    width: 36,
-    height: 36,
+    borderRadius: 12,
+    backgroundColor: colors.cardBg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    width: 40,
+    height: 40,
   },
   actionButton: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 4,
-    borderRadius: radius.pill,
-    backgroundColor: "rgba(255,255,255,0.9)",
-    paddingHorizontal: 10,
-    height: 36,
+    gap: 5,
+    borderRadius: 12,
+    backgroundColor: colors.cardBg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    height: 40,
     justifyContent: "center",
   },
   topTitle: {
-    color: "#ffffff",
-    fontSize: 16,
+    color: colors.text,
+    fontSize: 17,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
+    letterSpacing: -0.2,
   },
   content: {
     paddingHorizontal: spacing.screenX,
-    paddingTop: 16,
-    paddingBottom: spacing.screenX,
-    gap: 16,
+    paddingTop: 14,
+    paddingBottom: 24,
+    gap: 14,
   },
   card: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: radius.card,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: spacing.card,
+    padding: 18,
     alignItems: "center",
-    ...cardShadow,
   },
   emptyIllustration: {
     width: 220,
@@ -373,13 +378,15 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     textAlign: "center",
   },
   cardBody: {
     color: colors.textMuted,
     fontSize: 13,
+    lineHeight: 20,
     marginTop: 6,
     textAlign: "center",
   },
@@ -391,20 +398,20 @@ const styles = StyleSheet.create({
   earningsCard: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: radius.card,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: spacing.card,
-    ...cardShadow,
+    padding: 18,
   },
   earningsTitleRow: {
     alignItems: "center",
     flexDirection: "row",
     gap: 6,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   earningsTitle: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   earningsRow: {
@@ -421,6 +428,7 @@ const styles = StyleSheet.create({
   earningsHint: {
     color: colors.textMuted,
     fontSize: 12,
+    lineHeight: 18,
     marginTop: 6,
   },
   earningsLabel: {
@@ -440,16 +448,15 @@ const styles = StyleSheet.create({
   },
   earningsValueStrong: {
     color: colors.accent,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
   },
   payoutCard: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: radius.card,
-    padding: spacing.card,
-    ...cardShadow,
+    borderRadius: 14,
+    padding: 18,
   },
   payoutTitleRow: {
     alignItems: "center",
@@ -458,7 +465,8 @@ const styles = StyleSheet.create({
   },
   payoutTitle: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   payoutBody: {
@@ -474,30 +482,33 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   list: {
-    gap: spacing.gap,
+    gap: 12,
   },
   listCard: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     flexDirection: "row",
     gap: 12,
-    padding: 14,
-    ...cardShadow,
+    padding: 12,
   },
   listImage: {
-    borderRadius: 12,
-    height: 88,
-    width: 108,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    height: 82,
+    width: 100,
   },
   listPlaceholder: {
     alignItems: "center",
-    backgroundColor: colors.border,
-    borderRadius: 12,
-    height: 88,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: 10,
+    borderWidth: 1,
+    height: 82,
     justifyContent: "center",
-    width: 108,
+    width: 100,
   },
   listPlaceholderText: {
     color: colors.textSoft,
@@ -506,7 +517,7 @@ const styles = StyleSheet.create({
   },
   listBody: {
     flex: 1,
-    gap: 4,
+    gap: 3,
     justifyContent: "space-between",
   },
   listTitleRow: {
@@ -524,11 +535,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 14,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   listMeta: {
     color: colors.textMuted,
     fontSize: 12,
+    lineHeight: 18,
   },
   listPrice: {
     color: colors.text,
@@ -536,12 +549,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   deleteButton: {
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
-    borderRadius: radius.pill,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: 10,
     borderWidth: 1,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
   },
   deleteButtonText: {
     color: colors.danger,
@@ -553,10 +566,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     borderRadius: 12,
     marginTop: 14,
-    minHeight: 48,
+    minHeight: 46,
     justifyContent: "center",
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 9,
   },
   primaryButtonDisabled: {
     backgroundColor: "#a7f3d0",
@@ -564,11 +577,13 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.cardBg,
     fontSize: 14,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   actionText: {
     color: colors.text,
     fontSize: 13,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
 });
