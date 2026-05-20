@@ -448,12 +448,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: hostFlowColors.cardBg,
     borderColor: hostFlowColors.border,
-    borderRadius: 24,
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     paddingHorizontal: 18,
     paddingVertical: 14,
-    ...hostFlowShadow,
   },
   searchIcon: {
     marginRight: 10,
@@ -491,12 +490,11 @@ const styles = StyleSheet.create({
   suggestions: {
     backgroundColor: hostFlowColors.cardBg,
     borderColor: hostFlowColors.border,
-    borderRadius: 20,
+    borderRadius: 12,
     borderWidth: 1,
     marginHorizontal: spacing.screenX,
     marginTop: 10,
     overflow: "hidden",
-    ...hostFlowShadow,
   },
   suggestionItem: {
     borderBottomColor: "rgba(17, 24, 39, 0.06)",
@@ -609,7 +607,7 @@ const styles = StyleSheet.create({
   addressPrompt: {
     backgroundColor: "rgba(252, 248, 238, 0.98)",
     borderColor: hostFlowColors.border,
-    borderRadius: 18,
+    borderRadius: 12,
     borderWidth: 1,
     bottom: 14,
     left: 16,
@@ -644,7 +642,7 @@ const styles = StyleSheet.create({
   addressPromptGhost: {
     backgroundColor: hostFlowColors.cardBg,
     borderColor: hostFlowColors.border,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     flex: 1,
     paddingVertical: 10,
@@ -658,7 +656,7 @@ const styles = StyleSheet.create({
   },
   addressPromptPrimary: {
     backgroundColor: hostFlowColors.accent,
-    borderRadius: 12,
+    borderRadius: 10,
     flex: 1,
     paddingVertical: 10,
   },
@@ -680,7 +678,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     alignItems: "center",
     backgroundColor: hostFlowColors.accent,
-    borderRadius: 16,
+    borderRadius: 12,
     minHeight: 48,
     justifyContent: "center",
   },

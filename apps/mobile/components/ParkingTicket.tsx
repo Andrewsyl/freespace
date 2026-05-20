@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { colors } from "../styles/theme";
 
 type ParkingTicketProps = {
   companyName?: string;
@@ -101,21 +102,16 @@ export function ParkingTicketScene(props: ParkingTicketProps) {
 const styles = StyleSheet.create({
   scene: {
     flex: 1,
-    backgroundColor: "#f6f4ee",
+    backgroundColor: colors.appBg,
     justifyContent: "center",
     paddingHorizontal: 24,
   },
   card: {
-    backgroundColor: "#ffffff",
-    borderColor: "#e5e7eb",
-    borderRadius: 26,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 20,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.05,
-    shadowRadius: 18,
-    elevation: 5,
+    padding: 18,
   },
   headerRow: {
     alignItems: "flex-start",
@@ -127,7 +123,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eyebrow: {
-    color: "#147A72",
+    color: colors.accent,
     fontFamily: "Inter-SemiBold",
     fontSize: 11,
     fontWeight: "600",
@@ -136,15 +132,15 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   title: {
-    color: "#111827",
+    color: colors.text,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 27,
+    fontSize: 24,
     fontWeight: "700",
     letterSpacing: -0.7,
     lineHeight: 31,
   },
   subtitle: {
-    color: "#6b7280",
+    color: colors.textMuted,
     fontFamily: "Inter-Regular",
     fontSize: 13,
     lineHeight: 18,
@@ -152,9 +148,9 @@ const styles = StyleSheet.create({
   },
   iconShell: {
     alignItems: "center",
-    backgroundColor: "#eef8f5",
-    borderColor: "#d8ebe5",
-    borderRadius: 16,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: 12,
     borderWidth: 1,
     height: 36,
     justifyContent: "center",
@@ -162,7 +158,7 @@ const styles = StyleSheet.create({
   },
   amountRow: {
     alignItems: "flex-start",
-    borderBottomColor: "#edf1f3",
+    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     gap: 10,
     marginTop: 18,
@@ -172,39 +168,39 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   amountLabel: {
-    color: "#111827",
+    color: colors.text,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     fontWeight: "600",
     lineHeight: 20,
   },
   amountHint: {
-    color: "#7a8288",
+    color: colors.textSoft,
     fontFamily: "Inter-Regular",
     fontSize: 12,
     lineHeight: 17,
     marginTop: 4,
   },
   amountValue: {
-    color: "#111827",
+    color: colors.text,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: "700",
     letterSpacing: -0.8,
     lineHeight: 32,
     textAlign: "left",
   },
   detailsCard: {
-    backgroundColor: "#ffffff",
-    borderColor: "#e7ebef",
-    borderRadius: 20,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: 12,
     borderWidth: 1,
     marginTop: 16,
     overflow: "hidden",
   },
   infoRow: {
     alignItems: "flex-start",
-    borderBottomColor: "#edf1f3",
+    borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     gap: 14,
@@ -212,14 +208,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   infoLabel: {
-    color: "#7a8288",
+    color: colors.textSoft,
     fontFamily: "Inter-SemiBold",
     fontSize: 12,
     fontWeight: "600",
     width: 82,
   },
   infoValue: {
-    color: "#111827",
+    color: colors.text,
     flex: 1,
     fontFamily: "Inter-Medium",
     fontSize: 13.5,
@@ -229,16 +225,16 @@ const styles = StyleSheet.create({
   },
   codeCard: {
     alignItems: "center",
-    backgroundColor: "#f8fafb",
-    borderColor: "#e7ebef",
-    borderRadius: 20,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: 12,
     borderWidth: 1,
     marginTop: 14,
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
   codeLabel: {
-    color: "#7a8288",
+    color: colors.textSoft,
     fontFamily: "Inter-SemiBold",
     fontSize: 11,
     fontWeight: "600",
@@ -256,7 +252,7 @@ const styles = StyleSheet.create({
     marginRight: 2,
   },
   codeValue: {
-    color: "#374151",
+    color: colors.textMuted,
     fontFamily: "Inter-SemiBold",
     fontSize: 10.5,
     fontWeight: "600",
@@ -270,7 +266,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   supportText: {
-    color: "#6b7280",
+    color: colors.textMuted,
     fontFamily: "Inter-Medium",
     fontSize: 12.5,
     fontWeight: "500",

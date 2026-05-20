@@ -11,7 +11,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { WebView } from "react-native-webview";
 import { StepProgress } from "./StepProgress";
 import { useListingFlow } from "./context";
-import { cardShadow, colors, spacing, textStyles } from "../../styles/theme";
+import { colors, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
   ListingStreetView: undefined;
@@ -168,12 +168,11 @@ const styles = StyleSheet.create({
   viewer: {
     marginTop: 16,
     marginHorizontal: spacing.screenX,
-    borderRadius: 22,
+    borderRadius: 12,
     overflow: "hidden",
-    borderColor: "rgba(17, 24, 39, 0.08)",
+    borderColor: colors.border,
     borderWidth: 1,
     height: 288,
-    ...cardShadow,
   },
   webView: {
     flex: 1,
@@ -202,10 +201,9 @@ const styles = StyleSheet.create({
   primaryButton: {
     alignItems: "center",
     backgroundColor: colors.accent,
-    borderRadius: 16,
+    borderRadius: 12,
     minHeight: 48,
     justifyContent: "center",
-    ...cardShadow,
   },
   primaryButtonDisabled: {
     backgroundColor: "#cbd5e1",
@@ -219,8 +217,10 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     alignItems: "center",
-    backgroundColor: colors.appBg,
-    borderRadius: 16,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 12,
     minHeight: 46,
     justifyContent: "center",
   },

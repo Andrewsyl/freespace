@@ -686,7 +686,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       {listing && user && !plateFocused ? (
         <View style={[styles.footerBar, { paddingBottom: 18 + insets.bottom }]}>
           <View style={styles.footerPriceBlock}>
-            <Text style={styles.footerPriceLabel}>Total price</Text>
+            <Text style={styles.footerPriceLabel}>TOTAL</Text>
             <Text style={styles.footerPriceValue}>€{Math.round(pricing.finalPrice)}</Text>
             <Text style={styles.footerPriceMeta}>{priceSummary?.durationLabel ?? ""}</Text>
           </View>
@@ -700,7 +700,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.footerButtonText}>
-                  {confirmingBooking ? "Finalizing..." : "PAY"}
+                  {confirmingBooking ? "Finalizing..." : "Book Now"}
                 </Text>
               )}
             </View>
@@ -754,7 +754,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F7F1E4",
+    backgroundColor: "#ffffff",
   },
   keyboardAvoid: {
     flex: 1,
@@ -775,7 +775,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 4,
     paddingBottom: 10,
-    backgroundColor: "#F7F1E4",
+    backgroundColor: "#ffffff",
   },
   bookingTopBarBack: {
     marginBottom: 0,
@@ -784,7 +784,7 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 19,
     lineHeight: 24,
-    color: "#114f4a",
+    color: "#151b1b",
     letterSpacing: -0.35,
   },
   bookingTopBarSpacer: {
@@ -832,7 +832,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   scrollContent: {
-    paddingBottom: 180,
+    paddingBottom: 120,
     paddingTop: 6,
   },
   divider: {
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   listingTitle: {
-    color: "#134d49",
+    color: "#151b1b",
     fontSize: 24,
     lineHeight: 30,
     fontFamily: "PlusJakartaSans-Bold",
@@ -868,7 +868,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   addressText: {
-    color: "#5d7773",
+    color: "#6b747b",
     fontSize: 13,
     lineHeight: 19,
     fontFamily: "Inter-Regular",
@@ -907,16 +907,11 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   summaryCard: {
-    backgroundColor: "#fffaf3",
-    borderRadius: 28,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#e3d8c4",
+    borderColor: "#e8eaeb",
     marginBottom: 12,
-    shadowColor: "#0F4D40",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 3,
     overflow: "hidden",
   },
   summaryMetricsWrap: {
@@ -926,11 +921,11 @@ const styles = StyleSheet.create({
   summaryMetrics: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fffef9",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#d8e5df",
-    borderRadius: 18,
-    paddingVertical: 8,
+    borderColor: "#e8eaeb",
+    borderRadius: 14,
+    paddingVertical: 10,
   },
   summaryMetricCell: {
     alignItems: "center",
@@ -938,7 +933,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   summaryMetricLabel: {
-    color: "#7a918e",
+    color: "#8b949b",
     fontSize: 10,
     lineHeight: 13,
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -948,8 +943,8 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   summaryMetricValue: {
-    color: "#145852",
-    fontSize: 14.5,
+    color: "#151b1b",
+    fontSize: 18,
     lineHeight: 19,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
@@ -958,7 +953,7 @@ const styles = StyleSheet.create({
   summaryMetricDivider: {
     width: 1,
     height: 28,
-    backgroundColor: "#d8e5df",
+    backgroundColor: "#eceff1",
   },
   bookingTimeCard: {
     paddingHorizontal: 16,
@@ -971,8 +966,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   bookingSectionTitle: {
-    color: "#114f4a",
-    fontSize: 17,
+    color: "#151b1b",
+    fontSize: 18,
     lineHeight: 22,
     fontFamily: "PlusJakartaSans-Bold",
     fontWeight: "600",
@@ -982,11 +977,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 14,
     borderWidth: 1,
-    borderColor: "#e3d8c4",
-    borderRadius: 24,
+    borderColor: "#e8eaeb",
+    borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    backgroundColor: "#fffef9",
+    backgroundColor: "#ffffff",
   },
   bookingRouteTrack: {
     alignItems: "center",
@@ -1029,17 +1024,17 @@ const styles = StyleSheet.create({
   },
   bookingRouteValue: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15.5,
+    fontSize: 16,
     lineHeight: 21,
-    color: "#235b56",
+    color: "#1f2a2a",
   },
   bookingTimeEditButton: {
     alignSelf: "center",
     minHeight: 36,
     borderRadius: 999,
-    backgroundColor: "#f3fbf8",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#d8ebe5",
+    borderColor: "#e0e4e5",
     paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -1047,8 +1042,8 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   bookingTimeEditText: {
-    color: "#0f5b55",
-    fontSize: 14,
+    color: "#4f5b5a",
+    fontSize: 13.5,
     lineHeight: 17,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
@@ -1170,10 +1165,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   regCard: {
-    backgroundColor: "#fffef9",
-    borderRadius: 26,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#e3d8c4",
+    borderColor: "#e8eaeb",
     marginBottom: 0,
     flexDirection: "row",
     overflow: "hidden",
@@ -1183,9 +1178,9 @@ const styles = StyleSheet.create({
     width: 72,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f3fbf8",
+    backgroundColor: "#f7f8f8",
     borderRightWidth: 1,
-    borderRightColor: "#d8ebe5",
+    borderRightColor: "#e8eaeb",
   },
   vehicleContent: {
     flex: 1,
@@ -1212,10 +1207,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   priceCard: {
-    backgroundColor: "#fffef9",
-    borderRadius: 26,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#e3d8c4",
+    borderColor: "#e8eaeb",
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 0,
@@ -1226,7 +1221,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#e8ddd0",
+    borderBottomColor: "#eceff1",
   },
   priceBreakdownRowLast: {
     flexDirection: "row",
@@ -1236,35 +1231,35 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   priceBreakdownLabel: {
-    color: "#5d7773",
+    color: "#6b747b",
     fontSize: 14,
     lineHeight: 20,
     fontFamily: "Inter-Regular",
     fontWeight: "400",
   },
   priceBreakdownValue: {
-    color: "#134d49",
+    color: "#151b1b",
     fontSize: 14,
     lineHeight: 20,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   priceBreakdownMuted: {
-    color: "#5d7773",
+    color: "#6b747b",
     fontSize: 13,
     lineHeight: 18,
     fontFamily: "Inter-Regular",
     fontWeight: "400",
   },
   priceBreakdownTotalLabel: {
-    color: "#134d49",
+    color: "#151b1b",
     fontSize: 15,
     lineHeight: 20,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   priceBreakdownTotalValue: {
-    color: "#134d49",
+    color: "#151b1b",
     fontSize: 30,
     lineHeight: 32,
     fontFamily: "PlusJakartaSans-Bold",
@@ -1335,7 +1330,7 @@ const styles = StyleSheet.create({
   noticeCard: {
     backgroundColor: "#fff4f1",
     borderColor: "#f6c7ba",
-    borderRadius: 22,
+    borderRadius: 16,
     borderWidth: 1,
     marginTop: 14,
     padding: 16,
@@ -1393,8 +1388,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     borderTopWidth: 1,
     borderTopColor: "#edf0f2",
     shadowColor: "#15232b",
@@ -1417,7 +1412,7 @@ const styles = StyleSheet.create({
   },
   footerPriceValue: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 30,
+    fontSize: 27,
     fontWeight: "700",
     color: "#111827",
     marginTop: 4,
@@ -1441,18 +1436,18 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   footerButtonPill: {
-    minHeight: 68,
+    minHeight: 56,
     minWidth: 178,
-    borderRadius: 22,
+    borderRadius: 8,
     backgroundColor: '#158a83',
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 28,
     shadowColor: "#158a83",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.16,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
   },
   footerButtonText: {
     fontFamily: 'PlusJakartaSans-Bold',

@@ -437,7 +437,7 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
         modal
         mode="time"
         open={pickerVisible}
-        minuteInterval={30}
+        minuteInterval={5}
         date={
           pickerDay
             ? new Date(
@@ -496,11 +496,10 @@ const styles = StyleSheet.create({
   optionCard: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: 24,
+    borderRadius: 10,
     borderWidth: 1,
     marginTop: 16,
-    padding: 24,
-    ...cardShadow,
+    padding: 18,
   },
   customRow: {
     alignItems: "center",
@@ -518,9 +517,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   customSummaryCard: {
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: 10,
     borderWidth: 1,
     marginTop: 12,
     paddingHorizontal: 14,
@@ -536,8 +535,8 @@ const styles = StyleSheet.create({
   },
   optionCardActive: {
     borderColor: colors.accent,
-    borderWidth: 2,
-    backgroundColor: colors.accentSoft,
+    borderWidth: 1,
+    backgroundColor: colors.cardBg,
   },
   optionTitle: {
     color: colors.text,
@@ -561,7 +560,7 @@ const styles = StyleSheet.create({
   timePill: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: 10,
     borderWidth: 1,
     flex: 1,
     paddingHorizontal: 14,
@@ -656,7 +655,7 @@ const styles = StyleSheet.create({
   dayRow: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
     flexDirection: "row",

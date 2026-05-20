@@ -17,7 +17,7 @@ import { useAuth } from "../../auth";
 import { Button } from "../../components/ui";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
-import { cardShadow, colors, spacing, textStyles } from "../../styles/theme";
+import { colors, spacing, textStyles } from "../../styles/theme";
 import { Plus, X } from "lucide-react-native";
 
 type FlowStackParamList = {
@@ -76,7 +76,17 @@ export function ListingPhotosScreen({ navigation }: Props) {
       body: formData,
     });
     if (!uploadResult.ok) {
-      throw new Error("Upload failed. Try again.");
+      const responseText = await uploadResult.text().catch(() => "");
+      if (responseText.includes("AccessDenied")) {
+        throw new Error("Image upload is currently unavailable. S3 access was denied.");
+      }
+      if (responseText.includes("SignatureDoesNotMatch")) {
+        throw new Error("Image upload signature failed. Check the server S3 credentials.");
+      }
+      if (responseText.includes("InvalidAccessKeyId") || responseText.includes("InvalidToken")) {
+        throw new Error("Image upload credentials are invalid on the server.");
+      }
+      throw new Error("Upload failed. The storage service rejected the image.");
     }
     return upload.publicUrl;
   };
@@ -230,11 +240,10 @@ const styles = StyleSheet.create({
   uploadButton: {
     alignItems: "center",
     backgroundColor: colors.accent,
-    borderRadius: 16,
+    borderRadius: 12,
     marginTop: 22,
-    minHeight: 56,
+    minHeight: 48,
     justifyContent: "center",
-    ...cardShadow,
   },
   uploadButtonDisabled: {
     opacity: 0.85,
@@ -265,11 +274,12 @@ const styles = StyleSheet.create({
   photoCard: {
     width: "48%",
     aspectRatio: 1.2,
-    borderRadius: 16,
+    borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#e5e7eb",
+    backgroundColor: colors.cardBgMuted,
+    borderColor: colors.border,
+    borderWidth: 1,
     position: "relative",
-    ...cardShadow,
   },
   photoImage: {
     width: "100%",
@@ -288,14 +298,14 @@ const styles = StyleSheet.create({
   },
   footer: {
     backgroundColor: colors.cardBg,
-    borderTopColor: "rgba(17, 24, 39, 0.08)",
+    borderTopColor: colors.border,
     borderTopWidth: 1,
     paddingHorizontal: spacing.screenX,
     paddingTop: 10,
     paddingBottom: 2,
   },
   continueButton: {
-    borderRadius: 16,
+    borderRadius: 12,
     minHeight: 48,
   },
   continueButtonText: {
@@ -306,7 +316,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   secondaryButton: {
-    borderRadius: 16,
+    borderRadius: 12,
     marginTop: 10,
     minHeight: 48,
   },

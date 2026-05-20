@@ -14,7 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { CalendarDays, Clock3, Info } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
-import { cardShadow, colors, spacing, textStyles } from "../../styles/theme";
+import { colors, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
   ListingPrice: undefined;
@@ -240,11 +240,10 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#FFFFFF",
     borderColor: colors.border,
-    borderRadius: 24,
+    borderRadius: 12,
     borderWidth: 1,
     marginTop: 24,
     overflow: "hidden",
-    ...cardShadow,
   },
   priceRow: {
     borderBottomColor: colors.border,
@@ -289,8 +288,8 @@ const styles = StyleSheet.create({
   },
   inputShell: {
     backgroundColor: "#FFFFFF",
-    borderColor: colors.borderStrong,
-    borderRadius: 16,
+    borderColor: colors.border,
+    borderRadius: 12,
     borderWidth: 1,
     minWidth: 124,
     paddingHorizontal: 16,
@@ -314,7 +313,9 @@ const styles = StyleSheet.create({
   },
   noteCard: {
     backgroundColor: colors.accentSoft,
-    borderRadius: 20,
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
     marginTop: 18,
     paddingHorizontal: 18,
     paddingVertical: 18,
@@ -349,7 +350,7 @@ const styles = StyleSheet.create({
   warningCard: {
     backgroundColor: "#FFF7ED",
     borderColor: "#F6AD55",
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
   continueBtn: {
     alignItems: "center",
     backgroundColor: colors.accent,
-    borderRadius: 16,
+    borderRadius: 12,
     justifyContent: "center",
     minHeight: 48,
   },

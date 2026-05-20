@@ -19,7 +19,7 @@ import { LIGHT_MAP_STYLE } from "../../components/mapStyles";
 import type { RootStackParamList } from "../../types";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
-import { cardShadow, colors, radius, spacing, textStyles } from "../../styles/theme";
+import { colors, radius, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
   ListingReview: undefined;
@@ -253,16 +253,6 @@ export function ListingReviewScreen({ navigation }: Props) {
           {listingId ? "Confirm everything looks right." : "You can edit anything after publishing."}
         </Text>
 
-        <View style={styles.guidanceCard}>
-          <Text style={styles.guidanceTitle}>What gets bookings</Text>
-          <Text style={styles.guidanceBody}>
-            The strongest listings are easy to trust at a glance and easy to use after booking.
-          </Text>
-          <Text style={styles.guidanceBullet}>• Show exactly where the driver should park</Text>
-          <Text style={styles.guidanceBullet}>• Add arrival notes and any code they need after booking</Text>
-          <Text style={styles.guidanceBullet}>• Keep price and availability accurate to avoid cancellations</Text>
-        </View>
-
         <Pressable
           style={[
             styles.confirmRow,
@@ -381,6 +371,16 @@ export function ListingReviewScreen({ navigation }: Props) {
             <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />
           </Pressable>
         </View>
+
+        <View style={styles.guidanceCard}>
+          <Text style={styles.guidanceTitle}>What gets bookings</Text>
+          <Text style={styles.guidanceBody}>
+            The strongest listings are easy to trust at a glance and easy to use after booking.
+          </Text>
+          <Text style={styles.guidanceBullet}>• Show exactly where the driver should park</Text>
+          <Text style={styles.guidanceBullet}>• Add arrival notes and any code they need after booking</Text>
+          <Text style={styles.guidanceBullet}>• Keep price and availability accurate to avoid cancellations</Text>
+        </View>
       </ScrollView>
       <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
         <Pressable
@@ -457,9 +457,9 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   guidanceCard: {
-    backgroundColor: "#F8FAFC",
-    borderColor: "rgba(17, 24, 39, 0.08)",
-    borderRadius: 18,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: 12,
     borderWidth: 1,
     marginTop: 20,
     padding: 18,
@@ -498,21 +498,19 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.cardBg,
-    borderColor: "rgba(17, 24, 39, 0.08)",
-    borderRadius: 18,
+    borderColor: colors.border,
+    borderRadius: 12,
     borderWidth: 1,
     marginTop: 16,
     overflow: "hidden",
-    ...cardShadow,
   },
   editCard: {
     backgroundColor: colors.cardBg,
-    borderColor: "rgba(17, 24, 39, 0.08)",
-    borderRadius: 18,
+    borderColor: colors.border,
+    borderRadius: 12,
     borderWidth: 1,
     marginTop: 16,
     overflow: "hidden",
-    ...cardShadow,
   },
   editTitle: {
     color: colors.text,
@@ -556,14 +554,13 @@ const styles = StyleSheet.create({
   },
   confirmRow: {
     backgroundColor: colors.cardBg,
-    borderColor: "rgba(17, 24, 39, 0.08)",
-    borderRadius: 18,
+    borderColor: colors.border,
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 12,
     marginTop: 18,
     padding: 16,
-    ...cardShadow,
   },
   confirmRowActive: {
     borderColor: colors.accent,
@@ -613,7 +610,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     backgroundColor: colors.cardBg,
-    borderTopColor: "rgba(17, 24, 39, 0.08)",
+    borderTopColor: colors.border,
     borderTopWidth: 1,
     paddingHorizontal: spacing.screenX,
     paddingTop: 10,
@@ -632,11 +629,12 @@ const styles = StyleSheet.create({
   successCard: {
     alignItems: "center",
     backgroundColor: colors.cardBg,
-    borderRadius: radius.card,
+    borderRadius: 16,
     paddingHorizontal: 24,
     paddingVertical: 20,
-    ...cardShadow,
     width: 240,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   successAnimation: {
     height: 140,
@@ -659,10 +657,9 @@ const styles = StyleSheet.create({
   primaryButton: {
     alignItems: "center",
     backgroundColor: colors.accent,
-    borderRadius: 16,
+    borderRadius: 12,
     minHeight: 48,
     justifyContent: "center",
-    ...cardShadow,
   },
   primaryButtonDisabled: {
     backgroundColor: "#cbd5e1",
@@ -676,7 +673,10 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     alignItems: "center",
-    borderRadius: 16,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 12,
     marginTop: 10,
     minHeight: 44,
     justifyContent: "center",
