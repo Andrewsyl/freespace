@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
-import { cardShadow, colors, radius, spacing } from "../styles/theme";
+import { colors, radius, spacing } from "../styles/theme";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -77,7 +77,7 @@ export function FavoritesScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.headerTint,
+    backgroundColor: colors.appBg,
   },
   contentWrapper: {
     flex: 1,
@@ -87,36 +87,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: colors.headerTint,
+    backgroundColor: colors.appBg,
     paddingHorizontal: spacing.screenX,
     paddingTop: 8,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   backButton: {
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 44,
-    paddingVertical: 6,
-  },
-  backCircle: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 32,
-    width: 32,
-    borderRadius: 16,
+    minWidth: 40,
+    height: 40,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.cardBg,
   },
-  backIcon: {
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 14,
-    textAlign: "center",
-    fontWeight: "600",
-  },
   title: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 17,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   content: {
@@ -126,17 +117,18 @@ const styles = StyleSheet.create({
   row: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: radius.card,
+    borderRadius: 14,
     borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
-    padding: 14,
+    padding: 12,
     gap: 12,
-    ...cardShadow,
   },
   icon: {
-    backgroundColor: "#e6f9f5",
-    borderRadius: 18,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
     height: 36,
     width: 36,
   },
@@ -145,12 +137,14 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 14,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   rowSubtitle: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 18,
     marginTop: 2,
   },
   emptyState: {
@@ -160,12 +154,14 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 20,
     textAlign: "center",
   },
   helper: {
     color: colors.textSoft,
     fontSize: 12,
+    lineHeight: 18,
     marginTop: 6,
   },
   error: {
@@ -187,14 +183,15 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     backgroundColor: colors.accent,
-    borderRadius: radius.card,
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 11,
     marginTop: 14,
   },
   primaryButtonText: {
     color: "#ffffff",
     fontSize: 14,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
 });

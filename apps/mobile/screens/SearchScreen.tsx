@@ -119,26 +119,22 @@ const ordinalSuffix = (value: number) => {
 const formatDateLabel = (date: Date) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
   const dateToCheck = new Date(date);
   dateToCheck.setHours(0, 0, 0, 0);
 
   if (dateToCheck.getTime() === today.getTime()) {
     return "Today";
   }
-  if (dateToCheck.getTime() === tomorrow.getTime()) {
-    return "Tomorrow";
-  }
 
-  return `${weekdayNames[date.getDay()]} ${date.getDate()}${ordinalSuffix(date.getDate())} ${
-    monthNames[date.getMonth()]
-  }`;
+  return `${date.getDate()} ${monthNames[date.getMonth()]}`;
 };
 
 const formatTimeLabel = (date: Date) => `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 
-const formatDateTimeLabel = (date: Date) => `${formatDateLabel(date)} · ${formatTimeLabel(date)}`;
+const formatDateTimeLabel = (date: Date) => {
+  const dayLabel = formatDateLabel(date);
+  return `${dayLabel} · ${formatTimeLabel(date)}`;
+};
 const formatMapCardMetaLine = (fromIso: string, toIso: string, distanceM?: number | null) => {
   const fromDate = new Date(fromIso);
   const toDate = new Date(toIso);
@@ -222,6 +218,8 @@ export function SearchScreen({ navigation }: Props) {
   const searchAnim = useRef(new Animated.Value(0)).current;
   const searchAreaOpacity = useRef(new Animated.Value(0)).current;
   const searchAreaTranslateY = useRef(new Animated.Value(8)).current;
+  const pickerBackdropOpacity = useRef(new Animated.Value(0)).current;
+  const pickerSheetTranslateY = useRef(new Animated.Value(28)).current;
   const showAreaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchOverlayOpacity = useMemo(
     () =>
@@ -232,6 +230,26 @@ export function SearchScreen({ navigation }: Props) {
     [searchAnim]
   );
   const searchRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    if (Platform.OS !== "android" || !pickerVisible) return;
+    pickerBackdropOpacity.setValue(0);
+    pickerSheetTranslateY.setValue(28);
+    Animated.parallel([
+      Animated.timing(pickerBackdropOpacity, {
+        toValue: 1,
+        duration: 180,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(pickerSheetTranslateY, {
+        toValue: 0,
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [pickerBackdropOpacity, pickerSheetTranslateY, pickerVisible]);
   const searchStartedAtRef = useRef(0);
   const mapReadyEventsRef = useRef({ ready: false, loaded: false });
   const mapReadyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1184,27 +1202,31 @@ export function SearchScreen({ navigation }: Props) {
           </View>
           <View style={styles.dateRowCard}>
             <View style={styles.dateRow}>
-              <Pressable
-                style={styles.dateTimeColumn}
-                onPress={() => openPicker("start")}
-                android_ripple={null}
-              >
+              <View style={styles.dateTimeColumn}>
                 <Text style={styles.dateTimeLabel}>From</Text>
-                <Text style={styles.dateTimeValue} numberOfLines={1} ellipsizeMode="tail">
-                  {formatDateTimeLabel(startAt)}
-                </Text>
-              </Pressable>
-              <Ionicons name="arrow-forward" size={18} color="#9CA3AF" style={styles.dateArrowIcon} />
-              <Pressable
-                style={styles.dateTimeColumn}
-                onPress={() => openPicker("end")}
-                android_ripple={null}
-              >
+                <Pressable
+                  style={styles.dateTimeColumnButton}
+                  onPress={() => openPicker("start")}
+                  android_ripple={null}
+                >
+                  <Text style={styles.dateTimeValue} numberOfLines={1} ellipsizeMode="tail">
+                    {formatDateTimeLabel(startAt)}
+                  </Text>
+                </Pressable>
+              </View>
+              <Ionicons name="arrow-forward" size={16} color="#9CA3AF" style={styles.dateArrowIcon} />
+              <View style={styles.dateTimeColumn}>
                 <Text style={styles.dateTimeLabel}>Until</Text>
-                <Text style={styles.dateTimeValue} numberOfLines={1} ellipsizeMode="tail">
-                  {formatDateTimeLabel(endAt)}
-                </Text>
-              </Pressable>
+                <Pressable
+                  style={styles.dateTimeColumnButton}
+                  onPress={() => openPicker("end")}
+                  android_ripple={null}
+                >
+                  <Text style={styles.dateTimeValue} numberOfLines={1} ellipsizeMode="tail">
+                    {formatDateTimeLabel(endAt)}
+                  </Text>
+                </Pressable>
+              </View>
             </View>
           </View>
           {renderSearchArea && pendingSearch ? (
@@ -1596,9 +1618,32 @@ export function SearchScreen({ navigation }: Props) {
         ) : null}
         {Platform.OS !== "web" ? (
           Platform.OS === "android" && pickerVisible ? (
-            <Modal transparent animationType="fade" visible>
-              <View style={styles.pickerBackdrop}>
-                <View style={styles.pickerSheet}>
+            <Modal
+              transparent
+              animationType="none"
+              visible
+              onRequestClose={() => {
+                setPickerVisible(false);
+                setDraftDate(null);
+              }}
+            >
+              <View style={styles.pickerModalRoot}>
+                <Pressable
+                  style={styles.pickerBackdropPressable}
+                  onPress={() => {
+                    setPickerVisible(false);
+                    setDraftDate(null);
+                  }}
+                >
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[styles.pickerBackdrop, { opacity: pickerBackdropOpacity }]}
+                  />
+                </Pressable>
+                <Animated.View
+                  style={[styles.pickerSheetWrap, { transform: [{ translateY: pickerSheetTranslateY }] }]}
+                >
+                  <Pressable style={styles.pickerSheet} onPress={() => {}}>
                   <View style={styles.pickerHeader}>
                     <Text style={styles.pickerTitle}>When do you want to leave?</Text>
                     <Text style={styles.pickerSubtitle}>
@@ -1666,7 +1711,8 @@ export function SearchScreen({ navigation }: Props) {
                       </Text>
                     </Pressable>
                   </View>
-                </View>
+                  </Pressable>
+                </Animated.View>
               </View>
             </Modal>
           ) : (
@@ -1802,24 +1848,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: 24,
+    borderRadius: 14,
     borderWidth: 1,
     flex: 1,
     flexDirection: "row",
-    gap: 10,
-    height: 44,
+    gap: 8,
+    height: 48,
     paddingHorizontal: 14,
     paddingRight: 34,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 6,
   },
   searchInput: {
     ...textStyles.bodyMedium,
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 20,
     flex: 1,
   },
   clearButton: {
@@ -1845,16 +1886,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: radius.pill,
+    borderRadius: 14,
     borderWidth: 1,
-    height: 40,
+    height: 44,
     justifyContent: "center",
-    width: 40,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    width: 44,
   },
   actionButtonActive: {
     borderColor: colors.accent,
@@ -1876,16 +1912,11 @@ const styles = StyleSheet.create({
   dateRowCard: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: radius.card,
+    borderRadius: 16,
     borderWidth: 1,
     marginTop: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
   searchOverlayTrigger: {
     bottom: 0,
@@ -1993,86 +2024,110 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   filtersTitle: {
-    ...textStyles.titleSmall,
+    color: colors.text,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 24,
+    lineHeight: 30,
   },
   filtersSubtitle: {
-    ...textStyles.bodyMedium,
-    fontSize: 13,
-    marginBottom: 16,
+    color: colors.textMuted,
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 18,
   },
   filtersSection: {
-    backgroundColor: colors.appBg,
+    backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: radius.card,
+    borderRadius: 16,
     borderWidth: 1,
-    marginBottom: 14,
+    marginBottom: 12,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   row: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 12,
+    marginBottom: 6,
   },
   field: {
     flex: 1,
   },
   label: {
-    ...textStyles.meta,
+    color: colors.textMuted,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 11,
+    letterSpacing: 0.5,
     marginBottom: 6,
+    textTransform: "uppercase",
   },
   input: {
+    backgroundColor: colors.appBg,
     borderColor: colors.border,
     borderRadius: 12,
     borderWidth: 1,
     color: colors.text,
-    fontFamily: "Inter-Medium",
-    fontSize: 14,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    lineHeight: 20,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 0,
   },
   chip: {
+    alignItems: "center",
     backgroundColor: colors.appBg,
-    borderRadius: radius.pill,
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    minHeight: 40,
+    justifyContent: "center",
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   chipActive: {
-    backgroundColor: colors.accent,
+    backgroundColor: "#ecfdf7",
+    borderColor: colors.accent,
   },
   chipText: {
-    ...textStyles.meta,
+    color: colors.text,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 13,
+    lineHeight: 18,
     textTransform: "capitalize",
   },
   chipTextActive: {
-    color: "#ffffff",
+    color: colors.accent,
   },
   switchRow: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   switchLabel: {
-    ...textStyles.bodyStrong,
-    fontSize: 13,
+    color: colors.text,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 14,
+    lineHeight: 20,
   },
   applyButton: {
     alignItems: "center",
     backgroundColor: colors.accent,
-    borderRadius: 12,
-    minHeight: 44,
-    paddingVertical: 10,
+    borderRadius: 14,
+    minHeight: 48,
+    paddingVertical: 12,
   },
   applyButtonText: {
-    ...textStyles.button,
-    fontSize: 14,
+    color: "#ffffff",
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    lineHeight: 20,
   },
   suggestions: {
     backgroundColor: colors.cardBg,
@@ -2249,10 +2304,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   sectionLabel: {
-    ...textStyles.meta,
     color: colors.text,
-    letterSpacing: 0.4,
-    marginBottom: 10,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    letterSpacing: 0.1,
+    marginBottom: 12,
   },
   emptyText: {
     color: "#6b7280",
@@ -2261,23 +2317,39 @@ const styles = StyleSheet.create({
   dateRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
   },
   dateTimeColumn: {
     flex: 1,
     minWidth: 0,
   },
+  dateTimeColumnButton: {
+    backgroundColor: colors.appBg,
+    borderColor: colors.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    minHeight: 42,
+    justifyContent: "center",
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+  },
   dateTimeLabel: {
-    ...textStyles.label,
-    marginBottom: 4,
+    color: colors.textMuted,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 9,
+    letterSpacing: 0.5,
+    marginBottom: 3,
+    textTransform: "uppercase",
   },
   dateTimeValue: {
-    ...textStyles.bodyStrong,
+    color: colors.text,
+    fontFamily: "Inter-SemiBold",
     fontSize: 14,
-    lineHeight: 19,
+    lineHeight: 16,
   },
   dateArrowIcon: {
-    marginHorizontal: 4,
+    marginHorizontal: 0,
+    marginTop: 12,
   },
   dateArrow: {
     alignItems: "center",
@@ -2331,14 +2403,31 @@ const styles = StyleSheet.create({
     ...textStyles.meta,
     color: colors.textMuted,
   },
-  pickerBackdrop: {
-    backgroundColor: "rgba(15, 23, 42, 0.4)",
+  pickerModalRoot: {
     bottom: 0,
     justifyContent: "flex-end",
     left: 0,
     position: "absolute",
     right: 0,
     top: 0,
+  },
+  pickerBackdropPressable: {
+    bottom: 0,
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0,
+  },
+  pickerBackdrop: {
+    backgroundColor: "rgba(15, 23, 42, 0.4)",
+    bottom: 0,
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0,
+  },
+  pickerSheetWrap: {
+    justifyContent: "flex-end",
   },
   pickerSheet: {
     backgroundColor: "#ffffff",

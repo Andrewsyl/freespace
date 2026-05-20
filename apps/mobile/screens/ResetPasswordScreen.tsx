@@ -13,7 +13,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { requestPasswordReset, resetPassword } from "../api";
 import { useToastOnMessage } from "../components/GlobalToast";
 import type { RootStackParamList } from "../types";
-import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
+import { colors, radius, spacing, textStyles } from "../styles/theme";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPassword">;
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.screenY,
   },
   header: {
-    marginBottom: spacing.gap,
+    marginBottom: 14,
   },
   kicker: textStyles.kicker,
   title: {
@@ -274,11 +274,10 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.cardBg,
-    borderRadius: radius.card,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.card,
-    ...cardShadow,
   },
   field: {
     marginBottom: 14,
@@ -295,7 +294,7 @@ const styles = StyleSheet.create({
   previewRow: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   linkButton: {
     flex: 1,
@@ -308,6 +307,6 @@ const styles = StyleSheet.create({
   },
   ghostButton: {
     alignSelf: "center",
-    marginTop: 20,
+    marginTop: 16,
   },
 });

@@ -3,11 +3,10 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,6 +17,8 @@ import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
 import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
 import { logInfo, logWarn } from "../logger";
+import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
+import { colors, radius, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Register">;
 
@@ -141,21 +142,14 @@ export function RegisterScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <KeyboardAvoidingView
           style={styles.safeArea}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <View style={styles.header}>
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}
-              >
-                <Ionicons name="chevron-back" size={24} color="#4A9EFF" />
-                <Text style={styles.backText}>Sign in</Text>
-              </TouchableOpacity>
+              <BackButton onPress={() => navigation.goBack()} />
             </View>
 
             <View style={styles.card}>
@@ -165,45 +159,43 @@ export function RegisterScreen({ navigation }: Props) {
                 resizeMode="contain"
               />
               <Text style={styles.cardTitle}>Sign Up</Text>
+              <Text style={styles.cardSubtitle}>Create your account to book and host with FreeSpace.</Text>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Email</Text>
-                <TextInput
-                  style={styles.input}
+                <AppTextInput
+                  containerStyle={styles.inputContainer}
                   placeholder="johndoe@gmail.com"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  placeholderTextColor="#9CA3AF"
                 />
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Password</Text>
-                <TextInput
-                  style={styles.input}
+                <AppTextInput
+                  containerStyle={styles.inputContainer}
                   placeholder="******"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
-                  placeholderTextColor="#9CA3AF"
                 />
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Password again</Text>
-                <TextInput
-                  style={styles.input}
+                <AppTextInput
+                  containerStyle={styles.inputContainer}
                   placeholder="******"
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry
-                  placeholderTextColor="#9CA3AF"
                 />
               </View>
 
-              <TouchableOpacity
+              <Pressable
                 style={styles.checkboxRow}
                 onPress={() => setAccepted((value) => !value)}
               >
@@ -214,20 +206,17 @@ export function RegisterScreen({ navigation }: Props) {
                   I agree to the <Text style={styles.link}>terms</Text> and{" "}
                   <Text style={styles.link}>privacy</Text> policy.
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
 
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-              <TouchableOpacity
+              <Button
                 style={styles.signUpButton}
                 onPress={handleSignUp}
                 disabled={submitting}
-              >
-                <Text style={styles.buttonText}>
-                  {submitting ? "Creating..." : "Sign Up"}
-                </Text>
-                <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
-              </TouchableOpacity>
+                loading={submitting}
+                title={submitting ? "Creating..." : "Sign Up"}
+              />
 
               <View style={styles.divider}>
                 <View style={styles.dividerLine} />
@@ -236,148 +225,118 @@ export function RegisterScreen({ navigation }: Props) {
               </View>
 
               <View style={styles.socialRow}>
-                <TouchableOpacity style={styles.socialButton} onPress={handleGoogleSignup}>
+                <Pressable style={styles.socialButton} onPress={handleGoogleSignup}>
                   <Ionicons name="logo-google" size={20} color="#DB4437" />
                   <Text style={styles.socialText}>Google</Text>
-                </TouchableOpacity>
+                </Pressable>
 
-                <TouchableOpacity style={styles.socialButton}>
+                <Pressable style={styles.socialButton}>
                   <Ionicons name="logo-facebook" size={20} color="#4267B2" />
                   <Text style={styles.socialText}>Facebook</Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
-      </SafeAreaView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FA",
+    backgroundColor: colors.appBg,
   },
   safeArea: {
     flex: 1,
   },
   content: {
     flexGrow: 1,
+    paddingBottom: spacing.xl,
   },
   header: {
-    padding: 20,
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  backText: {
-    fontSize: 16,
-    color: "#4A9EFF",
+    paddingHorizontal: spacing.screenX,
+    paddingTop: spacing.screenY,
+    paddingBottom: spacing.sm,
   },
   card: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    padding: 32,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    borderWidth: 1,
+    padding: spacing.xl,
   },
   brandLogo: {
     width: "100%",
-    height: 72,
-    marginBottom: 10,
+    height: 46,
+    marginBottom: spacing.xxs,
   },
   cardTitle: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    marginBottom: 32,
+    ...textStyles.screenTitle,
+    marginBottom: spacing.xs,
+  },
+  cardSubtitle: {
+    ...textStyles.subtitle,
+    marginBottom: spacing.lg,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: spacing.md,
   },
   inputLabel: {
-    fontSize: 13,
-    color: "#9CA3AF",
-    marginBottom: 8,
-    fontWeight: "500",
+    ...textStyles.label,
+    color: colors.textSoft,
+    marginBottom: spacing.xs,
   },
-  input: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    paddingVertical: 12,
-    fontSize: 16,
-    color: "#1A1A1A",
+  inputContainer: {
+    marginBottom: 0,
   },
   checkboxRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginTop: 8,
-    marginBottom: 24,
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+    marginBottom: spacing.lg,
   },
   checkbox: {
     width: 20,
     height: 20,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: "#D1D5DB",
+    borderColor: colors.borderStrong,
     justifyContent: "center",
     alignItems: "center",
   },
   checkboxChecked: {
-    backgroundColor: "#4A9EFF",
-    borderColor: "#4A9EFF",
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   checkboxText: {
     flex: 1,
-    fontSize: 13,
-    color: "#6B7280",
+    ...textStyles.meta,
+    color: colors.textMuted,
   },
   link: {
-    color: "#4A9EFF",
+    color: colors.accent,
   },
   signUpButton: {
-    backgroundColor: "#2ECC8F",
-    borderRadius: 28,
-    paddingVertical: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    marginBottom: 32,
-    shadowColor: "#2ECC8F",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+    marginBottom: spacing.md,
   },
   divider: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: spacing.md,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: colors.border,
   },
   dividerText: {
-    marginHorizontal: 16,
-    fontSize: 13,
-    color: "#9CA3AF",
+    ...textStyles.meta,
+    color: colors.textSoft,
+    marginHorizontal: spacing.md,
   },
   socialRow: {
     flexDirection: "row",
@@ -389,20 +348,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.cardBgMuted,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     borderRadius: 12,
     paddingVertical: 14,
   },
   socialText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#4A4A4A",
+    ...textStyles.bodyStrong,
+    color: colors.text,
   },
   errorText: {
-    color: "#b42318",
-    fontSize: 13,
-    marginBottom: 16,
+    ...textStyles.meta,
+    color: colors.danger,
+    marginBottom: spacing.sm,
+    textAlign: "center",
   },
 });

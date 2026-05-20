@@ -20,7 +20,7 @@ import type { RootStackParamList } from "../types";
 import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 import { logInfo, logWarn } from "../logger";
-import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
+import { colors, radius, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
 
@@ -378,17 +378,16 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: spacing.screenX,
     paddingTop: spacing.screenY,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.xs,
   },
   card: {
     flex: 1,
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     borderWidth: 1,
     padding: spacing.xl,
-    ...cardShadow,
   },
   brandLogo: {
     width: "100%",
@@ -465,7 +464,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.cardBgMuted,
     borderColor: colors.border,
-    borderRadius: radius.md,
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.xs,
@@ -511,12 +510,13 @@ const styles = StyleSheet.create({
   },
   successCard: {
     backgroundColor: colors.cardBg,
-    borderRadius: radius.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
     maxWidth: 320,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
     width: "100%",
-    ...cardShadow,
   },
   successTitle: {
     ...textStyles.titleSmall,

@@ -27,7 +27,7 @@ import { formatTimeLabel } from "../utils/dateFormat";
 import { formatBookingReference } from "../utils/bookingFormat";
 import { ParkingTicket } from "../components/ParkingTicket";
 import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
-import { cardShadow, colors } from "../styles/theme";
+import { colors } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingDetail">;
 
@@ -706,7 +706,7 @@ const styles = StyleSheet.create({
   },
 
   reviewTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
@@ -746,7 +746,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
     letterSpacing: -0.2,
-    fontFamily: 'PlusJakartaSans-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   reviewedStars: {
     flexDirection: 'row',
@@ -763,9 +763,9 @@ const styles = StyleSheet.create({
   outerGreenCard: {
     backgroundColor: '#2ECC8F', // Dark green
     marginHorizontal: 20,
-    borderRadius: 28, // Outer corner radius
-    paddingHorizontal: 4, // Thin green "border" on sides
-    paddingBottom: 4, // Thin green "border" at bottom
+    borderRadius: 18,
+    paddingHorizontal: 2,
+    paddingBottom: 2,
     overflow: 'hidden',
   },
 
@@ -804,11 +804,11 @@ const styles = StyleSheet.create({
   // Inner White Content - has its own rounded corners
   innerWhiteContent: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderBottomLeftRadius: 24, // Match outer container radius
-    borderBottomRightRadius: 24, // Match outer container radius
-    padding: 20,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    padding: 18,
   },
 
   // Listing row
@@ -831,11 +831,12 @@ const styles = StyleSheet.create({
   },
 
   listingName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 4,
     letterSpacing: -0.2,
+    fontFamily: 'Inter-SemiBold',
   },
 
   listingSubtitle: {
@@ -923,11 +924,12 @@ const styles = StyleSheet.create({
   },
 
   mapTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 4,
     letterSpacing: -0.3,
+    fontFamily: 'Inter-SemiBold',
   },
 
   mapAddress: {
@@ -983,8 +985,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#2ECC8F',
-    borderRadius: 16,
+    borderColor: colors.border,
+    borderRadius: 12,
     justifyContent: 'center',
     alignSelf: 'stretch',
     marginBottom: 4,
@@ -995,6 +997,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#111827',
+    fontFamily: 'Inter-SemiBold',
   },
 
   // Action buttons
@@ -1015,7 +1018,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'PlusJakartaSans-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   bookAgainButton: {
     marginTop: 12,
@@ -1023,7 +1026,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 999,
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
   },
@@ -1031,7 +1034,7 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'PlusJakartaSans-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   dangerButton: {
@@ -1049,7 +1052,7 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'PlusJakartaSans-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
 
   dangerButtonDisabled: {
@@ -1075,10 +1078,10 @@ const styles = StyleSheet.create({
   },
   infoCardTitle: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     marginBottom: 8,
-    fontFamily: 'PlusJakartaSans-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   infoCardBody: {
     color: colors.textMuted,
@@ -1114,14 +1117,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 2,
-    fontFamily: 'PlusJakartaSans-Bold',
+    fontFamily: 'Inter-Bold',
   },
   secondaryLinkButton: {
     marginTop: 12,
     alignSelf: 'flex-start',
     paddingVertical: 9,
     paddingHorizontal: 12,
-    borderRadius: 999,
+    borderRadius: 10,
     backgroundColor: colors.cardBg,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1130,7 +1133,7 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: 13,
     fontWeight: '700',
-    fontFamily: 'PlusJakartaSans-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   helpChips: {
     flexDirection: 'row',
@@ -1168,6 +1171,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.accent,
-    fontFamily: 'PlusJakartaSans-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
 });

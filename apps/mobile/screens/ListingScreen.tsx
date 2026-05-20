@@ -1014,7 +1014,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   airStatPillText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
+    fontFamily: "Inter-SemiBold",
     fontSize: 13,
     lineHeight: 18,
     color: "#145852",
@@ -1029,8 +1029,8 @@ const styles = StyleSheet.create({
   },
   typePillText: { fontFamily: "Inter-SemiBold", fontSize: 11, color: "#0f5b55", letterSpacing: 0.5 },
   titleText: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 24, lineHeight: 31, letterSpacing: -0.55,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 22, lineHeight: 28, letterSpacing: -0.35,
     color: "#151b1b", marginBottom: 8,
   },
   metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 7, marginBottom: 4 },
@@ -1063,7 +1063,7 @@ const styles = StyleSheet.create({
     color: "#8b949b", letterSpacing: 0.9, textTransform: "uppercase",
   },
   statsCellValue: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 18,
+    fontFamily: "Inter-SemiBold", fontSize: 18,
     color: "#151b1b", letterSpacing: -0.3,
   },
   statsVDivider: { width: 1, backgroundColor: "#eceff1", marginVertical: 10 },
@@ -1118,7 +1118,7 @@ const styles = StyleSheet.create({
   },
   taxiRouteSpacer: { height: 12 },
   taxiRouteValue: {
-    fontFamily: "PlusJakartaSans-SemiBold",
+    fontFamily: "Inter-SemiBold",
     fontSize: 16,
     lineHeight: 21,
     color: "#1f2a2a",
@@ -1131,14 +1131,14 @@ const styles = StyleSheet.create({
     gap: 6,
     minHeight: 36,
     paddingHorizontal: 12,
-    borderRadius: 999,
+    borderRadius: 10,
     backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "#e0e4e5",
     marginLeft: 8,
   },
   airTimeEditButtonText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
+    fontFamily: "Inter-SemiBold",
     fontSize: 13.5,
     lineHeight: 18,
     color: "#4f5b5a",
@@ -1170,11 +1170,11 @@ const styles = StyleSheet.create({
   availabilityHoursToday: { color: "#15714a" },
   section: { paddingVertical: 18 },
   sectionTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
+    fontFamily: "Inter-SemiBold",
     fontSize: 20, color: "#151b1b", letterSpacing: -0.35, marginBottom: 14,
   },
   sectionBody: { fontFamily: "Inter-Regular", fontSize: 15, lineHeight: 27, color: "#343c3c" },
-  readMore: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: "#151b1b", marginTop: 10 },
+  readMore: { fontFamily: "Inter-SemiBold", fontSize: 14, color: "#151b1b", marginTop: 10 },
   localAreaCard: {
     backgroundColor: "transparent",
     borderRadius: 0,
@@ -1190,7 +1190,7 @@ const styles = StyleSheet.create({
   },
   localAreaHeaderTextWrap: { flex: 1 },
   localAreaAddress: {
-    fontFamily: "PlusJakartaSans-Bold",
+    fontFamily: "Inter-SemiBold",
     fontSize: 15,
     lineHeight: 21,
     color: "#151b1b",
@@ -1234,7 +1234,7 @@ const styles = StyleSheet.create({
   localAreaButtonSecondary: {
     flex: 1,
     minHeight: 48,
-    borderRadius: 6,
+    borderRadius: 10,
     backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "#e0e4e5",
@@ -1243,7 +1243,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   localAreaButtonSecondaryText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
+    fontFamily: "Inter-SemiBold",
     fontSize: 14,
     color: "#151b1b",
     letterSpacing: -0.1,
@@ -1268,7 +1268,7 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   featureChipLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13.5, color: "#151b1b", letterSpacing: -0.15,
+    fontFamily: "Inter-SemiBold", fontSize: 13.5, color: "#151b1b", letterSpacing: -0.1,
   },
 
   // Guarantee strip
@@ -1284,7 +1284,7 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
   guaranteeCopy: { flex: 1 },
-  guaranteeTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#151b1b", letterSpacing: -0.2 },
+  guaranteeTitle: { fontFamily: "Inter-SemiBold", fontSize: 15, color: "#151b1b", letterSpacing: -0.1 },
   guaranteeSub: { fontFamily: "Inter-Medium", fontSize: 12.5, color: "#6b747b", marginTop: 2 },
 
   // Reviews
@@ -1293,7 +1293,7 @@ const styles = StyleSheet.create({
     marginLeft: "auto",
   },
   reviewsLinkText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
+    fontFamily: "Inter-SemiBold",
     fontSize: 13,
     color: "#2caea3",
   },
@@ -1315,7 +1315,7 @@ const styles = StyleSheet.create({
   },
   reviewAvatarText: { fontFamily: "Inter-Bold", fontSize: 15, color: colors.text },
   reviewMetaBlock: { flex: 1 },
-  reviewAuthorName: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#151b1b", letterSpacing: -0.18 },
+  reviewAuthorName: { fontFamily: "Inter-SemiBold", fontSize: 15, color: "#151b1b", letterSpacing: -0.1 },
   reviewDateText: { fontFamily: "Inter-Regular", fontSize: 11.5, color: "#798289", marginTop: 1 },
   reviewStarPill: {
     flexDirection: "row", alignItems: "center", gap: 3,
@@ -1328,10 +1328,10 @@ const styles = StyleSheet.create({
   authCard: {
     backgroundColor: colors.cardBg,
     borderWidth: 1.5, borderColor: colors.border,
-    borderRadius: 22, padding: 20, marginTop: 24,
+    borderRadius: 16, padding: 20, marginTop: 24,
     ...WARM_SHADOW,
   },
-  authTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 18, color: colors.text, marginBottom: 4, letterSpacing: -0.3 },
+  authTitle: { fontFamily: "Inter-SemiBold", fontSize: 18, color: colors.text, marginBottom: 4, letterSpacing: -0.2 },
   authSub: { fontFamily: "Inter-Regular", fontSize: 13, color: colors.textMuted, marginBottom: 16 },
   authInput: {
     fontFamily: "Inter-Regular", backgroundColor: colors.appBg,
@@ -1371,7 +1371,7 @@ const styles = StyleSheet.create({
   },
   bottomLeft: { flex: 1, justifyContent: "center", paddingLeft: 2 },
   bottomLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold",
+    fontFamily: "Inter-SemiBold",
     fontSize: 11,
     color: "#7a8288",
     letterSpacing: 0.8,
@@ -1379,13 +1379,13 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   bottomPrice: {
-    fontFamily: "PlusJakartaSans-Bold",
+    fontFamily: "Inter-Bold",
     fontSize: 27, color: "#111827", letterSpacing: -0.8, lineHeight: 31,
   },
   bottomDuration: { fontFamily: "Inter-Regular", fontSize: 12, color: "#98a4ab", marginTop: 2 },
   reserveBtn: {
     backgroundColor: "#148b84",
-    borderRadius: 8,
+    borderRadius: 12,
     minHeight: 56,
     paddingVertical: 16, paddingHorizontal: 24, minWidth: 148, alignItems: "center", justifyContent: "center",
     shadowColor: "#158a83",
@@ -1395,7 +1395,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   reserveBtnDisabled: { backgroundColor: colors.border, shadowOpacity: 0, elevation: 0 },
-  reserveBtnText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#fff", letterSpacing: -0.2 },
+  reserveBtnText: { fontFamily: "Inter-SemiBold", fontSize: 17, color: "#fff", letterSpacing: -0.1 },
   reserveBtnDisabledText: { fontFamily: "Inter-SemiBold", fontSize: 16, color: colors.textSoft },
 
   // Picker modal
@@ -1403,13 +1403,13 @@ const styles = StyleSheet.create({
     flex: 1, backgroundColor: "rgba(15,40,35,0.35)",
     justifyContent: "center", alignItems: "center", paddingHorizontal: 20,
   },
-  pickerSheet: { backgroundColor: colors.cardBg, borderRadius: 22, overflow: "hidden", width: "100%" },
+  pickerSheet: { backgroundColor: colors.cardBg, borderRadius: 16, overflow: "hidden", width: "100%" },
   pickerHeader: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 18, paddingVertical: 14,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  pickerTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: colors.text },
+  pickerTitle: { fontFamily: "Inter-SemiBold", fontSize: 16, color: colors.text },
   pickerDone: { paddingVertical: 6, paddingHorizontal: 8 },
   pickerDoneText: { fontFamily: "Inter-SemiBold", fontSize: 15, color: colors.accent },
 

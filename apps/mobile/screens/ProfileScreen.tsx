@@ -433,6 +433,7 @@ export function ProfileScreen({ navigation }: Props) {
             <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
           </Pressable>
         </Card>
+        <View style={styles.bottomSpacer} />
         </View>
       </Screen>
     </SafeAreaView>
@@ -445,8 +446,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.appBg,
   },
   content: {
-    paddingBottom: spacing.xl,
-    paddingTop: 8,
+    paddingBottom: spacing.section,
+    paddingTop: 16,
   },
   header: {
     marginBottom: 10,
@@ -521,7 +522,7 @@ const styles = StyleSheet.create({
     color: "#a16207",
   },
   contentBody: {
-    marginTop: 10,
+    marginTop: 14,
   },
   section: {
     backgroundColor: colors.cardBg,
@@ -668,5 +669,8 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
     fontWeight: "600",
+  },
+  bottomSpacer: {
+    height: 96,
   },
 });

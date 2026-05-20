@@ -12,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { CardField, useStripe } from "@stripe/stripe-react-native";
-import { cardShadow, colors, radius, spacing } from "../styles/theme";
+import { colors, radius, spacing } from "../styles/theme";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { BackButton, Button } from "../components/ui";
 import {
@@ -299,8 +299,8 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: spacing.screenX,
-    paddingBottom: 32,
-    paddingTop: 16,
+    paddingBottom: 28,
+    paddingTop: 12,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -311,26 +311,29 @@ const styles = StyleSheet.create({
   loadingBadge: {
     alignItems: "center",
     backgroundColor: "rgba(255, 255, 255, 0.92)",
-    borderRadius: radius.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
     flexDirection: "row",
     gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    ...cardShadow,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   title: {
     color: colors.text,
-    fontSize: 28,
+    fontSize: 24,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     letterSpacing: -0.4,
     marginTop: 6,
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: 15,
+    fontSize: 14,
+    lineHeight: 21,
     marginTop: 6,
   },
   muted: {
@@ -341,19 +344,21 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.textMuted,
     fontSize: 12,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   section: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
-    marginBottom: 18,
+    marginBottom: 16,
     overflow: "hidden",
   },
   sectionHeader: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 18,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     marginBottom: 10,
     marginTop: 8,
@@ -361,6 +366,7 @@ const styles = StyleSheet.create({
   poweredBy: {
     color: colors.textSoft,
     fontSize: 12,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
     textAlign: "center",
   },
@@ -375,7 +381,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   addButton: {
@@ -391,6 +398,7 @@ const styles = StyleSheet.create({
   addCardLabel: {
     color: colors.text,
     fontSize: 13,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   cardFieldContainer: {
@@ -421,12 +429,14 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 14,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   rowSubtitle: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 18,
     marginTop: 2,
   },
   rowMeta: {
@@ -440,19 +450,21 @@ const styles = StyleSheet.create({
   },
   rowActionButton: {
     borderColor: colors.border,
-    borderRadius: radius.pill,
+    borderRadius: 10,
     borderWidth: 1,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
   },
   rowActionText: {
     color: colors.text,
     fontSize: 11,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   rowStatus: {
     color: "#16a34a",
     fontSize: 11,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   rowDelete: {
@@ -461,6 +473,7 @@ const styles = StyleSheet.create({
   rowDeleteText: {
     color: "#b42318",
     fontSize: 11,
+    fontFamily: "Inter-SemiBold",
     fontWeight: "600",
   },
   rowRetry: {
@@ -474,6 +487,7 @@ const styles = StyleSheet.create({
   emptyText: {
     color: colors.textMuted,
     fontSize: 13,
+    lineHeight: 20,
     textAlign: "center",
   },
   emptyState: {

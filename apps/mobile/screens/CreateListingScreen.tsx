@@ -12,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { createListing } from "../api";
 import { useAuth } from "../auth";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
-import { cardShadow, colors, spacing, textStyles } from "../styles/theme";
+import { colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<any, any>;
 
@@ -201,12 +201,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: spacing.screenX,
-    paddingTop: 10,
-    paddingBottom: 6,
+    paddingTop: 8,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   topBarSpacer: {
-    height: 34,
-    width: 34,
+    height: 40,
+    width: 40,
   },
   topTitle: {
     color: colors.text,
@@ -217,16 +219,15 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.screenX,
-    paddingBottom: 120,
+    paddingBottom: 108,
   },
   heroCard: {
     backgroundColor: colors.cardBg,
-    borderColor: "rgba(17, 24, 39, 0.08)",
-    borderRadius: 20,
+    borderColor: colors.border,
+    borderRadius: 14,
     borderWidth: 1,
-    marginBottom: 18,
-    padding: 20,
-    ...cardShadow,
+    marginBottom: 14,
+    padding: 18,
   },
   heroIllustration: {
     width: 220,
@@ -235,34 +236,33 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: colors.text,
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 24,
+    lineHeight: 30,
     fontFamily: "Inter-SemiBold",
     fontWeight: "600",
-    letterSpacing: -0.6,
+    letterSpacing: -0.4,
   },
   heroBody: {
-    color: "#667085",
-    fontSize: 15,
-    lineHeight: 24,
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 21,
     fontFamily: "Inter-Regular",
     fontWeight: "400",
-    marginTop: 10,
+    marginTop: 8,
   },
   card: {
     backgroundColor: colors.cardBg,
-    borderColor: "rgba(17, 24, 39, 0.08)",
-    borderRadius: 20,
+    borderColor: colors.border,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 20,
-    ...cardShadow,
+    padding: 18,
   },
   kicker: {
     ...textStyles.kicker,
     fontFamily: "Inter-SemiBold",
   },
   subtitle: {
-    color: "#667085",
+    color: colors.textMuted,
     fontSize: 14,
     fontFamily: "Inter-Regular",
     lineHeight: 22,
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   },
   notice: {
     backgroundColor: "#F8FAFC",
-    borderColor: "rgba(17, 24, 39, 0.08)",
+    borderColor: colors.border,
     borderRadius: 12,
     borderWidth: 1,
     color: colors.text,
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   field: {
-    marginTop: 18,
+    marginTop: 16,
   },
   fieldHalf: {
     flex: 1,
@@ -311,15 +311,15 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    gap: 14,
+    gap: 12,
     marginTop: 2,
   },
   footer: {
     backgroundColor: colors.appBg,
-    borderTopColor: "rgba(17, 24, 39, 0.08)",
+    borderTopColor: colors.border,
     borderTopWidth: 1,
     paddingHorizontal: spacing.screenX,
-    paddingTop: 14,
-    paddingBottom: 18,
+    paddingTop: 12,
+    paddingBottom: 16,
   },
 });
