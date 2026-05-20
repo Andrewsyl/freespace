@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -98,6 +98,8 @@ export function ListingScreen({ navigation, route }: Props) {
   const [startAt, setStartAt] = useState(() => new Date(from));
   const [endAt, setEndAt] = useState(() => new Date(to));
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [heroTapEnabled, setHeroTapEnabled] = useState(true);
+  const heroTapEnabledRef = useRef(true);
   const [pickerField, setPickerField] = useState<"start" | "end">("start");
   const [draftDate, setDraftDate] = useState<Date | null>(null);
 
@@ -418,15 +420,25 @@ export function ListingScreen({ navigation, route }: Props) {
             </View>
             </View>
 
-            <Pressable
-              style={[styles.heroTapZone, { height: heroTapHeight, top: 0 }]}
-              onPress={() => { setViewerIndex(0); setShowImageViewer(true); }}
-            />
+            {heroTapEnabled ? (
+              <Pressable
+                style={[styles.heroTapZone, { height: heroTapHeight, top: 0 }]}
+                onPress={() => { setViewerIndex(0); setShowImageViewer(true); }}
+              />
+            ) : null}
 
             <ScrollView
               style={styles.scroll}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: bottomBarSpacer }}
+              scrollEventThrottle={16}
+              onScroll={(event) => {
+                const nextEnabled = event.nativeEvent.contentOffset.y < Math.max(0, heroTapHeight - 24);
+                if (nextEnabled !== heroTapEnabledRef.current) {
+                  heroTapEnabledRef.current = nextEnabled;
+                  setHeroTapEnabled(nextEnabled);
+                }
+              }}
             >
               {/* Hero spacer */}
               <View style={{ height: heroHeight + insets.top - 28 }} />
@@ -925,6 +937,8 @@ const styles = StyleSheet.create({
   // Sheet
   sheet: {
     backgroundColor: "#ffffff",
+    position: "relative",
+    zIndex: 3,
     borderTopLeftRadius: 26, borderTopRightRadius: 26,
     paddingHorizontal: spacing.screenX,
     paddingTop: 8, paddingBottom: 16,
@@ -932,7 +946,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.03,
     shadowRadius: 12,
-    elevation: 6,
+    elevation: 8,
   },
   sheetHandle: {
     width: 36, height: 4, borderRadius: 999,
