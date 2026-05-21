@@ -580,14 +580,6 @@ export function ListingScreen({ navigation, route }: Props) {
                         </Pressable>
                       </View>
                     ) : null}
-                    <View style={styles.localAreaButtons}>
-                      <Pressable style={styles.localAreaButtonSecondary} onPress={handleOpenMaps}>
-                        <Text style={styles.localAreaButtonSecondaryText}>Get directions</Text>
-                      </Pressable>
-                      <Pressable style={styles.localAreaButtonSecondary} onPress={handleOpenStreetView}>
-                        <Text style={styles.localAreaButtonSecondaryText}>Street view</Text>
-                      </Pressable>
-                    </View>
                   </View>
                 </View>
 
@@ -627,17 +619,6 @@ export function ListingScreen({ navigation, route }: Props) {
                         </View>
                       </View>
                     ))}
-                  </View>
-                </View>
-
-                {/* ── Guarantee strip ───────────────────────── */}
-                <View style={styles.guaranteeStrip}>
-                  <View style={styles.guaranteeIconTile}>
-                    <Ionicons name="shield-checkmark-outline" size={18} color={colors.accent} />
-                  </View>
-                  <View style={styles.guaranteeCopy}>
-                    <Text style={styles.guaranteeTitle}>Pay at confirmation</Text>
-                    <Text style={styles.guaranteeSub}>Book now · charged at reservation</Text>
                   </View>
                 </View>
 

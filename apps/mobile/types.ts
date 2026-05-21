@@ -22,7 +22,12 @@ export type RootStackParamList = {
     from: string;
     to: string;
   };
-  VehicleType: undefined;
+  VehicleType:
+    | {
+        returnTo?: "BookingSummary";
+        focusField?: "plate";
+      }
+    | undefined;
   Welcome: undefined;
   SignIn: undefined;
   Register: undefined;

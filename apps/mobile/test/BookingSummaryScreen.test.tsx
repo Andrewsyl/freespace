@@ -5,7 +5,14 @@ import { GlobalLoadingProvider } from "../components/GlobalLoading";
 jest.mock("../auth", () => ({
   useAuth: () => ({
     token: "test-token",
-    user: { id: "user-1", email: "test@example.com" },
+    user: {
+      id: "user-1",
+      email: "test@example.com",
+      vehicleMake: "Ford",
+      vehicleType: "Fiesta",
+      vehicleColor: "Blue",
+      vehiclePlate: "21-D-12345",
+    },
   }),
 }));
 

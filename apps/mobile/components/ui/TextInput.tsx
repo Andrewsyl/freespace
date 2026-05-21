@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Pressable,
   StyleSheet,
   Text,
   TextInput as RNTextInput,
@@ -15,6 +16,7 @@ interface AppTextInputProps extends TextInputProps {
   helpText?: string;
   containerStyle?: ViewStyle;
   variant?: "signup" | "form" | "embedded";
+  clearable?: boolean;
 }
 
 export function TextInput({
@@ -25,38 +27,54 @@ export function TextInput({
   style,
   variant = "signup",
   multiline,
+  clearable = true,
   ...props
 }: AppTextInputProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const value = typeof props.value === "string" ? props.value : "";
+  const canClear = clearable && isFocused && !!props.onChangeText && !!value && props.editable !== false;
 
   return (
     <View style={[styles.container, variant === "embedded" && styles.containerEmbedded, containerStyle]}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
-      <RNTextInput
-        {...props}
-        multiline={multiline}
-        style={[
-          variant === "form" ? styles.inputFormText : styles.input,
-          variant === "embedded"
-            ? styles.inputEmbedded
-            : variant === "form"
-              ? styles.inputForm
-              : styles.inputSignup,
-          multiline && styles.inputMultiline,
-          isFocused && (variant === "embedded" ? styles.inputEmbeddedFocused : styles.inputFocused),
-          error && styles.inputError,
-          style,
-        ]}
-        onFocus={(event) => {
-          setIsFocused(true);
-          props.onFocus?.(event);
-        }}
-        onBlur={(event) => {
-          setIsFocused(false);
-          props.onBlur?.(event);
-        }}
-        placeholderTextColor={colors.textSoft}
-      />
+      <View style={styles.inputWrap}>
+        <RNTextInput
+          {...props}
+          multiline={multiline}
+          style={[
+            variant === "form" ? styles.inputFormText : styles.input,
+            variant === "embedded"
+              ? styles.inputEmbedded
+              : variant === "form"
+                ? styles.inputForm
+                : styles.inputSignup,
+            multiline && styles.inputMultiline,
+            isFocused && (variant === "embedded" ? styles.inputEmbeddedFocused : styles.inputFocused),
+            error && styles.inputError,
+            canClear && styles.inputWithClear,
+            style,
+          ]}
+          onFocus={(event) => {
+            setIsFocused(true);
+            props.onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setIsFocused(false);
+            props.onBlur?.(event);
+          }}
+          placeholderTextColor={colors.textSoft}
+        />
+        {canClear ? (
+          <Pressable
+            accessibilityLabel="Clear input"
+            hitSlop={10}
+            onPress={() => props.onChangeText?.("")}
+            style={[styles.clearButton, variant === "embedded" && styles.clearButtonEmbedded]}
+          >
+            <Text style={styles.clearButtonText}>×</Text>
+          </Pressable>
+        ) : null}
+      </View>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
       {!error && helpText ? <Text style={styles.helpText}>{helpText}</Text> : null}
     </View>
@@ -72,6 +90,10 @@ const styles = StyleSheet.create({
   },
   label: {
     ...fields.label,
+  },
+  inputWrap: {
+    justifyContent: "center",
+    position: "relative",
   },
   input: {
     ...fields.inputText,
@@ -105,6 +127,27 @@ const styles = StyleSheet.create({
     minHeight: 96,
     paddingTop: 12,
     textAlignVertical: "top",
+  },
+  inputWithClear: {
+    paddingRight: 34,
+  },
+  clearButton: {
+    alignItems: "center",
+    height: 44,
+    justifyContent: "center",
+    position: "absolute",
+    right: spacing.sm,
+    top: "50%",
+    transform: [{ translateY: -22 }],
+    width: 24,
+  },
+  clearButtonEmbedded: {
+    right: 0,
+  },
+  clearButtonText: {
+    color: colors.textSoft,
+    fontSize: 20,
+    lineHeight: 20,
   },
   helpText: {
     ...fields.helpText,

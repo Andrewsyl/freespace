@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { updateMe } from "../api";
 import { useAuth } from "../auth";
 import { Button, TextInput as AppTextInput } from "../components/ui";
+import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import type { RootStackParamList } from "../types";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,34 +23,56 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 type Props = NativeStackScreenProps<RootStackParamList, "VehicleType">;
 
 const VEHICLE_MAKES = [
+  "Alfa Romeo",
   "Audi",
   "BMW",
+  "BYD",
+  "Chevrolet",
+  "Chrysler",
   "Citroen",
   "Cupra",
   "Dacia",
+  "DS",
   "Fiat",
   "Ford",
+  "Genesis",
   "Honda",
   "Hyundai",
+  "Isuzu",
+  "Jaguar",
+  "Jeep",
   "Kia",
   "Land Rover",
+  "Lexus",
+  "Maserati",
   "Mazda",
   "Mercedes-Benz",
+  "MG",
   "Mini",
+  "Mitsubishi",
   "Nissan",
   "Opel",
   "Peugeot",
+  "Polestar",
+  "Porsche",
   "Renault",
+  "Saab",
+  "SEAT",
   "Seat",
   "Skoda",
+  "Smart",
+  "Subaru",
+  "Suzuki",
   "Tesla",
   "Toyota",
+  "Vauxhall",
   "Volkswagen",
   "Volvo",
   "Other",
 ];
 
 const VEHICLE_MODELS_BY_MAKE: Record<string, string[]> = {
+  "Alfa Romeo": ["Giulia", "Giulietta", "MiTo", "Tonale", "Stelvio", "Junior", "159", "Brera", "Spider", "Other"],
   Audi: [
     "A1",
     "A2",
@@ -65,19 +88,59 @@ const VEHICLE_MODELS_BY_MAKE: Record<string, string[]> = {
     "Q5",
     "Q7",
     "Q8",
+    "Q8 e-tron",
+    "RS3",
+    "RS4",
+    "RS5",
+    "RS6",
+    "RS7",
+    "S1",
+    "S3",
+    "S4",
+    "S5",
+    "S6",
+    "S7",
+    "S8",
+    "SQ5",
+    "SQ7",
+    "SQ8",
     "TT",
+    "R8",
     "e-tron",
     "Other",
   ],
   BMW: [
     "1 Series",
+    "1 Series M",
+    "114d",
+    "116d",
+    "116i",
+    "118d",
+    "118i",
+    "120i",
+    "120d",
     "2 Series",
+    "2 Series Active Tourer",
+    "2 Series Gran Coupe",
+    "2 Series Gran Tourer",
     "3 Series",
+    "3 Series Touring",
     "4 Series",
+    "4 Series Convertible",
+    "4 Series Gran Coupe",
     "5 Series",
+    "5 Series Touring",
     "6 Series",
+    "6 Series Gran Turismo",
     "7 Series",
     "8 Series",
+    "8 Series Gran Coupe",
+    "M2",
+    "M3",
+    "M4",
+    "M5",
+    "M8",
+    "XM",
     "X1",
     "X2",
     "X3",
@@ -85,28 +148,42 @@ const VEHICLE_MODELS_BY_MAKE: Record<string, string[]> = {
     "X5",
     "X6",
     "X7",
+    "Z4",
     "i3",
+    "iX1",
+    "iX2",
     "i4",
     "i5",
+    "iX3",
     "i7",
     "iX",
     "Other",
   ],
+  BYD: ["ATTO 3", "DOLPHIN", "SEAL", "SEAL U", "SEALION 7", "HAN", "TANG", "Other"],
+  Chevrolet: ["Aveo", "Camaro", "Captiva", "Corvette", "Cruze", "Lacetti", "Matiz", "Orlando", "Spark", "Trax", "Volt", "Other"],
+  Chrysler: ["300C", "Crossfire", "Grand Voyager", "PT Cruiser", "Voyager", "Ypsilon", "Other"],
   Citroen: ["C1", "C2", "C3", "C3 Aircross", "C4", "C4 X", "C5", "C5 Aircross", "Berlingo", "Dispatch", "Relay", "Other"],
   Cupra: ["Born", "Formentor", "Leon", "Leon Sportstourer", "Ateca", "Tavascan", "Terramar", "Other"],
   Dacia: ["Sandero", "Sandero Stepway", "Duster", "Jogger", "Spring", "Logan", "Other"],
+  DS: ["DS 3", "DS 3 Crossback", "DS 4", "DS 5", "DS 7", "DS 9", "Other"],
   Fiat: ["500", "500e", "500X", "600", "Panda", "Punto", "Tipo", "Doblo", "Ducato", "Other"],
   Ford: [
     "Fiesta",
     "Focus",
+    "Focus ST",
     "Mondeo",
     "Ka",
+    "Ka+",
     "EcoSport",
     "Puma",
     "Kuga",
     "Edge",
     "Mustang",
+    "Mustang Mach-E",
     "Explorer",
+    "S-Max",
+    "Galaxy",
+    "Capri",
     "Transit Courier",
     "Transit Connect",
     "Transit Custom",
@@ -114,21 +191,31 @@ const VEHICLE_MODELS_BY_MAKE: Record<string, string[]> = {
     "Ranger",
     "Other",
   ],
-  Honda: ["Civic", "Jazz", "Accord", "CR-V", "HR-V", "ZR-V", "e", "e:Ny1", "Other"],
+  Genesis: ["G70", "G80", "G90", "GV60", "GV70", "GV80", "Other"],
+  Honda: ["Civic", "Jazz", "Accord", "CR-V", "HR-V", "ZR-V", "Insight", "Prelude", "e", "e:Ny1", "Other"],
   Hyundai: [
     "i10",
     "i20",
     "i30",
+    "i40",
+    "ix20",
+    "ix35",
     "Bayon",
+    "Inster",
     "Kona",
     "Tucson",
     "Santa Fe",
+    "IONIQ Hybrid",
     "IONIQ",
     "IONIQ 5",
     "IONIQ 6",
+    "IONIQ 9",
     "Other",
   ],
-  Kia: ["Picanto", "Rio", "Ceed", "XCeed", "Stonic", "Niro", "Sportage", "Sorento", "EV3", "EV6", "EV9", "Other"],
+  Isuzu: ["D-Max", "MU-X", "Trooper", "Other"],
+  Jaguar: ["E-PACE", "F-PACE", "I-PACE", "XE", "XF", "XJ", "F-TYPE", "Other"],
+  Jeep: ["Avenger", "Renegade", "Compass", "Cherokee", "Grand Cherokee", "Wrangler", "Other"],
+  Kia: ["Picanto", "Rio", "Ceed", "ProCeed", "XCeed", "Stonic", "Niro", "Sportage", "Sorento", "EV3", "EV5", "EV6", "EV9", "Other"],
   "Land Rover": [
     "Defender",
     "Discovery",
@@ -140,7 +227,9 @@ const VEHICLE_MODELS_BY_MAKE: Record<string, string[]> = {
     "Range Rover Sport",
     "Other",
   ],
-  Mazda: ["Mazda2", "Mazda3", "Mazda6", "CX-3", "CX-30", "CX-5", "CX-60", "CX-80", "MX-5", "MX-30", "Other"],
+  Lexus: ["CT", "IS", "ES", "LC", "LS", "LBX", "UX", "NX", "RX", "RZ", "GX", "LX", "Other"],
+  Maserati: ["Ghibli", "GranCabrio", "GranTurismo", "Grecale", "Levante", "MC20", "Quattroporte", "Other"],
+  Mazda: ["Mazda2", "Mazda3", "Mazda6", "CX-3", "CX-30", "CX-5", "CX-60", "CX-80", "CX-90", "MX-5", "MX-30", "Other"],
   "Mercedes-Benz": [
     "A-Class",
     "B-Class",
@@ -148,7 +237,11 @@ const VEHICLE_MODELS_BY_MAKE: Record<string, string[]> = {
     "CLA",
     "CLS",
     "E-Class",
+    "EQA SUV",
     "S-Class",
+    "SL",
+    "GLC Coupe",
+    "GLE Coupe",
     "GLA",
     "GLB",
     "GLC",
@@ -160,24 +253,38 @@ const VEHICLE_MODELS_BY_MAKE: Record<string, string[]> = {
     "EQE",
     "EQS",
     "Vito",
+    "V-Class",
     "Sprinter",
     "Other",
   ],
+  MG: ["MG3", "MG4", "MG5", "MG Cyberster", "MG ZS", "HS", "Marvel R", "Other"],
   Mini: ["Hatch", "Convertible", "Clubman", "Countryman", "Aceman", "Paceman", "Other"],
-  Nissan: ["Micra", "Note", "Leaf", "Juke", "Qashqai", "X-Trail", "Ariya", "Navara", "Primastar", "Other"],
+  Mitsubishi: ["ASX", "Colt", "Eclipse Cross", "L200", "Mirage", "Outlander", "Pajero", "Other"],
+  Nissan: ["Micra", "Note", "Leaf", "Juke", "Qashqai", "X-Trail", "Ariya", "350Z", "370Z", "Navara", "Primastar", "Townstar", "Interstar", "Other"],
   Opel: ["Adam", "Corsa", "Astra", "Insignia", "Crossland", "Grandland", "Mokka", "Combo", "Vivaro", "Movano", "Other"],
-  Peugeot: ["108", "208", "2008", "308", "3008", "408", "5008", "Partner", "Expert", "Boxer", "Other"],
-  Renault: ["Clio", "Megane", "Captur", "Kadjar", "Austral", "Arkana", "Scenic", "Zoe", "Kangoo", "Trafic", "Master", "Other"],
+  Peugeot: ["108", "208", "2008", "308", "3008", "408", "508", "5008", "Partner", "Rifter", "Expert", "Boxer", "Other"],
+  Polestar: ["Polestar 2", "Polestar 3", "Polestar 4", "Other"],
+  Porsche: ["718 Boxster", "718 Cayman", "911", "Cayenne", "Macan", "Panamera", "Taycan", "Other"],
+  Renault: ["Clio", "Megane", "Captur", "Kadjar", "Austral", "Arkana", "Scenic", "Espace", "Rafale", "Symbioz", "Twingo", "Zoe", "Kangoo", "Trafic", "Master", "Other"],
+  Saab: ["9-3", "9-5", "900", "9000", "9-4X", "9-7X", "Other"],
+  SEAT: ["Mii", "Ibiza", "Leon", "Arona", "Ateca", "Tarraco", "Alhambra", "Other"],
   Seat: ["Mii", "Ibiza", "Leon", "Arona", "Ateca", "Tarraco", "Alhambra", "Other"],
-  Skoda: ["Citigo", "Fabia", "Scala", "Octavia", "Superb", "Kamiq", "Karoq", "Kodiaq", "Enyaq", "Other"],
+  Skoda: ["Citigo", "Fabia", "Rapid", "Scala", "Octavia", "Superb", "Kamiq", "Karoq", "Kodiaq", "Elroq", "Enyaq", "Other"],
+  Smart: ["fortwo", "forfour", "#1", "#3", "Roadster", "Other"],
+  Subaru: ["BRZ", "Forester", "Impreza", "Legacy", "Levorg", "Outback", "Solterra", "XV", "Other"],
+  Suzuki: ["Across", "Alto", "Baleno", "Ignis", "Jimny", "S-Cross", "Swift", "Swace", "Vitara", "Other"],
   Tesla: ["Model 3", "Model S", "Model X", "Model Y", "Cybertruck", "Other"],
-  Toyota: ["Aygo", "Yaris", "Yaris Cross", "Corolla", "Auris", "Avensis", "Camry", "Prius", "C-HR", "RAV4", "Land Cruiser", "Hilux", "Other"],
+  Toyota: ["Aygo", "Aygo X", "Yaris", "Yaris Cross", "Corolla", "Corolla Cross", "Auris", "Avensis", "Camry", "Prius", "GR86", "bZ4X", "C-HR", "RAV4", "Land Cruiser", "Hilux", "Proace", "Proace City", "Other"],
+  Vauxhall: ["Adam", "Agila", "Astra", "Combo", "Corsa", "Crossland", "Frontera", "Grandland", "Insignia", "Meriva", "Mokka", "Viva", "Vivaro", "Movano", "Zafira", "Other"],
   Volkswagen: [
     "up!",
     "Polo",
     "Golf",
+    "Golf GTI",
+    "Golf R",
     "Passat",
     "Arteon",
+    "ID. Buzz",
     "T-Cross",
     "Taigo",
     "T-Roc",
@@ -186,6 +293,7 @@ const VEHICLE_MODELS_BY_MAKE: Record<string, string[]> = {
     "ID.3",
     "ID.4",
     "ID.5",
+    "ID.7",
     "Touran",
     "Sharan",
     "Caddy",
@@ -193,7 +301,7 @@ const VEHICLE_MODELS_BY_MAKE: Record<string, string[]> = {
     "Crafter",
     "Other",
   ],
-  Volvo: ["V40", "V60", "V90", "S60", "S90", "XC40", "XC60", "XC90", "C40", "EX30", "EX40", "EX90", "Other"],
+  Volvo: ["V40", "V60", "V90", "S60", "S90", "XC40", "XC60", "XC90", "C40", "EC40", "EX30", "EX40", "EX90", "Other"],
   Other: ["Other"],
 };
 
@@ -211,6 +319,36 @@ const VEHICLE_COLORS = [
   "Gold",
   "Other",
 ];
+
+const VEHICLE_COLOR_SWATCHES: Record<string, string> = {
+  Black: "#1F2937",
+  White: "#FFFFFF",
+  Silver: "#C0C7D1",
+  Grey: "#8B95A7",
+  Blue: "#2563EB",
+  Red: "#DC2626",
+  Green: "#16A34A",
+  Yellow: "#EAB308",
+  Orange: "#F97316",
+  Brown: "#8B5E3C",
+  Gold: "#D4A017",
+  Other: "#CBD5E1",
+};
+
+const VEHICLE_COLOR_MARKERS: Record<string, string> = {
+  Black: "⬛",
+  White: "⬜",
+  Silver: "◻️",
+  Grey: "◼️",
+  Blue: "🟦",
+  Red: "🟥",
+  Green: "🟩",
+  Yellow: "🟨",
+  Orange: "🟧",
+  Brown: "🟫",
+  Gold: "🟨",
+  Other: "▪️",
+};
 
 function formatIrishPlateInput(raw: string) {
   const compact = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -231,7 +369,7 @@ function formatIrishPlateInput(raw: string) {
   return `${year}-${county}-${serial}`;
 }
 
-export function VehicleTypeScreen({ navigation }: Props) {
+export function VehicleTypeScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { token, user, setAuthUser } = useAuth();
   const scrollRef = useRef<ScrollView | null>(null);
@@ -289,7 +427,11 @@ export function VehicleTypeScreen({ navigation }: Props) {
         vehiclePlate: plate.trim() ? plate.trim().toUpperCase() : null,
       });
       await setAuthUser(response.user);
-      navigation.navigate("Tabs", { screen: "Profile" });
+      if (route.params?.returnTo === "BookingSummary") {
+        navigation.goBack();
+      } else {
+        navigation.navigate("Tabs", { screen: "Profile" });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save vehicle");
     } finally {
@@ -303,6 +445,14 @@ export function VehicleTypeScreen({ navigation }: Props) {
     });
   };
 
+  useEffect(() => {
+    if (route.params?.focusField !== "plate") return;
+    const timer = setTimeout(() => {
+      scrollToField(plateFieldY.current);
+    }, 180);
+    return () => clearTimeout(timer);
+  }, [route.params?.focusField]);
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView
@@ -315,17 +465,21 @@ export function VehicleTypeScreen({ navigation }: Props) {
           contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
           keyboardShouldPersistTaps="handled"
         >
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={20} color={colors.text} />
             <Text style={styles.backText}>Back</Text>
           </Pressable>
 
           <View style={styles.header}>
-            <Text style={styles.title}>My vehicle</Text>
-            <Text style={styles.subtitle}>Your vehicle details</Text>
+            <View style={styles.headerTextWrap}>
+              <Text style={styles.title}>My vehicle</Text>
+              <Text style={styles.subtitle}>Your vehicle details</Text>
+            </View>
+            {selectedMake ? (
+              <View style={styles.headerBrandLogo}>
+                <VehicleBrandLogo make={selectedMake} size={30} />
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.sheet}>
@@ -336,27 +490,29 @@ export function VehicleTypeScreen({ navigation }: Props) {
               }}
             >
               <Text style={styles.sectionLabel}>Car brand</Text>
-              <AppTextInput
-                containerStyle={styles.autoInputContainer}
-                value={brandQuery}
-                onChangeText={(value) => {
-                  setBrandQuery(value);
-                  if (value !== selectedMake) {
-                    setSelectedMake("");
-                    setSelectedModel("");
-                    setModelQuery("");
-                  }
-                }}
-                onFocus={() => {
-                  setBrandFocused(true);
-                  scrollToField(brandFieldY.current);
-                }}
-                onBlur={() => setTimeout(() => setBrandFocused(false), 120)}
-                placeholder="Search car brand"
-                style={styles.autoInput}
-                autoCapitalize="words"
-                autoCorrect={false}
-              />
+              <View style={styles.brandInputWrap}>
+                <AppTextInput
+                  containerStyle={styles.autoInputContainer}
+                  value={brandQuery}
+                  onChangeText={(value) => {
+                    setBrandQuery(value);
+                    if (value !== selectedMake) {
+                      setSelectedMake("");
+                      setSelectedModel("");
+                      setModelQuery("");
+                    }
+                  }}
+                  onFocus={() => {
+                    setBrandFocused(true);
+                    scrollToField(brandFieldY.current);
+                  }}
+                  onBlur={() => setTimeout(() => setBrandFocused(false), 120)}
+                  placeholder="Search car brand"
+                  style={styles.autoInput}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+              </View>
               {brandFocused ? (
                 <View style={styles.suggestionList}>
                   {filteredMakes.slice(0, 8).map((make) => (
@@ -385,26 +541,28 @@ export function VehicleTypeScreen({ navigation }: Props) {
               }}
             >
               <Text style={styles.sectionLabel}>Model</Text>
-              <AppTextInput
-                containerStyle={styles.autoInputContainer}
-                value={modelQuery}
-                onChangeText={(value) => {
-                  setModelQuery(value);
-                  if (value !== selectedModel) setSelectedModel("");
-                }}
-                onFocus={() => {
-                  if (selectedMake) {
-                    setModelFocused(true);
-                    scrollToField(modelFieldY.current);
-                  }
-                }}
-                onBlur={() => setTimeout(() => setModelFocused(false), 120)}
-                placeholder={selectedMake ? "Search model" : "Select brand first"}
-                style={[styles.autoInput, !selectedMake && styles.autoInputDisabled]}
-                autoCapitalize="words"
-                autoCorrect={false}
-                editable={!!selectedMake}
-              />
+              <View style={styles.brandInputWrap}>
+                <AppTextInput
+                  containerStyle={styles.autoInputContainer}
+                  value={modelQuery}
+                  onChangeText={(value) => {
+                    setModelQuery(value);
+                    if (value !== selectedModel) setSelectedModel("");
+                  }}
+                  onFocus={() => {
+                    if (selectedMake) {
+                      setModelFocused(true);
+                      scrollToField(modelFieldY.current);
+                    }
+                  }}
+                  onBlur={() => setTimeout(() => setModelFocused(false), 120)}
+                  placeholder={selectedMake ? "Search model" : "Select brand first"}
+                  style={[styles.autoInput, !selectedMake && styles.autoInputDisabled]}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  editable={!!selectedMake}
+                />
+              </View>
               {modelFocused && selectedMake ? (
                 <View style={styles.suggestionList}>
                   {filteredModels.slice(0, 8).map((model) => (
@@ -440,7 +598,11 @@ export function VehicleTypeScreen({ navigation }: Props) {
                 >
                   <Picker.Item label="Select color" value="" color={colors.textMuted} />
                   {VEHICLE_COLORS.map((color) => (
-                    <Picker.Item key={color} label={color} value={color} />
+                    <Picker.Item
+                      key={color}
+                      label={`${VEHICLE_COLOR_MARKERS[color] ?? "▪️"} ${color}`}
+                      value={color}
+                    />
                   ))}
                 </Picker>
               </View>
@@ -453,7 +615,7 @@ export function VehicleTypeScreen({ navigation }: Props) {
               }}
             >
               <Text style={styles.sectionLabel}>Registration plate</Text>
-              <View style={[styles.regRow, plateFocused && styles.regRowFocused]}>
+              <View style={styles.regRow}>
                 <View style={styles.plateCountry} />
                 <View style={styles.regDetails}>
                   <AppTextInput
@@ -464,6 +626,7 @@ export function VehicleTypeScreen({ navigation }: Props) {
                     placeholder="Enter reg plate"
                     autoCapitalize="characters"
                     autoCorrect={false}
+                    autoFocus={route.params?.focusField === "plate"}
                     textAlign="center"
                     style={[styles.regInput, styles.regInputText]}
                     onFocus={() => {
@@ -511,9 +674,22 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   header: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingHorizontal: spacing.screenX,
     paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
+  },
+  headerTextWrap: {
+    flex: 1,
+    paddingRight: spacing.sm,
+  },
+  headerBrandLogo: {
+    alignItems: "center",
+    height: 64,
+    justifyContent: "center",
+    minWidth: 88,
   },
   content: {
     paddingBottom: spacing.xl,
@@ -524,12 +700,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screenX,
   },
   title: {
-    ...textStyles.screenTitle,
-    marginBottom: spacing.xs,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 24,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+    lineHeight: 29,
+    marginBottom: 4,
     marginTop: spacing.xs,
   },
   subtitle: {
-    ...textStyles.subtitle,
+    color: colors.textMuted,
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    lineHeight: 21,
   },
   section: {
     marginBottom: 14,
@@ -542,6 +726,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
     lineHeight: 20,
     marginBottom: 10,
+  },
+  brandInputWrap: {
+    justifyContent: "center",
+    position: "relative",
   },
   autoInputContainer: {
     marginBottom: 0,
@@ -592,26 +780,23 @@ const styles = StyleSheet.create({
   },
   regRow: {
     alignItems: "center",
-    backgroundColor: colors.cardBg,
-    borderColor: "#D7DEE7",
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#3D6FB6",
+    borderRadius: 6,
+    borderWidth: 1.5,
     flexDirection: "row",
     overflow: "hidden",
-  },
-  regRowFocused: {
-    borderColor: colors.accent,
   },
   regDetails: {
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 4,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
   plateCountry: {
     alignItems: "center",
     alignSelf: "stretch",
-    backgroundColor: "#003399",
+    backgroundColor: "#3D6FB6",
     justifyContent: "center",
     width: 34,
   },
@@ -621,15 +806,16 @@ const styles = StyleSheet.create({
   },
   regInput: {
     backgroundColor: "transparent",
-    paddingHorizontal: 10,
-    paddingVertical: 10,
+    includeFontPadding: false,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   regInputText: {
-    fontFamily: "UKNumberPlate",
-    fontSize: 22,
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
     color: colors.text,
+    fontFamily: "UKNumberPlate",
+    fontSize: 24,
+    letterSpacing: 1,
+    textTransform: "uppercase",
   },
   error: {
     ...textStyles.meta,

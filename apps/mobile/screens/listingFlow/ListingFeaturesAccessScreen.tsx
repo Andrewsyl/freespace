@@ -215,6 +215,32 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.surfaceCard}>
+          <SectionHeader label="FEATURES" title="What else does your space offer?" />
+          <View style={styles.chipWrap}>
+            {accessOptions.map((option) => {
+              const active = draft.accessOptions.includes(option);
+              return (
+                <Pressable
+                  key={option}
+                  style={[styles.featureChip, active && styles.featureChipActive]}
+                  onPress={() => toggleAccess(option)}
+                >
+                  <View style={[styles.featureIconWrap, active && styles.featureIconWrapActive]}>
+                    <FeatureIcon option={option} active={active} />
+                  </View>
+                  <Text style={[styles.featureChipText, active && styles.featureChipTextActive]}>
+                    {option}
+                  </Text>
+                  {active ? (
+                    <CircleCheck size={16} color={hostFlowColors.accent} strokeWidth={2.2} />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.surfaceCard}>
           <SectionHeader
             label="ACCESS"
             title="Access instructions"
@@ -340,32 +366,6 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
                 />
               </View>
             ) : null}
-          </View>
-        </View>
-
-        <View style={styles.surfaceCard}>
-          <SectionHeader label="FEATURES" title="What else does your space offer?" />
-          <View style={styles.chipWrap}>
-            {accessOptions.map((option) => {
-              const active = draft.accessOptions.includes(option);
-              return (
-                <Pressable
-                  key={option}
-                  style={[styles.featureChip, active && styles.featureChipActive]}
-                  onPress={() => toggleAccess(option)}
-                >
-                  <View style={[styles.featureIconWrap, active && styles.featureIconWrapActive]}>
-                    <FeatureIcon option={option} active={active} />
-                  </View>
-                  <Text style={[styles.featureChipText, active && styles.featureChipTextActive]}>
-                    {option}
-                  </Text>
-                  {active ? (
-                    <CircleCheck size={16} color={hostFlowColors.accent} strokeWidth={2.2} />
-                  ) : null}
-                </Pressable>
-              );
-            })}
           </View>
         </View>
       </ScrollView>

@@ -131,10 +131,7 @@ const formatDateLabel = (date: Date) => {
 
 const formatTimeLabel = (date: Date) => `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 
-const formatDateTimeLabel = (date: Date) => {
-  const dayLabel = formatDateLabel(date);
-  return `${dayLabel} · ${formatTimeLabel(date)}`;
-};
+const formatDateTimeLabel = (date: Date) => `${formatDateLabel(date)} · ${formatTimeLabel(date)}`;
 const formatMapCardMetaLine = (fromIso: string, toIso: string, distanceM?: number | null) => {
   const fromDate = new Date(fromIso);
   const toDate = new Date(toIso);
@@ -218,8 +215,6 @@ export function SearchScreen({ navigation }: Props) {
   const searchAnim = useRef(new Animated.Value(0)).current;
   const searchAreaOpacity = useRef(new Animated.Value(0)).current;
   const searchAreaTranslateY = useRef(new Animated.Value(8)).current;
-  const pickerBackdropOpacity = useRef(new Animated.Value(0)).current;
-  const pickerSheetTranslateY = useRef(new Animated.Value(28)).current;
   const showAreaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchOverlayOpacity = useMemo(
     () =>
@@ -230,26 +225,6 @@ export function SearchScreen({ navigation }: Props) {
     [searchAnim]
   );
   const searchRequestIdRef = useRef(0);
-
-  useEffect(() => {
-    if (Platform.OS !== "android" || !pickerVisible) return;
-    pickerBackdropOpacity.setValue(0);
-    pickerSheetTranslateY.setValue(28);
-    Animated.parallel([
-      Animated.timing(pickerBackdropOpacity, {
-        toValue: 1,
-        duration: 180,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(pickerSheetTranslateY, {
-        toValue: 0,
-        duration: 220,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [pickerBackdropOpacity, pickerSheetTranslateY, pickerVisible]);
   const searchStartedAtRef = useRef(0);
   const mapReadyEventsRef = useRef({ ready: false, loaded: false });
   const mapReadyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1202,31 +1177,39 @@ export function SearchScreen({ navigation }: Props) {
           </View>
           <View style={styles.dateRowCard}>
             <View style={styles.dateRow}>
-              <View style={styles.dateTimeColumn}>
+              <Pressable
+                style={styles.dateTimeColumn}
+                onPress={() => openPicker("start")}
+                android_ripple={null}
+              >
                 <Text style={styles.dateTimeLabel}>From</Text>
-                <Pressable
-                  style={styles.dateTimeColumnButton}
-                  onPress={() => openPicker("start")}
-                  android_ripple={null}
+                <Text
+                  style={styles.dateTimeValue}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.9}
                 >
-                  <Text style={styles.dateTimeValue} numberOfLines={1} ellipsizeMode="tail">
-                    {formatDateTimeLabel(startAt)}
-                  </Text>
-                </Pressable>
-              </View>
-              <Ionicons name="arrow-forward" size={16} color="#9CA3AF" style={styles.dateArrowIcon} />
-              <View style={styles.dateTimeColumn}>
+                  {formatDateTimeLabel(startAt)}
+                </Text>
+              </Pressable>
+              <Ionicons name="arrow-forward" size={18} color="#9CA3AF" style={styles.dateArrowIcon} />
+              <Pressable
+                style={styles.dateTimeColumn}
+                onPress={() => openPicker("end")}
+                android_ripple={null}
+              >
                 <Text style={styles.dateTimeLabel}>Until</Text>
-                <Pressable
-                  style={styles.dateTimeColumnButton}
-                  onPress={() => openPicker("end")}
-                  android_ripple={null}
+                <Text
+                  style={styles.dateTimeValue}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.9}
                 >
-                  <Text style={styles.dateTimeValue} numberOfLines={1} ellipsizeMode="tail">
-                    {formatDateTimeLabel(endAt)}
-                  </Text>
-                </Pressable>
-              </View>
+                  {formatDateTimeLabel(endAt)}
+                </Text>
+              </Pressable>
             </View>
           </View>
           {renderSearchArea && pendingSearch ? (
@@ -1618,32 +1601,9 @@ export function SearchScreen({ navigation }: Props) {
         ) : null}
         {Platform.OS !== "web" ? (
           Platform.OS === "android" && pickerVisible ? (
-            <Modal
-              transparent
-              animationType="none"
-              visible
-              onRequestClose={() => {
-                setPickerVisible(false);
-                setDraftDate(null);
-              }}
-            >
-              <View style={styles.pickerModalRoot}>
-                <Pressable
-                  style={styles.pickerBackdropPressable}
-                  onPress={() => {
-                    setPickerVisible(false);
-                    setDraftDate(null);
-                  }}
-                >
-                  <Animated.View
-                    pointerEvents="none"
-                    style={[styles.pickerBackdrop, { opacity: pickerBackdropOpacity }]}
-                  />
-                </Pressable>
-                <Animated.View
-                  style={[styles.pickerSheetWrap, { transform: [{ translateY: pickerSheetTranslateY }] }]}
-                >
-                  <Pressable style={styles.pickerSheet} onPress={() => {}}>
+            <Modal transparent animationType="fade" visible>
+              <View style={styles.pickerBackdrop}>
+                <View style={styles.pickerSheet}>
                   <View style={styles.pickerHeader}>
                     <Text style={styles.pickerTitle}>When do you want to leave?</Text>
                     <Text style={styles.pickerSubtitle}>
@@ -1711,8 +1671,7 @@ export function SearchScreen({ navigation }: Props) {
                       </Text>
                     </Pressable>
                   </View>
-                  </Pressable>
-                </Animated.View>
+                </View>
               </View>
             </Modal>
           ) : (
@@ -1848,19 +1807,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: 24,
     borderWidth: 1,
     flex: 1,
     flexDirection: "row",
-    gap: 8,
-    height: 48,
+    gap: 10,
+    height: 44,
     paddingHorizontal: 14,
     paddingRight: 34,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
   },
   searchInput: {
     ...textStyles.bodyMedium,
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 18,
     flex: 1,
   },
   clearButton: {
@@ -1886,11 +1850,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    height: 44,
+    height: 40,
     justifyContent: "center",
-    width: 44,
+    width: 40,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   actionButtonActive: {
     borderColor: colors.accent,
@@ -1912,11 +1881,16 @@ const styles = StyleSheet.create({
   dateRowCard: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: radius.card,
     borderWidth: 1,
     marginTop: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   searchOverlayTrigger: {
     bottom: 0,
@@ -2024,110 +1998,86 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   filtersTitle: {
-    color: colors.text,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 24,
-    lineHeight: 30,
+    ...textStyles.titleSmall,
   },
   filtersSubtitle: {
-    color: colors.textMuted,
-    fontFamily: "Inter-Regular",
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 18,
+    ...textStyles.bodyMedium,
+    fontSize: 13,
+    marginBottom: 16,
   },
   filtersSection: {
-    backgroundColor: colors.cardBg,
+    backgroundColor: colors.appBg,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: radius.card,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 14,
     paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingVertical: 12,
   },
   row: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 6,
+    marginBottom: 12,
   },
   field: {
     flex: 1,
   },
   label: {
-    color: colors.textMuted,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 11,
-    letterSpacing: 0.5,
+    ...textStyles.meta,
     marginBottom: 6,
-    textTransform: "uppercase",
   },
   input: {
-    backgroundColor: colors.appBg,
     borderColor: colors.border,
     borderRadius: 12,
     borderWidth: 1,
     color: colors.text,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 15,
-    lineHeight: 20,
+    fontFamily: "Inter-Medium",
+    fontSize: 14,
     paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginBottom: 0,
+    marginBottom: 12,
   },
   chip: {
-    alignItems: "center",
     backgroundColor: colors.appBg,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    minHeight: 40,
-    justifyContent: "center",
+    borderRadius: radius.pill,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   chipActive: {
-    backgroundColor: "#ecfdf7",
-    borderColor: colors.accent,
+    backgroundColor: colors.accent,
   },
   chipText: {
-    color: colors.text,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 13,
-    lineHeight: 18,
+    ...textStyles.meta,
     textTransform: "capitalize",
   },
   chipTextActive: {
-    color: colors.accent,
+    color: "#ffffff",
   },
   switchRow: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 10,
   },
   switchLabel: {
-    color: colors.text,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 14,
-    lineHeight: 20,
+    ...textStyles.bodyStrong,
+    fontSize: 13,
   },
   applyButton: {
     alignItems: "center",
     backgroundColor: colors.accent,
-    borderRadius: 14,
-    minHeight: 48,
-    paddingVertical: 12,
+    borderRadius: 12,
+    minHeight: 44,
+    paddingVertical: 10,
   },
   applyButtonText: {
-    color: "#ffffff",
-    fontFamily: "Inter-SemiBold",
-    fontSize: 15,
-    lineHeight: 20,
+    ...textStyles.button,
+    fontSize: 14,
   },
   suggestions: {
     backgroundColor: colors.cardBg,
@@ -2304,11 +2254,10 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   sectionLabel: {
+    ...textStyles.meta,
     color: colors.text,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 15,
-    letterSpacing: 0.1,
-    marginBottom: 12,
+    letterSpacing: 0.4,
+    marginBottom: 10,
   },
   emptyText: {
     color: "#6b7280",
@@ -2317,39 +2266,23 @@ const styles = StyleSheet.create({
   dateRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
   },
   dateTimeColumn: {
     flex: 1,
     minWidth: 0,
   },
-  dateTimeColumnButton: {
-    backgroundColor: colors.appBg,
-    borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    minHeight: 42,
-    justifyContent: "center",
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-  },
   dateTimeLabel: {
-    color: colors.textMuted,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 9,
-    letterSpacing: 0.5,
-    marginBottom: 3,
-    textTransform: "uppercase",
+    ...textStyles.label,
+    marginBottom: 4,
   },
   dateTimeValue: {
-    color: colors.text,
-    fontFamily: "Inter-SemiBold",
+    ...textStyles.bodyStrong,
     fontSize: 14,
-    lineHeight: 16,
+    lineHeight: 19,
   },
   dateArrowIcon: {
-    marginHorizontal: 0,
-    marginTop: 12,
+    marginHorizontal: 4,
   },
   dateArrow: {
     alignItems: "center",
@@ -2403,31 +2336,14 @@ const styles = StyleSheet.create({
     ...textStyles.meta,
     color: colors.textMuted,
   },
-  pickerModalRoot: {
-    bottom: 0,
-    justifyContent: "flex-end",
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
-  },
-  pickerBackdropPressable: {
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
-  },
   pickerBackdrop: {
     backgroundColor: "rgba(15, 23, 42, 0.4)",
     bottom: 0,
+    justifyContent: "flex-end",
     left: 0,
     position: "absolute",
     right: 0,
     top: 0,
-  },
-  pickerSheetWrap: {
-    justifyContent: "flex-end",
   },
   pickerSheet: {
     backgroundColor: "#ffffff",

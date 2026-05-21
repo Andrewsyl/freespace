@@ -53,9 +53,9 @@ export const mobileDesignTokens = {
     },
     border: {
       subtle: "#F5F7F7",
-      default: "#E9EEEE",
-      strong: "#D9DEDE",
-      field: "#D9DEDE",
+      default: "#D3DADA",
+      strong: "#CDD6D6",
+      field: "#CDD6D6",
     },
     accent: {
       primary: "#00756B",

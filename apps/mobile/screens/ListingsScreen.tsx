@@ -86,7 +86,10 @@ export function ListingsScreen({ navigation }: Props) {
     try {
       const link = await createHostPayoutLink({
         token,
-        accountId: payoutStatus?.accountId ?? undefined,
+        accountId:
+          payoutStatus?.accountId && !payoutStatus.accountId.startsWith("acct_mock_")
+            ? payoutStatus.accountId
+            : undefined,
       });
       if (link.onboardingUrl) {
         await Linking.openURL(link.onboardingUrl);

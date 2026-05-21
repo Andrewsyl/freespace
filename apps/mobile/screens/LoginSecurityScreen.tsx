@@ -127,10 +127,7 @@ export function LoginSecurityScreen({ navigation }: Props) {
           contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
           keyboardShouldPersistTaps="handled"
         >
-          <Pressable
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={20} color={colors.text} />
             <Text style={styles.backText}>Back</Text>
           </Pressable>
@@ -246,8 +243,11 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.screenX,
   },
   groupLabel: {
-    ...textStyles.sectionTitle,
     color: colors.text,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    fontWeight: "600",
+    lineHeight: 20,
     marginBottom: 10,
   },
   groupHelp: {
@@ -256,8 +256,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   fieldLabel: {
-    ...textStyles.sectionTitle,
     color: colors.text,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    fontWeight: "600",
+    lineHeight: 20,
     marginBottom: 10,
     marginTop: 4,
   },
@@ -274,13 +277,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "flex-start",
     flexDirection: "row",
-    gap: 6,
-    marginBottom: spacing.sm,
-    paddingHorizontal: spacing.screenX,
-    paddingTop: spacing.screenY,
+    gap: 4,
+    marginLeft: spacing.screenX,
+    marginTop: spacing.screenY,
   },
   backText: {
-    ...textStyles.bodyStrong,
+    ...textStyles.body,
     color: colors.text,
   },
   header: {
@@ -289,12 +291,20 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   title: {
-    ...textStyles.screenTitle,
-    marginBottom: spacing.xs,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 24,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+    lineHeight: 29,
+    marginBottom: 4,
     marginTop: spacing.xs,
   },
   subtitle: {
-    ...textStyles.subtitle,
+    color: colors.textMuted,
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    lineHeight: 21,
   },
   suspendedBanner: {
     backgroundColor: "#FEF2F2",

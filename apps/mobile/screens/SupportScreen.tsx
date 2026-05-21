@@ -197,12 +197,20 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   title: {
-    ...textStyles.screenTitle,
-    marginBottom: spacing.xs,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 24,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+    lineHeight: 29,
+    marginBottom: 4,
     marginTop: spacing.xs,
   },
   subtitle: {
-    ...textStyles.subtitle,
+    color: colors.textMuted,
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    lineHeight: 21,
   },
   form: {
     backgroundColor: "transparent",
@@ -212,8 +220,11 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   label: {
-    ...textStyles.titleSmall,
     color: colors.text,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    fontWeight: "600",
+    lineHeight: 20,
     marginBottom: 10,
   },
   fieldInput: {

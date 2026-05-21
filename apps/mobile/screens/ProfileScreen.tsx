@@ -202,7 +202,7 @@ export function ProfileScreen({ navigation }: Props) {
               <Text style={styles.rowTitle}>My vehicle</Text>
               <Text style={styles.rowSubtitle}>
                 {user.vehicleMake && user.vehicleType
-                  ? `${user.vehicleMake} • ${user.vehicleType}`
+                  ? `${user.vehicleMake} - ${user.vehicleType}`
                   : "Add your car brand and model"}
               </Text>
             </View>

@@ -1,9 +1,9 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import type { RootStackParamList } from "../types";
-import { colors, spacing } from "../styles/theme";
-import { BackButton } from "../components/ui";
+import { colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 
@@ -11,7 +11,10 @@ export function SettingsScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <BackButton onPress={() => navigation.goBack()} />
+        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={20} color={colors.text} />
+          <Text style={styles.backText}>Back</Text>
+        </Pressable>
         <View style={styles.header}>
           <Text style={styles.title}>Settings</Text>
           <Text style={styles.subtitle}>Preferences and defaults</Text>
@@ -38,41 +41,63 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.screenX,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
   },
   title: {
     color: colors.text,
-    fontSize: 30,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 24,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+    lineHeight: 29,
+    marginBottom: 4,
+    marginTop: spacing.xs,
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: 15,
-    marginTop: 4,
-    marginBottom: 16,
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    lineHeight: 21,
   },
   content: {
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 16,
     paddingBottom: spacing.screenX,
-    gap: spacing.gap,
+    paddingTop: 0,
+  },
+  backButton: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    gap: 4,
+    marginLeft: spacing.screenX,
+    marginTop: spacing.screenY,
+  },
+  backText: {
+    ...textStyles.body,
+    color: colors.text,
   },
   card: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
     borderRadius: 16,
     borderWidth: 1,
-    padding: spacing.card,
+    marginHorizontal: spacing.screenX,
     marginBottom: 14,
+    padding: spacing.card,
   },
   cardTitle: {
     color: colors.text,
-    fontSize: 16,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
     fontWeight: "600",
+    lineHeight: 20,
   },
   cardBody: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    lineHeight: 21,
     marginTop: 6,
   },
 });

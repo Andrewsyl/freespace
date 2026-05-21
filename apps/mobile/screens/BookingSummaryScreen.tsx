@@ -31,7 +31,7 @@ import { getNotificationImageAttachment } from "../notifications";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
-import { BackButton, Button, SectionHeader, TextInput as AppTextInput } from "../components/ui";
+import { BackButton, Button, SectionHeader } from "../components/ui";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { formatDateLabel, formatTimeLabel } from "../utils/dateFormat";
 import { calculateListingTotal } from "../utils/pricing";
@@ -39,27 +39,6 @@ import { calculateListingTotal } from "../utils/pricing";
 type Props = NativeStackScreenProps<RootStackParamList, "BookingSummary">;
 
 const formatDateTimeLabel = (date: Date) => `${formatDateLabel(date)} · ${formatTimeLabel(date)}`;
-
-function formatIrishPlateInput(raw: string) {
-  const compact = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
-  if (!compact) return "";
-
-  const firstLetterIndex = compact.search(/[A-Z]/);
-  if (firstLetterIndex === -1) {
-    return compact.slice(0, 11);
-  }
-
-  const yearDigits = compact.slice(0, firstLetterIndex).replace(/\D/g, "");
-  const year = yearDigits.slice(0, 3);
-  const afterYear = compact.slice(firstLetterIndex);
-  const county = (afterYear.match(/[A-Z]/g) ?? []).join("").slice(0, 2);
-  const serial = afterYear.replace(/[A-Z]/g, "").replace(/\D/g, "").slice(0, 6);
-
-  if (!year) return compact.slice(0, 11);
-  if (!county) return year;
-  if (!serial) return `${year}-${county}`;
-  return `${year}-${county}-${serial}`;
-}
 
 export function BookingSummaryScreen({ navigation, route }: Props) {
   const { id, from, to } = route.params;
@@ -83,16 +62,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const [pickerField, setPickerField] = useState<"start" | "end">("start");
   const [draftDate, setDraftDate] = useState<Date | null>(null);
   const { reset: resetGlobalLoading } = useGlobalLoading();
-  const [plateFocused, setPlateFocused] = useState(false);
-  const scrollRef = useRef<ScrollView | null>(null);
-  const plateScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const plateSectionYRef = useRef(0);
-
-  useEffect(() => {
-    return () => {
-      if (plateScrollTimeoutRef.current) clearTimeout(plateScrollTimeoutRef.current);
-    };
-  }, []);
 
   useToastOnMessage(error, { variant: "danger" });
 
@@ -171,6 +140,11 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     };
   }, [priceSummary]);
 
+  const hasVehicleProfile =
+    !!user?.vehicleMake?.trim() && !!user?.vehicleType?.trim();
+  const hasVehiclePlate = vehiclePlate.trim().length > 0;
+  const requiresVehicleDetails = !hasVehicleProfile || !hasVehiclePlate;
+
   const openPicker = (field: "start" | "end") => {
     setPickerField(field);
     const current = field === "start" ? startAt : endAt;
@@ -193,13 +167,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     const safeEnd = next < minEnd ? minEnd : next;
     setEndAt(safeEnd);
   };
-
-  const scrollPlateIntoView = useCallback(() => {
-    scrollRef.current?.scrollTo({
-      y: Math.max(0, plateSectionYRef.current - 24),
-      animated: true,
-    });
-  }, []);
 
   const isAmbiguousPaymentSheetResultError = (message?: string | null) =>
     typeof message === "string" &&
@@ -536,7 +503,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           </View>
 
           <ScrollView
-            ref={scrollRef}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
@@ -595,12 +561,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 </View>
 
                 <View style={styles.sheetSectionStack}>
-                  <View
-                    style={styles.regCard}
-                    onLayout={(event) => {
-                      plateSectionYRef.current = event.nativeEvent.layout.y;
-                    }}
-                  >
+                  <View style={styles.regCard}>
                     {vehicleMake ? (
                       <View style={styles.vehicleLogoColumn}>
                         <VehicleBrandLogo make={vehicleMake} size={32} />
@@ -609,44 +570,51 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                     <View style={styles.vehicleContent}>
                       <SectionHeader
                         title="Vehicle"
-                        subtitle={vehicleMake && vehicleColor ? `${vehicleMake} · ${vehicleColor}` : undefined}
+                        subtitle={vehicleMake && vehicleColor ? `${vehicleMake} - ${vehicleColor}` : undefined}
                         trailing={
-                          <Button
-                            title={vehicleMake ? "Edit" : "Add"}
-                            variant="ghost"
-                            size="small"
+                          <Pressable
                             style={styles.vehicleEditButton}
-                            onPress={() => navigation.navigate("VehicleType")}
-                          />
+                            onPress={() =>
+                              navigation.navigate("VehicleType", {
+                                returnTo: "BookingSummary",
+                              })
+                            }
+                          >
+                            <Ionicons
+                              name={vehicleMake ? "create-outline" : "add"}
+                              size={14}
+                              color="#0F172A"
+                            />
+                            <Text style={styles.vehicleEditButtonText}>
+                              {vehicleMake ? "Edit" : "Add"}
+                            </Text>
+                          </Pressable>
                         }
                         style={styles.vehicleSectionHeader}
                       />
                       <View style={styles.regRow}>
                         <View style={styles.plateCountry} />
                         <View style={styles.regDetails}>
-                          <AppTextInput
-                            variant="embedded"
-                            value={vehiclePlate}
-                            onChangeText={(value) => setVehiclePlate(formatIrishPlateInput(value))}
-                            placeholder="Enter reg plate"
-                            autoCapitalize="characters"
-                            autoCorrect={false}
-                            textAlign="center"
-                            containerStyle={styles.regInputContainer}
-                            style={styles.regInput}
-                            onFocus={() => {
-                              setPlateFocused(true);
-                              if (plateScrollTimeoutRef.current) clearTimeout(plateScrollTimeoutRef.current);
-                              plateScrollTimeoutRef.current = setTimeout(() => {
-                                scrollPlateIntoView();
-                              }, Platform.OS === "android" ? 180 : 60);
-                            }}
-                            onBlur={() => {
-                              setPlateFocused(false);
-                            }}
-                          />
+                          <Pressable
+                            style={styles.regFieldButton}
+                            onPress={() =>
+                              navigation.navigate("VehicleType", {
+                                returnTo: "BookingSummary",
+                                focusField: "plate",
+                              })
+                            }
+                          >
+                            <Text style={[styles.regInput, !hasVehiclePlate && styles.regPlaceholder]}>
+                              {hasVehiclePlate ? vehiclePlate : "Enter reg plate"}
+                            </Text>
+                          </Pressable>
                         </View>
                       </View>
+                      {requiresVehicleDetails ? (
+                        <Text style={styles.regHint}>
+                          Add your vehicle details to continue with this booking.
+                        </Text>
+                      ) : null}
                     </View>
                   </View>
 
@@ -683,7 +651,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           <Text style={styles.error}>Listing not found.</Text>
         </View>
       )}
-      {listing && user && !plateFocused ? (
+      {listing && user ? (
         <View style={[styles.footerBar, { paddingBottom: 12 + insets.bottom }]}>
           <View style={styles.footerPriceBlock}>
             <Text style={styles.footerPriceLabel}>TOTAL</Text>
@@ -691,9 +659,12 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             <Text style={styles.footerPriceMeta}>{priceSummary?.durationLabel ?? ""}</Text>
           </View>
           <Pressable
-            style={[styles.footerButton, (bookingBusy || bookingConfirmed) && styles.footerButtonDisabled]}
+            style={[
+              styles.footerButton,
+              (bookingBusy || bookingConfirmed || requiresVehicleDetails) && styles.footerButtonDisabled,
+            ]}
             onPress={handlePayment}
-            disabled={bookingBusy || bookingConfirmed}
+            disabled={bookingBusy || bookingConfirmed || requiresVehicleDetails}
           >
             <View style={styles.footerButtonPill}>
               {bookingBusy ? (
@@ -1196,8 +1167,24 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   vehicleEditButton: {
-    paddingHorizontal: 10,
+    alignItems: "center",
+    alignSelf: "center",
+    backgroundColor: "#ffffff",
+    borderColor: "#e0e4e5",
+    borderRadius: 10,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 6,
+    marginLeft: 8,
     minHeight: 32,
+    paddingHorizontal: 10,
+  },
+  vehicleEditButtonText: {
+    color: "#4f5b5a",
+    fontFamily: "Inter-SemiBold",
+    fontSize: 12.5,
+    fontWeight: "600",
+    lineHeight: 16,
   },
   regInputContainer: {
     marginBottom: 0,
@@ -1279,6 +1266,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 12,
     paddingVertical: 12,
+    justifyContent: "center",
+  },
+  regFieldButton: {
+    alignItems: "center",
     justifyContent: "center",
   },
   plateCountry: {

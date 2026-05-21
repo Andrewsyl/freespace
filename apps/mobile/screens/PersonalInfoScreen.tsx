@@ -159,10 +159,7 @@ export function PersonalInfoScreen({ navigation }: Props) {
           contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
           keyboardShouldPersistTaps="handled"
         >
-          <Pressable
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={20} color={colors.text} />
             <Text style={styles.backText}>Back</Text>
           </Pressable>
@@ -335,12 +332,20 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   title: {
-    ...textStyles.screenTitle,
-    marginBottom: spacing.xs,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 24,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+    lineHeight: 29,
+    marginBottom: 4,
     marginTop: spacing.xs,
   },
   subtitle: {
-    ...textStyles.subtitle,
+    color: colors.textMuted,
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    lineHeight: 21,
   },
   sheet: {
     backgroundColor: "transparent",
@@ -351,8 +356,11 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   sectionLabel: {
-    ...textStyles.sectionTitle,
     color: colors.text,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    fontWeight: "600",
+    lineHeight: 20,
     marginBottom: 10,
   },
   phoneStatusRow: {

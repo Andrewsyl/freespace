@@ -139,6 +139,9 @@ router.post("/payout", requireAuth, enforceBlockedList, payoutLimiter, async (re
 
     const payload = payoutSchema.parse(req.body ?? {});
     let accountId = payload.accountId;
+    if (accountId?.startsWith("acct_mock_")) {
+      accountId = undefined;
+    }
 
     if (!accountId) {
       if (connectEnabled && stripe) {
