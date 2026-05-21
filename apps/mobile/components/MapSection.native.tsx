@@ -129,15 +129,20 @@ export default function MapSection({
     }
     (mapRef as React.MutableRefObject<MapView | null>).current = instance;
   };
+  // True once every label key for the current results has a captured image.
+  const allImagesReady = labelKeys.every((key) => Boolean(pinImages[key]));
+
   useEffect(() => {
+    // Only advance the display set when all new images are ready — this prevents
+    // pins from vanishing during the async capture window when results change.
     if (freezeMarkers && renderedResultsRef.current.length) return;
+    if (!allImagesReady) return;
     renderedResultsRef.current = nextResults;
-  }, [nextResults, freezeMarkers]);
+  }, [nextResults, freezeMarkers, allImagesReady]);
+
   useEffect(() => {
-    // Only evict stale images once every key in the new label set has been captured.
-    // This keeps old pin images alive during the capture gap so pins never flash away.
-    const newSetReady = labelKeys.every((key) => Boolean(pinImages[key]));
-    if (!newSetReady) return;
+    // Evict stale images only after all new-set captures are complete.
+    if (!allImagesReady) return;
     setPinImages((prev) => {
       const next: Record<string, string> = {};
       let changed = false;
@@ -150,7 +155,7 @@ export default function MapSection({
       });
       return changed ? next : prev;
     });
-  }, [labelKeys, pinImages]);
+  }, [labelKeys, pinImages, allImagesReady]);
 
   useEffect(() => {
     labelKeys.forEach((key) => {
@@ -206,7 +211,7 @@ export default function MapSection({
         moveOnMarkerPress={false}
         mapType="standard"
       >
-        {(freezeMarkers ? renderedResultsRef.current : nextResults).map((listing) => {
+        {(freezeMarkers || !allImagesReady ? renderedResultsRef.current : nextResults).map((listing) => {
           const isSelected = selectedId === listing.id;
           const price = priceForListing ? priceForListing(listing) : Number(listing.price_per_day);
           const label =
