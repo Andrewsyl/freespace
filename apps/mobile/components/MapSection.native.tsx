@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState, type Ref } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import MapView, {
   type EdgePadding,
@@ -7,6 +7,7 @@ import MapView, {
   PROVIDER_GOOGLE,
   type Region,
 } from "react-native-maps";
+import ViewShot from "react-native-view-shot";
 import { MapPricePin } from "./MapPricePin";
 
 type ListingResult = {
@@ -21,9 +22,13 @@ type ListingResult = {
   longitude?: number | null;
 };
 
-type MapRegion = Region;
+type ViewShotRef = InstanceType<typeof ViewShot>;
 
-const formatPinPrice = (value: number) => Math.round(value).toString();
+type MapRegion = Region;
+const PIN_STYLE_VERSION = "v20";
+const formatPinPrice = (value: number) => {
+  return Math.round(value).toString();
+};
 
 export default function MapSection({
   region,
@@ -56,7 +61,7 @@ export default function MapSection({
   selectedId?: string | null;
   provider?: "google" | "default";
   mapPadding?: EdgePadding;
-  mapRef?: React.Ref<MapView>;
+  mapRef?: Ref<MapView>;
   freezeMarkers?: boolean;
   onMapLoaded?: () => void;
   onMapReady?: () => void;
@@ -74,26 +79,46 @@ export default function MapSection({
       ),
     [results]
   );
-
   const renderedResultsRef = useRef(nextResults);
+  const captureRefs = useRef(new Map<string, ViewShotRef>());
+  const pendingCaptures = useRef(new Set<string>());
   const localMapRef = useRef<MapView | null>(null);
   const lastRegionRef = useRef<MapRegion>(region ?? initialRegion);
   const lastMarkerPressRef = useRef<number>(0);
-
-  if (region) {
-    lastRegionRef.current = region;
-  }
-
-  if (!freezeMarkers || !renderedResultsRef.current.length) {
-    renderedResultsRef.current = nextResults;
-  }
-
+  const [pinImages, setPinImages] = useState<Record<string, string>>({});
+  const pinLabelById = useMemo(
+    () =>
+      nextResults.reduce<Record<string, string>>((acc, listing) => {
+        const priceValue = priceForListing
+          ? priceForListing(listing)
+          : Number(listing.price_per_day);
+        acc[listing.id] =
+          listing.is_available === false
+            ? "Sold out"
+            : `€${formatPinPrice(priceValue)}`;
+        return acc;
+      }, {}),
+    [nextResults, priceForListing]
+  );
+  const labelKeys = useMemo(() => {
+    const labels = Array.from(new Set(Object.values(pinLabelById)));
+    const keys: string[] = [];
+    labels.forEach((label) => {
+      keys.push(`${label}|default|${PIN_STYLE_VERSION}|${priceKey ?? "base"}`);
+      keys.push(`${label}|selected|${PIN_STYLE_VERSION}|${priceKey ?? "base"}`);
+    });
+    return keys;
+  }, [pinLabelById, priceKey]);
   const providerValue =
     provider === "google"
       ? PROVIDER_GOOGLE
       : provider === "default"
         ? PROVIDER_DEFAULT
         : undefined;
+
+  if (region) {
+    lastRegionRef.current = region;
+  }
 
   const attachMapRef = (instance: MapView | null) => {
     localMapRef.current = instance;
@@ -104,7 +129,49 @@ export default function MapSection({
     }
     (mapRef as React.MutableRefObject<MapView | null>).current = instance;
   };
+  useEffect(() => {
+    if (freezeMarkers && renderedResultsRef.current.length) return;
+    renderedResultsRef.current = nextResults;
+  }, [nextResults, freezeMarkers]);
+  useEffect(() => {
+    // Only evict stale images once every key in the new label set has been captured.
+    // This keeps old pin images alive during the capture gap so pins never flash away.
+    const newSetReady = labelKeys.every((key) => Boolean(pinImages[key]));
+    if (!newSetReady) return;
+    setPinImages((prev) => {
+      const next: Record<string, string> = {};
+      let changed = false;
+      Object.entries(prev).forEach(([key, value]) => {
+        if (labelKeys.includes(key)) {
+          next[key] = value;
+        } else {
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [labelKeys, pinImages]);
 
+  useEffect(() => {
+    labelKeys.forEach((key) => {
+      if (pinImages[key] || pendingCaptures.current.has(key)) return;
+      const ref = captureRefs.current.get(key);
+      if (!ref) return;
+      pendingCaptures.current.add(key);
+      void ref
+        .capture?.()
+        .then((uri: string | undefined) => {
+          if (!uri) return;
+          setPinImages((prev) => ({ ...prev, [key]: uri }));
+        })
+        .finally(() => {
+          pendingCaptures.current.delete(key);
+        });
+    });
+  }, [labelKeys, pinImages]);
+
+  const getPinKey = (label: string, selected: boolean) =>
+    `${label}|${selected ? "selected" : "default"}|${PIN_STYLE_VERSION}|${priceKey ?? "base"}`;
   return (
     <View style={styles.container}>
       <MapView
@@ -130,6 +197,7 @@ export default function MapSection({
         customMapStyle={customMapStyle as any}
         onPress={() => {
           if (!onSelect) return;
+          // If a marker was just pressed, ignore this map press to avoid deselecting
           if (Date.now() - lastMarkerPressRef.current < 400) return;
           onOverlappingPins?.([]);
           onSelect(null as any);
@@ -138,25 +206,18 @@ export default function MapSection({
         moveOnMarkerPress={false}
         mapType="standard"
       >
-        {renderedResultsRef.current.filter((listing) => {
-          const r = lastRegionRef.current;
-          const lat = listing.latitude as number;
-          const lng = listing.longitude as number;
-          return (
-            lat >= r.latitude - r.latitudeDelta / 2 &&
-            lat <= r.latitude + r.latitudeDelta / 2 &&
-            lng >= r.longitude - r.longitudeDelta / 2 &&
-            lng <= r.longitude + r.longitudeDelta / 2
-          );
-        }).map((listing) => {
+        {(freezeMarkers ? renderedResultsRef.current : nextResults).map((listing) => {
           const isSelected = selectedId === listing.id;
           const price = priceForListing ? priceForListing(listing) : Number(listing.price_per_day);
-          const isSoldOut = listing.is_available === false;
-          const pinPrice = isSoldOut ? 0 : parseFloat(formatPinPrice(price));
-
+          const label =
+            pinLabelById[listing.id] ??
+            `€${formatPinPrice(price)}`;
+          const pinKey = getPinKey(label, isSelected);
+          const pinImage = pinImages[pinKey];
+          if (!pinImage) return null;
           return (
             <Marker
-              key={`marker-${listing.id}-${isSelected ? "sel" : "def"}`}
+              key={`marker-${listing.id}-${isSelected ? "sel" : "def"}-${PIN_STYLE_VERSION}`}
               coordinate={{
                 latitude: listing.latitude as number,
                 longitude: listing.longitude as number,
@@ -170,19 +231,56 @@ export default function MapSection({
                 onSelect?.(listing.id);
               }}
               zIndex={isSelected ? 1000000 : Math.round((90 - (listing.latitude as number)) * 10000)}
+              image={{ uri: pinImage }}
+              pinColor="transparent"
+              // Airbnb-style: Markers are always tappable
               tappable={true}
               stopPropagation={true}
-            >
-              <MapPricePin price={pinPrice} selected={isSelected} soldOut={isSoldOut} />
-            </Marker>
+            />
           );
         })}
       </MapView>
+      <View style={styles.captureShell} pointerEvents="none">
+        {labelKeys.map((key) => {
+          const [label, state] = key.split("|");
+          const selected = state === "selected";
+          const isSoldOut = label === "Sold out";
+          const price = isSoldOut ? 0 : parseFloat(label.replace(/[€,]/g, "")) || 0;
+          return (
+            <ViewShot
+              key={key}
+              ref={(ref) => {
+                if (ref) {
+                  captureRefs.current.set(key, ref);
+                } else {
+                  captureRefs.current.delete(key);
+                }
+              }}
+              options={{ format: "png", result: "tmpfile", quality: 1 }}
+              style={styles.capture}
+            >
+              <MapPricePin price={price} selected={selected} soldOut={isSoldOut} />
+            </ViewShot>
+          );
+        })}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  capture: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  captureShell: {
+    alignItems: "center",
+    justifyContent: "center",
+    left: -1000,
+    opacity: 0,
+    position: "absolute",
+    top: -1000,
+  },
   container: {
     flex: 1,
   },

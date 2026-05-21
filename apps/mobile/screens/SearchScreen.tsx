@@ -235,7 +235,6 @@ export function SearchScreen({ navigation }: Props) {
   const mapSpinnerLoopRef = useRef<Animated.CompositeAnimation | null>(null);
   const mapRegionSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const selectedIdRef = useRef<string | null>(null);
   const initialRegionHandledRef = useRef(false);
 
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
@@ -332,10 +331,6 @@ export function SearchScreen({ navigation }: Props) {
     resultsRef.current = results;
   }, [results]);
 
-  useEffect(() => {
-    selectedIdRef.current = selectedId;
-  }, [selectedId]);
-
   const isWithinRadius = useCallback(
     (listing: ListingSummary, center: { lat: number; lng: number }, radiusM: number) => {
       if (typeof listing.latitude !== "number" || typeof listing.longitude !== "number") {
@@ -361,7 +356,7 @@ export function SearchScreen({ navigation }: Props) {
       region.latitudeDelta ** 2 + region.longitudeDelta ** 2
     );
     const rawRadiusKm =
-      Math.max(MIN_SEARCH_RADIUS_KM, (diagDelta * 111) / 2);
+      Math.max(MIN_SEARCH_RADIUS_KM, (diagDelta * 111) / 2) * 1.2;
     return Math.min(MAX_SEARCH_RADIUS_KM, rawRadiusKm);
   }, []);
 
@@ -444,9 +439,9 @@ export function SearchScreen({ navigation }: Props) {
       const preserveSelection = options?.preserveSelection ?? false;
       if (shouldShowGlobal) {
         showGlobalLoading("Searching...");
-        setIsRefreshingPins(true);
       }
       setLoading(true);
+      setIsRefreshingPins(true);
       setError(null);
       const params = buildSearchParams(paramsOverride);
       logInfo("Search started", params);
@@ -499,33 +494,20 @@ export function SearchScreen({ navigation }: Props) {
           setPendingResults([]);
         }
       } finally {
-        if (shouldShowGlobal) {
-          const elapsed = Date.now() - searchStartedAtRef.current;
-          const remaining = Math.max(0, 1000 - elapsed);
-          setTimeout(() => {
-            hideGlobalLoading();
-            if (searchRequestIdRef.current !== requestId) return;
-            setLoading(false);
-            setIsRefreshingPins(false);
-            if (nextResultsSnapshot) {
-              setResults(nextResultsSnapshot);
-              setPendingResults(null);
+        const elapsed = Date.now() - searchStartedAtRef.current;
+        const remaining = Math.max(0, 1000 - elapsed);
+        setTimeout(() => {
+            if (shouldShowGlobal) {
+              hideGlobalLoading();
             }
-          }, remaining);
-        } else {
-          const elapsed = Date.now() - searchStartedAtRef.current;
-          const remaining = Math.max(0, 700 - elapsed);
-          setTimeout(() => {
-            if (searchRequestIdRef.current !== requestId) return;
-            setLoading(false);
-            if (nextResultsSnapshot && nextResultsSnapshot.length > 0) {
-              setResults(nextResultsSnapshot);
-              setPendingResults(null);
-            } else {
-              setPendingResults(null);
-            }
-          }, remaining);
-        }
+          if (searchRequestIdRef.current !== requestId) return;
+          setLoading(false);
+          if (nextResultsSnapshot) {
+            setResults(nextResultsSnapshot);
+            setPendingResults(null);
+          }
+          setIsRefreshingPins(false);
+        }, remaining);
       }
     },
     [buildSearchParams, hideGlobalLoading, showGlobalLoading, pendingResults]
@@ -832,13 +814,6 @@ export function SearchScreen({ navigation }: Props) {
       return;
     }
 
-    // Cancel any pending card-dismiss from a map pan so it doesn't clear the new selection
-    if (cardDismissTimerRef.current) {
-      clearTimeout(cardDismissTimerRef.current);
-      cardDismissTimerRef.current = null;
-      setDismissingCard(false);
-    }
-
     setSelectedId(id);
     if (!id || !mapRef.current) return;
 
@@ -898,6 +873,7 @@ export function SearchScreen({ navigation }: Props) {
         setShowSearchArea(false);
         setPendingSearch(null);
         setSelectedId(null);
+        setResults([]);
         setLoading(true);
         void runSearch();
       })();
@@ -1177,7 +1153,7 @@ export function SearchScreen({ navigation }: Props) {
             onRegionChangeComplete={handleRegionChange}
             selectedId={selectedId}
             mapRef={mapRef}
-            freezeMarkers={isRefreshingPins}
+            freezeMarkers={loading || isRefreshingPins}
             onMapLoaded={() => handleMapReady("loaded")}
             onMapReady={() => handleMapReady("ready")}
             onOverlappingPins={setOverlappingPins}

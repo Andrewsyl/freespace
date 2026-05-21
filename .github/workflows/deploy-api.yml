@@ -1,5 +1,9 @@
 name: Deploy API and Web
 
+concurrency:
+  group: deploy-api-web-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
     inputs:
