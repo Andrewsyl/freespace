@@ -1046,8 +1046,6 @@ export function SearchScreen({ navigation }: Props) {
       showAreaTimerRef.current = null;
     }
     if (!ignoreNextRegionChangeRef.current && !isProgrammaticMoveRef.current) {
-      // Keep the card open while a listing is selected — only dismiss on explicit map tap
-      if (selectedIdRef.current) return;
       if (cardDismissTimerRef.current) return;
       setDismissingCard(true);
       cardDismissTimerRef.current = setTimeout(() => {
