@@ -69,7 +69,6 @@ export function MobileSearchLayout({
   onAddressChange,
   onMarkerSelect,
   onMarkerClick,
-  onPopupBook,
   onBoundsChanged,
   onSearchArea,
 }: SharedLayoutProps) {
@@ -109,8 +108,6 @@ export function MobileSearchLayout({
           controlsOffset={{ bottom: 160, right: 12 }}
           showCenterPin
           selectedListingId={selectedListingId ?? undefined}
-          popupListing={undefined}
-          onPopupBook={onPopupBook}
           onSelectListing={onMarkerSelect}
           onMarkerClick={onMarkerClick}
           disableAutoFit={lockViewport}

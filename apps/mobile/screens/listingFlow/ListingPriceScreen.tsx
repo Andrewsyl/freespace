@@ -188,7 +188,7 @@ export function ListingPriceScreen({ navigation }: Props) {
 
         <View style={styles.noteCard}>
           <View style={styles.noteTitleRow}>
-            <Info size={16} color="#147A72" strokeWidth={2} />
+            <Info size={16} color="#2ECC8F" strokeWidth={2} />
             <Text style={styles.noteTitle}>How rates work</Text>
           </View>
           <View style={styles.noteList}>

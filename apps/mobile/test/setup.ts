@@ -110,3 +110,10 @@ jest.mock("react-native-date-picker", () => {
   return ({ children }: { children?: React.ReactNode }) =>
     React.createElement(View, null, children);
 });
+
+jest.mock("@react-native-community/datetimepicker", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+  return ({ children }: { children?: React.ReactNode }) =>
+    React.createElement(View, null, children);
+});

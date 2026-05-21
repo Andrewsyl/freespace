@@ -17,7 +17,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useStripe } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
-import DatePicker from "react-native-date-picker";
+import DatePicker from "../components/AdaptiveDatePicker";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, radius, spacing, textStyles } from "../styles/theme";
 import {
@@ -51,7 +51,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const [bookingBusy, setBookingBusy] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [confirmingBooking, setConfirmingBooking] = useState(false);
-  const [paymentFailed, setPaymentFailed] = useState(false);
   const [paymentFailureMessage, setPaymentFailureMessage] = useState<string | null>(null);
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleColor, setVehicleColor] = useState("");
@@ -64,6 +63,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const { reset: resetGlobalLoading } = useGlobalLoading();
 
   useToastOnMessage(error, { variant: "danger" });
+  useToastOnMessage(paymentFailureMessage, { variant: "danger" });
 
   useEffect(() => {
     let active = true;
@@ -250,7 +250,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     if (!listing || !priceSummary || !token || bookingConfirmed) return;
     setBookingBusy(true);
     setError(null);
-    setPaymentFailed(false);
     setPaymentFailureMessage(null);
     let didConfirm = false;
     try {
@@ -288,8 +287,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             // Ignore cancellation failures; booking cleanup is best-effort.
           }
         }
-        setPaymentFailed(true);
-        setPaymentFailureMessage("We couldn’t start the payment. Please try again.");
+        setPaymentFailureMessage("Couldn’t start payment. Try again.");
         return;
       }
       const presentResult = await presentPaymentSheet();
@@ -368,15 +366,13 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           }
         }
         if (presentResult.error.code === "Canceled") {
-          setPaymentFailed(true);
-          setPaymentFailureMessage("Payment canceled. You can try again anytime.");
+          setPaymentFailureMessage("Payment canceled.");
           return;
         }
-        setPaymentFailed(true);
         setPaymentFailureMessage(
           isAmbiguousResult
-            ? "We couldn't confirm the payment result. Please check your booking history before trying again."
-            : presentResult.error.message ?? "Payment failed. Please try again."
+            ? "We couldn’t confirm payment. Check your bookings before trying again."
+            : presentResult.error.message ?? "Payment failed. Try again."
         );
         return;
       }
@@ -450,9 +446,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       const message = err instanceof Error ? err.message : "Booking failed";
       logError("Booking error", { message });
       if (message.toLowerCase().includes("time slot already booked")) {
-        setPaymentFailed(true);
         setPaymentFailureMessage(
-          "That slot was just booked by someone else. Please choose another time."
+          "That slot was just taken. Choose another time."
         );
         setError(null);
         return;
@@ -633,15 +628,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                       <Text style={styles.priceBreakdownTotalValue}>€{Math.round(pricing.finalPrice)}</Text>
                     </View>
                   </View>
-
-                  {paymentFailed ? (
-                    <View style={styles.noticeCard}>
-                      <Text style={styles.noticeTitle}>Payment didn’t go through</Text>
-                      <Text style={styles.noticeText}>
-                        {paymentFailureMessage ?? "Please try again or use another payment method."}
-                      </Text>
-                    </View>
-                  ) : null}
                 </View>
             </View>
           </ScrollView>
@@ -1428,7 +1414,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
     minWidth: 172,
     borderRadius: 12,
-    backgroundColor: '#158a83',
+    backgroundColor: '#2ECC8F',
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,

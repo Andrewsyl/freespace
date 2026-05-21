@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { Listing } from "./ListingCard";
-import { MapPopupCard } from "./MapPopupCard";
 
 type BoundsLiteral = { north: number; south: number; east: number; west: number };
 
@@ -18,8 +16,6 @@ type MapViewProps = {
   controlsPosition?: "top-right" | "top-left" | "bottom-right" | "bottom-left";
   controlsOffset?: { top?: number; right?: number; bottom?: number; left?: number };
   selectedListingId?: string;
-  popupListing?: Listing | null;
-  onPopupBook?: (listing: Listing) => void;
   onSelectListing?: (listingId: string) => void;
   onMarkerClick?: (listing: Listing) => void;
   onBoundsChanged?: (bounds: BoundsLiteral, center: { lat: number; lng: number }, zoom: number, userInteracted: boolean) => void;
@@ -83,8 +79,6 @@ export function MapView({
   controlsPosition = "top-right",
   controlsOffset,
   selectedListingId,
-  popupListing,
-  onPopupBook,
   onSelectListing,
   onMarkerClick,
   onBoundsChanged,
@@ -100,8 +94,6 @@ export function MapView({
   const [tokenMissing, setTokenMissing] = useState(false);
   const hasUserDraggedRef = useRef(false);
   const prevSelectedRef = useRef<string | null>(null);
-  const popupRef = useRef<mapboxgl.Popup | null>(null);
-  const popupRootRef = useRef<Root | null>(null);
 
   // Initialise map once
   useEffect(() => {
@@ -240,47 +232,6 @@ export function MapView({
       centerMarkerRef.current.setLngLat([center.lng, center.lat]);
     }
   }, [center, showCenterPin, mapReady]);
-
-  // Popup
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!mapReady || !map) return;
-
-    popupRef.current?.remove();
-    popupRef.current = null;
-    if (popupRootRef.current) {
-      const root = popupRootRef.current;
-      popupRootRef.current = null;
-      queueMicrotask(() => root.unmount());
-    }
-
-    if (!popupListing || typeof popupListing.latitude !== "number" || typeof popupListing.longitude !== "number") return;
-
-    const container = document.createElement("div");
-    const root = createRoot(container);
-    popupRootRef.current = root;
-    root.render(
-      <MapPopupCard
-        title={popupListing.title}
-        price={`€${popupListing.pricePerDay}`}
-        secondaryText="5 min walk · Available now"
-        onBook={() => onPopupBook?.(popupListing)}
-      />
-    );
-
-    const popup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false, offset: 16, anchor: "bottom" })
-      .setLngLat([popupListing.longitude, popupListing.latitude])
-      .setDOMContent(container)
-      .addTo(map);
-    popupRef.current = popup;
-
-    return () => {
-      popup.remove();
-      popupRef.current = null;
-      queueMicrotask(() => root.unmount());
-      popupRootRef.current = null;
-    };
-  }, [mapReady, popupListing, onPopupBook]);
 
   return (
     <div

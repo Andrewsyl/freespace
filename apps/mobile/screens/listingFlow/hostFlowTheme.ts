@@ -8,7 +8,7 @@ export const hostFlowColors = {
   text: "#101414",
   textMuted: "#5F6868",
   textSoft: "#8C9494",
-  accent: "#00756B",
+  accent: "#2ECC8F",
   accentSoft: "#EEF9F4",
   accentSoftBorder: "#DDF6EA",
   mint: "#75E3A2",

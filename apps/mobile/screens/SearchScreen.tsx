@@ -19,7 +19,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import type MapView from "react-native-maps";
-import DatePicker from "react-native-date-picker";
+import DatePicker from "../components/AdaptiveDatePicker";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../auth";

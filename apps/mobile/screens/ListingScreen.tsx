@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Image,
   Linking,
   Modal,
@@ -13,7 +14,6 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -22,7 +22,7 @@ import ImageViewer from "react-native-image-zoom-viewer";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import LottieView from "lottie-react-native";
-import DatePicker from "react-native-date-picker";
+import DatePicker from "../components/AdaptiveDatePicker";
 import { colors, radius, spacing } from "../styles/theme";
 import { getListing, listListingReviews, type ListingReview } from "../api";
 import { useAuth } from "../auth";
@@ -75,7 +75,7 @@ const avatarBg = (name: string) => AVATAR_BG[(name.charCodeAt(0) || 0) % AVATAR_
 
 export function ListingScreen({ navigation, route }: Props) {
   const { id, from, to, booking } = route.params;
-  const { login, register, loading: authLoading, user } = useAuth();
+  const { user } = useAuth();
   const { isFavorite, toggle } = useFavorites();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -83,14 +83,13 @@ export function ListingScreen({ navigation, route }: Props) {
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [authError, setAuthError] = useState<string | null>(null);
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const [showFullAbout, setShowFullAbout] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
   const [showMapViewer, setShowMapViewer] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authOverlayVisible, setAuthOverlayVisible] = useState(false);
   const [showFavAnim, setShowFavAnim] = useState(false);
   const [reviews, setReviews] = useState<ListingReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -100,6 +99,8 @@ export function ListingScreen({ navigation, route }: Props) {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [heroTapEnabled, setHeroTapEnabled] = useState(true);
   const heroTapEnabledRef = useRef(true);
+  const authBackdropOpacity = useRef(new Animated.Value(0)).current;
+  const authSheetTranslateY = useRef(new Animated.Value(320)).current;
   const [pickerField, setPickerField] = useState<"start" | "end">("start");
   const [draftDate, setDraftDate] = useState<Date | null>(null);
 
@@ -137,6 +138,42 @@ export function ListingScreen({ navigation, route }: Props) {
   }, [from, to]);
 
   useEffect(() => {
+    if (showAuthModal) {
+      setAuthOverlayVisible(true);
+      authBackdropOpacity.setValue(0);
+      authSheetTranslateY.setValue(320);
+      Animated.parallel([
+        Animated.timing(authBackdropOpacity, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(authSheetTranslateY, {
+          toValue: 0,
+          duration: 240,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      return;
+    }
+    if (!authOverlayVisible) return;
+    Animated.parallel([
+      Animated.timing(authBackdropOpacity, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+      Animated.timing(authSheetTranslateY, {
+        toValue: 320,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (finished) setAuthOverlayVisible(false);
+    });
+  }, [authBackdropOpacity, authOverlayVisible, authSheetTranslateY, showAuthModal]);
+
+  useEffect(() => {
     let active = true;
     const loadReviews = async () => {
       if (!id) return;
@@ -159,7 +196,7 @@ export function ListingScreen({ navigation, route }: Props) {
     return calculateListingTotal(listing, startAt, endAt);
   }, [listing, startAt, endAt]);
 
-  const showBottomBar = !!(priceSummary && user);
+  const showBottomBar = !!priceSummary;
   const bottomBarSpacer = showBottomBar ? 40 + insets.bottom : 24;
 
   const openPicker = (field: "start" | "end") => {
@@ -312,24 +349,6 @@ export function ListingScreen({ navigation, route }: Props) {
     return { hours, extra: Math.round(discounted).toString(), endOfDay };
   }, [listing, endAt]);
 
-  const handleLogin = async () => {
-    setAuthError(null);
-    try {
-      await login(email.trim(), password);
-    } catch (err) {
-      setAuthError(err instanceof Error ? err.message : "Login failed");
-    }
-  };
-
-  const handleRegister = async () => {
-    setAuthError(null);
-    try {
-      await register(email.trim(), password, { termsVersion: "2026-01-10", privacyVersion: "2026-01-10" });
-    } catch (err) {
-      setAuthError(err instanceof Error ? err.message : "Sign up failed");
-    }
-  };
-
   const handleToggleFavorite = async () => {
     if (!listing) return;
     if (!user) { navigation.navigate("Welcome"); return; }
@@ -354,6 +373,15 @@ export function ListingScreen({ navigation, route }: Props) {
 
   const handleOpenStreetView = () => {
     void Linking.openURL(streetViewUrl);
+  };
+
+  const closeAuthOverlay = () => {
+    setShowAuthModal(false);
+  };
+
+  const openAuthScreen = (screen: "Welcome" | "SignIn" | "Register") => {
+    closeAuthOverlay();
+    setTimeout(() => navigation.navigate(screen), 180);
   };
 
   return (
@@ -685,44 +713,11 @@ export function ListingScreen({ navigation, route }: Props) {
                   )}
                 </View>
 
-                {/* ── Auth card ────────────────────────────── */}
-                {!user && (
-                  <View style={styles.authCard}>
-                    <Text style={styles.authTitle}>Sign in to book</Text>
-                    <Text style={styles.authSub}>Join thousands of commuters saving on parking.</Text>
-                    <TextInput
-                      style={styles.authInput}
-                      placeholder="Email address"
-                      placeholderTextColor={colors.textSoft}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      value={email}
-                      onChangeText={setEmail}
-                    />
-                    <TextInput
-                      style={styles.authInput}
-                      placeholder="Password"
-                      placeholderTextColor={colors.textSoft}
-                      secureTextEntry
-                      value={password}
-                      onChangeText={setPassword}
-                    />
-                    {authError ? <Text style={styles.authError}>{authError}</Text> : null}
-                    <View style={styles.authBtns}>
-                      <Pressable style={styles.authBtnSecondary} onPress={handleLogin} disabled={authLoading}>
-                        <Text style={styles.authBtnSecondaryText}>Log in</Text>
-                      </Pressable>
-                      <Pressable style={styles.authBtnPrimary} onPress={handleRegister} disabled={authLoading}>
-                        <Text style={styles.authBtnPrimaryText}>Create account</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                )}
               </View>
             </ScrollView>
 
             {/* ── Sticky bottom bar ──────────────────────── */}
-            {priceSummary && user ? (
+            {priceSummary ? (
               <View style={[styles.bottomBar, { paddingBottom: 16 + insets.bottom }]}>
                 <View style={styles.bottomLeft}>
                   <Text style={styles.bottomLabel}>TOTAL</Text>
@@ -737,6 +732,10 @@ export function ListingScreen({ navigation, route }: Props) {
                   <Pressable
                     style={styles.reserveBtn}
                     onPress={() => {
+                      if (!user) {
+                        setShowAuthModal(true);
+                        return;
+                      }
                       if (navigatingToBooking) return;
                       setNavigatingToBooking(true);
                       navigation.navigate("BookingSummary", {
@@ -746,7 +745,6 @@ export function ListingScreen({ navigation, route }: Props) {
                       });
                       setTimeout(() => setNavigatingToBooking(false), 800);
                     }}
-                    disabled={authLoading}
                   >
                     <Text style={styles.reserveBtnText}>
                       {navigatingToBooking ? "Opening…" : "Book Now"}
@@ -799,6 +797,50 @@ export function ListingScreen({ navigation, route }: Props) {
           </Pressable>
         </Modal>
       ) : null}
+
+      <Modal transparent animationType="none" visible={authOverlayVisible} onRequestClose={closeAuthOverlay}>
+        <View style={styles.authModalRoot} pointerEvents="box-none">
+          <Animated.View style={[styles.authModalBackdrop, { opacity: authBackdropOpacity }]}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={closeAuthOverlay} />
+          </Animated.View>
+          <Animated.View
+            style={[
+              styles.authModalSheet,
+              {
+                paddingBottom: Math.max(24, insets.bottom + 12),
+                transform: [{ translateY: authSheetTranslateY }],
+              },
+            ]}
+          >
+            <Text style={styles.authModalTitle}>Sign in to book</Text>
+            <Text style={styles.authModalBody}>Choose how you want to continue.</Text>
+            <Pressable
+              style={styles.authModalPrimary}
+              onPress={() => {
+                openAuthScreen("Welcome");
+              }}
+            >
+              <Text style={styles.authModalPrimaryText}>Continue with Google</Text>
+            </Pressable>
+            <Pressable
+              style={styles.authModalSecondary}
+              onPress={() => {
+                openAuthScreen("SignIn");
+              }}
+            >
+              <Text style={styles.authModalSecondaryText}>Log in with email or phone number</Text>
+            </Pressable>
+            <Pressable
+              style={styles.authModalLink}
+              onPress={() => {
+                openAuthScreen("Register");
+              }}
+            >
+              <Text style={styles.authModalLinkText}>Create account</Text>
+            </Pressable>
+          </Animated.View>
+        </View>
+      </Modal>
 
       {/* Image viewer modal */}
       <Modal
@@ -1319,34 +1361,81 @@ const styles = StyleSheet.create({
   reviewStarPillText: { fontFamily: "Inter-Bold", fontSize: 12, color: "#151b1b" },
   reviewComment: { fontFamily: "Inter-Regular", fontSize: 13.5, lineHeight: 22, color: "#3f4948" },
 
-  // Auth card
-  authCard: {
-    backgroundColor: colors.cardBg,
-    borderWidth: 1.5, borderColor: colors.border,
-    borderRadius: 16, padding: 20, marginTop: 24,
-    ...WARM_SHADOW,
+  authModalRoot: {
+    flex: 1,
+    justifyContent: "flex-end",
   },
-  authTitle: { fontFamily: "Inter-SemiBold", fontSize: 18, color: colors.text, marginBottom: 4, letterSpacing: -0.2 },
-  authSub: { fontFamily: "Inter-Regular", fontSize: 13, color: colors.textMuted, marginBottom: 16 },
-  authInput: {
-    fontFamily: "Inter-Regular", backgroundColor: colors.appBg,
-    borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.pill, paddingHorizontal: 16, paddingVertical: 13,
-    fontSize: 14, color: colors.text, marginBottom: 10,
+  authModalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(15, 23, 42, 0.22)",
   },
-  authError: { fontFamily: "Inter-Regular", fontSize: 13, color: colors.danger, marginBottom: 8 },
-  authBtns: { flexDirection: "row", gap: 10, marginTop: 4 },
-  authBtnSecondary: {
-    flex: 1, backgroundColor: colors.cardBg,
-    borderWidth: 1.5, borderColor: colors.accent,
-    borderRadius: radius.pill, paddingVertical: 13, alignItems: "center",
+  authModalSheet: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 28,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderBottomWidth: 0,
   },
-  authBtnSecondaryText: { fontFamily: "Inter-SemiBold", fontSize: 14, color: colors.accent },
-  authBtnPrimary: {
-    flex: 1, backgroundColor: colors.accent,
-    borderRadius: radius.pill, paddingVertical: 13, alignItems: "center",
+  authModalTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 22,
+    lineHeight: 27,
+    color: colors.text,
+    marginBottom: 6,
   },
-  authBtnPrimaryText: { fontFamily: "Inter-SemiBold", fontSize: 14, color: "#fff" },
+  authModalBody: {
+    fontFamily: "Inter-Regular",
+    fontSize: 15,
+    lineHeight: 21,
+    color: colors.textMuted,
+    marginBottom: 16,
+  },
+  authModalPrimary: {
+    backgroundColor: "#2ECC8F",
+    borderColor: "#2ECC8F",
+    borderWidth: 1,
+    minHeight: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  authModalPrimaryText: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 16,
+    color: "#FFFFFF",
+  },
+  authModalSecondary: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#D9DEDE",
+    borderWidth: 1,
+    minHeight: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+    paddingHorizontal: 16,
+  },
+  authModalSecondaryText: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 15,
+    color: colors.text,
+    textAlign: "center",
+  },
+  authModalLink: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+  },
+  authModalLinkText: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    color: "#2ECC8F",
+  },
 
   // Bottom bar
   bottomBar: {
@@ -1379,11 +1468,11 @@ const styles = StyleSheet.create({
   },
   bottomDuration: { fontFamily: "Inter-Regular", fontSize: 12, color: "#98a4ab", marginTop: 2 },
   reserveBtn: {
-    backgroundColor: "#148b84",
+    backgroundColor: colors.accent,
     borderRadius: 12,
     minHeight: 56,
     paddingVertical: 16, paddingHorizontal: 24, minWidth: 148, alignItems: "center", justifyContent: "center",
-    shadowColor: "#158a83",
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 6,

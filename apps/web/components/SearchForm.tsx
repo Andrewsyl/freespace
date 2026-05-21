@@ -85,21 +85,40 @@ export function SearchForm({
 
   useEffect(() => {
     if (!initialValues) return;
-    syncingFromProps.current = true;
-    const startFromProps = initialValues.date
-      ? buildDateTime(initialValues.date, initialValues.startTime ?? toTimeString(initialStart))
-      : state.startAt;
-    const endFromProps =
-      initialValues.endDate && initialValues.endTime
-        ? buildDateTime(initialValues.endDate, initialValues.endTime)
-        : addMinutes(startFromProps, 120);
-    setState((prev) => ({
-      ...prev,
-      ...initialValues,
-      startAt: startFromProps,
-      endAt: endFromProps,
-    }));
-  }, [initialValues, initialStart, state.startAt]);
+    setState((prev) => {
+      const startFromProps = initialValues.date
+        ? buildDateTime(initialValues.date, initialValues.startTime ?? toTimeString(initialStart))
+        : prev.startAt;
+      const endFromProps =
+        initialValues.endDate && initialValues.endTime
+          ? buildDateTime(initialValues.endDate, initialValues.endTime)
+          : addMinutes(startFromProps, 120);
+      const nextState = {
+        ...prev,
+        ...initialValues,
+        startAt: startFromProps,
+        endAt: endFromProps,
+      };
+      const unchanged =
+        prev.location === nextState.location &&
+        prev.latitude === nextState.latitude &&
+        prev.longitude === nextState.longitude &&
+        prev.mode === nextState.mode &&
+        prev.radiusKm === nextState.radiusKm &&
+        prev.priceMin === nextState.priceMin &&
+        prev.priceMax === nextState.priceMax &&
+        prev.coveredParking === nextState.coveredParking &&
+        prev.evCharging === nextState.evCharging &&
+        prev.securityLevel === nextState.securityLevel &&
+        prev.vehicleSize === nextState.vehicleSize &&
+        prev.instantBook === nextState.instantBook &&
+        prev.startAt.getTime() === nextState.startAt.getTime() &&
+        prev.endAt.getTime() === nextState.endAt.getTime();
+      if (unchanged) return prev;
+      syncingFromProps.current = true;
+      return nextState;
+    });
+  }, [initialValues, initialStart]);
 
   const buildFilters = useCallback((current = state): SearchFilters => {
     const startDate = toDateString(current.startAt);
@@ -320,7 +339,13 @@ function DateTimePicker({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setViewMonth(startOfMonth(value));
+    const nextMonth = startOfMonth(value);
+    setViewMonth((current) =>
+      current.getFullYear() === nextMonth.getFullYear() &&
+      current.getMonth() === nextMonth.getMonth()
+        ? current
+        : nextMonth
+    );
   }, [value]);
 
   useEffect(() => {

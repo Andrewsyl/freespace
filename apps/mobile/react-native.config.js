@@ -10,4 +10,11 @@ module.exports = {
         : "com.andrewsyl.carparking",
     },
   },
+  dependencies: {
+    "react-native-date-picker": {
+      platforms: {
+        ios: null,
+      },
+    },
+  },
 };

@@ -47,7 +47,7 @@ export function JustParkAuthScreen() {
     !candidate.termsVersion || !candidate.privacyVersion;
   useEffect(() => {
     GoogleSignin.configure({
-      webClientId: googleWebClientId || undefined,
+      webClientId: Platform.OS === "android" ? googleWebClientId || undefined : undefined,
       iosClientId: Platform.OS === "ios" ? googleIosClientId || undefined : undefined,
     });
   }, [googleWebClientId, googleIosClientId]);
@@ -100,9 +100,15 @@ export function JustParkAuthScreen() {
                 setAuthError(null);
                 try {
                   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-                  await GoogleSignin.signIn();
-                  const tokens = await GoogleSignin.getTokens();
-                  const idToken = tokens.idToken;
+                  const signInResult = await GoogleSignin.signIn();
+                  if (signInResult.type !== "success") {
+                    return;
+                  }
+                  let idToken = signInResult.data.idToken;
+                  if (!idToken) {
+                    const tokens = await GoogleSignin.getTokens();
+                    idToken = tokens.idToken;
+                  }
                   if (!idToken) {
                     throw new Error("Missing Google idToken");
                   }

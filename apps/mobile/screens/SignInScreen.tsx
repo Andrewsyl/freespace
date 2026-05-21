@@ -19,6 +19,7 @@ import { BackButton, Button, TextInput as AppTextInput } from "../components/ui"
 import { colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
+const AUTH_GREEN = "#2ECC8F";
 
 export function SignInScreen({ navigation }: Props) {
   const { login } = useAuth();
@@ -175,7 +176,7 @@ export function SignInScreen({ navigation }: Props) {
               <MaterialIcons
                 name={acceptLegalChecked ? "check-box" : "check-box-outline-blank"}
                 size={20}
-                color={acceptLegalChecked ? colors.accent : colors.textSoft}
+                color={acceptLegalChecked ? AUTH_GREEN : colors.textSoft}
               />
               <Text style={styles.checkboxText}>
                 I agree to{" "}
@@ -271,7 +272,7 @@ const styles = StyleSheet.create({
   },
   forgotText: {
     ...textStyles.meta,
-    color: colors.accent,
+    color: AUTH_GREEN,
   },
   checkboxRow: {
     alignItems: "center",
@@ -286,11 +287,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   link: {
-    color: colors.accent,
+    color: AUTH_GREEN,
     fontWeight: "500",
   },
   primaryButton: {
     marginBottom: spacing.xs,
+    backgroundColor: AUTH_GREEN,
+    borderColor: AUTH_GREEN,
   },
   errorText: {
     ...textStyles.meta,
@@ -300,7 +303,7 @@ const styles = StyleSheet.create({
   },
   noticeText: {
     ...textStyles.meta,
-    color: colors.accent,
+    color: AUTH_GREEN,
     marginTop: 6,
     textAlign: "center",
   },
@@ -310,7 +313,7 @@ const styles = StyleSheet.create({
   },
   linkButtonText: {
     ...textStyles.meta,
-    color: colors.accent,
+    color: AUTH_GREEN,
   },
   successOverlay: {
     ...StyleSheet.absoluteFillObject,

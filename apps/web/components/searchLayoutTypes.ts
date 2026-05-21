@@ -16,7 +16,6 @@ export type SharedLayoutProps = {
   error: string | null;
   center: { lat: number; lng: number };
   selectedListingId: string | null;
-  popupListing: Listing | null;
   lockViewport: boolean;
 
   // Search-as-move / area state
@@ -31,7 +30,6 @@ export type SharedLayoutProps = {
   onSelectListing: (listing: Listing) => void;
   onMarkerSelect: (id: string) => void;
   onMarkerClick: (listing: Listing) => void;
-  onPopupBook: (listing: Listing) => void;
   onBoundsChanged: (
     bounds: LatLngBoundsLiteral,
     center: { lat: number; lng: number },

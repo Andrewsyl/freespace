@@ -15,7 +15,7 @@ import { useCallback, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
-import DatePicker from "react-native-date-picker";
+import DatePicker from "../components/AdaptiveDatePicker";
 import { useStripe } from "@stripe/stripe-react-native";
 import { cancelBooking, checkInBooking, confirmBookingExtension, createBookingExtensionIntent } from "../api";
 import { useAuth } from "../auth";

@@ -19,7 +19,6 @@ export function DesktopSearchLayout({
   error,
   center,
   selectedListingId,
-  popupListing,
   lockViewport,
   searchAsMove,
   pendingCenter,
@@ -30,7 +29,6 @@ export function DesktopSearchLayout({
   onSelectListing,
   onMarkerSelect,
   onMarkerClick,
-  onPopupBook,
   onBoundsChanged,
   onSearchArea,
   onSearchAsMove,
@@ -206,10 +204,11 @@ export function DesktopSearchLayout({
               minFitZoom={16}
               showCenterPin
               selectedListingId={selectedListingId ?? undefined}
-              popupListing={popupListing ?? undefined}
-              onPopupBook={onPopupBook}
               onSelectListing={onMarkerSelect}
-              onMarkerClick={onMarkerClick}
+              onMarkerClick={(listing) => {
+                onMarkerClick(listing);
+                setShowListingOverlay(true);
+              }}
               disableAutoFit={lockViewport}
               onBoundsChanged={onBoundsChanged}
             />

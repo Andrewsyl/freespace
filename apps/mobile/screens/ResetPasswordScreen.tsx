@@ -17,6 +17,7 @@ import { colors, radius, spacing, textStyles } from "../styles/theme";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPassword">;
+const AUTH_GREEN = "#2ECC8F";
 
 export function ResetPasswordScreen({ navigation, route }: Props) {
   const scrollRef = useRef<ScrollView | null>(null);
@@ -298,9 +299,12 @@ const styles = StyleSheet.create({
   },
   linkButton: {
     flex: 1,
+    borderColor: AUTH_GREEN,
   },
   primaryButton: {
     marginTop: 4,
+    backgroundColor: AUTH_GREEN,
+    borderColor: AUTH_GREEN,
   },
   secondaryButton: {
     flex: 1,

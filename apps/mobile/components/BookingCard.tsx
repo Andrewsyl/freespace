@@ -120,7 +120,7 @@ export function BookingCard({
                 <Ionicons
                   name={badgeStyle.icon as any}
                   size={12}
-                  color={statusTone === "canceled" ? colors.danger : "#158a83"}
+                  color={statusTone === "canceled" ? colors.danger : "#2ECC8F"}
                 />
                 <Text
                   style={[

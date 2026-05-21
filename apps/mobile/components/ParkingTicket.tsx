@@ -54,7 +54,7 @@ export const ParkingTicket = memo(function ParkingTicket({
           </Text>
         </View>
         <View style={styles.iconShell}>
-          <Ionicons name="document-text-outline" size={18} color="#147A72" />
+          <Ionicons name="document-text-outline" size={18} color="#2ECC8F" />
         </View>
       </View>
 

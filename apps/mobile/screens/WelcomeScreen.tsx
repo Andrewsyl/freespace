@@ -26,7 +26,7 @@ export function WelcomeScreen({ navigation }: Props) {
 
   useEffect(() => {
     GoogleSignin.configure({
-      webClientId: googleWebClientId || undefined,
+      webClientId: Platform.OS === "android" ? googleWebClientId || undefined : undefined,
       iosClientId: Platform.OS === "ios" ? googleIosClientId || undefined : undefined,
     });
   }, [googleWebClientId, googleIosClientId]);
@@ -38,17 +38,22 @@ export function WelcomeScreen({ navigation }: Props) {
       logInfo("Google sign-in starting", { screen: "Welcome" });
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const signInResult = await GoogleSignin.signIn();
-      let idToken: string | null = null;
-      try {
-        const tokens = await GoogleSignin.getTokens();
-        idToken = tokens.idToken ?? null;
-      } catch {
-        idToken = null;
+      if (signInResult.type !== "success") {
+        return;
+      }
+      let idToken: string | null = signInResult.data.idToken ?? null;
+      if (!idToken) {
+        try {
+          const tokens = await GoogleSignin.getTokens();
+          idToken = tokens.idToken ?? null;
+        } catch {
+          idToken = null;
+        }
       }
       logInfo("Google tokens received", {
         screen: "Welcome",
         hasIdToken: Boolean(idToken),
-        email: signInResult?.data?.user?.email ?? null,
+        email: signInResult.data.user.email ?? null,
       });
       if (!idToken) {
         return;

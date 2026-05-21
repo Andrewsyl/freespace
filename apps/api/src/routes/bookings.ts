@@ -1411,6 +1411,8 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
       }
       receiptUrl = (intent as any).charges?.data?.[0]?.receipt_url ?? null;
     }
+    const existingBooking = await getBookingByPaymentIntent(paymentIntentId);
+    const shouldNotifyCanceledTransition = status === "confirmed" || existingBooking?.status === "confirmed";
     const ok = await updateBookingStatusByPaymentIntent({ paymentIntentId, status, receiptUrl });
     if (!ok) {
       const existing = await getBookingByPaymentIntent(paymentIntentId);
@@ -1421,28 +1423,28 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
     }
     const targets = await getBookingNotificationTargetsByPaymentIntent(paymentIntentId);
     if (targets) {
-      await sendBookingStatusPush({
-        bookingId: targets.booking_id,
-        driverId: targets.driver_id,
-        hostId: targets.host_id,
-        listingTitle: targets.listing_title,
-        startTime: new Date(targets.start_time),
-        endTime: new Date(targets.end_time),
-        status,
-      });
-      await sendDriverBookingLifecycleEmail({
-        driverEmail: targets.driver_email,
-        status,
-        bookingId: targets.booking_id,
-        listingTitle: targets.listing_title,
-        listingAddress: targets.listing_address,
-        startTime: new Date(targets.start_time),
-        endTime: new Date(targets.end_time),
-        receiptUrl,
-        accessCode: targets.access_code,
-        arrivalInstructions: targets.arrival_instructions,
-      });
       if (status === "confirmed") {
+        await sendBookingStatusPush({
+          bookingId: targets.booking_id,
+          driverId: targets.driver_id,
+          hostId: targets.host_id,
+          listingTitle: targets.listing_title,
+          startTime: new Date(targets.start_time),
+          endTime: new Date(targets.end_time),
+          status,
+        });
+        await sendDriverBookingLifecycleEmail({
+          driverEmail: targets.driver_email,
+          status,
+          bookingId: targets.booking_id,
+          listingTitle: targets.listing_title,
+          listingAddress: targets.listing_address,
+          startTime: new Date(targets.start_time),
+          endTime: new Date(targets.end_time),
+          receiptUrl,
+          accessCode: targets.access_code,
+          arrivalInstructions: targets.arrival_instructions,
+        });
         await sendPaymentReceivedPush({
           bookingId: targets.booking_id,
           hostId: targets.host_id,
@@ -1455,6 +1457,29 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
           endTime: new Date(targets.end_time),
         });
       } else {
+        if (shouldNotifyCanceledTransition) {
+          await sendBookingStatusPush({
+            bookingId: targets.booking_id,
+            driverId: targets.driver_id,
+            hostId: targets.host_id,
+            listingTitle: targets.listing_title,
+            startTime: new Date(targets.start_time),
+            endTime: new Date(targets.end_time),
+            status,
+          });
+          await sendDriverBookingLifecycleEmail({
+            driverEmail: targets.driver_email,
+            status,
+            bookingId: targets.booking_id,
+            listingTitle: targets.listing_title,
+            listingAddress: targets.listing_address,
+            startTime: new Date(targets.start_time),
+            endTime: new Date(targets.end_time),
+            receiptUrl,
+            accessCode: targets.access_code,
+            arrivalInstructions: targets.arrival_instructions,
+          });
+        }
         await deleteScheduledNotificationsByBooking(targets.booking_id);
       }
     }
@@ -1810,26 +1835,6 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       });
       const targets = await getBookingNotificationTargetsByCheckoutSession(session.id);
       if (targets) {
-        await sendBookingStatusPush({
-          bookingId: targets.booking_id,
-          driverId: targets.driver_id,
-          hostId: targets.host_id,
-          listingTitle: targets.listing_title,
-          startTime: new Date(targets.start_time),
-          endTime: new Date(targets.end_time),
-          status: "canceled",
-        });
-        await sendDriverBookingLifecycleEmail({
-          driverEmail: targets.driver_email,
-          status: "canceled",
-          bookingId: targets.booking_id,
-          listingTitle: targets.listing_title,
-          listingAddress: targets.listing_address,
-          startTime: new Date(targets.start_time),
-          endTime: new Date(targets.end_time),
-          accessCode: targets.access_code,
-          arrivalInstructions: targets.arrival_instructions,
-        });
         await deleteScheduledNotificationsByBooking(targets.booking_id);
       }
     }
@@ -1983,26 +1988,6 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       });
       const targets = await getBookingNotificationTargetsByPaymentIntent(intent.id);
       if (targets) {
-        await sendBookingStatusPush({
-          bookingId: targets.booking_id,
-          driverId: targets.driver_id,
-          hostId: targets.host_id,
-          listingTitle: targets.listing_title,
-          startTime: new Date(targets.start_time),
-          endTime: new Date(targets.end_time),
-          status: "canceled",
-        });
-        await sendDriverBookingLifecycleEmail({
-          driverEmail: targets.driver_email,
-          status: "canceled",
-          bookingId: targets.booking_id,
-          listingTitle: targets.listing_title,
-          listingAddress: targets.listing_address,
-          startTime: new Date(targets.start_time),
-          endTime: new Date(targets.end_time),
-          accessCode: targets.access_code,
-          arrivalInstructions: targets.arrival_instructions,
-        });
         await deleteScheduledNotificationsByBooking(targets.booking_id);
       }
     }

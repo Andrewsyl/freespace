@@ -10,7 +10,7 @@ type MapPricePinProps = {
 
 export function MapPricePin({ price, selected = false, soldOut = false }: MapPricePinProps) {
   const priceText = soldOut ? "Sold out" : `€${price}`;
-  const fill = soldOut ? "#F4F5F6" : selected ? "#147A72" : "#FFFFFF";
+  const fill = soldOut ? "#F4F5F6" : selected ? "#2ECC8F" : "#FFFFFF";
   const stroke = soldOut ? "#D7DDE2" : selected ? "#0F625C" : "#1E293B";
   const textColor = soldOut ? "#7A8493" : selected ? "#FFFFFF" : "#0F172A";
 

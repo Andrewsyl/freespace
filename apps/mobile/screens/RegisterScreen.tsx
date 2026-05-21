@@ -17,6 +17,7 @@ import { BackButton, Button, TextInput as AppTextInput } from "../components/ui"
 import { colors, radius, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Register">;
+const AUTH_GREEN = "#2ECC8F";
 
 export function RegisterScreen({ navigation }: Props) {
   const { register } = useAuth();
@@ -259,8 +260,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   checkboxChecked: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: AUTH_GREEN,
+    borderColor: AUTH_GREEN,
   },
   checkboxText: {
     flex: 1,
@@ -268,10 +269,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   link: {
-    color: colors.accent,
+    color: AUTH_GREEN,
   },
   signUpButton: {
     marginBottom: spacing.xs,
+    backgroundColor: AUTH_GREEN,
+    borderColor: AUTH_GREEN,
   },
   errorText: {
     ...textStyles.meta,

@@ -119,7 +119,6 @@ function SearchPageContainer() {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
-  const [popupListingId, setPopupListingId] = useState<string | null>(null);
 
   // On mobile: start on the landing form unless the URL already has search params
   const hasUrlParams = !!(searchParams.get("lat") || searchParams.get("location"));
@@ -236,7 +235,6 @@ function SearchPageContainer() {
   // ── Listing selection handlers ──
   const handleSelectListing = useCallback((listing: Listing) => {
     setSelectedListingId(listing.id);
-    setPopupListingId(null);
   }, []);
 
   const handleMarkerSelect = useCallback((id: string) => {
@@ -245,13 +243,7 @@ function SearchPageContainer() {
 
   const handleMarkerClick = useCallback((listing: Listing) => {
     setSelectedListingId(listing.id);
-    setPopupListingId(listing.id);
   }, []);
-
-  const handlePopupBook = useCallback(
-    (listing: Listing) => router.push(`/listing/${listing.id}`),
-    [router],
-  );
 
   // ── Bounds change — single handler for whichever MapView is mounted ──
   const handleBoundsChanged = useCallback(
@@ -304,8 +296,6 @@ function SearchPageContainer() {
     [],
   );
 
-  const popupListing = popupListingId ? results.find((l) => l.id === popupListingId) ?? null : null;
-
   const sharedProps = {
     filters,
     results,
@@ -313,7 +303,6 @@ function SearchPageContainer() {
     error,
     center,
     selectedListingId,
-    popupListing,
     lockViewport,
     searchAsMove,
     pendingCenter,
@@ -324,7 +313,6 @@ function SearchPageContainer() {
     onSelectListing: handleSelectListing,
     onMarkerSelect: handleMarkerSelect,
     onMarkerClick: handleMarkerClick,
-    onPopupBook: handlePopupBook,
     onBoundsChanged: handleBoundsChanged,
     onSearchArea: handleSearchArea,
     onSearchAsMove: setSearchAsMove,

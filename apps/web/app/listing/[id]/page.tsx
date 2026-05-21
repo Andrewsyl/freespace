@@ -21,6 +21,17 @@ function formatAreaLabel(address: string) {
   return [first || parts[0], ...parts.slice(1)].join(", ");
 }
 
+function formatReviewDate(value?: string | null) {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export default async function ListingDetailPage({
   params,
   searchParams,
@@ -71,67 +82,77 @@ export default async function ListingDetailPage({
           listingForMap={listingForMap}
           areaLabel={areaLabel}
           reviews={reviews as any}
+          fallbackImage={fallback}
         />
 
         
 
         {/* Desktop layout */}
         <div className="hidden lg:block">
-          <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <div className="relative grid gap-0 lg:grid-cols-[1.2fr,1fr]">
-              <div className="relative h-72 bg-slate-200 md:h-96 lg:h-full">
-                <img src={images[0]} alt={listing.title} className="h-full w-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-                <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800">
-                  <StarIcon className="h-4 w-4 text-amber-500" />
-                  {listing.rating?.toFixed(1) ?? "5.0"} ({listing.ratingCount ?? 0})
+          <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
+            <div className="grid lg:grid-cols-[1.15fr,0.85fr]">
+              <div className="p-10">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Parking space</p>
+                <h1 className="mt-4 max-w-3xl text-[48px] font-semibold leading-[1.02] tracking-[-0.055em] text-slate-950">
+                  {listing.title}
+                </h1>
+                <p className="mt-4 flex items-center gap-2 text-[15px] text-slate-500">
+                  <MapPinIcon className="h-4 w-4 text-brand-500" />
+                  {areaLabel}
+                </p>
+
+                <div className="mt-8 rounded-[24px] border border-slate-200 bg-slate-50">
+                  {[
+                    { label: "Price", value: formatListingPriceLine(listing) },
+                    { label: "Availability", value: listing.availability },
+                    { label: "Rating", value: listing.rating?.toFixed(1) ?? "5.0" },
+                    { label: "Reviews", value: String(listing.ratingCount ?? 0) },
+                  ].map((item, index) => (
+                    <div
+                      key={item.label}
+                      className={`flex items-center justify-between px-5 py-4 ${index !== 0 ? "border-t border-slate-200" : ""}`}
+                    >
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                        {item.label}
+                      </span>
+                      <span className="text-[15px] font-semibold text-slate-950">{item.value}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="space-y-3 p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Parking space</p>
-                <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{listing.title}</h1>
-                <p className="flex items-center gap-2 text-sm text-slate-600">
-                  <MapPinIcon className="h-4 w-4 text-brand-500" />
-                  {listing.address}
-                </p>
-                <div className="flex flex-wrap gap-2 pt-2 text-xs font-semibold text-slate-600">
-                  <span className="rounded-full bg-slate-100 px-3 py-1">{formatListingPriceLine(listing)}</span>
-                  <span className="rounded-full bg-slate-100 px-3 py-1">Availability: {listing.availability}</span>
-                  <span className="rounded-full bg-slate-100 px-3 py-1">
-                    {listing.permissionDeclared ? "Permission verified" : "Permission pending"}
-                  </span>
-                </div>
-                {images.length > 1 && (
-                  <div className="grid grid-cols-4 gap-2 pt-4">
-                    {images.slice(0, 4).map((img, idx) => (
-                      <div key={`${img}-${idx}`} className="h-20 overflow-hidden rounded-xl border border-slate-200">
-                        <img src={img} alt={`${listing.title} ${idx + 1}`} className="h-full w-full object-cover" />
-                      </div>
-                    ))}
+
+              <div className="border-l border-slate-200 bg-slate-100">
+                <div className="relative h-full min-h-[420px]">
+                  <img src={images[0]} alt={listing.title} className="h-full w-full object-cover" />
+                  <div className="absolute left-5 top-5 flex items-center gap-2 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-slate-800 shadow-sm">
+                    <StarIcon className="h-4 w-4 text-amber-500" />
+                    {listing.rating?.toFixed(1) ?? "5.0"} ({listing.ratingCount ?? 0})
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </section>
 
           <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
             <div className="space-y-6">
-              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-slate-900">About this space</h2>
-                <p className="mt-3 text-sm text-slate-600">{listing.availability}</p>
+              <section className="rounded-[28px] border border-slate-200 bg-white p-7 shadow-sm">
+                <h2 className="text-[30px] font-semibold tracking-[-0.04em] text-slate-950">About this space</h2>
+                <p className="mt-4 max-w-3xl text-[16px] leading-8 text-slate-600">
+                  {listing.availability}
+                </p>
                 {listing.accessCode && (
-                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-                    Access code is shared after booking confirmation.
+                  <div className="mt-5 rounded-[20px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+                    Access details are shared after booking confirmation.
                   </div>
                 )}
               </section>
 
               {listing.amenities && listing.amenities.length > 0 && (
-                <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <h2 className="text-lg font-semibold text-slate-900">Features</h2>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                <section className="rounded-[28px] border border-slate-200 bg-white p-7 shadow-sm">
+                  <h2 className="text-[30px] font-semibold tracking-[-0.04em] text-slate-950">Included features</h2>
+                  <div className="mt-5 flex flex-wrap gap-3">
                     {listing.amenities.map((amenity) => (
-                      <span key={amenity} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                      <span key={amenity} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800">
                         {amenity}
                       </span>
                     ))}
@@ -140,44 +161,42 @@ export default async function ListingDetailPage({
               )}
 
               {listing.latitude != null && listing.longitude != null && (
-                <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <h2 className="text-lg font-semibold text-slate-900">Location</h2>
-                  <p className="mt-2 text-sm text-slate-600">Exact location shown after booking.</p>
-                  <div className="mt-4 h-64 overflow-hidden rounded-xl">
+                <section className="rounded-[28px] border border-slate-200 bg-white p-7 shadow-sm">
+                  <h2 className="text-[30px] font-semibold tracking-[-0.04em] text-slate-950">The local area</h2>
+                  <div className="mt-5 h-72 overflow-hidden rounded-[24px] border border-slate-200">
                     <ListingMap
                       listing={listingForMap}
                       center={{ lat: listing.latitude, lng: listing.longitude }}
                       zoom={14}
                     />
                   </div>
-                  <div className="mt-4">
+                  <div className="mt-5">
                     <WalkTime origin={{ lat: listing.latitude, lng: listing.longitude }} />
                   </div>
                 </section>
               )}
 
-              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-slate-900">Reviews</h2>
+              <section className="rounded-[28px] border border-slate-200 bg-white p-7 shadow-sm">
+                <div className="flex items-center justify-between gap-4">
+                  <h2 className="text-[30px] font-semibold tracking-[-0.04em] text-slate-950">Reviews</h2>
+                  <span className="text-sm font-semibold text-brand-500">{reviews.length} total</span>
+                </div>
                 {reviews.length === 0 ? (
-                  <p className="mt-3 text-sm text-slate-600">No reviews yet.</p>
+                  <p className="mt-4 text-[16px] text-slate-600">No reviews yet.</p>
                 ) : (
-                  <div className="mt-4 space-y-4">
+                  <div className="mt-5 space-y-4">
                     {reviews.slice(0, 6).map((review: any) => (
-                      <div key={review.id} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                      <div key={review.id} className="rounded-[22px] border border-slate-200 bg-slate-50 px-5 py-4">
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2 font-semibold text-slate-900">
                             <StarIcon className="h-4 w-4 text-amber-500" />
                             {Number(review.rating).toFixed(1)}
                           </div>
                           <span className="text-xs text-slate-500">
-                            {new Date(review.createdAt ?? review.created_at ?? "").toLocaleDateString("en-GB", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })}
+                            {formatReviewDate(review.createdAt ?? review.created_at)}
                           </span>
                         </div>
-                        {review.comment && <p className="mt-2 text-sm text-slate-600">{review.comment}</p>}
+                        {review.comment && <p className="mt-3 text-[15px] leading-7 text-slate-600">{review.comment}</p>}
                       </div>
                     ))}
                   </div>
@@ -186,8 +205,11 @@ export default async function ListingDetailPage({
             </div>
 
             <aside className="space-y-4">
-              <div className="sticky top-6 space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Book this space</p>
+              <div className="sticky top-6 space-y-5 rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Book this space</p>
+                  <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-slate-950">Choose your time</h2>
+                </div>
                 <BookingSelector
                   listingId={listing.id}
                   pricePerDay={listing.pricePerDay}
@@ -195,7 +217,7 @@ export default async function ListingDetailPage({
                   rateType={listing.rateType}
                 />
                 {!listing.hostStripeAccountId && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                     Host payouts are not set up yet. You can still proceed for demo, but live payments require host onboarding.
                   </div>
                 )}

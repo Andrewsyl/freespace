@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
-import DatePicker from "react-native-date-picker";
+import DatePicker from "../../components/AdaptiveDatePicker";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronRight, X } from "lucide-react-native";
 import { Button } from "../../components/ui";
