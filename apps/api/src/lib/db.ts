@@ -59,6 +59,14 @@ export type SpaceSearchInput = {
   spaceType?: string;
 };
 
+function oneOffAvailabilityRange(alias: string) {
+  return `tstzrange(${alias}.starts_at, CASE WHEN ${alias}.ends_at < ${alias}.starts_at THEN ${alias}.ends_at + interval '1 day' ELSE ${alias}.ends_at END, '[)')`;
+}
+
+function recurringAvailabilityRange(alias: string) {
+  return `tstzrange(d + (${alias}.starts_at::time), d + (${alias}.ends_at::time) + CASE WHEN ${alias}.ends_at::time < ${alias}.starts_at::time THEN interval '1 day' ELSE interval '0 day' END, '[)')`;
+}
+
 export async function findAvailableSpaces(input: SpaceSearchInput) {
   const { lat, lng, radiusKm, from, to, spaceType } = input;
   const spaceTypeFilter = spaceType?.trim()
@@ -100,7 +108,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       WHERE a.listing_id = listings.id
         AND a.kind = 'blocked'
         AND (
-          (a.repeat_weekdays IS NULL AND tstzrange(a.starts_at, a.ends_at, '[)') && tstzrange($4::timestamptz, $5::timestamptz, '[)'))
+          (a.repeat_weekdays IS NULL AND ${oneOffAvailabilityRange("a")} && tstzrange($4::timestamptz, $5::timestamptz, '[)'))
           OR (
             a.repeat_weekdays IS NOT NULL
             AND (a.repeat_until IS NULL OR a.repeat_until >= $4::date)
@@ -108,7 +116,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
               SELECT 1
               FROM generate_series(date_trunc('day', $4::timestamptz), date_trunc('day', $5::timestamptz), interval '1 day') d
               WHERE extract(dow FROM d) = ANY(a.repeat_weekdays)
-                AND tstzrange(d + (a.starts_at::time), d + (a.ends_at::time), '[)') && tstzrange($4::timestamptz, $5::timestamptz, '[)')
+                AND ${recurringAvailabilityRange("a")} && tstzrange($4::timestamptz, $5::timestamptz, '[)')
             )
           )
         )
@@ -120,7 +128,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
         WHERE o.listing_id = listings.id
           AND o.kind = 'open'
           AND (
-            (o.repeat_weekdays IS NULL AND tstzrange(o.starts_at, o.ends_at, '[)') && tstzrange($4::timestamptz, $5::timestamptz, '[)'))
+            (o.repeat_weekdays IS NULL AND ${oneOffAvailabilityRange("o")} && tstzrange($4::timestamptz, $5::timestamptz, '[)'))
             OR (
               o.repeat_weekdays IS NOT NULL
               AND (o.repeat_until IS NULL OR o.repeat_until >= $4::date)
@@ -128,7 +136,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
                 SELECT 1
                 FROM generate_series(date_trunc('day', $4::timestamptz), date_trunc('day', $5::timestamptz), interval '1 day') d
                 WHERE extract(dow FROM d) = ANY(o.repeat_weekdays)
-                  AND tstzrange(d + (o.starts_at::time), d + (o.ends_at::time), '[)') && tstzrange($4::timestamptz, $5::timestamptz, '[)')
+                  AND ${recurringAvailabilityRange("o")} && tstzrange($4::timestamptz, $5::timestamptz, '[)')
               )
             )
           )
@@ -229,7 +237,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
       WHERE a.listing_id = listings.id
         AND a.kind = 'blocked'
         AND (
-          (a.repeat_weekdays IS NULL AND tstzrange(a.starts_at, a.ends_at, '[)') && tstzrange($4::timestamptz, $5::timestamptz, '[)'))
+          (a.repeat_weekdays IS NULL AND ${oneOffAvailabilityRange("a")} && tstzrange($4::timestamptz, $5::timestamptz, '[)'))
           OR (
             a.repeat_weekdays IS NOT NULL
             AND (a.repeat_until IS NULL OR a.repeat_until >= $4::date)
@@ -237,7 +245,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
               SELECT 1
               FROM generate_series(date_trunc('day', $4::timestamptz), date_trunc('day', $5::timestamptz), interval '1 day') d
               WHERE extract(dow FROM d) = ANY(a.repeat_weekdays)
-                AND tstzrange(d + (a.starts_at::time), d + (a.ends_at::time), '[)') && tstzrange($4::timestamptz, $5::timestamptz, '[)')
+                AND ${recurringAvailabilityRange("a")} && tstzrange($4::timestamptz, $5::timestamptz, '[)')
             )
           )
         )
@@ -249,7 +257,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
         WHERE o.listing_id = listings.id
           AND o.kind = 'open'
           AND (
-            (o.repeat_weekdays IS NULL AND tstzrange(o.starts_at, o.ends_at, '[)') && tstzrange($4::timestamptz, $5::timestamptz, '[)'))
+            (o.repeat_weekdays IS NULL AND ${oneOffAvailabilityRange("o")} && tstzrange($4::timestamptz, $5::timestamptz, '[)'))
             OR (
               o.repeat_weekdays IS NOT NULL
               AND (o.repeat_until IS NULL OR o.repeat_until >= $4::date)
@@ -257,7 +265,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
                 SELECT 1
                 FROM generate_series(date_trunc('day', $4::timestamptz), date_trunc('day', $5::timestamptz), interval '1 day') d
                 WHERE extract(dow FROM d) = ANY(o.repeat_weekdays)
-                  AND tstzrange(d + (o.starts_at::time), d + (o.ends_at::time), '[)') && tstzrange($4::timestamptz, $5::timestamptz, '[)')
+                  AND ${recurringAvailabilityRange("o")} && tstzrange($4::timestamptz, $5::timestamptz, '[)')
               )
             )
           )
@@ -1195,7 +1203,7 @@ export async function getListingByIdWithAvailability(
       WHERE a.listing_id = listings.id
         AND a.kind = 'blocked'
         AND (
-          (a.repeat_weekdays IS NULL AND tstzrange(a.starts_at, a.ends_at, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)'))
+          (a.repeat_weekdays IS NULL AND ${oneOffAvailabilityRange("a")} && tstzrange($2::timestamptz, $3::timestamptz, '[)'))
           OR (
             a.repeat_weekdays IS NOT NULL
             AND (a.repeat_until IS NULL OR a.repeat_until >= $2::date)
@@ -1203,7 +1211,7 @@ export async function getListingByIdWithAvailability(
               SELECT 1
               FROM generate_series(date_trunc('day', $2::timestamptz), date_trunc('day', $3::timestamptz), interval '1 day') d
               WHERE extract(dow FROM d) = ANY(a.repeat_weekdays)
-                AND tstzrange(d + (a.starts_at::time), d + (a.ends_at::time), '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+                AND ${recurringAvailabilityRange("a")} && tstzrange($2::timestamptz, $3::timestamptz, '[)')
             )
           )
         )
@@ -1215,7 +1223,7 @@ export async function getListingByIdWithAvailability(
         WHERE o.listing_id = listings.id
           AND o.kind = 'open'
           AND (
-            (o.repeat_weekdays IS NULL AND tstzrange(o.starts_at, o.ends_at, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)'))
+            (o.repeat_weekdays IS NULL AND ${oneOffAvailabilityRange("o")} && tstzrange($2::timestamptz, $3::timestamptz, '[)'))
             OR (
               o.repeat_weekdays IS NOT NULL
               AND (o.repeat_until IS NULL OR o.repeat_until >= $2::date)
@@ -1223,7 +1231,7 @@ export async function getListingByIdWithAvailability(
                 SELECT 1
                 FROM generate_series(date_trunc('day', $2::timestamptz), date_trunc('day', $3::timestamptz), interval '1 day') d
                 WHERE extract(dow FROM d) = ANY(o.repeat_weekdays)
-                  AND tstzrange(d + (o.starts_at::time), d + (o.ends_at::time), '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+                  AND ${recurringAvailabilityRange("o")} && tstzrange($2::timestamptz, $3::timestamptz, '[)')
               )
             )
           )
