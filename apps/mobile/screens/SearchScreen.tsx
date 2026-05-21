@@ -513,16 +513,18 @@ export function SearchScreen({ navigation }: Props) {
             }
           }, remaining);
         } else {
-          if (searchRequestIdRef.current === requestId) {
+          const elapsed = Date.now() - searchStartedAtRef.current;
+          const remaining = Math.max(0, 700 - elapsed);
+          setTimeout(() => {
+            if (searchRequestIdRef.current !== requestId) return;
             setLoading(false);
             if (nextResultsSnapshot && nextResultsSnapshot.length > 0) {
               setResults(nextResultsSnapshot);
               setPendingResults(null);
             } else {
-              // Background search returned nothing — keep existing pins rather than blanking the map
               setPendingResults(null);
             }
-          }
+          }, remaining);
         }
       }
     },
