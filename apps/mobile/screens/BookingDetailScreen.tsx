@@ -2,7 +2,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   Alert,
-  Image,
   Linking,
   Pressable,
   ScrollView,
@@ -26,7 +25,6 @@ import { StatusBar } from "expo-status-bar";
 import { formatTimeLabel } from "../utils/dateFormat";
 import { formatBookingReference } from "../utils/bookingFormat";
 import { ParkingTicket } from "../components/ParkingTicket";
-import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
 import { colors } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingDetail">;
@@ -261,13 +259,6 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     });
   };
 
-  const openSupportCase = (subject: string, issue: string) => {
-    navigation.navigate("Support", {
-      prefillSubject: subject,
-      prefillMessage: `Booking reference: ${formatBookingReference(booking.id)}\nListing: ${booking.title}\nIssue: ${issue}\n\nWhat happened:\n`,
-    });
-  };
-
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar style="dark" translucent={false} backgroundColor={colors.appBg} />
@@ -275,12 +266,6 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         <Pressable style={styles.backCircleButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={18} color="#111827" />
         </Pressable>
-        <Image
-          source={freeSpaceLogo}
-          style={styles.headerLogo}
-          resizeMode="contain"
-        />
-        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} ref={scrollRef}>
@@ -325,6 +310,8 @@ export function BookingDetailScreen({ navigation, route }: Props) {
           spot="1 Parking Space"
           paidAmount={`€${(localAmountCents / 100).toFixed(2)}`}
           barcodeText={barcodeText}
+          onExtend={isInProgress ? () => setExtendOpen(true) : undefined}
+          extendBusy={extendBusy}
         />
 
         {(isUpcoming || isInProgress) && !isCanceled ? (
@@ -345,46 +332,6 @@ export function BookingDetailScreen({ navigation, route }: Props) {
                 <Text style={styles.accessCodeValue}>{booking.accessCode.trim()}</Text>
               </View>
             ) : null}
-          </View>
-        ) : null}
-
-        {!isCanceled ? (
-          <View style={styles.infoCard}>
-            <Text style={styles.infoCardTitle}>If something goes wrong</Text>
-            <View style={styles.edgeCaseList}>
-              <Text style={styles.edgeCaseItem}>
-                If access fails, try the arrival details first. If you still cannot get in, contact support immediately so we can investigate and review refund eligibility.
-              </Text>
-              <Text style={styles.edgeCaseItem}>
-                If a host cancels, we will cancel the booking, notify you, and return any eligible refund to the original payment method.
-              </Text>
-              <Text style={styles.edgeCaseItem}>
-                If you do not show up, the booking still counts once the booked window starts unless support confirms a host-side access issue.
-              </Text>
-              <Text style={styles.edgeCaseItem}>
-                If you need extra time, extend before the session ends. Unauthorised overstays can trigger enforcement or reduce refund eligibility.
-              </Text>
-            </View>
-            <View style={styles.helpChips}>
-              <TouchableOpacity
-                style={styles.helpChip}
-                onPress={() => openSupportCase("Access issue", "I could not access the booked space.")}
-              >
-                <Text style={styles.helpChipText}>Access issue</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.helpChip}
-                onPress={() => openSupportCase("Host canceled", "The host canceled or could not honor this booking.")}
-              >
-                <Text style={styles.helpChipText}>Host canceled</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.helpChip}
-                onPress={() => openSupportCase("No-show or overstay", "I need help with no-show or overstay handling.")}
-              >
-                <Text style={styles.helpChipText}>No-show / overstay</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         ) : null}
 
@@ -437,18 +384,6 @@ export function BookingDetailScreen({ navigation, route }: Props) {
           </TouchableOpacity>
         ) : null}
 
-        {isInProgress ? (
-          <TouchableOpacity
-            style={[styles.actionBtn, extendBusy && styles.actionBtnDisabled]}
-            onPress={() => setExtendOpen(true)}
-            disabled={extendBusy}
-          >
-            <Text style={styles.actionBtnText}>
-              {extendBusy ? "Extending..." : "Extend Booking"}
-            </Text>
-          </TouchableOpacity>
-        ) : null}
-
         {extendError ? <Text style={styles.errorText}>{extendError}</Text> : null}
 
         {canBookAgain ? (
@@ -493,9 +428,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 8,
     paddingBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: colors.appBg,
   },
 
@@ -509,16 +441,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  headerSpacer: {
-    width: 38,
-    height: 38,
-  },
-
-  headerLogo: {
-    width: 130,
-    height: 34,
-  },
-
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 8,
@@ -1089,14 +1011,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontFamily: 'Inter-Regular',
   },
-  edgeCaseList: {
-    gap: 10,
-  },
-  edgeCaseItem: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 22,
-  },
   accessCodeWrap: {
     marginTop: 14,
     paddingTop: 14,
@@ -1135,27 +1049,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Inter-SemiBold',
   },
-  helpChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 14,
-  },
-  helpChip: {
-    backgroundColor: colors.cardBg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  helpChipText: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
-  },
-
   // Help button
   helpButton: {
     flexDirection: 'row',

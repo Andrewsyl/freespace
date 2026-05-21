@@ -209,7 +209,7 @@ export function SearchScreen({ navigation }: Props) {
   const { launchComplete } = useAppLaunch();
   const isFocused = useIsFocused();
   const { favorites, isFavorite, toggle } = useFavorites();
-  const { height: windowHeight } = useWindowDimensions();
+  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(0)).current;
   const searchAnim = useRef(new Animated.Value(0)).current;
@@ -234,6 +234,7 @@ export function SearchScreen({ navigation }: Props) {
   const mapSpinnerAnim = useRef(new Animated.Value(0)).current;
   const mapSpinnerLoopRef = useRef<Animated.CompositeAnimation | null>(null);
   const mapRegionSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cardDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialRegionHandledRef = useRef(false);
 
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
@@ -253,6 +254,7 @@ export function SearchScreen({ navigation }: Props) {
   const [mapInitialRegion, setMapInitialRegion] = useState<typeof mapRegion | null>(null);
   const ignoreNextRegionChangeRef = useRef(false);
   const lastSearchCenterRef = useRef<{ lat: number; lng: number } | null>(null);
+  const lastSearchRadiusRef = useRef<number | null>(null);
   const mapRef = useRef<MapView | null>(null);
   const skipAutocompleteRef = useRef(0);
   const historyLoadedRef = useRef(false);
@@ -421,7 +423,7 @@ export function SearchScreen({ navigation }: Props) {
   const runSearch = useCallback(
     async (
       paramsOverride?: Partial<SearchParams>,
-      options?: { showGlobal?: boolean }
+      options?: { showGlobal?: boolean; preserveSelection?: boolean }
     ) => {
       if (showAreaTimerRef.current) {
         clearTimeout(showAreaTimerRef.current);
@@ -434,6 +436,7 @@ export function SearchScreen({ navigation }: Props) {
       searchRequestIdRef.current = requestId;
       searchStartedAtRef.current = Date.now();
       const shouldShowGlobal = (options?.showGlobal ?? true) && isFocused;
+      const preserveSelection = options?.preserveSelection ?? false;
       if (shouldShowGlobal) {
         showGlobalLoading("Searching...");
       }
@@ -449,6 +452,10 @@ export function SearchScreen({ navigation }: Props) {
       if (Number.isFinite(nextCenter.lat) && Number.isFinite(nextCenter.lng)) {
         lastSearchCenterRef.current = nextCenter;
       }
+      const currentRegion = currentRegionRef.current;
+      if (currentRegion) {
+        lastSearchRadiusRef.current = radiusKmForRegion(currentRegion);
+      }
       try {
         const spaces = await searchListings(params);
         if (searchRequestIdRef.current !== requestId) return;
@@ -462,17 +469,23 @@ export function SearchScreen({ navigation }: Props) {
           (listing) => !nextIds.has(listing.id) && isWithinRadius(listing, center, radiusM)
         );
         nextResultsSnapshot = [...spaces, ...carryOver];
-        setPendingResults(nextResultsSnapshot);
-        setSelectedId((prev) => {
-          if (
-            prev &&
-            spaces.some(
-              (listing) => listing.id === prev && listing.is_available !== false
-            )
-          )
+        // If preserving selection, keep the selected listing in results so the card stays visible
+        if (preserveSelection) {
+          setSelectedId((prev) => {
+            if (prev && !nextResultsSnapshot!.some((l) => l.id === prev)) {
+              const kept = resultsRef.current.find((l) => l.id === prev);
+              if (kept) nextResultsSnapshot!.push(kept);
+            }
             return prev;
-          return null;
-        });
+          });
+        } else {
+          setSelectedId((prev) => {
+            if (prev && spaces.some((l) => l.id === prev && l.is_available !== false))
+              return prev;
+            return null;
+          });
+        }
+        setPendingResults(nextResultsSnapshot);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Search failed";
         logError("Search error", { message });
@@ -798,25 +811,44 @@ export function SearchScreen({ navigation }: Props) {
         setSelectedId(null);
         setDismissingCard(false);
       }, 250);
-    } else {
-      setSelectedId(id);
-      if (id) {
-        const listing = results.find((r) => r.id === id);
-        if (listing?.latitude && listing?.longitude) {
-          const region = currentRegionRef.current;
-          mapRef.current?.animateToRegion(
-            {
-              latitude: listing.latitude,
-              longitude: listing.longitude,
-              latitudeDelta: region?.latitudeDelta ?? 0.012,
-              longitudeDelta: region?.longitudeDelta ?? 0.012,
-            },
-            300
-          );
-        }
-      }
+      return;
     }
-  }, [selectedId, results]);
+
+    setSelectedId(id);
+    if (!id || !mapRef.current) return;
+
+    const listing = results.find((r) => r.id === id);
+    if (!listing?.latitude || !listing?.longitude) return;
+
+    const region = currentRegionRef.current;
+    const latDelta = region?.latitudeDelta ?? 0.012;
+    const lngDelta = region?.longitudeDelta ?? 0.012;
+    const centerLat = region?.latitude ?? listing.latitude;
+    const centerLng = region?.longitude ?? listing.longitude;
+
+    // Convert lat/lng to screen pixel position
+    const latPerPixel = latDelta / windowHeight;
+    const lngPerPixel = lngDelta / windowWidth;
+    const pinY = windowHeight / 2 + (centerLat - listing.latitude) / latPerPixel;
+    const pinX = windowWidth / 2 + (listing.longitude - centerLng) / lngPerPixel;
+
+    const offScreen = pinX < 0 || pinX > windowWidth || pinY < 0 || pinY > windowHeight;
+
+    // Only pan if the pin is in the bottom quarter of the screen
+    const cardTop = windowHeight * 0.80;
+
+    if (offScreen || pinY > cardTop) {
+      // Place the pin at 62% from the top — lower than center, above the card
+      const targetY = windowHeight * 0.70;
+      const newCenterLat = listing.latitude + (targetY - windowHeight / 2) * latPerPixel;
+      ignoreNextRegionChangeRef.current = true;
+      mapRef.current.animateToRegion(
+        { latitude: newCenterLat, longitude: listing.longitude, latitudeDelta: latDelta, longitudeDelta: lngDelta },
+        300
+      );
+    }
+    // Pin is already visible above the card zone — no pan needed
+  }, [selectedId, results, windowHeight, windowWidth, insets.bottom]);
 
   useFocusEffect(
     useCallback(() => {
@@ -989,7 +1021,16 @@ export function SearchScreen({ navigation }: Props) {
       clearTimeout(showAreaTimerRef.current);
       showAreaTimerRef.current = null;
     }
-  }, []);
+    if (!ignoreNextRegionChangeRef.current && !isProgrammaticMoveRef.current) {
+      if (cardDismissTimerRef.current) return;
+      setDismissingCard(true);
+      cardDismissTimerRef.current = setTimeout(() => {
+        setSelectedId(null);
+        setDismissingCard(false);
+        cardDismissTimerRef.current = null;
+      }, 250);
+    }
+  }, [setDismissingCard]);
 
   const handleRegionChange = (nextRegion: typeof mapRegion) => {
     currentRegionRef.current = nextRegion;
@@ -1032,10 +1073,13 @@ export function SearchScreen({ navigation }: Props) {
         Math.sin(dLng / 2) ** 2;
     const distanceM = 2 * R * Math.asin(Math.sqrt(a));
 
-    // Threshold adapts to zoom: show button only after moving 30% of the visible radius.
-    // This prevents the button from firing after tiny pans at city-wide zoom.
-    const visibleRadiusM = radiusKmForRegion(nextRegion) * 1000;
-    if (distanceM < visibleRadiusM * 0.3) {
+    const visibleRadiusKm = radiusKmForRegion(nextRegion);
+    const visibleRadiusM = visibleRadiusKm * 1000;
+    const lastRadius = lastSearchRadiusRef.current;
+    const radiusChangedSignificantly =
+      lastRadius != null && Math.abs(visibleRadiusKm - lastRadius) / lastRadius > 0.3;
+
+    if (distanceM < visibleRadiusM * 0.3 && !radiusChangedSignificantly) {
       if (showAreaTimerRef.current) {
         clearTimeout(showAreaTimerRef.current);
         showAreaTimerRef.current = null;
@@ -1047,7 +1091,7 @@ export function SearchScreen({ navigation }: Props) {
       return;
     }
 
-    // Debounce: wait for the map to fully settle before showing the button.
+    // Debounce: wait for the map to fully settle, then auto-search the new area.
     if (showAreaTimerRef.current) {
       clearTimeout(showAreaTimerRef.current);
     }
@@ -1056,9 +1100,14 @@ export function SearchScreen({ navigation }: Props) {
     const nextRadius = radiusKmForRegion(nextRegion).toFixed(2);
     showAreaTimerRef.current = setTimeout(() => {
       showAreaTimerRef.current = null;
-      setPendingSearch({ lat: nextLat, lng: nextLng, radiusKm: nextRadius });
-      setShowSearchArea(true);
-    }, 300);
+      setLat(nextLat);
+      setLng(nextLng);
+      setRadiusKm(nextRadius);
+      void runSearch(
+        { lat: nextLat, lng: nextLng, radiusKm: nextRadius },
+        { showGlobal: false, preserveSelection: true }
+      );
+    }, 700);
   };
 
   const priceForListing = useCallback(
@@ -1212,34 +1261,6 @@ export function SearchScreen({ navigation }: Props) {
               </Pressable>
             </View>
           </View>
-          {renderSearchArea && pendingSearch ? (
-            <Animated.View
-              style={[styles.searchAreaWrap, { opacity: searchAreaOpacity, transform: [{ translateY: searchAreaTranslateY }] }]}
-              pointerEvents="box-none"
-            >
-              <Pressable
-                style={styles.searchAreaButton}
-                onPress={() => {
-                setLat(pendingSearch.lat);
-                setLng(pendingSearch.lng);
-                setRadiusKm(pendingSearch.radiusKm);
-                setShowSearchArea(false);
-                setPendingSearch(null);
-                void runSearch(
-                  {
-                    lat: pendingSearch.lat,
-                    lng: pendingSearch.lng,
-                    radiusKm: pendingSearch.radiusKm,
-                  },
-                  { showGlobal: false }
-                );
-              }}
-            >
-                <Ionicons name="refresh" size={14} color="#ffffff" />
-                <Text style={styles.searchAreaText}>Search this area</Text>
-              </Pressable>
-            </Animated.View>
-          ) : null}
           {loading ? (
             <View style={styles.searchLoadingBubble}>
               <LottieView

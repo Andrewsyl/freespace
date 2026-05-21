@@ -14,46 +14,27 @@ type Props = {
   onPress: () => void;
 };
 
+// Design tokens
+const GREEN = "#1B8A5A";
+const GREEN_SOFT = "#E6F2EC";
+const FG = "#111111";
+const FG_2 = "#3D3D3D";
+const FG_MUTED = "#6B6B6B";
+const FG_SUBTLE = "#9A9A9A";
+const LINE = "#E6E6E4";
+const LINE_2 = "#BEBEBE";
+const BG_2 = "#F7F7F6";
+
 const STATUS_STYLES: Record<
   Props["statusTone"],
   { background: string; text: string; icon: string; border: string }
 > = {
-  confirmed: {
-    background: colors.status.confirmed.background,
-    text: colors.status.confirmed.text,
-    icon: "checkmark-circle",
-    border: colors.status.confirmed.border,
-  },
-  active: {
-    background: colors.status.active.background,
-    text: colors.status.active.text,
-    icon: "play-circle",
-    border: colors.status.active.border,
-  },
-  completed: {
-    background: colors.status.completed.background,
-    text: colors.status.completed.text,
-    icon: "checkmark-circle-outline",
-    border: colors.status.completed.border,
-  },
-  pending: {
-    background: colors.status.pending.background,
-    text: colors.status.pending.text,
-    icon: "time",
-    border: colors.status.pending.border,
-  },
-  canceled: {
-    background: colors.status.canceled.background,
-    text: colors.status.canceled.text,
-    icon: "close-circle-outline",
-    border: colors.status.canceled.border,
-  },
-  refunded: {
-    background: colors.status.refunded.background,
-    text: colors.status.refunded.text,
-    icon: "arrow-undo",
-    border: colors.status.refunded.border,
-  },
+  confirmed: { background: GREEN_SOFT, text: GREEN,      icon: "checkmark-circle",         border: GREEN     },
+  active:    { background: GREEN,      text: "#ffffff",  icon: "play-circle",               border: GREEN     },
+  completed: { background: BG_2,       text: FG_MUTED,  icon: "checkmark-circle-outline",  border: LINE      },
+  pending:   { background: "#FDF1E0",  text: "#B6691A",  icon: "time",                      border: "#B6691A" },
+  canceled:  { background: "#FBE2DE",  text: "#B5392B",  icon: "close-circle-outline",      border: "#B5392B" },
+  refunded:  { background: "#E2EBF4",  text: "#2C6CA8",  icon: "arrow-undo",                border: "#2C6CA8" },
 };
 
 
@@ -111,23 +92,9 @@ export function BookingCard({
               </Text>
             </View>
             <View style={styles.priceGroup}>
-              <View
-                style={[
-                  styles.statusBadge,
-                  statusTone === "canceled" && styles.statusBadgeDanger,
-                ]}
-              >
-                <Ionicons
-                  name={badgeStyle.icon as any}
-                  size={12}
-                  color={statusTone === "canceled" ? colors.danger : "#2ECC8F"}
-                />
-                <Text
-                  style={[
-                    styles.statusBadgeText,
-                    statusTone === "canceled" && styles.statusBadgeTextDanger,
-                  ]}
-                >
+              <View style={[styles.statusBadge, { backgroundColor: badgeStyle.background, borderColor: badgeStyle.border }]}>
+                <Ionicons name={badgeStyle.icon as any} size={11} color={badgeStyle.text} />
+                <Text style={[styles.statusBadgeText, { color: badgeStyle.text }]}>
                   {statusLabel}
                 </Text>
               </View>
@@ -156,7 +123,7 @@ export function BookingCard({
           <Text style={styles.timeDate}>{dateLabel}</Text>
         </View>
         <View style={styles.timeArrow}>
-          <Ionicons name="arrow-forward" size={16} color={colors.accent} />
+          <Ionicons name="arrow-forward" size={16} color={FG_SUBTLE} />
         </View>
         <View style={styles.timeColumn}>
           <Text style={styles.timeLabel}>Departure</Text>
@@ -166,8 +133,8 @@ export function BookingCard({
       </View>
 
       <View style={styles.viewMoreRow}>
-        <Text style={styles.viewMoreText}>VIEW MORE</Text>
-        <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+        <Text style={styles.viewMoreText}>View details</Text>
+        <Ionicons name="chevron-forward" size={14} color={FG_MUTED} />
       </View>
     </Pressable>
   );
@@ -175,12 +142,12 @@ export function BookingCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 14,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#C4CDCD",
+    borderColor: LINE_2,
     overflow: "hidden",
-    padding: 10,
+    padding: 12,
   },
   header: {
     flexDirection: "row",
@@ -191,38 +158,35 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   imageWrap: {
-    width: 96,
-    paddingLeft: 0,
-    paddingTop: 0,
-    paddingBottom: 0,
+    width: 88,
     justifyContent: "center",
   },
   thumb: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
+    width: 72,
+    height: 72,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: LINE,
   },
   thumbPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
-    backgroundColor: colors.border,
+    width: 72,
+    height: 72,
+    borderRadius: 8,
+    backgroundColor: BG_2,
   },
   reference: {
-    color: colors.textSoft,
-    fontSize: 9,
-    fontFamily: "PlusJakartaSans-SemiBold",
+    color: FG_SUBTLE,
+    fontSize: 11,
+    fontFamily: "Inter-SemiBold",
     letterSpacing: 0.6,
     textTransform: "uppercase",
-    marginBottom: 4,
+    marginBottom: 3,
   },
   textContent: {
     flex: 1,
     gap: 6,
     paddingTop: 2,
-    paddingRight: 4,
+    paddingRight: 2,
     paddingBottom: 2,
     paddingLeft: 8,
   },
@@ -230,17 +194,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    color: colors.text,
-    fontSize: 16,
-    fontFamily: "PlusJakartaSans-Bold",
-    lineHeight: 21,
-    letterSpacing: -0.25,
+    color: FG,
+    fontSize: 15,
+    fontFamily: "Inter-SemiBold",
+    lineHeight: 20,
+    letterSpacing: -0.15,
   },
   address: {
-    color: colors.textMuted,
-    fontSize: 11.5,
+    color: FG_MUTED,
+    fontSize: 13,
     fontFamily: "Inter-Regular",
-    marginTop: 3,
+    marginTop: 2,
   },
   priceGroup: {
     alignItems: "flex-end",
@@ -250,32 +214,22 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     alignItems: "center",
-    backgroundColor: colors.cardBg,
-    borderColor: colors.borderStrong,
     borderRadius: 999,
     borderWidth: 1,
     flexDirection: "row",
     gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-  },
-  statusBadgeDanger: {
-    backgroundColor: "#fff1f1",
-    borderColor: "#f4d4d4",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   statusBadgeText: {
-    color: colors.accent,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 10,
-  },
-  statusBadgeTextDanger: {
-    color: colors.danger,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 11,
   },
   priceText: {
-    color: colors.text,
-    fontSize: 18,
-    fontFamily: "PlusJakartaSans-Bold",
-    letterSpacing: -0.25,
+    color: FG,
+    fontSize: 17,
+    fontFamily: "Inter-Bold",
+    letterSpacing: -0.2,
   },
   metaRow: {
     flexDirection: "row",
@@ -286,19 +240,19 @@ const styles = StyleSheet.create({
   metaItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 5,
     flex: 1,
   },
   metaText: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontFamily: "Inter-Medium",
+    color: FG_MUTED,
+    fontSize: 13,
+    fontFamily: "Inter-Regular",
   },
   secondaryMeta: {
-    color: colors.textSoft,
+    color: FG_SUBTLE,
     flexShrink: 1,
-    fontFamily: "Inter-Medium",
-    fontSize: 11,
+    fontFamily: "Inter-Regular",
+    fontSize: 13,
     textAlign: "right",
   },
   timeBlock: {
@@ -306,32 +260,32 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderTopWidth: 1,
-    borderTopColor: colors.borderStrong,
-    marginTop: 10,
+    borderTopColor: LINE,
+    marginTop: 12,
     paddingTop: 12,
-    paddingBottom: 10,
-    paddingHorizontal: 12,
+    paddingBottom: 8,
+    paddingHorizontal: 8,
   },
   timeColumn: {
     flex: 1,
     alignItems: "center",
   },
   timeLabel: {
-    fontSize: 10,
-    color: colors.textSoft,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    letterSpacing: 0.45,
+    fontSize: 11,
+    color: FG_SUBTLE,
+    fontFamily: "Inter-SemiBold",
+    letterSpacing: 0.5,
     textTransform: "uppercase",
     marginBottom: 4,
   },
   timeValue: {
-    fontSize: 13.5,
-    fontFamily: "PlusJakartaSans-Bold",
-    color: colors.text,
+    fontSize: 13,
+    fontFamily: "Inter-SemiBold",
+    color: FG,
   },
   timeDate: {
-    fontSize: 10.5,
-    color: colors.textMuted,
+    fontSize: 12,
+    color: FG_MUTED,
     fontFamily: "Inter-Regular",
     marginTop: 2,
   },
@@ -343,17 +297,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    marginTop: 0,
+    gap: 4,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: colors.borderStrong,
-    paddingBottom: 8,
+    borderTopColor: LINE,
+    paddingBottom: 2,
   },
   viewMoreText: {
-    color: colors.accent,
-    fontSize: 11.5,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    letterSpacing: -0.1,
+    color: FG_MUTED,
+    fontSize: 13,
+    fontFamily: "Inter-SemiBold",
   },
 });

@@ -390,7 +390,7 @@ export function ListingScreen({ navigation, route }: Props) {
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         {loading ? (
           <View style={styles.centered}>
-            <ActivityIndicator color={colors.accent} size="large" />
+            <ActivityIndicator color="#1B8A5A" size="large" />
           </View>
         ) : error ? (
           <View style={styles.centered}>
@@ -491,7 +491,7 @@ export function ListingScreen({ navigation, route }: Props) {
                         <View style={styles.metaDot} />
                       </>
                     )}
-                    <View style={[styles.availPulseDot, !isAvailable && styles.availPulseDotOff]} />
+                    <View style={[styles.availPulseDot, !isAvailable && styles.availPulseDotOff]} pointerEvents="none" />
                     <Text style={[styles.availText, !isAvailable && styles.availTextOff]}>
                       {availabilityFallbackText}
                     </Text>
@@ -518,42 +518,43 @@ export function ListingScreen({ navigation, route }: Props) {
 
                 {/* ── Booking info card ─────────────────────── */}
                 <View style={styles.airRouteCard}>
-                  <View style={styles.taxiRouteTrack}>
-                    <View style={styles.taxiRouteDotStart} />
-                    <View style={styles.taxiRouteLine} />
-                    <View style={styles.taxiRouteDotEnd} />
-                  </View>
-                  <View style={styles.taxiRouteContent}>
-                    <View style={styles.taxiRouteRow}>
-                      <Text style={styles.taxiRouteValue}>{formatDateTimeLabel(startAt)}</Text>
+                  <View style={styles.airRouteTop}>
+                    <View style={styles.taxiRouteTrack}>
+                      <View style={styles.taxiRouteDotStart} />
+                      <View style={styles.taxiRouteLine} />
+                      <View style={styles.taxiRouteDotEnd} />
                     </View>
-                    <View style={styles.taxiRouteSpacer} />
-                    <View style={styles.taxiRouteRow}>
-                      <Text style={styles.taxiRouteValue}>{formatDateTimeLabel(endAt)}</Text>
+                    <View style={styles.taxiRouteContent}>
+                      <View style={styles.taxiRouteRow}>
+                        <Text style={styles.taxiRouteValue}>{formatDateTimeLabel(startAt)}</Text>
+                      </View>
+                      <View style={styles.taxiRouteSpacer} />
+                      <View style={styles.taxiRouteRow}>
+                        <Text style={styles.taxiRouteValue}>{formatDateTimeLabel(endAt)}</Text>
+                      </View>
                     </View>
+                    <Pressable style={styles.airTimeEditButton} onPress={() => openPicker("start")}>
+                      <Ionicons name="create-outline" size={16} color="#0F172A" />
+                      <Text style={styles.airTimeEditButtonText}>Edit</Text>
+                    </Pressable>
                   </View>
-                  <Pressable style={styles.airTimeEditButton} onPress={() => openPicker("start")}>
-                    <Ionicons name="create-outline" size={16} color="#0F172A" />
-                    <Text style={styles.airTimeEditButtonText}>Edit</Text>
-                  </Pressable>
-                </View>
 
-                {/* ── Extend offer ─────────────────────────── */}
-                {extendOffer ? (
-                  <Pressable
-                    style={styles.offerCard}
-                    onPress={() => setEndAt(new Date(extendOffer.endOfDay))}
-                  >
-                    <View style={styles.offerIconWrap}>
-                      <Ionicons name="flash" size={15} color={colors.accent} />
-                    </View>
-                    <Text style={styles.offerText}>
-                      Extend to end of day for only{" "}
-                      <Text style={styles.offerTextBold}>€{extendOffer.extra}</Text>
-                    </Text>
-                    <Ionicons name="chevron-forward" size={15} color={colors.accent} />
-                  </Pressable>
-                ) : null}
+                  {extendOffer ? (
+                    <Pressable
+                      style={styles.offerRow}
+                      onPress={() => setEndAt(new Date(extendOffer.endOfDay))}
+                    >
+                      <View style={styles.offerIconWrap}>
+                        <Ionicons name="flash" size={15} color="#1B8A5A" />
+                      </View>
+                      <Text style={styles.offerText}>
+                        Extend to end of day for only{" "}
+                        <Text style={styles.offerTextBold}>€{extendOffer.extra}</Text>
+                      </Text>
+                      <Ionicons name="chevron-forward" size={15} color="#1B8A5A" />
+                    </Pressable>
+                  ) : null}
+                </View>
 
                 {/* ── About ────────────────────────────────── */}
                 <View style={styles.sectionDivider} />
@@ -569,6 +570,24 @@ export function ListingScreen({ navigation, route }: Props) {
                     <Text style={styles.readMore}>{showFullAbout ? "View less" : "View full description"}</Text>
                   )}
                 </Pressable>
+
+                {/* ── Features (horizontal scroll chips) ───── */}
+                <View style={styles.sectionDivider} />
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Included features</Text>
+                  <View style={styles.chipsGrid}>
+                    {featureLabels.map((feature) => (
+                      <View key={feature} style={styles.featureChip}>
+                        <View style={styles.featureChipIconWrap}>
+                          <FeatureIcon type={getFeatureIconType(feature)} size={16} />
+                        </View>
+                        <View>
+                          <Text style={styles.featureChipLabel}>{feature}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </View>
 
                 <View style={styles.sectionDivider} />
                 <View style={styles.section}>
@@ -632,24 +651,6 @@ export function ListingScreen({ navigation, route }: Props) {
                   </View>
                 </View>
 
-                {/* ── Features (horizontal scroll chips) ───── */}
-                <View style={styles.sectionDivider} />
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Included features</Text>
-                  <View style={styles.chipsGrid}>
-                    {featureLabels.map((feature) => (
-                      <View key={feature} style={styles.featureChip}>
-                        <View style={styles.featureChipIconWrap}>
-                          <FeatureIcon type={getFeatureIconType(feature)} size={16} />
-                        </View>
-                        <View>
-                          <Text style={styles.featureChipLabel}>{feature}</Text>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-
                 {/* ── Reviews ──────────────────────────────── */}
                 <View style={styles.sectionDivider} />
                 <View style={styles.section}>
@@ -673,7 +674,7 @@ export function ListingScreen({ navigation, route }: Props) {
                     ) : null}
                   </View>
                   {reviewsLoading ? (
-                    <ActivityIndicator color={colors.accent} style={{ marginTop: 12, alignSelf: "flex-start" }} />
+                    <ActivityIndicator color="#1B8A5A" style={{ marginTop: 12, alignSelf: "flex-start" }} />
                   ) : reviews.length ? (
                     <View style={styles.reviewList}>
                       {reviews.slice(0, 3).map((review) => {
@@ -909,29 +910,31 @@ export function ListingScreen({ navigation, route }: Props) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-
-const WARM_SHADOW = {
-  shadowColor: "#0F4D40",
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.07,
-  shadowRadius: 16,
-  elevation: 3,
-};
+// Design tokens (spec)
+const GREEN = "#1B8A5A";
+const GREEN_SOFT = "#E6F2EC";
+const FG = "#111111";
+const FG_2 = "#3D3D3D";
+const FG_MUTED = "#6B6B6B";
+const FG_SUBTLE = "#9A9A9A";
+const LINE = "#E6E6E4";
+const LINE_2 = "#BEBEBE";
+const BG_2 = "#F7F7F6";
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "transparent" },
   centered: {
     flex: 1, alignItems: "center", justifyContent: "center",
-    backgroundColor: colors.appBg,
+    backgroundColor: "#ffffff",
   },
   errorText: {
-    fontFamily: "Inter-Regular", fontSize: 14, color: colors.danger,
+    fontFamily: "Inter-Regular", fontSize: 15, color: colors.danger,
     textAlign: "center", paddingHorizontal: 24,
   },
 
   // Hero
   heroFixed: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 0, overflow: "hidden" },
-  heroPlaceholder: { alignItems: "center", justifyContent: "center", backgroundColor: "#3A5A50" },
+  heroPlaceholder: { alignItems: "center", justifyContent: "center", backgroundColor: "#1B3A32" },
   heroGradient: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
   photoCounter: {
     backgroundColor: "rgba(0,0,0,0.44)", borderRadius: 999,
@@ -957,165 +960,79 @@ const styles = StyleSheet.create({
 
   scroll: { flex: 1 },
 
-  // Sheet
+  // Sheet — floating surface, gets the sheet shadow
   sheet: {
     backgroundColor: "#ffffff",
     position: "relative",
     zIndex: 3,
-    borderTopLeftRadius: 26, borderTopRightRadius: 26,
+    borderTopLeftRadius: 20, borderTopRightRadius: 20,
     paddingHorizontal: spacing.screenX,
     paddingTop: 8, paddingBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.03,
+    shadowColor: "#111111",
+    shadowOffset: { width: 0, height: -1 },
+    shadowOpacity: 0.06,
     shadowRadius: 12,
     elevation: 8,
   },
   sheetHandle: {
-    width: 36, height: 4, borderRadius: 999,
-    backgroundColor: "#d8dcdf",
+    width: 40, height: 4, borderRadius: 999,
+    backgroundColor: LINE,
     alignSelf: "center", marginBottom: 18,
-  },
-  airSummaryHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    paddingHorizontal: 4,
-    marginBottom: 14,
-  },
-  airSummaryThumb: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: "#E8EEF5",
-  },
-  taxiSummaryAvatarPlaceholder: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  airSummaryHeaderContent: {
-    flex: 1,
-    minWidth: 0,
-  },
-  airSummaryTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 24,
-    lineHeight: 30,
-    letterSpacing: -0.6,
-    textAlign: "left",
-    color: "#134d49",
-    marginBottom: 4,
-  },
-  airSummarySub: {
-    fontFamily: "Inter-Regular",
-    fontSize: 13,
-    lineHeight: 19,
-    color: "#5d7773",
-    textAlign: "left",
-    marginBottom: 12,
-  },
-  airSummaryStars: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-  },
-  airReviewSummaryLine: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 0,
-    flexWrap: "wrap",
-  },
-  airReviewSummarySecondary: {
-    fontFamily: "Inter-Medium",
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#5d7773",
-  },
-  airStatsPills: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 10,
-    marginBottom: 18,
-  },
-  airStatPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderColor: "#d8e5df",
-    backgroundColor: "#fffef9",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-  },
-  airStatPillText: {
-    fontFamily: "Inter-SemiBold",
-    fontSize: 13,
-    lineHeight: 18,
-    color: "#145852",
   },
 
   // Title block
   titleBlock: { paddingBottom: 14 },
-  typePill: {
-    alignSelf: "flex-start",
-    backgroundColor: "#dceee8", borderRadius: 999,
-    paddingHorizontal: 11, paddingVertical: 5, marginBottom: 10,
-  },
-  typePillText: { fontFamily: "Inter-SemiBold", fontSize: 11, color: "#0f5b55", letterSpacing: 0.5 },
   titleText: {
     fontFamily: "Inter-SemiBold",
     fontSize: 22, lineHeight: 28, letterSpacing: -0.35,
     color: "#151b1b", marginBottom: 8,
   },
-  metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 7, marginBottom: 4 },
-  starPill: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: "transparent", borderRadius: 0, paddingHorizontal: 0, paddingVertical: 0,
-  },
-  starPillText: { fontFamily: "Inter-Bold", fontSize: 14, color: "#151b1b" },
-  starPillCount: { fontFamily: "Inter-Regular", fontSize: 14, color: "#6b7280" },
-  metaDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: colors.borderStrong },
-  availPulseDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent, marginRight: 5 },
+  metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6, marginBottom: 4 },
+  starPill: { flexDirection: "row", alignItems: "center", gap: 4 },
+  starPillText: { fontFamily: "Inter-SemiBold", fontSize: 13, color: FG },
+  starPillCount: { fontFamily: "Inter-Regular", fontSize: 13, color: FG_MUTED },
+  metaDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: LINE_2 },
+  availPulseDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: GREEN, marginRight: 4 },
   availPulseDotOff: { backgroundColor: colors.danger },
-  availText: { fontFamily: "Inter-SemiBold", fontSize: 14, color: "#0f7f68" },
+  availText: { fontFamily: "Inter-Medium", fontSize: 13, color: GREEN },
   availTextOff: { color: colors.danger },
   addressRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  addressText: { fontFamily: "Inter-Regular", fontSize: 13, color: colors.textMuted, flex: 1, flexShrink: 1 },
-  addressSep: { fontFamily: "Inter-Regular", fontSize: 13, color: colors.borderStrong, flexShrink: 0 },
-  distanceText: { fontFamily: "Inter-Medium", fontSize: 13, color: colors.textMuted, flexShrink: 0 },
+  addressText: { fontFamily: "Inter-Regular", fontSize: 13, color: FG_MUTED, flex: 1, flexShrink: 1 },
+  addressSep: { fontFamily: "Inter-Regular", fontSize: 13, color: LINE_2, flexShrink: 0 },
+  distanceText: { fontFamily: "Inter-Medium", fontSize: 13, color: FG_MUTED, flexShrink: 0 },
 
-  // Stats strip
+  // Stats strip — inline card, border only, no shadow
   statsStrip: {
     flexDirection: "row",
     backgroundColor: "#ffffff",
-    borderRadius: 14, borderWidth: 1, borderColor: "#e6e8ea",
+    borderRadius: 12, borderWidth: 1, borderColor: LINE_2,
     overflow: "hidden", marginBottom: 12,
   },
-  statsCell: { flex: 1, paddingVertical: 16, paddingHorizontal: 10, alignItems: "center", gap: 4 },
+  statsCell: { flex: 1, paddingVertical: 14, paddingHorizontal: 10, alignItems: "center", gap: 4 },
   statsCellLabel: {
-    fontFamily: "Inter-SemiBold", fontSize: 10,
-    color: "#8b949b", letterSpacing: 0.9, textTransform: "uppercase",
+    fontFamily: "Inter-SemiBold", fontSize: 11,
+    color: FG_SUBTLE, letterSpacing: 0.7, textTransform: "uppercase",
   },
   statsCellValue: {
-    fontFamily: "Inter-SemiBold", fontSize: 18,
-    color: "#151b1b", letterSpacing: -0.3,
+    fontFamily: "Inter-SemiBold", fontSize: 17,
+    color: FG, letterSpacing: -0.2,
   },
-  statsVDivider: { width: 1, backgroundColor: "#eceff1", marginVertical: 10 },
+  statsVDivider: { width: 1, backgroundColor: LINE, marginVertical: 10 },
 
-  // Booking time card
+  // Booking time card — outer wrapper + inner sections
   airRouteCard: {
-    flexDirection: "row",
-    gap: 14,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: "#e8eaeb",
-    borderRadius: 14,
+    borderColor: LINE_2,
+    borderRadius: 12,
+    backgroundColor: "#ffffff",
+    overflow: "hidden",
+  },
+  airRouteTop: {
+    flexDirection: "row",
+    gap: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: "#ffffff",
   },
   taxiRouteTrack: {
     alignItems: "center",
@@ -1123,390 +1040,318 @@ const styles = StyleSheet.create({
     paddingTop: 6,
   },
   taxiRouteDotStart: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "#31b36b",
-    borderWidth: 4,
-    borderColor: "#ecfaf1",
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: GREEN,
   },
   taxiRouteLine: {
-    width: 2,
+    width: 1.5,
     flex: 1,
-    minHeight: 36,
-    backgroundColor: "#31b36b",
+    minHeight: 32,
+    backgroundColor: LINE,
     marginVertical: 4,
   },
   taxiRouteDotEnd: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 2,
-    borderColor: "#31b36b",
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#ffffff",
+    borderWidth: 1.5,
+    borderColor: LINE_2,
   },
-  taxiRouteContent: {
-    flex: 1,
-    gap: 0,
-  },
-  taxiRouteRow: {
-    minHeight: 34,
-    justifyContent: "center",
-  },
+  taxiRouteContent: { flex: 1 },
+  taxiRouteRow: { minHeight: 32, justifyContent: "center" },
   taxiRouteSpacer: { height: 12 },
   taxiRouteValue: {
     fontFamily: "Inter-SemiBold",
-    fontSize: 16,
-    lineHeight: 21,
-    color: "#1f2a2a",
+    fontSize: 15,
+    lineHeight: 20,
+    color: FG,
   },
   airTimeEditButton: {
     alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    minHeight: 36,
+    gap: 5,
+    minHeight: 32,
     paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e0e4e5",
+    borderRadius: 8,
+    backgroundColor: BG_2,
     marginLeft: 8,
   },
   airTimeEditButtonText: {
     fontFamily: "Inter-SemiBold",
-    fontSize: 13.5,
+    fontSize: 13,
     lineHeight: 18,
-    color: "#4f5b5a",
+    color: FG_2,
   },
 
-  // Extend offer
-  offerCard: {
+  // Extend offer — attached bottom section of airRouteCard
+  offerRow: {
     flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: "#ffffff",
-    borderRadius: 12, borderWidth: 1, borderColor: "#e8eaeb",
-    paddingHorizontal: 14, paddingVertical: 11, marginBottom: 2,
+    backgroundColor: GREEN_SOFT,
+    borderTopWidth: 1, borderTopColor: LINE,
+    paddingHorizontal: 14, paddingVertical: 11,
   },
   offerIconWrap: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: "#f4f7f7",
+    backgroundColor: "#ffffff",
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
-  offerText: { flex: 1, fontFamily: "Inter-Regular", fontSize: 13, color: "#151b1b", lineHeight: 19 },
-  offerTextBold: { fontFamily: "Inter-Bold" },
+  offerText: { flex: 1, fontFamily: "Inter-Regular", fontSize: 13, color: FG, lineHeight: 19 },
+  offerTextBold: { fontFamily: "Inter-SemiBold", color: GREEN },
 
   // Sections
-  sectionDivider: { height: 1, backgroundColor: "#f0f1f2", marginHorizontal: -spacing.screenX },
-  availabilityList: { gap: 6, marginTop: 10 },
-  availabilityRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 7 },
-  availabilityRowToday: { backgroundColor: "#f5faf7", borderRadius: 8, paddingHorizontal: 10, marginHorizontal: -8 },
-  availabilityDay: { fontFamily: "Inter-Medium", fontSize: 14, color: "#1F2937", flex: 1 },
-  availabilityDayToday: { color: "#15714a", fontFamily: "Inter-SemiBold" },
-  availabilityHours: { fontFamily: "Inter-Regular", fontSize: 13, color: "#64748B", textAlign: "right" },
-  availabilityHoursToday: { color: "#15714a" },
-  section: { paddingVertical: 18 },
+  sectionDivider: { height: 1, backgroundColor: LINE, marginHorizontal: -spacing.screenX },
+  availabilityList: { gap: 2, marginTop: 10 },
+  availabilityRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingVertical: 8,
+  },
+  availabilityRowToday: {
+    backgroundColor: GREEN_SOFT, borderRadius: 8,
+    paddingHorizontal: 10, marginHorizontal: -8,
+  },
+  availabilityDay: { fontFamily: "Inter-Regular", fontSize: 15, color: FG_2, flex: 1 },
+  availabilityDayToday: { color: GREEN, fontFamily: "Inter-SemiBold" },
+  availabilityHours: { fontFamily: "Inter-Regular", fontSize: 13, color: FG_MUTED, textAlign: "right" },
+  availabilityHoursToday: { color: GREEN },
+  section: { paddingVertical: 20 },
   sectionTitle: {
     fontFamily: "Inter-SemiBold",
-    fontSize: 20, color: "#151b1b", letterSpacing: -0.35, marginBottom: 14,
+    fontSize: 20, lineHeight: 25, color: FG, letterSpacing: -0.2, marginBottom: 14,
   },
-  sectionBody: { fontFamily: "Inter-Regular", fontSize: 15, lineHeight: 27, color: "#343c3c" },
-  readMore: { fontFamily: "Inter-SemiBold", fontSize: 14, color: "#151b1b", marginTop: 10 },
-  localAreaCard: {
-    backgroundColor: "transparent",
-    borderRadius: 0,
-    borderWidth: 0,
-    borderColor: "transparent",
-    padding: 0,
-    gap: 12,
-  },
-  localAreaHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
+  sectionBody: { fontFamily: "Inter-Regular", fontSize: 15, lineHeight: 24, color: FG_2 },
+  readMore: { fontFamily: "Inter-SemiBold", fontSize: 15, color: FG, marginTop: 10 },
+
+  // Local area map
+  localAreaCard: { backgroundColor: "transparent", padding: 0, gap: 12 },
+  localAreaHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   localAreaHeaderTextWrap: { flex: 1 },
   localAreaAddress: {
-    fontFamily: "Inter-SemiBold",
-    fontSize: 15,
-    lineHeight: 21,
-    color: "#151b1b",
-    letterSpacing: -0.15,
+    fontFamily: "Inter-SemiBold", fontSize: 15, lineHeight: 21,
+    color: FG, letterSpacing: -0.1,
   },
   localAreaSub: {
-    marginTop: 4,
-    fontFamily: "Inter-Regular",
-    fontSize: 12.5,
-    lineHeight: 18,
-    color: "#6a7474",
+    marginTop: 4, fontFamily: "Inter-Regular",
+    fontSize: 13, lineHeight: 18, color: FG_MUTED,
   },
   localAreaMap: {
-    width: "100%",
-    height: 180,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#e3e7e7",
-    backgroundColor: "#e7ecef",
+    width: "100%", height: 180,
+    borderRadius: 8, borderWidth: 1, borderColor: LINE,
+    backgroundColor: BG_2,
   },
-  localAreaMapWrap: {
-    position: "relative",
-  },
+  localAreaMapWrap: { position: "relative" },
   mapExpandButton: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    width: 34,
-    height: 34,
-    borderRadius: 6,
+    position: "absolute", top: 10, right: 10,
+    width: 34, height: 34, borderRadius: 6,
     backgroundColor: "rgba(255,255,255,0.96)",
-    borderWidth: 1,
-    borderColor: "#e3e7e7",
-    alignItems: "center",
-    justifyContent: "center",
+    borderWidth: 1, borderColor: LINE,
+    alignItems: "center", justifyContent: "center",
   },
-  localAreaButtons: {
-    flexDirection: "row",
-    gap: 10,
-  },
+  localAreaButtons: { flexDirection: "row", gap: 10 },
   localAreaButtonSecondary: {
-    flex: 1,
-    minHeight: 48,
-    borderRadius: 10,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e0e4e5",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
+    flex: 1, minHeight: 40, borderRadius: 8,
+    backgroundColor: BG_2,
+    alignItems: "center", justifyContent: "center", paddingHorizontal: 16,
   },
   localAreaButtonSecondaryText: {
-    fontFamily: "Inter-SemiBold",
-    fontSize: 14,
-    color: "#151b1b",
-    letterSpacing: -0.1,
+    fontFamily: "Inter-SemiBold", fontSize: 13, color: FG,
   },
 
-  // Feature chips
-  chipsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
+  // Feature chips — pill shape, bg-2 fill, no border (spec .chip pattern)
+  chipsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   featureChip: {
-    flexDirection: "row", alignItems: "center", gap: 10,
-    backgroundColor: "#ffffff",
-    borderRadius: 8, borderWidth: 1, borderColor: "#e0e4e5",
-    paddingHorizontal: 14, paddingVertical: 14,
-    minWidth: "46%",
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: BG_2,
+    borderRadius: 999,
+    paddingHorizontal: 14, paddingVertical: 10,
   },
   featureChipIconWrap: {
-    width: 28, height: 28, borderRadius: 8,
-    backgroundColor: "#fafbfb",
     alignItems: "center", justifyContent: "center",
   },
   featureChipLabel: {
-    fontFamily: "Inter-SemiBold", fontSize: 13.5, color: "#151b1b", letterSpacing: -0.1,
+    fontFamily: "Inter-Medium", fontSize: 13, color: FG_2,
   },
 
   // Guarantee strip
   guaranteeStrip: {
     flexDirection: "row", alignItems: "center", gap: 14,
     backgroundColor: "#ffffff",
-    borderRadius: 8, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 4,
-    borderWidth: 1, borderColor: "#e8eaeb",
+    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 4,
+    borderWidth: 1, borderColor: LINE,
   },
   guaranteeIconTile: {
-    width: 40, height: 40, borderRadius: 12,
-    backgroundColor: "#f4f7f7",
+    width: 40, height: 40, borderRadius: 8,
+    backgroundColor: BG_2,
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
   guaranteeCopy: { flex: 1 },
-  guaranteeTitle: { fontFamily: "Inter-SemiBold", fontSize: 15, color: "#151b1b", letterSpacing: -0.1 },
-  guaranteeSub: { fontFamily: "Inter-Medium", fontSize: 12.5, color: "#6b747b", marginTop: 2 },
+  guaranteeTitle: { fontFamily: "Inter-SemiBold", fontSize: 15, color: FG, letterSpacing: -0.1 },
+  guaranteeSub: { fontFamily: "Inter-Regular", fontSize: 13, color: FG_MUTED, marginTop: 2 },
 
   // Reviews
   reviewsHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 0 },
-  reviewsLink: {
-    marginLeft: "auto",
-  },
+  reviewsLink: { marginLeft: "auto" },
   reviewsLinkText: {
-    fontFamily: "Inter-SemiBold",
-    fontSize: 13,
-    color: "#2caea3",
+    fontFamily: "Inter-SemiBold", fontSize: 13,
+    color: GREEN,
   },
   ratingPill: {
     flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: "#FCEFD6", borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5,
+    backgroundColor: BG_2, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5,
   },
-  ratingPillText: { fontFamily: "Inter-Bold", fontSize: 12, color: "#7A5A2E" },
-  ratingPillCount: { fontFamily: "Inter-Regular", fontSize: 11, color: "#A07840" },
+  ratingPillText: { fontFamily: "Inter-SemiBold", fontSize: 12, color: FG },
+  ratingPillCount: { fontFamily: "Inter-Regular", fontSize: 11, color: FG_MUTED },
   reviewList: { gap: 12, marginTop: 12 },
   reviewCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 8, borderWidth: 1, borderColor: "#e8eaeb", padding: 15,
+    borderRadius: 12, borderWidth: 1, borderColor: LINE_2, padding: 16,
   },
   reviewCardTop: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   reviewAvatar: {
     width: 36, height: 36, borderRadius: 18,
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
-  reviewAvatarText: { fontFamily: "Inter-Bold", fontSize: 15, color: colors.text },
+  reviewAvatarText: { fontFamily: "Inter-Bold", fontSize: 15, color: FG },
   reviewMetaBlock: { flex: 1 },
-  reviewAuthorName: { fontFamily: "Inter-SemiBold", fontSize: 15, color: "#151b1b", letterSpacing: -0.1 },
-  reviewDateText: { fontFamily: "Inter-Regular", fontSize: 11.5, color: "#798289", marginTop: 1 },
+  reviewAuthorName: { fontFamily: "Inter-SemiBold", fontSize: 15, color: FG, letterSpacing: -0.1 },
+  reviewDateText: { fontFamily: "Inter-Regular", fontSize: 13, color: FG_MUTED, marginTop: 1 },
   reviewStarPill: {
     flexDirection: "row", alignItems: "center", gap: 3,
-    backgroundColor: "#f5f7f7", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
+    backgroundColor: BG_2, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
   },
-  reviewStarPillText: { fontFamily: "Inter-Bold", fontSize: 12, color: "#151b1b" },
-  reviewComment: { fontFamily: "Inter-Regular", fontSize: 13.5, lineHeight: 22, color: "#3f4948" },
+  reviewStarPillText: { fontFamily: "Inter-SemiBold", fontSize: 12, color: FG },
+  reviewComment: { fontFamily: "Inter-Regular", fontSize: 13, lineHeight: 20, color: FG_2 },
 
-  authModalRoot: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
+  // Auth modal — bottom sheet
+  authModalRoot: { flex: 1, justifyContent: "flex-end" },
   authModalBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15, 23, 42, 0.22)",
+    backgroundColor: "rgba(17, 17, 17, 0.45)",
   },
   authModalSheet: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 28,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderBottomWidth: 0,
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 16, borderTopRightRadius: 16,
+    paddingHorizontal: 20, paddingTop: 18, paddingBottom: 28,
+    borderWidth: 1, borderColor: LINE_2, borderBottomWidth: 0,
+    shadowColor: "#111111",
+    shadowOffset: { width: 0, height: -1 },
+    shadowOpacity: 0.06, shadowRadius: 12, elevation: 16,
   },
   authModalTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 22,
-    lineHeight: 27,
-    color: colors.text,
-    marginBottom: 6,
+    fontFamily: "Inter-Bold",
+    fontSize: 20, lineHeight: 25, letterSpacing: -0.2,
+    color: FG, marginBottom: 6,
   },
   authModalBody: {
     fontFamily: "Inter-Regular",
-    fontSize: 15,
-    lineHeight: 21,
-    color: colors.textMuted,
-    marginBottom: 16,
+    fontSize: 15, lineHeight: 22,
+    color: FG_MUTED, marginBottom: 20,
   },
   authModalPrimary: {
-    backgroundColor: "#2ECC8F",
-    borderColor: "#2ECC8F",
-    borderWidth: 1,
-    minHeight: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
+    backgroundColor: GREEN,
+    minHeight: 48, borderRadius: 12,
+    alignItems: "center", justifyContent: "center", marginBottom: 10,
   },
   authModalPrimaryText: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 16,
-    color: "#FFFFFF",
+    fontFamily: "Inter-SemiBold", fontSize: 15, color: "#ffffff",
   },
   authModalSecondary: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#D9DEDE",
-    borderWidth: 1,
-    minHeight: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-    paddingHorizontal: 16,
+    backgroundColor: BG_2,
+    borderWidth: 1, borderColor: LINE,
+    minHeight: 48, borderRadius: 12,
+    alignItems: "center", justifyContent: "center",
+    marginBottom: 10, paddingHorizontal: 16,
   },
   authModalSecondaryText: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 15,
-    color: colors.text,
-    textAlign: "center",
+    fontFamily: "Inter-SemiBold", fontSize: 15,
+    color: FG, textAlign: "center",
   },
-  authModalLink: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-  },
-  authModalLinkText: {
-    fontFamily: "Inter-SemiBold",
-    fontSize: 15,
-    color: "#2ECC8F",
-  },
+  authModalLink: { alignItems: "center", justifyContent: "center", paddingVertical: 10 },
+  authModalLinkText: { fontFamily: "Inter-SemiBold", fontSize: 15, color: GREEN },
 
-  // Bottom bar
+  // Bottom dock — fixed, border-top separator, sheet shadow
   bottomBar: {
     position: "absolute", bottom: 0, left: 0, right: 0,
-    backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#edf0f2",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingHorizontal: 16, paddingTop: 10,
-    minHeight: 86,
+    backgroundColor: "#ffffff",
+    borderTopWidth: 1, borderTopColor: LINE,
+    paddingHorizontal: 16, paddingTop: 12,
+    minHeight: 80,
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     gap: 16,
-    shadowColor: "#15232b",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.03, shadowRadius: 8, elevation: 8,
+    shadowColor: "#111111",
+    shadowOffset: { width: 0, height: -1 },
+    shadowOpacity: 0.05, shadowRadius: 8, elevation: 8,
   },
-  bottomLeft: { flex: 1, justifyContent: "center", paddingLeft: 2 },
+  bottomLeft: { flex: 1, justifyContent: "center" },
   bottomLabel: {
     fontFamily: "Inter-SemiBold",
-    fontSize: 11,
-    color: "#7a8288",
-    letterSpacing: 0.8,
-    marginBottom: 4,
+    fontSize: 11, color: FG_SUBTLE,
+    letterSpacing: 0.7, marginBottom: 2,
     textTransform: "uppercase",
   },
   bottomPrice: {
     fontFamily: "Inter-Bold",
-    fontSize: 27, color: "#111827", letterSpacing: -0.8, lineHeight: 31,
+    fontSize: 24, color: FG, letterSpacing: -0.5, lineHeight: 29,
   },
-  bottomDuration: { fontFamily: "Inter-Regular", fontSize: 12, color: "#98a4ab", marginTop: 2 },
+  bottomDuration: { fontFamily: "Inter-Regular", fontSize: 13, color: FG_MUTED, marginTop: 1 },
   reserveBtn: {
-    backgroundColor: colors.accent,
+    backgroundColor: GREEN,
     borderRadius: 12,
-    minHeight: 56,
-    paddingVertical: 16, paddingHorizontal: 24, minWidth: 148, alignItems: "center", justifyContent: "center",
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 3,
+    minHeight: 48,
+    paddingVertical: 13, paddingHorizontal: 24, minWidth: 140,
+    alignItems: "center", justifyContent: "center",
   },
-  reserveBtnDisabled: { backgroundColor: colors.border, shadowOpacity: 0, elevation: 0 },
-  reserveBtnText: { fontFamily: "Inter-SemiBold", fontSize: 17, color: "#fff", letterSpacing: -0.1 },
-  reserveBtnDisabledText: { fontFamily: "Inter-SemiBold", fontSize: 16, color: colors.textSoft },
+  reserveBtnDisabled: { backgroundColor: LINE },
+  reserveBtnText: { fontFamily: "Inter-SemiBold", fontSize: 15, color: "#ffffff", letterSpacing: -0.1 },
+  reserveBtnDisabledText: { fontFamily: "Inter-Regular", fontSize: 15, color: FG_MUTED },
 
   // Picker modal
   pickerBackdrop: {
-    flex: 1, backgroundColor: "rgba(15,40,35,0.35)",
+    flex: 1, backgroundColor: "rgba(17,17,17,0.45)",
     justifyContent: "center", alignItems: "center", paddingHorizontal: 20,
   },
-  pickerSheet: { backgroundColor: colors.cardBg, borderRadius: 16, overflow: "hidden", width: "100%" },
+  pickerSheet: { backgroundColor: "#ffffff", borderRadius: 16, overflow: "hidden", width: "100%" },
   pickerHeader: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 18, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: colors.border,
+    borderBottomWidth: 1, borderBottomColor: LINE,
   },
-  pickerTitle: { fontFamily: "Inter-SemiBold", fontSize: 16, color: colors.text },
+  pickerTitle: { fontFamily: "Inter-SemiBold", fontSize: 15, color: FG },
   pickerDone: { paddingVertical: 6, paddingHorizontal: 8 },
-  pickerDoneText: { fontFamily: "Inter-SemiBold", fontSize: 15, color: colors.accent },
+  pickerDoneText: { fontFamily: "Inter-SemiBold", fontSize: 15, color: GREEN },
 
-  // Image viewer modal
-  viewerBackdrop: { flex: 1, backgroundColor: "rgba(10,25,20,0.97)" },
+  // Image / map viewer
+  viewerBackdrop: { flex: 1, backgroundColor: "rgba(17,17,17,0.97)" },
   mapViewerScreen: { flex: 1, backgroundColor: "#fff" },
-  mapViewerClose: {
-    backgroundColor: "rgba(20,27,27,0.74)",
-  },
+  mapViewerClose: { backgroundColor: "rgba(17,17,17,0.74)" },
   viewerClose: {
     position: "absolute", right: 16,
     paddingHorizontal: 14, paddingVertical: 8,
     backgroundColor: "rgba(255,255,255,0.14)", borderRadius: 999,
   },
   viewerCloseText: { fontFamily: "Inter-SemiBold", fontSize: 13, color: "#fff" },
+
+  // Unused legacy styles (kept for compatibility with any unused JSX branches)
+  airSummaryHeaderRow: { flexDirection: "row", alignItems: "center", gap: 16, paddingHorizontal: 4, marginBottom: 14 },
+  airSummaryThumb: { width: 84, height: 84, borderRadius: 42, backgroundColor: BG_2 },
+  taxiSummaryAvatarPlaceholder: { justifyContent: "center", alignItems: "center" },
+  airSummaryHeaderContent: { flex: 1, minWidth: 0 },
+  airSummaryTitle: { fontFamily: "Inter-Bold", fontSize: 24, lineHeight: 29, color: FG, marginBottom: 4 },
+  airSummarySub: { fontFamily: "Inter-Regular", fontSize: 13, lineHeight: 19, color: FG_MUTED },
+  airSummaryStars: { flexDirection: "row", alignItems: "center", gap: 2 },
+  airReviewSummaryLine: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  airReviewSummarySecondary: { fontFamily: "Inter-Regular", fontSize: 13, color: FG_MUTED },
+  airStatsPills: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 18 },
+  airStatPill: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    borderWidth: 1, borderColor: LINE, backgroundColor: BG_2,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999,
+  },
+  airStatPillText: { fontFamily: "Inter-SemiBold", fontSize: 13, color: FG_2 },
+  typePill: { alignSelf: "flex-start", backgroundColor: GREEN_SOFT, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginBottom: 10 },
+  typePillText: { fontFamily: "Inter-SemiBold", fontSize: 11, color: GREEN, letterSpacing: 0.5 },
 });
