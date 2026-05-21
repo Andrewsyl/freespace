@@ -104,11 +104,11 @@ export default function MapSection({
     const labels = Array.from(new Set(Object.values(pinLabelById)));
     const keys: string[] = [];
     labels.forEach((label) => {
-      keys.push(`${label}|default|${PIN_STYLE_VERSION}|${priceKey ?? "base"}`);
-      keys.push(`${label}|selected|${PIN_STYLE_VERSION}|${priceKey ?? "base"}`);
+      keys.push(`${label}|default|${PIN_STYLE_VERSION}`);
+      keys.push(`${label}|selected|${PIN_STYLE_VERSION}`);
     });
     return keys;
-  }, [pinLabelById, priceKey]);
+  }, [pinLabelById]);
   const providerValue =
     provider === "google"
       ? PROVIDER_GOOGLE
@@ -171,7 +171,7 @@ export default function MapSection({
   }, [labelKeys, pinImages]);
 
   const getPinKey = (label: string, selected: boolean) =>
-    `${label}|${selected ? "selected" : "default"}|${PIN_STYLE_VERSION}|${priceKey ?? "base"}`;
+    `${label}|${selected ? "selected" : "default"}|${PIN_STYLE_VERSION}`;
   return (
     <View style={styles.container}>
       <MapView

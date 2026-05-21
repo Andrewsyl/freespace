@@ -873,7 +873,6 @@ export function SearchScreen({ navigation }: Props) {
         setShowSearchArea(false);
         setPendingSearch(null);
         setSelectedId(null);
-        setResults([]);
         setLoading(true);
         void runSearch();
       })();
