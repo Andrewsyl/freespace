@@ -515,8 +515,11 @@ export function SearchScreen({ navigation }: Props) {
         } else {
           if (searchRequestIdRef.current === requestId) {
             setLoading(false);
-            if (nextResultsSnapshot) {
+            if (nextResultsSnapshot && nextResultsSnapshot.length > 0) {
               setResults(nextResultsSnapshot);
+              setPendingResults(null);
+            } else {
+              // Background search returned nothing — keep existing pins rather than blanking the map
               setPendingResults(null);
             }
           }
