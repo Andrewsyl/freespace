@@ -444,9 +444,9 @@ export function SearchScreen({ navigation }: Props) {
       const preserveSelection = options?.preserveSelection ?? false;
       if (shouldShowGlobal) {
         showGlobalLoading("Searching...");
+        setLoading(true);
+        setIsRefreshingPins(true);
       }
-      setLoading(true);
-      setIsRefreshingPins(true);
       setError(null);
       const params = buildSearchParams(paramsOverride);
       logInfo("Search started", params);
@@ -499,20 +499,25 @@ export function SearchScreen({ navigation }: Props) {
           setPendingResults([]);
         }
       } finally {
-        const elapsed = Date.now() - searchStartedAtRef.current;
-        const remaining = Math.max(0, 1000 - elapsed);
-        setTimeout(() => {
-            if (shouldShowGlobal) {
-              hideGlobalLoading();
+        if (shouldShowGlobal) {
+          const elapsed = Date.now() - searchStartedAtRef.current;
+          const remaining = Math.max(0, 1000 - elapsed);
+          setTimeout(() => {
+            hideGlobalLoading();
+            if (searchRequestIdRef.current !== requestId) return;
+            setLoading(false);
+            setIsRefreshingPins(false);
+            if (nextResultsSnapshot) {
+              setResults(nextResultsSnapshot);
+              setPendingResults(null);
             }
-          if (searchRequestIdRef.current !== requestId) return;
-          setLoading(false);
-          if (nextResultsSnapshot) {
+          }, remaining);
+        } else {
+          if (searchRequestIdRef.current === requestId && nextResultsSnapshot) {
             setResults(nextResultsSnapshot);
             setPendingResults(null);
           }
-          setIsRefreshingPins(false);
-        }, remaining);
+        }
       }
     },
     [buildSearchParams, hideGlobalLoading, showGlobalLoading, pendingResults]
