@@ -289,8 +289,11 @@ router.post("/oauth/google", enforceBlockedList, oauthLimiter, async (req, res, 
     if (!payload.email) {
       return res.status(400).json({ message: "Google account missing email" });
     }
-    const expectedAud = process.env.GOOGLE_OAUTH_CLIENT_ID;
-    if (expectedAud && payload.aud !== expectedAud) {
+    const acceptedAudiences = [
+      process.env.GOOGLE_OAUTH_CLIENT_ID,
+      process.env.GOOGLE_IOS_CLIENT_ID,
+    ].filter((value): value is string => Boolean(value));
+    if (acceptedAudiences.length > 0 && (!payload.aud || !acceptedAudiences.includes(payload.aud))) {
       return res.status(401).json({ message: "Invalid Google token audience" });
     }
     let user = await findUserByEmail(payload.email);

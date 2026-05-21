@@ -55,6 +55,7 @@ const envSchema = z
     STRIPE_CONNECT_ENABLED: optionalStringBool.transform((value) => value ?? false),
     ERROR_REPORT_WEBHOOK_URL: z.string().url("ERROR_REPORT_WEBHOOK_URL must be a valid URL").optional(),
     GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
+    GOOGLE_IOS_CLIENT_ID: z.string().optional(),
     FACEBOOK_APP_ID: z.string().optional(),
     FACEBOOK_APP_SECRET: z.string().optional(),
     ENFORCE_HTTPS: optionalStringBool,
