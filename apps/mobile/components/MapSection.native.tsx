@@ -138,7 +138,19 @@ export default function MapSection({
         moveOnMarkerPress={false}
         mapType="standard"
       >
-        {renderedResultsRef.current.map((listing) => {
+        {renderedResultsRef.current.filter((listing) => {
+          const region = lastRegionRef.current;
+          const lat = listing.latitude as number;
+          const lng = listing.longitude as number;
+          const halfLat = region.latitudeDelta / 2;
+          const halfLng = region.longitudeDelta / 2;
+          return (
+            lat >= region.latitude - halfLat &&
+            lat <= region.latitude + halfLat &&
+            lng >= region.longitude - halfLng &&
+            lng <= region.longitude + halfLng
+          );
+        }).map((listing) => {
           const isSelected = selectedId === listing.id;
           const price = priceForListing ? priceForListing(listing) : Number(listing.price_per_day);
           const isSoldOut = listing.is_available === false;

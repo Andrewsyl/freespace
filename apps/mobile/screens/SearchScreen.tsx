@@ -361,7 +361,7 @@ export function SearchScreen({ navigation }: Props) {
       region.latitudeDelta ** 2 + region.longitudeDelta ** 2
     );
     const rawRadiusKm =
-      Math.max(MIN_SEARCH_RADIUS_KM, (diagDelta * 111) / 2) * 1.2;
+      Math.max(MIN_SEARCH_RADIUS_KM, (diagDelta * 111) / 2);
     return Math.min(MAX_SEARCH_RADIUS_KM, rawRadiusKm);
   }, []);
 
