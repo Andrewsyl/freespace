@@ -10,11 +10,13 @@ type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 export function SettingsScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <View style={styles.stickyHeader}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={20} color={colors.text} />
           <Text style={styles.backText}>Back</Text>
         </Pressable>
+      </View>
+      <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Settings</Text>
           <Text style={styles.subtitle}>Preferences and defaults</Text>
@@ -42,8 +44,14 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.screenX,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.lg,
+  },
+  stickyHeader: {
+    backgroundColor: colors.appBg,
+    paddingTop: spacing.screenY,
+    paddingBottom: spacing.xs,
+    zIndex: 5,
   },
   title: {
     color: colors.text,

@@ -220,32 +220,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     }
   }, [end, listing, start]);
 
-  const scheduleBookingConfirmationNotification = useCallback(async () => {
-    if (!listing) return;
-    let permissions = await Notifications.getPermissionsAsync();
-    if (!permissions.granted && permissions.canAskAgain) {
-      permissions = await Notifications.requestPermissionsAsync();
-    }
-    if (!permissions.granted) {
-      logWarn("Booking confirmation notification skipped: permission not granted");
-      return;
-    }
-    const attachments = await getNotificationImageAttachment();
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Booking confirmed",
-        body: `${listing.title} · ${formatTimeLabel(start)} - ${formatTimeLabel(end)}`,
-        data: {
-          listingId: listing.id,
-          type: "booking_confirmed",
-          historyTab: start.getTime() <= Date.now() && Date.now() < end.getTime() ? "active" : "upcoming",
-        },
-        attachments,
-      },
-      trigger: null,
-    });
-  }, [end, listing, start]);
-
   const handlePayment = async () => {
     if (!listing || !priceSummary || !token || bookingConfirmed) return;
     setBookingBusy(true);
@@ -321,11 +295,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               nowMs < endMs
                 ? "active"
                 : "upcoming";
-            void scheduleBookingConfirmationNotification().catch((notificationError) => {
-              logWarn("Immediate booking confirmation notification failed", {
-                message: notificationError instanceof Error ? notificationError.message : String(notificationError),
-              });
-            });
             void scheduleBookingReminders().catch((notificationError) => {
               logWarn("Booking reminder scheduling failed", {
                 message: notificationError instanceof Error ? notificationError.message : String(notificationError),
@@ -414,11 +383,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         nowMs < endMs
           ? "active"
           : "upcoming";
-      void scheduleBookingConfirmationNotification().catch((notificationError) => {
-        logWarn("Immediate booking confirmation notification failed", {
-          message: notificationError instanceof Error ? notificationError.message : String(notificationError),
-        });
-      });
       void scheduleBookingReminders().catch((notificationError) => {
         logWarn("Booking reminder scheduling failed", {
           message: notificationError instanceof Error ? notificationError.message : String(notificationError),

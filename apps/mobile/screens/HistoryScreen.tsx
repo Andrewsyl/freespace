@@ -372,12 +372,6 @@ export function HistoryScreen({ navigation, route }: Props) {
     return cardContent;
   }, [navigation, displayTab, newBookingId, newBookingOpacityAnim, newBookingSlideAnim]);
 
-  const getItemLayout = useCallback((_: any, index: number) => ({
-    length: 220, // Approximate card height + gap
-    offset: 220 * index,
-    index,
-  }), []);
-
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
@@ -528,7 +522,10 @@ export function HistoryScreen({ navigation, route }: Props) {
                   return renderBookingCard({ item: item.booking });
                 }}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 20) }]}
+                contentContainerStyle={[
+                  styles.content,
+                  { paddingBottom: Math.max(insets.bottom + 96, 120) },
+                ]}
                 ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
                 ListFooterComponent={
                   paneTab === "past" && hasMorePast ? (
@@ -598,8 +595,7 @@ export function HistoryScreen({ navigation, route }: Props) {
                     )}
                   </>
                 }
-                getItemLayout={getItemLayout}
-                removeClippedSubviews={true}
+                removeClippedSubviews={false}
                 maxToRenderPerBatch={10}
                 updateCellsBatchingPeriod={50}
                 initialNumToRender={15}
@@ -647,8 +643,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   title: {
     fontFamily: "Inter-SemiBold",

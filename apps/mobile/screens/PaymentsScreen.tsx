@@ -159,6 +159,12 @@ export function PaymentsScreen() {
   if (!user) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <View style={styles.stickyHeader}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={20} color={colors.text} />
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
+        </View>
         <View style={styles.emptyState}>
           <Text style={styles.title}>Payments</Text>
           <Text style={styles.subtitle}>Sign in to manage cards and view charges.</Text>
@@ -169,11 +175,13 @@ export function PaymentsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <View style={styles.stickyHeader}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={20} color={colors.text} />
           <Text style={styles.backText}>Back</Text>
         </Pressable>
+      </View>
+      <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Payments</Text>
           <Text style={styles.subtitle}>Manage cards and review your booking charges.</Text>
@@ -303,14 +311,20 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.screenX,
     paddingBottom: 28,
-    paddingTop: 12,
+    paddingTop: 8,
+  },
+  stickyHeader: {
+    backgroundColor: colors.appBg,
+    paddingHorizontal: spacing.screenX,
+    paddingTop: spacing.screenY,
+    paddingBottom: spacing.xs,
+    zIndex: 5,
   },
   backButton: {
     alignItems: "center",
     alignSelf: "flex-start",
     flexDirection: "row",
     gap: 4,
-    marginTop: spacing.screenY,
   },
   backText: {
     ...textStyles.body,

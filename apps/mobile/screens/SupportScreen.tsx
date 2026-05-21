@@ -75,14 +75,16 @@ export function SupportScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}>
-        <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
-          keyboardShouldPersistTaps="handled"
-        >
+        <View style={styles.stickyHeader}>
           <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={20} color={colors.text} />
             <Text style={styles.backText}>Back</Text>
           </Pressable>
+        </View>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.header}>
             <Text style={styles.title}>Contact us</Text>
             <Text style={styles.subtitle}>
@@ -179,6 +181,12 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing.xl,
   },
+  stickyHeader: {
+    backgroundColor: colors.appBg,
+    paddingTop: spacing.screenY,
+    paddingBottom: spacing.xs,
+    zIndex: 5,
+  },
   backButton: {
     alignItems: "center",
     alignSelf: "flex-start",
@@ -193,7 +201,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.screenX,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.lg,
   },
   title: {

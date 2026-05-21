@@ -154,16 +154,17 @@ export function PersonalInfoScreen({ navigation }: Props) {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
+        <View style={styles.stickyHeader}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={20} color={colors.text} />
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
+        </View>
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
           keyboardShouldPersistTaps="handled"
         >
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={20} color={colors.text} />
-            <Text style={styles.backText}>Back</Text>
-          </Pressable>
-
           <View style={styles.header}>
             <Text style={styles.title}>Personal information</Text>
             <Text style={styles.subtitle}>Your account details</Text>
@@ -314,6 +315,12 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing.xl,
   },
+  stickyHeader: {
+    backgroundColor: colors.appBg,
+    paddingTop: spacing.screenY,
+    paddingBottom: spacing.xs,
+    zIndex: 5,
+  },
   backButton: {
     alignItems: "center",
     alignSelf: "flex-start",
@@ -328,7 +335,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.screenX,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.lg,
   },
   title: {

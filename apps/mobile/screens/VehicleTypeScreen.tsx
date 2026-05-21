@@ -460,16 +460,17 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
+        <View style={styles.stickyHeader}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={20} color={colors.text} />
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
+        </View>
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
           keyboardShouldPersistTaps="handled"
         >
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={20} color={colors.text} />
-            <Text style={styles.backText}>Back</Text>
-          </Pressable>
-
           <View style={styles.header}>
             <View style={styles.headerTextWrap}>
               <Text style={styles.title}>My vehicle</Text>
@@ -661,6 +662,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.appBg,
   },
+  stickyHeader: {
+    backgroundColor: colors.appBg,
+    paddingTop: spacing.screenY,
+    paddingBottom: spacing.xs,
+    zIndex: 5,
+  },
   backButton: {
     alignItems: "center",
     alignSelf: "flex-start",
@@ -678,7 +685,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: spacing.screenX,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.lg,
   },
   headerTextWrap: {
