@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import MapView, {
   type EdgePadding,
@@ -79,30 +79,6 @@ export default function MapSection({
   const localMapRef = useRef<MapView | null>(null);
   const lastRegionRef = useRef<MapRegion>(region ?? initialRegion);
   const lastMarkerPressRef = useRef<number>(0);
-  const prevSelectedIdRef = useRef<string | null>(null);
-
-  // IDs whose markers need to briefly re-render due to selection state change.
-  // We enable tracksViewChanges only for those markers, then disable after one paint.
-  const [trackingIds, setTrackingIds] = useState<ReadonlySet<string>>(new Set());
-  const trackingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const prev = prevSelectedIdRef.current;
-    const next = selectedId ?? null;
-    prevSelectedIdRef.current = next;
-
-    const changed = new Set<string>();
-    if (prev) changed.add(prev);
-    if (next) changed.add(next);
-    if (changed.size === 0) return;
-
-    if (trackingTimerRef.current) clearTimeout(trackingTimerRef.current);
-    setTrackingIds(changed);
-    trackingTimerRef.current = setTimeout(() => {
-      setTrackingIds(new Set());
-      trackingTimerRef.current = null;
-    }, 400);
-  }, [selectedId]);
 
   if (region) {
     lastRegionRef.current = region;
@@ -180,12 +156,12 @@ export default function MapSection({
 
           return (
             <Marker
-              key={`marker-${listing.id}`}
+              key={`marker-${listing.id}-${isSelected ? "sel" : "def"}`}
               coordinate={{
                 latitude: listing.latitude as number,
                 longitude: listing.longitude as number,
               }}
-              tracksViewChanges={trackingIds.has(listing.id)}
+              tracksViewChanges={false}
               anchor={{ x: 0.5, y: 0.96 }}
               centerOffset={{ x: 0, y: isSelected ? -2 : 0 }}
               onPress={(e) => {
