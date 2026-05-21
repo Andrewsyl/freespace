@@ -235,6 +235,7 @@ export function SearchScreen({ navigation }: Props) {
   const mapSpinnerLoopRef = useRef<Animated.CompositeAnimation | null>(null);
   const mapRegionSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectedIdRef = useRef<string | null>(null);
   const initialRegionHandledRef = useRef(false);
 
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
@@ -330,6 +331,10 @@ export function SearchScreen({ navigation }: Props) {
   useEffect(() => {
     resultsRef.current = results;
   }, [results]);
+
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
 
   const isWithinRadius = useCallback(
     (listing: ListingSummary, center: { lat: number; lng: number }, radiusM: number) => {
@@ -814,6 +819,13 @@ export function SearchScreen({ navigation }: Props) {
       return;
     }
 
+    // Cancel any pending card-dismiss from a map pan so it doesn't clear the new selection
+    if (cardDismissTimerRef.current) {
+      clearTimeout(cardDismissTimerRef.current);
+      cardDismissTimerRef.current = null;
+      setDismissingCard(false);
+    }
+
     setSelectedId(id);
     if (!id || !mapRef.current) return;
 
@@ -1021,6 +1033,8 @@ export function SearchScreen({ navigation }: Props) {
       showAreaTimerRef.current = null;
     }
     if (!ignoreNextRegionChangeRef.current && !isProgrammaticMoveRef.current) {
+      // Keep the card open while a listing is selected — only dismiss on explicit map tap
+      if (selectedIdRef.current) return;
       if (cardDismissTimerRef.current) return;
       setDismissingCard(true);
       cardDismissTimerRef.current = setTimeout(() => {
