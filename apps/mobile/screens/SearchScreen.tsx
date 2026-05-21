@@ -444,9 +444,9 @@ export function SearchScreen({ navigation }: Props) {
       const preserveSelection = options?.preserveSelection ?? false;
       if (shouldShowGlobal) {
         showGlobalLoading("Searching...");
-        setLoading(true);
         setIsRefreshingPins(true);
       }
+      setLoading(true);
       setError(null);
       const params = buildSearchParams(paramsOverride);
       logInfo("Search started", params);
@@ -513,9 +513,12 @@ export function SearchScreen({ navigation }: Props) {
             }
           }, remaining);
         } else {
-          if (searchRequestIdRef.current === requestId && nextResultsSnapshot) {
-            setResults(nextResultsSnapshot);
-            setPendingResults(null);
+          if (searchRequestIdRef.current === requestId) {
+            setLoading(false);
+            if (nextResultsSnapshot) {
+              setResults(nextResultsSnapshot);
+              setPendingResults(null);
+            }
           }
         }
       }
@@ -1171,7 +1174,7 @@ export function SearchScreen({ navigation }: Props) {
             onRegionChangeComplete={handleRegionChange}
             selectedId={selectedId}
             mapRef={mapRef}
-            freezeMarkers={loading || isRefreshingPins}
+            freezeMarkers={isRefreshingPins}
             onMapLoaded={() => handleMapReady("loaded")}
             onMapReady={() => handleMapReady("ready")}
             onOverlappingPins={setOverlappingPins}
