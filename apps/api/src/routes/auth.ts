@@ -89,6 +89,12 @@ const phoneSchema = z.object({
     .regex(/^\+[1-9]\d{7,14}$/, "Use E.164 format, e.g. +353871234567"),
 });
 
+const registerPhoneSchema = z
+  .string()
+  .trim()
+  .min(6)
+  .max(32);
+
 const phoneVerifySchema = z.object({
   code: z.string().trim().min(4).max(8),
 });
@@ -96,7 +102,9 @@ const phoneVerifySchema = z.object({
 const registerSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(6).max(128),
-  phone: phoneSchema.shape.phone.optional(),
+  firstName: z.string().trim().min(1).max(60).optional(),
+  lastName: z.string().trim().min(1).max(60).optional(),
+  phone: registerPhoneSchema.optional(),
   termsVersion: z.string().trim().min(1).max(32),
   privacyVersion: z.string().trim().min(1).max(32),
 });
@@ -159,7 +167,7 @@ function buildPasswordResetPreviewUrl(token: string) {
 
 router.post("/register", enforceBlockedList, registerLimiter, async (req, res, next) => {
   try {
-    const { email, password, termsVersion, privacyVersion, phone } = registerSchema.parse(req.body);
+    const { email, password, firstName, lastName, termsVersion, privacyVersion, phone } = registerSchema.parse(req.body);
     const existing = await findUserByEmail(email);
     if (existing) {
       return res.status(409).json({ message: "Email already registered" });
@@ -167,11 +175,15 @@ router.post("/register", enforceBlockedList, registerLimiter, async (req, res, n
     const passwordHash = await hashPassword(password);
     const token = generateVerificationToken();
     const expires = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24h
-    const phoneToken = phone ? generateSmsCode() : null;
-    const phoneExpires = phone ? new Date(Date.now() + 1000 * 60 * 10) : null; // 10 min
+    const normalizedFullName = [firstName?.trim(), lastName?.trim()].filter(Boolean).join(" ") || null;
+    const normalizedPhone = phone?.trim() || null;
+    const e164Phone = normalizedPhone && /^\+[1-9]\d{7,14}$/.test(normalizedPhone) ? normalizedPhone : null;
+    const phoneToken = e164Phone ? generateSmsCode() : null;
+    const phoneExpires = e164Phone ? new Date(Date.now() + 1000 * 60 * 10) : null; // 10 min
     const user = await createUser({
       email,
-      phone,
+      fullName: normalizedFullName,
+      phone: normalizedPhone,
       passwordHash,
       verificationToken: token,
       verificationExpires: expires,
@@ -197,9 +209,9 @@ router.post("/register", enforceBlockedList, registerLimiter, async (req, res, n
       from: getAuthEmailFrom(),
     }).catch((err) => console.warn("send verification email failed", err));
     const previewUrl = buildVerificationPreviewUrl(token);
-    if (phone && phoneToken) {
+    if (e164Phone && phoneToken) {
       sendSms({
-        to: phone,
+        to: e164Phone,
         message: `Your FreeSpace verification code is ${phoneToken}. It expires in 10 minutes.`,
       }).catch((err) => console.warn("send sms failed", err));
     }

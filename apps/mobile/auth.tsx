@@ -40,7 +40,13 @@ type AuthContextValue = {
   register: (
     email: string,
     password: string,
-    legal: { termsVersion: string; privacyVersion: string }
+    legal: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      termsVersion: string;
+      privacyVersion: string;
+    }
   ) => Promise<{ previewUrl: string | null; user: AuthUser }>;
   loginWithOAuth: (provider: "google" | "facebook", token: string) => Promise<AuthUser>;
   acceptLegal: (payload: { termsVersion: string; privacyVersion: string }) => Promise<AuthUser>;
@@ -183,7 +189,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (email: string, password: string, legal: { termsVersion: string; privacyVersion: string }) => {
+    async (
+      email: string,
+      password: string,
+      legal: {
+        firstName?: string;
+        lastName?: string;
+        phone?: string;
+        termsVersion: string;
+        privacyVersion: string;
+      }
+    ) => {
       const response = await apiRegister(email, password, legal);
       const nextUser = withAuthProvider(response.user, "password");
       setToken(response.token);

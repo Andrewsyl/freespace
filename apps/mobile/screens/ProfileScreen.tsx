@@ -98,20 +98,121 @@ export function ProfileScreen({ navigation }: Props) {
     Alert.alert(title, "This section is coming soon.");
   };
 
+  const promptLogin = () => navigation.navigate("Welcome");
+  const gatedPress = (callback?: () => void) => () => {
+    if (!user) {
+      promptLogin();
+      return;
+    }
+    callback?.();
+  };
+
   if (!user) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
-        <Screen style={styles.emptyState}>
-          <Text style={styles.title}>Profile</Text>
-          <Text style={styles.subtitle}>Sign in to manage your profile, bookings, and security.</Text>
-          <Button style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")} title="Sign in" />
-          <Pressable
-            style={styles.ghostButton}
-            onPress={() => navigation.navigate("Tabs", { screen: "Search" })}
-          >
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-            <Text style={styles.ghostButtonText}>Search</Text>
-          </Pressable>
+        <Screen scroll scrollProps={{ contentContainerStyle: styles.content as any }}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Profile</Text>
+            <Text style={styles.subtitle}>Manage your account, payments, hosting, and support.</Text>
+          </View>
+
+          <View style={styles.contentBody}>
+            <Card style={styles.section} noPadding>
+              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
+                <View style={styles.avatarShell}>
+                  <Text style={styles.avatarText}>U</Text>
+                </View>
+                <View style={styles.rowText}>
+                  <Text style={styles.rowTitle}>Your account</Text>
+                  <Text style={styles.rowSubtitle}>Sign in to access your profile</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+              </Pressable>
+            </Card>
+
+            <SectionHeader title="Account" style={styles.sectionHeaderWrap} />
+            <Card style={styles.section} noPadding>
+              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
+                <View style={styles.iconShell}>
+                  <MaterialIcons name="credit-card" size={20} color={colors.accent} />
+                </View>
+                <View style={styles.rowText}>
+                  <Text style={styles.rowTitle}>Payment methods</Text>
+                  <Text style={styles.rowSubtitle}>Add cards or bank accounts</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+              </Pressable>
+              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
+                <View style={styles.iconShell}>
+                  <MaterialIcons name="directions-car" size={20} color={colors.accent} />
+                </View>
+                <View style={styles.rowText}>
+                  <Text style={styles.rowTitle}>My vehicle</Text>
+                  <Text style={styles.rowSubtitle}>Add your car brand and model</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+              </Pressable>
+              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
+                <View style={styles.iconShell}>
+                  <MaterialIcons name="lock-outline" size={20} color={colors.accent} />
+                </View>
+                <View style={styles.rowText}>
+                  <Text style={styles.rowTitle}>Login & security</Text>
+                  <Text style={styles.rowSubtitle}>Password, 2FA, devices</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+              </Pressable>
+            </Card>
+
+            <SectionHeader title="Hosting" style={styles.sectionHeaderWrap} />
+            <Card style={styles.section} noPadding>
+              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
+                <View style={styles.iconShell}>
+                  <MaterialIcons name="add-business" size={20} color={colors.accent} />
+                </View>
+                <View style={styles.rowText}>
+                  <Text style={styles.rowTitle}>List your space</Text>
+                  <Text style={styles.rowSubtitle}>Earn from your parking spot</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+              </Pressable>
+              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
+                <View style={styles.iconShell}>
+                  <MaterialIcons name="home-work" size={20} color={colors.accent} />
+                </View>
+                <View style={styles.rowText}>
+                  <Text style={styles.rowTitle}>Manage spaces</Text>
+                  <Text style={styles.rowSubtitle}>Edit listings and availability</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+              </Pressable>
+            </Card>
+
+            <SectionHeader title="Support" style={styles.sectionHeaderWrap} />
+            <Card style={styles.section} noPadding>
+              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
+                <View style={styles.iconShell}>
+                  <MaterialIcons name="help-outline" size={20} color={colors.accent} />
+                </View>
+                <View style={styles.rowText}>
+                  <Text style={styles.rowTitle}>Help centre</Text>
+                  <Text style={styles.rowSubtitle}>FAQs and guides</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+              </Pressable>
+              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
+                <View style={styles.iconShell}>
+                  <MaterialIcons name="support-agent" size={20} color={colors.accent} />
+                </View>
+                <View style={styles.rowText}>
+                  <Text style={styles.rowTitle}>Contact support</Text>
+                  <Text style={styles.rowSubtitle}>Send a message to our team</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+              </Pressable>
+            </Card>
+            <View style={styles.bottomSpacer} />
+          </View>
         </Screen>
       </SafeAreaView>
     );
@@ -650,24 +751,45 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 24,
   },
-  emptyIllustration: {
-    width: 220,
-    height: 150,
-    marginBottom: 18,
-  },
-  primaryButton: {
-    marginTop: 16,
+  emptyHero: {
+    alignItems: "center",
+    justifyContent: "center",
     width: "100%",
   },
-  ghostButton: {
+  emptyLogoWrap: {
+    alignItems: "center",
+    height: 170,
+    justifyContent: "center",
+    marginBottom: 10,
+    overflow: "visible",
+    width: "100%",
+  },
+  emptyLogo: {
+    height: 190,
+    transform: [{ scale: 2.1 }],
+    width: 430,
+  },
+  emptyIllustration: {
+    height: 268,
+    marginBottom: 28,
+    width: 408,
+  },
+  primaryButton: {
+    marginTop: 0,
+    width: "100%",
+  },
+  emptyLoginRow: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 8,
-    marginTop: 12,
+    marginTop: 24,
   },
-  ghostButtonText: {
+  emptyLoginText: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: 14,
+  },
+  emptyLoginLink: {
+    color: colors.accent,
+    fontSize: 14,
     fontWeight: "600",
   },
   bottomSpacer: {

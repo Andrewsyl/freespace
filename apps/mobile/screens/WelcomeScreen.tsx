@@ -1,22 +1,76 @@
-import { useEffect } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
 import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
+import { logInfo, logWarn } from "../logger";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Welcome">;
 
 export function WelcomeScreen({ navigation }: Props) {
-  const { user } = useAuth();
+  const { user, loginWithOAuth } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
+  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
 
   useEffect(() => {
     if (user) {
       navigation.replace("Tabs", { screen: "Search" });
     }
   }, [navigation, user]);
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: googleWebClientId || undefined,
+      iosClientId: Platform.OS === "ios" ? googleIosClientId || undefined : undefined,
+    });
+  }, [googleWebClientId, googleIosClientId]);
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setSubmitting(true);
+    try {
+      logInfo("Google sign-in starting", { screen: "Welcome" });
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const signInResult = await GoogleSignin.signIn();
+      let idToken: string | null = null;
+      try {
+        const tokens = await GoogleSignin.getTokens();
+        idToken = tokens.idToken ?? null;
+      } catch {
+        idToken = null;
+      }
+      logInfo("Google tokens received", {
+        screen: "Welcome",
+        hasIdToken: Boolean(idToken),
+        email: signInResult?.data?.user?.email ?? null,
+      });
+      if (!idToken) {
+        return;
+      }
+      await loginWithOAuth("google", idToken);
+    } catch (err) {
+      const errorCode =
+        err && typeof err === "object" && "code" in err ? String(err.code) : "";
+      if (errorCode === statusCodes.SIGN_IN_CANCELLED) {
+        return;
+      }
+      const message = err instanceof Error ? err.message : "Google sign-in failed";
+      logWarn("Google sign-in failed", {
+        screen: "Welcome",
+        code: errorCode || null,
+        message,
+      });
+      setError(errorCode ? `${message} (${errorCode})` : message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -36,19 +90,29 @@ export function WelcomeScreen({ navigation }: Props) {
         />
 
         <TouchableOpacity
-          style={styles.getStartedButton}
-          onPress={() => navigation.navigate("Register")}
+          style={[styles.primaryButton, submitting && styles.buttonDisabled]}
+          onPress={handleGoogleSignIn}
+          disabled={submitting}
         >
-          <Text style={styles.buttonText}>Get Started</Text>
-          <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+          <Ionicons name="logo-google" size={20} color="#FFFFFF" />
+          <Text style={styles.buttonText}>{submitting ? "Connecting..." : "Continue with Google"}</Text>
         </TouchableOpacity>
 
-        <View style={styles.loginRow}>
-          <Text style={styles.loginText}>Already have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate("SignIn")}>
-            <Text style={styles.loginLink}>Login</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => navigation.navigate("SignIn")}
+        >
+          <Text style={styles.secondaryButtonText}>Log in with email or phone number</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.tertiaryButton}
+          onPress={() => navigation.navigate("Register")}
+        >
+          <Text style={styles.tertiaryButtonText}>Create account</Text>
+        </TouchableOpacity>
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </View>
     </SafeAreaView>
   );
@@ -84,15 +148,18 @@ const styles = StyleSheet.create({
     height: 268,
     marginBottom: 28,
   },
-  getStartedButton: {
+  primaryButton: {
     backgroundColor: "#2ECC8F",
     borderRadius: 28,
     paddingVertical: 16,
-    paddingHorizontal: 40,
+    paddingHorizontal: 28,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 12,
-    marginBottom: 24,
+    width: "100%",
+    maxWidth: 360,
+    marginBottom: 14,
     shadowColor: "#2ECC8F",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -104,17 +171,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  loginRow: {
-    flexDirection: "row",
+  secondaryButton: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: "#D9DEDE",
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 16,
     alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
   },
-  loginText: {
-    fontSize: 14,
-    color: "#6B7280",
+  secondaryButtonText: {
+    color: "#101414",
+    fontSize: 16,
+    fontWeight: "600",
   },
-  loginLink: {
-    fontSize: 14,
+  tertiaryButton: {
+    width: "100%",
+    maxWidth: 360,
+    paddingVertical: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tertiaryButtonText: {
+    fontSize: 15,
     fontWeight: "600",
     color: "#2ECC8F",
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: "#D14343",
+    textAlign: "center",
+    maxWidth: 360,
   },
 });

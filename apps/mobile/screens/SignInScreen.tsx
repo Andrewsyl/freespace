@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Image,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -12,20 +11,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
-import { MaterialIcons, Ionicons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useAuth } from "../auth";
 import { requestEmailVerification } from "../api";
 import type { RootStackParamList } from "../types";
-import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
-import { logInfo, logWarn } from "../logger";
-import { colors, radius, spacing, textStyles } from "../styles/theme";
+import { colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
 
 export function SignInScreen({ navigation }: Props) {
-  const { login, register, loginWithOAuth } = useAuth();
+  const { login } = useAuth();
   const scrollRef = useRef<ScrollView | null>(null);
   const emailFieldY = useRef(0);
   const passwordFieldY = useRef(0);
@@ -39,9 +35,6 @@ export function SignInScreen({ navigation }: Props) {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [acceptLegalChecked, setAcceptLegalChecked] = useState(false);
-  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
-  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
-  const legalVersion = "2026-01-10";
   const needsLegalAcceptance = (candidate: { termsVersion?: string | null; privacyVersion?: string | null }) =>
     !candidate.termsVersion || !candidate.privacyVersion;
 
@@ -56,19 +49,6 @@ export function SignInScreen({ navigation }: Props) {
       if (successTimerRef.current) clearTimeout(successTimerRef.current);
     };
   }, []);
-
-  useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: googleWebClientId || undefined,
-      iosClientId: Platform.OS === "ios" ? googleIosClientId || undefined : undefined,
-    });
-    logInfo("Configured Google sign-in", {
-      platform: Platform.OS,
-      hasWebClientId: Boolean(googleWebClientId),
-      hasIosClientId: Boolean(googleIosClientId),
-      webClientIdSuffix: googleWebClientId ? googleWebClientId.slice(-12) : null,
-    });
-  }, [googleWebClientId, googleIosClientId]);
 
   const handleLogin = async () => {
     const trimmed = email.trim();
@@ -92,43 +72,6 @@ export function SignInScreen({ navigation }: Props) {
       setNotice("Signed in successfully.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleRegister = async () => {
-    const trimmed = email.trim();
-    if (!acceptLegalChecked) {
-      setError("Please accept the Terms & Privacy to create an account.");
-      return;
-    }
-    if (!trimmed.includes("@")) {
-      setError("Enter a valid email address.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-    setSubmitting(true);
-    setError(null);
-    setNotice(null);
-    try {
-      const { previewUrl: nextPreviewUrl, user } = await register(trimmed, password, {
-        termsVersion: legalVersion,
-        privacyVersion: legalVersion,
-      });
-      setPreviewUrl(nextPreviewUrl);
-      setNotice(
-        nextPreviewUrl
-          ? "Account created. Verify your email to continue."
-          : "Account created. Check your email to verify."
-      );
-      if (needsLegalAcceptance(user)) return;
-      setNotice("Account created successfully.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign up failed");
     } finally {
       setSubmitting(false);
     }
@@ -182,9 +125,7 @@ export function SignInScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.card}>
-            <Image source={freeSpaceLogo} style={styles.brandLogo} resizeMode="contain" />
-            <Text style={styles.cardTitle}>Sign In</Text>
-            <Text style={styles.cardSubtitle}>Access your bookings and host dashboard.</Text>
+            <Text style={styles.cardTitle}>Log in</Text>
 
             <View
               style={styles.inputGroup}
@@ -237,7 +178,7 @@ export function SignInScreen({ navigation }: Props) {
                 color={acceptLegalChecked ? colors.accent : colors.textSoft}
               />
               <Text style={styles.checkboxText}>
-                I agree to the{" "}
+                I agree to{" "}
                 <Text style={styles.link} onPress={() => navigation.navigate("Legal")}>
                   Terms & Privacy
                 </Text>
@@ -253,84 +194,6 @@ export function SignInScreen({ navigation }: Props) {
               title={submitting ? "Signing in..." : "Sign In"}
               testID="sign-in-button"
             />
-
-            <Button
-              variant="secondary"
-              style={styles.secondaryButton}
-              onPress={handleRegister}
-              disabled={submitting || !acceptLegalChecked}
-              title="Create account"
-            />
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or sign in with</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <Pressable
-              style={styles.socialButton}
-              onPress={async () => {
-                setError(null);
-                setNotice(null);
-                setAuthSuccess(null);
-                try {
-                  logInfo("Google sign-in starting", { screen: "SignIn" });
-                  await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-                  logInfo("Google Play Services available", { screen: "SignIn" });
-                  const signInResult = await GoogleSignin.signIn();
-                  logInfo("Google account selected", {
-                    screen: "SignIn",
-                    email: signInResult?.data?.user?.email ?? null,
-                  });
-                  const tokens = await GoogleSignin.getTokens();
-                  logInfo("Google tokens received", {
-                    screen: "SignIn",
-                    hasIdToken: Boolean(tokens.idToken),
-                    accessTokenSuffix: tokens.accessToken ? tokens.accessToken.slice(-8) : null,
-                  });
-                  const idToken = tokens.idToken;
-                  if (!idToken) throw new Error("Missing Google idToken");
-                  const authUser = await loginWithOAuth("google", idToken);
-                  logInfo("Backend Google OAuth login succeeded", {
-                    screen: "SignIn",
-                    userId: authUser.id,
-                    email: authUser.email,
-                  });
-                  if (needsLegalAcceptance(authUser)) {
-                    setNotice("Please accept Terms & Privacy to continue.");
-                    return;
-                  }
-                  setAuthSuccess("Signed in with Google");
-                } catch (err) {
-                  const errorCode =
-                    err && typeof err === "object" && "code" in err ? String(err.code) : "";
-                  if (errorCode === statusCodes.SIGN_IN_CANCELLED) return;
-                  const message = err instanceof Error ? err.message : "Google sign-in failed";
-                  logWarn("Google sign-in failed", {
-                    screen: "SignIn",
-                    code: errorCode || null,
-                    message,
-                    raw:
-                      err && typeof err === "object"
-                        ? JSON.parse(JSON.stringify(err, Object.getOwnPropertyNames(err)))
-                        : err,
-                  });
-                  setError(errorCode ? `${message} (${errorCode})` : message);
-                }
-              }}
-            >
-              <Ionicons name="logo-google" size={20} color="#DB4437" />
-              <Text style={styles.socialText}>Google</Text>
-            </Pressable>
-
-            <Text style={styles.legalNote}>
-              By continuing, you agree to the{" "}
-              <Text style={styles.link} onPress={() => navigation.navigate("Legal")}>
-                Terms & Privacy
-              </Text>
-              .
-            </Text>
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
             {notice ? <Text style={styles.noticeText}>{notice}</Text> : null}
@@ -373,49 +236,37 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   header: {
     paddingHorizontal: spacing.screenX,
-    paddingTop: spacing.screenY,
-    paddingBottom: spacing.xs,
+    paddingTop: spacing.lg,
+    paddingBottom: 4,
   },
   card: {
     flex: 1,
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderWidth: 1,
-    padding: spacing.xl,
-  },
-  brandLogo: {
-    width: "100%",
-    height: 46,
-    marginBottom: spacing.xxs,
+    backgroundColor: colors.appBg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
   cardTitle: {
-    ...textStyles.screenTitle,
-    marginBottom: spacing.xs,
-  },
-  cardSubtitle: {
-    ...textStyles.subtitle,
-    marginBottom: spacing.lg,
-  },
-  inputGroup: {
+    ...textStyles.sectionTitle,
     marginBottom: spacing.md,
   },
+  inputGroup: {
+    marginBottom: spacing.sm,
+  },
   inputLabel: {
-    ...textStyles.label,
+    ...textStyles.meta,
     color: colors.textSoft,
-    marginBottom: spacing.xs,
+    marginBottom: 6,
   },
   inputContainer: {
     marginBottom: 0,
   },
   forgotRow: {
     alignItems: "flex-end",
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
     marginTop: -4,
   },
   forgotText: {
@@ -425,9 +276,9 @@ const styles = StyleSheet.create({
   checkboxRow: {
     alignItems: "center",
     flexDirection: "row",
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-    marginBottom: spacing.lg,
+    gap: spacing.xs,
+    marginTop: 4,
+    marginBottom: spacing.md,
   },
   checkboxText: {
     ...textStyles.meta,
@@ -439,63 +290,23 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   primaryButton: {
-    marginBottom: spacing.sm,
-  },
-  secondaryButton: {
-    marginBottom: spacing.md,
-  },
-  divider: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginBottom: spacing.md,
-    marginTop: spacing.md,
-  },
-  dividerLine: {
-    backgroundColor: colors.border,
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    ...textStyles.meta,
-    color: colors.textSoft,
-    marginHorizontal: spacing.md,
-  },
-  socialButton: {
-    alignItems: "center",
-    backgroundColor: colors.cardBgMuted,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: spacing.xs,
-    justifyContent: "center",
-    paddingVertical: 14,
-  },
-  socialText: {
-    ...textStyles.bodyStrong,
-    color: colors.text,
-  },
-  legalNote: {
-    ...textStyles.meta,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
-    textAlign: "center",
+    marginBottom: spacing.xs,
   },
   errorText: {
     ...textStyles.meta,
     color: colors.danger,
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     textAlign: "center",
   },
   noticeText: {
     ...textStyles.meta,
     color: colors.accent,
-    marginTop: spacing.xs,
+    marginTop: 6,
     textAlign: "center",
   },
   linkButton: {
     alignItems: "center",
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
   },
   linkButtonText: {
     ...textStyles.meta,

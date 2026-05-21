@@ -61,7 +61,14 @@ export function HistoryScreen({ navigation, route }: Props) {
   );
 
   const loadBookings = useCallback(async (options?: { silent?: boolean }): Promise<BookingSummary[]> => {
-    if (!token) return [];
+    if (!token || !user) {
+      setBookings([]);
+      setError(null);
+      if (!options?.silent) {
+        setLoading(false);
+      }
+      return [];
+    }
     let active = true;
     if (!options?.silent) {
       setLoading(true);
@@ -81,7 +88,7 @@ export function HistoryScreen({ navigation, route }: Props) {
         setLoading(false);
       }
     }
-  }, [token]);
+  }, [token, user]);
 
   useEffect(() => {
     if (!bookings.length) {
@@ -115,6 +122,13 @@ export function HistoryScreen({ navigation, route }: Props) {
   useEffect(() => {
     void loadBookings();
   }, [loadBookings]);
+
+  useEffect(() => {
+    if (user) return;
+    setBookings([]);
+    setLoading(false);
+    setError(null);
+  }, [user]);
 
   useFocusEffect(
     useCallback(() => {

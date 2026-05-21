@@ -425,7 +425,13 @@ export async function login(email: string, password: string) {
 export async function register(
   email: string,
   password: string,
-  payload?: { termsVersion: string; privacyVersion: string }
+  payload?: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    termsVersion: string;
+    privacyVersion: string;
+  }
 ) {
   const response = await fetchWithTimeout(`${baseUrl}/api/auth/register`, {
     method: "POST",

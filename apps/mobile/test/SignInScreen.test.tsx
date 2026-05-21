@@ -52,18 +52,13 @@ describe("SignInScreen", () => {
     await waitFor(() => expect(getByText("Enter a valid email address.")).toBeTruthy());
   });
 
-  it("requires terms acceptance before creating an account", async () => {
-    const { getByPlaceholderText, getByText } = render(
+  it("does not show create account on the sign-in form", () => {
+    const { queryByText } = render(
       <GlobalToastProvider>
         <SignInScreen navigation={navigation as any} route={route as any} />
       </GlobalToastProvider>
     );
-    const user = userEvent.setup();
 
-    await user.type(getByPlaceholderText("you@example.com"), "test@example.com");
-    await user.type(getByPlaceholderText("••••••••"), "123456");
-
-    const createAccountButton = getByText("Create account").parent;
-    expect(createAccountButton).toBeDisabled();
+    expect(queryByText("Create account")).toBeNull();
   });
 });
