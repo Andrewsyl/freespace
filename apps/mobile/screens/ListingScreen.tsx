@@ -591,7 +591,6 @@ export function ListingScreen({ navigation, route }: Props) {
 
                 <View style={styles.sectionDivider} />
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>The local area</Text>
                   <View style={styles.localAreaCard}>
                     {hasCoordinates ? (
                       <View style={styles.localAreaMapWrap}>

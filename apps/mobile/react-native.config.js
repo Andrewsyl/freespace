@@ -6,8 +6,8 @@ module.exports = {
   project: {
     android: {
       packageName: isDevLike
-        ? "com.andrewsyl.carparking.dev"
-        : "com.andrewsyl.carparking",
+        ? "ie.freespace.app.dev"
+        : "ie.freespace.app",
     },
   },
   dependencies: {

@@ -47,7 +47,7 @@
     },
     "android": {
       "userInterfaceStyle": "light",
-      "package": "com.andrewsyl.carparking",
+      "package": "ie.freespace.app",
       "usesCleartextTraffic": true,
       "compileSdkVersion": 35,
       "targetSdkVersion": 35,

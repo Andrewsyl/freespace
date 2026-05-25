@@ -80,11 +80,11 @@ const styles = StyleSheet.create({
   item: {
     alignItems: "center",
     borderRadius: radius.pill,
-    gap: 1,
+    gap: 0,
     justifyContent: "center",
     width: "100%",
     paddingHorizontal: 4,
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   pressable: {
     alignItems: "center",

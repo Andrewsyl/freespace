@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_ID="${1:-com.andrewsyl.carparking.dev}"
-MAIN_ACTIVITY_CLASS="${2:-com.andrewsyl.carparking.MainActivity}"
+APP_ID="${1:-ie.freespace.app.dev}"
+MAIN_ACTIVITY_CLASS="${2:-ie.freespace.app.MainActivity}"
 APK_PATH="android/app/build/outputs/apk/debug/app-debug.apk"
 
 echo "[debug] Building debug APK for $APP_ID..."

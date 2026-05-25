@@ -387,7 +387,7 @@ function AppNavigator() {
 
 function MainTabs() {
   const insets = useSafeAreaInsets();
-  const bottomPadding = Math.max(10, insets.bottom + 2);
+  const bottomPadding = Math.max(8, insets.bottom);
   const baseTabBarStyle = {
     position: "absolute" as const,
     left: 0,
@@ -397,9 +397,9 @@ function MainTabs() {
     borderTopWidth: 0,
     shadowOpacity: 0,
     elevation: 0,
-    paddingTop: 8,
+    paddingTop: 4,
     paddingBottom: bottomPadding,
-    height: 64 + bottomPadding,
+    height: 58 + bottomPadding,
   };
 
   const renderTabIcon = (
@@ -409,7 +409,7 @@ function MainTabs() {
   ) => (
     <View style={[styles.navIconShell, focused && styles.navIconShellActive]}>
       <Icon
-        size={focused ? 20 : 22}
+        size={focused ? 18 : 20}
         color={focused ? "#FFFFFF" : color}
         strokeWidth={focused ? 2.3 : 2}
       />
@@ -607,35 +607,35 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#edf0f2",
     shadowColor: "#15232b",
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.035,
+    shadowRadius: 8,
+    elevation: 6,
   },
   tabBarItem: {
-    paddingTop: 2,
+    paddingTop: 0,
   },
   tabBarLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 2,
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: 1,
     letterSpacing: -0.1,
   },
   navIconShell: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
   navIconShellActive: {
     backgroundColor: "#2ECC8F",
     shadowColor: "#2ECC8F",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.16,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
   },
   legalActions: {
     flexDirection: "row",

@@ -35,3 +35,5 @@ apps/mobile/.expo/
 apps/mobile/*.apk
 apps/mobile/*.aab
 apps/mobile/*.jks
+apps/mobile/credentials.json
+apps/mobile/credentials/

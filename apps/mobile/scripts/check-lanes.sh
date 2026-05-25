@@ -9,7 +9,7 @@ node -e 'const p=require("./package.json"); console.log("android:local =", p.scr
 
 echo "[check] Verifying Firebase package mappings"
 if [ -f "android/app/google-services.json" ]; then
-  rg -n '"package_name": "com\.andrewsyl\.carparking(\.dev)?"' android/app/google-services.json || true
+  rg -n '"package_name": "ie\.freespace\.app(\.dev)?"' android/app/google-services.json || true
 else
   echo "[check][warn] Missing android/app/google-services.json"
 fi

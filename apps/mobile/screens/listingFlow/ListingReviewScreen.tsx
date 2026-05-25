@@ -1,9 +1,8 @@
 import { CommonActions } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import LottieView from "lottie-react-native";
 import { Check, ChevronRight } from "lucide-react-native";
 import {
@@ -14,8 +13,6 @@ import {
   updateListing,
 } from "../../api";
 import { useAuth } from "../../auth";
-import { MapPin } from "../../components/MapPin";
-import { LIGHT_MAP_STYLE } from "../../components/mapStyles";
 import type { RootStackParamList } from "../../types";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
@@ -287,28 +284,13 @@ export function ListingReviewScreen({ navigation }: Props) {
 
         <View style={styles.card}>
           <View style={styles.mapPreview}>
-            <MapView
+            <Image
               style={styles.map}
-              provider={PROVIDER_GOOGLE}
-              customMapStyle={LIGHT_MAP_STYLE}
-              initialRegion={{
-                latitude: draft.location.latitude,
-                longitude: draft.location.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
+              source={{
+                uri: `https://maps.googleapis.com/maps/api/staticmap?center=${draft.location.latitude},${draft.location.longitude}&zoom=15&size=640x320&scale=2&markers=color:0x111111%7C${draft.location.latitude},${draft.location.longitude}&key=${mapsKey}`,
               }}
-            >
-              <Marker
-                coordinate={{
-                  latitude: draft.location.latitude,
-                  longitude: draft.location.longitude,
-                }}
-                anchor={{ x: 0.5, y: 1 }}
-                centerOffset={{ x: 0, y: -6 }}
-              >
-                <MapPin />
-              </Marker>
-            </MapView>
+              resizeMode="cover"
+            />
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Space type</Text>

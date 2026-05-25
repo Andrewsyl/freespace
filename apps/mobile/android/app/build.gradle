@@ -1,7 +1,7 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
-def baseAndroidPackage = "com.andrewsyl.carparking"
+def baseAndroidPackage = "ie.freespace.app"
 def isDebugTask = gradle.startParameter.taskNames.any { task ->
     task.toLowerCase().contains("debug")
 }
@@ -75,6 +75,15 @@ react {
  * Set this to true in release builds to optimize the app using [R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization).
  */
 def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBuilds') ?: false).toBoolean()
+def releaseStoreFile = findProperty('ANDROID_UPLOAD_STORE_FILE') ?: System.getenv('ANDROID_UPLOAD_STORE_FILE')
+def releaseStorePassword = findProperty('ANDROID_UPLOAD_STORE_PASSWORD') ?: System.getenv('ANDROID_UPLOAD_STORE_PASSWORD')
+def releaseKeyAlias = findProperty('ANDROID_UPLOAD_KEY_ALIAS') ?: System.getenv('ANDROID_UPLOAD_KEY_ALIAS')
+def releaseKeyPassword = findProperty('ANDROID_UPLOAD_KEY_PASSWORD') ?: System.getenv('ANDROID_UPLOAD_KEY_PASSWORD')
+def hasReleaseSigning =
+    releaseStoreFile &&
+    releaseStorePassword &&
+    releaseKeyAlias &&
+    releaseKeyPassword
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -97,7 +106,7 @@ android {
 
     namespace baseAndroidPackage
     defaultConfig {
-        applicationId "com.andrewsyl.carparking"
+        applicationId "ie.freespace.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -112,6 +121,14 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
     }
     buildTypes {
         debug {
@@ -119,10 +136,11 @@ android {
             applicationIdSuffix ".dev"
         }
         release {
-            // Local Gradle release builds default to the debug keystore.
-            // EAS cloud builds override this via eas-build.gradle when
-            // credentials.json is present on the remote builder.
-            signingConfig signingConfigs.debug
+            // EAS cloud builds inject release credentials on the remote builder.
+            // Local release builds can opt into a real upload key via
+            // ANDROID_UPLOAD_* env vars or Gradle properties; otherwise they
+            // fall back to the debug keystore for narrow local-only checks.
+            signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds

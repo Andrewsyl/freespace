@@ -1,4 +1,4 @@
-package com.andrewsyl.carparking
+package ie.freespace.app
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

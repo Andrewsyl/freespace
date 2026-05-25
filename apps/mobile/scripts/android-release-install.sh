@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_ID="com.andrewsyl.carparking"
+APP_ID="ie.freespace.app"
 APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
 
 if [ "${ALLOW_DEBUG_SIGNED_RELEASE:-0}" != "1" ]; then

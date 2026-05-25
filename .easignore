@@ -1,16 +1,56 @@
-package-lock.json
+# Package manager / dependency caches
 node_modules
 **/node_modules
+package-lock.json
+
+# VCS / local tooling
 .git
 .github
+.idea
+.claude
+.DS_Store
+*.log
+*.swp
+
+# Generic outputs
 .next
 dist
 build
 coverage
+tmp
 .expo
-*.log
-apps/mobile/android/.gradle
-apps/mobile/android/app/build
-apps/mobile/android/build
-apps/mobile/ios/build
+
+# Root-level native build leftovers
+android/.gradle
+android/.kotlin
+android/build
+android/app/build
+android/app/.cxx
+
+# Web build leftovers from the monorepo
+apps/web/.next
+apps/web/test-results
+apps/web/tsconfig.tsbuildinfo
+apps/web/node_modules
+
+# Mobile local Expo / native build artifacts
 apps/mobile/.expo
+apps/mobile/.claude
+apps/mobile/.null.swp
+apps/mobile/android/.gradle
+apps/mobile/android/.kotlin
+apps/mobile/android/build
+apps/mobile/android/app/build
+apps/mobile/android/app/.cxx
+apps/mobile/ios/build
+apps/mobile/ios/Pods
+apps/mobile/ios/.symlinks
+apps/mobile/ios/**/xcuserdata
+apps/mobile/ios/**/*.xcuserstate
+apps/mobile/ios/DerivedData
+
+# Large local binaries / signing files not needed in cloud builds
+*.apk
+*.aab
+*.keystore
+*.jks
