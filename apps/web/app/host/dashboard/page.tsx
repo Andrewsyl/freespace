@@ -21,8 +21,14 @@ export default function HostDashboardPage() {
   const [listings, setListings] = useState<HostListing[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
-  const [payoutAccount, setPayoutAccount] = useState<string | null>(null);
-  const [payoutStatus, setPayoutStatus] = useState<"idle" | "loading" | "error" | "ready">("idle");
+  const [payout, setPayout] = useState<{
+    accountId: string | null;
+    chargesEnabled: boolean;
+    payoutsEnabled: boolean;
+    detailsSubmitted: boolean;
+    requirementsDue: string[];
+  } | null>(null);
+  const [payoutStatus, setPayoutStatus] = useState<"idle" | "loading" | "error">("idle");
   const [origin, setOrigin] = useState("");
 
   const loadListings = async () => {
@@ -49,8 +55,8 @@ export default function HostDashboardPage() {
       setPayoutStatus("loading");
       try {
         const res = await getHostPayoutStatus(token);
-        setPayoutAccount(res.accountId);
-        setPayoutStatus(res.accountId ? "ready" : "idle");
+        setPayout(res);
+        setPayoutStatus("idle");
       } catch (err) {
         setPayoutStatus("error");
       }
@@ -105,9 +111,13 @@ export default function HostDashboardPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2 text-sm font-semibold">
-            {payoutAccount ? (
+            {payout?.payoutsEnabled ? (
               <span className="rounded-full bg-emerald-100 px-3 py-2 text-emerald-800 ring-1 ring-emerald-200">
-                Payouts ready • {payoutAccount}
+                Payouts active • {payout.accountId}
+              </span>
+            ) : payout?.detailsSubmitted ? (
+              <span className="rounded-full bg-amber-100 px-3 py-2 text-amber-800 ring-1 ring-amber-200">
+                Payout review pending
               </span>
             ) : (
               <button
@@ -115,17 +125,28 @@ export default function HostDashboardPage() {
                   if (!token) return;
                   setPayoutStatus("loading");
                   try {
-                    const res = await createHostPayoutAccount(token);
-                    setPayoutAccount(res.accountId);
-                    setPayoutStatus("ready");
+                    const callbackUrl = origin ? `${origin}/host/dashboard` : undefined;
+                    const res = await createHostPayoutAccount(token, {
+                      accountId: payout?.accountId ?? undefined,
+                      returnUrl: callbackUrl,
+                      refreshUrl: callbackUrl,
+                    });
+                    if (res.onboardingUrl) {
+                      window.location.href = res.onboardingUrl;
+                      return;
+                    }
+                    const refreshed = await getHostPayoutStatus(token);
+                    setPayout(refreshed);
+                    setPayoutStatus("idle");
                   } catch (err) {
                     setPayoutStatus("error");
+                    setError(err instanceof Error ? err.message : "Could not start payout setup");
                   }
                 }}
                 className="rounded-full bg-amber-100 px-3 py-2 text-amber-800 ring-1 ring-amber-200 hover:bg-amber-200"
                 disabled={payoutStatus === "loading"}
               >
-                {payoutStatus === "loading" ? "Enabling payouts…" : "Enable payouts"}
+                {payoutStatus === "loading" ? "Opening Stripe…" : payout?.accountId ? "Finish payouts setup" : "Enable payouts"}
               </button>
             )}
           </div>

@@ -1,6 +1,6 @@
 import type { Listing } from "../components/ListingCard";
 import type { SearchFilters } from "../components/SearchForm";
-import type { PaymentMethod, PaymentHistoryItem, PayoutBalance, PayoutHistoryItem } from "../types/payments";
+import type { PaymentMethod, PaymentHistoryItem } from "../types/payments";
 import { webEnv } from "./env";
 
 // In the browser, use a relative base so requests go through Next.js rewrites
@@ -28,12 +28,18 @@ async function handleResponse<T>(res: Response): Promise<{ data: T | null; error
 
 export async function searchSpaces(filters: SearchFilters): Promise<Listing[]> {
   const radiusKm = Math.min(50, Math.max(0.1, Number(filters.radiusKm) || 5));
+  const fromValue = new Date(`${filters.date}T${filters.startTime}:00Z`);
+  const rawToValue = new Date(`${(filters.endDate ?? filters.date)}T${filters.endTime}:00Z`);
+  const toValue =
+    rawToValue.getTime() <= fromValue.getTime() && !filters.endDate
+      ? new Date(rawToValue.getTime() + 24 * 60 * 60 * 1000)
+      : rawToValue;
   const params = new URLSearchParams({
     lat: String(filters.latitude ?? 53.3498),
     lng: String(filters.longitude ?? -6.2603),
     radiusKm: String(radiusKm),
-    from: `${filters.date}T${filters.startTime}:00Z`,
-    to: `${(filters.endDate ?? filters.date)}T${filters.endTime}:00Z`,
+    from: fromValue.toISOString().slice(0, 19) + "Z",
+    to: toValue.toISOString().slice(0, 19) + "Z",
   });
 
   if (filters.priceMin !== undefined) params.set("priceMin", String(filters.priceMin));
@@ -42,6 +48,7 @@ export async function searchSpaces(filters: SearchFilters): Promise<Listing[]> {
   if (filters.evCharging) params.set("evCharging", "true");
   if (filters.securityLevel) params.set("securityLevel", filters.securityLevel);
   if (filters.vehicleSize) params.set("vehicleSize", filters.vehicleSize);
+  if (filters.spaceType) params.set("spaceType", filters.spaceType);
   if (filters.instantBook) params.set("instantBook", "true");
 
   const res = await fetch(`${API_BASE}/api/listings/search?${params.toString()}`, {
@@ -491,6 +498,66 @@ export async function listListingReviews(listingId: string, params?: { limit?: n
   return (data?.reviews ?? []) as ListingReview[];
 }
 
+export async function createReview(
+  payload: { bookingId: string; rating: number; comment?: string },
+  token?: string
+) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${API_BASE}/api/reviews`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(payload),
+  });
+  const { data, error } = await handleResponse<{ review: { id: string; rating: number; comment?: string } }>(res);
+  if (error) throw new Error(error);
+  return data!.review;
+}
+
+// ── Favourites ────────────────────────────────────────────────────────────────
+
+export type FavouriteListing = {
+  id: string;
+  title: string;
+  address: string;
+  pricePerDay?: number;
+  rating?: number;
+  ratingCount?: number;
+  imageUrls?: string[];
+};
+
+export async function getFavourites(token?: string): Promise<FavouriteListing[]> {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${API_BASE}/api/favorites`, {
+    cache: "no-store",
+    headers: { ...authHeaders(token) },
+  });
+  const { data, error } = await handleResponse<{ favorites: any[] }>(res);
+  if (error) throw new Error(error);
+  return (data?.favorites ?? []) as FavouriteListing[];
+}
+
+export async function addFavourite(listingId: string, token?: string) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${API_BASE}/api/favorites`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ listingId }),
+  });
+  const { error } = await handleResponse<{ ok: boolean }>(res);
+  if (error) throw new Error(error);
+}
+
+export async function removeFavourite(listingId: string, token?: string) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${API_BASE}/api/favorites/${listingId}`, {
+    method: "DELETE",
+    headers: { ...authHeaders(token) },
+  });
+  if (res.status === 204 || res.ok) return;
+  const { error } = await handleResponse<void>(res);
+  if (error) throw new Error(error);
+}
+
 export type CreateBookingInput = {
   listingId: string;
   from: string;
@@ -573,25 +640,53 @@ export async function getHostPayoutStatus(token?: string) {
     headers: { ...authHeaders(token) },
     cache: "no-store",
   });
-  const { data, error } = await handleResponse<{ accountId: string | null }>(res);
+  const { data, error } = await handleResponse<{
+    accountId: string | null;
+    chargesEnabled: boolean;
+    payoutsEnabled: boolean;
+    detailsSubmitted: boolean;
+    requirementsDue: string[];
+  }>(res);
   if (error) {
     throw new Error(error);
   }
   return data!;
 }
 
-export async function createHostPayoutAccount(token?: string) {
+export async function createHostPayoutAccount(
+  token?: string,
+  options?: { accountId?: string | null; returnUrl?: string; refreshUrl?: string }
+) {
   if (!token) throw new Error("Authentication required");
   const res = await fetch(`${API_BASE}/api/host/payout`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
-    body: JSON.stringify({}),
+    body: JSON.stringify({
+      accountId: options?.accountId ?? undefined,
+      returnUrl: options?.returnUrl,
+      refreshUrl: options?.refreshUrl,
+    }),
   });
-  const { data, error } = await handleResponse<{ accountId: string; onboardingUrl: string | null }>(res);
+  const { data, error } = await handleResponse<{ accountId: string; onboardingUrl: string | null; mock?: boolean }>(res);
   if (error) {
     throw new Error(error);
   }
   return data!;
+}
+
+export async function getHostEarningsSummary(token?: string) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${API_BASE}/api/host/earnings`, {
+    headers: { ...authHeaders(token) },
+    cache: "no-store",
+  });
+  const { data, error } = await handleResponse<{
+    summary: { totalCents: number; feeCents: number; netCents: number; currency: string };
+  }>(res);
+  if (error) {
+    throw new Error(error);
+  }
+  return data?.summary ?? { totalCents: 0, feeCents: 0, netCents: 0, currency: "EUR" };
 }
 
 export type AuthResponse = {
@@ -800,46 +895,14 @@ export async function retryPayment(paymentId: string, token?: string) {
 
 // Payouts (host)
 export async function getPayoutConnectStatus(token?: string) {
-  if (!token) throw new Error("Authentication required");
-  // Reuse host payout status endpoint if present
-  const res = await fetch(`${API_BASE}/api/payouts/connect-status`, {
-    headers: { ...authHeaders(token) },
-    cache: "no-store",
-  });
-  const { data, error } = await handleResponse<{ connected: boolean; accountId?: string }>(res);
-  if (error) throw new Error(error);
-  return data ?? { connected: false };
+  const data = await getHostPayoutStatus(token);
+  return {
+    connected: Boolean(data.payoutsEnabled),
+    accountId: data.accountId ?? undefined,
+  };
 }
 
 export async function createPayoutOnboardingLink(token?: string) {
-  if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/payouts/connect-link`, {
-    method: "POST",
-    headers: { ...authHeaders(token) },
-  });
-  const { data, error } = await handleResponse<{ url: string }>(res);
-  if (error) throw new Error(error);
-  return data!.url;
-}
-
-export async function getPayoutBalance(token?: string): Promise<PayoutBalance> {
-  if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/payouts/balance`, {
-    headers: { ...authHeaders(token) },
-    cache: "no-store",
-  });
-  const { data, error } = await handleResponse<{ balance: PayoutBalance }>(res);
-  if (error) throw new Error(error);
-  return data?.balance ?? { available: 0, pending: 0, currency: "eur" };
-}
-
-export async function listPayoutHistory(token?: string): Promise<PayoutHistoryItem[]> {
-  if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/payouts/history`, {
-    headers: { ...authHeaders(token) },
-    cache: "no-store",
-  });
-  const { data, error } = await handleResponse<{ payouts: PayoutHistoryItem[] }>(res);
-  if (error) throw new Error(error);
-  return data?.payouts ?? [];
+  const data = await createHostPayoutAccount(token);
+  return data.onboardingUrl ?? "";
 }

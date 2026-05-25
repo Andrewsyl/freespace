@@ -216,9 +216,9 @@ export default async function ListingDetailPage({
                   pricePerHour={listing.pricePerHour}
                   rateType={listing.rateType}
                 />
-                {!listing.hostStripeAccountId && (
+                {(!listing.hostStripeAccountId || listing.hostStripeAccountId.startsWith("acct_mock_")) && (
                   <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                    Host payouts are not set up yet. You can still proceed for demo, but live payments require host onboarding.
+                    This host has not finished payout onboarding yet, so booking is unavailable until Stripe setup is complete.
                   </div>
                 )}
               </div>

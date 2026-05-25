@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { BookingCard, type Booking } from "../../components/BookingCard";
-import { cancelHostBooking, getMyBookings } from "../../lib/api";
+import { cancelHostBooking, getMyBookings, createReview } from "../../lib/api";
 import { useAuth } from "../../components/AuthProvider";
 
 export default function DashboardPage() {
@@ -15,6 +15,11 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Booking | null>(null);
   const [cancelingHostBooking, setCancelingHostBooking] = useState(false);
+  const [reviewMode, setReviewMode] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewDone, setReviewDone] = useState<string | null>(null); // booking id that was reviewed
   const [stats, setStats] = useState<{ driverCount: number; hostCount: number; hostEarnings: number }>({
     driverCount: 0,
     hostCount: 0,
@@ -104,6 +109,28 @@ export default function DashboardPage() {
     load();
   }, [load]);
 
+  const openSelected = (booking: Booking) => {
+    setSelected(booking);
+    setReviewMode(false);
+    setReviewRating(5);
+    setReviewComment("");
+  };
+
+  const handleSubmitReview = async () => {
+    if (!token || !selected || reviewSubmitting) return;
+    setReviewSubmitting(true);
+    setError(null);
+    try {
+      await createReview({ bookingId: selected.id, rating: reviewRating, comment: reviewComment.trim() || undefined }, token);
+      setReviewDone(selected.id);
+      setReviewMode(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not submit review");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
   const handleHostCancel = async () => {
     if (!token || !selected?.id || cancelingHostBooking) return;
     if (!confirm("Cancel this booking? The driver will be refunded where eligible.")) return;
@@ -162,6 +189,9 @@ export default function DashboardPage() {
             <Link href="/dashboard/earnings" className="rounded-full bg-white/10 px-3 py-1.5 hover:bg-white/15">
               Earnings
             </Link>
+            <Link href="/dashboard/favorites" className="rounded-full bg-white/10 px-3 py-1.5 hover:bg-white/15">
+              ♥ Favourites
+            </Link>
             <Link href="/host" className="rounded-full bg-emerald-500 px-3 py-1.5 text-slate-900 hover:bg-emerald-400">
               List a space
             </Link>
@@ -196,7 +226,7 @@ export default function DashboardPage() {
           </div>
           <div className="grid gap-3">
             {driverBookings.map((booking) => (
-              <button key={booking.id} onClick={() => setSelected(booking)} className="text-left">
+              <button key={booking.id} onClick={() => openSelected(booking)} className="text-left">
                 <BookingCard booking={booking} />
               </button>
             ))}
@@ -234,7 +264,7 @@ export default function DashboardPage() {
           </div>
           <div className="grid gap-3">
             {hostBookings.map((booking) => (
-              <button key={booking.id} onClick={() => setSelected(booking)} className="text-left">
+              <button key={booking.id} onClick={() => openSelected(booking)} className="text-left">
                 <BookingCard booking={booking} />
               </button>
             ))}
@@ -305,6 +335,75 @@ export default function DashboardPage() {
                 This booking has been marked as a no-show.
               </div>
             ) : null}
+
+            {/* Leave a review — shown for driver (confirmed, ended) bookings */}
+            {(() => {
+              const isDriverBooking = !selected.driver || selected.driver === user?.email;
+              const isConfirmed = selected.status === "confirmed";
+              const isEnded = selected.endTime ? new Date(selected.endTime) <= new Date() : false;
+              const alreadyReviewed = reviewDone === selected.id;
+              if (!isDriverBooking || !isConfirmed || !isEnded) return null;
+              if (alreadyReviewed) {
+                return (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                    ✓ Review submitted — thank you!
+                  </div>
+                );
+              }
+              if (!reviewMode) {
+                return (
+                  <button
+                    type="button"
+                    onClick={() => setReviewMode(true)}
+                    className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100"
+                  >
+                    ★ Leave a review
+                  </button>
+                );
+              }
+              return (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                  <p className="text-sm font-semibold text-slate-900">Leave a review</p>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        className={`text-2xl transition ${star <= reviewRating ? "text-amber-400" : "text-slate-300 hover:text-amber-300"}`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="Share your experience (optional)"
+                    rows={3}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-emerald-400 focus:outline-none resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setReviewMode(false)}
+                      className="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSubmitReview}
+                      disabled={reviewSubmitting}
+                      className="rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
+                    >
+                      {reviewSubmitting ? "Submitting…" : "Submit review"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
               <p className="font-semibold text-slate-900">Booking handling</p>
               <ul className="mt-2 space-y-1">

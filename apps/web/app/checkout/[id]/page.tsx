@@ -35,6 +35,7 @@ export default function CheckoutPage() {
   const totalPrice = pricing?.total ?? 0;
   const parkingFee = totalPrice;
   const platformFeeLabel = "Included";
+  const hostPayoutReady = Boolean(listing?.hostStripeAccountId && !listing.hostStripeAccountId.startsWith("acct_mock_"));
 
   useEffect(() => {
     const id = params?.id;
@@ -48,6 +49,10 @@ export default function CheckoutPage() {
     e.preventDefault();
     if (!token || !listing) {
       setError("Please sign in to book.");
+      return;
+    }
+    if (!hostPayoutReady) {
+      setError("This host has not completed payout setup yet.");
       return;
     }
     setStatus("loading");
@@ -124,6 +129,12 @@ export default function CheckoutPage() {
           <h1 className="text-3xl tracking-tight font-semibold text-slate-900">{listing.title}</h1>
           <p className="text-sm text-slate-600">{listing.address}</p>
         </header>
+
+        {!hostPayoutReady && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            This host has not finished payout onboarding yet, so checkout is temporarily unavailable for this space.
+          </div>
+        )}
 
         <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
           <h2 className="text-xl font-semibold text-slate-900">Parking location</h2>
@@ -294,7 +305,7 @@ export default function CheckoutPage() {
             type="submit"
             form="checkout-form"
             className="h-full w-44 rounded-xl bg-emerald-500 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-emerald-300"
-            disabled={status === "loading"}
+            disabled={status === "loading" || !hostPayoutReady}
           >
             {status === "loading"
               ? "Processing..."

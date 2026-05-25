@@ -34,7 +34,7 @@ export function FiltersPanel({
 
   const activeFilterCount = [
     pending.priceMin, pending.priceMax, pending.securityLevel,
-    pending.vehicleSize, pending.coveredParking, pending.evCharging, pending.instantBook,
+    pending.vehicleSize, pending.spaceType, pending.coveredParking, pending.evCharging, pending.instantBook,
   ].filter(Boolean).length;
 
   return (
@@ -97,6 +97,20 @@ export function FiltersPanel({
           </div>
         </Section>
 
+        {/* Space type */}
+        <Section label="Space type">
+          <div className="flex flex-wrap gap-2">
+            {(["Private Driveway", "Garage", "Car park", "Private road"] as const).map((type) => (
+              <Chip
+                key={type}
+                label={type}
+                active={pending.spaceType === type}
+                onClick={() => update("spaceType", pending.spaceType === type ? undefined : type)}
+              />
+            ))}
+          </div>
+        </Section>
+
         {/* Security */}
         <Section label="Security level">
           <div className="flex flex-wrap gap-2">
@@ -143,7 +157,7 @@ export function FiltersPanel({
               priceMin: undefined, priceMax: undefined,
               coveredParking: undefined, evCharging: undefined,
               securityLevel: undefined, vehicleSize: undefined,
-              instantBook: undefined,
+              spaceType: undefined, instantBook: undefined,
             };
             setPending(cleared);
           }}

@@ -24,26 +24,48 @@ type MapViewProps = {
 };
 
 function buildMarkerSvg(price: number, active: boolean): string {
-  const key = `${price}-${active ? "a" : "i"}`;
-  const fillTop = active ? "#12b886" : "#f8fafc";
-  const fillBottom = active ? "#0f9d75" : "#ffffff";
-  const stroke = active ? "#0b7d55" : "#cbd5e1";
-  const textColor = active ? "#ffffff" : "#0f172a";
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="78" height="56" viewBox="0 0 78 56" fill="none">
-    <defs>
-      <linearGradient id="grad-${key}" x1="0" y1="0" x2="0" y2="42">
-        <stop offset="0%" stop-color="${fillTop}"/>
-        <stop offset="100%" stop-color="${fillBottom}"/>
-      </linearGradient>
-      <filter id="shadow-${key}" x="-10" y="-10" width="98" height="86" color-interpolation-filters="sRGB">
-        <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="rgba(15,23,42,0.18)"/>
-      </filter>
-    </defs>
-    <g filter="url(#shadow-${key})">
-      <path d="M11 9.5C11 6.462 13.462 4 16.5 4H61.5C64.538 4 67 6.462 67 9.5V34.5C67 38.09 64.09 41 60.5 41H44L39 50L34 41H17.5C13.91 41 11 38.09 11 34.5V17Z" fill="url(#grad-${key})" stroke="${stroke}" stroke-width="2"/>
-      <path d="M39 50L44 41H34L39 50Z" fill="url(#grad-${key})" stroke="${stroke}" stroke-width="2"/>
-      <text x="39" y="28" text-anchor="middle" fill="${textColor}" font-size="14" font-family="Inter,Arial,sans-serif" font-weight="700">€${price}</text>
-    </g>
+  const priceText = `€${price}`;
+  const textLength = priceText.length;
+  const width = Math.max(44, 44 + Math.max(0, (textLength - 3) * 6));
+  const bubbleHeight = 24;
+  const tailHeight = 5;
+  const tailWidth = 8;
+  const strokeWidth = 1.35;
+  const radius = bubbleHeight / 2;
+  const padding = strokeWidth;
+  const totalHeight = bubbleHeight + tailHeight;
+  const viewBoxWidth = width + padding * 2;
+  const viewBoxHeight = totalHeight + padding * 2;
+  const shadowCx = viewBoxWidth / 2;
+  const shadowCy = viewBoxHeight - 2;
+  const fill = active ? "#111111" : "#FFFFFF";
+  const stroke = active ? "#111111" : "#1E293B";
+  const textColor = active ? "#FFFFFF" : "#0F172A";
+  const w = width;
+  const h = bubbleHeight;
+  const r = radius;
+  const tw = tailWidth / 2;
+  const th = tailHeight;
+  const cx = w / 2;
+  const p = padding;
+  const pinPath = `
+    M ${r + p} ${p}
+    L ${w - r + p} ${p}
+    A ${r} ${r} 0 0 1 ${w + p} ${r + p}
+    A ${r} ${r} 0 0 1 ${w - r + p} ${h + p}
+    L ${cx + tw + p} ${h + p}
+    L ${cx + p} ${h + th + p}
+    L ${cx - tw + p} ${h + p}
+    L ${r + p} ${h + p}
+    A ${r} ${r} 0 0 1 ${p} ${r + p}
+    A ${r} ${r} 0 0 1 ${r + p} ${p}
+    Z
+  `.trim();
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${viewBoxWidth}" height="${viewBoxHeight}" viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}" fill="none">
+    <ellipse cx="${shadowCx}" cy="${shadowCy}" rx="${Math.max(7, width * 0.16)}" ry="2.3" fill="rgba(15,23,42,0.12)"/>
+    <path d="${pinPath}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linejoin="round"/>
+    <text x="${viewBoxWidth / 2}" y="${bubbleHeight / 2 + padding + 4}" text-anchor="middle" fill="${textColor}" font-size="12" font-family="Inter,Arial,sans-serif" font-weight="700" letter-spacing="-0.15">${priceText}</text>
   </svg>`;
 }
 

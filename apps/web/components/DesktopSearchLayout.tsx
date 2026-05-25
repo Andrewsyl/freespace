@@ -47,6 +47,7 @@ export function DesktopSearchLayout({
     if (filters.evCharging) count += 1;
     if (filters.securityLevel) count += 1;
     if (filters.vehicleSize) count += 1;
+    if (filters.spaceType) count += 1;
     if (filters.instantBook) count += 1;
     if (filters.mode === "monthly") count += 1;
     return count;

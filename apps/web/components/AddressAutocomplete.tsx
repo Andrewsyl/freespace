@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type PlaceResult = {
   address: string;
@@ -14,14 +14,18 @@ export function AddressAutocomplete({
   onPlace,
   name,
   inputClassName,
+  showLocationButton,
 }: {
   defaultValue?: string;
   placeholder?: string;
   onPlace: (place: PlaceResult) => void;
   name?: string;
   inputClassName?: string;
+  showLocationButton?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   useEffect(() => {
     const input = inputRef.current;
@@ -45,6 +49,60 @@ export function AddressAutocomplete({
     };
   }, [onPlace]);
 
+  const handleUseLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation not supported");
+      return;
+    }
+    setLocating(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        let address = "Current location";
+        try {
+          const key = (window as any).__GOOGLE_MAPS_KEY__ ?? "";
+          if ((window as any).google?.maps?.Geocoder) {
+            const geocoder = new (window as any).google.maps.Geocoder();
+            await new Promise<void>((resolve) => {
+              geocoder.geocode(
+                { location: { lat: latitude, lng: longitude } },
+                (results: any[], status: string) => {
+                  if (status === "OK" && results?.[0]?.formatted_address) {
+                    address = results[0].formatted_address;
+                  }
+                  resolve();
+                }
+              );
+            });
+          } else if (key) {
+            const res = await fetch(
+              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${key}`
+            );
+            const data = await res.json();
+            if (data.results?.[0]?.formatted_address) {
+              address = data.results[0].formatted_address;
+            }
+          }
+        } catch {
+          // fall back to "Current location" label
+        }
+        if (inputRef.current) inputRef.current.value = address;
+        onPlace({ address, lat: latitude, lng: longitude });
+        setLocating(false);
+      },
+      (err) => {
+        setLocating(false);
+        if (err.code === 1) {
+          setLocationError("Location permission denied");
+        } else {
+          setLocationError("Could not get location");
+        }
+      },
+      { timeout: 8000, maximumAge: 60000 }
+    );
+  };
+
   return (
     <div className="relative w-full">
       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">📍</span>
@@ -62,6 +120,30 @@ export function AddressAutocomplete({
           onPlace({ address: e.target.value, lat: 53.3498, lng: -6.2603 });
         }}
       />
+      {showLocationButton && (
+        <button
+          type="button"
+          title={locating ? "Finding your location…" : "Use my current location"}
+          onClick={handleUseLocation}
+          disabled={locating}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-60"
+        >
+          {locating ? (
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" strokeLinecap="round" />
+            </svg>
+          ) : (
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v2M12 20v2M2 12h2M20 12h2" strokeLinecap="round" />
+              <path d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
+            </svg>
+          )}
+        </button>
+      )}
+      {locationError && (
+        <p className="absolute left-0 top-full mt-1 text-xs font-medium text-rose-600">{locationError}</p>
+      )}
     </div>
   );
 }

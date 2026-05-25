@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AddressAutocomplete } from "../components/AddressAutocomplete";
 import type { SearchFilters } from "../components/SearchForm";
 import { SlimNav } from "../components/SlimNav";
@@ -23,11 +23,13 @@ function toTimeString(d: Date) {
 }
 
 const now = roundUpToHalfHour(new Date());
+const defaultEnd = new Date(now.getTime() + 120 * 60000);
 const defaultFilters: SearchFilters = {
   location: "Dublin City Centre",
   date: now.toISOString().split("T")[0],
+  endDate: defaultEnd.toISOString().split("T")[0],
   startTime: toTimeString(now),
-  endTime: toTimeString(new Date(now.getTime() + 120 * 60000)),
+  endTime: toTimeString(defaultEnd),
   radiusKm: 5,
   latitude: 53.3498,
   longitude: -6.2603,
@@ -36,6 +38,10 @@ const defaultFilters: SearchFilters = {
 
 export default function HomePage() {
   const router = useRouter();
+  const fromDateRef = useRef<HTMLInputElement>(null);
+  const fromTimeRef = useRef<HTMLInputElement>(null);
+  const untilDateRef = useRef<HTMLInputElement>(null);
+  const untilTimeRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<"daily" | "monthly">("daily");
   const [location, setLocation] = useState(defaultFilters.location);
   const [latitude, setLatitude] = useState<number | undefined>(defaultFilters.latitude);
@@ -70,6 +76,16 @@ export default function HomePage() {
       endTime,
       mode,
     });
+  };
+
+  const openNativePicker = (input: HTMLInputElement | null) => {
+    if (!input) return;
+    if (typeof input.showPicker === "function") {
+      input.showPicker();
+      return;
+    }
+    input.focus();
+    input.click();
   };
 
   return (
@@ -117,7 +133,8 @@ export default function HomePage() {
                 <AddressAutocomplete
                   defaultValue={location}
                   placeholder="Where would you like to park?"
-                  inputClassName="w-full rounded-full border border-slate-200 bg-white px-10 py-3 text-sm font-semibold text-slate-800 shadow-sm focus:border-emerald-400 focus:outline-none"
+                  inputClassName="w-full rounded-full border border-slate-200 bg-white px-10 py-3 pr-12 text-sm font-semibold text-slate-800 shadow-sm focus:border-emerald-400 focus:outline-none"
+                  showLocationButton
                   onPlace={(place) => {
                     setLocation(place.address);
                     setLatitude(place.lat);
@@ -129,35 +146,67 @@ export default function HomePage() {
                   <label className="flex flex-col gap-1 rounded-2xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
                     <span className="text-[11px] text-slate-500">From</span>
                     <div className="flex items-center gap-2">
-                      <input
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        className="w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none"
-                      />
-                      <input
-                        type="time"
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
-                        className="w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none"
-                      />
+                      <button
+                        type="button"
+                        onClick={() => openNativePicker(fromDateRef.current)}
+                        className="w-full rounded-xl px-1 py-1 text-left transition hover:bg-slate-50"
+                      >
+                        <input
+                          ref={fromDateRef}
+                          type="date"
+                          value={date}
+                          onChange={(e) => setDate(e.target.value)}
+                          className="pointer-events-none w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none"
+                          tabIndex={-1}
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openNativePicker(fromTimeRef.current)}
+                        className="w-full rounded-xl px-1 py-1 text-left transition hover:bg-slate-50"
+                      >
+                        <input
+                          ref={fromTimeRef}
+                          type="time"
+                          value={startTime}
+                          onChange={(e) => setStartTime(e.target.value)}
+                          className="pointer-events-none w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none"
+                          tabIndex={-1}
+                        />
+                      </button>
                     </div>
                   </label>
                   <label className="flex flex-col gap-1 rounded-2xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
                     <span className="text-[11px] text-slate-500">Until</span>
                     <div className="flex items-center gap-2">
-                      <input
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        className="w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none"
-                      />
-                      <input
-                        type="time"
-                        value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)}
-                        className="w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none"
-                      />
+                      <button
+                        type="button"
+                        onClick={() => openNativePicker(untilDateRef.current)}
+                        className="w-full rounded-xl px-1 py-1 text-left transition hover:bg-slate-50"
+                      >
+                        <input
+                          ref={untilDateRef}
+                          type="date"
+                          value={date}
+                          onChange={(e) => setDate(e.target.value)}
+                          className="pointer-events-none w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none"
+                          tabIndex={-1}
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openNativePicker(untilTimeRef.current)}
+                        className="w-full rounded-xl px-1 py-1 text-left transition hover:bg-slate-50"
+                      >
+                        <input
+                          ref={untilTimeRef}
+                          type="time"
+                          value={endTime}
+                          onChange={(e) => setEndTime(e.target.value)}
+                          className="pointer-events-none w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none"
+                          tabIndex={-1}
+                        />
+                      </button>
                     </div>
                   </label>
                 </div>

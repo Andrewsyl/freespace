@@ -18,9 +18,12 @@ import {
   markPayoutPending,
 } from "../lib/db.js";
 import { stripe } from "../lib/stripe.js";
+import { env } from "../env.js";
 
 const router = Router();
 const connectEnabled = process.env.STRIPE_CONNECT_ENABLED === "true";
+const allowMockConnect = env.NODE_ENV !== "production";
+const payoutUnavailableMessage = "Host payouts are not configured right now. Please contact support.";
 
 const payoutLimiter = createRateLimiter({
   windowMs: 10 * 60 * 1000,
@@ -89,9 +92,10 @@ router.get("/payout", requireAuth, enforceBlockedList, payoutLimiter, async (req
     if (!gate.ok) return res.status(403).json({ message: gate.message });
     const user = await findUserById(userId);
     const accountId = user?.host_stripe_account_id ?? null;
-    if (!connectEnabled || !stripe || !accountId || accountId.startsWith("acct_mock_")) {
+    const hasUsableAccount = Boolean(accountId && (!accountId.startsWith("acct_mock_") || allowMockConnect));
+    if (!connectEnabled || !stripe || !hasUsableAccount) {
       return res.json({
-        accountId,
+        accountId: allowMockConnect ? accountId : null,
         chargesEnabled: false,
         payoutsEnabled: false,
         detailsSubmitted: false,
@@ -99,7 +103,7 @@ router.get("/payout", requireAuth, enforceBlockedList, payoutLimiter, async (req
       });
     }
     try {
-      const account = await stripe.accounts.retrieve(accountId);
+      const account = await stripe.accounts.retrieve(accountId!);
       res.json({
         accountId,
         chargesEnabled: account.charges_enabled ?? false,
@@ -109,6 +113,9 @@ router.get("/payout", requireAuth, enforceBlockedList, payoutLimiter, async (req
       });
     } catch (error) {
       if (isStripeConnectDisabled(error)) {
+        if (!allowMockConnect) {
+          return res.status(503).json({ message: payoutUnavailableMessage });
+        }
         return res.json({
           accountId: `acct_mock_${userId.slice(0, 8)}`,
           chargesEnabled: false,
@@ -143,6 +150,10 @@ router.post("/payout", requireAuth, enforceBlockedList, payoutLimiter, async (re
       accountId = undefined;
     }
 
+    if (!allowMockConnect && (!connectEnabled || !stripe)) {
+      return res.status(503).json({ message: payoutUnavailableMessage });
+    }
+
     if (!accountId) {
       if (connectEnabled && stripe) {
         try {
@@ -161,12 +172,18 @@ router.post("/payout", requireAuth, enforceBlockedList, payoutLimiter, async (re
           accountId = account.id;
         } catch (error) {
           if (isStripeConnectDisabled(error)) {
+            if (!allowMockConnect) {
+              return res.status(503).json({ message: payoutUnavailableMessage });
+            }
             accountId = `acct_mock_${userId.slice(0, 8)}`;
           } else {
             throw error;
           }
         }
       } else {
+        if (!allowMockConnect) {
+          return res.status(503).json({ message: payoutUnavailableMessage });
+        }
         accountId = `acct_mock_${userId.slice(0, 8)}`;
       }
     }

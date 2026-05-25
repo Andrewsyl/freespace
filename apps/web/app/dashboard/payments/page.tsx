@@ -17,7 +17,6 @@ import { Elements, CardElement, useElements, useStripe } from "@stripe/react-str
 import { loadStripe, type StripeElementsOptions, type Stripe } from "@stripe/stripe-js";
 
 type LoadingState = "idle" | "loading" | "error";
-const LOCAL_PAYMENT_KEY = "payments-local-methods";
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 const stripePromise: Promise<Stripe | null> | null = stripeKey ? loadStripe(stripeKey) : null;
 
@@ -30,22 +29,6 @@ export default function PaymentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
 
-  const loadLocalMethods = () => {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = window.localStorage.getItem(LOCAL_PAYMENT_KEY);
-      if (!raw) return [];
-      return JSON.parse(raw) as PaymentMethod[];
-    } catch {
-      return [];
-    }
-  };
-
-  const saveLocalMethods = (items: PaymentMethod[]) => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(LOCAL_PAYMENT_KEY, JSON.stringify(items));
-  };
-
   const loadMethods = useMemo(
     () => async () => {
       if (!token) return;
@@ -54,22 +37,10 @@ export default function PaymentsPage() {
       try {
         const data = await listPaymentMethods(token);
         setMethods(data);
-        // Clear any local placeholders once we have real Stripe-backed methods.
-        const hasReal = data.some((pm) => pm.id.startsWith("pm_"));
-        if (hasReal) saveLocalMethods([]);
         setStatus("idle");
       } catch (err) {
         setStatus("error");
-        const msg = err instanceof Error ? err.message : "Could not load payment methods";
-        // Fallback to locally stored cards so the UI stays usable in dev.
-        const local = loadLocalMethods();
-        if (local.length > 0) {
-          setMethods(local);
-          setStatus("idle");
-          setError(null);
-        } else {
-          setError(msg);
-        }
+        setError(err instanceof Error ? err.message : "Could not load payment methods");
       }
     },
     [token]
@@ -99,50 +70,21 @@ export default function PaymentsPage() {
 
   const handleDefault = async (id: string) => {
     if (!token) return;
-    if (!id.startsWith("pm_")) {
-      // Local placeholder: just update local state.
-      setMethods((prev) => {
-        const next = prev.map((pm) => ({ ...pm, is_default: pm.id === id }));
-        saveLocalMethods(next);
-        return next;
-      });
-      return;
-    }
     try {
       await setDefaultPaymentMethod(id, token);
       loadMethods();
     } catch (err) {
-      // Fallback to local update if backend fails
-      setMethods((prev) => {
-        const next = prev.map((pm) => ({ ...pm, is_default: pm.id === id }));
-        saveLocalMethods(next);
-        return next;
-      });
-      setError(err instanceof Error ? err.message : "Could not set default (using local fallback)");
+      setError(err instanceof Error ? err.message : "Could not set default payment method");
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!token) return;
-    if (!id.startsWith("pm_")) {
-      setMethods((prev) => {
-        const next = prev.filter((pm) => pm.id !== id);
-        saveLocalMethods(next);
-        return next;
-      });
-      return;
-    }
     try {
       await deletePaymentMethod(id, token);
       loadMethods();
     } catch (err) {
-      // Fallback: remove locally stored card
-      setMethods((prev) => {
-        const next = prev.filter((pm) => pm.id !== id);
-        saveLocalMethods(next);
-        return next;
-      });
-      setError(err instanceof Error ? err.message : "Could not delete card (removed locally for now)");
+      setError(err instanceof Error ? err.message : "Could not delete card");
     }
   };
 
@@ -358,27 +300,24 @@ export default function PaymentsPage() {
             <AddCardModalStripe
               onClose={() => setShowAdd(false)}
               onAdded={loadMethods}
-              onLocalAdd={(pm) => {
-                setMethods((prev) => {
-                  const next = prev.length === 0 ? [pm] : [...prev, pm];
-                  saveLocalMethods(next);
-                  return next;
-                });
-              }}
               setError={setError}
               token={token ?? undefined}
             />
           ) : (
-            <AddCardModalFallback
-              onClose={() => setShowAdd(false)}
-              onLocalAdd={(pm) => {
-                setMethods((prev) => {
-                  const next = prev.length === 0 ? [pm] : [...prev, pm];
-                  saveLocalMethods(next);
-                  return next;
-                });
-              }}
-            />
+            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold tracking-wide text-brand-700">Add card</p>
+                  <p className="text-sm text-slate-600">Stripe is not configured for web.</p>
+                </div>
+                <button className="rounded-lg px-3 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-100" onClick={() => setShowAdd(false)}>
+                  Close
+                </button>
+              </div>
+              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                Card management is unavailable until the web Stripe publishable key is configured.
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -409,13 +348,11 @@ function StatusChip({ status }: { status: PaymentHistoryItem["status"] }) {
 function AddCardModalStripe({
   onClose,
   onAdded,
-  onLocalAdd,
   setError,
   token,
 }: {
   onClose: () => void;
   onAdded: () => void;
-  onLocalAdd: (pm: PaymentMethod) => void;
   setError: (msg: string | null) => void;
   token?: string;
 }) {
@@ -423,20 +360,6 @@ function AddCardModalStripe({
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-
-  const addLocal = () => {
-    const mock: PaymentMethod = {
-      id: `local-${Date.now()}`,
-      brand: "visa",
-      last4: "4242",
-      exp_month: 12,
-      exp_year: new Date().getFullYear() + 2,
-      is_default: true,
-      created_at: new Date().toISOString(),
-    };
-    onLocalAdd(mock);
-    onClose();
-  };
 
   const handleSubmit = async () => {
     if (!token) return;
@@ -453,8 +376,7 @@ function AddCardModalStripe({
       const clientSecret = intentResp?.clientSecret ?? intentResp?.client_secret ?? intentResp?.setupIntentClientSecret;
 
       if (!clientSecret) {
-        addLocal();
-        setMessage("Stripe not configured; added local placeholder card.");
+        setMessage("Stripe setup could not be started.");
         return;
       }
 
@@ -480,7 +402,6 @@ function AddCardModalStripe({
       }
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Failed to add card");
-      addLocal();
     } finally {
       setSubmitting(false);
     }
@@ -518,56 +439,6 @@ function AddCardModalStripe({
           onClick={handleSubmit}
         >
           {submitting ? "Saving…" : "Save card"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function AddCardModalFallback({
-  onClose,
-  onLocalAdd,
-}: {
-  onClose: () => void;
-  onLocalAdd: (pm: PaymentMethod) => void;
-}) {
-  const addLocal = () => {
-    const mock: PaymentMethod = {
-      id: `local-${Date.now()}`,
-      brand: "visa",
-      last4: "4242",
-      exp_month: 12,
-      exp_year: new Date().getFullYear() + 2,
-      is_default: true,
-      created_at: new Date().toISOString(),
-    };
-    onLocalAdd(mock);
-    onClose();
-  };
-
-  return (
-    <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold tracking-wide text-brand-700">Add card</p>
-          <p className="text-sm text-slate-600">Stripe is not configured for web.</p>
-        </div>
-        <button className="rounded-lg px-3 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-100" onClick={onClose}>
-          Close
-        </button>
-      </div>
-      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
-        We can add a placeholder card for local testing.
-      </div>
-      <div className="mt-4 flex items-center justify-end gap-2">
-        <button className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" onClick={onClose}>
-          Cancel
-        </button>
-        <button
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
-          onClick={addLocal}
-        >
-          Add placeholder
         </button>
       </div>
     </div>

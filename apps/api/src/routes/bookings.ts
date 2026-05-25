@@ -44,8 +44,13 @@ import {
 } from "../middleware/fraud.js";
 import "../loadEnv.js";
 import { generateVerificationToken, hashPassword } from "../lib/auth.js";
+import { env } from "../env.js";
 
 const router = Router();
+
+function hasUsableHostPayoutAccount(accountId?: string | null) {
+  return Boolean(accountId && !accountId.startsWith("acct_mock_"));
+}
 
 function calculateListingChargeCents(input: {
   rateType?: string | null;
@@ -560,6 +565,9 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
     if (!listingWithHost) {
       return res.status(404).json({ message: "Listing not found" });
     }
+    if (env.NODE_ENV === "production" && !hasUsableHostPayoutAccount(listingWithHost.hostStripeAccountId)) {
+      return res.status(409).json({ message: "This host has not completed payout setup yet." });
+    }
     const expectedAmountCents = calculateListingChargeCents({
       rateType: listingWithHost.rateType,
       pricePerDay: listingWithHost.pricePerDay,
@@ -733,6 +741,9 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
     const listingWithHost = await getListingWithHostAccount(payload.listingId);
     if (!listingWithHost) {
       return res.status(404).json({ message: "Listing not found" });
+    }
+    if (env.NODE_ENV === "production" && !hasUsableHostPayoutAccount(listingWithHost.hostStripeAccountId)) {
+      return res.status(409).json({ message: "This host has not completed payout setup yet." });
     }
     const expectedAmountCents = calculateListingChargeCents({
       rateType: listingWithHost.rateType,

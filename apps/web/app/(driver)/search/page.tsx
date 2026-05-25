@@ -28,11 +28,13 @@ function toTimeString(d: Date) {
 }
 
 const now = roundUpToHalfHour(new Date());
+const defaultEnd = new Date(now.getTime() + 120 * 60000);
 const defaultFilters: SearchFilters = {
   location: "Dublin City Centre",
   date: now.toISOString().split("T")[0],
+  endDate: defaultEnd.toISOString().split("T")[0],
   startTime: toTimeString(now),
-  endTime: toTimeString(new Date(now.getTime() + 120 * 60000)),
+  endTime: toTimeString(defaultEnd),
   radiusKm: 5,
   latitude: 53.3498,
   longitude: -6.2603,
@@ -109,6 +111,7 @@ function SearchPageContainer() {
       evCharging: get("evCharging") === "true" ? true : undefined,
       securityLevel: (get("securityLevel") as SearchFilters["securityLevel"]) ?? undefined,
       vehicleSize: (get("vehicleSize") as SearchFilters["vehicleSize"]) ?? undefined,
+      spaceType: get("spaceType") ?? undefined,
       instantBook: get("instantBook") === "true" ? true : undefined,
     } as Partial<SearchFilters>;
   }, [searchParams]);
@@ -178,6 +181,7 @@ function SearchPageContainer() {
     if (next.evCharging) p.set("evCharging", "true");
     if (next.securityLevel) p.set("securityLevel", next.securityLevel);
     if (next.vehicleSize) p.set("vehicleSize", next.vehicleSize);
+    if (next.spaceType) p.set("spaceType", next.spaceType);
     if (next.instantBook) p.set("instantBook", "true");
     if (p.toString() !== searchParams.toString()) {
       router.replace(`/search?${p.toString()}`);

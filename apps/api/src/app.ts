@@ -57,9 +57,26 @@ export function createApp() {
     });
   }
 
+  const webBaseUrl = process.env.WEB_BASE_URL;
+  const alternateWebOrigin = (() => {
+    if (!webBaseUrl) return null;
+    try {
+      const url = new URL(webBaseUrl);
+      if (url.hostname.startsWith("www.")) {
+        url.hostname = url.hostname.slice(4);
+      } else {
+        url.hostname = `www.${url.hostname}`;
+      }
+      return url.origin;
+    } catch {
+      return null;
+    }
+  })();
+
   const allowedOrigins = new Set(
     [
-      process.env.WEB_BASE_URL,
+      webBaseUrl,
+      alternateWebOrigin,
       "http://localhost:3000",
       "http://localhost:8081",
       "http://localhost:19006",

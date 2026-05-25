@@ -30,6 +30,7 @@ export function SlimNav() {
         <Link href="/search" className="hover:text-slate-900">Find parking</Link>
         <Link href="/host" className="hover:text-slate-900">List a space</Link>
         <Link href="/dashboard" className="hover:text-slate-900">Dashboard</Link>
+        {user && <Link href="/dashboard/favorites" className="hover:text-slate-900">♥ Favourites</Link>}
         {user?.role === "admin" && <Link href="/admin" className="hover:text-slate-900">Admin</Link>}
         <a href="/help" className="hover:text-slate-900">Help</a>
         {user ? (
@@ -81,6 +82,11 @@ export function SlimNav() {
             <Link href="/dashboard" className="block px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => setOpen(false)}>
               Dashboard
             </Link>
+            {user && (
+              <Link href="/dashboard/favorites" className="block px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => setOpen(false)}>
+                ♥ Favourites
+              </Link>
+            )}
             {user?.role === "admin" && (
               <Link href="/admin" className="block px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => setOpen(false)}>
                 Admin

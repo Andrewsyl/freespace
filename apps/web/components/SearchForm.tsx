@@ -21,6 +21,7 @@ export type SearchFilters = {
   evCharging?: boolean;
   securityLevel?: "basic" | "gated" | "cctv";
   vehicleSize?: "motorcycle" | "car" | "van";
+  spaceType?: string;
   instantBook?: boolean;
 };
 
@@ -79,6 +80,7 @@ export function SearchForm({
       evCharging: initialValues?.evCharging,
       securityLevel: initialValues?.securityLevel,
       vehicleSize: initialValues?.vehicleSize,
+      spaceType: initialValues?.spaceType,
       instantBook: initialValues?.instantBook,
     };
   });
@@ -111,6 +113,7 @@ export function SearchForm({
         prev.evCharging === nextState.evCharging &&
         prev.securityLevel === nextState.securityLevel &&
         prev.vehicleSize === nextState.vehicleSize &&
+        prev.spaceType === nextState.spaceType &&
         prev.instantBook === nextState.instantBook &&
         prev.startAt.getTime() === nextState.startAt.getTime() &&
         prev.endAt.getTime() === nextState.endAt.getTime();
@@ -141,6 +144,7 @@ export function SearchForm({
       evCharging: current.evCharging,
       securityLevel: current.securityLevel,
       vehicleSize: current.vehicleSize,
+      spaceType: current.spaceType,
       instantBook: current.instantBook,
     };
     if (current.mode === "monthly") {
@@ -218,6 +222,7 @@ export function SearchForm({
       if (submission.evCharging) params.set("evCharging", "true");
       if (submission.securityLevel) params.set("securityLevel", submission.securityLevel);
       if (submission.vehicleSize) params.set("vehicleSize", submission.vehicleSize);
+      if (submission.spaceType) params.set("spaceType", submission.spaceType);
       if (submission.instantBook) params.set("instantBook", "true");
       router.push(`/search?${params.toString()}`);
       return;
