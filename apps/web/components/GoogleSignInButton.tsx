@@ -4,6 +4,31 @@ import { useEffect, useRef } from "react";
 
 type TextVariant = "signin_with" | "signup_with" | "continue_with" | "signin";
 
+type GoogleIdButtonOptions = {
+  type: "standard";
+  theme: "outline";
+  size: "large";
+  text: TextVariant;
+  width: number;
+  shape: "rectangular";
+};
+
+type GoogleIdClient = {
+  initialize: (config: {
+    client_id: string;
+    callback: (response: { credential?: string }) => void;
+  }) => void;
+  renderButton: (element: HTMLElement, options: GoogleIdButtonOptions) => void;
+};
+
+type GoogleWindow = Window & {
+  google?: {
+    accounts?: {
+      id?: GoogleIdClient;
+    };
+  };
+};
+
 /**
  * Renders Google's official Sign In With Google button via `google.accounts.id.renderButton`.
  *
@@ -33,10 +58,10 @@ export function GoogleSignInButton({
   useEffect(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID;
     if (!clientId) return;
+    const googleWindow = window as GoogleWindow;
 
     const render = () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const gis = (window as any).google?.accounts?.id;
+      const gis = googleWindow.google?.accounts?.id;
       if (!gis || !containerRef.current) return;
 
       // Clear any previously rendered button (e.g. on text prop change)
@@ -61,16 +86,14 @@ export function GoogleSignInButton({
       });
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((window as any).google?.accounts?.id) {
+    if (googleWindow.google?.accounts?.id) {
       render();
       return;
     }
 
     // GIS script hasn't finished loading yet — poll until it's ready
     const timer = setInterval(() => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((window as any).google?.accounts?.id) {
+      if (googleWindow.google?.accounts?.id) {
         clearInterval(timer);
         render();
       }

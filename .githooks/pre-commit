@@ -1,0 +1,39 @@
+#!/bin/sh
+set -e
+
+staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+[ -z "$staged_files" ] && exit 0
+
+run_web=false
+run_api=false
+run_mobile=false
+
+for file in $staged_files; do
+  case "$file" in
+    apps/web/*|design-system/*)
+      run_web=true
+      ;;
+    apps/api/*|db/*|scripts/check-env-sanity.mjs|scripts/check-migrations.mjs)
+      run_api=true
+      ;;
+    apps/mobile/*)
+      run_mobile=true
+      ;;
+  esac
+done
+
+if [ "$run_web" = true ]; then
+  echo "pre-commit: verifying web build"
+  npm --workspace apps/web run build
+fi
+
+if [ "$run_api" = true ]; then
+  echo "pre-commit: verifying api build"
+  npm run build:api
+fi
+
+if [ "$run_mobile" = true ]; then
+  echo "pre-commit: verifying mobile typecheck"
+  npm run typecheck:mobile
+fi
