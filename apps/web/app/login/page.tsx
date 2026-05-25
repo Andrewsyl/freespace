@@ -4,10 +4,10 @@ import { Suspense, useState } from "react";
 import { type Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../../components/AuthProvider";
 import { requestVerification } from "../../lib/api";
 import { TextField } from "../../components/ui";
+import { GoogleSignInButton } from "../../components/GoogleSignInButton";
 
 export default function LoginPage() {
   return (
@@ -23,19 +23,32 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [debug, setDebug] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
 
+  const redirect = () => {
+    const next = searchParams.get("next");
+    router.push((next || "/dashboard") as Route);
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setNotice(null);
     try {
       await signIn(email, password);
-      setDebug(`Login success for ${email}`);
-      const next = searchParams.get("next");
-      router.push((next || "/dashboard") as Route);
+      redirect();
     } catch {
-      setDebug("Login failed; check console for details.");
+      // error shown via AuthProvider
+    }
+  };
+
+  const handleGoogle = async (credential: string) => {
+    setNotice(null);
+    try {
+      await signInWithGoogle(credential);
+      redirect();
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Google sign-in failed. Try again.");
     }
   };
 
@@ -50,6 +63,23 @@ function LoginPageContent() {
         </div>
 
         <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.08)]">
+          {/* ── Google sign-in (primary / prominent) ── */}
+          {googleClientId && (
+            <div className="mb-5">
+              <GoogleSignInButton
+                text="signin_with"
+                onSuccess={handleGoogle}
+                onError={() => setNotice("Google sign-in failed. Try again.")}
+              />
+              <div className="mt-5 flex items-center gap-3 text-xs font-semibold text-slate-400">
+                <span className="h-px flex-1 bg-slate-200" />
+                or sign in with email
+                <span className="h-px flex-1 bg-slate-200" />
+              </div>
+            </div>
+          )}
+
+          {/* ── Email / password form ── */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <TextField
               required
@@ -71,37 +101,9 @@ function LoginPageContent() {
               </Link>
             </div>
             <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? "Signing in…" : "Sign in"}
             </button>
-            {googleClientId && (
-              <>
-                <div className="flex items-center gap-3 text-xs font-semibold text-slate-400">
-                  <span className="h-px flex-1 bg-slate-200" />
-                  or
-                  <span className="h-px flex-1 bg-slate-200" />
-                </div>
-                <div className="flex justify-center">
-                  <GoogleLogin
-                    onSuccess={async (credentialResponse) => {
-                      if (!credentialResponse.credential) {
-                        setNotice("Google sign-in failed. Try again.");
-                        return;
-                      }
-                      try {
-                        await signInWithGoogle(credentialResponse.credential);
-                        const next = searchParams.get("next");
-                        router.push((next || "/dashboard") as Route);
-                      } catch (err) {
-                        const msg = err instanceof Error ? err.message : "Google sign-in failed.";
-                        setNotice(msg);
-                      }
-                    }}
-                    onError={() => setNotice("Google sign-in failed. Try again.")}
-                    width="320"
-                  />
-                </div>
-              </>
-            )}
+
             {error && (
               <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                 {error}
@@ -112,21 +114,19 @@ function LoginPageContent() {
                 {notice}
               </div>
             )}
-            {debug && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">
-                {debug}
-              </div>
-            )}
+
             <p className="text-center text-sm text-slate-600">
               No account?{" "}
               <Link href="/signup" className="font-semibold text-brand-700">
                 Sign up
               </Link>
             </p>
+
             <button
               type="button"
               className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
               onClick={async () => {
+                setNotice(null);
                 try {
                   await requestVerification(email);
                   setNotice("Verification email sent (if the account exists).");

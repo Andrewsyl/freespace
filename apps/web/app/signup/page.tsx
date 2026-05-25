@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../../components/AuthProvider";
 import { requestPhoneVerification, verifyPhone } from "../../lib/api";
 import { TextField } from "../../components/ui";
+import { GoogleSignInButton } from "../../components/GoogleSignInButton";
 
 export default function SignupPage() {
   const { signUp, signInWithGoogle, loading, error, token, setUser } = useAuth();
@@ -47,6 +47,16 @@ export default function SignupPage() {
     }
   };
 
+  const handleGoogle = async (credential: string) => {
+    setNotice(null);
+    try {
+      await signInWithGoogle(credential);
+      router.push("/dashboard");
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Google sign-in failed. Try again.");
+    }
+  };
+
   return (
     <div className="min-h-[100dvh] bg-slate-50 px-4 pb-12 pt-8">
       <div className="mx-auto max-w-md">
@@ -58,6 +68,23 @@ export default function SignupPage() {
         </div>
 
         <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.08)]">
+          {/* ── Google sign-up (primary / prominent) — only on the initial form step ── */}
+          {phoneStep === "form" && googleClientId && (
+            <div className="mb-5">
+              <GoogleSignInButton
+                text="signup_with"
+                onSuccess={handleGoogle}
+                onError={() => setNotice("Google sign-in failed. Try again.")}
+              />
+              <div className="mt-5 flex items-center gap-3 text-xs font-semibold text-slate-400">
+                <span className="h-px flex-1 bg-slate-200" />
+                or create account with email
+                <span className="h-px flex-1 bg-slate-200" />
+              </div>
+            </div>
+          )}
+
+          {/* ── Email / phone form ── */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {phoneStep === "form" && (
               <>
@@ -144,34 +171,7 @@ export default function SignupPage() {
                 </button>
               </div>
             )}
-            {phoneStep === "form" && googleClientId && (
-              <>
-                <div className="flex items-center gap-3 text-xs font-semibold text-slate-400">
-                  <span className="h-px flex-1 bg-slate-200" />
-                  or
-                  <span className="h-px flex-1 bg-slate-200" />
-                </div>
-                <div className="flex justify-center">
-                  <GoogleLogin
-                    onSuccess={async (credentialResponse) => {
-                      if (!credentialResponse.credential) {
-                        setNotice("Google sign-in failed. Try again.");
-                        return;
-                      }
-                      try {
-                        await signInWithGoogle(credentialResponse.credential);
-                        router.push("/dashboard");
-                      } catch (err) {
-                        const msg = err instanceof Error ? err.message : "Google sign-in failed.";
-                        setNotice(msg);
-                      }
-                    }}
-                    onError={() => setNotice("Google sign-in failed. Try again.")}
-                    width="320"
-                  />
-                </div>
-              </>
-            )}
+
             {error && (
               <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                 {error}
