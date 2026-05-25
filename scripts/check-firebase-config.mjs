@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { createRequire } from "module";
 
 const root = process.cwd();
 const files = [
@@ -7,10 +8,26 @@ const files = [
   "apps/mobile/android/app/google-services.json",
 ].map((file) => path.join(root, file));
 
-const requiredPackages = [
-  "com.andrewsyl.carparking",
-  "com.andrewsyl.carparking.dev",
-];
+const require = createRequire(import.meta.url);
+const appConfigPath = path.join(root, "apps/mobile/app.config.js");
+const appJsonPath = path.join(root, "apps/mobile/app.json");
+const loadExpoConfig = () => {
+  const appConfigModule = require(appConfigPath);
+  const appConfigExport = appConfigModule.default ?? appConfigModule;
+  return typeof appConfigExport === "function" ? appConfigExport({ config: {} }) : appConfigExport;
+};
+
+const appJson = JSON.parse(fs.readFileSync(appJsonPath, "utf8"));
+const expoConfig = loadExpoConfig();
+const requiredPackages = [...new Set([
+  appJson?.expo?.android?.package,
+  expoConfig?.android?.package,
+].filter(Boolean))];
+
+if (requiredPackages.length !== 2) {
+  console.error("Could not determine expected Android package names from apps/mobile/app.json and apps/mobile/app.config.js");
+  process.exit(1);
+}
 
 const readClients = (filePath) => {
   const raw = fs.readFileSync(filePath, "utf8");
