@@ -61,7 +61,8 @@ export function StarRating({ rating, onRatingChange, size = 40, disabled = false
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    gap: spacing.sm,
+    justifyContent: "space-between",
+    width: "100%",
   },
   star: {
     justifyContent: "center",

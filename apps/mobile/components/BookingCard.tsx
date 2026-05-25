@@ -1,8 +1,6 @@
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../styles/theme";
 import type { BookingSummary } from "../api";
-import { formatBookingReference } from "../utils/bookingFormat";
 
 type Props = {
   booking: BookingSummary;
@@ -15,28 +13,26 @@ type Props = {
 };
 
 // Design tokens
-const GREEN = "#1B8A5A";
-const GREEN_SOFT = "#E6F2EC";
-const FG = "#111111";
-const FG_2 = "#3D3D3D";
-const FG_MUTED = "#6B6B6B";
-const FG_SUBTLE = "#9A9A9A";
-const LINE = "#E6E6E4";
-const LINE_2 = "#BEBEBE";
-const BG_2 = "#F7F7F6";
+const GREEN        = "#1B8A5A";
+const GREEN_SOFT   = "#E6F2EC";
+const GREEN_STRIP  = "#F0FAF5";
+const FG           = "#111111";
+const FG_MUTED     = "#6B6B6B";
+const FG_SUBTLE    = "#9A9A9A";
+const LINE         = "#EBEBEA";
+const BG_2         = "#F5F5F4";
 
 const STATUS_STYLES: Record<
   Props["statusTone"],
-  { background: string; text: string; icon: string; border: string }
+  { bg: string; text: string; icon: string }
 > = {
-  confirmed: { background: GREEN_SOFT, text: GREEN,      icon: "checkmark-circle",         border: GREEN     },
-  active:    { background: GREEN,      text: "#ffffff",  icon: "play-circle",               border: GREEN     },
-  completed: { background: BG_2,       text: FG_MUTED,  icon: "checkmark-circle-outline",  border: LINE      },
-  pending:   { background: "#FDF1E0",  text: "#B6691A",  icon: "time",                      border: "#B6691A" },
-  canceled:  { background: "#FBE2DE",  text: "#B5392B",  icon: "close-circle-outline",      border: "#B5392B" },
-  refunded:  { background: "#E2EBF4",  text: "#2C6CA8",  icon: "arrow-undo",                border: "#2C6CA8" },
+  confirmed: { bg: GREEN_SOFT,  text: GREEN,       icon: "checkmark-circle"        },
+  active:    { bg: GREEN,       text: "#ffffff",   icon: "play-circle"             },
+  completed: { bg: BG_2,        text: FG_MUTED,    icon: "checkmark-circle-outline"},
+  pending:   { bg: "#FDF1E0",   text: "#B6691A",   icon: "time"                    },
+  canceled:  { bg: "#FBE2DE",   text: "#B5392B",   icon: "close-circle-outline"    },
+  refunded:  { bg: "#E2EBF4",   text: "#2C6CA8",   icon: "arrow-undo"              },
 };
-
 
 export function BookingCard({
   booking,
@@ -46,7 +42,7 @@ export function BookingCard({
   timeLabel,
   onPress,
 }: Props) {
-  const badgeStyle = STATUS_STYLES[statusTone];
+  const badge = STATUS_STYLES[statusTone];
   const price = Math.round(booking.amountCents / 100);
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const imageUrl =
@@ -54,7 +50,8 @@ export function BookingCard({
     (mapsKey && booking.latitude != null && booking.longitude != null
       ? `https://maps.googleapis.com/maps/api/streetview?size=240x240&location=${booking.latitude},${booking.longitude}&fov=70&key=${mapsKey}`
       : undefined);
-  const [startTime, endTime] = timeLabel.split("–").map((item) => item.trim());
+  const [startTime, endTime] = timeLabel.split("–").map((s) => s.trim());
+
   const secondaryLabel =
     booking.accessCode
       ? "Access code"
@@ -64,77 +61,90 @@ export function BookingCard({
       ? "Refund processed"
       : booking.receiptUrl
       ? "Receipt available"
-      : statusLabel;
+      : null;
 
   return (
     <Pressable
       onPress={onPress}
-      style={styles.card}
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       android_ripple={null}
     >
-      <View style={styles.mainContent}>
+      {/* ── Top section: thumbnail + info ── */}
+      <View style={styles.top}>
+
+        {/* Thumbnail with status overlay */}
         <View style={styles.imageWrap}>
           {imageUrl ? (
             <Image source={{ uri: imageUrl }} style={styles.thumb} />
           ) : (
-            <View style={styles.thumbPlaceholder} />
+            <View style={styles.thumbPlaceholder}>
+              <Ionicons name="car-outline" size={26} color={FG_SUBTLE} />
+            </View>
           )}
+          {/* Status pill overlaid at bottom of image */}
+          <View style={[styles.imagePill, { backgroundColor: badge.bg }]}>
+            <Ionicons name={badge.icon as any} size={10} color={badge.text} />
+            <Text style={[styles.imagePillText, { color: badge.text }]}>
+              {statusLabel}
+            </Text>
+          </View>
         </View>
-        <View style={styles.textContent}>
-          <View style={styles.header}>
-            <View style={styles.titleSection}>
-              <Text style={styles.reference}>{formatBookingReference(booking.id)}</Text>
-              <Text style={styles.title} numberOfLines={2}>
-                {booking.title}
-              </Text>
-              <Text style={styles.address} numberOfLines={1}>
-                {booking.address}
-              </Text>
-            </View>
-            <View style={styles.priceGroup}>
-              <View style={[styles.statusBadge, { backgroundColor: badgeStyle.background, borderColor: badgeStyle.border }]}>
-                <Ionicons name={badgeStyle.icon as any} size={11} color={badgeStyle.text} />
-                <Text style={[styles.statusBadgeText, { color: badgeStyle.text }]}>
-                  {statusLabel}
-                </Text>
-              </View>
-              <Text style={styles.priceText}>€{price}</Text>
-            </View>
+
+        {/* Text block */}
+        <View style={styles.info}>
+          {/* Title row */}
+          <View style={styles.titleRow}>
+            <Text style={styles.title} numberOfLines={2}>{booking.title}</Text>
+            <Text style={styles.price}>€{price}</Text>
           </View>
 
+          {/* Address */}
+          <Text style={styles.address} numberOfLines={1}>{booking.address}</Text>
+
+          {/* Meta */}
           <View style={styles.metaRow}>
             <View style={styles.metaItem}>
-              <Ionicons name="car-outline" size={14} color={colors.textSoft} />
+              <Ionicons name="car-outline" size={13} color={FG_SUBTLE} />
               <Text style={styles.metaText}>
-                {booking.vehiclePlate ? booking.vehiclePlate : "Not selected"}
+                {booking.vehiclePlate ?? "No plate"}
               </Text>
             </View>
-            <Text style={styles.secondaryMeta} numberOfLines={1}>
-              {secondaryLabel}
-            </Text>
+            {secondaryLabel && (
+              <Text style={styles.secondaryMeta} numberOfLines={1}>
+                {secondaryLabel}
+              </Text>
+            )}
           </View>
         </View>
       </View>
 
-      <View style={styles.timeBlock}>
+      {/* ── Time strip ── */}
+      <View style={styles.timeStrip}>
         <View style={styles.timeColumn}>
-          <Text style={styles.timeLabel}>Arrival</Text>
+          <Text style={styles.timeLabel}>ARRIVAL</Text>
           <Text style={styles.timeValue}>{startTime}</Text>
           <Text style={styles.timeDate}>{dateLabel}</Text>
         </View>
-        <View style={styles.timeArrow}>
-          <Ionicons name="arrow-forward" size={16} color={FG_SUBTLE} />
+
+        <View style={styles.timeCenter}>
+          <View style={styles.timeLine} />
+          <View style={styles.timePuck}>
+            <Ionicons name="navigate" size={12} color={GREEN} />
+          </View>
+          <View style={styles.timeLine} />
         </View>
-        <View style={styles.timeColumn}>
-          <Text style={styles.timeLabel}>Departure</Text>
+
+        <View style={[styles.timeColumn, { alignItems: "flex-end" }]}>
+          <Text style={styles.timeLabel}>DEPARTURE</Text>
           <Text style={styles.timeValue}>{endTime}</Text>
           <Text style={styles.timeDate}>{dateLabel}</Text>
         </View>
       </View>
 
-      <View style={styles.viewMoreRow}>
-        <Text style={styles.viewMoreText}>View details</Text>
-        <Ionicons name="chevron-forward" size={14} color={FG_MUTED} />
+      {/* ── Footer CTA ── */}
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>View details</Text>
+        <Ionicons name="arrow-forward" size={13} color={GREEN} />
       </View>
     </Pressable>
   );
@@ -143,169 +153,189 @@ export function BookingCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: LINE_2,
+    borderRadius: 16,
     overflow: "hidden",
-    padding: 12,
+    // iOS shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    // Android
+    elevation: 3,
   },
-  header: {
+  cardPressed: {
+    opacity: 0.93,
+  },
+
+  // ── Top ──
+  top: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 10,
+    padding: 14,
+    gap: 12,
   },
-  mainContent: {
-    flexDirection: "row",
-  },
+
+  // Image
   imageWrap: {
-    width: 88,
-    justifyContent: "center",
+    width: 78,
+    height: 78,
+    borderRadius: 10,
+    overflow: "hidden",
+    flexShrink: 0,
   },
   thumb: {
-    width: 72,
-    height: 72,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: LINE,
+    width: "100%",
+    height: "100%",
   },
   thumbPlaceholder: {
-    width: 72,
-    height: 72,
-    borderRadius: 8,
+    width: "100%",
+    height: "100%",
     backgroundColor: BG_2,
-  },
-  reference: {
-    color: FG_SUBTLE,
-    fontSize: 11,
-    fontFamily: "Inter-SemiBold",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-    marginBottom: 3,
-  },
-  textContent: {
-    flex: 1,
-    gap: 6,
-    paddingTop: 2,
-    paddingRight: 2,
-    paddingBottom: 2,
-    paddingLeft: 8,
-  },
-  titleSection: {
-    flex: 1,
-  },
-  title: {
-    color: FG,
-    fontSize: 15,
-    fontFamily: "Inter-SemiBold",
-    lineHeight: 20,
-    letterSpacing: -0.15,
-  },
-  address: {
-    color: FG_MUTED,
-    fontSize: 13,
-    fontFamily: "Inter-Regular",
-    marginTop: 2,
-  },
-  priceGroup: {
-    alignItems: "flex-end",
-    justifyContent: "flex-start",
-    gap: 6,
-    paddingTop: 1,
-  },
-  statusBadge: {
     alignItems: "center",
-    borderRadius: 999,
-    borderWidth: 1,
+    justifyContent: "center",
+  },
+  imagePill: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: "row",
-    gap: 4,
-    paddingHorizontal: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
     paddingVertical: 4,
   },
-  statusBadgeText: {
+  imagePillText: {
+    fontSize: 10,
     fontFamily: "Inter-SemiBold",
-    fontSize: 11,
+    letterSpacing: 0.1,
   },
-  priceText: {
-    color: FG,
-    fontSize: 17,
+
+  // Info
+  info: {
+    flex: 1,
+    gap: 4,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  title: {
+    flex: 1,
+    fontSize: 15,
     fontFamily: "Inter-Bold",
+    color: FG,
+    lineHeight: 20,
     letterSpacing: -0.2,
+  },
+  price: {
+    fontSize: 18,
+    fontFamily: "Inter-Bold",
+    color: GREEN,
+    letterSpacing: -0.3,
+  },
+  address: {
+    fontSize: 13,
+    fontFamily: "Inter-Regular",
+    color: FG_MUTED,
   },
   metaRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 10,
     alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 2,
   },
   metaItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 4,
     flex: 1,
   },
   metaText: {
-    color: FG_MUTED,
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Inter-Regular",
+    color: FG_MUTED,
   },
   secondaryMeta: {
-    color: FG_SUBTLE,
+    fontSize: 12,
+    fontFamily: "Inter-SemiBold",
+    color: GREEN,
     flexShrink: 1,
-    fontFamily: "Inter-Regular",
-    fontSize: 13,
     textAlign: "right",
   },
-  timeBlock: {
+
+  // ── Time strip ──
+  timeStrip: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    borderTopWidth: 1,
-    borderTopColor: LINE,
-    marginTop: 12,
-    paddingTop: 12,
-    paddingBottom: 8,
-    paddingHorizontal: 8,
+    backgroundColor: GREEN_STRIP,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 0,
   },
   timeColumn: {
     flex: 1,
-    alignItems: "center",
+    alignItems: "flex-start",
   },
   timeLabel: {
-    fontSize: 11,
-    color: FG_SUBTLE,
+    fontSize: 9,
     fontFamily: "Inter-SemiBold",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-    marginBottom: 4,
+    color: GREEN,
+    letterSpacing: 0.8,
+    marginBottom: 3,
   },
   timeValue: {
-    fontSize: 13,
-    fontFamily: "Inter-SemiBold",
+    fontSize: 14,
+    fontFamily: "Inter-Bold",
     color: FG,
+    letterSpacing: -0.2,
   },
   timeDate: {
-    fontSize: 12,
-    color: FG_MUTED,
+    fontSize: 11,
     fontFamily: "Inter-Regular",
-    marginTop: 2,
+    color: FG_MUTED,
+    marginTop: 1,
   },
-  timeArrow: {
-    width: 32,
+  timeCenter: {
+    flexDirection: "row",
     alignItems: "center",
+    flex: 1,
+    justifyContent: "center",
   },
-  viewMoreRow: {
+  timeLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: LINE,
+    maxWidth: 28,
+  },
+  timePuck: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+
+  // ── Footer ──
+  footer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
-    paddingTop: 10,
+    gap: 5,
+    paddingVertical: 11,
     borderTopWidth: 1,
     borderTopColor: LINE,
-    paddingBottom: 2,
+    backgroundColor: "#ffffff",
   },
-  viewMoreText: {
-    color: FG_MUTED,
+  footerText: {
     fontSize: 13,
     fontFamily: "Inter-SemiBold",
+    color: GREEN,
   },
 });

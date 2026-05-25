@@ -57,7 +57,6 @@ export function MapBottomCard({
   );
   useEffect(() => {
     if (dismissing) {
-      // Animate out
       Animated.parallel([
         Animated.timing(translateAnim, {
           toValue: 1,
@@ -73,7 +72,6 @@ export function MapBottomCard({
         }),
       ]).start();
     } else {
-      // Animate in
       translateAnim.setValue(1);
       opacityAnim.setValue(0);
       Animated.parallel([

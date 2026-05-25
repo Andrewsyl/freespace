@@ -21,11 +21,10 @@ import { useAuth } from "../auth";
 import { getNotificationImageAttachment } from "../notifications";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { formatTimeLabel } from "../utils/dateFormat";
 import { formatBookingReference } from "../utils/bookingFormat";
-import { ParkingTicket } from "../components/ParkingTicket";
-import { colors } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingDetail">;
 
@@ -56,10 +55,12 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   const canReview = end.getTime() <= now && localStatus === "confirmed";
   const [reviewed, setReviewed] = useState(false);
   const [reviewedRating, setReviewedRating] = useState<number | null>(null);
+  const [pendingRating, setPendingRating] = useState<number | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
+      setPendingRating(null);
       void (async () => {
         try {
           const stored = await AsyncStorage.getItem(`bookingRating:${booking.id}`);
@@ -107,6 +108,28 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     Date.now() >= start.getTime() - 15 * 60 * 1000 &&
     Date.now() <= end.getTime();
   const canBookAgain = isCanceled || (!isUpcoming && !isInProgress);
+  const statusConfig = (() => {
+    if (isCanceled) return {
+      label: "Booking canceled",
+      icon: "close-circle" as const,
+      cardGradient: ["#C0392B", "#000000"] as const,
+    };
+    if (isInProgress) return {
+      label: "In progress",
+      icon: "play-circle" as const,
+      cardGradient: ["#1B8A5A", "#000000"] as const,
+    };
+    if (isUpcoming) return {
+      label: "Confirmed",
+      icon: "checkmark-circle" as const,
+      cardGradient: ["#1E6E47", "#000000"] as const,
+    };
+    return {
+      label: "Completed",
+      icon: "checkmark-circle-outline" as const,
+      cardGradient: ["#3D4D63", "#000000"] as const,
+    };
+  })();
   const showArrivalInfo =
     (isUpcoming || isInProgress || canReview) &&
     (Boolean(booking.arrivalInstructions?.trim()) || Boolean(booking.accessCode?.trim()));
@@ -117,11 +140,24 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     month: "short",
     timeZone: "Europe/Dublin",
   })} · ${formatTimeLabel(start)} - ${formatTimeLabel(end)}`;
-  const barcodeRaw = booking.id.replace(/-/g, "").slice(0, 12).toUpperCase();
-  const barcodeText =
-    barcodeRaw.length >= 12
-      ? `${barcodeRaw.slice(0, 4)} ${barcodeRaw.slice(4, 8)} ${barcodeRaw.slice(8, 12)}`
-      : barcodeRaw;
+  const startDateLabel = start.toLocaleDateString("en-IE", {
+    weekday: "short", day: "2-digit", month: "short", timeZone: "Europe/Dublin",
+  });
+  const endDateLabel = end.toLocaleDateString("en-IE", {
+    weekday: "short", day: "2-digit", month: "short", timeZone: "Europe/Dublin",
+  });
+  const durationMs    = end.getTime() - start.getTime();
+  const durH          = Math.floor(durationMs / 3_600_000);
+  const durM          = Math.floor((durationMs % 3_600_000) / 60_000);
+  const durationLabel = durH > 0
+    ? (durM > 0 ? `${durH}h ${durM}m` : `${durH}h`)
+    : `${durM}m`;
+  const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+  const heroUrl: string | null =
+    booking.imageUrls?.[0] ??
+    (mapsKey && booking.latitude != null && booking.longitude != null
+      ? `https://maps.googleapis.com/maps/api/streetview?size=800x400&location=${booking.latitude},${booking.longitude}&fov=90&key=${mapsKey}`
+      : null);
 
   const performCancel = async () => {
     if (!token || canceling || localStatus === "canceled") return;
@@ -252,6 +288,16 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     ]);
   };
 
+  const handleStarPress = (star: number) => {
+    setPendingRating(star);
+    // Navigate after a short delay so the filled stars are visible during
+    // the transition. pendingRating is NOT cleared here — it resets via
+    // useFocusEffect when the user returns to this screen.
+    setTimeout(() => {
+      navigation.navigate("Review", { booking, initialRating: star });
+    }, 350);
+  };
+
   const handleContactSupport = () => {
     navigation.navigate("Support", {
       prefillSubject: isCanceled ? "Refund request" : "Payment or refund",
@@ -261,65 +307,196 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <StatusBar style="dark" translucent={false} backgroundColor={colors.appBg} />
+      <StatusBar style="dark" translucent={false} backgroundColor={SCREEN_BG} />
+
+      {/* ── Navigation header ── */}
       <View style={styles.header}>
-        <Pressable style={styles.backCircleButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={18} color="#111827" />
+        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={20} color={FG} />
         </Pressable>
+        <Text style={styles.headerTitle} numberOfLines={1}>{booking.title}</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} ref={scrollRef}>
-        {/* Review Card */}
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} ref={scrollRef}>
+
+        {/* ── Review CTA — sits above the ticket when a review is due ── */}
         {canReview ? (
           reviewed ? (
-            <View style={[styles.reviewButton, styles.reviewButtonTopSpacing]}>
-              <View style={styles.reviewedStars}>
-                {Array.from({ length: 5 }).map((_, index) => {
-                  const filled = reviewedRating != null && index < Math.round(reviewedRating);
+            <View style={styles.reviewCta}>
+              <Text style={styles.reviewCtaQuestion}>Thanks for your review!</Text>
+              <View style={styles.reviewCtaStars}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Ionicons
+                    key={`star-top-${i}`}
+                    name="star"
+                    size={30}
+                    color={reviewedRating != null && i < Math.round(reviewedRating) ? "#fff" : "rgba(255,255,255,0.3)"}
+                  />
+                ))}
+              </View>
+            </View>
+          ) : (
+            <View style={styles.reviewCta}>
+              <Text style={styles.reviewCtaQuestion}>How was your parking experience?</Text>
+              <View style={styles.reviewCtaStars}>
+                {Array.from({ length: 5 }).map((_, i) => {
+                  const star = i + 1;
+                  const filled = pendingRating !== null && star <= pendingRating;
                   return (
-                    <Ionicons
-                      key={`review-star-${index}`}
-                      name="star"
-                      size={16}
-                      color={filled ? "#FBBF24" : "#E5E7EB"}
-                    />
+                    <Pressable
+                      key={`star-top-${i}`}
+                      onPress={() => handleStarPress(star)}
+                      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+                      hitSlop={8}
+                    >
+                      <Ionicons
+                        name={filled ? "star" : "star-outline"}
+                        size={34}
+                        color="#fff"
+                      />
+                    </Pressable>
                   );
                 })}
               </View>
             </View>
-          ) : (
-            <TouchableOpacity
-              style={[styles.reviewButton, styles.reviewButtonTopSpacing]}
-              onPress={() => navigation.navigate("Review", { booking })}
-            >
-              <Ionicons name="star-outline" size={20} color="#2ECC8F" />
-              <Text style={styles.reviewButtonText}>Leave a review</Text>
-            </TouchableOpacity>
           )
         ) : null}
 
-        <ParkingTicket
-          companyName="FREESPACE"
-          companySubtitle="PARKING MARKETPLACE"
-          companyAddress="Dublin, Ireland"
-          companySupportEmail="support@freespace.ie"
-          title="PARKING RECEIPT"
-          date={bookingDateLabel}
-          location={booking.address}
-          orderId={formatBookingReference(booking.id)}
-          spot="1 Parking Space"
-          paidAmount={`€${(localAmountCents / 100).toFixed(2)}`}
-          barcodeText={barcodeText}
-          onExtend={isInProgress ? () => setExtendOpen(true) : undefined}
-          extendBusy={extendBusy}
-        />
+        {/* ═══════════════════════════════════════
+            E-TICKET CARD
+        ═══════════════════════════════════════ */}
+        <View style={styles.ticketCard}>
 
-        {(isUpcoming || isInProgress) && !isCanceled ? (
-          <TouchableOpacity style={styles.actionBtn} onPress={handleOpenMaps}>
-            <Text style={styles.actionBtnText}>Get Directions</Text>
-          </TouchableOpacity>
-        ) : null}
+          {/* ── Dark top section ── */}
+          <LinearGradient
+            colors={statusConfig.cardGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.ticketTop}
+          >
 
+            {/* Status chip + price */}
+            <View style={styles.ticketHeaderRow}>
+              <View style={styles.statusChip}>
+                <Ionicons name={statusConfig.icon} size={12} color="#fff" />
+                <Text style={styles.statusChipText}>{statusConfig.label}</Text>
+              </View>
+              <Text style={styles.ticketPrice}>
+                €{(localAmountCents / 100).toFixed(2)}
+              </Text>
+            </View>
+
+            {/* Listing name + address */}
+            <Text style={styles.ticketTitle} numberOfLines={2}>{booking.title}</Text>
+            <Text style={styles.ticketAddress} numberOfLines={1}>{booking.address}</Text>
+
+            {/* Time row */}
+            <View style={styles.timeRow}>
+              <View style={styles.timeCol}>
+                <Text style={styles.timeEyebrow}>ARRIVAL</Text>
+                <Text style={styles.timeBig}>{formatTimeLabel(start)}</Text>
+                <Text style={styles.timeSub}>{startDateLabel}</Text>
+              </View>
+
+              <View style={styles.timeMid}>
+                <View style={styles.timeLine} />
+                <View style={styles.durationPill}>
+                  <Text style={styles.durationText}>{durationLabel}</Text>
+                </View>
+                <View style={styles.timeLine} />
+              </View>
+
+              <View style={[styles.timeCol, styles.timeColRight]}>
+                <Text style={styles.timeEyebrow}>DEPARTURE</Text>
+                <Text style={styles.timeBig}>{formatTimeLabel(end)}</Text>
+                <Text style={styles.timeSub}>{endDateLabel}</Text>
+              </View>
+            </View>
+
+            {/* Extend end time */}
+            {(isUpcoming || isInProgress) && !isCanceled ? (
+              <Pressable
+                style={({ pressed }) => [styles.extendBtn, pressed && { opacity: 0.7 }]}
+                onPress={() => setExtendOpen(true)}
+                disabled={extendBusy}
+              >
+                <Ionicons name="time-outline" size={14} color="rgba(255,255,255,0.85)" />
+                <Text style={styles.extendBtnText}>
+                  {extendBusy ? "Extending…" : "Extend end time"}
+                </Text>
+                <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.5)" />
+              </Pressable>
+            ) : null}
+
+          </LinearGradient>
+
+          {/* ── White bottom section ── */}
+          <View style={styles.ticketBottom}>
+            <View style={styles.refRow}>
+              <View>
+                <Text style={styles.refEyebrow}>Booking reference</Text>
+                <Text style={styles.refCode}>{formatBookingReference(booking.id)}</Text>
+              </View>
+              {booking.vehiclePlate ? (
+                <View style={styles.plateChip}>
+                  <Ionicons name="car-outline" size={12} color={FG_MUTED} />
+                  <Text style={styles.plateChipText}>{booking.vehiclePlate}</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+
+        </View>
+
+        {/* ═══════════════════════════════════════
+            ACTIONS
+        ═══════════════════════════════════════ */}
+        <View style={styles.actionBlock}>
+          {(isUpcoming || isInProgress) && !isCanceled ? (
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleOpenMaps}>
+              <Ionicons name="navigate-outline" size={16} color="#fff" />
+              <Text style={styles.primaryBtnText}>Get directions</Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {canCheckIn ? (
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleCheckIn}>
+              <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
+              <Text style={styles.primaryBtnText}>Check in</Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {receiptUrl ? (
+            <TouchableOpacity style={styles.outlineBtn} onPress={() => Linking.openURL(receiptUrl)}>
+              <Ionicons name="receipt-outline" size={16} color={GREEN} />
+              <Text style={styles.outlineBtnText}>View receipt</Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {canBookAgain ? (
+            <TouchableOpacity style={styles.outlineBtn} onPress={handleBookAgain}>
+              <Ionicons name="refresh-outline" size={16} color={FG} />
+              <Text style={styles.outlineBtnText}>Book again</Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {isUpcoming && !isCanceled ? (
+            <TouchableOpacity
+              style={[styles.dangerBtn, canceling && styles.btnDisabled]}
+              onPress={handleCancel}
+              disabled={canceling}
+            >
+              <Text style={styles.dangerBtnText}>
+                {canceling ? "Canceling…" : "Cancel booking"}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {extendError ? <Text style={styles.errorText}>{extendError}</Text> : null}
+        </View>
+
+        {/* ── Arrival details ── */}
         {showArrivalInfo ? (
           <View style={styles.infoCard}>
             <Text style={styles.infoCardTitle}>Arrival details</Text>
@@ -335,68 +512,68 @@ export function BookingDetailScreen({ navigation, route }: Props) {
           </View>
         ) : null}
 
+        {/* ── Cancellation status ── */}
         {isCanceled ? (
-          <View style={styles.infoCard}>
-            <Text style={styles.infoCardTitle}>Cancellation and refund</Text>
-            <Text style={styles.infoCardBody}>
+          <View style={styles.cancelCard}>
+            <Text style={styles.cancelEyebrow}>Cancellation status</Text>
+
+            <Text style={styles.cancelNote}>
               {cancellationSource === "host"
                 ? isRefunded
-                  ? `The host canceled this booking. Your refund has been submitted to the original payment method${localRefundedAt ? ` on ${new Date(localRefundedAt).toLocaleDateString("en-IE", { day: "2-digit", month: "short", year: "numeric", timeZone: "Europe/Dublin" })}` : ""}.`
-                  : "The host canceled this booking. If the refund has not appeared yet, contact support and we will trace it."
+                  ? "The host canceled this booking. Your refund has been submitted to the original payment method."
+                  : "The host canceled this booking. If no refund has appeared yet, contact support and we will trace it."
                 : isRefunded
-                  ? `This booking was canceled and the refund has been submitted to your original payment method${localRefundedAt ? ` on ${new Date(localRefundedAt).toLocaleDateString("en-IE", { day: "2-digit", month: "short", year: "numeric", timeZone: "Europe/Dublin" })}` : ""}.`
-                  : "This booking was canceled. If you expected a refund and do not see one yet, contact support with your booking reference."}
+                  ? "This booking was canceled. Your refund has been submitted to the original payment method."
+                  : "This booking was canceled. If you expected a refund and have not received one, contact support with your reference."}
             </Text>
-            <TouchableOpacity style={styles.secondaryLinkButton} onPress={handleContactSupport}>
-              <Text style={styles.secondaryLinkButtonText}>
+
+            {isRefunded ? (
+              <View style={styles.cancelTimeline}>
+                <View style={styles.timelineItem}>
+                  <View style={styles.timelineIndicator}>
+                    <View style={styles.timelineDot}>
+                      <Ionicons name="checkmark" size={12} color="#fff" />
+                    </View>
+                  </View>
+                  <View style={styles.timelineBody}>
+                    <Text style={styles.timelineTitle}>Refund processed</Text>
+                    {localRefundedAt ? (
+                      <Text style={styles.timelineSub}>
+                        {new Date(localRefundedAt).toLocaleDateString("en-IE", {
+                          day: "2-digit", month: "long", year: "numeric", timeZone: "Europe/Dublin",
+                        })}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+              </View>
+            ) : null}
+
+            <TouchableOpacity style={styles.secondaryLinkBtn} onPress={handleContactSupport}>
+              <Text style={styles.secondaryLinkBtnText}>
                 {cancellationSource === "host"
                   ? "Need help with host cancellation?"
-                  : isRefunded
-                    ? "Need refund help?"
-                    : "Request refund support"}
+                  : isRefunded ? "Need refund help?" : "Request refund support"}
               </Text>
             </TouchableOpacity>
           </View>
         ) : null}
 
-        {/* Action Buttons */}
-        {isUpcoming && localStatus !== "canceled" ? (
-          <>
-            {canCheckIn ? (
-              <TouchableOpacity style={styles.actionBtn} onPress={handleCheckIn}>
-                <Text style={styles.actionBtnText}>Check In</Text>
-              </TouchableOpacity>
-            ) : null}
 
-            <TouchableOpacity
-              style={[styles.dangerButton, canceling && styles.dangerButtonDisabled]}
-              onPress={handleCancel}
-              disabled={canceling}
-            >
-              <Text style={styles.dangerButtonText}>
-                {canceling ? "Canceling..." : "Cancel Booking"}
-              </Text>
-            </TouchableOpacity>
-          </>
-        ) : receiptUrl ? (
-          <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(receiptUrl)}>
-            <Text style={styles.actionBtnText}>View Receipt</Text>
+        {/* ── Help ── */}
+        <View style={styles.helpCard}>
+          <TouchableOpacity style={styles.helpRow} onPress={handleContactSupport} activeOpacity={0.7}>
+            <View style={styles.helpIconWrap}>
+              <Ionicons name="chatbubble-ellipses-outline" size={18} color={GREEN} />
+            </View>
+            <View style={styles.helpRowBody}>
+              <Text style={styles.helpRowTitle}>Need help?</Text>
+              <Text style={styles.helpRowSub}>Contact support about this booking</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={15} color="#9A9A9A" />
           </TouchableOpacity>
-        ) : null}
+        </View>
 
-        {extendError ? <Text style={styles.errorText}>{extendError}</Text> : null}
-
-        {canBookAgain ? (
-          <TouchableOpacity style={styles.bookAgainButton} onPress={handleBookAgain}>
-            <Text style={styles.bookAgainText}>Book again</Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {/* Help Button */}
-        <TouchableOpacity style={styles.helpButton} onPress={handleContactSupport}>
-          <Ionicons name="help-circle-outline" size={28} color="#2ECC8F" />
-          <Text style={styles.helpText}>Need help?</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       <DatePicker
@@ -406,664 +583,463 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         minimumDate={minExtendTime}
         mode="datetime"
         minuteInterval={30}
-        onConfirm={(date) => {
-          setExtendOpen(false);
-          handleExtend(date);
-        }}
-        onCancel={() => {
-          setExtendOpen(false);
-        }}
+        onConfirm={(date) => { setExtendOpen(false); handleExtend(date); }}
+        onCancel={() => setExtendOpen(false)}
       />
     </SafeAreaView>
   );
 }
 
+// ── Design tokens ──────────────────────────────────────────────────────────
+const SCREEN_BG  = "#EFEEEC";
+const GREEN      = "#1B8A5A";
+const GREEN_SOFT = "#E6F2EC";
+const FG         = "#111111";
+const FG_MUTED   = "#6B6B6B";
+const LINE       = "#EBEBEA";
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.appBg,
-  },
+  container: { flex: 1, backgroundColor: SCREEN_BG },
 
+  // ── Header ──────────────────────────────────────────────────────────────
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 6,
     paddingBottom: 10,
-    backgroundColor: colors.appBg,
+    backgroundColor: SCREEN_BG,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.07)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 15,
+    fontFamily: "Inter-SemiBold",
+    color: FG,
+    letterSpacing: -0.1,
+    paddingHorizontal: 8,
   },
 
-  backCircleButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
+  // ── Scroll ──────────────────────────────────────────────────────────────
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 8,
-    paddingBottom: 44,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 52,
+    gap: 12,
   },
-  receiptCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 4,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    shadowColor: '#000',
+
+  // ── E-ticket card ───────────────────────────────────────────────────────
+  ticketCard: {
+    borderRadius: 20,
+    overflow: "hidden",
+    backgroundColor: "#fff",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
     elevation: 8,
-    overflow: 'hidden',
   },
-  ticketPerforationTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    zIndex: 3,
+
+  // Dark top section (no own shadow — card handles it)
+  ticketTop: {
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
-  ticketPerforationBottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    zIndex: 3,
+  ticketHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 18,
   },
-  perfCircle: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#2ECC8F',
+  statusChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
-  receiptSection: {
-    paddingVertical: 12,
+  statusChipText: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 12,
+    color: "#fff",
   },
-  receiptTitle: {
-    color: '#1A1A2E',
-    fontSize: 26,
-    fontWeight: '700',
-    textAlign: 'center',
+  ticketPrice: {
+    fontFamily: "Inter-Bold",
+    fontSize: 28,
+    color: "#fff",
+    letterSpacing: -0.8,
   },
-  receiptSubtitle: {
-    color: '#888888',
+  ticketTitle: {
+    fontFamily: "Inter-Bold",
+    fontSize: 20,
+    color: "#fff",
+    letterSpacing: -0.4,
+    lineHeight: 26,
+    marginBottom: 4,
+  },
+  ticketAddress: {
+    fontFamily: "Inter-Regular",
     fontSize: 13,
-    fontWeight: '400',
-    textAlign: 'center',
-    marginTop: 4,
+    color: "rgba(255,255,255,0.58)",
+    marginBottom: 24,
   },
-  slotsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-evenly',
+
+  // Time row
+  timeRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  slotCard: {
-    width: '42%',
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: '#EEF2F4',
-    paddingVertical: 12,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+  timeCol: { flex: 1 },
+  timeColRight: { alignItems: "flex-end" },
+  timeEyebrow: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 9,
+    color: "rgba(255,255,255,0.55)",
+    letterSpacing: 0.9,
+    marginBottom: 4,
   },
-  slotDivider: {
-    width: 1,
-    height: 90,
-    borderRightWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#D9DEE2',
+  timeBig: {
+    fontFamily: "Inter-Bold",
+    fontSize: 26,
+    color: "#fff",
+    letterSpacing: -0.5,
   },
-  entryLabel: {
-    color: '#2ECC8F',
-    fontSize: 11,
-    fontWeight: '700',
-    marginTop: 6,
+  timeSub: {
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    color: "rgba(255,255,255,0.55)",
+    marginTop: 2,
   },
-  exitLabel: {
-    color: '#E74C3C',
-    fontSize: 11,
-    fontWeight: '700',
-    marginTop: 6,
+  timeMid: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 0.85,
+    justifyContent: "center",
   },
-  slotTimeText: {
-    color: '#999999',
-    fontSize: 11,
-    marginTop: 3,
+  timeLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.22)",
   },
-  receiptDashLine: {
-    borderTopWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#E0E0E0',
-    marginVertical: 4,
-  },
-  ticketDividerWrap: {
-    position: 'relative',
-    justifyContent: 'center',
-    marginVertical: 2,
-  },
-  ticketNotchLeft: {
-    position: 'absolute',
-    left: -36,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#2ECC8F',
-    zIndex: 2,
-  },
-  ticketNotchRight: {
-    position: 'absolute',
-    right: -36,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#2ECC8F',
-    zIndex: 2,
-  },
-  barcodeWrap: {
-    marginTop: 14,
-    marginBottom: 14,
-    alignSelf: 'center',
-    height: 24,
-    width: 150,
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    justifyContent: 'space-between',
-  },
-  barcodeBar: {
-    backgroundColor: '#111827',
-    height: '100%',
-    borderRadius: 1,
-  },
-  durationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+  durationPill: {
+    backgroundColor: "rgba(255,255,255,0.13)",
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginHorizontal: 6,
   },
   durationText: {
-    color: '#999999',
+    fontFamily: "Inter-SemiBold",
+    fontSize: 11,
+    color: "rgba(255,255,255,0.8)",
+  },
+
+  // Extend button
+  extendBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.13)",
+    paddingTop: 14,
+    marginTop: 18,
+  },
+  extendBtnText: {
+    flex: 1,
+    fontFamily: "Inter-SemiBold",
     fontSize: 13,
-  },
-  billAmount: {
-    color: '#1A1A2E',
-    fontSize: 36,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  payButton: {
-    backgroundColor: '#3B9DDD',
-    height: 52,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  payButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 2,
+    color: "rgba(255,255,255,0.88)",
   },
 
-  // Review card
-  reviewCard: {
-    backgroundColor: '#2ECC8F',
-    paddingVertical: 24,
-    paddingHorizontal: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    marginBottom: 16,
-    alignItems: 'center',
-  },
-
-  reviewTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 28,
-    letterSpacing: -0.3,
-  },
-
-  starsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    justifyContent: 'center',
-  },
-
-  // Review button
-  reviewButton: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 0,
-    marginTop: 16,
-    marginBottom: 12,
-    paddingVertical: 15,
+  // White bottom section
+  ticketBottom: {
+    backgroundColor: "#fff",
     paddingHorizontal: 20,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingTop: 16,
+    paddingBottom: 20,
   },
-  reviewButtonTopSpacing: {
-    marginTop: 20,
+  refRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
   },
-
-  reviewButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    letterSpacing: -0.2,
-    fontFamily: 'Inter-SemiBold',
+  refEyebrow: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 9,
+    color: GREEN,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginBottom: 6,
   },
-  reviewedStars: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
+  refCode: {
+    fontFamily: "Inter-Bold",
+    fontSize: 22,
+    color: FG,
+    letterSpacing: 2.5,
+    fontVariant: ["tabular-nums"] as const,
   },
-  reviewedText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-  },
-
-  // Outer Green Card - creates the "frame" effect
-  outerGreenCard: {
-    backgroundColor: '#2ECC8F', // Dark green
-    marginHorizontal: 20,
-    borderRadius: 18,
-    paddingHorizontal: 2,
-    paddingBottom: 2,
-    overflow: 'hidden',
-  },
-
-  outerGreenCardCanceled: {
-    backgroundColor: '#DC2626',
-  },
-
-  outerGreenCardRefunded: {
-    backgroundColor: '#3B82F6',
-  },
-
-  outerGreenCardInProgress: {
-    backgroundColor: '#F59E0B', // Amber/Orange
-  },
-
-  outerGreenCardUpcoming: {
-    backgroundColor: '#8B5CF6', // Purple
-  },
-
-  // Status Header - dark green area at top
-  statusHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  plateChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#F5F5F4",
+    borderRadius: 999,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    gap: 4,
   },
-
-  statusHeaderText: {
-    color: '#FFFFFF',
+  plateChipText: {
+    fontFamily: "Inter-SemiBold",
     fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    color: FG_MUTED,
   },
 
-  // Inner White Content - has its own rounded corners
-  innerWhiteContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-    padding: 18,
+  // ── Action buttons ───────────────────────────────────────────────────────
+  actionBlock: { gap: 10 },
+  primaryBtn: {
+    backgroundColor: GREEN,
+    paddingVertical: 16,
+    borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.28,
+    shadowRadius: 6,
+    elevation: 3,
   },
-
-  // Listing row
-  listingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 32,
-    gap: 16,
-  },
-
-  carIcon: {
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  listingText: {
-    flex: 1,
-  },
-
-  listingName: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
-    letterSpacing: -0.2,
-    fontFamily: 'Inter-SemiBold',
-  },
-
-  listingSubtitle: {
-    fontSize: 16,
-    color: '#6B7280',
-  },
-
-  // Detail rows - vertical stacked layout
-  detailRow: {
-    paddingVertical: 12,
-    alignItems: 'flex-start',
-  },
-
-  // Detail rows - horizontal layout (label left, value right)
-  detailRowHorizontal: {
-    paddingVertical: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  // Detail rows - two columns side by side
-  detailRowDouble: {
-    paddingVertical: 12,
-    flexDirection: 'row',
-    gap: 16,
-  },
-
-  detailRowDoubleItem: {
-    flex: 1,
-    alignItems: 'flex-start',
-  },
-
-  detailLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-    fontFamily: 'System',
-  },
-
-  label: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-    fontFamily: 'System',
-  },
-
-  detailValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    lineHeight: 22,
-    fontFamily: 'System',
-  },
-
-  value: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    lineHeight: 22,
-    fontFamily: 'System',
-  },
-
-  totalValue: {
-    fontSize: 20,
-    fontWeight: '800',
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 8,
-  },
-
-  // Map section
-  mapSection: {
-    marginHorizontal: 0,
-    marginBottom: 20,
-  },
-
-  mapTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
-    letterSpacing: -0.3,
-    fontFamily: 'Inter-SemiBold',
-  },
-
-  mapAddress: {
+  primaryBtnText: {
+    color: "#fff",
     fontSize: 15,
-    color: '#6B7280',
-    marginBottom: 16,
+    fontFamily: "Inter-SemiBold",
   },
-
-  parkingImage: {
-    height: 200,
-    borderRadius: 16,
-    marginBottom: 12,
-    backgroundColor: '#F3F4F6',
-  },
-
-  map: {
-    height: 200,
-    borderRadius: 16,
-    marginBottom: 12,
-  },
-
-  mapImageButton: {
-    borderRadius: 0,
-    overflow: "hidden",
-    marginBottom: 12,
-  },
-
-  mapImage: {
-    height: 200,
-    width: "100%",
-    backgroundColor: "#F3F4F6",
-  },
-
-  mapPlaceholder: {
-    height: 200,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-
-  mapPlaceholderText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 8,
-  },
-
-  mapButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 18,
+  outlineBtn: {
+    backgroundColor: "#fff",
+    paddingVertical: 15,
+    borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignSelf: 'stretch',
-    marginBottom: 4,
-    marginHorizontal: 20,
+    borderColor: LINE,
   },
-
-  mapButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
-    fontFamily: 'Inter-SemiBold',
-  },
-
-  // Action buttons
-  actionBtn: {
-    backgroundColor: colors.accent,
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginHorizontal: 0,
-    marginTop: 16,
-    alignItems: 'center',
-  },
-
-  actionBtnDisabled: {
-    opacity: 0.6,
-  },
-
-  actionBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
-  },
-  bookAgainButton: {
-    marginTop: 12,
-    marginHorizontal: 0,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  bookAgainText: {
-    color: '#111827',
+  outlineBtnText: {
+    color: FG,
     fontSize: 15,
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: "Inter-SemiBold",
   },
-
-  dangerButton: {
+  dangerBtn: {
     borderWidth: 1,
-    borderColor: '#f6caca',
-    backgroundColor: '#fff7f7',
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginHorizontal: 0,
-    marginTop: 12,
-    alignItems: 'center',
+    borderColor: "#f6caca",
+    backgroundColor: "#fff7f7",
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: "center",
   },
-
-  dangerButtonText: {
-    color: '#DC2626',
+  dangerBtnText: {
+    color: "#DC2626",
     fontSize: 15,
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: "Inter-SemiBold",
   },
-
-  dangerButtonDisabled: {
-    opacity: 0.6,
-  },
-
+  btnDisabled: { opacity: 0.6 },
   errorText: {
-    color: '#DC2626',
+    color: "#DC2626",
     fontSize: 14,
-    textAlign: 'center',
-    marginTop: 12,
-    marginHorizontal: 0,
+    textAlign: "center",
+    fontFamily: "Inter-Regular",
   },
 
+  // ── Info cards ───────────────────────────────────────────────────────────
   infoCard: {
-    marginTop: 16,
-    marginHorizontal: 0,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 18,
-    backgroundColor: colors.cardBg,
+    backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: LINE,
   },
   infoCardTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
+    color: FG,
+    fontSize: 15,
+    fontFamily: "Inter-SemiBold",
     marginBottom: 8,
-    fontFamily: 'Inter-SemiBold',
   },
   infoCardBody: {
-    color: colors.textMuted,
+    color: FG_MUTED,
     fontSize: 14,
     lineHeight: 22,
-    fontFamily: 'Inter-Regular',
+    fontFamily: "Inter-Regular",
   },
   accessCodeWrap: {
     marginTop: 14,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: LINE,
   },
   infoCardLabel: {
-    color: colors.textSoft,
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    color: "#9A9A9A",
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
     marginBottom: 6,
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: "Inter-SemiBold",
   },
   accessCodeValue: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 2,
-    fontFamily: 'Inter-Bold',
+    color: FG,
+    fontSize: 20,
+    letterSpacing: 2.5,
+    fontFamily: "Inter-Bold",
   },
-  secondaryLinkButton: {
+  secondaryLinkBtn: {
     marginTop: 12,
-    alignSelf: 'flex-start',
-    paddingVertical: 9,
+    alignSelf: "flex-start",
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: colors.cardBg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: GREEN_SOFT,
   },
-  secondaryLinkButtonText: {
-    color: colors.accent,
+  secondaryLinkBtnText: {
+    color: GREEN,
     fontSize: 13,
-    fontWeight: '700',
-    fontFamily: 'Inter-SemiBold',
-  },
-  // Help button
-  helpButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 16,
-    marginTop: 24,
-    marginHorizontal: 0,
+    fontFamily: "Inter-SemiBold",
   },
 
-  helpText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.accent,
-    fontFamily: 'Inter-SemiBold',
+  // ── Cancellation timeline card ───────────────────────────────────────────
+  cancelCard: {
+    borderRadius: 16,
+    padding: 18,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: LINE,
+  },
+  cancelEyebrow: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 10,
+    color: FG_MUTED,
+    letterSpacing: 0.9,
+    textTransform: "uppercase",
+    marginBottom: 10,
+  },
+  cancelNote: {
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    color: FG_MUTED,
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  cancelTimeline: {
+    marginBottom: 16,
+  },
+  timelineItem: {
+    flexDirection: "row",
+    gap: 14,
+  },
+  timelineIndicator: {
+    alignItems: "center",
+    width: 24,
+  },
+  timelineDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: GREEN,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    minHeight: 16,
+    backgroundColor: GREEN,
+    marginVertical: 3,
+  },
+  timelineBody: {
+    flex: 1,
+    paddingBottom: 18,
+  },
+  timelineTitle: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 14,
+    color: FG,
+  },
+  timelineSub: {
+    fontFamily: "Inter-Regular",
+    fontSize: 13,
+    color: FG_MUTED,
+    marginTop: 2,
+  },
+
+  // ── Review CTA ───────────────────────────────────────────────────────────
+  reviewCta: {
+    borderRadius: 16,
+    backgroundColor: "#1B8A5A",
+    paddingVertical: 22,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    gap: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  reviewCtaQuestion: {
+    fontFamily: "Inter-Bold",
+    fontSize: 17,
+    color: "#fff",
+    textAlign: "center",
+    lineHeight: 24,
+  },
+  reviewCtaStars: {
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  // ── Help card ────────────────────────────────────────────────────────────
+  helpCard: {
+    borderRadius: 14,
+    backgroundColor: "#fff",
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: LINE,
+  },
+  helpRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  helpIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: GREEN_SOFT,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  helpRowBody: { flex: 1 },
+  helpRowTitle: {
+    fontSize: 14,
+    fontFamily: "Inter-SemiBold",
+    color: FG,
+  },
+  helpRowSub: {
+    fontSize: 12,
+    fontFamily: "Inter-Regular",
+    color: FG_MUTED,
+    marginTop: 2,
   },
 });

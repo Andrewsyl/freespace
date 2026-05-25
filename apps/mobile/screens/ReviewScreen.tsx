@@ -20,9 +20,6 @@ import Animated, {
   FadeOut,
   ZoomIn,
   ZoomOut,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft, MapPin } from "lucide-react-native";
@@ -32,14 +29,12 @@ import type { RootStackParamList } from "../types";
 import { StarRating } from "../components/ui/StarRating";
 import { colors, spacing, typography } from "../theme";
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
 type Props = NativeStackScreenProps<RootStackParamList, "Review">;
 
 export function ReviewScreen({ navigation, route }: Props) {
-  const { booking } = route.params;
+  const { booking, initialRating } = route.params;
   const { token } = useAuth();
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState(initialRating ?? 5);
   const [feedback, setFeedback] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,10 +54,11 @@ export function ReviewScreen({ navigation, route }: Props) {
   }, [rating]);
 
   const submitLabel = useMemo(() => {
+    if (isSubmitted) return "✓ Thank you!";
     if (existingRating) return "Reviewed";
     if (rating >= 4) return "Share the love";
     return "Submit review";
-  }, [existingRating, rating]);
+  }, [isSubmitted, existingRating, rating]);
 
   useEffect(() => {
     void (async () => {
@@ -161,7 +157,6 @@ export function ReviewScreen({ navigation, route }: Props) {
 
             <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
               <Text style={styles.cardTitle}>Rate your experience</Text>
-              <Text style={styles.cardSubtitle}>Tap a star to rate the space</Text>
               <View style={styles.ratingContainer}>
                 <StarRating
                   rating={rating}
@@ -179,7 +174,6 @@ export function ReviewScreen({ navigation, route }: Props) {
 
             <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
               <Text style={styles.cardTitle}>Share your feedback</Text>
-              <Text style={styles.cardSubtitle}>Help other drivers by sharing a few words</Text>
               <TextInput
                 value={feedback}
                 onChangeText={setFeedback}
@@ -204,13 +198,23 @@ export function ReviewScreen({ navigation, route }: Props) {
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             <Animated.View entering={FadeInDown.delay(400)}>
-              <SubmitButton
-                disabled={!canReview || rating === 0 || !!existingRating}
-                isSubmitted={isSubmitted}
-                loading={submitting}
-                label={submitLabel}
-                onPress={handleSubmit}
-              />
+              {!canReview || rating === 0 || !!existingRating ? (
+                <View style={[styles.ctaBtn, styles.ctaBtnDisabled]}>
+                  <Text style={styles.ctaBtnTextDisabled}>{submitLabel}</Text>
+                </View>
+              ) : (
+                <Pressable
+                  style={({ pressed }) => [styles.ctaBtn, pressed && { opacity: 0.82 }]}
+                  onPress={handleSubmit}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.ctaBtnText}>{submitLabel}</Text>
+                  )}
+                </Pressable>
+              )}
             </Animated.View>
 
             <View style={styles.spacer} />
@@ -229,65 +233,6 @@ export function ReviewScreen({ navigation, route }: Props) {
   );
 }
 
-interface SubmitButtonProps {
-  disabled: boolean;
-  isSubmitted: boolean;
-  loading: boolean;
-  label: string;
-  onPress: () => void;
-}
-
-function SubmitButton({ disabled, isSubmitted, loading, label, onPress }: SubmitButtonProps) {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => {
-    if (!disabled) {
-      scale.value = withSpring(0.98);
-    }
-  };
-
-  const handlePressOut = () => {
-    if (!disabled) {
-      scale.value = withSpring(1.02);
-      setTimeout(() => {
-        scale.value = withSpring(1);
-      }, 100);
-    }
-  };
-
-  if (disabled) {
-    return (
-      <View style={[styles.submitButton, styles.submitButtonDisabled]}>
-        <Text style={styles.submitButtonTextDisabled}>{label}</Text>
-      </View>
-    );
-  }
-
-  return (
-    <AnimatedPressable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} style={animatedStyle}>
-      <LinearGradient
-        colors={["#2ECC8F", "#2ECC8F"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.submitButton}
-      >
-        {loading ? (
-          <ActivityIndicator color={colors.text.inverse} />
-        ) : isSubmitted ? (
-          <Animated.View entering={ZoomIn} style={styles.submitSuccessContent}>
-            <Text style={styles.submitButtonText}>✓ Thank you!</Text>
-          </Animated.View>
-        ) : (
-          <Text style={styles.submitButtonText}>{label}</Text>
-        )}
-      </LinearGradient>
-    </AnimatedPressable>
-  );
-}
 
 const styles = StyleSheet.create({
   container: {
@@ -381,7 +326,6 @@ const styles = StyleSheet.create({
   },
   ratingContainer: {
     marginVertical: spacing.md,
-    alignItems: "center",
   },
   ratingFeedback: {
     textAlign: "center",
@@ -413,30 +357,6 @@ const styles = StyleSheet.create({
     color: "#2ECC8F",
     fontWeight: "500",
   },
-  submitButton: {
-    paddingVertical: spacing.md,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  submitButtonDisabled: {
-    backgroundColor: colors.border,
-  },
-  submitButtonText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: colors.text.inverse,
-  },
-  submitButtonTextDisabled: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: colors.text.tertiary,
-  },
-  submitSuccessContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
   successOverlay: {
     position: "absolute",
     top: 0,
@@ -459,6 +379,30 @@ const styles = StyleSheet.create({
   },
   successEmoji: {
     fontSize: 60,
+  },
+  ctaBtn: {
+    backgroundColor: "#1B8A5A",
+    borderRadius: 12,
+    minHeight: 52,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 13,
+    paddingHorizontal: 24,
+  },
+  ctaBtnDisabled: {
+    backgroundColor: "#E0E0DE",
+  },
+  ctaBtnText: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    color: "#ffffff",
+    letterSpacing: -0.1,
+  },
+  ctaBtnTextDisabled: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 15,
+    color: "#9A9A9A",
+    letterSpacing: -0.1,
   },
   spacer: {
     height: 24,

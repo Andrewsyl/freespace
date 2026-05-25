@@ -58,6 +58,7 @@ export type RootStackParamList = {
   };
   Review: {
     booking: import("./api").BookingSummary;
+    initialRating?: number;
   };
   CreateListingFlow: {
     listingId?: string;
