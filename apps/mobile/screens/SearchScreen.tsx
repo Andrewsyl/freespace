@@ -873,9 +873,7 @@ export function SearchScreen({ navigation }: Props) {
         setShowSearchArea(false);
         setPendingSearch(null);
         setSelectedId(null);
-        setResults([]);
-        setLoading(true);
-        void runSearch();
+        void runSearch(undefined, { showGlobal: false, preserveSelection: false });
       })();
       return () => {
         if (showAreaTimerRef.current) {
@@ -1021,7 +1019,7 @@ export function SearchScreen({ navigation }: Props) {
       clearTimeout(showAreaTimerRef.current);
       showAreaTimerRef.current = null;
     }
-    if (!ignoreNextRegionChangeRef.current && !isProgrammaticMoveRef.current) {
+    if (selectedId && !isProgrammaticMoveRef.current) {
       if (cardDismissTimerRef.current) return;
       setDismissingCard(true);
       cardDismissTimerRef.current = setTimeout(() => {
@@ -1030,7 +1028,7 @@ export function SearchScreen({ navigation }: Props) {
         cardDismissTimerRef.current = null;
       }, 250);
     }
-  }, [setDismissingCard]);
+  }, [selectedId]);
 
   const handleRegionChange = (nextRegion: typeof mapRegion) => {
     currentRegionRef.current = nextRegion;
