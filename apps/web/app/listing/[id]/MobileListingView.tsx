@@ -81,138 +81,143 @@ export function MobileListingView({
   );
 
   return (
-    <div className="space-y-5 lg:hidden">
-      <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
-        <div className="relative h-72 bg-slate-200">
-          <img src={heroImage} alt={listing.title} className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-5">
-            <h1 className="max-w-[90%] text-[30px] font-semibold leading-[1.05] tracking-[-0.04em] text-white">
-              {listing.title}
-            </h1>
-            <p className="mt-2 flex items-center gap-2 text-sm text-white/90">
-              <MapPinIcon className="h-4 w-4" />
-              {areaLabel}
-            </p>
-          </div>
+    <div className="space-y-0 lg:hidden">
+      {/* Hero image */}
+      <div className="relative h-72 overflow-hidden bg-slate-200">
+        <img src={heroImage} alt={listing.title} className="h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">Parking space</p>
+          <h1 className="mt-1 max-w-[90%] text-[28px] font-semibold leading-[1.05] tracking-[-0.04em] text-white">
+            {listing.title}
+          </h1>
+          <p className="mt-2 flex items-center gap-1.5 text-sm text-white/80">
+            <MapPinIcon className="h-4 w-4 shrink-0" />
+            {areaLabel}
+          </p>
         </div>
+      </div>
 
-        <div className="grid grid-cols-3 border-t border-slate-200 bg-white">
-          <div className="border-r border-slate-200 px-4 py-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Price</p>
-            <p className="mt-1 text-lg font-semibold tracking-[-0.03em] text-slate-950">{listing.pricePerDay ? `€${listing.pricePerDay}` : "-"}</p>
-          </div>
-          <div className="border-r border-slate-200 px-4 py-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Rating</p>
-            <p className="mt-1 flex items-center gap-1 text-lg font-semibold tracking-[-0.03em] text-slate-950">
-              <StarIcon className="h-4 w-4 text-amber-500" />
-              {listing.rating?.toFixed(1) ?? "5.0"}
-            </p>
-          </div>
-          <div className="px-4 py-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Reviews</p>
-            <p className="mt-1 text-lg font-semibold tracking-[-0.03em] text-slate-950">{listing.ratingCount ?? 0}</p>
-          </div>
+      {/* Quick stats bar */}
+      <div className="grid grid-cols-3 border-b border-slate-200 bg-white">
+        <div className="border-r border-slate-200 px-4 py-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Price</p>
+          <p className="mt-1 text-[17px] font-semibold tracking-[-0.03em] text-slate-950">
+            {listing.pricePerDay ? `€${listing.pricePerDay}` : "-"}
+          </p>
         </div>
-      </section>
+        <div className="border-r border-slate-200 px-4 py-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Rating</p>
+          <p className="mt-1 flex items-center gap-1 text-[17px] font-semibold tracking-[-0.03em] text-slate-950">
+            <StarIcon className="h-4 w-4 text-amber-500" />
+            {listing.rating?.toFixed(1) ?? "5.0"}
+          </p>
+        </div>
+        <div className="px-4 py-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Reviews</p>
+          <p className="mt-1 text-[17px] font-semibold tracking-[-0.03em] text-slate-950">{listing.ratingCount ?? 0}</p>
+        </div>
+      </div>
 
-      <section className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+      {/* Book this space */}
+      <section className="border-b border-slate-200 bg-white px-5 py-6">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Book this space</p>
-            <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-slate-950">Choose your time</h2>
-          </div>
+          <h2 className="text-[22px] font-semibold leading-[1.1] tracking-[-0.04em] text-slate-950">Choose your time</h2>
           <button
             type="button"
-            onClick={() => setShowBookingEditor((value) => !value)}
+            onClick={() => setShowBookingEditor((v) => !v)}
             className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
           >
             {showBookingEditor ? "Done" : "Change"}
           </button>
         </div>
 
-        <div className="mt-4 rounded-[22px] border border-slate-200 bg-slate-50">
-          <div className="flex items-center justify-between px-4 py-4">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Date</p>
-              <p className="mt-1 text-sm font-semibold text-slate-950">{selectedDateLabel}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Time</p>
-              <p className="mt-1 text-sm font-semibold text-slate-950">
-                {startTime} - {endTime}
-              </p>
-            </div>
-          </div>
+        <div className="mt-4 border-b border-slate-100 pb-4">
+          <p className="text-[13px] text-slate-400">{selectedDateLabel}</p>
+          <p className="mt-0.5 text-[22px] font-semibold leading-tight tracking-[-0.03em] text-slate-950">
+            {startTime} <span className="font-light text-slate-300">→</span> {endTime}
+          </p>
         </div>
 
-        {showBookingEditor ? (
-          <>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <label className="space-y-1">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">From</span>
+        {showBookingEditor && (
+          <div className="mt-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <label className="space-y-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">From</span>
                 <input
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="h-12 w-full rounded-2xl border border-slate-200 px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-brand-500"
+                  className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-brand-500"
                 />
               </label>
-              <label className="space-y-1">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Until</span>
+              <label className="space-y-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Until</span>
                 <input
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="h-12 w-full rounded-2xl border border-slate-200 px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-brand-500"
+                  className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-brand-500"
                 />
               </label>
             </div>
-            <label className="mt-3 block space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Date</span>
+            <label className="block space-y-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Date</span>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="h-12 w-full rounded-2xl border border-slate-200 px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-brand-500"
+                className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-brand-500"
               />
             </label>
-          </>
-        ) : null}
+          </div>
+        )}
 
         <Link
           href={href as any}
-          className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-brand-500 px-4 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600"
+          className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-brand-500 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-600"
         >
           Continue to booking
         </Link>
-      </section>
 
-      <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950">About this space</h2>
-        <p className="mt-3 text-[15px] leading-7 text-slate-600">{listing.availability}</p>
-        {listing.accessCode && (
-          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Access details are shared after booking confirmation.
+        <div className="mt-4 space-y-2 text-[13px] text-slate-500">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            Exact location confirmed after booking
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            Arrival instructions included with your confirmation
+          </div>
+        </div>
       </section>
 
+      {/* About this space */}
+      <section className="border-b border-slate-200 bg-white px-5 py-6">
+        <h2 className="text-[22px] font-semibold leading-[1.1] tracking-[-0.04em] text-slate-950">Space overview</h2>
+        <p className="mt-4 text-[15px] leading-7 text-slate-600">{listing.availability}</p>
+        <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-3">
+          <p className="text-sm font-semibold text-slate-950">Important notice</p>
+          <p className="mt-1 text-[13px] leading-6 text-slate-600">
+            Access details are shared after booking confirmation.
+          </p>
+        </div>
+      </section>
+
+      {/* Included features */}
       {amenities.length > 0 && (
-        <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950">Included features</h2>
-          <div className="mt-4 grid grid-cols-2 gap-3">
+        <section className="border-b border-slate-200 bg-white px-5 py-6">
+          <h2 className="text-[22px] font-semibold leading-[1.1] tracking-[-0.04em] text-slate-950">Included features</h2>
+          <div className="mt-5 space-y-0">
             {amenities.slice(0, 6).map((amenity) => {
               const Icon = amenityToIcon(amenity);
               return (
                 <div
                   key={amenity}
-                  className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                  className="flex items-center gap-3 border-b border-slate-100 py-3.5 last:border-b-0"
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-brand-500">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <span className="text-sm font-semibold text-slate-800">{amenity}</span>
+                  <Icon className="h-5 w-5 shrink-0 text-slate-400" />
+                  <span className="text-[15px] text-slate-800">{amenity}</span>
                 </div>
               );
             })}
@@ -220,10 +225,11 @@ export function MobileListingView({
         </section>
       )}
 
+      {/* Local area */}
       {listing.latitude != null && listing.longitude != null && (
-        <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950">The local area</h2>
-          <div className="mt-4 h-56 overflow-hidden rounded-[20px] border border-slate-200">
+        <section className="border-b border-slate-200 bg-white px-5 py-6">
+          <h2 className="text-[22px] font-semibold leading-[1.1] tracking-[-0.04em] text-slate-950">The local area</h2>
+          <div className="mt-4 h-56 overflow-hidden rounded-lg">
             <ListingMap listing={listingForMap} center={{ lat: listing.latitude, lng: listing.longitude }} zoom={14} />
           </div>
           <div className="mt-4">
@@ -232,29 +238,30 @@ export function MobileListingView({
         </section>
       )}
 
-      <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950">Reviews</h2>
-          <span className="text-sm font-semibold text-brand-500">{reviews.length} total</span>
+      {/* Reviews */}
+      <section className="bg-white px-5 py-6">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-[22px] font-semibold leading-[1.1] tracking-[-0.04em] text-slate-950">Reviews</h2>
+          <span className="text-[13px] text-slate-400">{reviews.length} total</span>
         </div>
         {reviews.length === 0 ? (
-          <p className="mt-3 text-[15px] text-slate-600">No reviews yet.</p>
+          <p className="mt-4 text-[15px] text-slate-600">No reviews yet.</p>
         ) : (
-          <div className="mt-4 space-y-3">
+          <div className="mt-5 space-y-0">
             {reviews.slice(0, 4).map((review) => (
-              <div key={review.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <div className="flex items-center justify-between gap-3">
+              <div key={review.id} className="border-b border-slate-100 py-5 last:border-b-0">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                     <StarIcon className="h-4 w-4 text-amber-500" />
                     {Number(review.rating).toFixed(1)}
                   </div>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-slate-400">
                     {formatReviewDate(review.createdAt ?? review.created_at)}
                   </span>
                 </div>
-                {review.comment ? (
-                  <p className="mt-2 text-sm leading-6 text-slate-600">{review.comment}</p>
-                ) : null}
+                {review.comment && (
+                  <p className="mt-2.5 text-[14px] leading-6 text-slate-600">{review.comment}</p>
+                )}
               </div>
             ))}
           </div>

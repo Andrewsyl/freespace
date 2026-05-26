@@ -88,7 +88,7 @@ function createCenterPinEl(): HTMLDivElement {
     <ellipse cx="15" cy="36.5" rx="6" ry="2" fill="rgba(0,0,0,0.13)"/>
     <path d="M15 2C8.925 2 4 6.925 4 13c0 8.4 11 23 11 23S26 21.4 26 13C26 6.925 21.075 2 15 2Z" fill="#2ECC8F"/>
     <circle cx="15" cy="13" r="5" fill="white"/>
-    <circle cx="15" cy="13" r="2.2" fill="#2ECC8F"/>
+    <circle cx="15" cy="13" r="3.1" fill="#2ECC8F" stroke="#0B5B58" stroke-width="2.4"/>
   </svg>`;
   return el;
 }
@@ -355,7 +355,7 @@ export function MapView({
 
   return (
     <div
-      className="relative h-full w-full overflow-hidden rounded-xl bg-slate-100"
+      className="relative h-full w-full overflow-hidden bg-slate-100"
       style={{
         ["--map-controls-top" as any]: controlsOffset?.top !== undefined ? `${controlsOffset.top}px` : undefined,
         ["--map-controls-right" as any]: controlsOffset?.right !== undefined ? `${controlsOffset.right}px` : undefined,

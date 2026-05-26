@@ -71,11 +71,11 @@ export function DesktopSearchLayout({
   ] as const;
 
   return (
-    <div className="flex h-[100dvh] min-w-0 flex-col bg-[#f8fafc]">
+    <div className="flex h-[100dvh] min-w-0 flex-col overflow-hidden bg-[#f8fafc]">
       <SlimNav />
 
       {/* ── Search + controls strip ── */}
-      <div className="border-b border-slate-200/80 bg-white px-6 shadow-sm">
+      <div className="border-b border-emerald-100 bg-[linear-gradient(180deg,rgba(236,253,245,0.96),rgba(255,255,255,0.98))] px-6 shadow-sm">
 
         {/* Search form */}
         <div className="pt-4 pb-2">
@@ -144,11 +144,11 @@ export function DesktopSearchLayout({
       </div>
 
       {/* ── Two-column body ── */}
-      <div className="grid h-full min-w-0 grid-cols-[460px,1fr] gap-4 overflow-hidden px-6 pb-0 pt-4">
+      <div className="grid min-h-0 flex-1 min-w-0 grid-cols-[460px,1fr] gap-0 overflow-hidden pl-6 pr-0 pb-0 pt-0">
 
         {/* Left sidebar */}
         <div className="flex h-full min-w-0 flex-col overflow-hidden">
-          <div className="relative flex-1 overflow-hidden">
+          <div className="relative min-h-0 flex-1 overflow-hidden">
             <AnimatePresence mode="wait" initial={false}>
 
               {showFilters ? (
@@ -192,7 +192,7 @@ export function DesktopSearchLayout({
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ type: "spring", damping: 28, stiffness: 380, mass: 0.75 }}
-                  className="space-y-3 pb-4"
+                  className="h-full overflow-y-auto space-y-3 pb-4 pr-4 pt-4"
                 >
                   {/* Header */}
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3 pt-0.5">
@@ -268,7 +268,7 @@ export function DesktopSearchLayout({
 
         {/* Map */}
         <motion.div
-          className="h-full min-w-0"
+          className="h-full min-w-0 border-l border-slate-200"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
@@ -522,19 +522,12 @@ function ListingOverlay({
         </div>
 
         {/* CTAs */}
-        <div className="flex gap-2 px-5 py-4">
+        <div className="px-5 py-4">
           <button
             onClick={onOpen}
-            className="flex-1 rounded-xl bg-brand-500 py-3 text-[14px] font-bold text-white shadow-sm transition hover:bg-brand-600 hover:-translate-y-px active:scale-[0.98]"
+            className="w-full rounded-xl bg-brand-500 py-3 text-[14px] font-bold text-white shadow-sm transition hover:bg-brand-600 hover:-translate-y-px active:scale-[0.98]"
           >
             Reserve now →
-          </button>
-          <button
-            type="button"
-            onClick={onOpen}
-            className="rounded-xl border border-slate-200 px-4 py-3 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-50"
-          >
-            Details
           </button>
         </div>
       </div>

@@ -7,7 +7,6 @@ import { AddressAutocomplete } from "../../../components/AddressAutocomplete";
 async function getWalkingTime(origin: { lat: number; lng: number }, destination: { address: string; lat: number; lng: number }) {
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   if (!key) throw new Error("Google Maps API key missing");
-  // Directions
   const dirRes = await fetch(
     `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&mode=walking&key=${key}`
   );
@@ -24,9 +23,7 @@ async function getWalkingTime(origin: { lat: number; lng: number }, destination:
 
 export function WalkTime({ origin }: { origin: { lat: number; lng: number } }) {
   const [destination, setDestination] = useState<{ address: string; lat: number; lng: number } | null>(null);
-  const [result, setResult] = useState<{ destinationAddress: string; durationText: string; distanceText: string } | null>(
-    null
-  );
+  const [result, setResult] = useState<{ destinationAddress: string; durationText: string; distanceText: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -50,39 +47,52 @@ export function WalkTime({ origin }: { origin: { lat: number; lng: number } }) {
   };
 
   return (
-    <div className="card space-y-3">
-      <p className="text-sm font-semibold text-slate-800">Walking time</p>
-      <form onSubmit={handleCheck} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+    <div className="space-y-4">
+      <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-slate-500">Walking distance</p>
+      <form onSubmit={handleCheck} className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex-1">
           <AddressAutocomplete
-            placeholder="Enter destination (e.g. Aviva Stadium)"
+            placeholder="Enter a destination (e.g. Aviva Stadium)"
             onPlace={(place) => setDestination(place)}
           />
         </div>
         <button
           type="submit"
           disabled={loading}
-          className="btn-primary w-full sm:w-auto"
+          className="inline-flex items-center justify-center border border-emerald-400 px-5 py-3 text-[14px] font-semibold text-emerald-600 transition hover:bg-emerald-50 disabled:opacity-50 sm:w-auto w-full"
         >
           {loading ? "Calculating…" : "Get time"}
         </button>
       </form>
-      {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>}
+
+      {error && (
+        <div className="border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </div>
+      )}
+
       {result && (
-        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-          <div className="flex items-center gap-2 font-semibold text-slate-900">
-            <ClockIcon className="h-4 w-4" />
-            {result.durationText} walk
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPinIcon className="h-4 w-4 text-brand-600" />
-            <span>{result.destinationAddress}</span>
-            <span className="text-xs text-slate-500">({result.distanceText})</span>
+        <div className="border-t border-slate-200 pt-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+              <ClockIcon className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[18px] font-semibold text-slate-950">{result.durationText} walk</p>
+              <p className="mt-0.5 flex items-center gap-1.5 text-[14px] text-slate-500">
+                <MapPinIcon className="h-4 w-4 text-brand-500" />
+                {result.destinationAddress}
+                <span className="text-slate-400">({result.distanceText})</span>
+              </p>
+            </div>
           </div>
         </div>
       )}
+
       {!result && !error && (
-        <p className="text-xs text-slate-500">We’ll geocode your destination and show the walking time from this space.</p>
+        <p className="text-[13px] text-slate-400">
+          Enter a destination to see the walking time from this space.
+        </p>
       )}
     </div>
   );
