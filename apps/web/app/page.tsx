@@ -133,7 +133,7 @@ export default function HomePage() {
                 <AddressAutocomplete
                   defaultValue={location}
                   placeholder="Where would you like to park?"
-                  inputClassName="w-full rounded-full border border-slate-200 bg-white px-10 py-3 pr-12 text-sm font-semibold text-slate-800 shadow-sm focus:border-emerald-400 focus:outline-none"
+                  inputClassName="w-full rounded-full border border-slate-200 bg-white px-5 py-3 pr-12 text-sm font-semibold text-slate-800 shadow-sm focus:border-emerald-400 focus:outline-none"
                   showLocationButton
                   onPlace={(place) => {
                     setLocation(place.address);

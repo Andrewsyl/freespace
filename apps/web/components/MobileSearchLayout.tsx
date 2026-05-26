@@ -107,6 +107,7 @@ export function MobileSearchLayout({
           controlsPosition="bottom-right"
           controlsOffset={{ bottom: 160, right: 12 }}
           showCenterPin
+          centerPinRadius={500}
           selectedListingId={selectedListingId ?? undefined}
           onSelectListing={onMarkerSelect}
           onMarkerClick={onMarkerClick}

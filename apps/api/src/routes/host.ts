@@ -92,10 +92,20 @@ router.get("/payout", requireAuth, enforceBlockedList, payoutLimiter, async (req
     if (!gate.ok) return res.status(403).json({ message: gate.message });
     const user = await findUserById(userId);
     const accountId = user?.host_stripe_account_id ?? null;
-    const hasUsableAccount = Boolean(accountId && (!accountId.startsWith("acct_mock_") || allowMockConnect));
+    const isMockAccount = Boolean(accountId?.startsWith("acct_mock_"));
+    const hasUsableAccount = Boolean(accountId && (!isMockAccount || allowMockConnect));
     if (!connectEnabled || !stripe || !hasUsableAccount) {
       return res.json({
         accountId: allowMockConnect ? accountId : null,
+        chargesEnabled: false,
+        payoutsEnabled: false,
+        detailsSubmitted: false,
+        requirementsDue: [],
+      });
+    }
+    if (isMockAccount && allowMockConnect) {
+      return res.json({
+        accountId,
         chargesEnabled: false,
         payoutsEnabled: false,
         detailsSubmitted: false,

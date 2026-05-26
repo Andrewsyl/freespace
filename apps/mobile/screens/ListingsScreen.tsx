@@ -117,7 +117,7 @@ export function ListingsScreen({ navigation }: Props) {
       return "Payouts are active. Transfers will arrive automatically.";
     }
     if (payoutIsMock) {
-      return "Payout onboarding is not available in this environment yet.";
+      return "This is a local mock payout account. Start setup to create a real Stripe test account.";
     }
     if (payoutStatus.requirementsDue.length > 0) {
       return "Stripe still needs a few details before payouts can be enabled.";

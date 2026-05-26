@@ -17,9 +17,9 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useStripe } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
-import DatePicker from "../components/AdaptiveDatePicker";
+import { DrumRollPicker } from "../components/DrumRollPicker";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, radius, spacing, textStyles } from "../styles/theme";
+import { ArrowLeft } from "lucide-react-native";
 import {
   confirmBookingPayment,
   createBookingPaymentIntent,
@@ -31,14 +31,12 @@ import { getNotificationImageAttachment } from "../notifications";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
-import { BackButton, Button, SectionHeader } from "../components/ui";
+import { Button } from "../components/ui";
 import type { ListingDetail, RootStackParamList } from "../types";
-import { formatDateLabel, formatTimeLabel } from "../utils/dateFormat";
+import { formatDateLabel, formatDateTimeLabel, formatTimeLabel } from "../utils/dateFormat";
 import { calculateListingTotal } from "../utils/pricing";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingSummary">;
-
-const formatDateTimeLabel = (date: Date) => `${formatDateLabel(date)} · ${formatTimeLabel(date)}`;
 
 export function BookingSummaryScreen({ navigation, route }: Props) {
   const { id, from, to } = route.params;
@@ -154,14 +152,14 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
   const applyPickedDate = (next: Date) => {
     if (pickerField === "start") {
-      if (next > endAt) {
-        const bumped = new Date(next);
-        bumped.setHours(bumped.getHours() + 2);
-        setEndAt(bumped);
-      }
       setStartAt(next);
+      // Always push "until" to 2 h after the new "from" time.
+      const bumped = new Date(next);
+      bumped.setHours(bumped.getHours() + 2);
+      setEndAt(bumped);
       return;
     }
+    // For the "until" picker: enforce at least 1 h after "from".
     const minEnd = new Date(startAt);
     minEnd.setHours(minEnd.getHours() + 1);
     const safeEnd = next < minEnd ? minEnd : next;
@@ -426,185 +424,153 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   };
 
   return (
-    <>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <StatusBar barStyle="dark-content" />
+
+      <View style={styles.header}>
+        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+          <ArrowLeft size={22} color="#151b1b" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Review booking</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
       <KeyboardAvoidingView
-        style={styles.keyboardAvoid}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.flex}
         keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
       >
-      {loadingListing ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="small" color="#2ECC8F" />
-          <Text style={styles.muted}>Loading booking…</Text>
-        </View>
-      ) : !user ? (
-        <View style={styles.centered}>
-          <Text style={styles.title}>Sign in to continue</Text>
-          <Text style={styles.subtitle}>Log in or create an account to confirm your booking.</Text>
-          <View style={styles.authButtons}>
-            <Button style={styles.authButton} onPress={() => navigation.navigate("SignIn")} title="Sign in" />
-            <Button
-              variant="secondary"
-              style={styles.authButton}
-              onPress={() => navigation.navigate("Register")}
-              title="Create account"
-            />
+        {loadingListing ? (
+          <View style={styles.centered}>
+            <ActivityIndicator size="small" color="#2ECC8F" />
+            <Text style={styles.muted}>Loading booking…</Text>
           </View>
-        </View>
-      ) : listing ? (
-        <>
-          <View style={styles.bookingTopBar}>
-            <BackButton onPress={() => navigation.goBack()} style={styles.bookingTopBarBack} />
-            <Text style={styles.bookingTopBarTitle}>Review booking</Text>
-            <View style={styles.bookingTopBarSpacer} />
+        ) : !user ? (
+          <View style={styles.centered}>
+            <Text style={styles.centeredTitle}>Sign in to continue</Text>
+            <Text style={styles.centeredSubtitle}>Log in or create an account to confirm your booking.</Text>
+            <View style={styles.authButtons}>
+              <Button style={styles.authButton} onPress={() => navigation.navigate("SignIn")} title="Sign in" />
+              <Button
+                variant="secondary"
+                style={styles.authButton}
+                onPress={() => navigation.navigate("Register")}
+                title="Create account"
+              />
+            </View>
           </View>
-
+        ) : listing ? (
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            style={styles.flex}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: 110 + insets.bottom }]}
+            showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <View style={styles.bookingPage}>
-                <View style={styles.summaryCard}>
-                  <View style={styles.summaryHeader}>
-                    <View style={styles.summaryHeaderContent}>
-                      <Text style={styles.listingTitle}>{listing.title || "Adam House Car Park"}</Text>
-                      <Text style={styles.addressText}>
-                        {listing.address || "24 Adam Street, Dublin"}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.summaryMetricsWrap}>
-                    <View style={styles.summaryMetrics}>
-                      <View style={styles.summaryMetricCell}>
-                        <Text style={styles.summaryMetricLabel}>Duration</Text>
-                        <Text style={styles.summaryMetricValue}>
-                          {priceSummary?.durationLabel ?? "--"}
-                        </Text>
-                      </View>
-                      <View style={styles.summaryMetricDivider} />
-                      <View style={styles.summaryMetricCell}>
-                        <Text style={styles.summaryMetricLabel}>Total</Text>
-                        <Text style={styles.summaryMetricValue}>€{Math.round(pricing.finalPrice)}</Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View style={styles.bookingTimeCard}>
-                    <View style={styles.bookingSectionHeaderRow}>
-                      <Text style={styles.bookingSectionTitle}>Your times</Text>
-                      <Pressable style={styles.bookingTimeEditButton} onPress={() => openPicker("start")}>
-                        <Ionicons name="create-outline" size={16} color="#0F172A" />
-                        <Text style={styles.bookingTimeEditText}>Edit</Text>
-                      </Pressable>
-                    </View>
-                    <View style={styles.bookingRouteCard}>
-                      <View style={styles.bookingRouteTrack}>
-                        <View style={styles.bookingRouteDotStart} />
-                        <View style={styles.bookingRouteLine} />
-                        <View style={styles.bookingRouteDotEnd} />
-                      </View>
-                      <View style={styles.bookingRouteContent}>
-                        <View style={styles.bookingRouteRow}>
-                          <Text style={styles.bookingRouteValue}>{formatDateTimeLabel(start)}</Text>
-                        </View>
-                        <View style={styles.bookingRouteSpacer} />
-                        <View style={styles.bookingRouteRow}>
-                          <Text style={styles.bookingRouteValue}>{formatDateTimeLabel(end)}</Text>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={styles.sheetSectionStack}>
-                  <View style={styles.regCard}>
-                    {vehicleMake ? (
-                      <View style={styles.vehicleLogoColumn}>
-                        <VehicleBrandLogo make={vehicleMake} size={32} />
-                      </View>
-                    ) : null}
-                    <View style={styles.vehicleContent}>
-                      <SectionHeader
-                        title="Vehicle"
-                        subtitle={vehicleMake && vehicleColor ? `${vehicleMake} - ${vehicleColor}` : undefined}
-                        trailing={
-                          <Pressable
-                            style={styles.vehicleEditButton}
-                            onPress={() =>
-                              navigation.navigate("VehicleType", {
-                                returnTo: "BookingSummary",
-                              })
-                            }
-                          >
-                            <Ionicons
-                              name={vehicleMake ? "create-outline" : "add"}
-                              size={14}
-                              color="#0F172A"
-                            />
-                            <Text style={styles.vehicleEditButtonText}>
-                              {vehicleMake ? "Edit" : "Add"}
-                            </Text>
-                          </Pressable>
-                        }
-                        style={styles.vehicleSectionHeader}
-                      />
-                      <View style={styles.regRow}>
-                        <View style={styles.plateCountry} />
-                        <View style={styles.regDetails}>
-                          <Pressable
-                            style={styles.regFieldButton}
-                            onPress={() =>
-                              navigation.navigate("VehicleType", {
-                                returnTo: "BookingSummary",
-                                focusField: "plate",
-                              })
-                            }
-                          >
-                            <Text style={[styles.regInput, !hasVehiclePlate && styles.regPlaceholder]}>
-                              {hasVehiclePlate ? vehiclePlate : "Enter reg plate"}
-                            </Text>
-                          </Pressable>
-                        </View>
-                      </View>
-                      {requiresVehicleDetails ? (
-                        <Text style={styles.regHint}>
-                          Add your vehicle details to continue with this booking.
-                        </Text>
-                      ) : null}
-                    </View>
-                  </View>
-
-                  <View style={styles.priceCard}>
-                    <SectionHeader title="Price" style={styles.priceHeader} />
-                    <View style={styles.priceBreakdownRow}>
-                      <Text style={styles.priceBreakdownLabel}>Parking fee</Text>
-                      <Text style={styles.priceBreakdownValue}>€{Math.round(pricing.parkingFee)}</Text>
-                    </View>
-                    <View style={styles.priceBreakdownRow}>
-                      <Text style={styles.priceBreakdownLabel}>Platform fee</Text>
-                      <Text style={styles.priceBreakdownMuted}>Included</Text>
-                    </View>
-                    <View style={styles.priceBreakdownRowLast}>
-                      <Text style={styles.priceBreakdownTotalLabel}>Total due today</Text>
-                      <Text style={styles.priceBreakdownTotalValue}>€{Math.round(pricing.finalPrice)}</Text>
-                    </View>
-                  </View>
-                </View>
+            {/* ── Listing ── */}
+            <View style={styles.listingBlock}>
+              <Text style={styles.listingName}>{listing.title || "Parking space"}</Text>
+              <View style={styles.listingAddressRow}>
+                <Ionicons name="location-outline" size={14} color="#8b949b" />
+                <Text style={styles.listingAddress}>{listing.address || ""}</Text>
+              </View>
             </View>
+
+            <View style={styles.divider} />
+
+            {/* ── Parking window ── */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Parking window</Text>
+              <View style={styles.dateChipRow}>
+                <Pressable style={styles.dateChip} onPress={() => openPicker("start")}>
+                  <Text style={styles.dateChipLabel}>From</Text>
+                  <Text style={styles.dateChipDate}>{formatDateLabel(start)}</Text>
+                  <Text style={styles.dateChipTime}>{formatTimeLabel(start)}</Text>
+                  <View style={styles.dateChipEditHint}>
+                    <Ionicons name="pencil-outline" size={11} color="#9A9A9A" />
+                  </View>
+                </Pressable>
+                <Ionicons name="arrow-forward" size={14} color="#BEBEBE" style={styles.dateChipArrow} />
+                <Pressable style={styles.dateChip} onPress={() => openPicker("end")}>
+                  <Text style={styles.dateChipLabel}>Until</Text>
+                  <Text style={styles.dateChipDate}>{formatDateLabel(end)}</Text>
+                  <Text style={styles.dateChipTime}>{formatTimeLabel(end)}</Text>
+                  <View style={styles.dateChipEditHint}>
+                    <Ionicons name="pencil-outline" size={11} color="#9A9A9A" />
+                  </View>
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* ── Vehicle ── */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionLabel}>Vehicle</Text>
+                <Pressable
+                  style={styles.editBtn}
+                  onPress={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary" })}
+                >
+                  <Text style={styles.editBtnText}>{vehicleMake ? "Edit" : "Add"}</Text>
+                </Pressable>
+              </View>
+              <Pressable
+                style={styles.regRow}
+                onPress={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary", focusField: "plate" })}
+              >
+                <View style={styles.plateCountry} />
+                <View style={styles.regDetails}>
+                  <Text style={[styles.regInput, !hasVehiclePlate && styles.regPlaceholder]}>
+                    {hasVehiclePlate ? vehiclePlate : "Enter reg plate"}
+                  </Text>
+                </View>
+              </Pressable>
+              {vehicleMake ? (
+                <View style={styles.vehicleInfoRow}>
+                  <VehicleBrandLogo make={vehicleMake} size={16} />
+                  <Text style={styles.vehicleInfoText}>
+                    {[vehicleMake, vehicleColor, user?.vehicleType].filter(Boolean).join(" · ")}
+                  </Text>
+                </View>
+              ) : null}
+              {requiresVehicleDetails ? (
+                <Text style={styles.regHint}>Add your vehicle details to continue.</Text>
+              ) : null}
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* ── Price ── */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionLabel}>Price breakdown</Text>
+              </View>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Parking fee</Text>
+                <Text style={styles.priceValue}>€{Math.round(pricing.parkingFee)}</Text>
+              </View>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Platform fee</Text>
+                <Text style={styles.priceMuted}>Included</Text>
+              </View>
+              <View style={styles.priceTotalRow}>
+                <Text style={styles.priceTotalLabel}>Total</Text>
+                <Text style={styles.priceTotalValue}>€{Math.round(pricing.finalPrice)}</Text>
+              </View>
+            </View>
+
           </ScrollView>
-        </>
-      ) : (
-        <View style={styles.centered}>
-          <Text style={styles.error}>Listing not found.</Text>
-        </View>
-      )}
+        ) : (
+          <View style={styles.centered}>
+            <Text style={styles.muted}>Listing not found.</Text>
+          </View>
+        )}
+      </KeyboardAvoidingView>
+
       {listing && user ? (
         <View style={[styles.footerBar, { paddingBottom: 12 + insets.bottom }]}>
           <View style={styles.footerPriceBlock}>
-            <Text style={styles.footerPriceLabel}>TOTAL</Text>
+            <Text style={styles.footerPriceLabel}>Total</Text>
             <Text style={styles.footerPriceValue}>€{Math.round(pricing.finalPrice)}</Text>
             <Text style={styles.footerPriceMeta}>{priceSummary?.durationLabel ?? ""}</Text>
           </View>
@@ -628,714 +594,321 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           </Pressable>
         </View>
       ) : null}
+
       {pickerVisible ? (
-        <Modal transparent animationType="fade" visible>
-          <Pressable
-            style={styles.pickerBackdrop}
-            onPress={() => {
-              setPickerVisible(false);
-              setDraftDate(null);
-            }}
-          >
-            <Pressable style={styles.pickerSheet} onPress={() => undefined}>
-              <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>
-                  {pickerField === "start" ? "Start" : "End"}
-                </Text>
-                <Pressable
-                  style={styles.pickerDone}
-                  onPress={() => {
-                    setPickerVisible(false);
-                    setDraftDate(null);
-                  }}
-                >
-                  <Text style={styles.pickerDoneText}>Done</Text>
-                </Pressable>
-              </View>
-              <DatePicker
+        <Modal transparent animationType="slide" visible>
+          <View style={styles.pickerBackdrop}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => { setPickerVisible(false); setDraftDate(null); }} />
+            <View style={[styles.pickerSheet, { paddingBottom: Math.max(24, insets.bottom + 12) }]}>
+              <View style={styles.pickerHandle} />
+              <Text style={styles.pickerTitle}>
+                {pickerField === "start" ? "Select arrival time" : "Select departure time"}
+              </Text>
+              <DrumRollPicker
                 date={draftDate ?? (pickerField === "start" ? start : end)}
-                mode="datetime"
-                minuteInterval={30}
-                onDateChange={(date) => {
-                  setDraftDate(date);
-                  applyPickedDate(date);
+                minuteInterval={5}
+                onChange={(d) => {
+                  setDraftDate(d);
+                  applyPickedDate(d);
                 }}
               />
-            </Pressable>
-          </Pressable>
+              <Pressable
+                style={styles.pickerDoneBtn}
+                onPress={() => {
+                  setPickerVisible(false);
+                  setDraftDate(null);
+                }}
+              >
+                <Text style={styles.pickerDoneBtnText}>Done</Text>
+              </Pressable>
+            </View>
+          </View>
         </Modal>
       ) : null}
       {bookingConfirmed ? <View style={styles.successOverlay} pointerEvents="none" /> : null}
-      </KeyboardAvoidingView>
-      </SafeAreaView>
-    </>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  // ── Shell ────────────────────────────────────────────────────
   container: {
     flex: 1,
     backgroundColor: "#ffffff",
   },
-  keyboardAvoid: {
-    flex: 1,
-  },
-  heroPlaceholder: {
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#CBD5E1",
-  },
-  heroPlaceholderText: {
-    color: "#475569",
-    fontFamily: "Inter-Medium",
-  },
-  bookingTopBar: {
+  flex: { flex: 1 },
+
+  // ── Header ──────────────────────────────────────────────────
+  header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: 2,
-    paddingBottom: 8,
-    backgroundColor: "#ffffff",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#BEBEBE",
   },
-  bookingTopBarBack: {
-    marginBottom: 0,
-  },
-  bookingTopBarTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 18,
-    lineHeight: 22,
-    color: "#151b1b",
-    letterSpacing: -0.35,
-  },
-  bookingTopBarSpacer: {
-    width: 40,
-  },
-  bookingPage: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    paddingTop: 2,
-  },
-  topBar: {
-    alignItems: "center",
-    backgroundColor: colors.headerTint,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.screenX,
-    paddingVertical: 6,
-  },
-  backButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 6,
-    width: 56,
-  },
-  backCircle: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 32,
-    width: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.cardBg,
-  },
-  topTitle: {
-    width: 120,
-  },
-  progressHeader: {
-    display: "none",
-  },
-  progressBackButton: {
-    position: "absolute",
-    left: spacing.screenX,
-    top: 10,
-    zIndex: 2,
-    marginBottom: 0,
-  },
-  scrollContent: {
-    paddingBottom: 168,
-    paddingTop: 8,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#F3F4F6",
-  },
-  card: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 16,
-  },
-  cardBody: {
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-  },
-  cardSectionLabel: {
-    ...textStyles.label,
-    color: colors.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    marginBottom: 6,
-  },
-  listingTitle: {
-    color: colors.text,
-    fontSize: 20,
-    lineHeight: 25,
-    fontFamily: "Inter-SemiBold",
+  backButton: { padding: 6, marginLeft: -6 },
+  headerTitle: {
+    fontSize: 16,
     fontWeight: "600",
-    letterSpacing: -0.35,
+    fontFamily: "Inter-SemiBold",
+    color: "#151b1b",
+  },
+  headerSpacer: { width: 34 },
+
+  // ── Scroll ──────────────────────────────────────────────────
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 110, // extended inline with insets.bottom
+  },
+
+  // ── Listing block ───────────────────────────────────────────
+  listingBlock: {
     marginBottom: 4,
   },
-  addressText: {
-    color: "#6b747b",
-    fontSize: 12,
-    lineHeight: 17,
-    fontFamily: "Inter-Regular",
-    fontWeight: "400",
-  },
-  summaryHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 6,
-  },
-  summaryThumb: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: "#E8EEF5",
-  },
-  summaryHeaderContent: {
-    flex: 1,
-    minWidth: 0,
-  },
-  summaryRatingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 6,
-    flexWrap: "wrap",
-  },
-  summaryRatingText: {
-    fontFamily: "Inter-Medium",
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#6B7280",
-    marginLeft: 4,
-  },
-  summaryCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 10,
-    overflow: "hidden",
-  },
-  summaryMetricsWrap: {
-    paddingHorizontal: 16,
-    paddingBottom: 6,
-  },
-  summaryMetrics: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e8eaeb",
-    borderRadius: 12,
-    paddingVertical: 8,
-  },
-  summaryMetricCell: {
-    alignItems: "center",
-    flex: 1,
-    paddingHorizontal: 10,
-  },
-  summaryMetricLabel: {
-    color: "#8b949b",
-    fontSize: 9,
-    lineHeight: 11,
-    fontFamily: "Inter-SemiBold",
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.7,
-    marginBottom: 1,
-  },
-  summaryMetricValue: {
-    color: "#151b1b",
-    fontSize: 16,
-    lineHeight: 18,
-    fontFamily: "Inter-SemiBold",
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  summaryMetricDivider: {
-    width: 1,
-    height: 28,
-    backgroundColor: "#eceff1",
-  },
-  bookingTimeCard: {
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-  },
-  bookingSectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  bookingSectionTitle: {
-    color: "#151b1b",
-    fontSize: 16,
-    lineHeight: 20,
-    fontFamily: "Inter-SemiBold",
-    fontWeight: "600",
-    letterSpacing: -0.25,
-  },
-  bookingRouteCard: {
-    flexDirection: "row",
-    gap: 12,
-    borderWidth: 1,
-    borderColor: "#e8eaeb",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: "#ffffff",
-  },
-  bookingRouteTrack: {
-    alignItems: "center",
-    width: 18,
-    paddingTop: 4,
-  },
-  bookingRouteDotStart: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "#45C36F",
-    borderWidth: 4,
-    borderColor: "#DDF7E7",
-  },
-  bookingRouteLine: {
-    width: 2,
-    flex: 1,
-    minHeight: 28,
-    backgroundColor: "#45C36F",
-    marginVertical: 3,
-  },
-  bookingRouteDotEnd: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 2,
-    borderColor: "#45C36F",
-  },
-  bookingRouteContent: {
-    flex: 1,
-    gap: 0,
-  },
-  bookingRouteRow: {
-    minHeight: 28,
-    justifyContent: "center",
-  },
-  bookingRouteSpacer: {
-    height: 12,
-  },
-  bookingRouteValue: {
-    fontFamily: "Inter-SemiBold",
-    fontSize: 15,
-    lineHeight: 19,
-    color: "#1f2a2a",
-  },
-  bookingTimeEditButton: {
-    alignSelf: "center",
-    minHeight: 32,
-    borderRadius: 10,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e0e4e5",
-    paddingHorizontal: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginLeft: 8,
-  },
-  bookingTimeEditText: {
-    color: "#4f5b5a",
-    fontSize: 12.5,
-    lineHeight: 16,
-    fontFamily: "Inter-SemiBold",
-    fontWeight: "600",
-  },
-  rowBetween: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  rowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  rowLabelGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  rowLabel: {
-    ...textStyles.body,
-    fontSize: 15,
-  },
-  rowValue: {
-    ...textStyles.bodyStrong,
-    fontSize: 15,
-  },
-  rowSubtext: {
-    marginTop: 8,
-    ...textStyles.meta,
-    lineHeight: 18,
-  },
-  totalDue: {
-    marginTop: 10,
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1.5,
-    borderColor: "#E5E7EB",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  totalDueLabel: {
-    fontSize: 13,
+  listingName: {
+    fontSize: 26,
     fontWeight: "700",
-    fontFamily: "Inter-SemiBold",
-    color: "#6B7280",
-  },
-  totalDueValue: {
-    fontSize: 28,
-    fontWeight: "800",
     fontFamily: "Inter-Bold",
-    color: colors.text,
-    letterSpacing: -0.3,
-  },
-  totalRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 2,
-  },
-  totalInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  breakdownList: {
-    marginTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-    paddingTop: 8,
-  },
-  breakdownRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 6,
-  },
-  breakdownLabel: {
-    color: "#6B7280",
-    fontSize: 12,
-    fontWeight: "600",
-    fontFamily: "Inter-SemiBold",
-  },
-  breakdownValue: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: "700",
-    fontFamily: "Inter-SemiBold",
-  },
-  trustRow: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  fieldLabel: {
-    color: "#6B7280",
-    fontSize: 12,
-    lineHeight: 16,
-    fontFamily: "Inter-SemiBold",
-    fontWeight: "600",
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
-    marginBottom: 8,
-  },
-  fieldInput: {
-    backgroundColor: colors.cardBgMuted,
-    borderColor: colors.borderStrong,
-    borderRadius: 10,
-    borderWidth: 1,
-    color: colors.text,
-    fontSize: 15,
-    fontFamily: "Inter-Medium",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  regCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 0,
-    flexDirection: "row",
-    overflow: "hidden",
-    paddingVertical: 10,
-  },
-  vehicleLogoColumn: {
-    width: 64,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f7f8f8",
-    borderRightWidth: 1,
-    borderRightColor: "#e8eaeb",
-  },
-  vehicleContent: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingTop: 2,
-    paddingBottom: 2,
-  },
-  vehicleSectionHeader: {
-    marginBottom: 8,
-  },
-  vehicleTypeText: {
-    ...textStyles.meta,
-    color: colors.textMuted,
-  },
-  vehicleEditButton: {
-    alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: "#ffffff",
-    borderColor: "#e0e4e5",
-    borderRadius: 10,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 6,
-    marginLeft: 8,
-    minHeight: 32,
-    paddingHorizontal: 10,
-  },
-  vehicleEditButtonText: {
-    color: "#4f5b5a",
-    fontFamily: "Inter-SemiBold",
-    fontSize: 12.5,
-    fontWeight: "600",
-    lineHeight: 16,
-  },
-  regInputContainer: {
-    marginBottom: 0,
-    flex: 1,
-  },
-  priceHeader: {
-    marginBottom: 8,
-  },
-  priceCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 0,
-  },
-  priceBreakdownRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eceff1",
-  },
-  priceBreakdownRowLast: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 8,
-    paddingBottom: 2,
-  },
-  priceBreakdownLabel: {
-    color: "#6b747b",
-    fontSize: 13,
-    lineHeight: 18,
-    fontFamily: "Inter-Regular",
-    fontWeight: "400",
-  },
-  priceBreakdownValue: {
     color: "#151b1b",
-    fontSize: 13,
-    lineHeight: 18,
-    fontFamily: "Inter-SemiBold",
-    fontWeight: "600",
-  },
-  priceBreakdownMuted: {
-    color: "#6b747b",
-    fontSize: 12,
-    lineHeight: 16,
-    fontFamily: "Inter-Regular",
-    fontWeight: "400",
-  },
-  priceBreakdownTotalLabel: {
-    color: "#151b1b",
-    fontSize: 14,
-    lineHeight: 18,
-    fontFamily: "Inter-SemiBold",
-    fontWeight: "600",
-  },
-  priceBreakdownTotalValue: {
-    color: "#151b1b",
-    fontSize: 24,
-    lineHeight: 26,
-    fontFamily: "Inter-Bold",
-    fontWeight: "700",
     letterSpacing: -0.6,
+    lineHeight: 32,
+    marginBottom: 8,
   },
+  listingAddressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  listingAddress: {
+    fontSize: 14,
+    fontFamily: "Inter-Regular",
+    color: "#8b949b",
+    flex: 1,
+    lineHeight: 20,
+  },
+
+  // ── Divider ─────────────────────────────────────────────────
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "#BEBEBE",
+    marginVertical: 22,
+  },
+
+  // ── Section chrome ──────────────────────────────────────────
+  section: {},
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    fontFamily: "Inter-SemiBold",
+    color: "#8b949b",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 14,
+  },
+  editBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#D8D8D8",
+    backgroundColor: "#ffffff",
+  },
+  editBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    fontFamily: "Inter-SemiBold",
+    color: "#151b1b",
+  },
+
+  // ── Date chips (parking window) ─────────────────────────────
+  dateChipRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  dateChip: {
+    flex: 1,
+    backgroundColor: "#F7F7F6",
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+  },
+  dateChipLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    fontFamily: "Inter-SemiBold",
+    color: "#9A9A9A",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 5,
+  },
+  dateChipDate: {
+    fontSize: 12,
+    fontFamily: "Inter-Regular",
+    color: "#6B6B6B",
+    marginBottom: 3,
+  },
+  dateChipTime: {
+    fontSize: 20,
+    fontWeight: "700",
+    fontFamily: "Inter-Bold",
+    color: "#111111",
+    letterSpacing: -0.4,
+  },
+  dateChipEditHint: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+  },
+  dateChipArrow: {
+    marginTop: 14,
+  },
+
+  durationPill: {
+    alignSelf: "flex-start",
+    backgroundColor: "#EDF7F2",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    marginTop: 12,
+  },
+  durationPillText: {
+    fontSize: 13,
+    fontFamily: "Inter-SemiBold",
+    fontWeight: "600",
+    color: "#1B8A5A",
+  },
+
+  // ── Vehicle / Reg plate ─────────────────────────────────────
   regRow: {
     flexDirection: "row",
-    borderRadius: 6,
-    borderWidth: 1.5,
+    borderRadius: 10,
+    borderWidth: 2,
     borderColor: "#3D6FB6",
     overflow: "hidden",
     backgroundColor: "#FFFFFF",
     alignItems: "center",
-  },
-  regDetails: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    justifyContent: "center",
-  },
-  regFieldButton: {
-    alignItems: "center",
-    justifyContent: "center",
+    marginBottom: 10,
   },
   plateCountry: {
-    width: 34,
+    width: 38,
     alignSelf: "stretch",
     backgroundColor: "#3D6FB6",
     alignItems: "center",
     justifyContent: "center",
   },
-  regPlaceholder: {
-    ...textStyles.bodyMedium,
-    color: colors.textSoft,
-    letterSpacing: 0.1,
+  regDetails: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    justifyContent: "center",
   },
   regInput: {
-    color: colors.text,
-    fontSize: 24,
+    color: "#151b1b",
+    fontSize: 28,
     fontFamily: "UKNumberPlate",
-    letterSpacing: 1,
+    letterSpacing: 2,
     textTransform: "uppercase",
     paddingHorizontal: 0,
     paddingVertical: 0,
     includeFontPadding: false,
   },
-  regHint: {
-    ...textStyles.meta,
-    color: colors.textSoft,
-    marginTop: 4,
-  },
-  centered: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-  title: {
-    ...textStyles.title,
-  },
-  subtitle: {
-    ...textStyles.subtitle,
+  regPlaceholder: {
     fontSize: 15,
-    marginTop: 8,
-    textAlign: "center",
+    fontFamily: "Inter-Regular",
+    color: "#8b949b",
+    letterSpacing: 0,
+    textTransform: "none",
   },
-  muted: {
-    ...textStyles.meta,
-    marginTop: 8,
-  },
-  noticeCard: {
-    backgroundColor: "#fff4f1",
-    borderColor: "#f6c7ba",
-    borderRadius: 16,
-    borderWidth: 1,
-    marginTop: 14,
-    padding: 16,
-  },
-  noticeTitle: {
-    ...textStyles.bodyStrong,
-  },
-  noticeText: {
-    ...textStyles.meta,
-    marginTop: 6,
-    lineHeight: 18,
-  },
-  pickerBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(17, 24, 39, 0.3)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-  },
-  pickerSheet: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    overflow: "hidden",
-    width: "100%",
-  },
-  pickerHeader: {
+  vehicleInfoRow: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 7,
+    marginBottom: 4,
+  },
+  vehicleInfoText: {
+    fontSize: 13,
+    fontFamily: "Inter-Regular",
+    color: "#6b747b",
+  },
+  regHint: {
+    fontSize: 13,
+    fontFamily: "Inter-Regular",
+    color: "#F59E0B",
+    marginTop: 10,
+    lineHeight: 18,
+  },
+
+  // ── Price breakdown ─────────────────────────────────────────
+  priceRow: {
+    flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
+    alignItems: "center",
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#EBEBEB",
   },
-  pickerTitle: {
-    ...textStyles.sectionTitle,
+  priceLabel: {
+    fontSize: 15,
+    fontFamily: "Inter-Regular",
+    color: "#6b747b",
   },
-  pickerDone: {
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+  priceValue: {
+    fontSize: 15,
+    fontFamily: "Inter-SemiBold",
+    color: "#151b1b",
+    fontWeight: "600",
   },
-  pickerDoneText: {
-    color: colors.accent,
+  priceMuted: {
+    fontSize: 14,
+    fontFamily: "Inter-Regular",
+    color: "#8b949b",
+  },
+  priceTotalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 16,
+    paddingBottom: 2,
+  },
+  priceTotalLabel: {
+    fontSize: 16,
     fontWeight: "600",
     fontFamily: "Inter-SemiBold",
+    color: "#151b1b",
   },
+  priceTotalValue: {
+    fontSize: 26,
+    fontWeight: "700",
+    fontFamily: "Inter-Bold",
+    color: "#151b1b",
+    letterSpacing: -0.6,
+  },
+
+  // ── Sticky footer ───────────────────────────────────────────
   footerBar: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 18,
-    paddingTop: 12,
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 24,
+    paddingTop: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#edf0f2",
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#BEBEBE",
   },
   footerPriceBlock: {
     flex: 1,
@@ -1344,77 +917,68 @@ const styles = StyleSheet.create({
   footerPriceLabel: {
     fontFamily: "Inter-SemiBold",
     fontSize: 11,
-    lineHeight: 18,
-    color: "#7a8288",
+    color: "#8b949b",
     letterSpacing: 0.8,
     textTransform: "uppercase",
   },
   footerPriceValue: {
     fontFamily: "Inter-Bold",
-    fontSize: 25,
+    fontSize: 26,
     fontWeight: "700",
-    color: "#111827",
-    marginTop: 4,
-    letterSpacing: -0.8,
+    color: "#151b1b",
+    marginTop: 1,
+    letterSpacing: -0.7,
   },
   footerPriceMeta: {
     fontFamily: "Inter-Regular",
     fontSize: 12,
-    color: "#98a4ab",
-    fontWeight: "400",
+    color: "#8b949b",
     marginTop: 2,
   },
-  sheetSectionStack: {
-    gap: 8,
-  },
-  footerButton: {
-    marginBottom: 0,
-    minWidth: 178,
-  },
-  footerButtonDisabled: {
-    opacity: 0.55,
-  },
+  footerButton: {},
+  footerButtonDisabled: { opacity: 0.45 },
   footerButtonPill: {
-    minHeight: 50,
-    minWidth: 172,
-    borderRadius: 12,
-    backgroundColor: '#2ECC8F',
+    minHeight: 52,
+    minWidth: 152,
+    borderRadius: 14,
+    backgroundColor: "#1B8A5A",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 28,
   },
   footerButtonText: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: "Inter-SemiBold",
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#ffffff",
     letterSpacing: -0.2,
   },
-  successOverlay: {
-    ...StyleSheet.absoluteFillObject,
+
+  // ── Empty / auth states ─────────────────────────────────────
+  centered: {
     alignItems: "center",
-    backgroundColor: "rgba(15, 23, 42, 0.35)",
+    flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
-  successCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-  },
-  successTitle: {
-    ...textStyles.titleSmall,
-    fontSize: 18,
+  centeredTitle: {
+    fontSize: 20,
+    fontFamily: "PlusJakartaSans-Bold",
+    color: "#151b1b",
     textAlign: "center",
   },
-  successBody: {
-    ...textStyles.bodyMedium,
+  centeredSubtitle: {
+    fontSize: 15,
+    fontFamily: "Inter-Regular",
+    color: "#6b747b",
+    marginTop: 8,
+    textAlign: "center",
+  },
+  muted: {
     fontSize: 13,
-    marginTop: 6,
-    textAlign: "center",
+    fontFamily: "Inter-Regular",
+    color: "#6b747b",
+    marginTop: 8,
   },
   authButtons: {
     marginTop: 16,
@@ -1422,19 +986,58 @@ const styles = StyleSheet.create({
     maxWidth: 320,
     gap: 10,
   },
-  authButton: {
-    width: "100%",
+  authButton: { width: "100%" },
+
+  // ── Date picker modal ───────────────────────────────────────
+  pickerBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-end",
   },
-  error: {
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
-    borderRadius: 12,
-    borderWidth: 1,
-    color: "#b42318",
-    fontSize: 12,
-    fontFamily: "Inter-Regular",
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+  pickerSheet: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 36,
+    alignItems: "center",
+    paddingTop: 12,
+  },
+  pickerHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#E0E0E0",
+    marginBottom: 18,
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    fontFamily: "Inter-Bold",
+    color: "#111111",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  pickerDoneBtn: {
+    alignSelf: "stretch",
+    marginHorizontal: 20,
+    marginTop: 16,
+    backgroundColor: "#2ECC8F",
+    borderRadius: 14,
+    minHeight: 54,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pickerDoneBtnText: {
+    fontSize: 17,
+    fontWeight: "700",
+    fontFamily: "Inter-Bold",
+    color: "#ffffff",
+    letterSpacing: -0.2,
+  },
+
+  // ── Overlay ─────────────────────────────────────────────────
+  successOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(15, 23, 42, 0.35)",
   },
 });

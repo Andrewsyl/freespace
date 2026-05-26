@@ -21,52 +21,55 @@ type MapViewProps = {
   onBoundsChanged?: (bounds: BoundsLiteral, center: { lat: number; lng: number }, zoom: number, userInteracted: boolean) => void;
   disableAutoFit?: boolean;
   showCenterPin?: boolean;
+  /** Radius in metres for the distance ring drawn around the centre pin. */
+  centerPinRadius?: number;
+  satellite?: boolean;
 };
+
+// ─── Price-bubble markers ────────────────────────────────────────────────────
 
 function buildMarkerSvg(price: number, active: boolean): string {
   const priceText = `€${price}`;
-  const textLength = priceText.length;
-  const width = Math.max(44, 44 + Math.max(0, (textLength - 3) * 6));
-  const bubbleHeight = 24;
-  const tailHeight = 5;
-  const tailWidth = 8;
-  const strokeWidth = 1.35;
-  const radius = bubbleHeight / 2;
-  const padding = strokeWidth;
-  const totalHeight = bubbleHeight + tailHeight;
-  const viewBoxWidth = width + padding * 2;
-  const viewBoxHeight = totalHeight + padding * 2;
-  const shadowCx = viewBoxWidth / 2;
-  const shadowCy = viewBoxHeight - 2;
-  const fill = active ? "#111111" : "#FFFFFF";
-  const stroke = active ? "#111111" : "#1E293B";
-  const textColor = active ? "#FFFFFF" : "#0F172A";
-  const w = width;
-  const h = bubbleHeight;
-  const r = radius;
-  const tw = tailWidth / 2;
-  const th = tailHeight;
-  const cx = w / 2;
-  const p = padding;
-  const pinPath = `
-    M ${r + p} ${p}
-    L ${w - r + p} ${p}
-    A ${r} ${r} 0 0 1 ${w + p} ${r + p}
-    A ${r} ${r} 0 0 1 ${w - r + p} ${h + p}
-    L ${cx + tw + p} ${h + p}
-    L ${cx + p} ${h + th + p}
-    L ${cx - tw + p} ${h + p}
-    L ${r + p} ${h + p}
-    A ${r} ${r} 0 0 1 ${p} ${r + p}
-    A ${r} ${r} 0 0 1 ${r + p} ${p}
-    Z
-  `.trim();
+  const extraChars = Math.max(0, priceText.length - 3);
+  const bw = 44 + extraChars * 6;  // bubble width
+  const bh = 24;                    // bubble height
+  const tailH = 5;
+  const tailHalfW = 4;
+  const sw = 1.5;                   // stroke width
+  const p = sw / 2;                 // inset so strokes aren't clipped
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${viewBoxWidth}" height="${viewBoxHeight}" viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}" fill="none">
-    <ellipse cx="${shadowCx}" cy="${shadowCy}" rx="${Math.max(7, width * 0.16)}" ry="2.3" fill="rgba(15,23,42,0.12)"/>
-    <path d="${pinPath}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linejoin="round"/>
-    <text x="${viewBoxWidth / 2}" y="${bubbleHeight / 2 + padding + 4}" text-anchor="middle" fill="${textColor}" font-size="12" font-family="Inter,Arial,sans-serif" font-weight="700" letter-spacing="-0.15">${priceText}</text>
-  </svg>`;
+  const r = bh / 2;                 // bubble corner radius = 12
+
+  const vbW = bw + p * 2;
+  const vbH = bh + tailH + p + 3;
+
+  const bx = p;
+  const by = p;
+  const midX = bx + bw / 2;
+
+  const pinPath = [
+    `M ${r + bx} ${by}`,
+    `L ${bw - r + bx} ${by}`,
+    `A ${r} ${r} 0 0 1 ${bw + bx} ${r + by}`,
+    `A ${r} ${r} 0 0 1 ${bw - r + bx} ${bh + by}`,
+    `L ${midX + tailHalfW} ${bh + by}`,
+    `L ${midX} ${bh + tailH + by}`,
+    `L ${midX - tailHalfW} ${bh + by}`,
+    `L ${r + bx} ${bh + by}`,
+    `A ${r} ${r} 0 0 1 ${bx} ${r + by}`,
+    `A ${r} ${r} 0 0 1 ${r + bx} ${by}`,
+    "Z",
+  ].join(" ");
+
+  const bubbleFill   = active ? "#111111" : "#FFFFFF";
+  const bubbleStroke = active ? "#111111" : "#1E293B";
+  const textFill     = active ? "#FFFFFF" : "#0F172A";
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${vbW}" height="${vbH}" viewBox="0 0 ${vbW} ${vbH}" fill="none">
+  <ellipse cx="${vbW / 2}" cy="${vbH - 1.5}" rx="${Math.max(7, bw * 0.16)}" ry="2.3" fill="rgba(15,23,42,0.12)"/>
+  <path d="${pinPath}" fill="${bubbleFill}" stroke="${bubbleStroke}" stroke-width="${sw}" stroke-linejoin="round"/>
+  <text x="${midX}" y="${by + bh / 2 + 4.2}" text-anchor="middle" fill="${textFill}" font-size="12" font-family="Inter,Arial,sans-serif" font-weight="700" letter-spacing="-0.15">${priceText}</text>
+</svg>`;
 }
 
 function createMarkerEl(price: number, active: boolean): HTMLDivElement {
@@ -76,14 +79,54 @@ function createMarkerEl(price: number, active: boolean): HTMLDivElement {
   return el;
 }
 
+// ─── Centre pin ──────────────────────────────────────────────────────────────
+
 function createCenterPinEl(): HTMLDivElement {
   const el = document.createElement("div");
-  el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 24 32" fill="none">
-    <path d="M12 0C5.373 0 0 5.13 0 11.455 0 20.545 12 32 12 32s12-11.455 12-20.545C24 5.13 18.627 0 12 0Z" fill="#2563EB"/>
-    <circle cx="12" cy="11" r="4.5" fill="white"/>
+  // Brand-green teardrop. anchor="bottom" places the tail tip on the coordinate.
+  el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38" fill="none">
+    <ellipse cx="15" cy="36.5" rx="6" ry="2" fill="rgba(0,0,0,0.13)"/>
+    <path d="M15 2C8.925 2 4 6.925 4 13c0 8.4 11 23 11 23S26 21.4 26 13C26 6.925 21.075 2 15 2Z" fill="#2ECC8F"/>
+    <circle cx="15" cy="13" r="5" fill="white"/>
+    <circle cx="15" cy="13" r="2.2" fill="#2ECC8F"/>
   </svg>`;
   return el;
 }
+
+// ─── Distance-ring GeoJSON ───────────────────────────────────────────────────
+
+/**
+ * Builds a GeoJSON Polygon that approximates a circle of `radiusMeters`
+ * around `[lng, lat]`. Uses a flat-earth approximation — accurate to <0.1 %
+ * for radii under ~50 km.
+ */
+function buildRadiusPolygon(
+  [lng, lat]: [number, number],
+  radiusMeters: number,
+  steps = 72,
+) {
+  const mPerDegLat = 111_320;
+  const mPerDegLng = 111_320 * Math.cos((lat * Math.PI) / 180);
+  const coords: [number, number][] = Array.from({ length: steps }, (_, i) => {
+    const angle = (i / steps) * 2 * Math.PI;
+    return [
+      lng + (radiusMeters / mPerDegLng) * Math.sin(angle),
+      lat + (radiusMeters / mPerDegLat) * Math.cos(angle),
+    ];
+  });
+  coords.push(coords[0]!); // close the ring
+  return {
+    type: "Feature" as const,
+    geometry: { type: "Polygon" as const, coordinates: [coords] },
+    properties: {},
+  };
+}
+
+const RADIUS_SOURCE = "cp-radius";
+const RADIUS_FILL   = "cp-radius-fill";
+const RADIUS_LINE   = "cp-radius-line";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const clampZoom = (value: number, min?: number, max?: number) => {
   let z = value;
@@ -91,6 +134,8 @@ const clampZoom = (value: number, min?: number, max?: number) => {
   if (typeof max === "number") z = Math.min(z, max);
   return z;
 };
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export function MapView({
   listings,
@@ -106,6 +151,8 @@ export function MapView({
   onBoundsChanged,
   disableAutoFit = false,
   showCenterPin = false,
+  centerPinRadius,
+  satellite = false,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -130,7 +177,9 @@ export function MapView({
     const defaultCenter = center ?? { lat: 53.3498, lng: -6.2603 };
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: "mapbox://styles/mapbox/streets-v12",
+      style: satellite
+        ? "mapbox://styles/mapbox/satellite-streets-v12"
+        : "mapbox://styles/mapbox/streets-v12",
       center: [defaultCenter.lng, defaultCenter.lat],
       zoom: initialZoom,
     });
@@ -237,7 +286,7 @@ export function MapView({
     prevSelectedRef.current = selectedListingId ?? null;
   }, [selectedListingId, mapReady]);
 
-  // Center pin
+  // Centre pin marker
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map) return;
@@ -254,6 +303,55 @@ export function MapView({
       centerMarkerRef.current.setLngLat([center.lng, center.lat]);
     }
   }, [center, showCenterPin, mapReady]);
+
+  // Distance ring — GeoJSON fill + outline drawn on the map canvas
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+
+    const removeRing = () => {
+      if (map.getLayer(RADIUS_FILL)) map.removeLayer(RADIUS_FILL);
+      if (map.getLayer(RADIUS_LINE)) map.removeLayer(RADIUS_LINE);
+      if (map.getSource(RADIUS_SOURCE)) map.removeSource(RADIUS_SOURCE);
+    };
+
+    if (!showCenterPin || !center || !centerPinRadius || centerPinRadius <= 0) {
+      removeRing();
+      return;
+    }
+
+    const data = buildRadiusPolygon([center.lng, center.lat], centerPinRadius);
+
+    if (map.getSource(RADIUS_SOURCE)) {
+      // Source already exists — just update its geometry in place (no layer flicker)
+      (map.getSource(RADIUS_SOURCE) as mapboxgl.GeoJSONSource).setData(data);
+      return;
+    }
+
+    map.addSource(RADIUS_SOURCE, { type: "geojson", data });
+
+    map.addLayer({
+      id: RADIUS_FILL,
+      type: "fill",
+      source: RADIUS_SOURCE,
+      paint: {
+        "fill-color": "#2ECC8F",
+        "fill-opacity": 0.08,
+      },
+    });
+
+    map.addLayer({
+      id: RADIUS_LINE,
+      type: "line",
+      source: RADIUS_SOURCE,
+      paint: {
+        "line-color": "#2ECC8F",
+        "line-width": 1.5,
+        "line-opacity": 0.5,
+        "line-dasharray": [3, 2],
+      },
+    });
+  }, [mapReady, center, showCenterPin, centerPinRadius]);
 
   return (
     <div

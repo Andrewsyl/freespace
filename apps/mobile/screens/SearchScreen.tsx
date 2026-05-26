@@ -32,6 +32,7 @@ import { calculateListingTotal } from "../utils/pricing";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { getListing, searchListings } from "../api";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
+import { MapPin as MapPinIcon } from "lucide-react-native";
 import { logError, logInfo } from "../logger";
 import type {
   ListingSummary,
@@ -168,6 +169,7 @@ export function SearchScreen({ navigation }: Props) {
   const [isRefreshingPins, setIsRefreshingPins] = useState(false);
   const resultsRef = useRef<ListingSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showSelectedCard, setShowSelectedCard] = useState(false);
   const [dismissingCard, setDismissingCard] = useState(false);
   const [addressQuery, setAddressQuery] = useState("");
   const [addressSuggestions, setAddressSuggestions] = useState<PlaceSuggestion[]>([]);
@@ -419,6 +421,7 @@ export function SearchScreen({ navigation }: Props) {
     }, 300);
     return () => clearTimeout(handle);
   }, [addressQuery, mapsKey]);
+
 
   const runSearch = useCallback(
     async (
@@ -765,30 +768,31 @@ export function SearchScreen({ navigation }: Props) {
   const selectedListing = selectedId
     ? results.find((listing) => listing.id === selectedId) ?? null
     : null;
+  const visibleSelectedListing = showSelectedCard ? selectedListing : null;
 
   const selectedListingImage =
-    selectedListing?.image_urls?.[0] ??
-    selectedListing?.imageUrls?.[0] ??
-    (selectedListing?.latitude &&
-    selectedListing?.longitude &&
+    visibleSelectedListing?.image_urls?.[0] ??
+    visibleSelectedListing?.imageUrls?.[0] ??
+    (visibleSelectedListing?.latitude &&
+    visibleSelectedListing?.longitude &&
     mapsKey
-      ? `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${selectedListing.latitude},${selectedListing.longitude}&key=${mapsKey}`
+      ? `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${visibleSelectedListing.latitude},${visibleSelectedListing.longitude}&key=${mapsKey}`
       : null);
 
   useEffect(() => {
     let cancelled = false;
-    if (!selectedListing) {
+    if (!visibleSelectedListing) {
       setSelectedCardAmenities(null);
       return;
     }
-    const summaryAmenities = selectedListing.amenities ?? [];
+    const summaryAmenities = visibleSelectedListing.amenities ?? [];
     if (summaryAmenities.length > 0) {
       setSelectedCardAmenities(summaryAmenities);
       return;
     }
     void (async () => {
       try {
-        const detail = await getListing(selectedListing.id, { from, to });
+        const detail = await getListing(visibleSelectedListing.id, { from, to });
         if (!cancelled) {
           setSelectedCardAmenities(detail.amenities ?? []);
         }
@@ -801,20 +805,28 @@ export function SearchScreen({ navigation }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [selectedListing?.id, selectedListing?.amenities, from, to]);
+  }, [visibleSelectedListing?.id, visibleSelectedListing?.amenities, from, to]);
 
   const handleSelectListing = useCallback((id: string | null) => {
     ignoreNextRegionChangeRef.current = true;
+    if (cardDismissTimerRef.current) {
+      clearTimeout(cardDismissTimerRef.current);
+      cardDismissTimerRef.current = null;
+    }
     if (id === null && selectedId !== null) {
       setDismissingCard(true);
-      setTimeout(() => {
+      cardDismissTimerRef.current = setTimeout(() => {
+        setShowSelectedCard(false);
         setSelectedId(null);
         setDismissingCard(false);
+        cardDismissTimerRef.current = null;
       }, 250);
       return;
     }
 
     setSelectedId(id);
+    setShowSelectedCard(Boolean(id));
+    setDismissingCard(false);
     if (!id || !mapRef.current) return;
 
     const listing = results.find((r) => r.id === id);
@@ -842,9 +854,10 @@ export function SearchScreen({ navigation }: Props) {
       const targetY = windowHeight * 0.70;
       const newCenterLat = listing.latitude + (targetY - windowHeight / 2) * latPerPixel;
       ignoreNextRegionChangeRef.current = true;
+      isProgrammaticMoveRef.current = true;
       mapRef.current.animateToRegion(
         { latitude: newCenterLat, longitude: listing.longitude, latitudeDelta: latDelta, longitudeDelta: lngDelta },
-        300
+        480
       );
     }
     // Pin is already visible above the card zone — no pan needed
@@ -853,6 +866,7 @@ export function SearchScreen({ navigation }: Props) {
   useFocusEffect(
     useCallback(() => {
       setSelectedId(null);
+      setShowSelectedCard(false);
       setSearchSheetOpen(false);
       // Don't reset mapReady when switching tabs - keep map mounted
       // setMapReady(false);
@@ -873,6 +887,7 @@ export function SearchScreen({ navigation }: Props) {
         setShowSearchArea(false);
         setPendingSearch(null);
         setSelectedId(null);
+        setShowSelectedCard(false);
         void runSearch(undefined, { showGlobal: false, preserveSelection: false });
       })();
       return () => {
@@ -1019,16 +1034,16 @@ export function SearchScreen({ navigation }: Props) {
       clearTimeout(showAreaTimerRef.current);
       showAreaTimerRef.current = null;
     }
-    if (selectedId && !isProgrammaticMoveRef.current) {
+    if (selectedId && showSelectedCard && !isProgrammaticMoveRef.current) {
       if (cardDismissTimerRef.current) return;
       setDismissingCard(true);
       cardDismissTimerRef.current = setTimeout(() => {
-        setSelectedId(null);
+        setShowSelectedCard(false);
         setDismissingCard(false);
         cardDismissTimerRef.current = null;
       }, 250);
     }
-  }, [selectedId]);
+  }, [selectedId, showSelectedCard]);
 
   const handleRegionChange = (nextRegion: typeof mapRegion) => {
     currentRegionRef.current = nextRegion;
@@ -1277,21 +1292,25 @@ export function SearchScreen({ navigation }: Props) {
           ) : null}
           {error ? <Text style={styles.error}>{error}</Text> : null}
         </View>
-        {selectedListing ? (
+        {visibleSelectedListing ? (
           <MapBottomCard
-            title={getListingDisplayTitle(selectedListing)}
+            title={getListingDisplayTitle(visibleSelectedListing)}
             imageUrl={selectedListingImage ?? undefined}
-            rating={selectedListing.rating ?? 0}
-            reviewCount={selectedListing.rating_count ?? 0}
-            price={`€${priceForListing(selectedListing)}`}
-            subtitle={selectedListing.availability_text?.trim() || "Parking space"}
-            metaLine={formatMapCardMetaLine(from, to, selectedListing.distance_m)}
-            badgeLabel={selectedCardAmenities?.[0] ?? selectedListing.amenities?.[0] ?? null}
-            amenities={selectedCardAmenities ?? selectedListing.amenities ?? []}
-            isAvailable={selectedListing.is_available !== false}
-            isFavorite={isFavorite(selectedListing.id)}
-            onToggleFavorite={() => toggle(selectedListing)}
-            onPress={() => { setSelectedId(null); navigation.navigate("Listing", { id: selectedListing.id, from, to }); }}
+            rating={visibleSelectedListing.rating ?? 0}
+            reviewCount={visibleSelectedListing.rating_count ?? 0}
+            price={`€${priceForListing(visibleSelectedListing)}`}
+            subtitle={visibleSelectedListing.availability_text?.trim() || "Parking space"}
+            metaLine={formatMapCardMetaLine(from, to, visibleSelectedListing.distance_m)}
+            badgeLabel={selectedCardAmenities?.[0] ?? visibleSelectedListing.amenities?.[0] ?? null}
+            amenities={selectedCardAmenities ?? visibleSelectedListing.amenities ?? []}
+            isAvailable={visibleSelectedListing.is_available !== false}
+            isFavorite={isFavorite(visibleSelectedListing.id)}
+            onToggleFavorite={() => toggle(visibleSelectedListing)}
+            onPress={() => {
+              setShowSelectedCard(false);
+              setSelectedId(null);
+              navigation.navigate("Listing", { id: visibleSelectedListing.id, from, to });
+            }}
             bottomOffset={82 + insets.bottom}
             horizontalInset={16}
             dismissing={dismissingCard}
@@ -1513,24 +1532,31 @@ export function SearchScreen({ navigation }: Props) {
                     addressLoading ? (
                       <Text style={styles.emptyText}>Searching...</Text>
                     ) : addressSuggestions.length > 0 ? (
-                      addressSuggestions.slice(0, 6).map((suggestion) => (
-                        <Pressable
-                          key={suggestion.place_id}
-                          style={styles.resultRow}
-                          onPress={() => {
-                            setSearchSheetOpen(false);
-                            void handleSelectSuggestion(suggestion);
-                          }}
-                        >
-                          <View style={styles.resultIcon}>
-                            <View style={styles.resultIconDot} />
-                          </View>
-                          <View style={styles.resultCopy}>
-                            <Text style={styles.resultTitle}>{suggestion.description}</Text>
-                            <Text style={styles.resultSubtitle}>Suggested location</Text>
-                          </View>
-                        </Pressable>
-                      ))
+                      addressSuggestions.slice(0, 6).map((suggestion) => {
+                        const commaIdx = suggestion.description.indexOf(",");
+                        const mainText = commaIdx > -1 ? suggestion.description.slice(0, commaIdx) : suggestion.description;
+                        const secondaryText = commaIdx > -1 ? suggestion.description.slice(commaIdx + 1).trim() : "";
+                        return (
+                          <Pressable
+                            key={suggestion.place_id}
+                            style={styles.resultRow}
+                            onPress={() => {
+                              setSearchSheetOpen(false);
+                              void handleSelectSuggestion(suggestion);
+                            }}
+                          >
+                            <View style={styles.resultIcon}>
+                              <MapPinIcon size={17} color="#2ECC8F" strokeWidth={2.3} />
+                            </View>
+                            <View style={styles.resultCopy}>
+                              <Text style={styles.resultTitle}>{mainText}</Text>
+                              {secondaryText ? (
+                                <Text style={styles.resultSubtitle}>{secondaryText}</Text>
+                              ) : null}
+                            </View>
+                          </Pressable>
+                        );
+                      })
                     ) : (
                       <Text style={styles.emptyText}>No results found.</Text>
                     )

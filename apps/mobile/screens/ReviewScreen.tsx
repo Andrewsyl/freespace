@@ -21,8 +21,7 @@ import Animated, {
   ZoomIn,
   ZoomOut,
 } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
-import { ArrowLeft, MapPin } from "lucide-react-native";
+import { ArrowLeft } from "lucide-react-native";
 import { createReview } from "../api";
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
@@ -38,7 +37,7 @@ export function ReviewScreen({ navigation, route }: Props) {
   const [feedback, setFeedback] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [inputHeight, setInputHeight] = useState(120);
+  const [inputHeight, setInputHeight] = useState(100);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [existingRating, setExistingRating] = useState<number | null>(null);
 
@@ -107,128 +106,114 @@ export function ReviewScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar barStyle="dark-content" />
 
-      <View style={styles.gradient}>
-        <LinearGradient colors={["#ECFDF5", "#F9FAFB"]} style={styles.header}>
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-            <ArrowLeft size={24} color={colors.text.primary} />
-          </Pressable>
-          <Text style={styles.headerTitle}>Review</Text>
-          <View style={styles.headerSpacer} />
-        </LinearGradient>
-
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.flex}>
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Animated.View entering={FadeInDown.delay(0)} style={styles.titleSection}>
-              <View style={styles.heroRow}>
-                <View style={styles.heroIcon}>
-                  <MapPin size={20} color={colors.primary.main} />
-                </View>
-                <View style={styles.heroText}>
-                  <Text style={styles.mainTitle}>How was your parking experience?</Text>
-                  <Text style={styles.helperText}>
-                    Your feedback helps other drivers find great parking spots.
-                  </Text>
-                </View>
-              </View>
-            </Animated.View>
-
-            {showReviewNotice ? (
-              <Animated.View entering={FadeInDown.delay(50)} style={styles.noticeCard}>
-                <Text style={styles.noticeTitle}>Reviews unlock after the stay</Text>
-                <Text style={styles.noticeText}>
-                  You can leave a review once the booking has ended and is confirmed.
-                </Text>
-              </Animated.View>
-            ) : null}
-
-            {existingRating ? (
-              <Animated.View entering={FadeInDown.delay(80)} style={styles.noticeCard}>
-                <Text style={styles.noticeTitle}>Already reviewed</Text>
-                <Text style={styles.noticeText}>
-                  You rated this booking {existingRating} out of 5.
-                </Text>
-              </Animated.View>
-            ) : null}
-
-            <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
-              <Text style={styles.cardTitle}>Rate your experience</Text>
-              <View style={styles.ratingContainer}>
-                <StarRating
-                  rating={rating}
-                  onRatingChange={setRating}
-                  size={52}
-                  disabled={!!existingRating}
-                />
-              </View>
-              {rating > 0 ? (
-                <Animated.Text entering={FadeIn} exiting={FadeOut} style={styles.ratingFeedback}>
-                  {ratingPrompt}
-                </Animated.Text>
-              ) : null}
-            </Animated.View>
-
-            <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
-              <Text style={styles.cardTitle}>Share your feedback</Text>
-              <TextInput
-                value={feedback}
-                onChangeText={setFeedback}
-                placeholder="Tell other drivers what to expect…"
-                placeholderTextColor={colors.text.tertiary}
-                multiline
-                style={[styles.textInput, { height: Math.max(120, inputHeight) }]}
-                textAlignVertical="top"
-                onContentSizeChange={(event) => setInputHeight(event.nativeEvent.contentSize.height)}
-                editable={canReview && !existingRating}
-              />
-              <View style={styles.feedbackFooter}>
-                <Text style={styles.characterCount}>{feedback.length} characters</Text>
-                {feedback.length > 0 ? (
-                  <Animated.Text entering={FadeIn} style={styles.positiveText}>
-                    Looking good! ✨
-                  </Animated.Text>
-                ) : null}
-              </View>
-            </Animated.View>
-
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-
-            <Animated.View entering={FadeInDown.delay(400)}>
-              {!canReview || rating === 0 || !!existingRating ? (
-                <View style={[styles.ctaBtn, styles.ctaBtnDisabled]}>
-                  <Text style={styles.ctaBtnTextDisabled}>{submitLabel}</Text>
-                </View>
-              ) : (
-                <Pressable
-                  style={({ pressed }) => [styles.ctaBtn, pressed && { opacity: 0.82 }]}
-                  onPress={handleSubmit}
-                  disabled={submitting}
-                >
-                  {submitting ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.ctaBtnText}>{submitLabel}</Text>
-                  )}
-                </Pressable>
-              )}
-            </Animated.View>
-
-            <View style={styles.spacer} />
-          </ScrollView>
-        </KeyboardAvoidingView>
-
-        {isSubmitted ? (
-          <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.successOverlay} pointerEvents="none">
-            <Animated.View entering={ZoomIn.springify().damping(10)} exiting={ZoomOut} style={styles.successCircle}>
-              <Text style={styles.successEmoji}>🎉</Text>
-            </Animated.View>
-          </Animated.View>
-        ) : null}
+      <View style={styles.header}>
+        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+          <ArrowLeft size={22} color={colors.text.primary} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Leave a review</Text>
+        <View style={styles.headerSpacer} />
       </View>
+
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.flex}>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Animated.View entering={FadeInDown.delay(0)}>
+            <Text style={styles.mainTitle}>How was your parking?</Text>
+            <Text style={styles.helperText}>Your feedback helps other drivers find great spots.</Text>
+          </Animated.View>
+
+          {showReviewNotice ? (
+            <Animated.View entering={FadeInDown.delay(50)} style={styles.notice}>
+              <Text style={styles.noticeText}>
+                Reviews unlock once the booking has ended and is confirmed.
+              </Text>
+            </Animated.View>
+          ) : null}
+
+          {existingRating ? (
+            <Animated.View entering={FadeInDown.delay(50)} style={styles.notice}>
+              <Text style={styles.noticeText}>
+                You already rated this booking {existingRating} out of 5.
+              </Text>
+            </Animated.View>
+          ) : null}
+
+          <View style={styles.divider} />
+
+          <Animated.View entering={FadeInDown.delay(100)} style={styles.section}>
+            <Text style={styles.sectionLabel}>Your rating</Text>
+            <View style={styles.starsRow}>
+              <StarRating
+                rating={rating}
+                onRatingChange={setRating}
+                size={40}
+                disabled={!!existingRating}
+              />
+            </View>
+            {rating > 0 ? (
+              <Animated.Text entering={FadeIn} exiting={FadeOut} style={styles.ratingFeedback}>
+                {ratingPrompt}
+              </Animated.Text>
+            ) : null}
+          </Animated.View>
+
+          <View style={styles.divider} />
+
+          <Animated.View entering={FadeInDown.delay(200)} style={styles.section}>
+            <Text style={styles.sectionLabel}>Your feedback <Text style={styles.optional}>(optional)</Text></Text>
+            <TextInput
+              value={feedback}
+              onChangeText={setFeedback}
+              placeholder="Tell other drivers what to expect…"
+              placeholderTextColor={colors.text.tertiary}
+              multiline
+              style={[styles.textInput, { height: Math.max(100, inputHeight) }]}
+              textAlignVertical="top"
+              onContentSizeChange={(e) => setInputHeight(e.nativeEvent.contentSize.height)}
+              editable={canReview && !existingRating}
+            />
+            {feedback.length > 0 ? (
+              <Animated.Text entering={FadeIn} style={styles.charCount}>
+                {feedback.length} chars · Looking good ✨
+              </Animated.Text>
+            ) : null}
+          </Animated.View>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <Animated.View entering={FadeInDown.delay(300)} style={styles.ctaWrap}>
+            {!canReview || rating === 0 || !!existingRating ? (
+              <View style={[styles.ctaBtn, styles.ctaBtnDisabled]}>
+                <Text style={styles.ctaBtnTextDisabled}>{submitLabel}</Text>
+              </View>
+            ) : (
+              <Pressable
+                style={({ pressed }) => [styles.ctaBtn, pressed && { opacity: 0.82 }]}
+                onPress={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.ctaBtnText}>{submitLabel}</Text>
+                )}
+              </Pressable>
+            )}
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {isSubmitted ? (
+        <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.successOverlay} pointerEvents="none">
+          <Animated.View entering={ZoomIn.springify().damping(10)} exiting={ZoomOut} style={styles.successCircle}>
+            <Text style={styles.successEmoji}>🎉</Text>
+          </Animated.View>
+        </Animated.View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -239,9 +224,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  gradient: {
-    flex: 1,
-  },
   flex: {
     flex: 1,
   },
@@ -249,141 +231,108 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: spacing.xxl,
-    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#BEBEBE",
   },
   backButton: {
-    padding: 8,
-    marginLeft: -8,
+    padding: 6,
+    marginLeft: -6,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "500",
+    fontSize: 16,
+    fontWeight: "600",
     color: colors.text.primary,
   },
   headerSpacer: {
-    width: 40,
-  },
-  scrollView: {
-    flex: 1,
+    width: 34,
   },
   scrollContent: {
-    padding: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xxl,
   },
-  titleSection: {
-    marginBottom: spacing.xl,
-  },
-  heroRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.lg,
-  },
-  heroIcon: {
-    height: 48,
-    width: 48,
-    borderRadius: 16,
-    backgroundColor: colors.primary.subtle,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  heroText: {
-    flex: 1,
-  },
   mainTitle: {
-    fontSize: 32,
-    fontWeight: "600",
-    marginBottom: spacing.xs,
+    fontSize: 22,
+    fontWeight: "700",
     color: colors.text.primary,
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
+    marginBottom: 4,
   },
   helperText: {
     fontSize: 14,
     color: colors.text.secondary,
     lineHeight: 20,
   },
-  card: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: 16,
-    padding: spacing.xl,
-    marginBottom: spacing.xl,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+  notice: {
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.background.accent,
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary.main,
   },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 4,
-    color: colors.text.primary,
-  },
-  cardSubtitle: {
-    fontSize: 14,
+  noticeText: {
+    fontSize: 13,
     color: colors.text.secondary,
-    marginBottom: 16,
+    lineHeight: 18,
   },
-  ratingContainer: {
-    marginVertical: spacing.md,
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "#BEBEBE",
+    marginVertical: spacing.lg,
+  },
+  section: {
+    gap: spacing.xs,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.text.secondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  optional: {
+    fontWeight: "400",
+    textTransform: "none",
+    letterSpacing: 0,
+    fontSize: 12,
+  },
+  starsRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   ratingFeedback: {
-    textAlign: "center",
-    marginTop: spacing.lg,
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "500",
     color: colors.text.primary,
+    marginTop: 2,
   },
   textInput: {
-    minHeight: 120,
-    padding: spacing.lg,
-    backgroundColor: colors.background.tertiary,
-    borderRadius: 16,
+    minHeight: 100,
+    padding: spacing.sm,
+    backgroundColor: colors.background.secondary,
+    borderRadius: 10,
     fontSize: 15,
-    marginBottom: spacing.sm,
     color: colors.text.primary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#BEBEBE",
   },
-  feedbackFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  characterCount: {
+  charCount: {
     fontSize: 12,
     color: colors.text.tertiary,
+    marginTop: 4,
   },
-  positiveText: {
-    fontSize: 12,
-    color: "#2ECC8F",
-    fontWeight: "500",
-  },
-  successOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.1)",
-  },
-  successCircle: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: 80,
-    padding: 32,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  successEmoji: {
-    fontSize: 60,
+  ctaWrap: {
+    marginTop: spacing.lg,
   },
   ctaBtn: {
     backgroundColor: "#1B8A5A",
     borderRadius: 12,
-    minHeight: 52,
+    minHeight: 50,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 13,
@@ -404,29 +353,32 @@ const styles = StyleSheet.create({
     color: "#9A9A9A",
     letterSpacing: -0.1,
   },
-  spacer: {
-    height: 24,
-  },
   error: {
     ...typography.bodySmall,
     color: colors.error.main,
-    marginBottom: 8,
+    marginTop: spacing.xs,
   },
-  noticeCard: {
-    marginBottom: spacing.xxl,
-    backgroundColor: colors.background.accent,
-    borderRadius: 16,
-    padding: spacing.xl,
+  successOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.1)",
   },
-  noticeTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.text.primary,
+  successCircle: {
+    backgroundColor: colors.background.secondary,
+    borderRadius: 80,
+    padding: 28,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  noticeText: {
-    fontSize: 12,
-    marginTop: 6,
-    lineHeight: 18,
-    color: colors.text.secondary,
+  successEmoji: {
+    fontSize: 52,
   },
 });

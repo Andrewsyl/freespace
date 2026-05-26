@@ -14,6 +14,7 @@ type Props = {
   nextDisabled?: boolean;
   backDisabled?: boolean;
   loading?: boolean;
+  error?: string | null;
 };
 
 export function HostStepperLayout({
@@ -24,57 +25,85 @@ export function HostStepperLayout({
   children,
   onBack,
   onNext,
-  nextLabel = "Next",
+  nextLabel = "Continue",
   nextDisabled,
   backDisabled,
   loading,
+  error,
 }: Props) {
   const progress = Math.round((step / totalSteps) * 100);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <header className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.18em] text-brand-700">
-              Step {step} of {totalSteps}
-            </p>
-            <h1 className="text-3xl tracking-tight font-semibold text-slate-900">{title}</h1>
-          </div>
-          <div className="hidden h-10 flex-1 items-center rounded-full bg-slate-100 sm:flex">
-            <div
-              className="h-full rounded-full bg-brand-600 transition-all"
-              style={{ width: `${progress}%` }}
-              aria-label={`Progress ${progress}%`}
-            />
-          </div>
+    <div className="mx-auto flex min-h-screen max-w-2xl flex-col bg-white px-5">
+      {/* ── Header ── */}
+      <div className="pt-6 pb-2">
+        {/* Step counter + progress */}
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+            Step {step} of {totalSteps}
+          </span>
+          <span className="text-xs font-semibold" style={{ color: "#2ECC8F" }}>
+            {progress}%
+          </span>
         </div>
-        {description && <p className="max-w-3xl text-sm text-slate-600">{description}</p>}
-      </header>
-
-      <div className="card space-y-6">
-        <div className="h-2 w-full rounded-full bg-slate-100 sm:hidden">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
           <div
-            className="h-full rounded-full bg-brand-600 transition-all"
-            style={{ width: `${progress}%` }}
-            aria-hidden
+            className="h-full rounded-full transition-all duration-300"
+            style={{ width: `${progress}%`, backgroundColor: "#2ECC8F" }}
           />
         </div>
-        <div className="space-y-4">{children}</div>
-        <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
-          <button
-            type="button"
-            onClick={onBack}
-            disabled={!onBack || backDisabled}
-            className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Back
-          </button>
+
+        {/* Title */}
+        <h1 className="mt-5 text-2xl font-semibold leading-snug tracking-tight text-slate-900">
+          {title}
+        </h1>
+        {description && (
+          <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{description}</p>
+        )}
+      </div>
+
+      {/* ── Error banner ── */}
+      {error && (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+          {error}
+        </div>
+      )}
+
+      {/* ── Step content ── */}
+      <div className="flex-1 py-5">{children}</div>
+
+      {/* ── Footer ── */}
+      <div className="border-t border-slate-100 py-4 pb-10">
+        <div className="flex items-center gap-3">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              disabled={backDisabled}
+              className="flex h-12 shrink-0 items-center gap-1 rounded-xl px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+            >
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </button>
+          ) : (
+            /* Spacer so the continue button stays right-aligned on step 1 */
+            <div className="w-[88px] shrink-0" />
+          )}
+
           <button
             type="button"
             onClick={onNext}
             disabled={nextDisabled}
-            className="btn-primary min-w-[140px] justify-center disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-12 flex-1 items-center justify-center rounded-2xl text-sm font-semibold text-white transition disabled:opacity-50"
+            style={{ backgroundColor: nextDisabled ? "#a3a3a3" : "#2ECC8F" }}
           >
             {loading ? "Saving…" : nextLabel}
           </button>

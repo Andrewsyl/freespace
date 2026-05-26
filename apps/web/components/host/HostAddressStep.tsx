@@ -1,78 +1,183 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AddressAutocomplete } from "../AddressAutocomplete";
 import type { HostStepProps } from "./types";
 
 const MapView = dynamic(() => import("../MapView").then((mod) => mod.MapView), { ssr: false });
 
 export function HostAddressStep({ data, onUpdate }: HostStepProps) {
-  const [address, setAddress] = useState(data.address ?? "");
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [movePinMode, setMovePinMode] = useState(true);
+  const [pendingAddress, setPendingAddress] = useState<string | null>(null);
+  const [showAddressPrompt, setShowAddressPrompt] = useState(false);
+  const [addressVersion, setAddressVersion] = useState(0);
 
-  useEffect(() => {
-    setAddress(data.address ?? "");
-  }, [data.address]);
+  const hasCoords = typeof data.latitude === "number" && typeof data.longitude === "number";
 
-  const hasCoordinates = typeof data.latitude === "number" && typeof data.longitude === "number";
+  const handleDropPin = () => {
+    if (!mapCenter) return;
+    const { lat, lng } = mapCenter;
+    onUpdate({ latitude: lat, longitude: lng, locationConfirmed: false });
+    setMovePinMode(false);
+
+    // Reverse geocode via Nominatim (OpenStreetMap) — no API key required
+    fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+      { headers: { "Accept-Language": "en", "User-Agent": "CarPark/1.0" } }
+    )
+      .then((r) => r.json())
+      .then((json) => {
+        const addr: string | undefined = json?.display_name;
+        if (addr && addr !== data.address) {
+          setPendingAddress(addr);
+          setShowAddressPrompt(true);
+        }
+      })
+      .catch(() => {/* ignore network errors */});
+  };
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
+      {/* ── Address search ── */}
+      <div className="space-y-1">
         <label className="text-sm font-semibold text-slate-800">Where is your space?</label>
         <AddressAutocomplete
+          key={`addr-${addressVersion}`}
           defaultValue={data.address}
           placeholder="Search for an address"
+          showLocationButton
           onPlace={(place) => {
-            setAddress(place.address);
             onUpdate({ address: place.address, latitude: place.lat, longitude: place.lng, locationConfirmed: false });
+            setMovePinMode(true);
+            setShowAddressPrompt(false);
+            setPendingAddress(null);
+            setAddressVersion((v) => v + 1);
           }}
           name="address"
         />
-        <p className="text-xs text-slate-500">We&apos;ll use this to position your listing on the map.</p>
+        <p className="text-xs text-slate-500">Drag the satellite map to fine-tune the pin to your exact spot.</p>
       </div>
 
-      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-inner">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold tracking-wide text-slate-700">Confirm on map</p>
-            <p className="text-sm text-slate-600">We place a pin at your address. Confirm it looks right.</p>
-          </div>
-          <button
-            type="button"
-            disabled={!hasCoordinates}
-            onClick={() => onUpdate({ locationConfirmed: true })}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-200 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {data.locationConfirmed ? "Confirmed" : "Confirm location"}
-          </button>
-        </div>
-        <div className="h-64 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-          {hasCoordinates ? (
+      {/* ── Satellite map ── */}
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100" style={{ height: 440 }}>
+        {hasCoords ? (
+          <>
             <MapView
+              key={`map-${addressVersion}`}
               listings={[]}
               center={{ lat: data.latitude!, lng: data.longitude! }}
-              initialZoom={20}
+              initialZoom={19}
               maxZoom={21}
-              minFitZoom={20}
-              showCenterPin
-              disableAutoFit
+              minFitZoom={18}
+              showCenterPin={!movePinMode}
+              disableAutoFit={!movePinMode}
+              satellite
+              onBoundsChanged={(_bounds, center) => setMapCenter(center)}
             />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-slate-500">Select an address to preview</div>
-          )}
-        </div>
-        <p className="text-xs text-slate-500">
-          {data.locationConfirmed ? "Location confirmed." : "Tap confirm once the pin matches your space entrance."}
-        </p>
+
+            {/* Crosshair pin (move mode) */}
+            {movePinMode && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center" style={{ paddingBottom: 32 }}>
+                <svg width="28" height="38" viewBox="0 0 24 32" fill="none">
+                  <path d="M12 0C5.373 0 0 5.13 0 11.455 0 20.545 12 32 12 32s12-11.455 12-20.545C24 5.13 18.627 0 12 0Z" fill="#10b981"/>
+                  <circle cx="12" cy="11" r="4.5" fill="white"/>
+                </svg>
+              </div>
+            )}
+
+            {/* Controls */}
+            <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
+              {movePinMode ? (
+                <>
+                  <div className="rounded-full bg-emerald-600/90 px-3 py-1.5 text-xs font-semibold text-white shadow backdrop-blur-sm">
+                    Drag map to position
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDropPin}
+                    className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-md transition hover:bg-slate-50"
+                  >
+                    Drop pin here ↓
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setMovePinMode(true)}
+                  className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-md transition hover:bg-slate-50"
+                >
+                  Move pin
+                </button>
+              )}
+            </div>
+
+            {/* Address update prompt */}
+            {showAddressPrompt && pendingAddress && (
+              <div className="absolute bottom-3 left-3 right-3 rounded-xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm">
+                <p className="text-xs font-semibold text-slate-900">Update address?</p>
+                <p className="mt-1 truncate text-xs text-slate-600">{pendingAddress}</p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setShowAddressPrompt(false); setPendingAddress(null); }}
+                    className="flex-1 rounded-lg border border-slate-200 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Keep original
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (pendingAddress) onUpdate({ address: pendingAddress });
+                      setShowAddressPrompt(false);
+                      setPendingAddress(null);
+                    }}
+                    className="flex-1 rounded-lg bg-emerald-600 py-2 text-xs font-semibold text-white hover:bg-emerald-500"
+                  >
+                    Use new address
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          /* No address yet */
+          <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 ring-2 ring-emerald-100">
+              <svg className="h-10 w-10 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">No location selected</p>
+              <p className="mt-1 text-xs text-slate-500">Search for an address above to preview your parking spot on the satellite map</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="space-y-2">
-        <label className="text-xs font-semibold tracking-wide text-slate-700">Address preview</label>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800">
-          {address || "No address selected yet"}
+      {/* ── Confirm strip ── */}
+      {hasCoords && !movePinMode && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-slate-700">
+              {data.locationConfirmed ? "✓ Location confirmed" : "Does the pin match your entrance?"}
+            </p>
+            <p className="truncate text-xs text-slate-500">{data.address}</p>
+          </div>
+          {!data.locationConfirmed && (
+            <button
+              type="button"
+              onClick={() => onUpdate({ locationConfirmed: true })}
+              className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700"
+            >
+              Confirm location
+            </button>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

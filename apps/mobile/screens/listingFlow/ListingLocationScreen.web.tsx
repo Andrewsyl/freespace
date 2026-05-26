@@ -141,15 +141,28 @@ export function ListingLocationScreen({ navigation }: Props) {
           {addressLoading ? (
             <Text style={styles.suggestionMuted}>Searching...</Text>
           ) : (
-            suggestions.slice(0, 4).map((suggestion) => (
-              <Pressable
-                key={suggestion.place_id}
-                style={styles.suggestionItem}
-                onPress={() => void handleSelectSuggestion(suggestion)}
-              >
-                <Text style={styles.suggestionText}>{suggestion.description}</Text>
-              </Pressable>
-            ))
+            suggestions.slice(0, 4).map((suggestion) => {
+              const commaIdx = suggestion.description.indexOf(",");
+              const mainText = commaIdx > -1 ? suggestion.description.slice(0, commaIdx) : suggestion.description;
+              const secondaryText = commaIdx > -1 ? suggestion.description.slice(commaIdx + 1).trim() : "";
+              return (
+                <Pressable
+                  key={suggestion.place_id}
+                  style={styles.suggestionItem}
+                  onPress={() => void handleSelectSuggestion(suggestion)}
+                >
+                  <View style={styles.suggestionIconCircle}>
+                    <Text style={styles.suggestionIconPin}>📍</Text>
+                  </View>
+                  <View style={styles.suggestionCopy}>
+                    <Text style={styles.suggestionText}>{mainText}</Text>
+                    {secondaryText ? (
+                      <Text style={styles.suggestionSubText}>{secondaryText}</Text>
+                    ) : null}
+                  </View>
+                </Pressable>
+              );
+            })
           )}
         </View>
       ) : null}
@@ -237,14 +250,38 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   suggestionItem: {
+    alignItems: "center",
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
+    flexDirection: "row",
+    gap: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 9,
+  },
+  suggestionIconCircle: {
+    alignItems: "center",
+    backgroundColor: "#e6f9f2",
+    borderRadius: 18,
+    flexShrink: 0,
+    height: 32,
+    justifyContent: "center",
+    width: 32,
+  },
+  suggestionIconPin: {
+    fontSize: 14,
+  },
+  suggestionCopy: {
+    flex: 1,
   },
   suggestionText: {
     color: colors.text,
     fontSize: 13,
+    fontWeight: "600",
+  },
+  suggestionSubText: {
+    color: colors.textSoft,
+    fontSize: 11,
+    marginTop: 1,
   },
   suggestionMuted: {
     color: colors.textSoft,

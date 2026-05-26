@@ -59,26 +59,32 @@ export function FiltersPanel({
         <Section label="Price per day">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="mb-1.5 text-xs font-semibold text-[#6B7280]">Min € / day</p>
-              <input
-                type="number"
-                min={0}
-                placeholder="10"
-                value={pending.priceMin ?? ""}
-                onChange={(e) => update("priceMin", e.target.value ? Number(e.target.value) : undefined)}
-                className="w-full rounded-xl border border-[#E5E7EB] px-3 py-2.5 text-sm text-[#0f172a] shadow-sm focus:border-brand-500 focus:outline-none"
-              />
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Min / day</p>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-semibold text-slate-400">€</span>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="0"
+                  value={pending.priceMin ?? ""}
+                  onChange={(e) => update("priceMin", e.target.value ? Number(e.target.value) : undefined)}
+                  className="w-full rounded-xl border border-[#E5E7EB] py-2.5 pl-7 pr-3 text-[13px] font-semibold text-[#0f172a] shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                />
+              </div>
             </div>
             <div>
-              <p className="mb-1.5 text-xs font-semibold text-[#6B7280]">Max € / day</p>
-              <input
-                type="number"
-                min={0}
-                placeholder="40"
-                value={pending.priceMax ?? ""}
-                onChange={(e) => update("priceMax", e.target.value ? Number(e.target.value) : undefined)}
-                className="w-full rounded-xl border border-[#E5E7EB] px-3 py-2.5 text-sm text-[#0f172a] shadow-sm focus:border-brand-500 focus:outline-none"
-              />
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Max / day</p>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-semibold text-slate-400">€</span>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="100"
+                  value={pending.priceMax ?? ""}
+                  onChange={(e) => update("priceMax", e.target.value ? Number(e.target.value) : undefined)}
+                  className="w-full rounded-xl border border-[#E5E7EB] py-2.5 pl-7 pr-3 text-[13px] font-semibold text-[#0f172a] shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                />
+              </div>
             </div>
           </div>
         </Section>
@@ -181,8 +187,11 @@ export function FiltersPanel({
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-[18px] border border-[#E5E7EB] bg-white px-4 py-3">
-      <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-[#6B7280]">{label}</p>
+    <div className="rounded-[18px] border border-[#E5E7EB] bg-white px-4 py-3.5">
+      <p className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+        <span className="h-1.5 w-1.5 rounded-full bg-brand-400/60" />
+        {label}
+      </p>
       {children}
     </div>
   );
@@ -193,12 +202,17 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-3.5 py-[7px] text-sm font-semibold transition ${
+      className={`flex items-center gap-1 rounded-full px-3.5 py-[7px] text-[13px] font-semibold transition ${
         active
-          ? "bg-brand-500 text-white"
-          : "bg-[#f5f7fb] text-[#6B7280] hover:bg-slate-100"
+          ? "bg-brand-500 text-white shadow-sm"
+          : "bg-[#f5f7fb] text-[#6B7280] hover:bg-slate-100 hover:text-slate-800"
       }`}
     >
+      {active && (
+        <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+      )}
       {label}
     </button>
   );

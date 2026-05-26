@@ -22,7 +22,7 @@ import ImageViewer from "react-native-image-zoom-viewer";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import LottieView from "lottie-react-native";
-import DatePicker from "../components/AdaptiveDatePicker";
+import { DrumRollPicker } from "../components/DrumRollPicker";
 import { colors, radius, spacing } from "../styles/theme";
 import { getListing, listListingReviews, type ListingReview } from "../api";
 import { useAuth } from "../auth";
@@ -30,7 +30,7 @@ import { useFavorites } from "../favorites";
 import { LIGHT_MAP_STYLE } from "../components/mapStyles";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
-import { formatDateTimeLabel, formatReviewDate } from "../utils/dateFormat";
+import { formatDateLabel, formatDateTimeLabel, formatReviewDate, formatTimeLabel } from "../utils/dateFormat";
 import { calculateListingTotal, getListingRateType } from "../utils/pricing";
 import { ArrowDownUp, Cctv, EvCharger, Home, Fence, IdCard, KeyRound } from "lucide-react-native";
 
@@ -207,16 +207,14 @@ export function ListingScreen({ navigation, route }: Props) {
 
   const applyPickedDate = (next: Date) => {
     if (pickerField === "start") {
-      let nextEnd = endAt;
-      if (next > endAt) {
-        const bumped = new Date(next);
-        bumped.setHours(bumped.getHours() + 2);
-        nextEnd = bumped;
-        setEndAt(bumped);
-      }
       setStartAt(next);
-      return nextEnd;
+      // Always push "until" to 2 h after the new "from" time.
+      const bumped = new Date(next);
+      bumped.setHours(bumped.getHours() + 2);
+      setEndAt(bumped);
+      return bumped;
     }
+    // For the "until" picker: enforce at least 1 h after "from".
     const minEnd = new Date(startAt);
     minEnd.setHours(minEnd.getHours() + 1);
     const safeEnd = next < minEnd ? minEnd : next;
@@ -516,26 +514,29 @@ export function ListingScreen({ navigation, route }: Props) {
                   </View>
                 </View>
 
-                {/* ── Booking info card ─────────────────────── */}
-                <View style={styles.airRouteCard}>
-                  <View style={styles.airRouteTop}>
-                    <View style={styles.taxiRouteTrack}>
-                      <View style={styles.taxiRouteDotStart} />
-                      <View style={styles.taxiRouteLine} />
-                      <View style={styles.taxiRouteDotEnd} />
-                    </View>
-                    <View style={styles.taxiRouteContent}>
-                      <View style={styles.taxiRouteRow}>
-                        <Text style={styles.taxiRouteValue}>{formatDateTimeLabel(startAt)}</Text>
+                {/* ── Booking time boxes ───────────────────── */}
+                <View style={styles.timePickerWrapper}>
+                  <View style={styles.timePickerCard}>
+                    <Pressable style={styles.timePickerColumn} onPress={() => openPicker("start")}>
+                      <View style={styles.timePickerField}>
+                        <View>
+                          <Text style={styles.dateTimeLabel}>From</Text>
+                          <Text style={styles.dateTimeValue}>{formatDateTimeLabel(startAt)}</Text>
+                        </View>
+                        <Ionicons name="chevron-down" size={16} color="#0f766e" />
                       </View>
-                      <View style={styles.taxiRouteSpacer} />
-                      <View style={styles.taxiRouteRow}>
-                        <Text style={styles.taxiRouteValue}>{formatDateTimeLabel(endAt)}</Text>
-                      </View>
+                    </Pressable>
+                    <View style={styles.timePickerArrow}>
+                      <Ionicons name="arrow-forward" size={18} color="#22a06b" />
                     </View>
-                    <Pressable style={styles.airTimeEditButton} onPress={() => openPicker("start")}>
-                      <Ionicons name="create-outline" size={16} color="#0F172A" />
-                      <Text style={styles.airTimeEditButtonText}>Edit</Text>
+                    <Pressable style={styles.timePickerColumn} onPress={() => openPicker("end")}>
+                      <View style={styles.timePickerField}>
+                        <View>
+                          <Text style={styles.dateTimeLabel}>Until</Text>
+                          <Text style={styles.dateTimeValue}>{formatDateTimeLabel(endAt)}</Text>
+                        </View>
+                        <Ionicons name="chevron-down" size={16} color="#0f766e" />
+                      </View>
                     </Pressable>
                   </View>
 
@@ -759,42 +760,33 @@ export function ListingScreen({ navigation, route }: Props) {
 
       {/* Date picker modal */}
       {pickerVisible ? (
-        <Modal transparent animationType="fade" visible>
-          <Pressable
-            style={styles.pickerBackdrop}
-            onPress={() => { setPickerVisible(false); setDraftDate(null); }}
-          >
-            <Pressable style={styles.pickerSheet} onPress={() => undefined}>
-              <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>
-                  {pickerField === "start" ? "Arrival time" : "Departure time"}
-                </Text>
-                <Pressable
-                  style={styles.pickerDone}
-                  onPress={() => {
-                    const currentField = pickerField;
-                    const picked = draftDate ?? (pickerField === "start" ? startAt : endAt);
-                    const resolved = applyPickedDate(picked);
-                    if (currentField === "start") {
-                      setPickerField("end");
-                      setDraftDate(resolved);
-                      return;
-                    }
-                    setPickerVisible(false);
-                    setDraftDate(null);
-                  }}
-                >
-                  <Text style={styles.pickerDoneText}>Done</Text>
-                </Pressable>
-              </View>
-              <DatePicker
+        <Modal transparent animationType="slide" visible>
+          <View style={styles.pickerBackdrop}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => { setPickerVisible(false); setDraftDate(null); }} />
+            <View style={[styles.pickerSheet, { paddingBottom: Math.max(24, insets.bottom + 12) }]}>
+              <View style={styles.pickerHandle} />
+              <Text style={styles.pickerTitle}>
+                {pickerField === "start" ? "Select arrival time" : "Select departure time"}
+              </Text>
+              <DrumRollPicker
+                key={pickerField}
                 date={draftDate ?? (pickerField === "start" ? startAt : endAt)}
-                mode="datetime"
-                minuteInterval={30}
-                onDateChange={(d) => setDraftDate(d)}
+                minuteInterval={5}
+                onChange={(d) => setDraftDate(d)}
               />
-            </Pressable>
-          </Pressable>
+              <Pressable
+                style={styles.pickerDoneBtn}
+                onPress={() => {
+                  const picked = draftDate ?? (pickerField === "start" ? startAt : endAt);
+                  applyPickedDate(picked);
+                  setPickerVisible(false);
+                  setDraftDate(null);
+                }}
+              >
+                <Text style={styles.pickerDoneBtnText}>Done</Text>
+              </Pressable>
+            </View>
+          </View>
         </Modal>
       ) : null}
 
@@ -1018,73 +1010,62 @@ const styles = StyleSheet.create({
   },
   statsVDivider: { width: 1, backgroundColor: LINE, marginVertical: 10 },
 
-  // Booking time card — outer wrapper + inner sections
-  airRouteCard: {
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: LINE_2,
-    borderRadius: 12,
+  // Booking time-picker boxes
+  timePickerWrapper: {
+    overflow: "hidden",
+    borderRadius: 16,
     backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#BEBEBE",
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+    marginBottom: 14,
+  },
+  timePickerCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  timePickerColumn: {
+    flex: 1,
+  },
+  timePickerField: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#BEBEBE",
+    backgroundColor: BG_2,
     overflow: "hidden",
   },
-  airRouteTop: {
-    flexDirection: "row",
-    gap: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  taxiRouteTrack: {
-    alignItems: "center",
-    width: 18,
-    paddingTop: 6,
-  },
-  taxiRouteDotStart: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: GREEN,
-  },
-  taxiRouteLine: {
-    width: 1.5,
-    flex: 1,
-    minHeight: 32,
-    backgroundColor: LINE,
-    marginVertical: 4,
-  },
-  taxiRouteDotEnd: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#ffffff",
-    borderWidth: 1.5,
-    borderColor: LINE_2,
-  },
-  taxiRouteContent: { flex: 1 },
-  taxiRouteRow: { minHeight: 32, justifyContent: "center" },
-  taxiRouteSpacer: { height: 12 },
-  taxiRouteValue: {
-    fontFamily: "Inter-SemiBold",
-    fontSize: 15,
-    lineHeight: 20,
-    color: FG,
-  },
-  airTimeEditButton: {
-    alignSelf: "center",
-    flexDirection: "row",
+  timePickerArrow: {
+    width: 32,
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
-    minHeight: 32,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: BG_2,
-    marginLeft: 8,
   },
-  airTimeEditButtonText: {
+  dateTimeLabel: {
+    fontFamily: "Inter-Medium",
+    fontSize: 10,
+    color: FG_SUBTLE,
+    textTransform: "uppercase",
+    letterSpacing: 0.65,
+    fontWeight: "600",
+    marginBottom: 3,
+  },
+  dateTimeValue: {
     fontFamily: "Inter-SemiBold",
     fontSize: 13,
-    lineHeight: 18,
-    color: FG_2,
+    fontWeight: "600",
+    color: FG,
   },
 
   // Extend offer — attached bottom section of airRouteCard
@@ -1308,20 +1289,52 @@ const styles = StyleSheet.create({
   reserveBtnText: { fontFamily: "Inter-SemiBold", fontSize: 15, color: "#ffffff", letterSpacing: -0.1 },
   reserveBtnDisabledText: { fontFamily: "Inter-Regular", fontSize: 15, color: FG_MUTED },
 
-  // Picker modal
+  // Picker modal — bottom sheet
   pickerBackdrop: {
-    flex: 1, backgroundColor: "rgba(17,17,17,0.45)",
-    justifyContent: "center", alignItems: "center", paddingHorizontal: 20,
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-end",
   },
-  pickerSheet: { backgroundColor: "#ffffff", borderRadius: 16, overflow: "hidden", width: "100%" },
-  pickerHeader: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 18, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: LINE,
+  pickerSheet: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 12,
+    paddingBottom: 36,
+    alignItems: "center",
   },
-  pickerTitle: { fontFamily: "Inter-SemiBold", fontSize: 15, color: FG },
-  pickerDone: { paddingVertical: 6, paddingHorizontal: 8 },
-  pickerDoneText: { fontFamily: "Inter-SemiBold", fontSize: 15, color: GREEN },
+  pickerHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#E0E0E0",
+    marginBottom: 18,
+  },
+  pickerTitle: {
+    fontFamily: "Inter-Bold",
+    fontSize: 18,
+    fontWeight: "700",
+    color: FG,
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  pickerDoneBtn: {
+    alignSelf: "stretch",
+    marginHorizontal: 20,
+    marginTop: 16,
+    backgroundColor: GREEN,
+    borderRadius: 14,
+    minHeight: 54,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pickerDoneBtnText: {
+    fontFamily: "Inter-Bold",
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#ffffff",
+    letterSpacing: -0.2,
+  },
 
   // Image / map viewer
   viewerBackdrop: { flex: 1, backgroundColor: "rgba(17,17,17,0.97)" },

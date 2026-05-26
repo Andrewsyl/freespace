@@ -27,8 +27,12 @@ export type SearchFilters = {
 
 type DateTimePickerProps = {
   label: "From" | "Until";
+  inlineLabel?: string;
   value: Date;
   onChange: (next: Date) => void;
+  compact?: boolean;
+  inline?: boolean;
+  popupAlign?: "left" | "right";
 };
 
 export function SearchForm({
@@ -242,67 +246,90 @@ export function SearchForm({
     setState((prev) => ({ ...prev, endAt: next }));
   };
 
+  const addressOnPlace = useCallback((place: { address: string; lat: number; lng: number }) => {
+    setState((prev) => ({
+      ...prev,
+      location: place.address,
+      latitude: place.lat,
+      longitude: place.lng,
+    }));
+    onAddressChange?.({ address: place.address, lat: place.lat, lng: place.lng });
+  }, [onAddressChange]);
+
+  // ── Desktop-inline variant ────────────────────────────────────────────────
   if (variant === "desktop-inline") {
     return (
       <div className="w-full">
-        <form
-          onSubmit={handleSubmit}
-          className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
-        >
-          <div className="flex-1 text-sm font-semibold text-slate-800">
-            <AddressAutocomplete
-              defaultValue={state.location}
-              placeholder="Enter area or landmark"
-              inputClassName="w-full h-12 rounded-xl border border-[#E5E7EB] bg-white px-9 text-[15px] font-semibold text-[#0f172a] transition focus:border-brand-500 focus:outline-none"
-              onPlace={(place) => {
-                setState((prev) => ({
-                  ...prev,
-                  location: place.address,
-                  latitude: place.lat,
-                  longitude: place.lng,
-                }));
-                onAddressChange?.({ address: place.address, lat: place.lat, lng: place.lng });
-              }}
+        <form onSubmit={handleSubmit}>
+          <div className="flex items-stretch rounded-2xl border border-slate-200 bg-white shadow-md ring-1 ring-black/[0.03]">
+            {/* Location segment */}
+            <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-3.5">
+              <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Find parking near</p>
+              <AddressAutocomplete
+                defaultValue={state.location}
+                placeholder="Enter area or landmark"
+                inputClassName="w-full bg-transparent pl-0 pr-2 text-[13.5px] font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                onPlace={addressOnPlace}
+              />
+            </div>
+
+            {/* Divider */}
+            <div className="my-3 w-px shrink-0 self-stretch bg-slate-200" />
+
+            {/* Arriving picker */}
+            <DateTimePicker
+              label="From"
+              inlineLabel="Arriving"
+              value={state.startAt}
+              onChange={setStart}
+              inline
+              popupAlign="left"
             />
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <div className="w-[220px]">
-              <DateTimePicker label="From" value={state.startAt} onChange={setStart} compact />
+
+            {/* Divider */}
+            <div className="my-3 w-px shrink-0 self-stretch bg-slate-200" />
+
+            {/* Leaving picker */}
+            <DateTimePicker
+              label="Until"
+              inlineLabel="Leaving"
+              value={state.endAt}
+              onChange={setEnd}
+              inline
+              popupAlign="right"
+            />
+
+            {/* Search button */}
+            <div className="flex items-center px-3">
+              <button
+                type="submit"
+                aria-label="Search"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 text-white shadow-sm transition hover:bg-brand-600 active:scale-95"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+              </button>
             </div>
-            <div className="w-[220px]">
-              <DateTimePicker label="Until" value={state.endAt} onChange={setEnd} compact />
-            </div>
           </div>
-          <button type="submit" className="sr-only">
-            Search
-          </button>
         </form>
       </div>
     );
   }
 
+  // ── Default variant ───────────────────────────────────────────────────────
   return (
     <div className="w-full">
       <form
         onSubmit={handleSubmit}
         className="flex w-full flex-col gap-3 rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-sm"
       >
-        <div className="flex w-full flex-col gap-1 text-sm font-semibold text-slate-800">
-          <AddressAutocomplete
-            defaultValue={state.location}
-            placeholder="Enter area or landmark"
-            inputClassName="w-full h-12 rounded-xl border border-[#E5E7EB] bg-white px-9 text-[15px] font-semibold text-[#0f172a] transition focus:border-brand-500 focus:outline-none"
-            onPlace={(place) => {
-              setState((prev) => ({
-                ...prev,
-                location: place.address,
-                latitude: place.lat,
-                longitude: place.lng,
-              }));
-              onAddressChange?.({ address: place.address, lat: place.lat, lng: place.lng });
-            }}
-          />
-        </div>
+        <AddressAutocomplete
+          defaultValue={state.location}
+          placeholder="Enter area or landmark"
+          inputClassName="w-full h-12 rounded-xl border border-[#E5E7EB] bg-white px-9 text-[15px] font-semibold text-[#0f172a] transition focus:border-brand-500 focus:outline-none"
+          onPlace={addressOnPlace}
+        />
 
         <div className="grid grid-cols-2 gap-2">
           <DateTimePicker label="From" value={state.startAt} onChange={setStart} compact />
@@ -314,17 +341,23 @@ export function SearchForm({
             <button
               type="button"
               onClick={onOpenFilters}
-              className="h-12 w-full rounded-xl border border-[#E5E7EB] px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 md:h-10 md:px-3 md:text-[13px]"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
             >
+              <svg className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 9.75V10.5" />
+              </svg>
               Filters
             </button>
           )}
           <button
             type="submit"
-            className={`h-12 w-full rounded-xl bg-brand-500 px-5 text-[15px] font-bold text-white shadow-md transition hover:bg-brand-600 md:h-10 md:px-4 md:text-[13px] ${
+            className={`flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 text-[15px] font-bold text-white shadow-md transition hover:bg-brand-600 active:scale-[0.98] ${
               onOpenFilters ? "" : "col-span-2"
             }`}
           >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
             Search
           </button>
         </div>
@@ -333,15 +366,21 @@ export function SearchForm({
   );
 }
 
+// ── DateTimePicker ────────────────────────────────────────────────────────────
+
 function DateTimePicker({
   label,
+  inlineLabel,
   value,
   onChange,
   compact = false,
-}: DateTimePickerProps & { compact?: boolean }) {
+  inline = false,
+  popupAlign = "left",
+}: DateTimePickerProps) {
   const [open, setOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState(startOfMonth(value));
   const containerRef = useRef<HTMLDivElement>(null);
+  const timeListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const nextMonth = startOfMonth(value);
@@ -356,13 +395,20 @@ function DateTimePicker({
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (!containerRef.current) return;
-      if (!containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (!containerRef.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Auto-scroll time list to the selected item whenever the popup opens
+  useEffect(() => {
+    if (!open || !timeListRef.current) return;
+    const selectedEl = timeListRef.current.querySelector('[data-selected="true"]') as HTMLElement | null;
+    if (selectedEl) {
+      timeListRef.current.scrollTop = Math.max(0, selectedEl.offsetTop - 56);
+    }
+  }, [open]);
 
   const times = useMemo(() => {
     const slots: string[] = [];
@@ -380,129 +426,198 @@ function DateTimePicker({
     const next = new Date(day);
     next.setHours(value.getHours(), value.getMinutes(), 0, 0);
     onChange(next);
-    if (label === "From") {
-      onChange(next);
-      // Parent handles end adjustment separately
-    }
   };
 
   const handleTimeSelect = (time: string) => {
-    const next = buildDateTime(toDateString(value), time);
-    onChange(next);
+    onChange(buildDateTime(toDateString(value), time));
   };
 
-  const title = formatMonthTitle(viewMonth);
+  const currentTime = toTimeString(value);
   const timeLabel = label === "From" ? "Enter after" : "Leave by";
+  const alignClass = popupAlign === "right" ? "right-0" : "left-0";
 
+  // ── Shared popup ────────────────────────────────────────────────────────
+  const popup = open ? (
+    <div
+      className={`absolute ${alignClass} z-50 mt-2 w-[400px] max-w-[95vw] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.16)] ring-1 ring-slate-100/80`}
+    >
+      {/* Popup header */}
+      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label} time</p>
+          <p className="mt-0.5 text-[13px] font-bold text-slate-900">{formatTrigger(value)}</p>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setViewMonth(addMonths(viewMonth, -1))}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100"
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+          </button>
+          <span className="w-28 text-center text-[12px] font-semibold text-slate-800">
+            {formatMonthTitle(viewMonth)}
+          </span>
+          <button
+            type="button"
+            onClick={() => setViewMonth(addMonths(viewMonth, 1))}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100"
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div className="p-4">
+        {/* Day-name headers */}
+        <div className="grid grid-cols-7 gap-1 pb-2 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+          {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+            <div key={d}>{d}</div>
+          ))}
+        </div>
+
+        {/* Calendar grid */}
+        <div className="grid grid-cols-7 gap-1">
+          {days.map((day, idx) => {
+            if (!day) return <div key={idx} className="h-9 rounded-xl" />;
+            const isSelected = isSameDay(day, value);
+            const isToday = isSameDay(day, new Date());
+            const inMonth = day.getMonth() === viewMonth.getMonth();
+            return (
+              <button
+                key={day.toISOString()}
+                type="button"
+                onClick={() => handleDateSelect(day)}
+                className={`h-9 rounded-xl text-[13px] transition ${
+                  isSelected
+                    ? "bg-brand-500 font-bold text-white shadow-sm"
+                    : isToday
+                      ? "font-bold text-brand-600 hover:bg-brand-50"
+                      : inMonth
+                        ? "font-semibold text-slate-700 hover:bg-slate-100"
+                        : "font-semibold text-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                {day.getDate()}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Time picker — scrollable list replacing <select> */}
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+            {timeLabel}
+          </p>
+          <div
+            ref={timeListRef}
+            className="max-h-[168px] overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 scroll-smooth"
+          >
+            {times.map((t) => {
+              const isSel = t === currentTime;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  data-selected={isSel ? "true" : undefined}
+                  onClick={() => handleTimeSelect(t)}
+                  className={`flex w-full items-center justify-between px-3.5 py-[7px] text-left text-[13px] font-semibold transition ${
+                    isSel
+                      ? "bg-brand-500 text-white"
+                      : "text-slate-700 hover:bg-white"
+                  }`}
+                >
+                  {t}
+                  {isSel && (
+                    <svg
+                      className="h-3.5 w-3.5 shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Done */}
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="rounded-xl bg-brand-500 px-5 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-brand-600"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  // ── Inline trigger (used inside the desktop search bar) ──────────────────
+  if (inline) {
+    return (
+      <div className="relative" ref={containerRef}>
+        <button
+          type="button"
+          onClick={() => setOpen((p) => !p)}
+          className={`flex w-[210px] flex-col justify-center px-5 py-3.5 text-left transition hover:bg-slate-50/80 ${
+            open ? "bg-slate-50/80" : ""
+          }`}
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+            {inlineLabel ?? label}
+          </p>
+          <p className="mt-0.5 tabular-nums text-[13.5px] font-semibold text-slate-900">
+            {formatTrigger(value)}
+          </p>
+        </button>
+        {popup}
+      </div>
+    );
+  }
+
+  // ── Standalone trigger (default / mobile form) ────────────────────────────
   return (
     <div className="relative" ref={containerRef}>
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex w-full items-center justify-between rounded-xl border border-[#E5E7EB] bg-white text-left shadow-sm transition hover:border-slate-300 ${
-          compact ? "h-12 px-3 py-2" : "px-3.5 py-2.5"
-        }`}
+        className={`flex w-full items-center justify-between rounded-xl border bg-white text-left shadow-sm transition ${
+          open
+            ? "border-brand-400 ring-2 ring-brand-100"
+            : "border-[#E5E7EB] hover:border-slate-300"
+        } ${compact ? "h-12 px-3 py-2" : "px-3.5 py-2.5"}`}
       >
-        <div className={`flex min-w-0 flex-col text-sm font-semibold text-[#0f172a]`}>
-          <span className="text-[11px] font-semibold text-[#16A34A]">{label}</span>
-          <span className="tabular-nums text-[13px] font-bold">{formatTrigger(value)}</span>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-[11px] font-semibold text-brand-600">{label}</span>
+          <span className="tabular-nums text-[13px] font-bold text-slate-900">{formatTrigger(value)}</span>
         </div>
-        <span className="text-slate-400">▾</span>
+        <svg
+          className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180 text-brand-500" : "text-slate-400"}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
       </button>
-      {open && (
-        <div className="absolute left-0 z-50 mt-2 w-[440px] max-w-[95vw] rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_18px_60px_rgba(15,23,42,0.15)] ring-1 ring-slate-100">
-          <div className="flex items-center justify-between pb-3">
-            <div className="space-y-0.5">
-              <p className="text-xs font-semibold tracking-wide text-slate-500">{label} time</p>
-              <p className="text-sm font-semibold text-slate-900">{formatTrigger(value)}</p>
-            </div>
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <button
-                type="button"
-                onClick={() => setViewMonth(addMonths(viewMonth, -1))}
-                className="h-8 w-8 rounded-full border border-slate-200 text-slate-700 transition hover:bg-slate-100"
-              >
-                ‹
-              </button>
-              <div className="text-sm font-semibold text-slate-900">{title}</div>
-              <button
-                type="button"
-                onClick={() => setViewMonth(addMonths(viewMonth, 1))}
-                className="h-8 w-8 rounded-full border border-slate-200 text-slate-700 transition hover:bg-slate-100"
-              >
-                ›
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-7 gap-1 pb-2 text-center text-xs font-semibold tracking-wide text-slate-500">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-              <div key={d}>{d}</div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {days.map((day, idx) => {
-              if (!day) {
-                return <div key={idx} className="h-10 rounded-xl" />;
-              }
-              const isSelected = isSameDay(day, value);
-              const isToday = isSameDay(day, new Date());
-              const inMonth = day.getMonth() === viewMonth.getMonth();
-              return (
-                <button
-                  key={day.toISOString()}
-                  type="button"
-                  onClick={() => handleDateSelect(day)}
-                  className={`h-10 rounded-xl text-sm font-semibold transition ${
-                    isSelected
-                      ? "bg-slate-900 text-white shadow ring-1 ring-slate-300"
-                      : inMonth
-                        ? "text-slate-800 hover:bg-slate-100"
-                        : "text-slate-400 hover:bg-slate-50"
-                  }`}
-                >
-                  <div className="flex items-center justify-center gap-1">
-                    <span>{day.getDate()}</span>
-                    {isToday && !isSelected && <span className="text-[10px] text-emerald-600">•</span>}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-4 flex items-center gap-3">
-            <div className="text-xs font-semibold tracking-wide text-slate-500">{timeLabel}</div>
-            <div className="flex-1">
-              <div className="relative">
-                <select
-                  value={toTimeString(value)}
-                  onChange={(e) => handleTimeSelect(e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none"
-                >
-                  {times.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">▾</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 flex justify-end">
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600"
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      )}
+      {popup}
     </div>
   );
 }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function buildDateTime(date: string, time: string) {
   const [h, m] = time.split(":").map(Number);
@@ -540,12 +655,16 @@ function addMonths(date: Date, count: number) {
 }
 
 function isSameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
 
 function buildMonthGrid(month: Date) {
   const start = startOfMonth(month);
-  const startDay = start.getDay(); // 0-6
+  const startDay = start.getDay();
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const grid: (Date | null)[] = [];
   for (let i = 0; i < startDay; i++) grid.push(null);

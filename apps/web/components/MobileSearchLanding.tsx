@@ -115,7 +115,7 @@ export function MobileSearchLanding({
           <AddressAutocomplete
             defaultValue={location}
             placeholder="Enter a place or postcode"
-            inputClassName="w-full rounded-xl border border-[#E5E7EB] bg-white px-9 py-3 pr-11 text-[15px] font-semibold text-[#0f172a] transition focus:border-brand-500 focus:outline-none"
+            inputClassName="w-full rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 pr-11 text-[15px] font-semibold text-[#0f172a] transition focus:border-brand-500 focus:outline-none"
             showLocationButton
             onPlace={(place) => {
               setLocation(place.address);
