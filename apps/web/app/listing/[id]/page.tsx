@@ -69,7 +69,7 @@ export default async function ListingDetailPage({
   return (
     <div className="min-h-screen bg-[#f5f7fb] lg:bg-slate-50">
       <SlimNav />
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
+      <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 lg:space-y-10">
         {resolvedSearchParams.created && (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
             Listing published successfully.
@@ -84,8 +84,6 @@ export default async function ListingDetailPage({
           reviews={reviews as any}
           fallbackImage={fallback}
         />
-
-        
 
         {/* Desktop layout */}
         <div className="hidden lg:block">
@@ -133,7 +131,7 @@ export default async function ListingDetailPage({
             </div>
           </section>
 
-          <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+          <div className="grid gap-8 lg:grid-cols-[2fr,1fr]">
             <div className="space-y-6">
               <section className="rounded-[28px] border border-slate-200 bg-white p-7 shadow-sm">
                 <h2 className="text-[30px] font-semibold tracking-[-0.04em] text-slate-950">About this space</h2>
@@ -204,8 +202,8 @@ export default async function ListingDetailPage({
               </section>
             </div>
 
-            <aside className="space-y-4">
-              <div className="sticky top-6 space-y-5 rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+            <aside className="space-y-6">
+              <div className="sticky top-6 space-y-6 rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Book this space</p>
                   <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-slate-950">Choose your time</h2>
@@ -216,11 +214,6 @@ export default async function ListingDetailPage({
                   pricePerHour={listing.pricePerHour}
                   rateType={listing.rateType}
                 />
-                {(!listing.hostStripeAccountId || listing.hostStripeAccountId.startsWith("acct_mock_")) && (
-                  <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                    This host has not finished payout onboarding yet, so booking is unavailable until Stripe setup is complete.
-                  </div>
-                )}
               </div>
             </aside>
           </div>
