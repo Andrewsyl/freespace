@@ -15,7 +15,6 @@ import {
 } from "@heroicons/react/24/outline";
 import type { Listing } from "../../../components/ListingCard";
 import { ListingMap } from "./MapSection";
-import { WalkTime } from "./WalkTime";
 
 type Review = {
   id: string;
@@ -231,9 +230,6 @@ export function MobileListingView({
           <h2 className="text-[22px] font-semibold leading-[1.1] tracking-[-0.04em] text-slate-950">The local area</h2>
           <div className="mt-4 h-56 overflow-hidden rounded-lg">
             <ListingMap listing={listingForMap} center={{ lat: listing.latitude, lng: listing.longitude }} zoom={14} />
-          </div>
-          <div className="mt-4">
-            <WalkTime origin={{ lat: listing.latitude, lng: listing.longitude }} />
           </div>
         </section>
       )}

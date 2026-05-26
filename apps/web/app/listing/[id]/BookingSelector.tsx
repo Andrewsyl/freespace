@@ -54,6 +54,7 @@ export function BookingSelector({
   pricePerDay,
   pricePerHour,
   rateType,
+  unitPrice,
   dark = false,
   hidePrice = false,
 }: {
@@ -62,6 +63,7 @@ export function BookingSelector({
   pricePerDay?: number;
   pricePerHour?: number | null;
   rateType?: "hourly" | "daily" | null;
+  unitPrice?: number;
   dark?: boolean;
   hidePrice?: boolean;
 }) {
@@ -77,8 +79,20 @@ export function BookingSelector({
   const startSummary = formatSelectedDateTime(selectedDate, startTime);
   const endSummary = formatSelectedDateTime(selectedDate, endTime);
 
+  // Duration string for picker display
+  const durationLabel = useMemo(() => {
+    const [sh, sm] = startTime.split(":").map(Number);
+    const [eh, em] = endTime.split(":").map(Number);
+    const mins = (eh * 60 + em) - (sh * 60 + sm);
+    if (mins <= 0) return "—";
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (m === 0) return `${h} hr${h !== 1 ? "s" : ""}`;
+    return `${h}h ${m}m`;
+  }, [startTime, endTime]);
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Price row — shown unless hidePrice */}
       {!hidePrice && (
         <div className="flex items-end justify-between gap-3">
@@ -89,52 +103,45 @@ export function BookingSelector({
               rateType: rateType ?? "daily",
             })}
           </div>
-          <button
-            type="button"
-            onClick={() => setShowEditor(true)}
-            className={`mb-0.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-              dark
-                ? "border-white/[0.1] text-slate-400 hover:bg-white/[0.06]"
-                : "border-slate-200 text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            Change
-          </button>
         </div>
       )}
 
-      {/* Date + time summary */}
-      <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <p className={`text-[13px] ${dark ? "text-slate-500" : "text-slate-400"}`}>
-            {selectedDayLabel}
-          </p>
-          {hidePrice && (
-            <button
-              type="button"
-              onClick={() => setShowEditor(true)}
-              className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition ${
-                dark
-                  ? "border-white/[0.1] text-slate-400 hover:bg-white/[0.06]"
-                  : "border-slate-200 text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              Change
-            </button>
-          )}
+      {/* Picker grid — click to open editor */}
+      <div
+        className="cursor-pointer overflow-hidden rounded-xl border border-slate-200 transition hover:border-slate-300"
+        onClick={() => setShowEditor(true)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && setShowEditor(true)}
+      >
+        <div className="grid grid-cols-2">
+          <div className="px-4 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-400">Arrive</p>
+            <p className="mt-0.5 text-[15px] font-semibold text-slate-950">
+              {selectedDayLabel} · {startTime}
+            </p>
+          </div>
+          <div className="border-l border-slate-200 px-4 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-400">Depart</p>
+            <p className="mt-0.5 text-[15px] font-semibold text-slate-950">
+              {selectedDayLabel} · {endTime}
+            </p>
+          </div>
         </div>
-        <p className={`text-[28px] font-semibold leading-tight tracking-[-0.04em] ${dark ? "text-white" : "text-slate-950"}`}>
-          {startTime}{" "}
-          <span className={`font-light ${dark ? "text-white/20" : "text-slate-300"}`}>→</span>{" "}
-          {endTime}
-        </p>
+        <div className="border-t border-slate-200 px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-400">Duration</p>
+          <p className="mt-0.5 text-[15px] font-semibold text-slate-950">{durationLabel}</p>
+        </div>
       </div>
 
       <Link
         href={href as any}
-        className="inline-flex w-full items-center justify-center rounded-xl bg-brand-500 px-4 py-3.5 text-[15px] font-semibold text-white transition hover:bg-brand-600"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-3.5 text-[17px] font-bold text-white transition hover:bg-brand-600"
       >
-        Continue to booking
+        Reserve{unitPrice != null ? ` · €${unitPrice}.00` : ""}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 12h14M13 5l7 7-7 7"/>
+        </svg>
       </Link>
 
       {/* Edit modal */}
