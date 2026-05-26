@@ -129,6 +129,48 @@ export default async function ListingDetailPage({
             <span className="text-slate-600">{listing.title}</span>
           </nav>
 
+          {/* Title bar */}
+          <div className="mt-5 flex items-start justify-between gap-8">
+            <div className="min-w-0">
+              <h1 className="text-[34px] font-bold leading-tight tracking-[-0.03em] text-slate-950">
+                <span className="text-brand-500">Parking at </span>{listing.title}
+              </h1>
+              <div className="mt-1.5 flex items-center gap-1.5 text-[15px] text-slate-500">
+                <MapPinIcon className="h-4 w-4 shrink-0 text-slate-400" />
+                {listing.address}
+              </div>
+              <div className="mt-2 flex items-center gap-2.5 text-[13px] text-slate-500">
+                <span className="flex items-center gap-1.5 font-semibold text-slate-800">
+                  <StarIcon className="h-4 w-4 text-amber-400" />
+                  {rating.toFixed(1)}
+                </span>
+                {ratingCount > 0 && <span>· {ratingCount} reviews</span>}
+                <span>·</span>
+                <span>Hosted on carpark</span>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-2 pt-1">
+              <button
+                type="button"
+                className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v14"/>
+                </svg>
+                Share
+              </button>
+              <button
+                type="button"
+                className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+                Save
+              </button>
+            </div>
+          </div>
+
           {/* Hero map */}
           {hasCoords ? (
             <div className="relative mt-4 h-[460px] overflow-hidden rounded-2xl">
@@ -213,48 +255,6 @@ export default async function ListingDetailPage({
               </div>
             )
           )}
-
-          {/* Title bar */}
-          <div className="mt-6 flex items-start justify-between gap-8">
-            <div className="min-w-0">
-              <h1 className="text-[34px] font-bold leading-tight tracking-[-0.03em] text-slate-950">
-                <span className="text-brand-500">Parking at </span>{listing.title}
-              </h1>
-              <div className="mt-1.5 flex items-center gap-1.5 text-[15px] text-slate-500">
-                <MapPinIcon className="h-4 w-4 shrink-0 text-slate-400" />
-                {listing.address}
-              </div>
-              <div className="mt-2 flex items-center gap-2.5 text-[13px] text-slate-500">
-                <span className="flex items-center gap-1.5 font-semibold text-slate-800">
-                  <StarIcon className="h-4 w-4 text-amber-400" />
-                  {rating.toFixed(1)}
-                </span>
-                {ratingCount > 0 && <span>· {ratingCount} reviews</span>}
-                <span>·</span>
-                <span>Hosted on carpark</span>
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-2 pt-1">
-              <button
-                type="button"
-                className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 12v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v14"/>
-                </svg>
-                Share
-              </button>
-              <button
-                type="button"
-                className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-                Save
-              </button>
-            </div>
-          </div>
 
           {/* Two-column body */}
           <div className="mt-10 grid grid-cols-[minmax(0,1fr),380px] gap-16 pb-16">
@@ -356,42 +356,6 @@ export default async function ListingDetailPage({
                   </div>
                 </section>
               )}
-
-              {/* Getting there */}
-              <section className="mt-10 border-t border-slate-100 pt-10">
-                <h2 className="text-[22px] font-bold tracking-[-0.02em] text-slate-950">
-                  Getting there
-                </h2>
-                <p className="mt-1 text-[13px] text-slate-400">
-                  {listing.address} · Exact address shared after booking
-                </p>
-                <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-                  <div className="flex items-center gap-4 px-4 py-3.5">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100">
-                      <MapPinIcon className="h-4 w-4 text-slate-500" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-[14px] font-semibold text-slate-800">
-                        {listing.address.split(",")[0]}
-                      </p>
-                      <p className="text-[13px] text-slate-400">Exact address confirmed after booking</p>
-                    </div>
-                  </div>
-                  {streetViewHref && (
-                    <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
-                      <span className="text-[13px] text-slate-500">Open in Google Maps for directions</span>
-                      <a
-                        href={streetViewHref}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[13px] font-semibold text-brand-500 transition hover:text-brand-600"
-                      >
-                        Open directions →
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </section>
 
               {/* Reviews */}
               <section className="mt-10 border-t border-slate-100 pt-10">
