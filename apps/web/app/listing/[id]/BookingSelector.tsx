@@ -140,66 +140,121 @@ export function BookingSelector({
       {/* Edit modal */}
       {showEditor ? (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/40 px-4"
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/50 sm:items-center sm:px-4"
           onClick={() => setShowEditor(false)}
         >
           <div
-            className="w-full max-w-[940px] rounded-[32px] bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.22)] sm:p-8 lg:p-10"
+            className="w-full max-w-lg overflow-hidden rounded-t-2xl bg-white shadow-[0_8px_40px_rgba(15,23,42,0.22)] sm:rounded-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mx-auto max-w-3xl">
-              <h3 className="text-center text-[26px] font-semibold tracking-[-0.04em] text-slate-950 sm:text-[32px]">
-                Edit your date or time
-              </h3>
-              <p className="mx-auto mt-4 max-w-2xl text-center text-[17px] leading-8 text-slate-500">
-                The price or availability may change based on the date or time you select.
-              </p>
+            {/* Drag handle — visible on mobile only */}
+            <div className="flex justify-center bg-slate-950 pt-3 sm:hidden">
+              <div className="h-1 w-8 rounded-full bg-white/20" />
+            </div>
 
-              <div className="mt-8 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                <label className="block">
-                  <span className="text-[13px] font-semibold text-slate-800">Parking date</span>
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="mt-3 h-16 w-full rounded-[18px] border border-slate-200 bg-white px-5 text-[18px] font-semibold text-slate-950 focus:border-brand-500 focus:outline-none"
-                  />
-                </label>
+            {/* Dark header */}
+            <div className="bg-slate-950 px-6 pb-5 pt-3 sm:pt-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-500">
+                    Edit booking
+                  </p>
+                  <h3 className="mt-1 text-[22px] font-bold leading-tight tracking-[-0.03em] text-white">
+                    Date &amp; time
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowEditor(false)}
+                  className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
+                  aria-label="Close"
+                >
+                  <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                    <path d="M4 4l8 8M12 4l-8 8" />
+                  </svg>
+                </button>
+              </div>
+            </div>
 
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <div>
-                    <p className="text-[13px] font-semibold text-slate-800">Parking from</p>
-                    <div className="mt-3 rounded-[18px] border border-slate-200 bg-white px-5 py-4">
-                      <p className="text-[18px] font-semibold text-slate-950">{startSummary}</p>
-                      <input
-                        type="time"
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
-                        className="mt-3 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base font-semibold text-slate-900 focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-slate-800">Parking until</p>
-                    <div className="mt-3 rounded-[18px] border border-slate-200 bg-white px-5 py-4">
-                      <p className="text-[18px] font-semibold text-slate-950">{endSummary}</p>
-                      <input
-                        type="time"
-                        value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)}
-                        className="mt-3 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base font-semibold text-slate-900 focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
+            {/* Body */}
+            <div className="space-y-5 px-6 py-5">
+              {/* Quick-select chips */}
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  Quick select
+                </p>
+                <div className="mt-2.5 flex flex-wrap gap-2">
+                  {([
+                    { label: "2 hrs", start: "09:00", end: "11:00" },
+                    { label: "4 hrs", start: "09:00", end: "13:00" },
+                    { label: "Full day", start: "08:00", end: "20:00" },
+                    { label: "Evening", start: "17:00", end: "22:00" },
+                  ] as const).map((preset) => {
+                    const active = startTime === preset.start && endTime === preset.end;
+                    return (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => { setStartTime(preset.start); setEndTime(preset.end); }}
+                        className={`rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition ${
+                          active
+                            ? "border-brand-500 bg-brand-500 text-white"
+                            : "border-slate-200 text-slate-600 hover:border-brand-500 hover:text-brand-600"
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  Parking date
+                </p>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="mt-2 h-12 w-full rounded-lg border border-slate-200 px-4 text-[15px] font-semibold text-slate-950 focus:border-brand-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    From
+                  </p>
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="mt-2 h-12 w-full rounded-lg border border-slate-200 px-4 text-[15px] font-semibold text-slate-900 focus:border-brand-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    Until
+                  </p>
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="mt-2 h-12 w-full rounded-lg border border-slate-200 px-4 text-[15px] font-semibold text-slate-900 focus:border-brand-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-slate-100 px-6 py-4">
               <button
                 type="button"
                 onClick={() => setShowEditor(false)}
-                className="mt-8 inline-flex w-full items-center justify-center rounded-2xl bg-brand-500 px-6 py-4 text-lg font-semibold text-white transition hover:bg-brand-600"
+                className="inline-flex w-full items-center justify-center rounded-xl bg-brand-500 px-4 py-3.5 text-[15px] font-semibold text-white transition hover:bg-brand-600"
               >
-                Done
+                Confirm
               </button>
             </div>
           </div>
