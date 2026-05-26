@@ -24,10 +24,13 @@ export function ListingReviewScreen({ navigation }: Props) {
   const [published, setPublished] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const rootNavigation = navigation.getParent();
+  const requiresShortStay =
+    draft.pricingMode === "hourly_daily" || draft.pricingMode === "both";
+  const requiresMonthly = draft.pricingMode === "monthly" || draft.pricingMode === "both";
   const canPublish =
     draft.spaceType.trim().length > 0 &&
-    draft.pricePerHour.trim().length > 0 &&
-    draft.pricePerDay.trim().length > 0 &&
+    (!requiresShortStay || (draft.pricePerHour.trim().length > 0 && draft.pricePerDay.trim().length > 0)) &&
+    (!requiresMonthly || draft.pricePerMonth.trim().length > 0) &&
     draft.location.address.trim().length > 0;
 
   useEffect(() => {
@@ -48,7 +51,13 @@ export function ListingReviewScreen({ navigation }: Props) {
     }
     const hasHourlyPrice = draft.pricePerHour.trim().length > 0;
     const hasDailyPrice = draft.pricePerDay.trim().length > 0;
-    if (!draft.spaceType || !hasHourlyPrice || !hasDailyPrice || !draft.permissionDeclared) {
+    const hasMonthlyPrice = draft.pricePerMonth.trim().length > 0;
+    if (
+      !draft.spaceType ||
+      !draft.permissionDeclared ||
+      (requiresShortStay && (!hasHourlyPrice || !hasDailyPrice)) ||
+      (requiresMonthly && !hasMonthlyPrice)
+    ) {
       setError("Complete the required steps first.");
       return;
     }
@@ -65,7 +74,9 @@ export function ListingReviewScreen({ navigation }: Props) {
       ];
       const parsedHourly = Number.parseFloat(draft.pricePerHour);
       const parsedDaily = Number.parseFloat(draft.pricePerDay);
-      const inferredRateType = parsedHourly != null ? "hourly" : "daily";
+      const parsedMonthly = Number.parseFloat(draft.pricePerMonth);
+      const inferredRateType =
+        requiresShortStay && Number.isFinite(parsedHourly) && parsedHourly > 0 ? "hourly" : "daily";
       if (listingId) {
         await updateListing({
           token,
@@ -76,7 +87,8 @@ export function ListingReviewScreen({ navigation }: Props) {
           address: draft.location.address || "Dublin",
           rateType: inferredRateType,
           pricePerDay: parsedDaily,
-          pricePerHour: parsedHourly,
+          pricePerHour: requiresShortStay ? parsedHourly : null,
+          pricePerMonth: requiresMonthly ? parsedMonthly : null,
           availabilityText: draft.availability.detail,
           imageUrls,
           amenities: draft.accessOptions,
@@ -93,7 +105,8 @@ export function ListingReviewScreen({ navigation }: Props) {
           address: draft.location.address || "Dublin",
           rateType: inferredRateType,
           pricePerDay: parsedDaily,
-          pricePerHour: parsedHourly,
+          pricePerHour: requiresShortStay ? parsedHourly : null,
+          pricePerMonth: requiresMonthly ? parsedMonthly : null,
           availabilityText: draft.availability.detail,
           latitude: draft.location.latitude,
           longitude: draft.location.longitude,
@@ -180,7 +193,13 @@ export function ListingReviewScreen({ navigation }: Props) {
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Price</Text>
-            <Text style={styles.value}>€{draft.pricePerDay || "0"}</Text>
+            <Text style={styles.value}>
+              {requiresShortStay && requiresMonthly
+                ? `€${draft.pricePerHour}/hr · €${draft.pricePerDay}/day · €${draft.pricePerMonth}/month`
+                : requiresMonthly
+                  ? `€${draft.pricePerMonth || "0"}/month`
+                  : `€${draft.pricePerHour}/hr · €${draft.pricePerDay}/day`}
+            </Text>
           </View>
         </View>
       </ScrollView>

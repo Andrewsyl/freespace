@@ -22,6 +22,7 @@ import { colors, spacing, textStyles } from "../styles/theme";
 type Props = NativeStackScreenProps<RootStackParamList, "EditListing">;
 
 export function EditListingScreen({ navigation, route }: Props) {
+  const decimalKeyboardType = Platform.OS === "ios" ? "decimal-pad" : "numeric";
   const { id } = route.params;
   const { token } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -151,7 +152,7 @@ export function EditListingScreen({ navigation, route }: Props) {
                 containerStyle={styles.fieldInput}
                 value={pricePerDay}
                 onChangeText={setPricePerDay}
-                keyboardType="decimal-pad"
+                keyboardType={decimalKeyboardType}
               />
             </View>
             <View style={styles.fieldHalf}>

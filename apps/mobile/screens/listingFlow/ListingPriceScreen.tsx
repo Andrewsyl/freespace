@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { CalendarDays, Clock3, Info } from "lucide-react-native";
+import { CalendarDays, Clock3 } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
 import { colors, spacing, textStyles } from "../../styles/theme";
@@ -23,9 +23,14 @@ type FlowStackParamList = {
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingPrice">;
 
-const DEFAULT_HOURLY = 2.5;
-const DEFAULT_DAILY = 15;
-const MONTHLY_DEFAULT_DAYS = 12;
+const DEFAULT_HOURLY = 1;
+const DEFAULT_DAILY = 12;
+const DEFAULT_MONTHLY = 100;
+const PRICING_MODES = [
+  { key: "hourly_daily", label: "Hourly / Daily" },
+  { key: "monthly", label: "Monthly" },
+  { key: "both", label: "Both" },
+] as const;
 
 function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
@@ -35,7 +40,10 @@ function sanitizeMoneyInput(value: string) {
   const normalized = value.replace(",", ".").replace(/[^\d.]/g, "");
   const [whole, ...rest] = normalized.split(".");
   const decimal = rest.join("").slice(0, 2);
-  return decimal.length ? `${whole}.${decimal}` : whole;
+  if (rest.length > 0) {
+    return `${whole}.${decimal}`;
+  }
+  return whole;
 }
 
 function formatMoney(value: number) {
@@ -62,6 +70,8 @@ function PricingRow({
   editable?: boolean;
   onChangeText?: (next: string) => void;
 }) {
+  const decimalKeyboardType = Platform.OS === "ios" ? "decimal-pad" : "numeric";
+
   return (
     <View style={styles.priceRow}>
       <View style={styles.priceRowTop}>
@@ -77,7 +87,7 @@ function PricingRow({
                 style={styles.priceInput}
                 value={value}
                 onChangeText={onChangeText}
-                keyboardType="decimal-pad"
+                keyboardType={decimalKeyboardType}
                 placeholder="0.00"
                 placeholderTextColor="#9CA3AF"
               />
@@ -98,7 +108,8 @@ export function ListingPriceScreen({ navigation }: Props) {
 
   const initialHourly = parseMoney(draft.pricePerHour) ?? DEFAULT_HOURLY;
   const initialDaily = parseMoney(draft.pricePerDay) ?? DEFAULT_DAILY;
-  const initialMonthly = parseMoney(draft.pricePerMonth) ?? roundMoney(initialDaily * MONTHLY_DEFAULT_DAYS);
+  const initialMonthly = parseMoney(draft.pricePerMonth) ?? DEFAULT_MONTHLY;
+  const pricingMode = draft.pricingMode ?? "both";
 
   const [hourlyPrice, setHourlyPrice] = useState(formatMoney(initialHourly));
   const [dailyPrice, setDailyPrice] = useState(formatMoney(initialDaily));
@@ -154,23 +165,47 @@ export function ListingPriceScreen({ navigation }: Props) {
 
         <Text style={styles.title}>Set your rates</Text>
         <Text style={styles.subtitle}>
-          Drivers are always charged the lower of your applicable rates — your daily price automatically caps any hourly overflow.
+          Choose whether this space is for short stays, monthly commuter parking, or both.
         </Text>
 
+        <View style={styles.modeTabs}>
+          {PRICING_MODES.map((mode) => {
+            const active = pricingMode === mode.key;
+            return (
+              <Pressable
+                key={mode.key}
+                style={[styles.modeTab, active && styles.modeTabActive]}
+                onPress={() =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    pricingMode: mode.key,
+                  }))
+                }
+              >
+                <Text style={[styles.modeTabText, active && styles.modeTabTextActive]}>{mode.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         <View style={styles.card}>
-          <PricingRow
-            icon={<Clock3 size={22} color="#15171A" strokeWidth={2.2} />}
-            label="Hourly"
-            value={hourlyPrice}
-            onChangeText={handleHourlyChange}
-          />
-          <PricingRow
-            icon={<CalendarDays size={22} color="#15171A" strokeWidth={2.2} />}
-            label="Daily"
-            value={dailyPrice}
-            onChangeText={handleDailyChange}
-          />
-          {pricingWarning ? (
+          {(pricingMode === "hourly_daily" || pricingMode === "both") ? (
+            <>
+              <PricingRow
+                icon={<Clock3 size={22} color="#15171A" strokeWidth={2.2} />}
+                label="Hourly"
+                value={hourlyPrice}
+                onChangeText={handleHourlyChange}
+              />
+              <PricingRow
+                icon={<CalendarDays size={22} color="#15171A" strokeWidth={2.2} />}
+                label="Daily"
+                value={dailyPrice}
+                onChangeText={handleDailyChange}
+              />
+            </>
+          ) : null}
+          {pricingWarning && (pricingMode === "hourly_daily" || pricingMode === "both") ? (
             <View style={styles.inlineWarningWrap}>
               <View style={styles.warningCard}>
                 <Text style={styles.warningTitle}>Pricing conflict</Text>
@@ -178,25 +213,16 @@ export function ListingPriceScreen({ navigation }: Props) {
               </View>
             </View>
           ) : null}
-          <PricingRow
-            icon={<CalendarDays size={22} color="#15171A" strokeWidth={2.2} />}
-            label="Monthly"
-            value={monthlyPrice}
-            onChangeText={handleMonthlyChange}
-          />
+          {(pricingMode === "monthly" || pricingMode === "both") ? (
+            <PricingRow
+              icon={<CalendarDays size={22} color="#15171A" strokeWidth={2.2} />}
+              label="Monthly"
+              value={monthlyPrice}
+              onChangeText={handleMonthlyChange}
+            />
+          ) : null}
         </View>
 
-        <View style={styles.noteCard}>
-          <View style={styles.noteTitleRow}>
-            <Info size={16} color="#2ECC8F" strokeWidth={2} />
-            <Text style={styles.noteTitle}>How rates work</Text>
-          </View>
-          <View style={styles.noteList}>
-            <Text style={styles.noteItem}>· Drivers pay the <Text style={styles.noteItemBold}>lower</Text> of your hourly or daily rate — a 5-hour booking at €3/hr would cost €12 if your daily rate is €12.</Text>
-            <Text style={styles.noteItem}>· Set your <Text style={styles.noteItemBold}>daily rate lower</Text> than 24× your hourly rate so longer stays always get a fair deal.</Text>
-            <Text style={styles.noteItem}>· The <Text style={styles.noteItemBold}>monthly rate</Text> defaults to roughly 40% off your daily rate — similar to what JustPark and YourParkingSpace spaces charge. Adjust it to match nearby commuter spaces.</Text>
-          </View>
-        </View>
       </ScrollView>
 
       <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
@@ -236,6 +262,39 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     lineHeight: 22,
     marginTop: 8,
+  },
+  modeTabs: {
+    backgroundColor: "#EEF2F1",
+    borderRadius: 14,
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 20,
+    padding: 6,
+  },
+  modeTab: {
+    alignItems: "center",
+    borderRadius: 10,
+    flex: 1,
+    justifyContent: "center",
+    minHeight: 40,
+    paddingHorizontal: 10,
+  },
+  modeTabActive: {
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+  },
+  modeTabText: {
+    color: colors.textMuted,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  modeTabTextActive: {
+    color: colors.text,
   },
   card: {
     backgroundColor: "#FFFFFF",
@@ -310,42 +369,6 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 20,
     fontWeight: "700",
-  },
-  noteCard: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 18,
-    paddingHorizontal: 18,
-    paddingVertical: 18,
-  },
-  noteTitleRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
-  },
-  noteTitle: {
-    color: colors.brandDark,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  noteList: {
-    gap: 10,
-  },
-  noteItem: {
-    color: colors.textMuted,
-    fontFamily: "Inter-Regular",
-    fontSize: 13,
-    fontWeight: "400",
-    lineHeight: 20,
-  },
-  noteItemBold: {
-    fontFamily: "Inter-SemiBold",
-    fontWeight: "600",
-    color: colors.text,
   },
   warningCard: {
     backgroundColor: "#FFF7ED",

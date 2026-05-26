@@ -13,7 +13,10 @@ export type HostListingDraft = {
   requiresAccessCode?: boolean | null;
   accessType?: string;
   accessInstructions?: string;
+  pricingMode?: "hourly_daily" | "monthly" | "both";
+  pricePerHour?: number;
   pricePerDay?: number;
+  pricePerMonth?: number;
   amenities: string[];
   imageUrls: string[];
 };

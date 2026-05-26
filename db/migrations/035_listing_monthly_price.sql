@@ -1,0 +1,2 @@
+ALTER TABLE listings
+ADD COLUMN IF NOT EXISTS price_per_month NUMERIC(10, 2);

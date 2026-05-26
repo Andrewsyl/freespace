@@ -131,6 +131,7 @@ export type CreateListingInput = {
   rateType?: "hourly" | "daily";
   pricePerDay: number;
   pricePerHour?: number | null;
+  pricePerMonth?: number | null;
   availabilityText: string;
   latitude: number;
   longitude: number;

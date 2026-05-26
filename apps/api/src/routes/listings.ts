@@ -34,6 +34,7 @@ function normalizeListingPricing(input: {
   rateType?: "hourly" | "daily";
   pricePerDay?: number;
   pricePerHour?: number;
+  pricePerMonth?: number;
 }) {
   const hasDay = typeof input.pricePerDay === "number" && Number.isFinite(input.pricePerDay) && input.pricePerDay > 0;
   const hasHour = typeof input.pricePerHour === "number" && Number.isFinite(input.pricePerHour) && input.pricePerHour > 0;
@@ -60,6 +61,12 @@ function normalizeListingPricing(input: {
     rateType,
     pricePerDay: normalizedDaily,
     pricePerHour: normalizedHourly,
+    pricePerMonth:
+      typeof input.pricePerMonth === "number" &&
+      Number.isFinite(input.pricePerMonth) &&
+      input.pricePerMonth > 0
+        ? roundMoney(input.pricePerMonth)
+        : null,
   };
 }
 
@@ -141,6 +148,7 @@ const createListingSchema = z.object({
   rateType: rateTypeSchema.default("daily"),
   pricePerDay: z.coerce.number().positive().max(100000).optional(),
   pricePerHour: z.coerce.number().positive().max(100000).optional(),
+  pricePerMonth: z.coerce.number().positive().max(100000).optional(),
   availabilityText: z.string().trim().min(3).max(240),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
@@ -186,6 +194,7 @@ router.post("/", requireAuth, enforceBlockedList, listingWriteLimiter, async (re
       rateType: pricing.rateType,
       pricePerDay: pricing.pricePerDay,
       pricePerHour: pricing.pricePerHour,
+      pricePerMonth: pricing.pricePerMonth,
       hostId,
       latitude,
       longitude,
@@ -216,6 +225,7 @@ const searchSchema = z
     from: z.string().datetime(),
     to: z.string().datetime(),
     includeUnavailable: z.coerce.boolean().optional().default(false),
+    mode: z.enum(["daily", "monthly"]).optional().default("daily"),
     spaceType: z.string().trim().min(2).max(40).optional(),
   })
   .superRefine((value, ctx) => {
@@ -286,6 +296,7 @@ const updateListingSchema = z.object({
   rateType: rateTypeSchema.optional(),
   pricePerDay: z.coerce.number().positive().max(100000).optional(),
   pricePerHour: z.coerce.number().positive().max(100000).optional(),
+  pricePerMonth: z.coerce.number().positive().max(100000).optional(),
   availabilityText: z.string().trim().min(3).max(240).optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
@@ -307,7 +318,8 @@ router.patch("/:id", requireAuth, listingWriteLimiter, async (req, res, next) =>
     const pricing =
       payload.rateType ||
       typeof payload.pricePerDay === "number" ||
-      typeof payload.pricePerHour === "number"
+      typeof payload.pricePerHour === "number" ||
+      typeof payload.pricePerMonth === "number"
         ? normalizeListingPricing(payload)
         : null;
     const updated = await updateListingForHost({
@@ -318,6 +330,7 @@ router.patch("/:id", requireAuth, listingWriteLimiter, async (req, res, next) =>
       rateType: pricing?.rateType,
       pricePerDay: pricing?.pricePerDay,
       pricePerHour: pricing?.pricePerHour,
+      pricePerMonth: pricing?.pricePerMonth,
       availabilityText: payload.availabilityText,
       latitude: payload.latitude,
       longitude: payload.longitude,

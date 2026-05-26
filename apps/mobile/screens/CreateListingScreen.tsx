@@ -17,6 +17,7 @@ import { colors, spacing, textStyles } from "../styles/theme";
 type Props = NativeStackScreenProps<any, any>;
 
 export function CreateListingScreen({ navigation }: Props) {
+  const decimalKeyboardType = Platform.OS === "ios" ? "decimal-pad" : "numeric";
   const { token, user } = useAuth();
   const [title, setTitle] = useState("");
   const [address, setAddress] = useState("");
@@ -123,7 +124,7 @@ export function CreateListingScreen({ navigation }: Props) {
                   containerStyle={styles.fieldInput}
                   value={pricePerDay}
                   onChangeText={setPricePerDay}
-                  keyboardType="decimal-pad"
+                  keyboardType={decimalKeyboardType}
                   placeholder="22"
                 />
               </View>
@@ -146,7 +147,7 @@ export function CreateListingScreen({ navigation }: Props) {
                   containerStyle={styles.fieldInput}
                   value={latitude}
                   onChangeText={setLatitude}
-                  keyboardType="decimal-pad"
+                  keyboardType={decimalKeyboardType}
                   placeholder="53.3498"
                 />
               </View>
@@ -157,7 +158,7 @@ export function CreateListingScreen({ navigation }: Props) {
                   containerStyle={styles.fieldInput}
                   value={longitude}
                   onChangeText={setLongitude}
-                  keyboardType="decimal-pad"
+                  keyboardType={decimalKeyboardType}
                   placeholder="-6.2603"
                 />
               </View>

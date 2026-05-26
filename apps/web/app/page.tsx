@@ -36,6 +36,69 @@ const defaultFilters: SearchFilters = {
   mode: "daily",
 };
 
+const homepageScenarios = [
+  {
+    title: "Monthly parking",
+    body: "Lock in a regular space near home, work, or your weekday commute.",
+    cta: "Browse monthly",
+    filters: {
+      location: "Dublin City Centre",
+      latitude: 53.3498,
+      longitude: -6.2603,
+      mode: "monthly" as const,
+    },
+  },
+  {
+    title: "Airport parking",
+    body: "Book ahead for early departures, weekend trips, and longer stays.",
+    cta: "Near the airport",
+    filters: {
+      location: "Dublin Airport",
+      latitude: 53.4264,
+      longitude: -6.2499,
+      mode: "daily" as const,
+    },
+  },
+  {
+    title: "Event parking",
+    body: "Get closer to stadiums, gigs, and matchday venues before the rush.",
+    cta: "Find event parking",
+    filters: {
+      location: "Aviva Stadium, Dublin",
+      latitude: 53.3352,
+      longitude: -6.2285,
+      mode: "daily" as const,
+    },
+  },
+  {
+    title: "EV charging",
+    body: "Search spaces with charging so parking and topping up happen in one stop.",
+    cta: "Spaces with EV",
+    filters: {
+      location: "Dublin City Centre",
+      latitude: 53.3498,
+      longitude: -6.2603,
+      mode: "daily" as const,
+      evCharging: true,
+    },
+  },
+] as const;
+
+const howItWorks = [
+  {
+    title: "Search",
+    body: "Pick your destination, compare spaces, and filter by what actually matters to your trip.",
+  },
+  {
+    title: "Book",
+    body: "Reserve in seconds with upfront pricing, clear instructions, and instant confirmation.",
+  },
+  {
+    title: "Park",
+    body: "Arrive with the details you need, follow the access steps, and get on with your day.",
+  },
+] as const;
+
 export default function HomePage() {
   const router = useRouter();
   const fromDateRef = useRef<HTMLInputElement>(null);
@@ -49,6 +112,7 @@ export default function HomePage() {
   const [date, setDate] = useState(() => defaultFilters.date);
   const [startTime, setStartTime] = useState(defaultFilters.startTime);
   const [endTime, setEndTime] = useState(defaultFilters.endTime);
+
   const handleSearch = (filters: SearchFilters) => {
     const params = new URLSearchParams({
       location: filters.location,
@@ -75,6 +139,18 @@ export default function HomePage() {
       startTime,
       endTime,
       mode,
+    });
+  };
+
+  const launchScenario = (overrides: Partial<SearchFilters>) => {
+    handleSearch({
+      ...defaultFilters,
+      ...overrides,
+      location: overrides.location ?? defaultFilters.location,
+      latitude: overrides.latitude ?? defaultFilters.latitude,
+      longitude: overrides.longitude ?? defaultFilters.longitude,
+      mode: overrides.mode ?? defaultFilters.mode,
+      evCharging: overrides.evCharging,
     });
   };
 
@@ -251,6 +327,59 @@ export default function HomePage() {
               <p className="text-sm text-slate-600">{item.body}</p>
             </div>
           ))}
+        </section>
+
+        <section className="mt-8 space-y-5">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">Ways to park</p>
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+              Parking for every kind of trip
+            </h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {homepageScenarios.map((scenario) => (
+              <button
+                key={scenario.title}
+                type="button"
+                onClick={() => launchScenario(scenario.filters)}
+                className="rounded-[24px] border border-slate-200 bg-white px-5 py-5 text-left shadow-[0_12px_28px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_18px_38px_rgba(15,23,42,0.10)]"
+              >
+                <div className="space-y-3">
+                  <div className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                    {scenario.title}
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="font-display text-lg font-semibold text-slate-900">{scenario.title}</h3>
+                    <p className="text-sm leading-6 text-slate-600">{scenario.body}</p>
+                  </div>
+                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    {scenario.cta}
+                    <span aria-hidden>→</span>
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-[28px] border border-slate-200 bg-white px-6 py-8 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">How it works</p>
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+              Search, book, park
+            </h2>
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {howItWorks.map((step, index) => (
+              <div key={step.title} className="rounded-[22px] bg-slate-50 px-5 py-5">
+                <div className="mb-4 inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+                  {index + 1}
+                </div>
+                <h3 className="font-display text-lg font-semibold text-slate-900">{step.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{step.body}</p>
+              </div>
+            ))}
+          </div>
         </section>
       </main>
     </div>

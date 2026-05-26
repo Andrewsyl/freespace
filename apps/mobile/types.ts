@@ -74,6 +74,7 @@ export type ListingSummary = {
   address: string;
   price_per_day: number;
   price_per_hour?: number | null;
+  price_per_month?: number | null;
   rate_type?: "hourly" | "daily" | null;
   is_available?: boolean | null;
   rating?: number | null;

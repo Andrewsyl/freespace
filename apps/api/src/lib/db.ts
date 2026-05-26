@@ -10,16 +10,23 @@ if (!connectionString) {
 export const pool = new Pool({ connectionString });
 
 type ListingRateType = "hourly" | "daily";
+type ListingSearchMode = "daily" | "monthly";
 
 function mapListingRateType(raw: unknown): ListingRateType {
   return raw === "hourly" ? "hourly" : "daily";
 }
 
-function mapListingPricing(row: { price_per_day: number | string; price_per_hour?: number | string | null; rate_type?: string | null }) {
+function mapListingPricing(row: {
+  price_per_day: number | string;
+  price_per_hour?: number | string | null;
+  price_per_month?: number | string | null;
+  rate_type?: string | null;
+}) {
   return {
     rateType: mapListingRateType(row.rate_type),
     pricePerDay: Number(row.price_per_day),
     pricePerHour: row.price_per_hour == null ? null : Number(row.price_per_hour),
+    pricePerMonth: row.price_per_month == null ? null : Number(row.price_per_month),
   };
 }
 
@@ -57,6 +64,7 @@ export type SpaceSearchInput = {
   from: string;
   to: string;
   spaceType?: string;
+  mode?: ListingSearchMode;
 };
 
 function oneOffAvailabilityRange(alias: string) {
@@ -68,7 +76,7 @@ function recurringAvailabilityRange(alias: string) {
 }
 
 export async function findAvailableSpaces(input: SpaceSearchInput) {
-  const { lat, lng, radiusKm, from, to, spaceType } = input;
+  const { lat, lng, radiusKm, from, to, spaceType, mode = "daily" } = input;
   const spaceTypeFilter = spaceType?.trim()
     ? `%${spaceType.trim().toLowerCase()}%`
     : null;
@@ -79,6 +87,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       address,
       price_per_day,
       price_per_hour,
+      price_per_month,
       rate_type,
       rating,
       rating_count,
@@ -97,6 +106,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
     )
     AND status <> 'archived'
     AND ($6::text IS NULL OR lower(title) LIKE $6)
+    AND ($7::text <> 'monthly' OR price_per_month IS NOT NULL)
     AND NOT EXISTS (
       SELECT 1 FROM bookings b
       WHERE b.listing_id = listings.id
@@ -177,7 +187,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
     LIMIT 200;
   `;
 
-  const params = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter];
+  const params = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter, mode];
   try {
     const result = await pool.query(
       baseQuery.replace(
@@ -203,7 +213,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
     if (err?.code !== "42703" && err?.code !== "42P01") throw err;
     // Fallback for older schema without image_urls / rating_count / availability table
     const legacy = legacyQuery.replace("rating_count,", "");
-    const result = await pool.query(legacy, params);
+    const result = await pool.query(legacy, params.slice(0, 6));
     return result.rows.map((row) => ({
       id: row.id,
       title: row.title,
@@ -221,7 +231,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
 }
 
 export async function findSpacesWithAvailability(input: SpaceSearchInput) {
-  const { lat, lng, radiusKm, from, to, spaceType } = input;
+  const { lat, lng, radiusKm, from, to, spaceType, mode = "daily" } = input;
   const spaceTypeFilter = spaceType?.trim()
     ? `%${spaceType.trim().toLowerCase()}%`
     : null;
@@ -279,6 +289,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
       address,
       price_per_day,
       price_per_hour,
+      price_per_month,
       rate_type,
       rating,
       rating_count,
@@ -298,6 +309,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
     )
     AND status <> 'archived'
     AND ($6::text IS NULL OR lower(title) LIKE $6)
+    AND ($7::text <> 'monthly' OR price_per_month IS NOT NULL)
     ORDER BY distance_m ASC
     LIMIT 200;
   `;
@@ -329,7 +341,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
     LIMIT 200;
   `;
 
-  const params = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter];
+  const params = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter, mode];
   try {
     const result = await pool.query(
       baseQuery.replace(
@@ -355,7 +367,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
   } catch (err: any) {
     if (err?.code !== "42703" && err?.code !== "42P01") throw err;
     const legacy = legacyQuery.replace("rating_count,", "");
-    const result = await pool.query(legacy, params);
+    const result = await pool.query(legacy, params.slice(0, 6));
     return result.rows.map((row) => ({
       id: row.id,
       title: row.title,
@@ -379,6 +391,7 @@ export type NewListing = {
   rateType: ListingRateType;
   pricePerDay: number;
   pricePerHour?: number | null;
+  pricePerMonth?: number | null;
   availabilityText: string;
   hostId: string;
   hostStripeAccountId?: string | null;
@@ -399,6 +412,7 @@ export async function createListing(listing: NewListing) {
       rate_type,
       price_per_day,
       price_per_hour,
+      price_per_month,
       availability_text,
       host_id,
       amenities,
@@ -408,7 +422,7 @@ export async function createListing(listing: NewListing) {
       arrival_instructions,
       permission_declared
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, ST_SetSRID(ST_MakePoint($9, $10), 4326), $11, $12, $13, $14)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, ST_SetSRID(ST_MakePoint($10, $11), 4326), $12, $13, $14, $15)
     RETURNING id;
   `;
   const params = [
@@ -417,6 +431,7 @@ export async function createListing(listing: NewListing) {
     listing.rateType,
     listing.pricePerDay,
     listing.pricePerHour ?? null,
+    listing.pricePerMonth ?? null,
     listing.availabilityText,
     listing.hostId,
     listing.amenities ?? [],
@@ -884,6 +899,7 @@ export async function listListingsByHost(hostId: string) {
         address,
         price_per_day,
         price_per_hour,
+        price_per_month,
         rate_type,
         availability_text,
         image_urls,
@@ -959,6 +975,7 @@ export async function updateListingForHost({
   address,
   pricePerDay,
   pricePerHour,
+  pricePerMonth,
   rateType,
   availabilityText,
   latitude,
@@ -975,6 +992,7 @@ export async function updateListingForHost({
   address?: string;
   pricePerDay?: number;
   pricePerHour?: number | null;
+  pricePerMonth?: number | null;
   rateType?: ListingRateType;
   availabilityText?: string;
   latitude?: number;
@@ -1008,6 +1026,10 @@ export async function updateListingForHost({
   if (pricePerHour !== undefined) {
     fields.push(`price_per_hour = $${idx++}`);
     values.push(pricePerHour);
+  }
+  if (pricePerMonth !== undefined) {
+    fields.push(`price_per_month = $${idx++}`);
+    values.push(pricePerMonth);
   }
   if (typeof availabilityText === "string") {
     fields.push(`availability_text = $${idx++}`);
@@ -1118,6 +1140,7 @@ export async function getListingById(listingId: string) {
         address,
         price_per_day,
         price_per_hour,
+        price_per_month,
         rate_type,
         availability_text,
         image_urls,
@@ -1248,6 +1271,7 @@ export async function getListingByIdWithAvailability(
         address,
         price_per_day,
         price_per_hour,
+        price_per_month,
         rate_type,
         availability_text,
         image_urls,

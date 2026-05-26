@@ -34,7 +34,10 @@ const DEFAULT_DRAFT: HostListingDraft = {
   requiresAccessCode: null,
   accessType: undefined,
   accessInstructions: "",
-  pricePerDay: undefined,
+  pricingMode: "both",
+  pricePerHour: 1,
+  pricePerDay: 12,
+  pricePerMonth: 100,
   amenities: [],
   imageUrls: [],
 };
@@ -123,7 +126,19 @@ export default function HostWizardPage() {
       case 4: // Availability
         return draft.availabilityText.trim().length > 3;
       case 5: // Pricing
-        return typeof draft.pricePerDay === "number" && draft.pricePerDay > 0;
+        return draft.pricingMode === "monthly"
+          ? typeof draft.pricePerMonth === "number" && draft.pricePerMonth > 0
+          : draft.pricingMode === "both"
+            ? typeof draft.pricePerHour === "number" &&
+              draft.pricePerHour > 0 &&
+              typeof draft.pricePerDay === "number" &&
+              draft.pricePerDay > 0 &&
+              typeof draft.pricePerMonth === "number" &&
+              draft.pricePerMonth > 0
+            : typeof draft.pricePerHour === "number" &&
+              draft.pricePerHour > 0 &&
+              typeof draft.pricePerDay === "number" &&
+              draft.pricePerDay > 0;
       case 6: // Photos — optional but must have at least 1 to proceed (or skip)
         return true;
       default: // Review
@@ -166,7 +181,10 @@ export default function HostWizardPage() {
         {
           title: buildTitleFromDraft(draft),
           address: draft.address,
+          rateType: typeof draft.pricePerHour === "number" && draft.pricePerHour > 0 ? "hourly" : "daily",
           pricePerDay: draft.pricePerDay ?? 0,
+          pricePerHour: draft.pricingMode === "monthly" ? null : draft.pricePerHour ?? null,
+          pricePerMonth: draft.pricingMode === "hourly_daily" ? null : draft.pricePerMonth ?? null,
           availabilityText: draft.availabilityText,
           latitude: draft.latitude ?? 0,
           longitude: draft.longitude ?? 0,

@@ -58,10 +58,11 @@ const defaultDraft: ListingDraft = {
     weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     dayTimeRanges: {},
   },
+  pricingMode: "both",
   rateType: "daily",
-  pricePerDay: "",
-  pricePerHour: "",
-  pricePerMonth: "",
+  pricePerDay: "12.00",
+  pricePerHour: "1.00",
+  pricePerMonth: "100.00",
   photos: [],
 };
 
@@ -150,6 +151,13 @@ export function ListingFlowScreen({ route }: Props) {
             ...prev.availability,
             detail: listing.availability_text ?? prev.availability.detail,
           },
+          pricingMode:
+            (listing as { price_per_month?: number | null }).price_per_month != null &&
+            (listing.price_per_day != null || listing.price_per_hour != null)
+              ? "both"
+              : (listing as { price_per_month?: number | null }).price_per_month != null
+                ? "monthly"
+                : "hourly_daily",
           rateType:
             (listing.rate_type ?? "daily") === "hourly" ? "hourly" : "daily",
           pricePerDay:

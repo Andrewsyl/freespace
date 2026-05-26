@@ -56,6 +56,9 @@ export function HostConfirmationStep({ data }: HostStepProps) {
             <Row label="Vehicle"  value={VEHICLE_LABELS[data.vehicleSize] ?? data.vehicleSize} />
           )}
           <Row label="Price"       value={data.pricePerDay ? `€${data.pricePerDay} per day` : undefined} missing={!data.pricePerDay} />
+          {typeof data.pricePerMonth === "number" && data.pricePerMonth > 0 ? (
+            <Row label="Monthly" value={`€${data.pricePerMonth} per month`} />
+          ) : null}
           <Row label="Available"   value={data.availabilityText || undefined}   missing={!data.availabilityText} />
           {data.requiresAccessCode === true && data.accessType && (
             <Row label="Access"    value={ACCESS_TYPE_LABELS[data.accessType] ?? data.accessType} />
