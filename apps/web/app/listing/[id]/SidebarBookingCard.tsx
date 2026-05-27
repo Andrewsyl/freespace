@@ -86,7 +86,7 @@ export function SidebarBookingCard({
             </div>
           </div>
 
-          {/* Book with confidence — JustPark style */}
+          {/* Book with confidence */}
           <div className="mt-4 rounded-xl border border-brand-500/30 bg-brand-500/5 p-4">
             <div className="mb-3 flex items-center gap-2">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-brand-600">
@@ -95,10 +95,10 @@ export function SidebarBookingCard({
               <p className="text-[13px] font-bold text-brand-700">Book with confidence</p>
             </div>
             {([
-              "Confirmation is immediate",
-              "106,000+ verified reviews",
-              "Trusted by over 1 million drivers",
-              "Free cancellation up to 1 hr before",
+              "Instant booking confirmation",
+              "Secure, encrypted payment",
+              "No hidden fees",
+              "Cancel before your booking starts",
             ] as const).map((item) => (
               <div key={item} className="mb-1.5 flex items-center gap-2 last:mb-0">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-brand-500">

@@ -13,6 +13,7 @@ export type Listing = {
   distanceKm?: number;
   availability: string;
   tags?: string[];
+  amenities?: string[];
   image?: string;
   imageUrls?: string[];
   image_urls?: string[];
@@ -141,14 +142,18 @@ export function ListingCard({
     "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80";
 
   const hasRating = typeof listing.rating === "number" && listing.rating > 0;
-  const isInstantBook = listing.tags?.some((t) => t.toLowerCase().includes("instant"));
   const isVerified = hasRating && (listing.ratingCount ?? 0) >= 3;
   const dist = listing.distanceKm;
-  const hasCctv = listing.tags?.some((t) => t.toLowerCase().includes("cctv") || t.toLowerCase().includes("camera"));
-  const hasEv = listing.tags?.some((t) => t.toLowerCase().includes("ev") || t.toLowerCase().includes("charg"));
-  const hasGated = listing.tags?.some((t) => t.toLowerCase().includes("gat") || t.toLowerCase().includes("barrier"));
-  const hasCovered = listing.tags?.some((t) => t.toLowerCase().includes("cover") || t.toLowerCase().includes("shelter") || t.toLowerCase().includes("roof"));
-  const spaceType = deriveSpaceType(listing.tags);
+
+  // Use amenities (from detail API) or fall back to tags (from search API)
+  const features = [...(listing.amenities ?? []), ...(listing.tags ?? [])];
+  const feats = (s: string) => features.some((f) => f.toLowerCase().includes(s));
+  const isInstantBook = feats("instant");
+  const hasCctv    = feats("cctv") || feats("camera");
+  const hasEv      = feats("ev") || feats("charg");
+  const hasGated   = feats("gat") || feats("barrier");
+  const hasCovered = feats("cover") || feats("shelter") || feats("roof");
+  const spaceType  = deriveSpaceType(listing.tags);
 
   return (
     <article

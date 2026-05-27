@@ -364,13 +364,15 @@ function ListingOverlay({
   const isUrl = image?.startsWith("http");
 
   const hasRating    = typeof listing.rating === "number" && listing.rating > 0;
-  const isInstant    = listing.tags?.some(t => t.toLowerCase().includes("instant"));
-  const hasCctv      = listing.tags?.some(t => t.toLowerCase().includes("cctv") || t.toLowerCase().includes("camera"));
-  const hasEv        = listing.tags?.some(t => t.toLowerCase().includes("ev") || t.toLowerCase().includes("charg"));
-  const hasGated     = listing.tags?.some(t => t.toLowerCase().includes("gat") || t.toLowerCase().includes("barrier"));
-  const hasCovered   = listing.tags?.some(t => t.toLowerCase().includes("cover") || t.toLowerCase().includes("shelter") || t.toLowerCase().includes("roof"));
-  const hasDisabled  = listing.tags?.some(t => t.toLowerCase().includes("disabled") || t.toLowerCase().includes("wheelchair"));
-  const has247       = listing.tags?.some(t => t.toLowerCase().includes("24") || t.toLowerCase().includes("24/7"));
+  const features     = [...(listing.amenities ?? []), ...(listing.tags ?? [])];
+  const feats        = (s: string) => features.some(f => f.toLowerCase().includes(s));
+  const isInstant    = feats("instant");
+  const hasCctv      = feats("cctv") || feats("camera");
+  const hasEv        = feats("ev") || feats("charg");
+  const hasGated     = feats("gat") || feats("barrier");
+  const hasCovered   = feats("cover") || feats("shelter") || feats("roof");
+  const hasDisabled  = feats("disabled") || feats("wheelchair");
+  const has247       = feats("24/7") || feats("24 hour");
   const spaceType    = deriveSpaceType(listing.tags);
   const isAvailable  = listing.availability?.toLowerCase() !== "unavailable";
   const amenities    = [

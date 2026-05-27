@@ -146,21 +146,13 @@ export default async function ListingDetailPage({
               </div>
             </div>
 
-            {/* TrustScore badge */}
+            {/* Secure booking badge */}
             <div className="shrink-0 rounded-xl border border-slate-200 px-4 py-3">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold text-slate-500">TrustScore</span>
-                <span className="text-[15px] font-bold text-slate-950">4.6</span>
-                <span className="text-[11px] text-slate-400">| 106,000+ reviews</span>
+                <ShieldCheckIcon className="h-4 w-4 text-brand-500" />
+                <span className="text-[13px] font-semibold text-slate-950">Secure booking</span>
               </div>
-              <div className="mt-1.5 flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <div
-                    key={n}
-                    className={`h-5 w-5 rounded-[3px] ${n <= 4 ? "bg-[#00b67a]" : "bg-[#73cf11]"}`}
-                  />
-                ))}
-              </div>
+              <p className="mt-1 text-[11px] text-slate-400">Payments encrypted &amp; protected</p>
             </div>
           </div>
         </div>
@@ -170,26 +162,31 @@ export default async function ListingDetailPage({
           <div className="mx-auto max-w-6xl px-6 py-2.5">
             <div className="flex items-center justify-between text-[12.5px] font-semibold text-white">
               <div className="flex items-center gap-2">
-                <ShieldCheckIcon className="h-4 w-4" />
-                <span>Best price guarantee</span>
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                <span>Secure, encrypted payment</span>
               </div>
               <div className="flex items-center gap-2">
                 <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none">
                   <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
                   <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <span>Confirmation is immediate</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <StarIcon className="h-4 w-4 text-white" />
-                <span>4.6+ Trustpilot ratings</span>
+                <span>Instant booking confirmation</span>
               </div>
               <div className="flex items-center gap-2">
                 <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none">
                   <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
                   <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <span>Trusted by over 1 million drivers</span>
+                <span>No hidden fees</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>Cancel before your booking starts</span>
               </div>
             </div>
           </div>
@@ -378,10 +375,7 @@ export default async function ListingDetailPage({
                 {/* Local area */}
                 {hasCoords && (
                   <section className="border-t border-slate-100 py-8">
-                    <h2 className="text-[26px] font-bold leading-tight tracking-[-0.03em] text-slate-950">
-                      The local area
-                    </h2>
-                    <div className="mt-5 h-64 overflow-hidden rounded-lg">
+                    <div className="h-64 overflow-hidden rounded-lg">
                       <ListingMap
                         listing={listingForMap}
                         center={{ lat: listing.latitude!, lng: listing.longitude! }}
