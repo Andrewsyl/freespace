@@ -7,21 +7,57 @@ concurrency:
 on:
   workflow_dispatch:
     inputs:
-      verify_only:
-        description: Only verify the currently live frontend build marker
+      deploy_web:
+        description: Deploy the web service to ECS
         required: true
         type: boolean
-        default: false
+        default: true
   push:
     branches: [main]
     paths:
       - "apps/web/**"
+      - "design-system/**"
+      - "package.json"
+      - "yarn.lock"
+      - "tsconfig.json"
+      - "tsconfig.base.json"
       - "scripts/verify-live-web.mjs"
       - ".github/workflows/deploy-web.yml"
 
 jobs:
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.set.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        if: github.event_name != 'workflow_dispatch'
+        id: filter
+        with:
+          filters: |
+            web:
+              - "apps/web/**"
+              - "design-system/**"
+              - "package.json"
+              - "yarn.lock"
+              - "tsconfig.json"
+              - "tsconfig.base.json"
+              - "scripts/verify-live-web.mjs"
+              - ".github/workflows/deploy-web.yml"
+      - id: set
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "web=${{ inputs.deploy_web }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "web=${{ steps.filter.outputs.web }}" >> "$GITHUB_OUTPUT"
+          fi
+
   deploy-web:
-    name: Trigger and verify web deploy
+    name: Deploy Web to ECS Fargate
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -50,16 +86,76 @@ jobs:
           NEXT_PUBLIC_APP_BUILD_SHA: ${{ github.sha }}
         run: yarn build:web
 
-      - name: Trigger hosting deploy
-        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.verify_only }}
-        env:
-          WEB_DEPLOY_HOOK_URL: ${{ secrets.WEB_DEPLOY_HOOK_URL }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+
+      - name: Log in to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Ensure ECR repository exists
         run: |
-          if [ -z "$WEB_DEPLOY_HOOK_URL" ]; then
-            echo "WEB_DEPLOY_HOOK_URL secret is required"
-            exit 1
+          if ! aws ecr describe-repositories --repository-names freespace-web >/dev/null 2>&1; then
+            aws ecr create-repository --repository-name freespace-web >/dev/null
           fi
-          curl --fail --show-error --silent --request POST "$WEB_DEPLOY_HOOK_URL"
+
+      - name: Build and push web image
+        id: image
+        env:
+          NEXT_PUBLIC_API_BASE: https://api.freespace.ie
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID }}
+          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
+          NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
+        run: |
+          image_uri=${{ steps.ecr.outputs.registry }}/freespace-web:${{ github.sha }}
+          docker build \
+            --platform linux/amd64 \
+            -f apps/web/Dockerfile \
+            -t "$image_uri" \
+            --build-arg NEXT_PUBLIC_API_BASE="$NEXT_PUBLIC_API_BASE" \
+            --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" \
+            --build-arg NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID="$NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID" \
+            --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY" \
+            --build-arg NEXT_PUBLIC_MAPBOX_TOKEN="$NEXT_PUBLIC_MAPBOX_TOKEN" \
+            --build-arg NEXT_PUBLIC_APP_BUILD_SHA="${{ github.sha }}" \
+            .
+          docker push "$image_uri"
+          echo "image_uri=$image_uri" >> "$GITHUB_OUTPUT"
+
+      - name: Render task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition freespace-web \
+            --query taskDefinition > task-definition.json
+
+          jq --arg IMAGE "${{ steps.image.outputs.image_uri }}" --arg BUILD_SHA "${{ github.sha }}" '
+            del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy
+            )
+            | .containerDefinitions[0].image = $IMAGE
+            | .containerDefinitions[0].environment |=
+                (map(if .name == "NEXT_PUBLIC_APP_BUILD_SHA" then .value = $BUILD_SHA else . end)
+                + if any(.[]; .name == "NEXT_PUBLIC_APP_BUILD_SHA") then [] else [{"name":"NEXT_PUBLIC_APP_BUILD_SHA","value":$BUILD_SHA}] end)
+          ' task-definition.json > task-definition-rendered.json
+
+      - name: Deploy ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: task-definition-rendered.json
+          service: freespace-web
+          cluster: freespace-prod
+          wait-for-service-stability: true
 
       - name: Verify live web build marker
         run: node scripts/verify-live-web.mjs
