@@ -290,6 +290,23 @@ export function SearchForm({
     return (
       <div className="w-full">
         <form onSubmit={handleSubmit}>
+          {/* Mode toggle */}
+          <div className="mb-2 flex items-center gap-1.5">
+            {(["daily", "monthly"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={`rounded-full px-3.5 py-1 text-[12.5px] font-semibold transition ${
+                  state.mode === m
+                    ? "bg-brand-500 text-white shadow-sm"
+                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                }`}
+              >
+                {m === "daily" ? "Hourly / Daily" : "Monthly"}
+              </button>
+            ))}
+          </div>
           <div className="grid grid-cols-[minmax(0,1fr)_302px_302px] gap-3">
             <div className="flex min-w-0 items-stretch rounded-md border border-[#d5dbe3] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.08)]">
               <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-2.5">
@@ -370,6 +387,24 @@ export function SearchForm({
         onSubmit={handleSubmit}
         className="flex w-full flex-col gap-3 rounded-lg border border-[#E5E7EB] bg-white p-4 shadow-sm"
       >
+        {/* Mode toggle */}
+        <div className="flex gap-1.5 rounded-xl border border-[#E5E7EB] bg-slate-50 p-1">
+          {(["daily", "monthly"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className={`flex-1 rounded-lg py-2 text-[13px] font-semibold transition ${
+                state.mode === m
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              {m === "daily" ? "Hourly / Daily" : "Monthly"}
+            </button>
+          ))}
+        </div>
+
         <AddressAutocomplete
           defaultValue={state.location}
           placeholder="Enter area or landmark"

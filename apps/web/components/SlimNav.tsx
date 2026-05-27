@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "./AuthProvider";
 
 function initials(email?: string | null) {
@@ -13,138 +13,197 @@ function initials(email?: string | null) {
 export function SlimNav() {
   const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const onClickOutside = (event: MouseEvent) => {
-      if (!menuRef.current) return;
-      if (open && !menuRef.current.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener("click", onClickOutside);
-    return () => document.removeEventListener("click", onClickOutside);
-  }, [open]);
+  const close = () => setOpen(false);
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/80 bg-white/95 px-7 py-4 backdrop-blur-md">
-      {/* Logo */}
-      <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-        <img src="/freespace-logo.png" alt="FreeSpace" className="h-10 w-auto" />
-      </Link>
+    <>
+      <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[#E6E6E4] bg-[#F7F7F6] px-5">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
+          <img src="/freespace-logo.png" alt="FreeSpace" className="h-10 w-auto" />
+        </Link>
 
-      {/* Desktop nav */}
-      <nav className="hidden items-center gap-2 sm:flex">
-        <NavLink href="/search">Find parking</NavLink>
-        <NavLink href="/host">List a space</NavLink>
-        <NavLink href="/dashboard">Dashboard</NavLink>
-        {user && <NavLink href="/dashboard/favorites">Favourites</NavLink>}
-        {user?.role === "admin" && <NavLink href="/admin">Admin</NavLink>}
-        <NavLink href="/help">Help</NavLink>
-        <div className="ml-2 h-4 w-px bg-slate-200" />
+        {/* Desktop nav */}
+        <nav className="hidden items-center gap-2 sm:flex">
+          <NavLink href="/search">Find parking</NavLink>
+          <NavLink href="/host">List a space</NavLink>
+          <div className="ml-2 h-4 w-px bg-slate-200" />
 
-        {user ? (
-          <button
-            type="button"
-            onClick={signOut}
-            className="ml-2 rounded-full px-3 py-1.5 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
-          >
-            Log out
-          </button>
-        ) : (
-          <>
-            <Link
-              href="/login"
+          {user ? (
+            <button
+              type="button"
+              onClick={signOut}
               className="ml-2 rounded-full px-3 py-1.5 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
             >
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="ml-2 rounded-full bg-brand-500 px-5 py-1.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-brand-600"
-            >
-              Sign up
-            </Link>
-          </>
-        )}
+              Log out
+            </button>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="ml-2 rounded-full px-3 py-1.5 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/signup"
+                className="ml-2 rounded-full bg-brand-500 px-5 py-1.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-brand-600"
+              >
+                Sign up
+              </Link>
+            </>
+          )}
 
-        {user && (
-          <div className="ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-[12px] font-bold text-white shadow-sm">
-            {initials(user.email)}
-          </div>
-        )}
-      </nav>
+          {user && (
+            <div className="ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-[12px] font-bold text-white shadow-sm">
+              {initials(user.email)}
+            </div>
+          )}
+        </nav>
 
-      {/* Mobile hamburger */}
-      <div className="relative sm:hidden" ref={menuRef}>
+        {/* Mobile hamburger */}
         <button
           type="button"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setOpen(true)}
           aria-label="Open menu"
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition hover:bg-slate-50"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition hover:bg-slate-50 sm:hidden"
         >
-          {open ? (
-            <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          )}
+          <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
         </button>
+      </header>
 
-        <AnimatePresence>
-          {open && (
+      {/* ── Full-screen mobile menu ── */}
+      <AnimatePresence>
+        {open && (
+          <>
+            {/* Backdrop */}
             <motion.div
-              initial={{ opacity: 0, y: -8, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.97 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute right-0 mt-2 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl"
+              key="backdrop"
+              className="fixed inset-0 z-40 bg-black/30"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={close}
+            />
+
+            {/* Drawer */}
+            <motion.div
+              key="drawer"
+              className="fixed inset-0 z-50 flex flex-col bg-white"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 280 }}
             >
+              {/* Drawer header */}
+              <div
+                className="flex items-center justify-between border-b border-slate-100 px-5 pb-4"
+                style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}
+              >
+                <Link href="/" onClick={close}>
+                  <img src="/freespace-logo.png" alt="FreeSpace" className="h-9 w-auto" />
+                </Link>
+                <button
+                  type="button"
+                  onClick={close}
+                  aria-label="Close menu"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50"
+                >
+                  <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Account card */}
               {user && (
-                <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500 text-[12px] font-bold text-white">
+                <div className="mx-5 mt-5 flex items-center gap-3.5 rounded-2xl bg-slate-50 px-4 py-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-500 text-[14px] font-bold text-white shadow-sm">
                     {initials(user.email)}
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-[13px] font-semibold text-slate-800">Account</p>
-                    <p className="truncate text-[11px] text-slate-500">{user.email}</p>
+                    <p className="truncate text-[14px] font-semibold text-slate-900">My account</p>
+                    <p className="truncate text-[12px] text-slate-500">{user.email}</p>
                   </div>
                 </div>
               )}
 
-              <div className="py-1">
-                <MobileNavLink href="/search" onClick={() => setOpen(false)}>Find parking</MobileNavLink>
-                <MobileNavLink href="/host" onClick={() => setOpen(false)}>List a space</MobileNavLink>
-                <MobileNavLink href="/dashboard" onClick={() => setOpen(false)}>Dashboard</MobileNavLink>
-                {user && <MobileNavLink href="/dashboard/favorites" onClick={() => setOpen(false)}>Favourites</MobileNavLink>}
-                {user?.role === "admin" && <MobileNavLink href="/admin" onClick={() => setOpen(false)}>Admin</MobileNavLink>}
-                <MobileNavLink href="/help" onClick={() => setOpen(false)}>Help</MobileNavLink>
-              </div>
+              {/* Nav links */}
+              <nav className="flex-1 overflow-y-auto px-5 py-5">
+                <div className="space-y-1">
+                  <DrawerLink href="/search" onClick={close} icon={<ParkingIcon />}>
+                    Find parking
+                  </DrawerLink>
+                  <DrawerLink href="/host" onClick={close} icon={<ListIcon />}>
+                    List a space
+                  </DrawerLink>
+                  <DrawerLink href="/dashboard" onClick={close} icon={<DashboardIcon />}>
+                    Dashboard
+                  </DrawerLink>
+                  {user && (
+                    <DrawerLink href="/dashboard/favorites" onClick={close} icon={<HeartIcon />}>
+                      Favourites
+                    </DrawerLink>
+                  )}
+                  <DrawerLink href="/help" onClick={close} icon={<HelpIcon />}>
+                    Help
+                  </DrawerLink>
+                  {user?.role === "admin" && (
+                    <DrawerLink href="/admin" onClick={close} icon={<AdminIcon />}>
+                      Admin
+                    </DrawerLink>
+                  )}
+                </div>
+              </nav>
 
-              <div className="border-t border-slate-100 py-1">
+              {/* Footer: auth */}
+              <div
+                className="border-t border-slate-100 px-5 pt-4"
+                style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 20px)" }}
+              >
                 {user ? (
                   <button
                     type="button"
-                    onClick={() => { setOpen(false); signOut(); }}
-                    className="block w-full px-4 py-2.5 text-left text-[13px] font-semibold text-rose-600 transition hover:bg-rose-50"
+                    onClick={() => { close(); signOut(); }}
+                    className="flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-[15px] font-semibold text-rose-600 transition hover:bg-rose-50"
                   >
+                    <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
                     Log out
                   </button>
                 ) : (
-                  <>
-                    <MobileNavLink href="/login" onClick={() => setOpen(false)}>Log in</MobileNavLink>
-                    <MobileNavLink href="/signup" onClick={() => setOpen(false)}>Sign up</MobileNavLink>
-                  </>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Link
+                      href="/login"
+                      onClick={close}
+                      className="flex items-center justify-center rounded-xl border border-slate-200 py-3.5 text-[15px] font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Log in
+                    </Link>
+                    <Link
+                      href="/signup"
+                      onClick={close}
+                      className="flex items-center justify-center rounded-xl bg-brand-500 py-3.5 text-[15px] font-semibold text-white shadow-sm transition hover:bg-brand-600"
+                    >
+                      Sign up
+                    </Link>
+                  </div>
                 )}
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </header>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
+
+// ── Sub-components ─────────────────────────────────────────────────────────────
 
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
@@ -157,22 +216,78 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   );
 }
 
-function MobileNavLink({
+function DrawerLink({
   href,
   onClick,
+  icon,
   children,
 }: {
   href: string;
   onClick: () => void;
+  icon: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <Link
       href={href as any}
       onClick={onClick}
-      className="block px-4 py-2.5 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+      className="flex items-center gap-4 rounded-xl px-4 py-3.5 text-[16px] font-semibold text-slate-800 transition hover:bg-slate-50 active:bg-slate-100"
     >
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+        {icon}
+      </span>
       {children}
     </Link>
+  );
+}
+
+// ── Icons ──────────────────────────────────────────────────────────────────────
+
+function ParkingIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+      <circle cx="12" cy="10" r="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ListIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+    </svg>
+  );
+}
+
+function DashboardIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+    </svg>
+  );
+}
+
+function HeartIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+    </svg>
+  );
+}
+
+function HelpIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function AdminIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" />
+    </svg>
   );
 }

@@ -73,7 +73,7 @@ export function FiltersPanel({
                 <p className="text-[13px] font-semibold text-slate-800">Search as I move</p>
                 <p className="text-[11.5px] text-slate-400">Re-search automatically when you pan the map</p>
               </div>
-              <div className={`relative ml-4 h-5 w-9 shrink-0 rounded-full transition-colors duration-200 ${searchAsMove ? "bg-[#20a73f]" : "bg-slate-200"}`}>
+              <div className={`relative ml-4 h-5 w-9 shrink-0 rounded-full transition-colors duration-200 ${searchAsMove ? "bg-brand-500" : "bg-slate-200"}`}>
                 <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${searchAsMove ? "translate-x-4" : "translate-x-0.5"}`} />
               </div>
             </button>

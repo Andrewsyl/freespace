@@ -281,7 +281,7 @@ export function DesktopSearchLayout({
                 <AdjustmentsHorizontalIcon className="h-4 w-4" />
                 Filters
                 {activeFilterCount > 0 && (
-                  <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#20a73f] px-1 text-[10px] font-bold text-white">
+                  <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold text-white">
                     {activeFilterCount}
                   </span>
                 )}

@@ -164,11 +164,11 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.12),transparent_45%),radial-gradient(circle_at_80%_10%,rgba(59,130,246,0.12),transparent_40%),#ffffff]">
+    <div className="min-h-[100dvh] bg-white">
       <SlimNav />
 
       <main className="mx-auto w-full max-w-6xl px-6 py-6 sm:py-10">
-        <section className="block sm:hidden">
+        <section className="block sm:hidden -mx-6 -mt-6 pt-4">
           <MobileSearchLanding
             initialFilters={defaultFilters}
             onSearch={(filters) => handleSearch(filters)}
@@ -178,7 +178,6 @@ export default function HomePage() {
 
         <section className="hidden items-center gap-10 sm:grid lg:grid-cols-[1.1fr,0.9fr]">
           <div className="space-y-5">
-            <p className="hidden text-xs font-semibold uppercase tracking-[0.32em] text-emerald-600 sm:block">Find parking fast</p>
             <h1 className="hidden font-display text-4xl font-semibold tracking-tight text-slate-900 sm:block sm:text-5xl">
               The smarter way to find<br />parking in seconds.
             </h1>
@@ -186,7 +185,7 @@ export default function HomePage() {
               Search thousands of trusted spaces, compare prices, and book instantly.
             </p>
 
-            <div className="rounded-[26px] bg-white/60 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur sm:p-6 lg:p-6 min-h-[60dvh] sm:min-h-0 flex flex-col">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col">
               <div className="flex gap-2 rounded-full border border-slate-200 bg-slate-100 p-1 text-sm font-semibold shadow-sm">
                 {(["daily", "monthly"] as const).map((value) => (
                   <button
@@ -208,8 +207,7 @@ export default function HomePage() {
                 <AddressAutocomplete
                   defaultValue={location}
                   placeholder="Where would you like to park?"
-                  inputClassName="w-full rounded-full border border-slate-200 bg-white px-5 py-3 pr-12 text-sm font-semibold text-slate-800 shadow-sm focus:border-emerald-400 focus:outline-none"
-                  showLocationButton
+                  inputClassName="w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm focus:border-emerald-400 focus:outline-none"
                   onPlace={(place) => {
                     setLocation(place.address);
                     setLatitude(place.lat);
@@ -291,7 +289,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="mt-12 grid gap-6 rounded-[26px] bg-white/70 px-6 py-8 shadow-[0_18px_50px_rgba(15,23,42,0.06)] sm:grid-cols-3">
+        <section className="mt-10 grid gap-6 rounded-2xl border border-slate-200 bg-white px-6 py-8 sm:grid-cols-3">
           {[
             { title: "Stress-free booking", body: "Reserve a space in seconds and skip the parking scramble." },
             { title: "No surprises", body: "See the total cost before you book. No hidden fees." },
@@ -317,7 +315,7 @@ export default function HomePage() {
                 key={scenario.title}
                 type="button"
                 onClick={() => launchScenario(scenario.filters)}
-                className="rounded-[24px] border border-slate-200 bg-white px-5 py-5 text-left shadow-[0_12px_28px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_18px_38px_rgba(15,23,42,0.10)]"
+                className="rounded-2xl border border-slate-200 bg-white px-5 py-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
               >
                 <div className="space-y-3">
                   <div className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
@@ -337,7 +335,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="mt-8 rounded-[28px] border border-slate-200 bg-white px-6 py-8 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+        <section className="mt-8 rounded-2xl border border-slate-200 bg-white px-6 py-8">
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">How it works</p>
             <h2 className="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
