@@ -11,6 +11,11 @@ import { webEnv } from "../lib/env";
 export const metadata: Metadata = {
   title: "FreeSpace",
   description: "Find and book parking in minutes",
+  icons: {
+    icon: "/freespace-logo.png",
+    shortcut: "/freespace-logo.png",
+    apple: "/freespace-logo.png",
+  },
 };
 
 const buildSha =

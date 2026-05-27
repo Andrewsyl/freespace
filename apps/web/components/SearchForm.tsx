@@ -280,7 +280,7 @@ export function SearchForm({
   };
 
   const MONTHLY_OPTIONS = [
-    { value: "full_week", label: "Every day" },
+    { value: "full_week", label: "Everyday" },
     { value: "weekdays", label: "Mon - Fri only" },
     { value: "any_3_days", label: "Any 3 days" },
   ] as const;

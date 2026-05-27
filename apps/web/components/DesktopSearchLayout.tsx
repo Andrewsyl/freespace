@@ -856,7 +856,7 @@ function formatOverlayDateTime(date: string, time: string) {
 function formatMonthlyPlan(plan?: string) {
   if (plan === "weekdays") return "Mon - Fri only";
   if (plan === "any_3_days") return "Any 3 days";
-  return "Every day";
+  return "Everyday";
 }
 
 function buildOverlaySummary(

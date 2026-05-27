@@ -239,7 +239,7 @@ export default function HomePage() {
                           onChange={(event) => setMonthlyPlan(event.target.value as NonNullable<SearchFilters["monthlyPlan"]>)}
                           className="w-full appearance-none rounded-lg bg-transparent px-1 py-1 text-sm font-semibold text-slate-800 outline-none"
                         >
-                          <option value="full_week">Mon - Sun</option>
+                          <option value="full_week">Everyday</option>
                           <option value="weekdays">Mon - Fri only</option>
                           <option value="any_3_days">Any 3 days</option>
                         </select>
