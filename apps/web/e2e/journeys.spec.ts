@@ -36,6 +36,7 @@ function seedSignedInSession(page: Parameters<typeof test>[0]["page"]) {
   return page.addInitScript((session) => {
     window.localStorage.setItem("auth_token", session.token);
     window.localStorage.setItem("auth_user", JSON.stringify(session.user));
+    window.localStorage.setItem("freespace_cookie_consent", "accepted");
   }, authSession);
 }
 
@@ -98,6 +99,7 @@ test("signed-in host can publish a space from the wizard", async ({ page }) => {
     window.localStorage.setItem("auth_token", session.token);
     window.localStorage.setItem("auth_user", JSON.stringify(session.user));
     window.localStorage.setItem("host-listing-draft", JSON.stringify(draft));
+    window.localStorage.setItem("freespace_cookie_consent", "accepted");
   }, { session: authSession, draft: hostDraft });
 
   await page.route("**/api/listings", async (route) => {
