@@ -168,7 +168,7 @@ describe("bookings routes", () => {
         listingId: "11111111-1111-4111-8111-111111111111",
         from: "2026-03-20T10:00:00.000Z",
         to: "2026-03-20T12:00:00.000Z",
-        amountCents: 1200,
+        amountCents: 300,
         currency: "eur",
         platformFeePercent: 0.1,
       });
@@ -180,7 +180,7 @@ describe("bookings routes", () => {
       expect.any(Object),
       expect.objectContaining({
         idempotencyKey:
-          "payment-intent:user-1:11111111-1111-4111-8111-111111111111:2026-03-20T10:00:00.000Z:2026-03-20T12:00:00.000Z:1200:eur",
+          "payment-intent:user-1:11111111-1111-4111-8111-111111111111:2026-03-20T10:00:00.000Z:2026-03-20T12:00:00.000Z:300:eur",
       })
     );
   });
@@ -234,7 +234,7 @@ describe("bookings routes", () => {
         listingId: "11111111-1111-4111-8111-111111111111",
         from: "2026-03-20T10:00:00.000Z",
         to: "2026-03-20T12:00:00.000Z",
-        amountCents: 1200,
+        amountCents: 300,
         currency: "eur",
         platformFeePercent: 0.1,
       });
@@ -283,7 +283,7 @@ describe("bookings routes", () => {
         listingId: "11111111-1111-4111-8111-111111111111",
         from: "2026-03-20T10:00:00.000Z",
         to: "2026-03-20T12:00:00.000Z",
-        amountCents: 1200,
+        amountCents: 300,
         currency: "eur",
         platformFeePercent: 0.1,
       });
@@ -292,7 +292,7 @@ describe("bookings routes", () => {
     expect(stripeMocks.createCheckoutSession).toHaveBeenCalledWith(
       expect.objectContaining({
         idempotencyKey:
-          "checkout:user-1:11111111-1111-4111-8111-111111111111:2026-03-20T10:00:00.000Z:2026-03-20T12:00:00.000Z:1200:eur",
+          "checkout:user-1:11111111-1111-4111-8111-111111111111:2026-03-20T10:00:00.000Z:2026-03-20T12:00:00.000Z:300:eur",
       })
     );
   });
