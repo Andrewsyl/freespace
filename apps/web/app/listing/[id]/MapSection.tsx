@@ -11,10 +11,12 @@ export function ListingMap({
   listing,
   center,
   zoom = 11,
+  interactive = true,
 }: {
   listing: Listing;
   center: { lat: number; lng: number };
   zoom?: number;
+  interactive?: boolean;
 }) {
-  return <MapView listings={[listing]} center={center} initialZoom={zoom} maxZoom={12} />;
+  return <MapView listings={[listing]} center={center} initialZoom={zoom} maxZoom={12} interactive={interactive} />;
 }

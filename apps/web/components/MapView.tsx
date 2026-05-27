@@ -24,6 +24,8 @@ type MapViewProps = {
   /** Radius in metres for the distance ring drawn around the centre pin. */
   centerPinRadius?: number;
   satellite?: boolean;
+  /** Set false to produce a static, non-interactive map (no zoom/pan/controls). */
+  interactive?: boolean;
 };
 
 // ─── Price-bubble markers ────────────────────────────────────────────────────
@@ -153,6 +155,7 @@ export function MapView({
   showCenterPin = false,
   centerPinRadius,
   satellite = false,
+  interactive = true,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -182,10 +185,13 @@ export function MapView({
         : "mapbox://styles/mapbox/streets-v12",
       center: [defaultCenter.lng, defaultCenter.lat],
       zoom: initialZoom,
+      interactive,
     });
     map.on("load", () => setMapReady(true));
     map.on("dragstart", () => { hasUserDraggedRef.current = true; });
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), controlsPosition);
+    if (interactive) {
+      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), controlsPosition);
+    }
     mapRef.current = map;
     return () => {
       map.remove();

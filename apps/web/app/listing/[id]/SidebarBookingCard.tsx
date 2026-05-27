@@ -22,17 +22,22 @@ export function SidebarBookingCard({
 
   return (
     <div>
-      {/* Pill tabs */}
-      <div className="mb-5 grid grid-cols-2 rounded-full bg-slate-100 p-1">
+      {/* Header */}
+      <h3 className="mb-4 text-[18px] font-bold tracking-[-0.02em] text-slate-950">
+        Reserve your parking space
+      </h3>
+
+      {/* Tab bar — underline style */}
+      <div className="mb-5 flex border-b border-slate-200">
         {(["hourly", "monthly"] as const).map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
-            className={`h-9 rounded-full text-[13px] font-semibold transition ${
+            className={`flex-1 pb-2.5 text-[13px] font-semibold transition ${
               tab === t
-                ? "bg-white text-slate-950 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
+                ? "border-b-2 border-slate-900 text-slate-900"
+                : "text-slate-400 hover:text-slate-600"
             }`}
           >
             {t === "hourly" ? "Hourly / Daily" : "Monthly"}
@@ -66,7 +71,7 @@ export function SidebarBookingCard({
           />
 
           {/* Price breakdown */}
-          <div className="mt-5 border-t border-slate-100 pt-4 space-y-2">
+          <div className="mt-5 space-y-2 border-t border-slate-100 pt-4">
             <div className="flex items-center justify-between text-[13px] text-slate-500">
               <span>€{unitPrice} × 1 day</span>
               <span className="font-mono">€{unitPrice}.00</span>
@@ -81,20 +86,27 @@ export function SidebarBookingCard({
             </div>
           </div>
 
-          {/* Guarantee trust block */}
-          <div className="mt-4 flex items-start gap-3 rounded-xl bg-slate-50 p-4">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e6f2ec] text-[#1b8a5a]">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          {/* Book with confidence — JustPark style */}
+          <div className="mt-4 rounded-xl border border-brand-500/30 bg-brand-500/5 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-brand-600">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                <path d="m9 12 2 2 4-4"/>
               </svg>
+              <p className="text-[13px] font-bold text-brand-700">Book with confidence</p>
             </div>
-            <div>
-              <p className="text-[13px] font-semibold text-slate-900">Covered by the carpark guarantee</p>
-              <p className="mt-0.5 text-[12px] leading-5 text-slate-500">
-                If the spot is unavailable on arrival, we&apos;ll find you a replacement or refund you in full.
-              </p>
-            </div>
+            {([
+              "Confirmation is immediate",
+              "106,000+ verified reviews",
+              "Trusted by over 1 million drivers",
+              "Free cancellation up to 1 hr before",
+            ] as const).map((item) => (
+              <div key={item} className="mb-1.5 flex items-center gap-2 last:mb-0">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-brand-500">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+                <span className="text-[12px] text-slate-600">{item}</span>
+              </div>
+            ))}
           </div>
         </>
       )}

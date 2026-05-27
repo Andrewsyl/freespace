@@ -27,7 +27,11 @@ function formatReviewDate(value?: string | null) {
   if (!value) return "";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "";
-  return parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return parsed.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function amenityToIcon(label: string) {
@@ -42,16 +46,12 @@ function amenityToIcon(label: string) {
   return ShieldCheckIcon;
 }
 
-function StarRow({ rating }: { rating: number }) {
+// Simple star fill helper
+function StarFill({ filled }: { filled: boolean }) {
   return (
-    <span className="inline-flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <StarIcon
-          key={n}
-          className={`h-3.5 w-3.5 ${n <= Math.round(rating) ? "text-amber-400" : "text-slate-200"}`}
-        />
-      ))}
-    </span>
+    <StarIcon
+      className={`h-4 w-4 ${filled ? "text-amber-400" : "text-slate-200"}`}
+    />
   );
 }
 
@@ -96,8 +96,6 @@ export default async function ListingDetailPage({
     ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${listing.latitude},${listing.longitude}`
     : undefined;
 
-  // Gallery slots — fill missing slots from first image
-  const slots = [0, 1, 2, 3, 4].map((i) => images[i] ?? images[0]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -116,337 +114,330 @@ export default async function ListingDetailPage({
 
       {/* ── Desktop ── */}
       <div className="hidden lg:block">
-        <div className="mx-auto max-w-6xl px-6 pt-5">
+
+        {/* Breadcrumb + title area */}
+        <div className="mx-auto max-w-6xl px-6 pb-4 pt-5">
 
           {/* Breadcrumb */}
           <nav className="flex items-center gap-1.5 text-[12px] text-slate-400">
-            <a href="/search" className="transition hover:text-slate-600">Find parking</a>
-            <span>/</span>
-            <a href="/search" className="transition hover:text-slate-600">
+            <a href="/search" className="transition hover:text-brand-500">Find parking</a>
+            <span>›</span>
+            <a href="/search" className="transition hover:text-brand-500">
               {listing.address.split(",").slice(-2).join(",").trim()}
             </a>
-            <span>/</span>
+            <span>›</span>
             <span className="text-slate-600">{listing.title}</span>
           </nav>
 
-          {/* Title bar */}
-          <div className="mt-5 flex items-start justify-between gap-8">
+          {/* Title row */}
+          <div className="mt-3 flex items-start justify-between gap-8">
             <div className="min-w-0">
-              <h1 className="text-[34px] font-bold leading-tight tracking-[-0.03em] text-slate-950">
-                <span className="text-brand-500">Parking at </span>{listing.title}
+              <h1 className="text-[30px] font-bold leading-tight tracking-[-0.03em] text-slate-950">
+                <span className="text-brand-500">Parking at </span>
+                {listing.title}
               </h1>
-              <div className="mt-1.5 flex items-center gap-1.5 text-[15px] text-slate-500">
-                <MapPinIcon className="h-4 w-4 shrink-0 text-slate-400" />
-                {listing.address}
-              </div>
-              <div className="mt-2 flex items-center gap-2.5 text-[13px] text-slate-500">
-                <span className="flex items-center gap-1.5 font-semibold text-slate-800">
-                  <StarIcon className="h-4 w-4 text-amber-400" />
-                  {rating.toFixed(1)}
-                </span>
-                {ratingCount > 0 && <span>· {ratingCount} reviews</span>}
-                <span>·</span>
-                <span>Hosted on carpark</span>
+              <p className="mt-1 text-[14px] text-slate-500">{listing.address}</p>
+              <div className="mt-2 flex items-center gap-2">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <StarFill key={n} filled={n <= Math.round(rating)} />
+                ))}
+                <span className="text-[13px] font-semibold text-slate-800">{rating.toFixed(1)}</span>
+                <span className="text-[13px] text-slate-400">· {ratingCount} bookings</span>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2 pt-1">
-              <button
-                type="button"
-                className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 12v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v14"/>
-                </svg>
-                Share
-              </button>
-              <button
-                type="button"
-                className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-                Save
-              </button>
+
+            {/* TrustScore badge */}
+            <div className="shrink-0 rounded-xl border border-slate-200 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-slate-500">TrustScore</span>
+                <span className="text-[15px] font-bold text-slate-950">4.6</span>
+                <span className="text-[11px] text-slate-400">| 106,000+ reviews</span>
+              </div>
+              <div className="mt-1.5 flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <div
+                    key={n}
+                    className={`h-5 w-5 rounded-[3px] ${n <= 4 ? "bg-[#00b67a]" : "bg-[#73cf11]"}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Hero map */}
-          {hasCoords ? (
-            <div className="relative mt-4 h-[460px] overflow-hidden rounded-2xl">
-              <div className="h-full w-full">
-                <ListingMap
-                  listing={listingForMap}
-                  center={{ lat: listing.latitude!, lng: listing.longitude! }}
-                  zoom={14}
-                />
+        {/* Trust strip */}
+        <div className="bg-brand-500">
+          <div className="mx-auto max-w-6xl px-6 py-2.5">
+            <div className="flex items-center justify-between text-[12.5px] font-semibold text-white">
+              <div className="flex items-center gap-2">
+                <ShieldCheckIcon className="h-4 w-4" />
+                <span>Best price guarantee</span>
               </div>
-
-              {/* Map view tabs — top-left */}
-              <div className="absolute left-4 top-4 flex overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-                {(["Map", "Satellite", "Street view"] as const).map((label, i) => (
-                  <button
-                    key={label}
-                    type="button"
-                    className={`px-3.5 py-2 text-[13px] font-semibold transition ${
-                      i === 0
-                        ? "bg-white text-brand-600"
-                        : "border-l border-slate-200 text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>Confirmation is immediate</span>
               </div>
-
-              {/* Zoom controls — top-right */}
-              <div className="absolute right-4 top-4 flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-                <button type="button" aria-label="Zoom in" className="flex h-9 w-9 items-center justify-center border-b border-slate-200 text-[18px] font-bold leading-none text-slate-700 transition hover:bg-slate-50">+</button>
-                <button type="button" aria-label="Zoom out" className="flex h-9 w-9 items-center justify-center text-[18px] font-bold leading-none text-slate-700 transition hover:bg-slate-50">−</button>
+              <div className="flex items-center gap-2">
+                <StarIcon className="h-4 w-4 text-white" />
+                <span>4.6+ Trustpilot ratings</span>
               </div>
-
-              {/* Address card — bottom-left */}
-              <div className="absolute bottom-4 left-4 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.14)]">
-                <div className="flex items-start gap-3 px-4 pb-2.5 pt-3.5">
-                  <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-brand-500 ring-[3px] ring-brand-100" />
-                  <div>
-                    <p className="text-[14px] font-semibold leading-tight text-slate-900">
-                      {listing.address.split(",")[0]}
-                    </p>
-                    <p className="mt-0.5 text-[12px] text-slate-400">Exact address shared after booking</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between border-t border-slate-100 px-4 py-2.5">
-                  <span className="font-mono text-[13px] font-semibold text-slate-700">€{unitPrice} {rateLabel}</span>
-                  {streetViewHref && (
-                    <a href={streetViewHref} target="_blank" rel="noreferrer" className="ml-4 text-[12px] font-semibold text-brand-500 transition hover:text-brand-600">
-                      Directions →
-                    </a>
-                  )}
-                </div>
+              <div className="flex items-center gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>Trusted by over 1 million drivers</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* ── Hero map — full-bleed cover photo ── */}
+        <div className="relative h-[420px] w-full overflow-hidden">
+          {hasCoords ? (
+            <ListingMap
+              listing={listingForMap}
+              center={{ lat: listing.latitude!, lng: listing.longitude! }}
+              zoom={14}
+              interactive={false}
+            />
           ) : (
-            /* Fallback: image gallery when no coords */
-            images.length === 1 ? (
-              <div className="relative mt-4 h-[460px] overflow-hidden rounded-2xl bg-slate-100">
-                <img src={images[0]} alt={listing.title} className="h-full w-full object-cover" />
-              </div>
-            ) : (
-              <div
-                className="relative mt-4 grid overflow-hidden rounded-2xl"
-                style={{ gridTemplateColumns: "2fr 1fr 1fr", gridTemplateRows: "220px 220px", gap: "8px" }}
-              >
-                <div className="row-span-2 overflow-hidden bg-slate-100">
-                  <img src={slots[0]} alt={listing.title} className="h-full w-full object-cover transition duration-500 hover:scale-[1.02]" />
-                </div>
-                {slots.slice(1).map((img, i) => (
-                  <div key={i} className="overflow-hidden bg-slate-100">
-                    <img src={img} alt={`${listing.title} ${i + 2}`} className="h-full w-full object-cover transition duration-500 hover:scale-[1.02]" />
-                  </div>
-                ))}
-                <button type="button" className="absolute bottom-4 right-4 flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-                    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-                  </svg>
-                  Show all photos
-                </button>
-              </div>
-            )
+            <img src={images[0]} alt={listing.title} className="h-full w-full object-cover" />
           )}
 
-          {/* Two-column body */}
-          <div className="mt-10 grid grid-cols-[minmax(0,1fr),380px] gap-16 pb-16">
+          {/* Address + directions overlay — bottom-left, aligned with content */}
+          <div className="absolute bottom-5 left-0 right-0">
+            <div className="mx-auto max-w-6xl px-6">
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/70">
+                    Parking space
+                  </p>
+                  <h2 className="mt-0.5 text-[22px] font-bold leading-tight tracking-[-0.02em] text-white drop-shadow">
+                    {listing.address.split(",")[0]}
+                  </h2>
+                  <p className="mt-1 flex items-center gap-1.5 text-[13px] text-white/80">
+                    <MapPinIcon className="h-3.5 w-3.5 shrink-0" />
+                    {listing.address.split(",").slice(1, 3).join(",").trim()}
+                  </p>
+                </div>
+                {streetViewHref && (
+                  <a
+                    href={streetViewHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 rounded-full bg-white/20 px-3.5 py-2 text-[12px] font-semibold text-white backdrop-blur-sm transition hover:bg-white/30"
+                  >
+                    <MapPinIcon className="h-3.5 w-3.5" />
+                    Street view
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main grid: left (content) | right (booking card hovers over map) */}
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="grid grid-cols-[minmax(0,1fr),320px] gap-0">
 
             {/* ── Left column ── */}
-            <div>
+            <div className="border-r border-slate-100 pr-8">
 
-              {/* Photos — first thing visible after the map hero */}
-              <section>
-                {images.length === 1 ? (
-                  <div className="overflow-hidden rounded-xl bg-slate-100" style={{ aspectRatio: "16 / 7" }}>
-                    <img
-                      src={images[0]}
-                      alt={listing.title}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-4 gap-3">
-                    {images.slice(0, 4).map((img, i) => (
-                      <div
-                        key={i}
-                        className="relative overflow-hidden rounded-xl bg-slate-100"
-                        style={{ aspectRatio: "4 / 3" }}
-                      >
+              {/* Photo gallery */}
+              {images.length > 0 && (
+                <div className="relative mt-6">
+                  {images.length === 1 ? (
+                    /* Single image */
+                    <div className="overflow-hidden rounded-lg bg-slate-100 shadow-sm">
+                      <div className="aspect-[16/7]">
                         <img
-                          src={img}
-                          alt={`${listing.title} photo ${i + 1}`}
-                          className="absolute inset-0 h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
+                          src={images[0]}
+                          alt={listing.title}
+                          className="h-full w-full object-cover"
                         />
-                        {i === 3 && images.length > 4 && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/40">
-                            <span className="text-[14px] font-semibold text-white">+{images.length - 4} more</span>
-                          </div>
-                        )}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              {/* Facts grid */}
-              <section>
-                <div className="grid grid-cols-4 overflow-hidden rounded-xl border border-slate-200">
-                  {([
-                    { label: "Verified bookings", value: "106,000+", sub: "across carpark",   green: false },
-                    { label: "Average rating",     value: "4.6",      sub: "12,400 reviews",  green: true  },
-                    { label: "Confirmation",       value: "Instant",  sub: "no waitlist",     green: false },
-                    { label: "Cancellation",       value: "Free",     sub: "up to 1 hr before", green: false },
-                  ] as const).map(({ label, value, sub, green }, i) => (
-                    <div
-                      key={label}
-                      className={`flex flex-col gap-1 px-5 py-4 ${i < 3 ? "border-r border-slate-200" : ""}`}
-                    >
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-400">
-                        {label}
-                      </p>
-                      <p className={`text-[17px] font-bold leading-tight ${green ? "text-brand-500" : "text-slate-950"}`}>
-                        {value}
-                      </p>
-                      <p className="text-[12px] text-slate-400">{sub}</p>
                     </div>
-                  ))}
-                </div>
-              </section>
+                  ) : (
+                    /* Multi-image mosaic: large left + 2 stacked right */
+                    <div
+                      className="overflow-hidden rounded-lg shadow-sm"
+                      style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px", height: "220px" }}
+                    >
+                      {/* Large hero image */}
+                      <div className="overflow-hidden bg-slate-100">
+                        <img
+                          src={images[0]}
+                          alt={listing.title}
+                          className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
+                        />
+                      </div>
 
-              {/* About */}
-              <section className="mt-10 border-t border-slate-100 pt-10">
-                <h2 className="text-[22px] font-bold tracking-[-0.02em] text-slate-950">
-                  About this spot
-                </h2>
-                <p className="mt-3 text-[15px] leading-7 text-slate-600">{listing.availability}</p>
-                <p className="mt-4 text-[13px] text-slate-400">
-                  Full address confirmed once your booking is complete.
-                </p>
-              </section>
-
-              {/* Amenities */}
-              {listing.amenities && listing.amenities.length > 0 && (
-                <section className="mt-10 border-t border-slate-100 pt-10">
-                  <h2 className="text-[22px] font-bold tracking-[-0.02em] text-slate-950">
-                    What&apos;s included
-                  </h2>
-                  <p className="mt-1 text-[13px] text-slate-400">
-                    Everything you get with this booking.
-                  </p>
-                  <div className="mt-5 grid grid-cols-2 gap-x-8 gap-y-4">
-                    {listing.amenities.map((amenity) => {
-                      const Icon = amenityToIcon(amenity);
-                      return (
-                        <div key={amenity} className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100">
-                            <Icon className="h-[18px] w-[18px] text-slate-600" />
+                      {/* Right column: 2 stacked */}
+                      <div style={{ display: "grid", gridTemplateRows: "1fr 1fr", gap: "2px" }}>
+                        {([images[1], images[2] ?? images[1]] as string[]).map((img, i) => (
+                          <div key={i} className="relative overflow-hidden bg-slate-100">
+                            <img
+                              src={img}
+                              alt={`${listing.title} photo ${i + 2}`}
+                              className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
+                            />
+                            {/* "+N more" overlay on last thumbnail */}
+                            {i === 1 && images.length > 3 && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-slate-950/50 backdrop-blur-[1px]">
+                                <span className="text-[15px] font-semibold text-white">
+                                  +{images.length - 3} more
+                                </span>
+                              </div>
+                            )}
                           </div>
-                          <span className="text-[15px] text-slate-800">{amenity}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Photo count badge */}
+                  <button
+                    type="button"
+                    className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full border border-white/30 bg-black/45 px-3 py-1.5 text-[12px] font-semibold text-white backdrop-blur-md transition hover:bg-black/60"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    {images.length} {images.length === 1 ? "photo" : "photos"}
+                  </button>
+                </div>
               )}
 
-              {/* Reviews */}
-              <section className="mt-10 border-t border-slate-100 pt-10">
-                <div className="mb-6 flex items-baseline gap-4">
-                  <span className="text-[40px] font-bold leading-none tracking-[-0.02em] text-slate-950">
-                    {rating.toFixed(1)}
-                  </span>
-                  <div>
-                    <div className="flex items-center gap-1">
-                      <StarRow rating={rating} />
-                    </div>
-                    <p className="mt-0.5 text-[13px] text-slate-400">
-                      From {ratingCount} verified bookings
-                    </p>
-                  </div>
-                </div>
+              {/* ── Content sections ── */}
+              <div className="space-y-0 py-8">
 
-                {reviews.length === 0 ? (
-                  <p className="text-[14px] text-slate-400">No reviews yet.</p>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 gap-8">
-                      {reviews.slice(0, 4).map((review: any) => (
-                        <div key={review.id}>
-                          <div className="mb-2 flex items-center justify-between">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-[13px] font-bold text-slate-600">
-                              {String(review.id ?? "?").slice(0, 2).toUpperCase()}
+                {/* Space overview */}
+                <section className="pb-8">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-500">
+                    {listing.title}
+                  </p>
+                  <h2 className="mt-1.5 text-[26px] font-bold leading-tight tracking-[-0.03em] text-slate-950">
+                    Space overview
+                  </h2>
+                  <p className="mt-4 text-[15px] leading-7 text-slate-600">
+                    {listing.availability}
+                  </p>
+                  {streetViewHref && (
+                    <a
+                      href={streetViewHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-5 inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <MapPinIcon className="h-4 w-4" />
+                      Open Street View
+                    </a>
+                  )}
+                  {/* Important notice box */}
+                  <div className="mt-5 flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50/60 p-4">
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                      <ShieldCheckIcon className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-semibold text-slate-900">Important notice:</p>
+                      <p className="mt-0.5 text-[13px] leading-6 text-slate-600">
+                        The full address of the parking space will be provided following a successful booking.
+                      </p>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Included features */}
+                {listing.amenities && listing.amenities.length > 0 && (
+                  <section className="border-t border-slate-100 py-8">
+                    <h2 className="text-[26px] font-bold leading-tight tracking-[-0.03em] text-slate-950">
+                      Included features
+                    </h2>
+                    <div className="mt-5 space-y-0">
+                      {listing.amenities.map((amenity) => {
+                        const Icon = amenityToIcon(amenity);
+                        return (
+                          <div
+                            key={amenity}
+                            className="flex items-center gap-3 border-b border-slate-100 py-3.5 last:border-b-0"
+                          >
+                            <Icon className="h-5 w-5 shrink-0 text-slate-400" />
+                            <span className="text-[15px] text-slate-800">{amenity}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
+
+                {/* Local area */}
+                {hasCoords && (
+                  <section className="border-t border-slate-100 py-8">
+                    <h2 className="text-[26px] font-bold leading-tight tracking-[-0.03em] text-slate-950">
+                      The local area
+                    </h2>
+                    <div className="mt-5 h-64 overflow-hidden rounded-lg">
+                      <ListingMap
+                        listing={listingForMap}
+                        center={{ lat: listing.latitude!, lng: listing.longitude! }}
+                        zoom={14}
+                      />
+                    </div>
+                  </section>
+                )}
+
+                {/* Reviews */}
+                <section className="border-t border-slate-100 py-8">
+                  <h2 className="text-[26px] font-bold leading-tight tracking-[-0.03em] text-slate-950">
+                    Reviews about this space
+                  </h2>
+                  {reviews.length === 0 ? (
+                    <p className="mt-4 text-[14px] text-slate-400">No reviews yet.</p>
+                  ) : (
+                    <div className="mt-5 space-y-0">
+                      {reviews.slice(0, 6).map((review: any) => (
+                        <div key={review.id} className="border-b border-slate-100 py-5 last:border-b-0">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              {[1, 2, 3, 4, 5].map((n) => (
+                                <StarFill key={n} filled={n <= Math.round(Number(review.rating))} />
+                              ))}
+                              <span className="text-[13px] font-semibold text-slate-800">
+                                {Number(review.rating).toFixed(1)}
+                              </span>
                             </div>
                             <span className="text-[12px] text-slate-400">
                               {formatReviewDate(review.createdAt ?? review.created_at)}
                             </span>
                           </div>
-                          <StarRow rating={Number(review.rating)} />
                           {review.comment && (
-                            <p className="mt-2 text-[14px] leading-6 text-slate-600">
+                            <p className="mt-3 text-[14px] leading-6 text-slate-600">
                               {review.comment}
                             </p>
                           )}
                         </div>
                       ))}
                     </div>
-                    {reviews.length > 4 && (
-                      <button
-                        type="button"
-                        className="mt-7 flex items-center gap-1.5 rounded-full border border-slate-200 px-4 py-2 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50"
-                      >
-                        See all {reviews.length} reviews →
-                      </button>
-                    )}
-                  </>
-                )}
-              </section>
+                  )}
+                </section>
 
-              {/* Policies */}
-              <section className="mt-10 border-t border-slate-100 pt-10">
-                <h2 className="text-[22px] font-bold tracking-[-0.02em] text-slate-950">
-                  Things to know
-                </h2>
-                <div className="mt-5 grid grid-cols-3 gap-6">
-                  <div>
-                    <h4 className="text-[15px] font-semibold text-slate-950">Cancellation</h4>
-                    <p className="mt-1.5 text-[13px] leading-6 text-slate-500">
-                      Free up to 1 hour before your booking starts. After that, the first hour is non-refundable.
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="text-[15px] font-semibold text-slate-950">Access</h4>
-                    <p className="mt-1.5 text-[13px] leading-6 text-slate-500">
-                      Full access details are shared once your booking is confirmed — no host meet-up needed.
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="text-[15px] font-semibold text-slate-950">Booking</h4>
-                    <p className="mt-1.5 text-[13px] leading-6 text-slate-500">
-                      Confirmation is immediate. You won&apos;t be charged until you complete your reservation.
-                    </p>
-                  </div>
-                </div>
-              </section>
-
+              </div>
             </div>
 
-            {/* ── Right rail ── */}
-            <aside>
-              <div className="sticky top-[80px]">
+            {/* ── Right column: hovers over map, then scrolls with page ── */}
+            <aside className="pl-8" style={{ marginTop: "-220px" }}>
+              <div className="sticky top-[68px]">
                 {resolvedSearchParams.created && (
                   <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-700">
                     Listing published successfully.
                   </div>
                 )}
-                <div className="rounded-2xl border border-slate-200 p-6 shadow-[0_4px_24px_rgba(15,23,42,0.08)]">
+                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,0.18)]">
                   <SidebarBookingCard
                     listingId={listing.id}
                     pricePerDay={listing.pricePerDay}
@@ -461,6 +452,7 @@ export default async function ListingDetailPage({
 
           </div>
         </div>
+
       </div>
     </div>
   );
