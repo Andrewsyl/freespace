@@ -75,29 +75,29 @@ function deriveSpaceType(tags?: string[]): string | undefined {
 
 function FeatureIcon({ type }: { type: "cctv" | "ev" | "gated" | "covered" | "instant" }) {
   if (type === "cctv") return (
-    <span title="CCTV" className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
-      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <span title="CCTV" className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500">
+      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
         <path d="M15 10l4.553-2.069A1 1 0 0121 8.87V15.13a1 1 0 01-1.447.9L15 14M3 8h12a2 2 0 012 2v4a2 2 0 01-2 2H3a2 2 0 01-2-2v-4a2 2 0 012-2z" strokeLinecap="round" />
       </svg>
     </span>
   );
   if (type === "ev") return (
-    <span title="EV charging" className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
-      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <span title="EV charging" className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500">
+      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </span>
   );
   if (type === "gated") return (
-    <span title="Gated" className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
-      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <span title="Gated" className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500">
+      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
         <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
       </svg>
     </span>
   );
   if (type === "covered") return (
-    <span title="Covered" className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
-      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <span title="Covered" className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500">
+      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
         <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </span>
@@ -145,14 +145,18 @@ export function ListingCard({
   const isVerified = hasRating && (listing.ratingCount ?? 0) >= 3;
   const dist = listing.distanceKm;
 
-  // Use amenities (from detail API) or fall back to tags (from search API)
+  // Derive features from actual amenities + tags, with title-only fallback
   const features = [...(listing.amenities ?? []), ...(listing.tags ?? [])];
   const feats = (s: string) => features.some((f) => f.toLowerCase().includes(s));
+  const title = listing.title.toLowerCase();
+
   const isInstantBook = feats("instant");
   const hasCctv    = feats("cctv") || feats("camera");
   const hasEv      = feats("ev") || feats("charg");
   const hasGated   = feats("gat") || feats("barrier");
-  const hasCovered = feats("cover") || feats("shelter") || feats("roof");
+  const hasCovered = feats("cover") || feats("shelter") || feats("roof")
+    || title.includes("garage") || title.includes("underground") || title.includes("indoor") || title.includes("covered");
+
   const spaceType  = deriveSpaceType(listing.tags);
 
   return (
@@ -213,11 +217,11 @@ export function ListingCard({
         </div>
 
         {/* Bottom row: feature icons + rating + distance */}
-        <div className="mt-2 flex items-center gap-2">
-          {hasCctv && <FeatureIcon type="cctv" />}
-          {hasEv && <FeatureIcon type="ev" />}
-          {hasGated && <FeatureIcon type="gated" />}
-          {hasCovered && <FeatureIcon type="covered" />}
+        <div className="mt-2 flex items-center gap-1.5">
+          {hasCovered  && <FeatureIcon type="covered" />}
+          {hasGated    && <FeatureIcon type="gated" />}
+          {hasCctv     && <FeatureIcon type="cctv" />}
+          {hasEv       && <FeatureIcon type="ev" />}
 
           <div className="ml-auto flex items-center gap-2.5">
             {hasRating && (

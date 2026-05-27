@@ -192,7 +192,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
     const result = await pool.query(
       baseQuery.replace(
         "availability_text,",
-        "availability_text, image_urls,"
+        "availability_text, image_urls, amenities,"
       ),
       params
     );
@@ -205,6 +205,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       ratingCount: Number(row.rating_count ?? 0),
       availability: row.availability_text,
       imageUrls: row.image_urls ?? [],
+      amenities: row.amenities ?? [],
       distanceKm: Math.round((row.distance_m / 1000) * 10) / 10,
       latitude: row.latitude,
       longitude: row.longitude,
@@ -223,6 +224,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       ratingCount: Number(row.rating_count ?? 0),
       availability: row.availability_text,
       imageUrls: [],
+      amenities: [],
       distanceKm: Math.round((row.distance_m / 1000) * 10) / 10,
       latitude: row.latitude,
       longitude: row.longitude,
@@ -346,7 +348,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
     const result = await pool.query(
       baseQuery.replace(
         "availability_text,",
-        "availability_text, image_urls,"
+        "availability_text, image_urls, amenities,"
       ),
       params
     );
@@ -359,6 +361,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
       ratingCount: Number(row.rating_count ?? 0),
       availability: row.availability_text,
       imageUrls: row.image_urls ?? [],
+      amenities: row.amenities ?? [],
       distanceKm: Math.round((row.distance_m / 1000) * 10) / 10,
       latitude: row.latitude,
       longitude: row.longitude,
@@ -377,6 +380,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
       ratingCount: Number(row.rating_count ?? 0),
       availability: row.availability_text,
       imageUrls: [],
+      amenities: [],
       distanceKm: Math.round((row.distance_m / 1000) * 10) / 10,
       latitude: row.latitude,
       longitude: row.longitude,
