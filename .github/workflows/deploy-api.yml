@@ -1,27 +1,15 @@
-name: Deploy API and Web
+name: Deploy API
 
 concurrency:
-  group: deploy-api-web-${{ github.ref }}
+  group: deploy-api-${{ github.ref }}
   cancel-in-progress: true
 
 on:
   workflow_dispatch:
-    inputs:
-      deploy_api:
-        description: Deploy the API service to ECS
-        required: true
-        type: boolean
-        default: true
-      verify_web:
-        description: Run the web build verification job
-        required: true
-        type: boolean
-        default: true
   push:
     branches: [main]
     paths:
       - 'apps/api/**'
-      - 'apps/web/**'
       - 'db/**'
       - 'docs/deploy/**'
       - 'infra/**'
@@ -35,7 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       api: ${{ steps.set.outputs.api }}
-      web: ${{ steps.set.outputs.web }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -50,16 +37,12 @@ jobs:
               - 'infra/**'
               - 'scripts/build-push-ecs-api.sh'
               - 'scripts/setup-ecs-api-aws.sh'
-            web:
-              - 'apps/web/**'
       - id: set
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "api=${{ inputs.deploy_api }}" >> "$GITHUB_OUTPUT"
-            echo "web=${{ inputs.verify_web }}" >> "$GITHUB_OUTPUT"
+            echo "api=true" >> "$GITHUB_OUTPUT"
           else
             echo "api=${{ steps.filter.outputs.api }}" >> "$GITHUB_OUTPUT"
-            echo "web=${{ steps.filter.outputs.web }}" >> "$GITHUB_OUTPUT"
           fi
 
   deploy-api:
@@ -132,34 +115,3 @@ jobs:
           SMOKE_BASE_URL: https://api.freespace.ie
           SMOKE_MODE: api
         run: yarn smoke:post-deploy
-
-  verify-web:
-    name: Verify Web Build (Amplify deploys separately)
-    needs: changes
-    if: needs.changes.outputs.web == 'true'
-    runs-on: ubuntu-latest
-    environment: production
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Build Next.js
-        env:
-          NEXT_PUBLIC_API_BASE: https://api.freespace.ie
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
-          NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID }}
-          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
-          NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
-        run: yarn build:web
-
-      - name: Note Amplify deployment
-        run: echo "Web deployment is handled by Amplify from the main branch; this workflow only validates the web build."

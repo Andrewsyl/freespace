@@ -13,6 +13,13 @@ export const metadata: Metadata = {
   description: "Find and book parking in minutes",
 };
 
+const buildSha =
+  process.env.NEXT_PUBLIC_APP_BUILD_SHA ??
+  process.env.AWS_COMMIT_ID ??
+  process.env.VERCEL_GIT_COMMIT_SHA ??
+  process.env.GITHUB_SHA ??
+  "dev";
+
 export default function RootLayout({
   children,
 }: {
@@ -20,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen text-slate-900">
+      <body className="min-h-screen text-slate-900" data-build-sha={buildSha}>
         <Script
           src={`https://maps.googleapis.com/maps/api/js?key=${webEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
           strategy="beforeInteractive"

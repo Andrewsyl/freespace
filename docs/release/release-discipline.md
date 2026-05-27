@@ -59,6 +59,22 @@ Stop rollout immediately if:
 - map/search goes blank
 
 ## Web rollout discipline
-- Amplify deploys from `main`, so treat every merge as production-sensitive.
+- Web publishing must run through `.github/workflows/deploy-web.yml`.
+- Set the production secret `WEB_DEPLOY_HOOK_URL` to the frontend hosting deploy hook.
+- A web release is not complete until `verify:web:live` confirms the live site is serving the pushed commit SHA.
 - Prefer merging only after the release checklist is complete.
 - If a risky UI or booking change is involved, release during a staffed window with rollback ready.
+
+### Web deploy contract
+- Build marker source order:
+  - `NEXT_PUBLIC_APP_BUILD_SHA`
+  - `AWS_COMMIT_ID`
+  - `VERCEL_GIT_COMMIT_SHA`
+  - `GITHUB_SHA`
+- Production pages expose the marker on `<body data-build-sha="...">`.
+- The deploy workflow:
+  - triggers the real hosting deploy hook
+  - waits for the live site to serve the expected SHA
+  - runs web smoke checks against production
+
+If the SHA never appears live, treat the release as failed even if the hosting hook returned `202`.
