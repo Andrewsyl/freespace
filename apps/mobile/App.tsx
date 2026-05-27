@@ -58,6 +58,12 @@ import { LoadingOverlay } from "./components/LoadingOverlay";
 import { GlobalLoadingProvider, useGlobalLoading } from "./components/GlobalLoading";
 import { GlobalToastProvider } from "./components/GlobalToast";
 import { useGlobalToast } from "./components/GlobalToast";
+import {
+  clearMobileE2EScenario,
+  configureMobileE2EScenario,
+  getMobileE2EState,
+  mobileE2EEnabled,
+} from "./e2e/testMode";
 import { mobileEnv } from "./env";
 import { installGlobalErrorLogging } from "./logger";
 import { colors } from "./theme/colors";
@@ -232,7 +238,7 @@ function EnvironmentBadge({ env }: { env: string }) {
 const TransparentTheme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: 'transparent' } };
 
 function AppNavigator() {
-  const { token, setAuthUser } = useAuth();
+  const { token, setAuthUser, hydrateSession } = useAuth();
   const { showError, showSuccess } = useGlobalToast();
 
   useEffect(() => {
@@ -285,6 +291,35 @@ function AppNavigator() {
       const tokenParam = typeof parsed.queryParams?.token === "string" ? parsed.queryParams.token : null;
       const apiBaseParam =
         typeof parsed.queryParams?.apiBase === "string" ? parsed.queryParams.apiBase : undefined;
+      if (path === "e2e") {
+        if (!mobileE2EEnabled) return;
+        const scenarioName =
+          typeof parsed.queryParams?.scenario === "string" ? parsed.queryParams.scenario : "guest-smoke";
+        const scenario =
+          scenarioName === "reset"
+            ? (clearMobileE2EScenario(), null)
+            : configureMobileE2EScenario(scenarioName);
+        await hydrateSession(scenario?.authSession ?? null);
+        const navigateToScenario = () => {
+          if (!navigationRef.isReady()) {
+            setTimeout(navigateToScenario, 50);
+            return;
+          }
+          const target = getMobileE2EState()?.route ?? {
+            name: "Tabs" as const,
+            params: { screen: "Search" as const },
+          };
+          navigationRef.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: target.name, params: target.params }],
+            })
+          );
+          showSuccess(`Loaded ${scenario?.name ?? "guest-smoke"} mobile test scenario.`);
+        };
+        navigateToScenario();
+        return;
+      }
       if (path === "reset-password") {
         if (!tokenParam) {
           showError("Reset link is missing its token.");
@@ -342,7 +377,7 @@ function AppNavigator() {
       active = false;
       subscription.remove();
     };
-  }, [setAuthUser, showError, showSuccess, token]);
+  }, [hydrateSession, setAuthUser, showError, showSuccess, token]);
 
   return (
     <>

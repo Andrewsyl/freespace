@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 import * as Sentry from "@sentry/node";
 import { z } from "zod";
 import authRouter from "./routes/auth.js";
+import analyticsRouter from "./routes/analytics.js";
 import bookingsRouter from "./routes/bookings.js";
 import listingsRouter from "./routes/listings.js";
 import favoritesRouter from "./routes/favorites.js";
@@ -15,6 +16,7 @@ import paymentsRouter from "./routes/payments.js";
 import supportRouter from "./routes/support.js";
 import notificationsRouter from "./routes/notifications.js";
 import { csrfProtection } from "./middleware/csrf.js";
+import { logError, logInfo } from "./lib/logger.js";
 
 export function createApp() {
   const app = express();
@@ -27,6 +29,24 @@ export function createApp() {
     req.headers["x-request-id"] = requestId;
     res.setHeader("X-Request-Id", requestId);
     return next();
+  });
+
+  app.use((req, res, next) => {
+    const startedAt = Date.now();
+    res.on("finish", () => {
+      const requestId =
+        typeof req.headers["x-request-id"] === "string" ? req.headers["x-request-id"] : "unknown";
+      logInfo("request.completed", {
+        requestId,
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: res.statusCode,
+        durationMs: Date.now() - startedAt,
+        userAgent: req.get("user-agent") ?? null,
+        referer: req.get("referer") ?? null,
+      });
+    });
+    next();
   });
 
   app.use((_req, res, next) => {
@@ -112,6 +132,7 @@ export function createApp() {
   });
 
   app.use("/api/auth", authRouter);
+  app.use("/api/analytics", analyticsRouter);
   app.use("/api/listings", listingsRouter);
   app.use("/api/favorites", favoritesRouter);
   app.use("/api/bookings", bookingsRouter);
@@ -124,7 +145,7 @@ export function createApp() {
 
   app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const requestId = typeof req.headers["x-request-id"] === "string" ? req.headers["x-request-id"] : "unknown";
-    console.error("[api:error]", {
+    logError("request.failed", {
       requestId,
       method: req.method,
       path: req.originalUrl,

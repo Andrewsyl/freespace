@@ -14,6 +14,7 @@ import { ListingFlowContext, type ListingDraft } from "./listingFlow/context";
 import { hostFlowColors } from "./listingFlow/hostFlowTheme";
 import { getListing, listAvailability } from "../api";
 import { useAuth } from "../auth";
+import { getMobileE2EState, isMobileE2EActive } from "../e2e/testMode";
 import type { RootStackParamList } from "../types";
 import { colors } from "../styles/theme";
 import { ArrowLeft } from "lucide-react-native";
@@ -70,8 +71,11 @@ type Props = NativeStackScreenProps<RootStackParamList, "CreateListingFlow">;
 
 export function ListingFlowScreen({ route }: Props) {
   const listingId = route.params?.listingId ?? null;
+  const e2eState = getMobileE2EState();
+  const e2eDraft = !listingId && isMobileE2EActive() ? e2eState?.draft ?? null : null;
+  const e2eInitialRoute = !listingId && isMobileE2EActive() ? e2eState?.flowInitialRoute ?? null : null;
   const { token } = useAuth();
-  const [draft, setDraft] = useState<ListingDraft>(defaultDraft);
+  const [draft, setDraft] = useState<ListingDraft>(e2eDraft ?? defaultDraft);
   const [loading, setLoading] = useState(!!listingId);
   const [error, setError] = useState<string | null>(null);
 
@@ -86,6 +90,9 @@ export function ListingFlowScreen({ route }: Props) {
 
   useEffect(() => {
     if (!listingId) {
+      if (e2eDraft) {
+        setDraft(e2eDraft);
+      }
       setLoading(false);
       setError(null);
       return;
@@ -238,7 +245,7 @@ export function ListingFlowScreen({ route }: Props) {
     return () => {
       active = false;
     };
-  }, [listingId, token]);
+  }, [e2eDraft, listingId, token]);
 
   return (
     <ListingFlowContext.Provider value={value}>
@@ -284,7 +291,7 @@ export function ListingFlowScreen({ route }: Props) {
               </Pressable>
             ),
           })}
-          initialRouteName={listingId ? "ListingReview" : "ListingLocation"}
+          initialRouteName={listingId ? "ListingReview" : e2eInitialRoute ?? "ListingLocation"}
         >
           <Stack.Screen
             name="ListingLocation"

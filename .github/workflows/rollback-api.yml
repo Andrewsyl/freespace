@@ -1,0 +1,64 @@
+name: Roll Back API
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Existing ECR image tag or commit SHA to roll back to
+        required: true
+        type: string
+
+jobs:
+  rollback-api:
+    name: Roll back API on ECS
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+
+      - name: Log in to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Render rollback task definition
+        run: |
+          image_uri=${{ steps.ecr.outputs.registry }}/freespace-api:${{ inputs.image_tag }}
+          aws ecs describe-task-definition \
+            --task-definition freespace-api \
+            --query taskDefinition > task-definition.json
+
+          jq --arg IMAGE "$image_uri" '
+            del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy
+            )
+            | .containerDefinitions[0].image = $IMAGE
+          ' task-definition.json > task-definition-rendered.json
+
+      - name: Deploy rollback task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: task-definition-rendered.json
+          service: freespace-api-v2
+          cluster: freespace-prod
+          wait-for-service-stability: true
+
+      - name: Post-rollback smoke checks
+        env:
+          SMOKE_BASE_URL: https://api.freespace.ie
+          SMOKE_MODE: api
+        run: yarn smoke:post-deploy

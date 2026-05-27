@@ -267,16 +267,32 @@ export type AdminMetrics = {
     payload?: Record<string, unknown> | null;
     createdAt: string;
   }[];
+  recentProductFailures: {
+    id: string;
+    eventType: string;
+    payload?: Record<string, unknown> | null;
+    createdAt: string;
+  }[];
   signupFunnel: {
     signedUp: number;
     verifiedEmail: number;
     loggedIn: number;
+    verifyRate: number;
+    loginRate: number;
+  };
+  discoveryFunnel: {
+    searchCompleted: number;
+    listingViewed: number;
+    listingViewRate: number;
   };
   bookingFunnel: {
     listingPublished: number;
     checkoutStarted: number;
     paymentIntentCreated: number;
     confirmed: number;
+    checkoutToIntentRate: number;
+    checkoutToConfirmedRate: number;
+    publishToCheckoutRate: number;
   };
 };
 

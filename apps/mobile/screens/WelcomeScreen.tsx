@@ -7,6 +7,7 @@ import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-si
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
 import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
+import { trackEvent } from "../analytics";
 import { logInfo, logWarn } from "../logger";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Welcome">;
@@ -59,6 +60,9 @@ export function WelcomeScreen({ navigation }: Props) {
         return;
       }
       await loginWithOAuth("google", idToken);
+      void trackEvent("mobile_login_succeeded", {
+        method: "google",
+      });
     } catch (err) {
       const errorCode =
         err && typeof err === "object" && "code" in err ? String(err.code) : "";
@@ -105,14 +109,20 @@ export function WelcomeScreen({ navigation }: Props) {
 
         <TouchableOpacity
           style={styles.secondaryButton}
-          onPress={() => navigation.navigate("SignIn")}
+          onPress={() => {
+            void trackEvent("mobile_signin_view_started", { source: "welcome" });
+            navigation.navigate("SignIn");
+          }}
         >
           <Text style={styles.secondaryButtonText}>Log in with email or phone number</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.tertiaryButton}
-          onPress={() => navigation.navigate("Register")}
+          onPress={() => {
+            void trackEvent("mobile_signup_view_started", { source: "welcome" });
+            navigation.navigate("Register");
+          }}
         >
           <Text style={styles.tertiaryButtonText}>Create account</Text>
         </TouchableOpacity>

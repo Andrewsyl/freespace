@@ -12,6 +12,7 @@ import {
   listAvailability,
   updateListing,
 } from "../../api";
+import { trackEvent } from "../../analytics";
 import { useAuth } from "../../auth";
 import type { RootStackParamList } from "../../types";
 import { useListingFlow } from "./context";
@@ -176,6 +177,10 @@ export function ListingReviewScreen({ navigation }: Props) {
     setSubmitting(true);
     setError(null);
     try {
+      void trackEvent("mobile_host_publish_started", {
+        pricingMode: draft.pricingMode,
+        hasPhotos: draft.photos.length > 0,
+      });
       const coverUrl =
         draft.coverHeading != null && mapsKey
           ? `https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=${draft.location.latitude},${draft.location.longitude}&heading=${draft.coverHeading}&pitch=${draft.coverPitch ?? 0}&fov=80&key=${mapsKey}`
@@ -233,6 +238,10 @@ export function ListingReviewScreen({ navigation }: Props) {
       }
       setPublished(true);
       setShowSuccess(true);
+      void trackEvent("mobile_host_publish_succeeded", {
+        pricingMode: draft.pricingMode,
+        listingId: listingId ?? "new",
+      });
       setTimeout(() => {
         (rootNavigation as { dispatch: (action: ReturnType<typeof CommonActions.reset>) => void })
           ?.dispatch(
@@ -243,6 +252,10 @@ export function ListingReviewScreen({ navigation }: Props) {
           );
       }, 1800);
     } catch (err) {
+      void trackEvent("mobile_host_publish_failed", {
+        pricingMode: draft.pricingMode,
+        listingId: listingId ?? "new",
+      });
       setError(err instanceof Error ? err.message : "Could not publish");
       setPublished(false);
       setShowSuccess(false);

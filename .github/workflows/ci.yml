@@ -34,6 +34,9 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
       - name: Sanity checks
         run: |
           yarn check:env:local
@@ -57,3 +60,6 @@ jobs:
         run: |
           yarn lint:web
           yarn build:web
+
+      - name: Web e2e
+        run: yarn test:web:e2e

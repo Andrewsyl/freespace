@@ -1,4 +1,10 @@
 import type { ListingDetail, ListingSummary, SearchParams } from "./types";
+import {
+  getMobileE2EState,
+  isMobileE2EActive,
+  recordMockBooking,
+  recordMockListingPublish,
+} from "./e2e/testMode";
 import { mobileEnv } from "./env";
 
 const baseUrl = mobileEnv.apiBase;
@@ -71,6 +77,10 @@ function resolveApiBase(apiBaseOverride?: string) {
 }
 
 export async function searchListings(params: SearchParams) {
+  const e2eState = getMobileE2EState();
+  if (isMobileE2EActive() && e2eState) {
+    return e2eState.searchResults.map((space) => ({ ...space }));
+  }
   const radiusKm = Math.min(50, Math.max(0.1, Number(params.radiusKm) || 5));
   const query = new URLSearchParams();
   query.set("lat", params.lat);
@@ -124,6 +134,10 @@ export async function getListing(
     to?: string;
   }
 ) {
+  const e2eState = getMobileE2EState();
+  if (isMobileE2EActive() && e2eState?.listing.id === id) {
+    return { ...e2eState.listing };
+  }
   const query = new URLSearchParams();
   if (params?.from) query.set("from", params.from);
   if (params?.to) query.set("to", params.to);
@@ -698,6 +712,15 @@ export async function createBookingPaymentIntent(payload: {
   vehiclePlate?: string | null;
   token: string;
 }) {
+  const e2eState = getMobileE2EState();
+  if (isMobileE2EActive() && e2eState) {
+    return {
+      paymentIntentClientSecret: "pi_e2e_secret",
+      paymentIntentId: e2eState.mockedPaymentIntentId,
+      customerId: "cus_e2e",
+      ephemeralKeySecret: "ephkey_e2e",
+    };
+  }
   const response = await fetch(`${baseUrl}/api/bookings/payment-intent`, {
     method: "POST",
     headers: {
@@ -737,6 +760,10 @@ export async function confirmBookingPayment(payload: {
   status?: "confirmed" | "canceled";
   token: string;
 }) {
+  if (isMobileE2EActive()) {
+    recordMockBooking();
+    return;
+  }
   const response = await fetch(`${baseUrl}/api/bookings/confirm`, {
     method: "POST",
     headers: {
@@ -842,6 +869,13 @@ export type BookingSummary = {
 };
 
 export async function listMyBookings(token: string) {
+  const e2eState = getMobileE2EState();
+  if (isMobileE2EActive() && e2eState) {
+    return {
+      driverBookings: e2eState.bookings.map((booking) => ({ ...booking })),
+      hostBookings: [],
+    };
+  }
   const response = await fetch(`${baseUrl}/api/bookings/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -952,6 +986,9 @@ export async function createListing(payload: {
   arrivalInstructions?: string | null;
   permissionDeclared?: boolean;
 }) {
+  if (isMobileE2EActive()) {
+    return recordMockListingPublish() ?? "e2e-host-listing-1";
+  }
   const response = await fetch(`${baseUrl}/api/listings`, {
     method: "POST",
     headers: {
@@ -983,6 +1020,10 @@ export async function createListing(payload: {
 }
 
 export async function listHostListings(token: string) {
+  const e2eState = getMobileE2EState();
+  if (isMobileE2EActive() && e2eState) {
+    return e2eState.hostListings.map((listing) => ({ ...listing }));
+  }
   const response = await fetch(`${baseUrl}/api/listings`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -1112,6 +1153,10 @@ export type AvailabilityEntry = {
 };
 
 export async function listAvailability(payload: { token: string; listingId: string }) {
+  const e2eState = getMobileE2EState();
+  if (isMobileE2EActive() && e2eState) {
+    return e2eState.availability.map((entry) => ({ ...entry }));
+  }
   const response = await fetch(`${baseUrl}/api/host/listings/${payload.listingId}/availability`, {
     headers: {
       Authorization: `Bearer ${payload.token}`,
@@ -1133,6 +1178,19 @@ export async function createAvailabilityEntry(payload: {
   repeatWeekdays?: number[] | null;
   repeatUntil?: string | null;
 }) {
+  const e2eState = getMobileE2EState();
+  if (isMobileE2EActive() && e2eState) {
+    const entry: AvailabilityEntry = {
+      id: `e2e-availability-${e2eState.availability.length + 1}`,
+      kind: payload.kind,
+      startsAt: payload.startsAt,
+      endsAt: payload.endsAt,
+      repeatWeekdays: payload.repeatWeekdays ?? null,
+      repeatUntil: payload.repeatUntil ?? null,
+    };
+    e2eState.availability = [...e2eState.availability, entry];
+    return entry;
+  }
   const response = await fetch(`${baseUrl}/api/host/listings/${payload.listingId}/availability`, {
     method: "POST",
     headers: {
@@ -1158,6 +1216,11 @@ export async function deleteAvailabilityEntry(payload: {
   token: string;
   availabilityId: string;
 }) {
+  const e2eState = getMobileE2EState();
+  if (isMobileE2EActive() && e2eState) {
+    e2eState.availability = e2eState.availability.filter((entry) => entry.id !== payload.availabilityId);
+    return;
+  }
   const response = await fetch(
     `${baseUrl}/api/host/availability/${payload.availabilityId}`,
     {

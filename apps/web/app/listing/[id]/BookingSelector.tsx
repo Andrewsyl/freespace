@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { trackEvent } from "../../../lib/telemetry";
 import { useEffect, useRef, useMemo, useState } from "react";
 import { formatListingPriceLine } from "../../../lib/pricing";
 
@@ -378,6 +379,15 @@ export function BookingSelector({
       {/* Reserve button */}
       <Link
         href={href as any}
+        onClick={() =>
+          void trackEvent("web_booking_started", {
+            listingId,
+            startDate,
+            startTime,
+            endDate,
+            endTime,
+          })
+        }
         className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-3.5 text-[15px] font-bold text-white transition hover:bg-brand-600"
       >
         Reserve{unitPrice != null ? ` · €${unitPrice}` : ""}{dur ? ` · ${dur}` : ""}

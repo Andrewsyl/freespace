@@ -17,6 +17,7 @@ import { ListingMap } from "./MapSection";
 import { SlimNav } from "../../../components/SlimNav";
 import { MobileListingView } from "./MobileListingView";
 import { SidebarBookingCard } from "./SidebarBookingCard";
+import { ListingViewTracker } from "./ListingViewTracker";
 
 function fallbackImage(title: string) {
   const encoded = encodeURIComponent(title);
@@ -99,6 +100,7 @@ export default async function ListingDetailPage({
 
   return (
     <div className="min-h-screen bg-white">
+      <ListingViewTracker listingId={listing.id} title={listing.title} />
       <SlimNav />
 
       {/* ── Mobile ── */}

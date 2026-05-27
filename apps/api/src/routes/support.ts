@@ -1,4 +1,5 @@
 import { Router } from "express";
+import * as Sentry from "@sentry/node";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { sendMail } from "../lib/mailer.js";
@@ -7,6 +8,7 @@ import { createSupportTicket, getLatestSupportTicketForUser, insertEventLog } fr
 import { reportOperationalAlert } from "../lib/opsAlerts.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
 import { enforceBlockedList } from "../middleware/fraud.js";
+import { logError } from "../lib/logger.js";
 
 const router = Router();
 
@@ -93,6 +95,35 @@ router.post("/client-error", clientErrorLimiter, async (req, res, next) => {
       normalizedEnv !== "production" ||
       runtimeUrl.includes("127.0.0.1") ||
       runtimeUrl.includes("localhost");
+    logError("client.error_reported", {
+      source: payload.source,
+      name: payload.name ?? null,
+      message: payload.message,
+      isFatal: payload.isFatal ?? false,
+      appEnv: payload.appEnv ?? null,
+    });
+    await insertEventLog({
+      eventType: "client.error_reported",
+      payload: {
+        source: payload.source,
+        name: payload.name ?? null,
+        message: payload.message,
+        isFatal: payload.isFatal ?? false,
+        appEnv: payload.appEnv ?? null,
+      },
+    });
+    Sentry.captureException(new Error(`[${payload.source}] ${payload.message}`), {
+      tags: {
+        source: `${payload.source}-client`,
+        isFatal: String(Boolean(payload.isFatal)),
+        appEnv: payload.appEnv ?? "unknown",
+      },
+      extra: {
+        name: payload.name ?? null,
+        stack: payload.stack ?? null,
+        runtimeUrl: payload.runtimeUrl ?? null,
+      },
+    });
     await reportOperationalAlert({
       source: `${payload.source}-client`,
       title: "Client error report",

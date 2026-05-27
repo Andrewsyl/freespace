@@ -32,6 +32,8 @@ import { useGlobalLoading } from "../components/GlobalLoading";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import { Button } from "../components/ui";
+import { isMobileE2EActive } from "../e2e/testMode";
+import { trackEvent } from "../analytics";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { formatDateLabel, formatDateTimeLabel, formatTimeLabel } from "../utils/dateFormat";
 import { calculateListingTotal } from "../utils/pricing";
@@ -230,6 +232,12 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         from: startAt.toISOString(),
         to: endAt.toISOString(),
       });
+      void trackEvent("mobile_booking_started", {
+        listingId: listing.id,
+        from: startAt.toISOString(),
+        to: endAt.toISOString(),
+        amountCents: pricing.finalCents,
+      });
       const payment = await createBookingPaymentIntent({
         listingId: listing.id,
         from: startAt.toISOString(),
@@ -239,6 +247,38 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         token,
       });
       const paymentIntentId = payment.paymentIntentId ?? "";
+      if (isMobileE2EActive()) {
+        setConfirmingBooking(true);
+        await confirmBookingPayment({ paymentIntentId, token });
+        didConfirm = true;
+        setBookingConfirmed(true);
+        setConfirmingBooking(false);
+        resetGlobalLoading();
+        void trackEvent("mobile_booking_confirmed", {
+          listingId: listing.id,
+          paymentIntentId,
+          amountCents: pricing.finalCents,
+        });
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: "Tabs",
+                params: {
+                  screen: "History",
+                  params: {
+                    showSuccess: true,
+                    refreshToken: Date.now(),
+                    initialTab: "upcoming",
+                  },
+                },
+              },
+            ],
+          })
+        );
+        return;
+      }
       const initResult = await initPaymentSheet({
         merchantDisplayName: "FreeSpace",
         customerId: payment.customerId,
@@ -371,6 +411,11 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       setBookingConfirmed(true);
       setConfirmingBooking(false);
       resetGlobalLoading();
+      void trackEvent("mobile_booking_confirmed", {
+        listingId: listing.id,
+        paymentIntentId,
+        amountCents: pricing.finalCents,
+      });
       const nowMs = Date.now();
       const startMs = Date.parse(from);
       const endMs = Date.parse(to);
@@ -407,6 +452,10 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Booking failed";
       logError("Booking error", { message });
+      void trackEvent("mobile_booking_failed", {
+        listingId: listing?.id ?? id,
+        message,
+      });
       if (message.toLowerCase().includes("time slot already booked")) {
         setPaymentFailureMessage(
           "That slot was just taken. Choose another time."

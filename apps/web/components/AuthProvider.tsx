@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { login, refreshSession, register, revokeSession, oauthLoginGoogle, type AuthResponse } from "../lib/api";
+import { trackEvent } from "../lib/telemetry";
 import { useAppStatus } from "./AppStatusProvider";
 
 type User = AuthResponse["user"];
@@ -126,6 +127,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (nextRefreshToken) {
         localStorage.setItem("auth_refresh", nextRefreshToken);
       }
+      void trackEvent("web_login_succeeded", {
+        method: "password",
+        userId: res.user.id,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Login failed";
       setError(msg);
@@ -153,6 +158,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (nextRefreshToken) {
         localStorage.setItem("auth_refresh", nextRefreshToken);
       }
+      void trackEvent("web_signup_completed", {
+        method: "password",
+        userId: res.user.id,
+        phoneProvided: Boolean(phone),
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Signup failed";
       setError(msg);
@@ -180,6 +190,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (nextRefreshToken) {
         localStorage.setItem("auth_refresh", nextRefreshToken);
       }
+      void trackEvent("web_login_succeeded", {
+        method: "google",
+        userId: res.user.id,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Google sign-in failed";
       setError(msg);

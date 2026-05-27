@@ -1,0 +1,8 @@
+appId: ie.freespace.app.dev
+---
+- launchApp
+- assertVisible: "Discover"
+- assertVisible: "Bookings"
+- assertVisible: "Profile"
+- tapOn: "Profile"
+- assertVisible: "Sign in to access your profile"

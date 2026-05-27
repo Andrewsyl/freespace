@@ -46,6 +46,8 @@ const formatDateTime = (value: string) => {
   }
 };
 
+const formatPercent = (value: number) => `${Math.round((value ?? 0) * 100)}%`;
+
 const eventLabel: Record<string, string> = {
   booking_conflict: "Booking conflict",
   booking_email_failed: "Booking email failed",
@@ -55,6 +57,12 @@ const eventLabel: Record<string, string> = {
   operational_alert: "Operational alert",
   host_booking_canceled: "Host canceled booking",
   booking_status_transition_skipped: "Booking state transition skipped",
+  web_search_failed: "Web search failed",
+  mobile_search_failed: "Mobile search failed",
+  web_host_publish_failed: "Web host publish failed",
+  mobile_host_publish_failed: "Mobile host publish failed",
+  mobile_booking_failed: "Mobile booking failed",
+  "client.error_reported": "Client error reported",
 };
 
 export default function AdminDashboardPage() {
@@ -111,6 +119,28 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Discovery funnel (30d)</p>
+              <p className="text-sm text-slate-600">Search demand and listing engagement across web and mobile</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Searches completed</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.discoveryFunnel.searchCompleted ?? "—"}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Listing views</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.discoveryFunnel.listingViewed ?? "—"}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                View rate: {metrics ? formatPercent(metrics.discoveryFunnel.listingViewRate) : "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
@@ -225,10 +255,16 @@ export default function AdminDashboardPage() {
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Verified email</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.signupFunnel.verifiedEmail ?? "—"}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Verify rate: {metrics ? formatPercent(metrics.signupFunnel.verifyRate) : "—"}
+              </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Logged in</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.signupFunnel.loggedIn ?? "—"}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Login rate: {metrics ? formatPercent(metrics.signupFunnel.loginRate) : "—"}
+              </p>
             </div>
           </div>
         </div>
@@ -237,7 +273,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Booking funnel (30d)</p>
-              <p className="text-sm text-slate-600">Publishing to confirmed paid bookings</p>
+              <p className="text-sm text-slate-600">Client intent plus backend payment completion</p>
             </div>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -252,47 +288,90 @@ export default function AdminDashboardPage() {
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Payment intent created</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.bookingFunnel.paymentIntentCreated ?? "—"}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Checkout to intent: {metrics ? formatPercent(metrics.bookingFunnel.checkoutToIntentRate) : "—"}
+              </p>
             </div>
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Confirmed</p>
               <p className="mt-1 text-2xl font-semibold text-emerald-900">{metrics?.bookingFunnel.confirmed ?? "—"}</p>
+              <p className="mt-1 text-xs text-emerald-700">
+                Checkout to confirmed: {metrics ? formatPercent(metrics.bookingFunnel.checkoutToConfirmedRate) : "—"}
+              </p>
             </div>
+          </div>
+          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Publish to checkout</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">
+              {metrics ? formatPercent(metrics.bookingFunnel.publishToCheckoutRate) : "—"}
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Operational alerts</p>
-            <p className="text-sm text-slate-600">Recent booking, payment, webhook, and delivery failures.</p>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Operational alerts</p>
+              <p className="text-sm text-slate-600">Recent booking, payment, webhook, and delivery failures.</p>
+            </div>
+          </div>
+          <div className="mt-4 space-y-3">
+            {(metrics?.recentOperationalEvents ?? []).map((event) => (
+              <div key={event.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {eventLabel[event.eventType] ?? event.eventType}
+                  </p>
+                  <p className="text-xs text-slate-500">{formatDateTime(event.createdAt)}</p>
+                </div>
+                {event.payload?.bookingId || event.payload?.listingId || event.payload?.paymentIntentId ? (
+                  <p className="mt-1 text-xs text-slate-500">
+                    {[event.payload?.bookingId ? `Booking ${String(event.payload.bookingId).slice(0, 8)}` : null,
+                      event.payload?.listingId ? `Listing ${String(event.payload.listingId).slice(0, 8)}` : null,
+                      event.payload?.paymentIntentId ? `Payment ${String(event.payload.paymentIntentId).slice(0, 12)}` : null]
+                      .filter(Boolean)
+                      .join(" • ")}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+            {!metrics?.recentOperationalEvents?.length ? (
+              <div className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">
+                No recent operational alerts.
+              </div>
+            ) : null}
           </div>
         </div>
-        <div className="mt-4 space-y-3">
-          {(metrics?.recentOperationalEvents ?? []).map((event) => (
-            <div key={event.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm font-semibold text-slate-900">
-                  {eventLabel[event.eventType] ?? event.eventType}
-                </p>
-                <p className="text-xs text-slate-500">{formatDateTime(event.createdAt)}</p>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Product failures</p>
+              <p className="text-sm text-slate-600">Recent search, booking, publish, and client-side failures.</p>
+            </div>
+          </div>
+          <div className="mt-4 space-y-3">
+            {(metrics?.recentProductFailures ?? []).map((event) => (
+              <div key={event.id} className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {eventLabel[event.eventType] ?? event.eventType}
+                  </p>
+                  <p className="text-xs text-slate-500">{formatDateTime(event.createdAt)}</p>
+                </div>
+                {event.payload?.message ? (
+                  <p className="mt-1 text-xs text-slate-600">{String(event.payload.message)}</p>
+                ) : null}
               </div>
-              {event.payload?.bookingId || event.payload?.listingId || event.payload?.paymentIntentId ? (
-                <p className="mt-1 text-xs text-slate-500">
-                  {[event.payload?.bookingId ? `Booking ${String(event.payload.bookingId).slice(0, 8)}` : null,
-                    event.payload?.listingId ? `Listing ${String(event.payload.listingId).slice(0, 8)}` : null,
-                    event.payload?.paymentIntentId ? `Payment ${String(event.payload.paymentIntentId).slice(0, 12)}` : null]
-                    .filter(Boolean)
-                    .join(" • ")}
-                </p>
-              ) : null}
-            </div>
-          ))}
-          {!metrics?.recentOperationalEvents?.length ? (
-            <div className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">
-              No recent operational alerts.
-            </div>
-          ) : null}
+            ))}
+            {!metrics?.recentProductFailures?.length ? (
+              <div className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">
+                No recent product failures.
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>

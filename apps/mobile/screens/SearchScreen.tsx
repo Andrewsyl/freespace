@@ -31,6 +31,7 @@ import { LIGHT_MAP_STYLE } from "../components/mapStyles";
 import { calculateListingTotal } from "../utils/pricing";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { getListing, searchListings } from "../api";
+import { trackEvent } from "../analytics";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import { MapPin as MapPinIcon } from "lucide-react-native";
 import { logError, logInfo } from "../logger";
@@ -461,6 +462,10 @@ export function SearchScreen({ navigation }: Props) {
       }
       try {
         const spaces = await searchListings(params);
+        void trackEvent("mobile_search_completed", {
+          resultCount: spaces.length,
+          radiusKm: params.radiusKm,
+        });
         if (searchRequestIdRef.current !== requestId) return;
         const center = {
           lat: Number.parseFloat(params.lat),
@@ -492,6 +497,10 @@ export function SearchScreen({ navigation }: Props) {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Search failed";
         logError("Search error", { message });
+        void trackEvent("mobile_search_failed", {
+          radiusKm: params.radiusKm,
+          message,
+        });
         setError(message);
         if (searchRequestIdRef.current === requestId) {
           setPendingResults([]);

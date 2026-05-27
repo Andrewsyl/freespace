@@ -10,6 +10,7 @@ import { DesktopSearchLayout } from "../../../components/DesktopSearchLayout";
 import { MobileSearchLanding } from "../../../components/MobileSearchLanding";
 import { useIsMobile } from "../../../lib/useBreakpoint";
 import { searchSpaces } from "../../../lib/api";
+import { trackEvent } from "../../../lib/telemetry";
 
 // ── Defaults ─────────────────────────────────────────────────────────────────
 
@@ -191,10 +192,19 @@ function SearchPageContainer() {
       const data = await searchSpaces(next);
       setResults(data);
       setStatus("idle");
+      void trackEvent("web_search_completed", {
+        resultCount: data.length,
+        location: next.location,
+        radiusKm: next.radiusKm,
+      });
       if (next.latitude !== undefined && next.longitude !== undefined) {
         lastAppliedCenter.current = { lat: next.latitude, lng: next.longitude };
       }
     } catch (err) {
+      void trackEvent("web_search_failed", {
+        location: next.location,
+        radiusKm: next.radiusKm,
+      });
       setError(err instanceof Error ? err.message : "Search failed");
       setStatus("error");
     } finally {

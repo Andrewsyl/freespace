@@ -8,6 +8,7 @@ import { processScheduledNotifications } from "./lib/notifications.js";
 import { reportOperationalAlert } from "./lib/opsAlerts.js";
 import { pool } from "./lib/db.js";
 import { env } from "./env.js";
+import { logError, logInfo, logWarn } from "./lib/logger.js";
 
 if (env.SENTRY_DSN) {
   Sentry.init({
@@ -21,13 +22,19 @@ const app = createApp();
 const port = env.PORT;
 
 const server = app.listen(port, () => {
-  console.log(`API listening on http://localhost:${port}`);
+  logInfo("api.started", {
+    port,
+    nodeEnv: env.NODE_ENV,
+  });
   void logRuntimeHealthChecks();
 });
 
 server.on("error", (error: NodeJS.ErrnoException) => {
   if (error.code === "EADDRINUSE") {
-    console.error(`[startup] Port ${port} is already in use. Stop the existing API process before starting another one.`);
+    logError("api.port_in_use", {
+      port,
+      message: error.message,
+    });
     if (env.NODE_ENV === "production") {
       void reportOperationalAlert({
         source: "api-process",
@@ -45,7 +52,9 @@ server.on("error", (error: NodeJS.ErrnoException) => {
 });
 
 process.on("unhandledRejection", (reason) => {
-  console.error("[process] Unhandled rejection", reason);
+  logError("process.unhandled_rejection", {
+    reason: reason instanceof Error ? { message: reason.message, stack: reason.stack } : String(reason),
+  });
   Sentry.captureException(reason);
   void reportOperationalAlert({
     source: "api-process",
@@ -57,7 +66,10 @@ process.on("unhandledRejection", (reason) => {
 });
 
 process.on("uncaughtException", (error) => {
-  console.error("[process] Uncaught exception", error);
+  logError("process.uncaught_exception", {
+    message: error.message,
+    stack: error.stack,
+  });
   Sentry.captureException(error);
   void reportOperationalAlert({
     source: "api-process",
@@ -79,7 +91,9 @@ async function logRuntimeHealthChecks() {
   try {
     await pool.query("SELECT 1");
   } catch (error) {
-    console.error("[startup] Database connectivity check failed:", error);
+    logError("startup.database_check_failed", {
+      error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
+    });
     return;
   }
 
@@ -95,9 +109,9 @@ async function logRuntimeHealthChecks() {
     const present = new Set(hasColumns.rows.map((r: { column_name: string }) => r.column_name));
     const missing = ["full_name", "phone", "vehicle_make", "vehicle_type", "vehicle_color", "vehicle_plate"].filter((col) => !present.has(col));
     if (missing.length) {
-      console.error(
-        `[startup] Missing users columns: ${missing.join(", ")}. Run: npm --workspace apps/api run migrate`
-      );
+      logError("startup.missing_user_columns", {
+        missing,
+      });
     }
 
     const __filename = fileURLToPath(import.meta.url);
@@ -115,19 +129,22 @@ async function logRuntimeHealthChecks() {
     );
     const exists = schemaMigrationsExists.rows[0]?.exists === true;
     if (!exists) {
-      console.error("[startup] schema_migrations table missing. Run: npm --workspace apps/api run migrate");
+      logError("startup.schema_migrations_missing");
       return;
     }
     const appliedRes = await pool.query("SELECT filename FROM schema_migrations");
     const applied = new Set(appliedRes.rows.map((r: { filename: string }) => r.filename));
     const pending = allMigrations.filter((f) => !applied.has(f));
     if (pending.length) {
-      console.warn(
-        `[startup] Pending migrations detected (${pending.length}). Latest pending: ${pending[pending.length - 1]}`
-      );
+      logWarn("startup.pending_migrations", {
+        count: pending.length,
+        latest: pending[pending.length - 1],
+      });
     }
   } catch (error) {
-    console.error("[startup] Runtime schema check failed:", error);
+    logError("startup.runtime_schema_check_failed", {
+      error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
+    });
   }
 }
 

@@ -15,6 +15,7 @@ import {
 } from "@heroicons/react/24/outline";
 import type { Listing } from "../../../components/ListingCard";
 import { ListingMap } from "./MapSection";
+import { trackEvent } from "../../../lib/telemetry";
 
 type Review = {
   id: string;
@@ -174,6 +175,14 @@ export function MobileListingView({
 
         <Link
           href={href as any}
+          onClick={() =>
+            void trackEvent("web_booking_started", {
+              listingId: listing.id,
+              date,
+              startTime,
+              endTime,
+            })
+          }
           className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-brand-500 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-600"
         >
           Continue to booking

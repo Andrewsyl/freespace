@@ -2663,6 +2663,8 @@ export async function deleteUserAccount(userId: string) {
 
 // Admin utilities
 export async function getAdminDashboardMetrics() {
+  const ratio = (numerator: number, denominator: number) =>
+    denominator > 0 ? Number(((numerator / denominator) * 100).toFixed(1)) : 0;
   const res = await pool.query(
     `
     SELECT
@@ -2750,6 +2752,23 @@ export async function getAdminDashboardMetrics() {
     `
   );
 
+  const recentProductFailures = await pool.query(
+    `
+    SELECT id, event_type, payload, created_at
+    FROM event_log
+    WHERE event_type IN (
+      'web_search_failed',
+      'mobile_search_failed',
+      'web_host_publish_failed',
+      'mobile_host_publish_failed',
+      'mobile_booking_failed',
+      'client.error_reported'
+    )
+    ORDER BY created_at DESC
+    LIMIT 10
+    `
+  );
+
   const funnelCounts = await pool.query(
     `
     SELECT event_type, COUNT(*)::int AS count
@@ -2762,7 +2781,20 @@ export async function getAdminDashboardMetrics() {
         'listing_published',
         'booking_checkout_started',
         'booking_payment_intent_created',
-        'booking_confirmed'
+        'booking_confirmed',
+        'web_login_succeeded',
+        'mobile_login_succeeded',
+        'web_signup_completed',
+        'mobile_signup_completed',
+        'web_search_completed',
+        'mobile_search_completed',
+        'web_listing_viewed',
+        'mobile_listing_viewed',
+        'web_booking_started',
+        'mobile_booking_started',
+        'mobile_booking_confirmed',
+        'web_host_publish_succeeded',
+        'mobile_host_publish_succeeded'
       )
     GROUP BY event_type
     `
@@ -2771,6 +2803,34 @@ export async function getAdminDashboardMetrics() {
   for (const row of funnelCounts.rows as Array<{ event_type: string; count: number }>) {
     funnelMap.set(row.event_type, Number(row.count ?? 0));
   }
+
+  const signupSignedUp =
+    (funnelMap.get("signup_completed") ?? 0) +
+    (funnelMap.get("web_signup_completed") ?? 0) +
+    (funnelMap.get("mobile_signup_completed") ?? 0);
+  const signupVerified = funnelMap.get("email_verified") ?? 0;
+  const signupLoggedIn =
+    (funnelMap.get("login_succeeded") ?? 0) +
+    (funnelMap.get("web_login_succeeded") ?? 0) +
+    (funnelMap.get("mobile_login_succeeded") ?? 0);
+  const discoverySearchCompleted =
+    (funnelMap.get("web_search_completed") ?? 0) +
+    (funnelMap.get("mobile_search_completed") ?? 0);
+  const discoveryListingViewed =
+    (funnelMap.get("web_listing_viewed") ?? 0) +
+    (funnelMap.get("mobile_listing_viewed") ?? 0);
+  const bookingListingPublished =
+    (funnelMap.get("listing_published") ?? 0) +
+    (funnelMap.get("web_host_publish_succeeded") ?? 0) +
+    (funnelMap.get("mobile_host_publish_succeeded") ?? 0);
+  const bookingCheckoutStarted =
+    (funnelMap.get("booking_checkout_started") ?? 0) +
+    (funnelMap.get("web_booking_started") ?? 0) +
+    (funnelMap.get("mobile_booking_started") ?? 0);
+  const bookingPaymentIntentCreated = funnelMap.get("booking_payment_intent_created") ?? 0;
+  const bookingConfirmed =
+    (funnelMap.get("booking_confirmed") ?? 0) +
+    (funnelMap.get("mobile_booking_confirmed") ?? 0);
 
   return {
     userCount: Number(row.user_count ?? 0),
@@ -2798,16 +2858,32 @@ export async function getAdminDashboardMetrics() {
       payload: row.payload ?? null,
       createdAt: row.created_at,
     })),
+    recentProductFailures: recentProductFailures.rows.map((row) => ({
+      id: row.id,
+      eventType: row.event_type,
+      payload: row.payload ?? null,
+      createdAt: row.created_at,
+    })),
     signupFunnel: {
-      signedUp: funnelMap.get("signup_completed") ?? 0,
-      verifiedEmail: funnelMap.get("email_verified") ?? 0,
-      loggedIn: funnelMap.get("login_succeeded") ?? 0,
+      signedUp: signupSignedUp,
+      verifiedEmail: signupVerified,
+      loggedIn: signupLoggedIn,
+      verifyRate: ratio(signupVerified, signupSignedUp),
+      loginRate: ratio(signupLoggedIn, signupVerified || signupSignedUp),
+    },
+    discoveryFunnel: {
+      searchCompleted: discoverySearchCompleted,
+      listingViewed: discoveryListingViewed,
+      listingViewRate: ratio(discoveryListingViewed, discoverySearchCompleted),
     },
     bookingFunnel: {
-      listingPublished: funnelMap.get("listing_published") ?? 0,
-      checkoutStarted: funnelMap.get("booking_checkout_started") ?? 0,
-      paymentIntentCreated: funnelMap.get("booking_payment_intent_created") ?? 0,
-      confirmed: funnelMap.get("booking_confirmed") ?? 0,
+      listingPublished: bookingListingPublished,
+      checkoutStarted: bookingCheckoutStarted,
+      paymentIntentCreated: bookingPaymentIntentCreated,
+      confirmed: bookingConfirmed,
+      checkoutToIntentRate: ratio(bookingPaymentIntentCreated, bookingCheckoutStarted),
+      checkoutToConfirmedRate: ratio(bookingConfirmed, bookingCheckoutStarted),
+      publishToCheckoutRate: ratio(bookingCheckoutStarted, bookingListingPublished),
     },
   };
 }

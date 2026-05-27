@@ -10,8 +10,9 @@ import {
   register as apiRegister,
   revokeSession,
 } from "./api";
+import { trackEvent } from "./analytics";
 
-type AuthUser = {
+export type AuthUser = {
   id: string;
   email: string;
   name?: string | null;
@@ -51,6 +52,7 @@ type AuthContextValue = {
   loginWithOAuth: (provider: "google" | "facebook", token: string) => Promise<AuthUser>;
   acceptLegal: (payload: { termsVersion: string; privacyVersion: string }) => Promise<AuthUser>;
   setAuthUser: (user: AuthUser) => Promise<void>;
+  hydrateSession: (session: { token: string; user: AuthUser; refreshToken?: string | null } | null) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -185,6 +187,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (nextRefreshToken) {
       await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
     }
+    void trackEvent("mobile_login_succeeded", {
+      method: "password",
+      userId: nextUser?.id ?? null,
+    });
     return nextUser as AuthUser;
   }, []);
 
@@ -212,6 +218,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (nextRefreshToken) {
         await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
       }
+      void trackEvent("mobile_signup_completed", {
+        method: "password",
+        userId: nextUser?.id ?? null,
+        phoneProvided: Boolean(legal.phone),
+      });
       return { previewUrl: response.previewUrl ?? null, user: nextUser as AuthUser };
     },
     []
@@ -265,6 +276,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (nextRefreshToken) {
       await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
     }
+    void trackEvent("mobile_login_succeeded", {
+      method: provider,
+      userId: nextUser?.id ?? null,
+    });
     return nextUser as AuthUser;
   }, []);
 
@@ -287,6 +302,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(nextUser);
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
   }, []);
+
+  const hydrateSession = useCallback(
+    async (session: { token: string; user: AuthUser; refreshToken?: string | null } | null) => {
+      if (!session) {
+        setToken(null);
+        setUser(null);
+        setLegalPromptRequired(false);
+        setRefreshToken(null);
+        await AsyncStorage.removeItem(TOKEN_KEY);
+        await AsyncStorage.removeItem(USER_KEY);
+        await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+        return;
+      }
+
+      const nextUser = withAuthProvider(session.user, session.user.authProvider);
+      setToken(session.token);
+      setUser(nextUser);
+      setLegalPromptRequired(needsLegalAcceptance(nextUser));
+      const nextRefreshToken = session.refreshToken ?? null;
+      setRefreshToken(nextRefreshToken);
+      await AsyncStorage.setItem(TOKEN_KEY, session.token);
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+      if (nextRefreshToken) {
+        await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
+      } else {
+        await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (logoutTimerRef.current) {
@@ -351,9 +396,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loginWithOAuth,
       acceptLegal,
       setAuthUser,
+      hydrateSession,
       logout,
     }),
-    [token, user, loading, legalPromptRequired, login, register, loginWithOAuth, acceptLegal, setAuthUser, logout]
+    [token, user, loading, legalPromptRequired, login, register, loginWithOAuth, acceptLegal, setAuthUser, hydrateSession, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,0 +1,10 @@
+appId: ie.freespace.app.dev
+---
+- launchApp
+- openLink: "carparking://e2e?scenario=driver-booking"
+- assertVisible: "Book Now"
+- tapOn: "Book Now"
+- assertVisible: "Review booking"
+- tapOn: "Book Now"
+- assertVisible: "Booking confirmed!"
+- assertVisible: "My bookings"

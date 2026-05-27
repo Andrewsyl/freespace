@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createListing } from "../../../lib/api";
+import { trackEvent } from "../../../lib/telemetry";
 import { useAuth } from "../../../components/AuthProvider";
 import { HostStepperLayout } from "../../../components/host/HostStepperLayout";
 import { HostAddressStep } from "../../../components/host/HostAddressStep";
@@ -177,6 +178,10 @@ export default function HostWizardPage() {
     setSaving(true);
     setError(null);
     try {
+      void trackEvent("web_host_publish_started", {
+        pricingMode: draft.pricingMode,
+        hasPhotos: draft.imageUrls.length > 0,
+      });
       await createListing(
         {
           title: buildTitleFromDraft(draft),
@@ -194,8 +199,14 @@ export default function HostWizardPage() {
         token
       );
       window.localStorage.removeItem(DRAFT_KEY);
+      void trackEvent("web_host_publish_succeeded", {
+        pricingMode: draft.pricingMode,
+      });
       router.push("/host/dashboard?created=1");
     } catch (err) {
+      void trackEvent("web_host_publish_failed", {
+        pricingMode: draft.pricingMode,
+      });
       setError(err instanceof Error ? err.message : "Failed to publish listing");
       setSaving(false);
     }

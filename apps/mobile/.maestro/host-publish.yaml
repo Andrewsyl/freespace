@@ -1,0 +1,9 @@
+appId: ie.freespace.app.dev
+---
+- launchApp
+- openLink: "carparking://e2e?scenario=host-publish"
+- assertVisible: "Review & publish"
+- assertVisible: "Publish space"
+- tapOn: "Publish space"
+- assertVisible: "Published"
+- assertVisible: "Your space is now live."

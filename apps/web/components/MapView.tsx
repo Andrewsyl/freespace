@@ -74,10 +74,13 @@ function buildMarkerSvg(price: number, active: boolean): string {
 </svg>`;
 }
 
-function createMarkerEl(price: number, active: boolean): HTMLDivElement {
+function createMarkerEl(listing: Listing, active: boolean): HTMLDivElement {
   const el = document.createElement("div");
   el.style.cursor = "pointer";
-  el.innerHTML = buildMarkerSvg(price, active);
+  el.dataset.testid = "map-marker";
+  el.dataset.listingId = listing.id;
+  el.setAttribute("aria-label", `Map marker for ${listing.title}`);
+  el.innerHTML = buildMarkerSvg(listing.pricePerDay, active);
   return el;
 }
 
@@ -164,6 +167,7 @@ export function MapView({
   const markerSignatureRef = useRef<string>("");
   const [mapReady, setMapReady] = useState(false);
   const [tokenMissing, setTokenMissing] = useState(false);
+  const [mapUnavailable, setMapUnavailable] = useState(false);
   const hasUserDraggedRef = useRef(false);
   const prevSelectedRef = useRef<string | null>(null);
 
@@ -176,17 +180,25 @@ export function MapView({
       return;
     }
     setTokenMissing(false);
+    setMapUnavailable(false);
     mapboxgl.accessToken = token;
     const defaultCenter = center ?? { lat: 53.3498, lng: -6.2603 };
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: satellite
-        ? "mapbox://styles/mapbox/satellite-streets-v12"
-        : "mapbox://styles/mapbox/streets-v12",
-      center: [defaultCenter.lng, defaultCenter.lat],
-      zoom: initialZoom,
-      interactive,
-    });
+    let map: mapboxgl.Map;
+    try {
+      map = new mapboxgl.Map({
+        container: containerRef.current,
+        style: satellite
+          ? "mapbox://styles/mapbox/satellite-streets-v12"
+          : "mapbox://styles/mapbox/streets-v12",
+        center: [defaultCenter.lng, defaultCenter.lat],
+        zoom: initialZoom,
+        interactive,
+      });
+    } catch (error) {
+      console.error("Map initialization failed", error);
+      setMapUnavailable(true);
+      return;
+    }
     map.on("load", () => setMapReady(true));
     map.on("dragstart", () => { hasUserDraggedRef.current = true; });
     if (interactive) {
@@ -240,7 +252,7 @@ export function MapView({
     listings.forEach((listing) => {
       if (typeof listing.latitude !== "number" || typeof listing.longitude !== "number") return;
       const active = selectedListingId === listing.id;
-      const el = createMarkerEl(listing.pricePerDay, active);
+      const el = createMarkerEl(listing, active);
       const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
         .setLngLat([listing.longitude, listing.latitude])
         .addTo(map);
@@ -370,13 +382,21 @@ export function MapView({
       }}
     >
       <div ref={containerRef} className="h-full w-full" />
-      {tokenMissing && (
+      {(tokenMissing || mapUnavailable) && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-center text-sm text-slate-600">
           <div className="max-w-xs rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Mapbox token missing</p>
-            <p className="mt-2 text-xs text-slate-500">
-              Set <code className="rounded bg-slate-100 px-1 py-0.5">NEXT_PUBLIC_MAPBOX_TOKEN</code> to enable the map.
+            <p className="text-sm font-semibold text-slate-900">
+              {tokenMissing ? "Mapbox token missing" : "Map unavailable"}
             </p>
+            {tokenMissing ? (
+              <p className="mt-2 text-xs text-slate-500">
+                Set <code className="rounded bg-slate-100 px-1 py-0.5">NEXT_PUBLIC_MAPBOX_TOKEN</code> to enable the map.
+              </p>
+            ) : (
+              <p className="mt-2 text-xs text-slate-500">
+                This browser could not start the interactive map. Search results are still available below.
+              </p>
+            )}
           </div>
         </div>
       )}

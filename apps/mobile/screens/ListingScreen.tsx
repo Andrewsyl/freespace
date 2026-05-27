@@ -22,6 +22,7 @@ import ImageViewer from "react-native-image-zoom-viewer";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import LottieView from "lottie-react-native";
+import { trackEvent } from "../analytics";
 import { DrumRollPicker } from "../components/DrumRollPicker";
 import { colors, radius, spacing } from "../styles/theme";
 import { getListing, listListingReviews, type ListingReview } from "../api";
@@ -123,6 +124,10 @@ export function ListingScreen({ navigation, route }: Props) {
       try {
         const data = await getListing(id, { from: startAt.toISOString(), to: endAt.toISOString() });
         setListing(data);
+        void trackEvent("mobile_listing_viewed", {
+          listingId: id,
+          title: data.title,
+        });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load listing");
       } finally {
