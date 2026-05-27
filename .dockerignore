@@ -10,5 +10,8 @@
 !apps/
 !apps/web/
 !apps/web/**
+!db/
+!db/migrations/
+!db/migrations/**
 !design-system/
 !design-system/**
