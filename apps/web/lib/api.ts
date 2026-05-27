@@ -41,6 +41,7 @@ export async function searchSpaces(filters: SearchFilters): Promise<Listing[]> {
     from: fromValue.toISOString().slice(0, 19) + "Z",
     to: toValue.toISOString().slice(0, 19) + "Z",
   });
+  if (filters.mode) params.set("mode", filters.mode);
 
   if (filters.priceMin !== undefined) params.set("priceMin", String(filters.priceMin));
   if (filters.priceMax !== undefined) params.set("priceMax", String(filters.priceMax));

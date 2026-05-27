@@ -8,11 +8,15 @@ export function FiltersPanel({
   onApply,
   onCancel: _onCancel,
   onLiveChange,
+  searchAsMove,
+  onSearchAsMove,
 }: {
   initialFilters: SearchFilters;
   onApply: (filters: SearchFilters) => void;
   onCancel?: () => void;
   onLiveChange?: (filters: SearchFilters) => void;
+  searchAsMove?: boolean;
+  onSearchAsMove?: (v: boolean) => void;
 }) {
   const [pending, setPending] = useState<SearchFilters>(initialFilters);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -38,8 +42,43 @@ export function FiltersPanel({
   ].filter(Boolean).length;
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-[#f5f7fb]">
-      <div className="flex-1 space-y-3 p-4">
+    <div className="flex h-full min-h-0 flex-col bg-[#f8fafc]">
+      <div className="border-b border-slate-200 bg-white px-5 py-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Refine results
+            </p>
+            <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.03em] text-slate-900">
+              Filters
+            </h2>
+          </div>
+          <div className="rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-600">
+            {activeFilterCount} active
+          </div>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto space-y-4 p-4">
+
+        {/* Search as I move */}
+        {onSearchAsMove !== undefined && (
+          <Section label="Map">
+            <button
+              type="button"
+              onClick={() => onSearchAsMove(!searchAsMove)}
+              className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3.5 py-3"
+            >
+              <div className="text-left">
+                <p className="text-[13px] font-semibold text-slate-800">Search as I move</p>
+                <p className="text-[11.5px] text-slate-400">Re-search automatically when you pan the map</p>
+              </div>
+              <div className={`relative ml-4 h-5 w-9 shrink-0 rounded-full transition-colors duration-200 ${searchAsMove ? "bg-[#20a73f]" : "bg-slate-200"}`}>
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${searchAsMove ? "translate-x-4" : "translate-x-0.5"}`} />
+              </div>
+            </button>
+          </Section>
+        )}
 
         {/* Mode */}
         <Section label="Mode">
@@ -56,7 +95,7 @@ export function FiltersPanel({
         </Section>
 
         {/* Price */}
-        <Section label="Price per day">
+        <Section label="Price">
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Min / day</p>
@@ -68,7 +107,7 @@ export function FiltersPanel({
                   placeholder="0"
                   value={pending.priceMin ?? ""}
                   onChange={(e) => update("priceMin", e.target.value ? Number(e.target.value) : undefined)}
-                  className="w-full rounded-xl border border-[#E5E7EB] py-2.5 pl-7 pr-3 text-[13px] font-semibold text-[#0f172a] shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-7 pr-3 text-[13px] font-semibold text-slate-900 transition focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-100"
                 />
               </div>
             </div>
@@ -82,7 +121,7 @@ export function FiltersPanel({
                   placeholder="100"
                   value={pending.priceMax ?? ""}
                   onChange={(e) => update("priceMax", e.target.value ? Number(e.target.value) : undefined)}
-                  className="w-full rounded-xl border border-[#E5E7EB] py-2.5 pl-7 pr-3 text-[13px] font-semibold text-[#0f172a] shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-7 pr-3 text-[13px] font-semibold text-slate-900 transition focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-100"
                 />
               </div>
             </div>
@@ -154,7 +193,11 @@ export function FiltersPanel({
       </div>
 
       {/* Footer */}
-      <div className="border-t border-[#E5E7EB] bg-white px-4 py-4 flex gap-3" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}>
+      <div
+        className="border-t border-slate-200 bg-white px-4 py-4"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
+      >
+        <div className="flex gap-3">
         <button
           type="button"
           onClick={() => {
@@ -167,17 +210,18 @@ export function FiltersPanel({
             };
             setPending(cleared);
           }}
-          className="flex-1 rounded-xl border border-[#E5E7EB] py-3 text-sm font-semibold text-[#374151] transition hover:bg-slate-50"
+          className="flex-1 rounded-lg border border-slate-200 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
         >
           Clear {activeFilterCount > 0 ? `(${activeFilterCount})` : "all"}
         </button>
         <button
           type="button"
           onClick={() => onApply(pending)}
-          className="flex-[2] rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600"
+          className="flex-[2] rounded-lg bg-brand-500 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600"
         >
           Apply filters
         </button>
+        </div>
       </div>
     </div>
   );
@@ -187,9 +231,9 @@ export function FiltersPanel({
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-[18px] border border-[#E5E7EB] bg-white px-4 py-3.5">
-      <p className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-        <span className="h-1.5 w-1.5 rounded-full bg-brand-400/60" />
+    <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+      <p className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+        <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
         {label}
       </p>
       {children}
@@ -202,10 +246,10 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-1 rounded-full px-3.5 py-[7px] text-[13px] font-semibold transition ${
+      className={`flex items-center gap-1 rounded-full border px-3.5 py-2 text-[13px] font-semibold transition ${
         active
-          ? "bg-brand-500 text-white shadow-sm"
-          : "bg-[#f5f7fb] text-[#6B7280] hover:bg-slate-100 hover:text-slate-800"
+          ? "border-brand-500 bg-brand-500 text-white shadow-sm"
+          : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-900"
       }`}
     >
       {active && (
@@ -228,8 +272,8 @@ function ToggleRow({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-[13px] font-semibold text-[#0f172a]">{label}</span>
+    <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+      <span className="text-[13px] font-semibold text-slate-900">{label}</span>
       <button
         type="button"
         role="switch"

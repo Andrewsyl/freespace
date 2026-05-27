@@ -9,6 +9,7 @@ import MapView, {
 } from "react-native-maps";
 import ViewShot from "react-native-view-shot";
 import { MapPricePin } from "./MapPricePin";
+import { formatPriceValue } from "../utils/pricing";
 
 type ListingResult = {
   id: string;
@@ -27,7 +28,7 @@ type ViewShotRef = InstanceType<typeof ViewShot>;
 type MapRegion = Region;
 const PIN_STYLE_VERSION = "v20";
 const formatPinPrice = (value: number) => {
-  return Math.round(value).toString();
+  return formatPriceValue(value);
 };
 
 export default function MapSection({

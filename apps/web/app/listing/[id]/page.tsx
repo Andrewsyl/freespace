@@ -149,7 +149,7 @@ export default async function ListingDetailPage({
             </div>
 
             {/* Secure booking badge */}
-            <div className="shrink-0 rounded-xl border border-slate-200 px-4 py-3">
+            <div className="shrink-0 rounded-lg border border-slate-200 px-4 py-3">
               <div className="flex items-center gap-2">
                 <ShieldCheckIcon className="h-4 w-4 text-brand-500" />
                 <span className="text-[13px] font-semibold text-slate-950">Secure booking</span>
@@ -207,18 +207,21 @@ export default async function ListingDetailPage({
             <img src={images[0]} alt={listing.title} className="h-full w-full object-cover" />
           )}
 
-          {/* Address + directions overlay — bottom-left, aligned with content */}
-          <div className="absolute bottom-5 left-0 right-0">
+          {/* Dark gradient scrim so white text is always legible over the map */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+          {/* Address + directions overlay — sits above the photo card overlap */}
+          <div className="absolute bottom-20 left-0 right-0">
             <div className="mx-auto max-w-6xl px-6">
               <div className="flex items-end justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/70">
+                <div style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.8)" }}>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white">
                     Parking space
                   </p>
-                  <h2 className="mt-0.5 text-[22px] font-bold leading-tight tracking-[-0.02em] text-white drop-shadow">
+                  <h2 className="mt-0.5 text-[22px] font-bold leading-tight tracking-[-0.02em] text-white">
                     {listing.address.split(",")[0]}
                   </h2>
-                  <p className="mt-1 flex items-center gap-1.5 text-[13px] text-white/80">
+                  <p className="mt-1 flex items-center gap-1.5 text-[13px] text-white">
                     <MapPinIcon className="h-3.5 w-3.5 shrink-0" />
                     {listing.address.split(",").slice(1, 3).join(",").trim()}
                   </p>
@@ -246,12 +249,15 @@ export default async function ListingDetailPage({
             {/* ── Left column ── */}
             <div className="border-r border-slate-100 pr-8">
 
-              {/* Photo gallery */}
+              {/* Photo gallery — white-framed card floating 60 px into the map */}
               {images.length > 0 && (
-                <div className="relative mt-6">
+                <div
+                  className="relative z-10 rounded-t-xl bg-white px-2 pt-2 shadow-[0_-6px_32px_rgba(15,23,42,0.18)]"
+                  style={{ marginTop: "-60px" }}
+                >
                   {images.length === 1 ? (
                     /* Single image */
-                    <div className="overflow-hidden rounded-lg bg-slate-100 shadow-sm">
+                    <div className="overflow-hidden rounded-lg bg-slate-100">
                       <div className="aspect-[16/7]">
                         <img
                           src={images[0]}
@@ -263,7 +269,7 @@ export default async function ListingDetailPage({
                   ) : (
                     /* Multi-image mosaic: large left + 2 stacked right */
                     <div
-                      className="overflow-hidden rounded-lg shadow-sm"
+                      className="overflow-hidden rounded-lg"
                       style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px", height: "220px" }}
                     >
                       {/* Large hero image */}
@@ -433,14 +439,13 @@ export default async function ListingDetailPage({
                     Listing published successfully.
                   </div>
                 )}
-                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,0.18)]">
+                <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,0.18)]">
                   <SidebarBookingCard
                     listingId={listing.id}
                     pricePerDay={listing.pricePerDay}
                     pricePerHour={listing.pricePerHour}
                     rateType={listing.rateType}
                     unitPrice={unitPrice}
-                    rateLabel={rateLabel}
                   />
                 </div>
               </div>

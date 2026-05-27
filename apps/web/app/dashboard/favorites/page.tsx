@@ -68,7 +68,7 @@ export default function FavouritesPage() {
 
   return (
     <div className="space-y-8">
-      <header className="space-y-3 rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-6 text-white shadow-lg">
+      <header className="space-y-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-6 text-white shadow-lg">
         <div className="text-xs font-semibold tracking-[0.28em] text-emerald-200">Saved spaces</div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -98,7 +98,7 @@ export default function FavouritesPage() {
       )}
 
       {status === "idle" && favourites.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
+        <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
           <HeartOutlineIcon className="mx-auto mb-3 h-10 w-10 text-slate-400" />
           <p className="text-base font-semibold text-slate-900">No favourites yet</p>
           <p className="mt-1 text-sm text-slate-600">
@@ -141,7 +141,7 @@ function FavouriteCard({
   const image = listing.imageUrls?.[0];
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
+    <div className="group relative overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
       {/* Image */}
       <div className="relative h-36 bg-slate-100">
         {image ? (
@@ -189,7 +189,7 @@ function FavouriteCard({
 
         <Link
           href={`/listing/${listing.id}`}
-          className="mt-3 block w-full rounded-xl bg-emerald-600 py-2 text-center text-sm font-semibold text-white transition hover:bg-emerald-500"
+          className="mt-3 block w-full rounded-lg bg-emerald-600 py-2 text-center text-sm font-semibold text-white transition hover:bg-emerald-500"
         >
           View &amp; book
         </Link>

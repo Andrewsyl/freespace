@@ -115,7 +115,7 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
                 key={label}
                 type="button"
                 onClick={() => toggleFeature(label)}
-                className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
+                className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition ${
                   active ? "border-[#2ECC8F] bg-white" : "border-slate-200 bg-white hover:border-slate-300"
                 }`}
               >
@@ -160,7 +160,7 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
                     ...(isNo ? { accessType: undefined, accessInstructions: "" } : {}),
                   })
                 }
-                className={`flex h-12 flex-1 items-center justify-center rounded-xl border text-sm font-semibold transition ${
+                className={`flex h-12 flex-1 items-center justify-center rounded-lg border text-sm font-semibold transition ${
                   active
                     ? "border-[#2ECC8F] text-slate-900"
                     : "border-slate-200 text-slate-500 hover:border-slate-300"
@@ -183,7 +183,7 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
                   <button
                     type="button"
                     onClick={() => selectAccessType(choice.id)}
-                    className={`flex w-full items-center justify-between rounded-xl border px-4 py-3.5 text-left transition ${
+                    className={`flex w-full items-center justify-between rounded-lg border px-4 py-3.5 text-left transition ${
                       active ? "border-[#2ECC8F] bg-white" : "border-slate-200 bg-white hover:border-slate-300"
                     }`}
                   >
@@ -199,7 +199,7 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
 
                   {/* Detail input — shown when this type is selected */}
                   {active && (
-                    <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
                       <textarea
                         value={data.accessInstructions ?? ""}
                         onChange={(e) => onUpdate({ accessInstructions: e.target.value })}

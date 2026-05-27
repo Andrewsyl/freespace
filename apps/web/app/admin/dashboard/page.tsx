@@ -93,33 +93,33 @@ export default function AdminDashboardPage() {
       {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Users</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{metrics?.userCount ?? "—"}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Listings</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{metrics?.listingCount ?? "—"}</p>
           <p className="text-xs text-slate-500">Active: {metrics?.activeListingCount ?? "—"}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Bookings (30d)</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{metrics?.bookings30d ?? "—"}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">GMV (30d)</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">
             {metrics ? formatCurrency(metrics.gmv30dCents) : "—"}
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Payout backlog</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{metrics?.payoutBacklog ?? "—"}</p>
         </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Discovery funnel (30d)</p>
@@ -127,11 +127,11 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Searches completed</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.discoveryFunnel.searchCompleted ?? "—"}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Listing views</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.discoveryFunnel.listingViewed ?? "—"}</p>
               <p className="mt-1 text-xs text-slate-500">
@@ -141,7 +141,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Bookings (30d)</p>
@@ -164,7 +164,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">GMV (30d)</p>
           <p className="text-sm text-slate-600">Daily gross booking value</p>
           <div className="mt-4 h-64">
@@ -185,7 +185,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Listings by status</p>
           <div className="mt-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -200,7 +200,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Fraud + risk events (30d)</p>
           <div className="mt-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -222,17 +222,17 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Average booking value</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(avgBookingValueCents)}</p>
           <p className="text-xs text-slate-500">30-day average</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Avg daily bookings</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{avgDailyBookings || "—"}</p>
           <p className="text-xs text-slate-500">Last 30 days</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Avg daily GMV</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(avgDailyGmvCents)}</p>
           <p className="text-xs text-slate-500">Last 30 days</p>
@@ -240,7 +240,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Signup funnel (30d)</p>
@@ -248,18 +248,18 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-4 space-y-3">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Signed up</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.signupFunnel.signedUp ?? "—"}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Verified email</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.signupFunnel.verifiedEmail ?? "—"}</p>
               <p className="mt-1 text-xs text-slate-500">
                 Verify rate: {metrics ? formatPercent(metrics.signupFunnel.verifyRate) : "—"}
               </p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Logged in</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.signupFunnel.loggedIn ?? "—"}</p>
               <p className="mt-1 text-xs text-slate-500">
@@ -269,7 +269,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Booking funnel (30d)</p>
@@ -277,22 +277,22 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Listings published</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.bookingFunnel.listingPublished ?? "—"}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Checkout started</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.bookingFunnel.checkoutStarted ?? "—"}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Payment intent created</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.bookingFunnel.paymentIntentCreated ?? "—"}</p>
               <p className="mt-1 text-xs text-slate-500">
                 Checkout to intent: {metrics ? formatPercent(metrics.bookingFunnel.checkoutToIntentRate) : "—"}
               </p>
             </div>
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Confirmed</p>
               <p className="mt-1 text-2xl font-semibold text-emerald-900">{metrics?.bookingFunnel.confirmed ?? "—"}</p>
               <p className="mt-1 text-xs text-emerald-700">
@@ -300,7 +300,7 @@ export default function AdminDashboardPage() {
               </p>
             </div>
           </div>
-          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Publish to checkout</p>
             <p className="mt-1 text-lg font-semibold text-slate-900">
               {metrics ? formatPercent(metrics.bookingFunnel.publishToCheckoutRate) : "—"}
@@ -310,7 +310,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Operational alerts</p>
@@ -319,7 +319,7 @@ export default function AdminDashboardPage() {
           </div>
           <div className="mt-4 space-y-3">
             {(metrics?.recentOperationalEvents ?? []).map((event) => (
-              <div key={event.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div key={event.id} className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm font-semibold text-slate-900">
                     {eventLabel[event.eventType] ?? event.eventType}
@@ -338,14 +338,14 @@ export default function AdminDashboardPage() {
               </div>
             ))}
             {!metrics?.recentOperationalEvents?.length ? (
-              <div className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">
+              <div className="rounded-lg border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">
                 No recent operational alerts.
               </div>
             ) : null}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Product failures</p>
@@ -354,7 +354,7 @@ export default function AdminDashboardPage() {
           </div>
           <div className="mt-4 space-y-3">
             {(metrics?.recentProductFailures ?? []).map((event) => (
-              <div key={event.id} className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+              <div key={event.id} className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm font-semibold text-slate-900">
                     {eventLabel[event.eventType] ?? event.eventType}
@@ -367,7 +367,7 @@ export default function AdminDashboardPage() {
               </div>
             ))}
             {!metrics?.recentProductFailures?.length ? (
-              <div className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">
+              <div className="rounded-lg border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">
                 No recent product failures.
               </div>
             ) : null}

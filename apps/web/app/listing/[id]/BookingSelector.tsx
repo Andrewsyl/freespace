@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { trackEvent } from "../../../lib/telemetry";
 import { useEffect, useRef, useMemo, useState } from "react";
-import { formatListingPriceLine } from "../../../lib/pricing";
+import { calculateListingTotal, formatPriceValue } from "../../../lib/pricing";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -63,6 +63,16 @@ function formatTrigger(iso: string, time: string) {
   return `${label} · ${time}`;
 }
 
+function buildBookingWindow(startDate: string, startTime: string, endDate: string, endTime: string) {
+  const start = new Date(`${startDate}T${startTime}:00`);
+  const rawEnd = new Date(`${endDate}T${endTime}:00`);
+  const end =
+    rawEnd.getTime() <= start.getTime()
+      ? new Date(rawEnd.getTime() + 24 * 60 * 60 * 1000)
+      : rawEnd;
+  return { start, end };
+}
+
 // ─── Single calendar dropdown ─────────────────────────────────────────────────
 
 function CalendarDropdown({
@@ -115,7 +125,7 @@ function CalendarDropdown({
   return (
     <div
       ref={ref}
-      className="absolute left-0 right-0 z-50 mt-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_40px_rgba(0,0,0,0.18)]"
+      className="absolute left-0 right-0 z-50 mt-1 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_8px_40px_rgba(0,0,0,0.18)]"
     >
       {/* Month nav */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
@@ -207,7 +217,7 @@ function CalendarDropdown({
         <button
           type="button"
           onClick={() => { onConfirm(selDate, selTime); onClose(); }}
-          className="w-full rounded-xl bg-brand-500 py-3 text-[14px] font-bold text-white transition hover:bg-brand-600"
+          className="w-full rounded-lg bg-brand-500 py-3 text-[14px] font-bold text-white transition hover:bg-brand-600"
         >
           Done
         </button>
@@ -235,7 +245,7 @@ function TriggerField({
     <button
       type="button"
       onClick={onToggle}
-      className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
+      className={`flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition ${
         open
           ? "border-brand-500 ring-1 ring-brand-500/30"
           : "border-slate-200 hover:border-slate-300"
@@ -264,18 +274,23 @@ export function BookingSelector({
   pricePerDay,
   pricePerHour,
   rateType,
-  unitPrice,
   dark = false,
   hidePrice = false,
+  onPricingChange,
 }: {
   listingId: string;
   bookedDates?: string[];
   pricePerDay?: number;
   pricePerHour?: number | null;
   rateType?: "hourly" | "daily" | null;
-  unitPrice?: number;
   dark?: boolean;
   hidePrice?: boolean;
+  onPricingChange?: (pricing: {
+    subtotal: number;
+    total: number;
+    durationLabel: string;
+    billingLabel: string;
+  }) => void;
 }) {
   const todayIso = dateToIso(new Date());
 
@@ -298,6 +313,34 @@ export function BookingSelector({
 
   const dur  = durationLabel(startTime, endTime);
   const href = `/checkout/${listingId}?date=${startDate}&startTime=${startTime}&endTime=${endTime}`;
+  const bookingWindow = useMemo(
+    () => buildBookingWindow(startDate, startTime, endDate, endTime),
+    [startDate, startTime, endDate, endTime]
+  );
+  const pricing = useMemo(() => {
+    const summary = calculateListingTotal(
+      {
+        pricePerDay: pricePerDay ?? 0,
+        pricePerHour: pricePerHour ?? null,
+        rateType: rateType ?? "daily",
+      },
+      bookingWindow.start,
+      bookingWindow.end
+    );
+    return {
+      subtotal: summary.total,
+      total: summary.total + 1.5,
+      durationLabel: summary.durationLabel,
+      billingLabel:
+        summary.billingUnit === "hour"
+          ? `€${formatPriceValue(summary.total)} for ${summary.durationLabel}`
+          : `€${formatPriceValue(summary.total)} for ${summary.billingCount} ${summary.billingUnit}${summary.billingCount === 1 ? "" : "s"}`,
+    };
+  }, [bookingWindow.end, bookingWindow.start, pricePerDay, pricePerHour, rateType]);
+
+  useEffect(() => {
+    onPricingChange?.(pricing);
+  }, [onPricingChange, pricing]);
 
   return (
     <div className="space-y-3">
@@ -305,11 +348,10 @@ export function BookingSelector({
       {/* Price */}
       {!hidePrice && (
         <div className={`text-[32px] font-semibold leading-none tracking-[-0.05em] ${dark ? "text-white" : "text-slate-950"}`}>
-          {formatListingPriceLine({
-            pricePerDay: pricePerDay ?? 0,
-            pricePerHour: pricePerHour ?? null,
-            rateType: rateType ?? "daily",
-          })}
+          €{formatPriceValue(pricing.subtotal)}
+          <span className={`ml-1.5 text-[15px] ${dark ? "text-white/70" : "text-slate-400"}`}>
+            for {pricing.durationLabel}
+          </span>
         </div>
       )}
 
@@ -388,9 +430,9 @@ export function BookingSelector({
             endTime,
           })
         }
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-4 py-3.5 text-[15px] font-bold text-white transition hover:bg-brand-600"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3.5 text-[15px] font-bold text-white transition hover:bg-brand-600"
       >
-        Reserve{unitPrice != null ? ` · €${unitPrice}` : ""}{dur ? ` · ${dur}` : ""}
+        Reserve · €{formatPriceValue(pricing.subtotal)}{dur ? ` · ${dur}` : ""}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
           <path d="M5 12h14M13 5l7 7-7 7"/>
         </svg>

@@ -93,7 +93,7 @@ export default function AdminSupportPage() {
         </button>
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-4">
+      <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-4">
         <label className="text-xs font-semibold text-slate-600">
           Status
           <select
@@ -145,7 +145,7 @@ export default function AdminSupportPage() {
 
       <div className="space-y-3">
         {rows.map((ticket) => (
-          <div key={ticket.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div key={ticket.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-900">{ticket.subject}</p>

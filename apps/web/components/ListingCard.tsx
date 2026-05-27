@@ -2,12 +2,25 @@ import { MapPinIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import Image from "next/image";
 import clsx from "clsx";
+import { formatPriceValue } from "../lib/pricing";
+
+export type AvailabilityScheduleEntry = {
+  id: string;
+  kind: "open" | "blocked";
+  startsAt: string;
+  endsAt: string;
+  repeatWeekdays?: number[] | null;
+  repeatUntil?: string | null;
+};
 
 export type Listing = {
   id: string;
   title: string;
   address: string;
   pricePerDay: number;
+  pricePerHour?: number | null;
+  pricePerMonth?: number | null;
+  rateType?: "hourly" | "daily" | null;
   rating?: number;
   ratingCount?: number;
   distanceKm?: number;
@@ -19,13 +32,14 @@ export type Listing = {
   image_urls?: string[];
   latitude?: number;
   longitude?: number;
+  availabilitySchedule?: AvailabilityScheduleEntry[] | null;
 };
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
 export function ListingCardSkeleton() {
   return (
-    <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <div className="flex overflow-hidden rounded-lg border border-slate-200 bg-white">
       <div className="w-[136px] shrink-0 animate-pulse bg-slate-100" style={{ minHeight: 128 }} />
       <div className="flex flex-1 flex-col justify-between px-3.5 py-3">
         <div className="h-4 w-20 animate-pulse rounded-full bg-slate-100" />
@@ -117,11 +131,19 @@ export function ListingCard({
   onSelect,
   suppressNavigation = false,
   selected = false,
+  searchMode = "daily",
+  priceDisplay,
 }: {
   listing: Listing;
   onSelect?: (listing: Listing) => void;
   suppressNavigation?: boolean;
   selected?: boolean;
+  searchMode?: "daily" | "monthly";
+  priceDisplay?: {
+    eyebrow: string;
+    value: number;
+    suffix: string;
+  };
 }) {
   const handleSelect = (e: React.MouseEvent) => {
     if (!onSelect) return;
@@ -158,14 +180,19 @@ export function ListingCard({
     || title.includes("garage") || title.includes("underground") || title.includes("indoor") || title.includes("covered");
 
   const spaceType  = deriveSpaceType(listing.tags);
+  const defaultPriceDisplay =
+    searchMode === "monthly" && typeof listing.pricePerMonth === "number" && listing.pricePerMonth > 0
+      ? { eyebrow: "from", value: listing.pricePerMonth, suffix: "per month" }
+      : { eyebrow: "from", value: listing.pricePerDay, suffix: "per day" };
+  const finalPriceDisplay = priceDisplay ?? defaultPriceDisplay;
 
   return (
     <article
       className={clsx(
-        "group flex items-stretch overflow-hidden rounded-xl border bg-white transition-all duration-200",
+        "group flex items-stretch overflow-hidden rounded-lg border bg-white transition-all duration-200",
         selected
           ? "border-brand-400 ring-2 ring-brand-400/15 shadow-md"
-          : "border-slate-200 shadow-none hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_4px_16px_rgba(15,23,42,0.10)]"
+          : "border-slate-200 shadow-none hover:border-slate-300 hover:shadow-[0_4px_16px_rgba(15,23,42,0.10)]"
       )}
     >
       {/* ── Image — full card height ── */}
@@ -174,7 +201,7 @@ export function ListingCard({
           src={imageSrc}
           alt={listing.title}
           fill
-          className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+          className="object-cover"
           sizes="136px"
         />
         {/* Gradient overlay for legibility */}
@@ -243,11 +270,11 @@ export function ListingCard({
       {/* ── Right: price + CTA ── */}
       <div className="flex w-[108px] shrink-0 flex-col items-stretch justify-between border-l border-slate-100 px-3 py-3">
         <div className="text-right">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">from</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{finalPriceDisplay.eyebrow}</p>
           <p className="text-[22px] font-extrabold leading-none tracking-tight text-slate-900">
-            €{listing.pricePerDay}
+            €{formatPriceValue(finalPriceDisplay.value)}
           </p>
-          <p className="mt-0.5 text-[11px] font-medium text-slate-400">per day</p>
+          <p className="mt-0.5 text-[11px] font-medium text-slate-400">{finalPriceDisplay.suffix}</p>
         </div>
         <Link
           href={`/checkout/${listing.id}`}

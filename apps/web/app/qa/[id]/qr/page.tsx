@@ -59,12 +59,12 @@ export default function QaPortalQrPage() {
         <p className="text-sm text-slate-600">{listing.address}</p>
       </header>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col items-center gap-4">
           <img
             src={`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(qrUrl)}`}
             alt={`QR code for ${listing.title}`}
-            className="h-64 w-64 rounded-xl border border-slate-200 bg-white p-2"
+            className="h-64 w-64 rounded-lg border border-slate-200 bg-white p-2"
           />
           <p className="text-sm font-semibold text-slate-700">Scan to pay for parking</p>
           <p className="break-all text-xs text-slate-500">{qrUrl}</p>

@@ -25,28 +25,27 @@ export function SlimNav() {
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/80 bg-white/95 px-6 py-2.5 backdrop-blur-md">
+    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/80 bg-white/95 px-7 py-4 backdrop-blur-md">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-        <img src="/freespace-logo.png" alt="FreeSpace" className="h-8 w-auto" />
+        <img src="/freespace-logo.png" alt="FreeSpace" className="h-10 w-auto" />
       </Link>
 
       {/* Desktop nav */}
-      <nav className="hidden items-center gap-1 sm:flex">
+      <nav className="hidden items-center gap-2 sm:flex">
         <NavLink href="/search">Find parking</NavLink>
         <NavLink href="/host">List a space</NavLink>
         <NavLink href="/dashboard">Dashboard</NavLink>
         {user && <NavLink href="/dashboard/favorites">Favourites</NavLink>}
         {user?.role === "admin" && <NavLink href="/admin">Admin</NavLink>}
         <NavLink href="/help">Help</NavLink>
-
         <div className="ml-2 h-4 w-px bg-slate-200" />
 
         {user ? (
           <button
             type="button"
             onClick={signOut}
-            className="ml-1 rounded-full px-3 py-1.5 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+            className="ml-2 rounded-full px-3 py-1.5 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
           >
             Log out
           </button>
@@ -54,13 +53,13 @@ export function SlimNav() {
           <>
             <Link
               href="/login"
-              className="ml-1 rounded-full px-3 py-1.5 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+              className="ml-2 rounded-full px-3 py-1.5 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
             >
               Log in
             </Link>
             <Link
               href="/signup"
-              className="ml-1 rounded-full bg-brand-500 px-4 py-1.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-brand-600"
+              className="ml-2 rounded-full bg-brand-500 px-5 py-1.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-brand-600"
             >
               Sign up
             </Link>
@@ -68,7 +67,7 @@ export function SlimNav() {
         )}
 
         {user && (
-          <div className="ml-1 flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-[12px] font-bold text-white shadow-sm">
+          <div className="ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-[12px] font-bold text-white shadow-sm">
             {initials(user.email)}
           </div>
         )}
@@ -100,7 +99,7 @@ export function SlimNav() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.97 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute right-0 mt-2 w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+              className="absolute right-0 mt-2 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl"
             >
               {user && (
                 <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3">

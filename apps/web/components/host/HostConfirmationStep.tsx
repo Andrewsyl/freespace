@@ -36,7 +36,7 @@ export function HostConfirmationStep({ data }: HostStepProps) {
       {data.imageUrls.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1">
           {data.imageUrls.map((url, idx) => (
-            <div key={url + idx} className="h-28 w-44 shrink-0 overflow-hidden rounded-2xl border border-slate-200">
+            <div key={url + idx} className="h-28 w-44 shrink-0 overflow-hidden rounded-lg border border-slate-200">
               <img src={url} alt="Listing" className="h-full w-full object-cover" />
             </div>
           ))}
@@ -44,7 +44,7 @@ export function HostConfirmationStep({ data }: HostStepProps) {
       )}
 
       {/* Details */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
         <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Your listing</p>
         <dl>
           <Row label="Address"    value={data.address}                          missing={!data.address} />
@@ -74,7 +74,7 @@ export function HostConfirmationStep({ data }: HostStepProps) {
 
       {/* Amenities */}
       {data.amenities.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Features</p>
           <div className="flex flex-wrap gap-2">
             {data.amenities.map((item) => (
@@ -88,7 +88,7 @@ export function HostConfirmationStep({ data }: HostStepProps) {
 
       {/* No photos nudge */}
       {data.imageUrls.length === 0 && (
-        <div className="flex items-start gap-3 rounded-xl border border-dashed border-slate-200 px-4 py-3">
+        <div className="flex items-start gap-3 rounded-lg border border-dashed border-slate-200 px-4 py-3">
           <svg className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
           </svg>
@@ -97,7 +97,7 @@ export function HostConfirmationStep({ data }: HostStepProps) {
       )}
 
       {/* Publish callout */}
-      <div className="rounded-2xl bg-emerald-50 px-4 py-4 ring-1 ring-emerald-100">
+      <div className="rounded-lg bg-emerald-50 px-4 py-4 ring-1 ring-emerald-100">
         <p className="text-sm font-semibold text-emerald-900">Ready to go live?</p>
         <p className="mt-1 text-xs leading-relaxed text-emerald-700">
           Your listing will appear on the map immediately. You can edit details, pause, or remove it anytime from your host dashboard.

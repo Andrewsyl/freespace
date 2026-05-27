@@ -31,7 +31,7 @@ export default function GlobalError({
           <button
             type="button"
             onClick={() => reset()}
-            className="mt-6 rounded-xl bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-600"
+            className="mt-6 rounded-lg bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-600"
           >
             Try again
           </button>

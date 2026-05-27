@@ -61,5 +61,14 @@ jobs:
           yarn lint:web
           yarn build:web
 
+      - name: Web production smoke
+        env:
+          NEXT_PUBLIC_API_BASE: http://127.0.0.1:4000
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_123456789
+          NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID: test-google-web-client
+          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: test-google-maps-key
+          NEXT_PUBLIC_MAPBOX_TOKEN: test-mapbox-token
+        run: yarn smoke:web:local
+
       - name: Web e2e
         run: yarn test:web:e2e

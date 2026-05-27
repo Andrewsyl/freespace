@@ -62,7 +62,7 @@ function LoginPageContent() {
           <p className="text-sm text-slate-600">Access your bookings and host dashboard.</p>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.08)]">
+        <div className="mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.08)]">
           {/* ── Google sign-in (primary / prominent) ── */}
           {googleClientId && (
             <div className="mb-5">
@@ -124,7 +124,7 @@ function LoginPageContent() {
 
             <button
               type="button"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
               onClick={async () => {
                 setNotice(null);
                 try {

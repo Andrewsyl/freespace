@@ -38,7 +38,7 @@ export function LegalDocumentPage({ doc }: { doc: LegalDoc }) {
             ))}
           </div>
 
-          <div className="mt-10 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <div className="mt-10 rounded-lg border border-slate-200 bg-slate-50 p-5">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
               Company and support
             </h2>

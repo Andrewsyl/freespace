@@ -145,7 +145,7 @@ export default function HostDashboardPage() {
   return (
     <div className="space-y-5">
       {/* ── Header ── */}
-      <header className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-5 text-white shadow-lg">
+      <header className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-5 text-white shadow-lg">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <p className="text-xs font-semibold tracking-[0.28em] text-emerald-200">Host dashboard</p>
@@ -191,7 +191,7 @@ export default function HostDashboardPage() {
       {/* ── Stats row: earnings + payout ── */}
       <div className="grid gap-4 sm:grid-cols-2">
         {/* Earnings summary */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-3 flex items-center gap-2">
             <WalletIcon className="h-4 w-4 text-emerald-500" />
             <p className="text-sm font-semibold text-slate-900">Earnings summary</p>
@@ -220,7 +220,7 @@ export default function HostDashboardPage() {
         </div>
 
         {/* Payout status */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-3 flex items-center gap-2">
             <CreditCardIcon className="h-4 w-4 text-emerald-500" />
             <p className="text-sm font-semibold text-slate-900">Payouts</p>
@@ -261,7 +261,7 @@ export default function HostDashboardPage() {
       </div>
 
       {/* ── Host playbook ── */}
-      <section className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 shadow-sm">
+      <section className="rounded-lg border border-emerald-200 bg-emerald-50/80 p-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3">
             <div>
@@ -275,14 +275,14 @@ export default function HostDashboardPage() {
                 { title: "Use photos that prove the spot", body: "Show the entrance, the bay itself, and anything that helps a driver recognise the space quickly." },
                 { title: "Avoid cancellations", body: "Accurate availability and fast support matter more than aggressive pricing once a driver has paid." },
               ].map((tip) => (
-                <div key={tip.title} className="rounded-xl border border-emerald-100 bg-white/80 p-4">
+                <div key={tip.title} className="rounded-lg border border-emerald-100 bg-white/80 p-4">
                   <p className="text-sm font-semibold text-slate-900">{tip.title}</p>
                   <p className="mt-1 text-sm text-slate-600">{tip.body}</p>
                 </div>
               ))}
             </div>
           </div>
-          <div className="min-w-[200px] rounded-2xl border border-white/70 bg-white/80 p-4">
+          <div className="min-w-[200px] rounded-lg border border-white/70 bg-white/80 p-4">
             <p className="text-sm font-semibold text-slate-900">Quality checklist</p>
             <ul className="mt-3 space-y-2 text-sm text-slate-600">
               {[
@@ -313,7 +313,7 @@ export default function HostDashboardPage() {
           return (
             <div
               key={listing.id}
-              className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
+              className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
             >
               <div className="flex gap-0">
                 {/* Thumbnail */}
@@ -397,7 +397,7 @@ export default function HostDashboardPage() {
         })}
 
         {status === "idle" && listings.length === 0 && (
-          <div className="rounded-2xl border border-slate-200 bg-white px-5 py-8 shadow-sm">
+          <div className="rounded-lg border border-slate-200 bg-white px-5 py-8 shadow-sm">
             <div className="grid items-center gap-4 md:grid-cols-[180px_1fr]">
               <div className="mx-auto w-full max-w-[180px]">
                 <Image

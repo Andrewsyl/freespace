@@ -19,7 +19,7 @@ export default function ContactPage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <section className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">Email support</h2>
             <p className="mt-3 text-sm leading-6 text-slate-600">
               For urgent booking issues, refunds, or account questions, email support with your
@@ -33,7 +33,7 @@ export default function ContactPage() {
             </a>
           </section>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <section className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">Common request types</h2>
             <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
               <li>Refund request</li>

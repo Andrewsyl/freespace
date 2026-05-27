@@ -47,7 +47,7 @@ export function Navbar() {
       )}
       <div className="flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-10">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-500 text-sm font-bold text-white shadow-sm">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-sm font-bold text-white shadow-sm">
             FS
           </span>
           FreeSpace
@@ -88,7 +88,7 @@ export function Navbar() {
               </svg>
             </button>
             {open && (
-              <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+              <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
                 <div className="px-4 py-3">
                   <p className="text-xs font-semibold tracking-wide text-slate-500">Signed in</p>
                   <p className="truncate text-sm font-semibold text-slate-900">{user.email}</p>

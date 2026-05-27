@@ -120,7 +120,7 @@ export default function QaPortalPage() {
   if (error) {
     return (
       <div className="mx-auto max-w-xl px-4 py-10">
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {error}
         </div>
       </div>
@@ -142,13 +142,13 @@ export default function QaPortalPage() {
       </div>
 
       <div className="mx-auto max-w-xl space-y-5 px-4 py-6">
-        <div className="rounded-2xl bg-white px-4 py-3 text-center shadow-sm">
+        <div className="rounded-lg bg-white px-4 py-3 text-center shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">Parking at</p>
           <h1 className="mt-2 text-xl font-semibold text-slate-900">{listing.title}</h1>
           <p className="mt-1 text-sm text-slate-600">{listing.address}</p>
         </div>
 
-        <form onSubmit={handlePay} className="space-y-4 rounded-3xl bg-white px-4 py-5 shadow-sm">
+        <form onSubmit={handlePay} className="space-y-4 rounded-lg bg-white px-4 py-5 shadow-sm">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
             <span className={step === 1 ? "text-emerald-700" : ""}>1. Vehicle</span>
             <span className={step === 2 ? "text-emerald-700" : ""}>2. Time</span>
@@ -156,7 +156,7 @@ export default function QaPortalPage() {
           </div>
 
           {step === 1 && (
-            <div className="rounded-2xl bg-emerald-50 px-4 py-5">
+            <div className="rounded-lg bg-emerald-50 px-4 py-5">
               <label className="flex flex-col gap-3 text-sm font-semibold text-slate-800">
                 Enter your vehicle registration
                 <div className="flex overflow-hidden rounded-lg border-2 border-slate-900 bg-white">
@@ -177,12 +177,12 @@ export default function QaPortalPage() {
           )}
 
           {step === 2 && (
-            <div className="rounded-2xl bg-slate-50 px-4 py-4">
+            <div className="rounded-lg bg-slate-50 px-4 py-4">
               <p className="text-sm font-semibold text-slate-800">When will you be leaving?</p>
               <button
                 type="button"
                 onClick={() => setPickerOpen(true)}
-                className="mt-4 flex w-full flex-col rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm"
+                className="mt-4 flex w-full flex-col rounded-lg border border-slate-200 bg-white px-4 py-3 text-left shadow-sm"
               >
                 <span className="text-xs font-semibold text-emerald-700">Departure time</span>
                 <span className="mt-1 text-sm font-bold text-slate-900">{formatDatetime(untilAt)}</span>
@@ -192,7 +192,7 @@ export default function QaPortalPage() {
 
           {step === 3 && (
             <div className="space-y-3">
-              <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700">
                 <div className="flex items-center justify-between">
                   <span>Vehicle</span>
                   <span className="font-semibold">{vehiclePlate || "—"}</span>
@@ -209,9 +209,9 @@ export default function QaPortalPage() {
             </div>
           )}
 
-          {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
+          {error ? <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
           {checkoutUrl ? (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
               {isMock ? "Test mode: payment flow will be wired after launch." : "Redirecting to payment…"}
             </div>
           ) : null}
@@ -220,7 +220,7 @@ export default function QaPortalPage() {
             <button
               type="button"
               onClick={() => setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s))}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               disabled={step === 1 || submitting}
             >
               Back
@@ -236,7 +236,7 @@ export default function QaPortalPage() {
                   setError(null);
                   setStep((s) => ((s + 1) as 1 | 2 | 3));
                 }}
-                className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-slate-800"
+                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-slate-800"
               >
                 Continue
               </button>
@@ -244,7 +244,7 @@ export default function QaPortalPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-slate-800 disabled:opacity-70"
+                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-slate-800 disabled:opacity-70"
               >
                 {submitting ? "Starting payment..." : "Pay for parking"}
               </button>
@@ -386,7 +386,7 @@ function DateTimeSheet({
         <button
           type="button"
           onClick={() => onConfirm(draft)}
-          className="ml-auto rounded-xl bg-brand-500 px-6 py-2.5 text-[14px] font-semibold text-white"
+          className="ml-auto rounded-lg bg-brand-500 px-6 py-2.5 text-[14px] font-semibold text-white"
         >
           Done
         </button>

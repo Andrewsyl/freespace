@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { BookingSelector } from "./BookingSelector";
+import { calculateListingTotal, formatPriceValue } from "../../../lib/pricing";
 
 export function SidebarBookingCard({
   listingId,
@@ -9,16 +10,37 @@ export function SidebarBookingCard({
   pricePerHour,
   rateType,
   unitPrice,
-  rateLabel,
 }: {
   listingId: string;
   pricePerDay?: number;
   pricePerHour?: number | null;
   rateType?: "hourly" | "daily" | null;
   unitPrice: number;
-  rateLabel: string;
 }) {
   const [tab, setTab] = useState<"hourly" | "monthly">("hourly");
+  const defaultPricing = useMemo(() => {
+    const start = new Date();
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    const summary = calculateListingTotal(
+      {
+        pricePerDay: pricePerDay ?? unitPrice,
+        pricePerHour: pricePerHour ?? null,
+        rateType: rateType ?? "daily",
+      },
+      start,
+      end
+    );
+    return {
+      subtotal: summary.total,
+      total: summary.total + 1.5,
+      durationLabel: summary.durationLabel,
+      billingLabel:
+        summary.billingUnit === "hour"
+          ? `${summary.durationLabel}`
+          : `${summary.billingCount} ${summary.billingUnit}${summary.billingCount === 1 ? "" : "s"}`,
+    };
+  }, [pricePerDay, pricePerHour, rateType, unitPrice]);
+  const [pricing, setPricing] = useState(defaultPricing);
 
   return (
     <div>
@@ -54,9 +76,9 @@ export function SidebarBookingCard({
           {/* Price */}
           <div className="mb-1 flex items-baseline gap-1.5">
             <span className="font-mono text-[36px] font-bold leading-none tracking-[-0.015em] text-slate-950">
-              <span className="text-brand-500">€</span>{unitPrice}
+              <span className="text-brand-500">€</span>{formatPriceValue(pricing.subtotal)}
             </span>
-            <span className="text-[15px] text-slate-400">{rateLabel}</span>
+            <span className="text-[15px] text-slate-400">for {pricing.durationLabel}</span>
           </div>
           <p className="mb-5 text-[13px] text-slate-400">You won&apos;t be charged yet</p>
 
@@ -66,15 +88,15 @@ export function SidebarBookingCard({
             pricePerDay={pricePerDay}
             pricePerHour={pricePerHour}
             rateType={rateType}
-            unitPrice={unitPrice}
             hidePrice
+            onPricingChange={setPricing}
           />
 
           {/* Price breakdown */}
           <div className="mt-5 space-y-2 border-t border-slate-100 pt-4">
             <div className="flex items-center justify-between text-[13px] text-slate-500">
-              <span>€{unitPrice} × 1 day</span>
-              <span className="font-mono">€{unitPrice}.00</span>
+              <span>{pricing.billingLabel}</span>
+              <span className="font-mono">€{formatPriceValue(pricing.subtotal)}</span>
             </div>
             <div className="flex items-center justify-between text-[13px] text-slate-500">
               <span>Service fee</span>
@@ -82,12 +104,12 @@ export function SidebarBookingCard({
             </div>
             <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[15px] font-bold text-slate-950">
               <span>Total</span>
-              <span className="font-mono">€{(unitPrice + 1.5).toFixed(2)}</span>
+              <span className="font-mono">€{pricing.total.toFixed(2)}</span>
             </div>
           </div>
 
           {/* Book with confidence */}
-          <div className="mt-4 rounded-xl border border-brand-500/30 bg-brand-500/5 p-4">
+          <div className="mt-4 rounded-lg border border-brand-500/30 bg-brand-500/5 p-4">
             <div className="mb-3 flex items-center gap-2">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-brand-600">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>

@@ -23,7 +23,7 @@ export default function LegalIndexPage() {
               <Link
                 key={doc.slug}
                 href={`/legal/${doc.slug}`}
-                className="rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-white"
+                className="rounded-lg border border-slate-200 bg-slate-50 p-5 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-white"
               >
                 <h2 className="text-lg font-semibold text-slate-900">{doc.title}</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">{doc.summary}</p>
@@ -31,7 +31,7 @@ export default function LegalIndexPage() {
             ))}
           </div>
 
-          <div className="mt-10 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <div className="mt-10 rounded-lg border border-slate-200 bg-slate-50 p-5">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
               Company details
             </h2>

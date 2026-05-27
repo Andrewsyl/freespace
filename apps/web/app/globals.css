@@ -162,12 +162,12 @@ a {
 }
 
 .btn-primary {
-  @apply inline-flex items-center justify-center rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:-translate-y-0.5 hover:bg-brand-600 hover:shadow-lg;
+  @apply inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:-translate-y-0.5 hover:bg-brand-600 hover:shadow-lg;
   font-family: var(--font-display);
 }
 
 .card {
-  @apply rounded-2xl bg-white p-6 shadow-card ring-1 ring-black/5;
+  @apply rounded-lg bg-white p-6 shadow-card ring-1 ring-black/5;
   background: var(--card-bg);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);

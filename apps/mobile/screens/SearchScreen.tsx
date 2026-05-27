@@ -28,7 +28,7 @@ import { useFavorites } from "../favorites";
 import MapSection from "../components/MapSection";
 import { MapBottomCard } from "../components/MapBottomCard";
 import { LIGHT_MAP_STYLE } from "../components/mapStyles";
-import { calculateListingTotal } from "../utils/pricing";
+import { calculateListingTotal, formatPriceValue } from "../utils/pricing";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { getListing, searchListings } from "../api";
 import { trackEvent } from "../analytics";
@@ -144,6 +144,10 @@ const formatMapCardMetaLine = (fromIso: string, toIso: string, distanceM?: numbe
       : null;
   return `${dayLabel}: ${formatTimeLabel(fromDate)} - ${formatTimeLabel(toDate)}${distanceLabel ? ` | ${distanceLabel}` : ""}`;
 };
+
+function rankResultsForSearch(results: ListingSummary[], start: Date, end: Date) {
+  return results;
+}
 
 export function SearchScreen({ navigation }: Props) {
   const today = useMemo(() => {
@@ -476,7 +480,7 @@ export function SearchScreen({ navigation }: Props) {
         const carryOver = resultsRef.current.filter(
           (listing) => !nextIds.has(listing.id) && isWithinRadius(listing, center, radiusM)
         );
-        nextResultsSnapshot = [...spaces, ...carryOver];
+        nextResultsSnapshot = [...rankResultsForSearch(spaces, startAt, endAt), ...carryOver];
         // If preserving selection, keep the selected listing in results so the card stays visible
         if (preserveSelection) {
           setSelectedId((prev) => {
@@ -1307,7 +1311,7 @@ export function SearchScreen({ navigation }: Props) {
             imageUrl={selectedListingImage ?? undefined}
             rating={visibleSelectedListing.rating ?? 0}
             reviewCount={visibleSelectedListing.rating_count ?? 0}
-            price={`€${priceForListing(visibleSelectedListing)}`}
+            price={`€${formatPriceValue(priceForListing(visibleSelectedListing))} total`}
             subtitle={visibleSelectedListing.availability_text?.trim() || "Parking space"}
             metaLine={formatMapCardMetaLine(from, to, visibleSelectedListing.distance_m)}
             badgeLabel={selectedCardAmenities?.[0] ?? visibleSelectedListing.amenities?.[0] ?? null}
@@ -1787,7 +1791,7 @@ export function SearchScreen({ navigation }: Props) {
                       </Text>
                     </View>
                     <Text style={styles.overlappingItemPrice}>
-                      €{priceForListing(listing)}
+                      €{formatPriceValue(priceForListing(listing))}
                     </Text>
                   </Pressable>
                 ))}

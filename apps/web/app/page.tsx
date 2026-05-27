@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { AddressAutocomplete } from "../components/AddressAutocomplete";
-import type { SearchFilters } from "../components/SearchForm";
+import { SearchDateTimePicker, type SearchFilters } from "../components/SearchForm";
 import { SlimNav } from "../components/SlimNav";
 import { MobileSearchLanding } from "../components/MobileSearchLanding";
 
@@ -20,6 +20,12 @@ function roundUpToHalfHour(d: Date): Date {
 
 function toTimeString(d: Date) {
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+function addMonths(date: string, count: number) {
+  const d = new Date(`${date}T00:00:00`);
+  d.setMonth(d.getMonth() + count);
+  return d.toISOString().split("T")[0];
 }
 
 const now = roundUpToHalfHour(new Date());
@@ -101,10 +107,6 @@ const howItWorks = [
 
 export default function HomePage() {
   const router = useRouter();
-  const fromDateRef = useRef<HTMLInputElement>(null);
-  const fromTimeRef = useRef<HTMLInputElement>(null);
-  const untilDateRef = useRef<HTMLInputElement>(null);
-  const untilTimeRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<"daily" | "monthly">("daily");
   const [location, setLocation] = useState(defaultFilters.location);
   const [latitude, setLatitude] = useState<number | undefined>(defaultFilters.latitude);
@@ -112,6 +114,10 @@ export default function HomePage() {
   const [date, setDate] = useState(() => defaultFilters.date);
   const [startTime, setStartTime] = useState(defaultFilters.startTime);
   const [endTime, setEndTime] = useState(defaultFilters.endTime);
+  const [monthlyPlan, setMonthlyPlan] = useState<NonNullable<SearchFilters["monthlyPlan"]>>("full_week");
+
+  const startDateTime = useMemo(() => new Date(`${date}T${startTime}:00`), [date, startTime]);
+  const endDateTime = useMemo(() => new Date(`${date}T${endTime}:00`), [date, endTime]);
 
   const handleSearch = (filters: SearchFilters) => {
     const params = new URLSearchParams({
@@ -123,6 +129,7 @@ export default function HomePage() {
       mode: filters.mode ?? "daily",
     });
     if (filters.endDate) params.set("endDate", filters.endDate);
+    if (filters.monthlyPlan) params.set("monthlyPlan", filters.monthlyPlan);
     if (filters.latitude !== undefined) params.set("lat", String(filters.latitude));
     if (filters.longitude !== undefined) params.set("lng", String(filters.longitude));
     router.push(`/search?${params.toString()}`);
@@ -136,8 +143,10 @@ export default function HomePage() {
       latitude: latitude ?? defaultFilters.latitude,
       longitude: longitude ?? defaultFilters.longitude,
       date,
-      startTime,
-      endTime,
+      startTime: mode === "monthly" ? "00:00" : startTime,
+      endDate: mode === "monthly" ? addMonths(date, 1) : defaultFilters.endDate,
+      endTime: mode === "monthly" ? "23:59" : endTime,
+      monthlyPlan: mode === "monthly" ? monthlyPlan : undefined,
       mode,
     });
   };
@@ -152,16 +161,6 @@ export default function HomePage() {
       mode: overrides.mode ?? defaultFilters.mode,
       evCharging: overrides.evCharging,
     });
-  };
-
-  const openNativePicker = (input: HTMLInputElement | null) => {
-    if (!input) return;
-    if (typeof input.showPicker === "function") {
-      input.showPicker();
-      return;
-    }
-    input.focus();
-    input.click();
   };
 
   return (
@@ -219,72 +218,48 @@ export default function HomePage() {
                 />
 
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="flex flex-col gap-1 rounded-2xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
-                    <span className="text-[11px] text-slate-500">From</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openNativePicker(fromDateRef.current)}
-                        className="w-full rounded-xl px-1 py-1 text-left transition hover:bg-slate-50"
-                      >
-                        <input
-                          ref={fromDateRef}
-                          type="date"
-                          value={date}
-                          onChange={(e) => setDate(e.target.value)}
-                          className="pointer-events-none w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none"
-                          tabIndex={-1}
-                        />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openNativePicker(fromTimeRef.current)}
-                        className="w-full rounded-xl px-1 py-1 text-left transition hover:bg-slate-50"
-                      >
-                        <input
-                          ref={fromTimeRef}
-                          type="time"
-                          value={startTime}
-                          onChange={(e) => setStartTime(e.target.value)}
-                          className="pointer-events-none w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none"
-                          tabIndex={-1}
-                        />
-                      </button>
-                    </div>
+                  <label className="flex flex-col gap-1 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+                    <SearchDateTimePicker
+                      label="From"
+                      inlineLabel={mode === "monthly" ? "Start" : "From"}
+                      value={startDateTime}
+                      onChange={(next) => {
+                        setDate(next.toISOString().split("T")[0]);
+                        setStartTime(mode === "monthly" ? "00:00" : toTimeString(next));
+                      }}
+                      dateOnly={mode === "monthly"}
+                    />
                   </label>
-                  <label className="flex flex-col gap-1 rounded-2xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
-                    <span className="text-[11px] text-slate-500">Until</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openNativePicker(untilDateRef.current)}
-                        className="w-full rounded-xl px-1 py-1 text-left transition hover:bg-slate-50"
-                      >
-                        <input
-                          ref={untilDateRef}
-                          type="date"
-                          value={date}
-                          onChange={(e) => setDate(e.target.value)}
-                          className="pointer-events-none w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none"
-                          tabIndex={-1}
-                        />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openNativePicker(untilTimeRef.current)}
-                        className="w-full rounded-xl px-1 py-1 text-left transition hover:bg-slate-50"
-                      >
-                        <input
-                          ref={untilTimeRef}
-                          type="time"
-                          value={endTime}
-                          onChange={(e) => setEndTime(e.target.value)}
-                          className="pointer-events-none w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none"
-                          tabIndex={-1}
-                        />
-                      </button>
-                    </div>
-                  </label>
+                  {mode === "monthly" ? (
+                    <label className="flex flex-col gap-1 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+                      <span className="text-[11px] text-slate-500">Plan</span>
+                      <div className="relative">
+                        <select
+                          value={monthlyPlan}
+                          onChange={(event) => setMonthlyPlan(event.target.value as NonNullable<SearchFilters["monthlyPlan"]>)}
+                          className="w-full appearance-none rounded-lg bg-transparent px-1 py-1 text-sm font-semibold text-slate-800 outline-none"
+                        >
+                          <option value="full_week">Mon - Sun</option>
+                          <option value="weekdays">Mon - Fri only</option>
+                          <option value="any_3_days">Any 3 days</option>
+                        </select>
+                        <svg className="pointer-events-none absolute right-1 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+                        </svg>
+                      </div>
+                    </label>
+                  ) : (
+                    <label className="flex flex-col gap-1 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+                      <SearchDateTimePicker
+                        label="Until"
+                        value={endDateTime}
+                        onChange={(next) => {
+                          setDate(next.toISOString().split("T")[0]);
+                          setEndTime(toTimeString(next));
+                        }}
+                      />
+                    </label>
+                  )}
                 </div>
 
                 <button

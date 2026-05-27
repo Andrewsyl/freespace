@@ -142,7 +142,7 @@ export function HostPricingStep({ data, onUpdate }: HostStepProps) {
         </div>
       </div>
 
-      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-slate-900">Offer a monthly rate</p>
@@ -173,7 +173,7 @@ export function HostPricingStep({ data, onUpdate }: HostStepProps) {
           <div className="space-y-3">
             <label className="block">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monthly price</span>
-              <div className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="mt-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
                 <span className="text-lg font-semibold text-slate-500">€</span>
                 <input
                   type="number"
@@ -197,7 +197,7 @@ export function HostPricingStep({ data, onUpdate }: HostStepProps) {
         ) : null}
       </div>
 
-      <p className="rounded-xl bg-slate-50 px-4 py-3 text-xs text-slate-500">
+      <p className="rounded-lg bg-slate-50 px-4 py-3 text-xs text-slate-500">
         Monthly pricing is optional. Drivers will only see a monthly option when you set a monthly rate.
       </p>
     </div>

@@ -1,17 +1,31 @@
 type ListingWithPricing = {
   pricePerDay: number;
   pricePerHour?: number | null;
+  pricePerMonth?: number | null;
   rateType?: "hourly" | "daily" | null;
 };
 
+const DEFAULT_DAILY_HOURS = 8;
+
+function roundMoney(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
 export function getListingRateType(listing: ListingWithPricing) {
+  if (typeof listing.pricePerHour === "number" && Number(listing.pricePerHour) > 0) {
+    return "hourly";
+  }
   return listing.rateType === "hourly" ? "hourly" : "daily";
 }
 
 export function getListingUnitPrice(listing: ListingWithPricing) {
-  return getListingRateType(listing) === "hourly"
-    ? Number(listing.pricePerHour ?? 0)
-    : Number(listing.pricePerDay ?? 0);
+  if (typeof listing.pricePerHour === "number" && Number(listing.pricePerHour) > 0) {
+    return Number(listing.pricePerHour);
+  }
+  if (typeof listing.pricePerDay === "number" && Number(listing.pricePerDay) > 0) {
+    return roundMoney(Number(listing.pricePerDay) / DEFAULT_DAILY_HOURS);
+  }
+  return 0;
 }
 
 export function getListingUnitLabel(listing: ListingWithPricing) {
@@ -36,9 +50,9 @@ function formatElapsedDurationLabel(durationHours: number) {
 export function calculateListingTotal(listing: ListingWithPricing, start: Date, end: Date) {
   const durationHours = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60)));
   const durationLabel = formatElapsedDurationLabel(durationHours);
-  if (getListingRateType(listing) === "hourly") {
+  if (durationHours < 24) {
     return {
-      total: getListingUnitPrice(listing) * durationHours,
+      total: roundMoney(getListingUnitPrice(listing) * durationHours),
       durationLabel,
       billingCount: durationHours,
       billingUnit: "hour",
@@ -47,7 +61,7 @@ export function calculateListingTotal(listing: ListingWithPricing, start: Date, 
 
   const billingDays = Math.max(1, Math.ceil(durationHours / 24));
   return {
-    total: getListingUnitPrice(listing) * billingDays,
+    total: roundMoney(getListingUnitPrice(listing) * billingDays),
     durationLabel,
     billingCount: billingDays,
     billingUnit: "day",
@@ -56,4 +70,9 @@ export function calculateListingTotal(listing: ListingWithPricing, start: Date, 
 
 export function formatListingPriceLine(listing: ListingWithPricing) {
   return `€${getListingUnitPrice(listing)} / ${getListingUnitLabel(listing)}`;
+}
+
+export function formatPriceValue(value: number) {
+  if (Number.isInteger(value)) return String(value);
+  return value.toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
 }

@@ -110,7 +110,7 @@ function ResetPasswordPageContent() {
           </p>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.08)]">
+        <div className="mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.08)]">
           {step === "request" ? (
             <form onSubmit={handleRequest} className="space-y-4">
               <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
@@ -120,7 +120,7 @@ function ResetPasswordPageContent() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-11 rounded-xl border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
+                  className="h-11 rounded-lg border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
                   placeholder="you@example.com"
                 />
               </label>
@@ -131,7 +131,7 @@ function ResetPasswordPageContent() {
           ) : (
             <form onSubmit={handleReset} className="space-y-4">
               {previewUrl ? (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
                   <p>Mailer is not configured yet. Use the preview link for now.</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <a
@@ -160,7 +160,7 @@ function ResetPasswordPageContent() {
                   type="text"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
-                  className="h-11 rounded-xl border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
+                  className="h-11 rounded-lg border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
                   placeholder="Paste token from email"
                 />
               </label>
@@ -172,7 +172,7 @@ function ResetPasswordPageContent() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-11 rounded-xl border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
+                  className="h-11 rounded-lg border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
                   placeholder="••••••••"
                 />
               </label>
@@ -184,7 +184,7 @@ function ResetPasswordPageContent() {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="h-11 rounded-xl border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
+                  className="h-11 rounded-lg border border-slate-200 px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none"
                   placeholder="••••••••"
                 />
               </label>

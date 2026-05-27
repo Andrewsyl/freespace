@@ -30,7 +30,7 @@ export function CookieBanner() {
 
   return (
     <div className="fixed inset-x-0 bottom-4 z-50 px-4">
-      <div className="mx-auto flex max-w-4xl flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.18)] sm:flex-row sm:items-end sm:justify-between">
+      <div className="mx-auto flex max-w-4xl flex-col gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.18)] sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-2xl">
           <p className="text-sm font-semibold text-slate-900">Cookie preferences</p>
           <p className="mt-2 text-sm leading-6 text-slate-600">

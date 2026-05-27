@@ -64,7 +64,7 @@ export function HostStepperLayout({
 
       {/* ── Error banner ── */}
       {error && (
-        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
           {error}
         </div>
       )}
@@ -80,7 +80,7 @@ export function HostStepperLayout({
               type="button"
               onClick={onBack}
               disabled={backDisabled}
-              className="flex h-12 shrink-0 items-center gap-1 rounded-xl px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+              className="flex h-12 shrink-0 items-center gap-1 rounded-lg px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
             >
               <svg
                 className="h-4 w-4"
@@ -102,7 +102,7 @@ export function HostStepperLayout({
             type="button"
             onClick={onNext}
             disabled={nextDisabled}
-            className="flex h-12 flex-1 items-center justify-center rounded-2xl text-sm font-semibold text-white transition disabled:opacity-50"
+            className="flex h-12 flex-1 items-center justify-center rounded-lg text-sm font-semibold text-white transition disabled:opacity-50"
             style={{ backgroundColor: nextDisabled ? "#a3a3a3" : "#2ECC8F" }}
           >
             {loading ? "Saving…" : nextLabel}

@@ -11,6 +11,7 @@ export type SearchFilters = {
   endDate?: string;
   startTime: string;
   endTime: string;
+  monthlyPlan?: "full_week" | "weekdays" | "any_3_days";
   radiusKm: number;
   latitude?: number;
   longitude?: number;
@@ -30,10 +31,15 @@ type DateTimePickerProps = {
   inlineLabel?: string;
   value: Date;
   onChange: (next: Date) => void;
+  dateOnly?: boolean;
   compact?: boolean;
   inline?: boolean;
   popupAlign?: "left" | "right";
 };
+
+export function SearchDateTimePicker(props: DateTimePickerProps) {
+  return <DateTimePicker {...props} />;
+}
 
 export function SearchForm({
   initialValues,
@@ -75,6 +81,7 @@ export function SearchForm({
       latitude: initialValues?.latitude ?? 53.3498,
       longitude: initialValues?.longitude ?? -6.2603,
       mode: initialValues?.mode ?? "daily",
+      monthlyPlan: initialValues?.monthlyPlan ?? "full_week",
       startAt: startFromProps,
       endAt: endFromProps,
       radiusKm: initialValues?.radiusKm ?? 5,
@@ -110,6 +117,7 @@ export function SearchForm({
         prev.latitude === nextState.latitude &&
         prev.longitude === nextState.longitude &&
         prev.mode === nextState.mode &&
+        prev.monthlyPlan === nextState.monthlyPlan &&
         prev.radiusKm === nextState.radiusKm &&
         prev.priceMin === nextState.priceMin &&
         prev.priceMax === nextState.priceMax &&
@@ -139,6 +147,7 @@ export function SearchForm({
       startTime,
       endTime,
       radiusKm: current.radiusKm,
+      monthlyPlan: current.mode === "monthly" ? current.monthlyPlan : undefined,
       latitude: current.latitude,
       longitude: current.longitude,
       mode: current.mode,
@@ -217,6 +226,7 @@ export function SearchForm({
         radiusKm: String(submission.radiusKm),
         mode: submission.mode ?? "daily",
       });
+      if (submission.monthlyPlan) params.set("monthlyPlan", submission.monthlyPlan);
       if (submission.endDate) params.set("endDate", submission.endDate);
       if (submission.latitude !== undefined) params.set("lat", String(submission.latitude));
       if (submission.longitude !== undefined) params.set("lng", String(submission.longitude));
@@ -256,61 +266,97 @@ export function SearchForm({
     onAddressChange?.({ address: place.address, lat: place.lat, lng: place.lng });
   }, [onAddressChange]);
 
+  const setMode = (mode: "daily" | "monthly") => {
+    setState((prev) => {
+      if (prev.mode === mode) return prev;
+      const nextEnd =
+        mode === "monthly"
+          ? addMonths(prev.startAt, 1)
+          : prev.endAt <= prev.startAt || prev.endAt.getTime() - prev.startAt.getTime() > 14 * 24 * 60 * 60 * 1000
+            ? addMinutes(prev.startAt, 180)
+            : prev.endAt;
+      return { ...prev, mode, endAt: nextEnd };
+    });
+  };
+
+  const MONTHLY_OPTIONS = [
+    { value: "full_week", label: "Every day" },
+    { value: "weekdays", label: "Mon - Fri only" },
+    { value: "any_3_days", label: "Any 3 days" },
+  ] as const;
+
   // ── Desktop-inline variant ────────────────────────────────────────────────
   if (variant === "desktop-inline") {
     return (
       <div className="w-full">
         <form onSubmit={handleSubmit}>
-          <div className="flex items-stretch rounded-2xl border border-slate-200 bg-white shadow-md ring-1 ring-black/[0.03]">
-            {/* Location segment */}
-            <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-3.5">
-              <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Find parking near</p>
-              <AddressAutocomplete
-                defaultValue={state.location}
-                placeholder="Enter area or landmark"
-                inputClassName="w-full bg-transparent pl-0 pr-2 text-[13.5px] font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                onPlace={addressOnPlace}
-              />
-            </div>
-
-            {/* Divider */}
-            <div className="my-3 w-px shrink-0 self-stretch bg-slate-200" />
-
-            {/* Arriving picker */}
-            <DateTimePicker
-              label="From"
-              inlineLabel="Arriving"
-              value={state.startAt}
-              onChange={setStart}
-              inline
-              popupAlign="left"
-            />
-
-            {/* Divider */}
-            <div className="my-3 w-px shrink-0 self-stretch bg-slate-200" />
-
-            {/* Leaving picker */}
-            <DateTimePicker
-              label="Until"
-              inlineLabel="Leaving"
-              value={state.endAt}
-              onChange={setEnd}
-              inline
-              popupAlign="right"
-            />
-
-            {/* Search button */}
-            <div className="flex items-center px-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_302px_302px] gap-3">
+            <div className="flex min-w-0 items-stretch rounded-md border border-[#d5dbe3] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.08)]">
+              <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-2.5">
+                <p className="mb-0.5 text-[12px] font-medium text-[#2cad49]">Park at</p>
+                <AddressAutocomplete
+                  defaultValue={state.location}
+                  placeholder="Enter area or landmark"
+                  inputClassName="w-full bg-transparent pl-0 pr-2 text-[16px] font-semibold text-[#202631] placeholder:text-slate-400 focus:outline-none"
+                  onPlace={addressOnPlace}
+                />
+              </div>
               <button
                 type="submit"
                 aria-label="Search"
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 text-white shadow-sm transition hover:bg-brand-600 active:scale-95"
+                className="flex w-14 items-center justify-center text-[#c4cbd3] transition hover:text-[#77818c]"
               >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                 </svg>
               </button>
             </div>
+
+            <DateTimePicker
+              label="From"
+              inlineLabel={state.mode === "monthly" ? "Start" : "From"}
+              value={state.startAt}
+              onChange={setStart}
+              dateOnly={state.mode === "monthly"}
+              inline
+              popupAlign="left"
+            />
+
+            {state.mode === "monthly" ? (
+              <div className="flex min-w-[302px] flex-col justify-center rounded-md border border-[#d5dbe3] bg-white px-4 py-2 text-left shadow-[0_1px_2px_rgba(15,23,42,0.08)]">
+                <p className="text-[12px] font-medium text-[#2cad49]">Plan</p>
+                <div className="relative mt-0.5">
+                  <select
+                    value={state.monthlyPlan}
+                    onChange={(event) =>
+                      setState((prev) => ({
+                        ...prev,
+                        monthlyPlan: event.target.value as NonNullable<SearchFilters["monthlyPlan"]>,
+                      }))
+                    }
+                    className="w-full appearance-none bg-transparent pr-6 text-[16px] font-semibold text-[#202631] outline-none"
+                  >
+                    {MONTHLY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <svg className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+                  </svg>
+                </div>
+              </div>
+            ) : (
+              <DateTimePicker
+                label="Until"
+                inlineLabel="Until"
+                value={state.endAt}
+                onChange={setEnd}
+                inline
+                popupAlign="right"
+              />
+            )}
           </div>
         </form>
       </div>
@@ -322,26 +368,54 @@ export function SearchForm({
     <div className="w-full">
       <form
         onSubmit={handleSubmit}
-        className="flex w-full flex-col gap-3 rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-sm"
+        className="flex w-full flex-col gap-3 rounded-lg border border-[#E5E7EB] bg-white p-4 shadow-sm"
       >
         <AddressAutocomplete
           defaultValue={state.location}
           placeholder="Enter area or landmark"
-          inputClassName="w-full h-12 rounded-xl border border-[#E5E7EB] bg-white px-9 text-[15px] font-semibold text-[#0f172a] transition focus:border-brand-500 focus:outline-none"
+          inputClassName="w-full h-12 rounded-lg border border-[#E5E7EB] bg-white px-9 text-[15px] font-semibold text-[#0f172a] transition focus:border-brand-500 focus:outline-none"
           onPlace={addressOnPlace}
         />
 
-        <div className="grid grid-cols-2 gap-2">
-          <DateTimePicker label="From" value={state.startAt} onChange={setStart} compact />
-          <DateTimePicker label="Until" value={state.endAt} onChange={setEnd} compact />
-        </div>
+        {state.mode === "monthly" ? (
+          <div className="grid grid-cols-2 gap-2">
+            <DateTimePicker label="From" inlineLabel="Start" value={state.startAt} onChange={setStart} compact dateOnly />
+            <label className="relative flex h-12 flex-col justify-center rounded-lg border border-[#E5E7EB] bg-white px-3 shadow-sm">
+              <span className="text-[11px] font-semibold text-brand-600">Plan</span>
+              <select
+                value={state.monthlyPlan}
+                onChange={(event) =>
+                  setState((prev) => ({
+                    ...prev,
+                    monthlyPlan: event.target.value as NonNullable<SearchFilters["monthlyPlan"]>,
+                  }))
+                }
+                className="w-full appearance-none bg-transparent pr-5 text-[13px] font-bold text-slate-900 outline-none"
+              >
+                {MONTHLY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <svg className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+              </svg>
+            </label>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <DateTimePicker label="From" value={state.startAt} onChange={setStart} compact />
+            <DateTimePicker label="Until" value={state.endAt} onChange={setEnd} compact />
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-2">
           {onOpenFilters && (
             <button
               type="button"
               onClick={onOpenFilters}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-[#E5E7EB] px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
             >
               <svg className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 9.75V10.5" />
@@ -351,7 +425,7 @@ export function SearchForm({
           )}
           <button
             type="submit"
-            className={`flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 text-[15px] font-bold text-white shadow-md transition hover:bg-brand-600 active:scale-[0.98] ${
+            className={`flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-5 text-[15px] font-bold text-white shadow-md transition hover:bg-brand-600 active:scale-[0.98] ${
               onOpenFilters ? "" : "col-span-2"
             }`}
           >
@@ -373,6 +447,7 @@ function DateTimePicker({
   inlineLabel,
   value,
   onChange,
+  dateOnly = false,
   compact = false,
   inline = false,
   popupAlign = "left",
@@ -380,7 +455,6 @@ function DateTimePicker({
   const [open, setOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState(startOfMonth(value));
   const containerRef = useRef<HTMLDivElement>(null);
-  const timeListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const nextMonth = startOfMonth(value);
@@ -401,18 +475,9 @@ function DateTimePicker({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Auto-scroll time list to the selected item whenever the popup opens
-  useEffect(() => {
-    if (!open || !timeListRef.current) return;
-    const selectedEl = timeListRef.current.querySelector('[data-selected="true"]') as HTMLElement | null;
-    if (selectedEl) {
-      timeListRef.current.scrollTop = Math.max(0, selectedEl.offsetTop - 56);
-    }
-  }, [open]);
-
   const times = useMemo(() => {
     const slots: string[] = [];
-    for (let i = 0; i < 24 * 60; i += 5) {
+    for (let i = 0; i < 24 * 60; i += 30) {
       const hh = String(Math.floor(i / 60)).padStart(2, "0");
       const mm = String(i % 60).padStart(2, "0");
       slots.push(`${hh}:${mm}`);
@@ -424,7 +489,7 @@ function DateTimePicker({
 
   const handleDateSelect = (day: Date) => {
     const next = new Date(day);
-    next.setHours(value.getHours(), value.getMinutes(), 0, 0);
+    next.setHours(dateOnly ? 0 : value.getHours(), dateOnly ? 0 : value.getMinutes(), 0, 0);
     onChange(next);
   };
 
@@ -439,13 +504,13 @@ function DateTimePicker({
   // ── Shared popup ────────────────────────────────────────────────────────
   const popup = open ? (
     <div
-      className={`absolute ${alignClass} z-50 mt-2 w-[400px] max-w-[95vw] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.16)] ring-1 ring-slate-100/80`}
+      className={`absolute ${alignClass} z-50 mt-2 w-[400px] max-w-[95vw] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.16)] ring-1 ring-slate-100/80`}
     >
       {/* Popup header */}
       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label} time</p>
-          <p className="mt-0.5 text-[13px] font-bold text-slate-900">{formatTrigger(value)}</p>
+          <p className="mt-0.5 text-[13px] font-bold text-slate-900">{formatTrigger(value, dateOnly)}</p>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -483,7 +548,7 @@ function DateTimePicker({
         {/* Calendar grid */}
         <div className="grid grid-cols-7 gap-1">
           {days.map((day, idx) => {
-            if (!day) return <div key={idx} className="h-9 rounded-xl" />;
+            if (!day) return <div key={idx} className="h-9 rounded-lg" />;
             const isSelected = isSameDay(day, value);
             const isToday = isSameDay(day, new Date());
             const inMonth = day.getMonth() === viewMonth.getMonth();
@@ -492,7 +557,7 @@ function DateTimePicker({
                 key={day.toISOString()}
                 type="button"
                 onClick={() => handleDateSelect(day)}
-                className={`h-9 rounded-xl text-[13px] transition ${
+                className={`h-9 rounded-lg text-[13px] transition ${
                   isSelected
                     ? "bg-brand-500 font-bold text-white shadow-sm"
                     : isToday
@@ -508,45 +573,39 @@ function DateTimePicker({
           })}
         </div>
 
-        {/* Time picker — scrollable list replacing <select> */}
+        {/* Time picker */}
         <div className="mt-3 border-t border-slate-100 pt-3">
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
             {timeLabel}
           </p>
-          <div
-            ref={timeListRef}
-            className="max-h-[168px] overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 scroll-smooth"
-          >
-            {times.map((t) => {
-              const isSel = t === currentTime;
-              return (
-                <button
-                  key={t}
-                  type="button"
-                  data-selected={isSel ? "true" : undefined}
-                  onClick={() => handleTimeSelect(t)}
-                  className={`flex w-full items-center justify-between px-3.5 py-[7px] text-left text-[13px] font-semibold transition ${
-                    isSel
-                      ? "bg-brand-500 text-white"
-                      : "text-slate-700 hover:bg-white"
-                  }`}
-                >
-                  {t}
-                  {isSel && (
-                    <svg
-                      className="h-3.5 w-3.5 shrink-0"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          {dateOnly ? (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-3 text-[14px] font-semibold text-slate-500">
+              Monthly search uses all-day availability.
+            </div>
+          ) : (
+            <div className="relative">
+              <select
+                value={currentTime}
+                onChange={(event) => handleTimeSelect(event.target.value)}
+                className="w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-3 text-[14px] font-semibold text-slate-800 outline-none transition focus:border-brand-500"
+              >
+                {times.map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+              </select>
+              <svg
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+              </svg>
+            </div>
+          )}
         </div>
 
         {/* Done */}
@@ -554,7 +613,7 @@ function DateTimePicker({
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="rounded-xl bg-brand-500 px-5 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-brand-600"
+            className="rounded-lg bg-brand-500 px-5 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-brand-600"
           >
             Done
           </button>
@@ -570,16 +629,29 @@ function DateTimePicker({
         <button
           type="button"
           onClick={() => setOpen((p) => !p)}
-          className={`flex w-[210px] flex-col justify-center px-5 py-3.5 text-left transition hover:bg-slate-50/80 ${
-            open ? "bg-slate-50/80" : ""
+          className={`flex w-full min-w-[302px] flex-col justify-center rounded-md border border-[#d5dbe3] bg-white px-4 py-2 text-left shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition hover:border-[#c7d0da] ${
+            open ? "border-[#b9c4cf]" : ""
           }`}
         >
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[12px] font-medium text-[#2cad49]">
             {inlineLabel ?? label}
-          </p>
-          <p className="mt-0.5 tabular-nums text-[13.5px] font-semibold text-slate-900">
-            {formatTrigger(value)}
-          </p>
+              </p>
+              <p className="mt-0.5 truncate tabular-nums text-[16px] font-semibold text-[#202631]">
+                {formatTrigger(value, dateOnly)}
+              </p>
+            </div>
+            <svg
+              className={`h-[18px] w-[18px] shrink-0 transition-transform ${open ? "rotate-180 text-[#202631]" : "text-[#202631]"}`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+            </svg>
+          </div>
         </button>
         {popup}
       </div>
@@ -592,7 +664,7 @@ function DateTimePicker({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex w-full items-center justify-between rounded-xl border bg-white text-left shadow-sm transition ${
+        className={`flex w-full items-center justify-between rounded-lg border bg-white text-left shadow-sm transition ${
           open
             ? "border-brand-400 ring-2 ring-brand-100"
             : "border-[#E5E7EB] hover:border-slate-300"
@@ -600,7 +672,7 @@ function DateTimePicker({
       >
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-[11px] font-semibold text-brand-600">{label}</span>
-          <span className="tabular-nums text-[13px] font-bold text-slate-900">{formatTrigger(value)}</span>
+          <span className="tabular-nums text-[13px] font-bold text-slate-900">{formatTrigger(value, dateOnly)}</span>
         </div>
         <svg
           className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180 text-brand-500" : "text-slate-400"}`}
@@ -632,8 +704,8 @@ function addMinutes(date: Date, minutes: number) {
   return d;
 }
 
-function formatTrigger(date: Date) {
-  return format(date, "EEE d MMM, HH:mm");
+function formatTrigger(date: Date, dateOnly = false) {
+  return format(date, dateOnly ? "EEE d MMM" : "EEE d MMM, HH:mm");
 }
 
 function toDateString(date: Date) {

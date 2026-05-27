@@ -228,14 +228,14 @@ export default function HostWizardPage() {
         <div className="flex w-full max-w-xs flex-col gap-3">
           <Link
             href="/login"
-            className="flex h-12 items-center justify-center rounded-2xl text-sm font-semibold text-white"
+            className="flex h-12 items-center justify-center rounded-lg text-sm font-semibold text-white"
             style={{ backgroundColor: "#2ECC8F" }}
           >
             Sign in
           </Link>
           <Link
             href="/signup"
-            className="flex h-12 items-center justify-center rounded-2xl border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="flex h-12 items-center justify-center rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
             Create account
           </Link>

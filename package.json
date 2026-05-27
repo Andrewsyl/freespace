@@ -28,6 +28,7 @@
     "test:web:e2e": "npm --workspace apps/web run test:e2e",
     "build:web": "npm --workspace apps/web run build",
     "start:web:prod": "node apps/web/.next/standalone/apps/web/server.js",
+    "smoke:web:local": "node scripts/smoke-local-web.mjs",
     "lint:web": "npm --workspace apps/web run lint",
     "build:api": "npm --workspace apps/api run build",
     "lint:mobile": "npm --workspace apps/mobile run lint",

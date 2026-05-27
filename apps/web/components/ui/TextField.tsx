@@ -59,7 +59,7 @@ export function TextField({
             props.onBlur?.(event);
           }}
           className={clsx(
-            "h-11 w-full rounded-xl border border-slate-200 px-3 text-sm shadow-sm transition focus:border-brand-500 focus:outline-none",
+            "h-11 w-full rounded-lg border border-slate-200 px-3 text-sm shadow-sm transition focus:border-brand-500 focus:outline-none",
             canClear && "pr-10",
             error && "border-rose-300 focus:border-rose-400",
             inputClassName,

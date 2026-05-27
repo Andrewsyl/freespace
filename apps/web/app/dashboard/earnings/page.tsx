@@ -151,7 +151,7 @@ export default function EarningsPage() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold tracking-wide text-slate-500">Stripe connect</p>
           <div className="mt-2 flex items-center justify-between gap-3">
             <div>
@@ -193,7 +193,7 @@ export default function EarningsPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <section className="space-y-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+        <section className="space-y-3 rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Earnings summary</h2>
             <p className="text-sm text-slate-600">Confirmed bookings less the platform fee.</p>
@@ -208,7 +208,7 @@ export default function EarningsPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-100 bg-slate-50/80 p-5">
+        <section className="rounded-lg border border-slate-100 bg-slate-50/80 p-5">
           <div className="grid items-center gap-4 md:grid-cols-[140px_1fr]">
             <div className="mx-auto w-full max-w-[140px]">
               <Image
@@ -253,7 +253,7 @@ function BalanceCard({
   tone: "success" | "muted";
 }) {
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
       <p className="text-xs font-semibold tracking-wide text-slate-500">{title}</p>
       <p className={`mt-3 text-3xl font-semibold tracking-tight ${tone === "success" ? "text-slate-900" : "text-slate-700"}`}>
         {formatMoney(amount, currency)}
@@ -264,7 +264,7 @@ function BalanceCard({
 
 function MetricCard({ label, value, muted, strong }: { label: string; value: string; muted?: boolean; strong?: boolean }) {
   return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+    <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
       <p className="text-xs font-semibold tracking-wide text-slate-500">{label}</p>
       <p className={`mt-2 text-xl font-semibold ${strong ? "text-slate-900" : muted ? "text-slate-700" : "text-slate-800"}`}>
         {value}

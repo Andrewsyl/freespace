@@ -88,7 +88,7 @@ export default function AdminBookingDetailPage() {
       {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-slate-900">Details</h2>
           <dl className="mt-3 space-y-2 text-sm text-slate-700">
             <div className="flex justify-between">
@@ -130,7 +130,7 @@ export default function AdminBookingDetailPage() {
           </dl>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-slate-900">Admin actions</h2>
           <div className="mt-3 space-y-3 text-sm">
             <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
@@ -184,7 +184,7 @@ export default function AdminBookingDetailPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 shadow-sm">
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 shadow-sm">
         <p className="font-semibold text-slate-900">Operational handling</p>
         <ul className="mt-2 space-y-1">
           <li>Use host cancellation when the space cannot be honored. Refunds should be created or confirmed in the same action.</li>

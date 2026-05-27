@@ -101,5 +101,5 @@ export function GoogleSignInButton({
     return () => clearInterval(timer);
   }, [text]); // Re-render button when the text label changes
 
-  return <div ref={containerRef} className="w-full overflow-hidden rounded-xl" />;
+  return <div ref={containerRef} className="w-full overflow-hidden rounded-lg" />;
 }

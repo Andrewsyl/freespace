@@ -175,7 +175,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <header className="space-y-3 rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-6 text-white shadow-lg">
+      <header className="space-y-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-6 text-white shadow-lg">
         <div className="text-xs font-semibold tracking-[0.28em] text-emerald-200">Dashboard</div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -214,7 +214,7 @@ export default function DashboardPage() {
       {status === "loading" && <div className="text-sm text-slate-600">Loading bookings…</div>}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="space-y-4 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
+        <section className="space-y-4 rounded-lg border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold tracking-wide text-emerald-600">Driver</p>
@@ -231,7 +231,7 @@ export default function DashboardPage() {
               </button>
             ))}
             {driverBookings.length === 0 && status === "idle" && (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
                 <div className="grid items-center gap-3 md:grid-cols-[160px_1fr]">
                   <div className="mx-auto w-full max-w-[160px]">
                     <Image
@@ -252,7 +252,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="space-y-4 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
+        <section className="space-y-4 rounded-lg border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold tracking-wide text-slate-700">Host</p>
@@ -269,7 +269,7 @@ export default function DashboardPage() {
               </button>
             ))}
             {hostBookings.length === 0 && status === "idle" && (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
                 <div className="grid items-center gap-3 md:grid-cols-[160px_1fr]">
                   <div className="mx-auto w-full max-w-[160px]">
                     <Image
@@ -288,7 +288,7 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
-          <div className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <div className="rounded-lg border border-dashed border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
             Payouts flow via Stripe Connect. Store each host Stripe account and send application fees per booking.
           </div>
         </section>
@@ -331,7 +331,7 @@ export default function DashboardPage() {
             </div>
             <p className="text-sm text-slate-700">Driver: {selected.driver ?? "You"}</p>
             {selected.noShowAt ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 This booking has been marked as a no-show.
               </div>
             ) : null}
@@ -345,7 +345,7 @@ export default function DashboardPage() {
               if (!isDriverBooking || !isConfirmed || !isEnded) return null;
               if (alreadyReviewed) {
                 return (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                     ✓ Review submitted — thank you!
                   </div>
                 );
@@ -362,7 +362,7 @@ export default function DashboardPage() {
                 );
               }
               return (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
                   <p className="text-sm font-semibold text-slate-900">Leave a review</p>
                   <div className="flex gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -381,7 +381,7 @@ export default function DashboardPage() {
                     onChange={(e) => setReviewComment(e.target.value)}
                     placeholder="Share your experience (optional)"
                     rows={3}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-emerald-400 focus:outline-none resize-none"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-emerald-400 focus:outline-none resize-none"
                   />
                   <div className="flex gap-2">
                     <button
@@ -404,7 +404,7 @@ export default function DashboardPage() {
               );
             })()}
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
               <p className="font-semibold text-slate-900">Booking handling</p>
               <ul className="mt-2 space-y-1">
                 <li>If you cancel, the driver is notified and any eligible refund is sent back to their original payment method.</li>
@@ -421,7 +421,7 @@ export default function DashboardPage() {
                 {cancelingHostBooking ? "Canceling booking…" : "Host cancel booking"}
               </button>
             ) : selected.cancellationSource === "host" ? (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                 This booking was canceled by the host. Refund tracking should be reviewed if the driver reports an issue.
               </div>
             ) : null}
@@ -435,7 +435,7 @@ export default function DashboardPage() {
 function StatCard({ label, value, hint, accent }: { label: string; value: string; hint?: string; accent?: boolean }) {
   return (
     <div
-      className={`rounded-2xl border px-4 py-3 shadow-sm ${
+      className={`rounded-lg border px-4 py-3 shadow-sm ${
         accent
           ? "border-emerald-200 bg-emerald-50 text-emerald-900"
           : "border-slate-200 bg-white/80 text-slate-900 backdrop-blur"

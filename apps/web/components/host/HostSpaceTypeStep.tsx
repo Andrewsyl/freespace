@@ -62,7 +62,7 @@ export function HostSpaceTypeStep({ data, onUpdate }: HostStepProps) {
               key={option.id}
               type="button"
               onClick={() => onUpdate({ spaceType: option.id })}
-              className={`relative flex min-h-[110px] flex-col gap-3 rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
+              className={`relative flex min-h-[110px] flex-col gap-3 rounded-lg border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
                 selected
                   ? "border-emerald-400 bg-emerald-50 shadow-md"
                   : "border-slate-200 bg-white hover:border-slate-300"
@@ -70,7 +70,7 @@ export function HostSpaceTypeStep({ data, onUpdate }: HostStepProps) {
             >
               <div className="flex items-start justify-between">
                 <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg ${
                     selected ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
                   }`}
                 >

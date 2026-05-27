@@ -89,7 +89,7 @@ export function HostStreetViewStep({ data, onUpdate }: HostStepProps) {
 
   if (!hasCoords) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-16 text-center">
+      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 py-16 text-center">
         <svg className="h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.4}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
@@ -109,12 +109,12 @@ export function HostStreetViewStep({ data, onUpdate }: HostStepProps) {
       {/* Street View viewer */}
       <div
         ref={viewerRef}
-        className="h-80 w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100"
+        className="h-80 w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-100"
       />
 
       {/* Saved confirmation */}
       {data.coverHeading != null && (
-        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700">
+        <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700">
           <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
             <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
           </svg>
@@ -127,14 +127,14 @@ export function HostStreetViewStep({ data, onUpdate }: HostStepProps) {
         <button
           type="button"
           onClick={handleUseView}
-          className="flex-1 rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500"
+          className="flex-1 rounded-lg bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500"
         >
           Use this view
         </button>
         <button
           type="button"
           onClick={handleSkip}
-          className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+          className="rounded-lg border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
         >
           Skip for now
         </button>

@@ -139,7 +139,7 @@ export default function AdminListingsPage() {
       </div>
       {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <table className="min-w-full divide-y divide-slate-100 text-sm">
           <thead className="bg-slate-50">
             <tr>
@@ -231,7 +231,7 @@ export default function AdminListingsPage() {
 
       {confirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
             <h2 className="text-lg font-semibold text-slate-900">
               {confirm.action === "approve"
                 ? "Approve listing"

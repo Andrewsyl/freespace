@@ -47,6 +47,7 @@ import { generateVerificationToken, hashPassword } from "../lib/auth.js";
 import { env } from "../env.js";
 
 const router = Router();
+const DEFAULT_DAILY_HOURS = 8;
 
 function hasUsableHostPayoutAccount(accountId?: string | null) {
   return Boolean(accountId && !accountId.startsWith("acct_mock_"));
@@ -64,8 +65,13 @@ function calculateListingChargeCents(input: {
     Math.ceil((input.endTime.getTime() - input.startTime.getTime()) / (1000 * 60 * 60))
   );
 
-  if (input.rateType === "hourly" && input.pricePerHour != null) {
-    return Math.max(1, Math.round(Number(input.pricePerHour) * durationHours * 100));
+  const derivedHourly =
+    input.pricePerHour != null && Number(input.pricePerHour) > 0
+      ? Number(input.pricePerHour)
+      : Number(input.pricePerDay) / DEFAULT_DAILY_HOURS;
+
+  if (durationHours < 24 && derivedHourly > 0) {
+    return Math.max(1, Math.round(derivedHourly * durationHours * 100));
   }
 
   const billingDays = Math.max(1, Math.ceil(durationHours / 24));

@@ -5,7 +5,6 @@ import { CookieBanner } from "../components/CookieBanner";
 import { GoogleAuthProvider } from "../components/GoogleAuthProvider";
 import { AppStatusProvider } from "../components/AppStatusProvider";
 import { ClientTelemetry } from "../components/ClientTelemetry";
-import { SiteFooter } from "../components/SiteFooter";
 import Script from "next/script";
 import { webEnv } from "../lib/env";
 
@@ -32,7 +31,6 @@ export default function RootLayout({
               <ClientTelemetry />
               <main className="px-0 py-0 sm:px-0 sm:py-0 lg:px-0 lg:py-0">{children}</main>
               <CookieBanner />
-              <SiteFooter />
             </AuthProvider>
           </AppStatusProvider>
         </GoogleAuthProvider>

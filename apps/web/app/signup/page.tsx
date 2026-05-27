@@ -67,7 +67,7 @@ export default function SignupPage() {
           <p className="text-sm text-slate-600">Book spaces or start earning from your driveway.</p>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.08)]">
+        <div className="mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.08)]">
           {/* ── Google sign-up (primary / prominent) — only on the initial form step ── */}
           {phoneStep === "form" && googleClientId && (
             <div className="mb-5">
@@ -118,7 +118,7 @@ export default function SignupPage() {
 
             {phoneStep === "verify" && (
               <div className="space-y-3">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
                   Enter the 6-digit code sent to {phone}.
                 </div>
                 <TextField
@@ -152,7 +152,7 @@ export default function SignupPage() {
                 </button>
                 <button
                   type="button"
-                  className="w-full rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700"
+                  className="w-full rounded-lg border border-slate-200 py-3 text-sm font-semibold text-slate-700"
                   onClick={async () => {
                     try {
                       setSmsLoading(true);

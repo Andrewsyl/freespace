@@ -54,7 +54,7 @@ export default function ProfilePage() {
       {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
+        <div className="rounded-lg border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold tracking-wide text-slate-500">Account</p>
@@ -87,7 +87,7 @@ export default function ProfilePage() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
+        <div className="rounded-lg border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
           <p className="text-xs font-semibold tracking-wide text-rose-600">Danger zone</p>
           <h2 className="text-lg font-semibold text-slate-900">Delete account</h2>
           <p className="mt-2 text-sm text-slate-700">
@@ -103,7 +103,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
+      <div className="rounded-lg border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
         <p className="text-xs font-semibold tracking-wide text-slate-500">Shortcuts</p>
         <div className="mt-2 flex flex-wrap gap-3 text-sm font-semibold text-brand-700">
           <Link href="/dashboard" className="rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50">

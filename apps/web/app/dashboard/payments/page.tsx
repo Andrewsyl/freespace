@@ -137,7 +137,7 @@ export default function PaymentsPage() {
       ))}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="space-y-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+        <section className="space-y-3 rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Saved payment methods</h2>
@@ -160,7 +160,7 @@ export default function PaymentsPage() {
 
           {status === "loading" && <div className="text-sm text-slate-600">Loading cards…</div>}
           {methods.length === 0 && status !== "loading" && (
-            <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-5">
+            <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-5">
               <div className="grid items-center gap-4 md:grid-cols-[180px_1fr]">
                 <div className="mx-auto w-full max-w-[180px]">
                   <Image
@@ -185,7 +185,7 @@ export default function PaymentsPage() {
             {methods.map((pm) => (
               <div
                 key={pm.id}
-                className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-800"
+                className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-800"
               >
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
@@ -221,7 +221,7 @@ export default function PaymentsPage() {
           </div>
         </section>
 
-        <section className="space-y-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+        <section className="space-y-3 rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Payment history</h2>
@@ -231,7 +231,7 @@ export default function PaymentsPage() {
 
           {historyStatus === "loading" && <div className="text-sm text-slate-600">Loading payments…</div>}
           {history.length === 0 && historyStatus === "idle" && (
-            <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-5">
+            <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-5">
               <div className="grid items-center gap-4 md:grid-cols-[180px_1fr]">
                 <div className="mx-auto w-full max-w-[180px]">
                   <Image
@@ -254,7 +254,7 @@ export default function PaymentsPage() {
 
           <div className="space-y-2">
             {history.map((p) => (
-              <div key={p.id} className="flex flex-col gap-1 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-800">
+              <div key={p.id} className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-800">
                 <div className="flex items-center justify-between gap-2">
                   <div className="font-semibold text-slate-900">{p.description ?? "Booking payment"}</div>
                   <StatusChip status={p.status} />
@@ -304,7 +304,7 @@ export default function PaymentsPage() {
               token={token ?? undefined}
             />
           ) : (
-            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl">
+            <div className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-4 shadow-2xl">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold tracking-wide text-brand-700">Add card</p>
@@ -408,7 +408,7 @@ function AddCardModalStripe({
   };
 
   return (
-    <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl">
+    <div className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-4 shadow-2xl">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold tracking-wide text-brand-700">Add card</p>

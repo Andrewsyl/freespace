@@ -68,6 +68,11 @@ const radiusFromBounds = (bounds: LatLngBoundsLiteral, center: { lat: number; ln
   );
 };
 
+function rankResultsForSearch(results: Listing[], filters: SearchFilters) {
+  if (filters.mode === "monthly") return results;
+  return results;
+}
+
 // ── Page entry point ──────────────────────────────────────────────────────────
 
 export default function SearchPage() {
@@ -102,6 +107,7 @@ function SearchPageContainer() {
       endDate: get("endDate") ?? undefined,
       startTime: get("startTime") ?? undefined,
       endTime: get("endTime") ?? undefined,
+      monthlyPlan: (get("monthlyPlan") as SearchFilters["monthlyPlan"]) ?? undefined,
       radiusKm: get("radiusKm") ? Number(get("radiusKm")) : undefined,
       latitude: get("lat") ? Number(get("lat")) : undefined,
       longitude: get("lng") ? Number(get("lng")) : undefined,
@@ -173,6 +179,7 @@ function SearchPageContainer() {
     p.set("endTime", next.endTime);
     p.set("radiusKm", String(next.radiusKm));
     if (next.mode) p.set("mode", next.mode);
+    if (next.monthlyPlan) p.set("monthlyPlan", next.monthlyPlan);
     if (next.endDate) p.set("endDate", next.endDate);
     if (next.latitude !== undefined) p.set("lat", String(next.latitude));
     if (next.longitude !== undefined) p.set("lng", String(next.longitude));
@@ -190,7 +197,7 @@ function SearchPageContainer() {
 
     try {
       const data = await searchSpaces(next);
-      setResults(data);
+      setResults(rankResultsForSearch(data, next));
       setStatus("idle");
       void trackEvent("web_search_completed", {
         resultCount: data.length,

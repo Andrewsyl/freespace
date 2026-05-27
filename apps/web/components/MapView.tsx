@@ -4,11 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { Listing } from "./ListingCard";
+import { formatPriceValue } from "../lib/pricing";
 
 type BoundsLiteral = { north: number; south: number; east: number; west: number };
 
 type MapViewProps = {
   listings: Listing[];
+  priceMode?: "daily" | "monthly";
+  priceForListing?: (listing: Listing) => number;
+  priceKey?: string;
   center?: { lat: number; lng: number };
   initialZoom?: number;
   maxZoom?: number;
@@ -31,7 +35,7 @@ type MapViewProps = {
 // ─── Price-bubble markers ────────────────────────────────────────────────────
 
 function buildMarkerSvg(price: number, active: boolean): string {
-  const priceText = `€${price}`;
+  const priceText = `€${formatPriceValue(price)}`;
   const extraChars = Math.max(0, priceText.length - 3);
   const bw = 44 + extraChars * 6;  // bubble width
   const bh = 24;                    // bubble height
@@ -74,13 +78,13 @@ function buildMarkerSvg(price: number, active: boolean): string {
 </svg>`;
 }
 
-function createMarkerEl(listing: Listing, active: boolean): HTMLDivElement {
+function createMarkerEl(listing: Listing, active: boolean, markerPrice: number): HTMLDivElement {
   const el = document.createElement("div");
   el.style.cursor = "pointer";
   el.dataset.testid = "map-marker";
   el.dataset.listingId = listing.id;
   el.setAttribute("aria-label", `Map marker for ${listing.title}`);
-  el.innerHTML = buildMarkerSvg(listing.pricePerDay, active);
+  el.innerHTML = buildMarkerSvg(markerPrice, active);
   return el;
 }
 
@@ -144,6 +148,9 @@ const clampZoom = (value: number, min?: number, max?: number) => {
 
 export function MapView({
   listings,
+  priceMode = "daily",
+  priceForListing,
+  priceKey,
   center,
   initialZoom = 12,
   maxZoom = 12,
@@ -240,7 +247,7 @@ export function MapView({
 
     const signature = listings
       .filter((l) => typeof l.latitude === "number" && typeof l.longitude === "number")
-      .map((l) => `${l.id}-${l.latitude}-${l.longitude}-${l.pricePerDay}`)
+      .map((l) => `${l.id}-${l.latitude}-${l.longitude}-${priceForListing ? priceForListing(l) : priceMode === "monthly" ? (l.pricePerMonth ?? l.pricePerDay) : l.pricePerDay}-${selectedListingId === l.id ? "selected" : "default"}-${priceKey ?? "base"}`)
       .join("|");
 
     if (signature === markerSignatureRef.current) return;
@@ -252,7 +259,12 @@ export function MapView({
     listings.forEach((listing) => {
       if (typeof listing.latitude !== "number" || typeof listing.longitude !== "number") return;
       const active = selectedListingId === listing.id;
-      const el = createMarkerEl(listing, active);
+      const markerPrice = priceForListing
+        ? priceForListing(listing)
+        : priceMode === "monthly" && typeof listing.pricePerMonth === "number" && listing.pricePerMonth > 0
+          ? listing.pricePerMonth
+          : listing.pricePerDay;
+      const el = createMarkerEl(listing, active, markerPrice);
       const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
         .setLngLat([listing.longitude, listing.latitude])
         .addTo(map);
@@ -288,21 +300,31 @@ export function MapView({
     } else if (center) {
       map.flyTo({ center: [center.lng, center.lat], zoom: clampZoom(initialZoom, minFitZoom, maxZoom) });
     }
-  }, [listings, center, selectedListingId, mapReady, initialZoom, maxZoom, minFitZoom, onMarkerClick, onSelectListing, disableAutoFit, showCenterPin]);
+  }, [listings, center, selectedListingId, mapReady, initialZoom, maxZoom, minFitZoom, onMarkerClick, onSelectListing, disableAutoFit, showCenterPin, priceMode, priceForListing, priceKey]);
 
   // Active marker style
   useEffect(() => {
     if (!mapReady) return;
     if (prevSelectedRef.current && markersRef.current.has(prevSelectedRef.current)) {
       const { el, listing } = markersRef.current.get(prevSelectedRef.current)!;
-      el.innerHTML = buildMarkerSvg(listing.pricePerDay, false);
+      const markerPrice = priceForListing
+        ? priceForListing(listing)
+        : priceMode === "monthly"
+          ? (listing.pricePerMonth ?? listing.pricePerDay)
+          : listing.pricePerDay;
+      el.innerHTML = buildMarkerSvg(markerPrice, false);
     }
     if (selectedListingId && markersRef.current.has(selectedListingId)) {
       const { el, listing } = markersRef.current.get(selectedListingId)!;
-      el.innerHTML = buildMarkerSvg(listing.pricePerDay, true);
+      const markerPrice = priceForListing
+        ? priceForListing(listing)
+        : priceMode === "monthly"
+          ? (listing.pricePerMonth ?? listing.pricePerDay)
+          : listing.pricePerDay;
+      el.innerHTML = buildMarkerSvg(markerPrice, true);
     }
     prevSelectedRef.current = selectedListingId ?? null;
-  }, [selectedListingId, mapReady]);
+  }, [selectedListingId, mapReady, priceMode, priceForListing, priceKey]);
 
   // Centre pin marker
   useEffect(() => {
@@ -384,7 +406,7 @@ export function MapView({
       <div ref={containerRef} className="h-full w-full" />
       {(tokenMissing || mapUnavailable) && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-center text-sm text-slate-600">
-          <div className="max-w-xs rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="max-w-xs rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <p className="text-sm font-semibold text-slate-900">
               {tokenMissing ? "Mapbox token missing" : "Map unavailable"}
             </p>

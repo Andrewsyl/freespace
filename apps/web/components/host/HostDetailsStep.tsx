@@ -83,7 +83,7 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
               key={type}
               type="button"
               onClick={() => onUpdate({ spaceType: type })}
-              className="flex min-h-[110px] flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm"
+              className="flex min-h-[110px] flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm"
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
                 <SpaceTypeIcon type={type} />
@@ -103,7 +103,7 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
       <button
         type="button"
         onClick={() => onUpdate({ spaceType: undefined, spaceCount: "", vehicleSize: undefined })}
-        className="flex w-full items-center gap-3 rounded-2xl border border-[#2ECC8F] bg-white px-4 py-3.5 text-left transition hover:bg-emerald-50"
+        className="flex w-full items-center gap-3 rounded-lg border border-[#2ECC8F] bg-white px-4 py-3.5 text-left transition hover:bg-emerald-50"
       >
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
           <SpaceTypeIcon type={data.spaceType!} />
@@ -127,7 +127,7 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
           >
             −
           </button>
-          <div className="flex h-14 w-20 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-2xl font-bold text-slate-900">
+          <div className="flex h-14 w-20 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-2xl font-bold text-slate-900">
             {spaceCount}
           </div>
           <button
@@ -156,7 +156,7 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
                   key={opt.value}
                   type="button"
                   onClick={() => onUpdate({ vehicleSize: opt.value })}
-                  className={`flex w-full items-center gap-4 rounded-2xl border px-4 py-3.5 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${
+                  className={`flex w-full items-center gap-4 rounded-lg border px-4 py-3.5 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${
                     active ? "border-[#2ECC8F] bg-white" : "border-slate-200 bg-white"
                   }`}
                 >

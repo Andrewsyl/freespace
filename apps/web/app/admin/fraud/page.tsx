@@ -90,7 +90,7 @@ export default function FraudEventsPage() {
 
       {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="grid grid-cols-[1.1fr_1fr_1.3fr_1.2fr_1.4fr] gap-2 border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
           <span>Time</span>
           <span>Reason</span>

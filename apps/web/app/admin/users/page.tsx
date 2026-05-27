@@ -133,7 +133,7 @@ export default function AdminUsersPage() {
           Refresh
         </button>
       </div>
-      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <label className="text-xs font-semibold text-slate-600">
           Search
           <input
@@ -151,7 +151,7 @@ export default function AdminUsersPage() {
         </button>
       </div>
       {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <table className="min-w-full divide-y divide-slate-100 text-sm">
           <thead className="bg-slate-50">
             <tr>
@@ -235,7 +235,7 @@ export default function AdminUsersPage() {
 
       {confirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
             <h2 className="text-lg font-semibold text-slate-900">
               {confirm.action === "suspend" ? "Suspend user" : "Activate user"}
             </h2>
@@ -278,7 +278,7 @@ export default function AdminUsersPage() {
 
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
             <h2 className="text-lg font-semibold text-slate-900">Delete user</h2>
             <p className="mt-1 text-sm text-slate-600">This removes the account, listings, and bookings.</p>
             <p className="mt-2 text-sm font-semibold text-slate-900">{deleteId.email}</p>

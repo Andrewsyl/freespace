@@ -224,7 +224,7 @@ export default function AdminSettingsPage() {
 
       {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold text-slate-900">Fraud controls</h2>
@@ -238,7 +238,7 @@ export default function AdminSettingsPage() {
           </button>
         </div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 p-3 md:col-span-2">
+          <div className="rounded-lg border border-slate-200 p-3 md:col-span-2">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="text-sm font-semibold text-slate-900">Fraud mode</p>
@@ -264,7 +264,7 @@ export default function AdminSettingsPage() {
             </select>
           </div>
           {FRAUD_FIELDS.map((field) => (
-            <div key={field.key} className="rounded-xl border border-slate-200 p-3">
+            <div key={field.key} className="rounded-lg border border-slate-200 p-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">{field.label}</p>
@@ -309,7 +309,7 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="text-sm font-semibold text-slate-900">Add setting</h2>
         <div className="mt-3 grid gap-3 md:grid-cols-[1fr,2fr,auto]">
           <input
@@ -335,7 +335,7 @@ export default function AdminSettingsPage() {
 
       <div className="space-y-3">
         {rows.map((row) => (
-          <div key={row.key} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div key={row.key} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-900">{row.key}</p>

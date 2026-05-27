@@ -16,6 +16,7 @@ import {
 import type { Listing } from "../../../components/ListingCard";
 import { ListingMap } from "./MapSection";
 import { trackEvent } from "../../../lib/telemetry";
+import TimeSelect from "../../../components/TimeSelect";
 
 type Review = {
   id: string;
@@ -144,19 +145,17 @@ export function MobileListingView({
             <div className="grid grid-cols-2 gap-3">
               <label className="space-y-1.5">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">From</span>
-                <input
-                  type="time"
+                <TimeSelect
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  onChange={setStartTime}
                   className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-brand-500"
                 />
               </label>
               <label className="space-y-1.5">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Until</span>
-                <input
-                  type="time"
+                <TimeSelect
                   value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
+                  onChange={setEndTime}
                   className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-brand-500"
                 />
               </label>
