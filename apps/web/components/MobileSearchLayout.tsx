@@ -17,6 +17,7 @@ import { FiltersPanel } from "./FiltersPanel";
 import { listingGradient } from "./DesktopSearchLayout";
 import type { SharedLayoutProps } from "./searchLayoutTypes";
 import type { Listing } from "./ListingCard";
+import { calculateListingTotal, formatPriceValue } from "../lib/pricing";
 
 // ── Date/time helpers ────────────────────────────────────────────────────────
 
@@ -83,6 +84,44 @@ function sortResults(results: Listing[], mode: string): Listing[] {
   return sorted;
 }
 
+function getSearchWindow(filters: SharedLayoutProps["filters"]) {
+  const start = new Date(`${filters.date}T${filters.startTime}:00`);
+  const rawEnd = new Date(`${filters.endDate ?? filters.date}T${filters.endTime}:00`);
+  const end =
+    rawEnd.getTime() <= start.getTime() && !filters.endDate
+      ? new Date(rawEnd.getTime() + 24 * 60 * 60 * 1000)
+      : rawEnd;
+  return { start, end };
+}
+
+function buildSearchPriceDisplay(
+  listing: Listing,
+  filters: SharedLayoutProps["filters"],
+  start: Date,
+  end: Date,
+) {
+  if (filters.mode === "monthly") {
+    const value =
+      typeof listing.pricePerMonth === "number" && listing.pricePerMonth > 0
+        ? listing.pricePerMonth
+        : listing.pricePerDay;
+    return {
+      sortValue: value,
+      label: "Per month",
+      value,
+      suffix: "/month",
+    };
+  }
+
+  const total = calculateListingTotal(listing, start, end);
+  return {
+    sortValue: total.total,
+    label: "Total",
+    value: total.total,
+    suffix: `for ${total.durationLabel}`,
+  };
+}
+
 // ── Bottom sheet snap ────────────────────────────────────────────────────────
 
 const PEEK_H = 92; // px of sheet visible in peek state
@@ -109,6 +148,21 @@ export function MobileSearchLayout({
   onSearchAsMove,
 }: SharedLayoutProps) {
   const router = useRouter();
+  const { start: searchStart, end: searchEnd } = useMemo(() => getSearchWindow(filters), [filters]);
+  const listingHref = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("date", filters.date);
+    params.set("startTime", filters.startTime);
+    params.set("endDate", filters.endDate ?? filters.date);
+    params.set("endTime", filters.endTime);
+    if (filters.mode) params.set("mode", filters.mode);
+    if (filters.monthlyPlan) params.set("monthlyPlan", filters.monthlyPlan);
+    return (listingId: string) => `/listing/${listingId}?${params.toString()}`;
+  }, [filters.date, filters.endDate, filters.endTime, filters.mode, filters.monthlyPlan, filters.startTime]);
+  const getSearchPrice = useMemo(
+    () => (listing: Listing) => buildSearchPriceDisplay(listing, filters, searchStart, searchEnd),
+    [filters, searchEnd, searchStart]
+  );
   const [searchPanelOpen, setSearchPanelOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState<"start" | "end" | null>(null);
   const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
@@ -124,10 +178,12 @@ export function MobileSearchLayout({
     ? results.find((l) => l.id === selectedListingId) ?? null
     : null;
 
-  const sortedResults = useMemo(
-    () => sortResults(results, sortMode),
-    [results, sortMode],
-  );
+  const sortedResults = useMemo(() => {
+    if (sortMode === "cheapest") {
+      return [...results].sort((a, b) => getSearchPrice(a).sortValue - getSearchPrice(b).sortValue);
+    }
+    return sortResults(results, sortMode);
+  }, [getSearchPrice, results, sortMode]);
 
   // Date/time
   const fallbackStart = useMemo(() => roundUpToHalfHour(new Date()), []);
@@ -202,6 +258,8 @@ export function MobileSearchLayout({
           showCenterPin
           centerPinRadius={500}
           priceMode={filters.mode ?? "daily"}
+          priceForListing={(listing) => getSearchPrice(listing).sortValue}
+          priceKey={`${filters.mode ?? "daily"}-${filters.date}-${filters.startTime}-${filters.endDate ?? filters.date}-${filters.endTime}`}
           selectedListingId={selectedListingId ?? undefined}
           onSelectListing={onMarkerSelect}
           onMarkerClick={onMarkerClick}
@@ -432,8 +490,9 @@ export function MobileSearchLayout({
                 <ResultCard
                   key={listing.id}
                   listing={listing}
+                  priceDisplay={getSearchPrice(listing)}
                   selected={listing.id === selectedListingId}
-                  onOpen={() => router.push(`/listing/${listing.id}`)}
+                  onOpen={() => router.push(listingHref(listing.id) as any)}
                   onSelect={() => {
                     onMarkerSelect(listing.id);
                     // snapTo handled by the useEffect watching selectedListingId
@@ -460,11 +519,12 @@ export function MobileSearchLayout({
           >
             <MapBottomCard
               listing={selectedListing}
+              priceDisplay={getSearchPrice(selectedListing)}
               onDismiss={() => {
                 onMarkerSelect("");
                 snapTo("half");
               }}
-              onOpen={() => router.push(`/listing/${selectedListing.id}`)}
+              onOpen={() => router.push(listingHref(selectedListing.id) as any)}
             />
           </motion.div>
         )}
@@ -600,11 +660,13 @@ export function MobileSearchLayout({
 
 function ResultCard({
   listing,
+  priceDisplay,
   selected,
   onOpen,
   onSelect,
 }: {
   listing: Listing;
+  priceDisplay: { label: string; value: number; suffix: string };
   selected: boolean;
   onOpen: () => void;
   onSelect: () => void;
@@ -640,8 +702,8 @@ function ResultCard({
               {listing.title}
             </p>
             <p className="shrink-0 text-[16px] font-extrabold tracking-tight text-brand-600">
-              €{listing.pricePerDay}
-              <span className="text-[10px] font-semibold text-slate-400">/day</span>
+              €{formatPriceValue(priceDisplay.value)}
+              <span className="text-[10px] font-semibold text-slate-400">{priceDisplay.suffix}</span>
             </p>
           </div>
           <p className="mt-0.5 line-clamp-1 text-[11.5px] text-slate-400">{listing.address}</p>
@@ -922,10 +984,12 @@ function normaliseAmenity(v: string): string {
 
 function MapBottomCard({
   listing,
+  priceDisplay,
   onDismiss,
   onOpen,
 }: {
   listing: Listing;
+  priceDisplay: { label: string; value: number; suffix: string };
   onDismiss: () => void;
   onOpen: () => void;
 }) {
@@ -987,10 +1051,11 @@ function MapBottomCard({
 
         <div className="flex items-center justify-between gap-3 border-t border-dashed border-slate-100 pt-2.5">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Per day</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{priceDisplay.label}</p>
             <p className="text-[18px] font-extrabold tracking-tight text-brand-600">
-              €{listing.pricePerDay}
+              €{formatPriceValue(priceDisplay.value)}
             </p>
+            <p className="text-[10px] font-medium text-slate-400">{priceDisplay.suffix}</p>
           </div>
           <button
             onClick={onOpen}

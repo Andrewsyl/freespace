@@ -11,7 +11,7 @@ import {
   TruckIcon,
 } from "@heroicons/react/24/outline";
 import { getListing, listListingReviews } from "../../../lib/api";
-import { getListingRateType, getListingUnitPrice } from "../../../lib/pricing";
+import { getListingUnitPrice } from "../../../lib/pricing";
 import type { Listing } from "../../../components/ListingCard";
 import { ListingMap } from "./MapSection";
 import { SlimNav } from "../../../components/SlimNav";
@@ -61,7 +61,13 @@ export default async function ListingDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ created?: string }>;
+  searchParams?: Promise<{
+    created?: string;
+    date?: string;
+    startTime?: string;
+    endDate?: string;
+    endTime?: string;
+  }>;
 }) {
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) ?? {};
@@ -88,7 +94,6 @@ export default async function ListingDetailPage({
       : fallbackImage(listing.title);
 
   const images = listing.imageUrls && listing.imageUrls.length ? listing.imageUrls : [fallback];
-  const rateLabel = getListingRateType(listing) === "hourly" ? "/ hr" : "/ day";
   const unitPrice = getListingUnitPrice(listing);
   const hasCoords = listing.latitude != null && listing.longitude != null;
   const rating = listing.rating ?? 5;
@@ -96,6 +101,12 @@ export default async function ListingDetailPage({
   const streetViewHref = hasCoords
     ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${listing.latitude},${listing.longitude}`
     : undefined;
+  const initialBooking = {
+    startDate: resolvedSearchParams.date,
+    startTime: resolvedSearchParams.startTime,
+    endDate: resolvedSearchParams.endDate ?? resolvedSearchParams.date,
+    endTime: resolvedSearchParams.endTime,
+  };
 
 
   return (
@@ -111,6 +122,7 @@ export default async function ListingDetailPage({
           areaLabel={listing.address}
           reviews={reviews as any}
           fallbackImage={fallback}
+          initialBooking={initialBooking}
         />
       </div>
 
@@ -446,6 +458,7 @@ export default async function ListingDetailPage({
                     pricePerHour={listing.pricePerHour}
                     rateType={listing.rateType}
                     unitPrice={unitPrice}
+                    initialBooking={initialBooking}
                   />
                 </div>
               </div>

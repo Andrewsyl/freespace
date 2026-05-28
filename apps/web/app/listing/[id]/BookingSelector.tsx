@@ -47,15 +47,6 @@ function firstDayOffset(year: number, month: number) {
   return day === 0 ? 6 : day - 1;
 }
 
-function durationLabel(start: string, end: string) {
-  const [sh, sm] = start.split(":").map(Number);
-  const [eh, em] = end.split(":").map(Number);
-  const mins = (eh*60+em) - (sh*60+sm);
-  if (mins <= 0) return "";
-  const h = Math.floor(mins/60), m = mins%60;
-  return m === 0 ? `${h}h` : `${h}h ${m}m`;
-}
-
 function formatTrigger(iso: string, time: string) {
   const d = new Date(`${iso}T00:00:00`);
   if (isNaN(d.getTime())) return `${iso} · ${time}`;
@@ -277,6 +268,7 @@ export function BookingSelector({
   dark = false,
   hidePrice = false,
   onPricingChange,
+  initialValues,
 }: {
   listingId: string;
   bookedDates?: string[];
@@ -291,10 +283,19 @@ export function BookingSelector({
     durationLabel: string;
     billingLabel: string;
   }) => void;
+  initialValues?: {
+    startDate?: string;
+    startTime?: string;
+    endDate?: string;
+    endTime?: string;
+  };
 }) {
   const todayIso = dateToIso(new Date());
 
   const defaultDate = useMemo(() => {
+    if (initialValues?.startDate) {
+      return initialValues.startDate;
+    }
     const d = new Date();
     for (let i = 0; i < 60; i++) {
       const iso = dateToIso(d);
@@ -306,13 +307,12 @@ export function BookingSelector({
   }, []);
 
   const [startDate, setStartDate] = useState(defaultDate);
-  const [startTime, setStartTime] = useState("09:00");
-  const [endDate,   setEndDate]   = useState(defaultDate);
-  const [endTime,   setEndTime]   = useState("18:00");
+  const [startTime, setStartTime] = useState(initialValues?.startTime ?? "09:00");
+  const [endDate,   setEndDate]   = useState(initialValues?.endDate ?? initialValues?.startDate ?? defaultDate);
+  const [endTime,   setEndTime]   = useState(initialValues?.endTime ?? "18:00");
   const [openPicker, setOpenPicker] = useState<"start"|"end"|null>(null);
 
-  const dur  = durationLabel(startTime, endTime);
-  const href = `/checkout/${listingId}?date=${startDate}&startTime=${startTime}&endTime=${endTime}`;
+  const href = `/checkout/${listingId}?date=${startDate}&startTime=${startTime}&endDate=${endDate}&endTime=${endTime}`;
   const bookingWindow = useMemo(
     () => buildBookingWindow(startDate, startTime, endDate, endTime),
     [startDate, startTime, endDate, endTime]
@@ -432,7 +432,7 @@ export function BookingSelector({
         }
         className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3.5 text-[15px] font-bold text-white transition hover:bg-brand-600"
       >
-        Reserve · €{formatPriceValue(pricing.subtotal)}{dur ? ` · ${dur}` : ""}
+        Reserve · €{formatPriceValue(pricing.subtotal)}{pricing.durationLabel ? ` · ${pricing.durationLabel}` : ""}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
           <path d="M5 12h14M13 5l7 7-7 7"/>
         </svg>

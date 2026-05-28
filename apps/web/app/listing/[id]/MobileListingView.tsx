@@ -56,27 +56,45 @@ export function MobileListingView({
   areaLabel,
   reviews,
   fallbackImage,
+  initialBooking,
 }: {
   listing: Listing & { amenities?: string[]; accessCode?: string | null };
   listingForMap: Listing;
   areaLabel: string;
   reviews: Review[];
   fallbackImage: string;
+  initialBooking?: {
+    startDate?: string;
+    startTime?: string;
+    endDate?: string;
+    endTime?: string;
+  };
 }) {
   const router = useRouter();
   const defaultStart = useMemo(() => {
+    if (initialBooking?.startDate && initialBooking?.startTime) {
+      return new Date(`${initialBooking.startDate}T${initialBooking.startTime}:00`);
+    }
     const d = new Date();
     d.setMinutes(Math.ceil(d.getMinutes() / 30) * 30, 0, 0);
     return d;
-  }, []);
+  }, [initialBooking?.startDate, initialBooking?.startTime]);
   const [startAt, setStartAt] = useState(defaultStart);
-  const [endAt, setEndAt] = useState(() => new Date(defaultStart.getTime() + 2 * 60 * 60 * 1000));
+  const [endAt, setEndAt] = useState(() => {
+    if (initialBooking?.endDate && initialBooking?.endTime) {
+      const parsed = new Date(`${initialBooking.endDate}T${initialBooking.endTime}:00`);
+      if (parsed.getTime() > defaultStart.getTime()) {
+        return parsed;
+      }
+    }
+    return new Date(defaultStart.getTime() + 2 * 60 * 60 * 1000);
+  });
 
   const pad2 = (n: number) => String(n).padStart(2, "0");
   const toDateStr = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
   const toTimeStr = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 
-  const href = `/checkout/${listing.id}?date=${toDateStr(startAt)}&startTime=${toTimeStr(startAt)}&endTime=${toTimeStr(endAt)}`;
+  const href = `/checkout/${listing.id}?date=${toDateStr(startAt)}&startTime=${toTimeStr(startAt)}&endDate=${toDateStr(endAt)}&endTime=${toTimeStr(endAt)}`;
   const amenities = listing.amenities ?? [];
   const images = useMemo(
     () => listing.imageUrls ?? listing.image_urls ?? [fallbackImage],

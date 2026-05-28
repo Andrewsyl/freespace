@@ -10,17 +10,34 @@ export function SidebarBookingCard({
   pricePerHour,
   rateType,
   unitPrice,
+  initialBooking,
 }: {
   listingId: string;
   pricePerDay?: number;
   pricePerHour?: number | null;
   rateType?: "hourly" | "daily" | null;
   unitPrice: number;
+  initialBooking?: {
+    startDate?: string;
+    startTime?: string;
+    endDate?: string;
+    endTime?: string;
+  };
 }) {
   const [tab, setTab] = useState<"hourly" | "monthly">("hourly");
   const defaultPricing = useMemo(() => {
-    const start = new Date();
-    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    const start =
+      initialBooking?.startDate && initialBooking?.startTime
+        ? new Date(`${initialBooking.startDate}T${initialBooking.startTime}:00`)
+        : new Date();
+    const rawEnd =
+      initialBooking?.endDate && initialBooking?.endTime
+        ? new Date(`${initialBooking.endDate}T${initialBooking.endTime}:00`)
+        : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    const end =
+      rawEnd.getTime() <= start.getTime()
+        ? new Date(rawEnd.getTime() + 24 * 60 * 60 * 1000)
+        : rawEnd;
     const summary = calculateListingTotal(
       {
         pricePerDay: pricePerDay ?? unitPrice,
@@ -39,7 +56,7 @@ export function SidebarBookingCard({
           ? `${summary.durationLabel}`
           : `${summary.billingCount} ${summary.billingUnit}${summary.billingCount === 1 ? "" : "s"}`,
     };
-  }, [pricePerDay, pricePerHour, rateType, unitPrice]);
+  }, [initialBooking?.endDate, initialBooking?.endTime, initialBooking?.startDate, initialBooking?.startTime, pricePerDay, pricePerHour, rateType, unitPrice]);
   const [pricing, setPricing] = useState(defaultPricing);
 
   return (
@@ -90,6 +107,7 @@ export function SidebarBookingCard({
             rateType={rateType}
             hidePrice
             onPricingChange={setPricing}
+            initialValues={initialBooking}
           />
 
           {/* Price breakdown */}

@@ -40,6 +40,16 @@ export function DesktopSearchLayout({
   const [sortMode, setSortMode] = useState<"recommended" | "cheapest" | "closest">("recommended");
   const selectedListing = selectedListingId ? results.find((l) => l.id === selectedListingId) ?? null : null;
   const { start: searchStart, end: searchEnd } = useMemo(() => getSearchWindow(filters), [filters]);
+  const listingHref = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("date", filters.date);
+    params.set("startTime", filters.startTime);
+    params.set("endDate", filters.endDate ?? filters.date);
+    params.set("endTime", filters.endTime);
+    if (filters.mode) params.set("mode", filters.mode);
+    if (filters.monthlyPlan) params.set("monthlyPlan", filters.monthlyPlan);
+    return (listingId: string) => `/listing/${listingId}?${params.toString()}`;
+  }, [filters.date, filters.endDate, filters.endTime, filters.mode, filters.monthlyPlan, filters.startTime]);
   const getSearchPrice = useMemo(
     () => (listing: Listing) => buildSearchPriceDisplay(listing, filters, searchStart, searchEnd),
     [filters, searchEnd, searchStart]
@@ -139,7 +149,7 @@ export function DesktopSearchLayout({
                     mode={filters.mode ?? "daily"}
                     pricing={getSearchPrice(selectedListing)}
                     onClose={() => setShowListingOverlay(false)}
-                    onOpen={() => router.push(`/listing/${selectedListing.id}`)}
+                    onOpen={() => router.push(listingHref(selectedListing.id) as any)}
                   />
                 </motion.div>
 
