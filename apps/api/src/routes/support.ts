@@ -8,7 +8,7 @@ import { createSupportTicket, getLatestSupportTicketForUser, insertEventLog } fr
 import { reportOperationalAlert } from "../lib/opsAlerts.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
 import { enforceBlockedList } from "../middleware/fraud.js";
-import { logError } from "../lib/logger.js";
+import { logError, logWarn } from "../lib/logger.js";
 
 const router = Router();
 
@@ -40,6 +40,20 @@ const clientErrorSchema = z.object({
   appEnv: z.string().trim().min(1).max(40).optional(),
   runtimeUrl: z.string().trim().max(2000).optional(),
 });
+
+function isDeployTransitionClientError(payload: z.infer<typeof clientErrorSchema>) {
+  const name = payload.name?.toLowerCase() ?? "";
+  const message = payload.message.toLowerCase();
+  const stack = payload.stack?.toLowerCase() ?? "";
+
+  return (
+    name.includes("chunkloaderror") ||
+    message.includes("loading chunk") ||
+    message.includes("chunkloaderror") ||
+    message.includes("css chunk") ||
+    stack.includes("chunkloaderror")
+  );
+}
 
 router.post("/", requireAuth, enforceBlockedList, supportLimiter, async (req, res, next) => {
   try {
@@ -95,12 +109,14 @@ router.post("/client-error", clientErrorLimiter, async (req, res, next) => {
       normalizedEnv !== "production" ||
       runtimeUrl.includes("127.0.0.1") ||
       runtimeUrl.includes("localhost");
+    const isDeployTransition = isDeployTransitionClientError(payload);
     logError("client.error_reported", {
       source: payload.source,
       name: payload.name ?? null,
       message: payload.message,
       isFatal: payload.isFatal ?? false,
       appEnv: payload.appEnv ?? null,
+      suppressedEmail: isDeployTransition,
     });
     await insertEventLog({
       eventType: "client.error_reported",
@@ -110,8 +126,16 @@ router.post("/client-error", clientErrorLimiter, async (req, res, next) => {
         message: payload.message,
         isFatal: payload.isFatal ?? false,
         appEnv: payload.appEnv ?? null,
+        suppressedEmail: isDeployTransition,
       },
     });
+    if (isDeployTransition) {
+      logWarn("client.error_suppressed", {
+        source: payload.source,
+        name: payload.name ?? null,
+        message: payload.message,
+      });
+    }
     Sentry.captureException(new Error(`[${payload.source}] ${payload.message}`), {
       tags: {
         source: `${payload.source}-client`,
@@ -128,7 +152,7 @@ router.post("/client-error", clientErrorLimiter, async (req, res, next) => {
       source: `${payload.source}-client`,
       title: "Client error report",
       payload,
-      sendEmail: !isNonProdClientReport,
+      sendEmail: !isNonProdClientReport && !isDeployTransition,
     });
     res.json({ ok: true });
   } catch (err) {

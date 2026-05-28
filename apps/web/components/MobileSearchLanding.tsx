@@ -55,10 +55,10 @@ function snapTo30(d: Date): Date {
 // ── Popular destinations ──────────────────────────────────────────────────────
 
 const POPULAR_DESTS = [
-  { name: "Aviva Stadium",     sub: "D02 · 105 spaces", accent: "#1B8A5A", lat: 53.3352, lng: -6.2285 },
-  { name: "Dublin Airport",    sub: "D09 · 312 spaces", accent: "#2C6CA8", lat: 53.4264, lng: -6.2499 },
-  { name: "Trinity College",   sub: "D02 · 48 spaces",  accent: "#B6691A", lat: 53.3458, lng: -6.2597 },
-  { name: "Grand Canal Dock",  sub: "D02 · 76 spaces",  accent: "#6B4D8C", lat: 53.3396, lng: -6.2319 },
+  { name: "Aviva Stadium",    sub: "105 spaces", icon: "🏟️", lat: 53.3352, lng: -6.2285 },
+  { name: "Dublin Airport",   sub: "312 spaces", icon: "✈️", lat: 53.4264, lng: -6.2499 },
+  { name: "Trinity College",  sub: "48 spaces",  icon: "🎓", lat: 53.3458, lng: -6.2597 },
+  { name: "Grand Canal Dock", sub: "76 spaces",  icon: "🌊", lat: 53.3396, lng: -6.2319 },
 ] as const;
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -97,14 +97,8 @@ export function MobileSearchLanding({
   };
 
   const formatDisplay = (d: Date): string => {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
-    const day = new Date(d); day.setHours(0, 0, 0, 0);
-    let dateLabel: string;
-    if (day.getTime() === today.getTime()) dateLabel = "Today";
-    else if (day.getTime() === tomorrow.getTime()) dateLabel = "Tomorrow";
-    else dateLabel = `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
-    return `${dateLabel} at ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    if (mode === "monthly") return formatDateOnly(d);
+    return `${formatDateOnly(d)}, ${formatTime(d)}`;
   };
 
   const toDate = (d: Date) => d.toISOString().split("T")[0];
@@ -126,176 +120,254 @@ export function MobileSearchLanding({
   };
 
   return (
-    <div
-      className="flex flex-col bg-white"
-      style={{ paddingTop: hideHeader ? "0px" : "env(safe-area-inset-top)" }}
-    >
-      {!hideHeader && (
-        <div className="flex items-center justify-between px-5 pb-4 pt-3">
-          <img src="/freespace-logo.png" alt="FreeSpace" className="h-10 w-auto mix-blend-multiply" />
-        </div>
-      )}
+    <div className="flex flex-col bg-white">
 
-      {/* ── Tagline ─────────────────────────────────────────────────────── */}
-      <div className="px-5 pb-5 pt-4">
-        <p className="text-[22px] leading-snug tracking-[-0.02em]">
-          <span className="font-normal text-[#6B6B6B]">Find your space, </span><span className="font-bold text-[#111]">pay less.</span>
-        </p>
-      </div>
+      {/* ── HERO — photo + dark scrim ──────────────────────────────────── */}
+      <div
+        className="relative overflow-hidden px-5 pb-7"
+        style={{ paddingTop: hideHeader ? "20px" : "calc(env(safe-area-inset-top) + 16px)" }}
+      >
+        {/* Background photo */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=800&q=80"
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+        />
+        {/* Dark overlay scrim */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/60 to-black/65" />
 
-      {/* ── Mode Tabs ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 border-y border-[#E6E6E4]">
-        {(["hourly", "monthly"] as ActiveTab[]).map((tab) => {
-          const LABELS: Record<ActiveTab, string> = {
-            hourly: "Hourly / Daily",
-            monthly: "Monthly",
-          };
-          const active = activeTab === tab;
-          return (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => handleTabChange(tab)}
-              className="relative flex h-[60px] items-center justify-center text-[15px] transition-colors"
-              style={{
-                background: active ? "#E6F2EC" : "#FFFFFF",
-                fontWeight: active ? 700 : 500,
-                color: "#111111",
-              }}
+        {/* Content sits above the overlay */}
+        <div className="relative">
+
+        {/* Nav row — only when shown standalone (search page landing) */}
+        {!hideHeader && (
+          <div className="mb-5 flex items-center justify-between">
+            <img
+              src="/freespace-logo.png"
+              alt="FreeSpace"
+              className="h-9 w-auto"
+              style={{ filter: "brightness(0) invert(1)" }}
+            />
+            <Link
+              href="/login"
+              className="rounded-full border border-white/30 px-4 py-1.5 text-[13px] font-semibold text-white/90 transition hover:border-white/60 hover:text-white"
             >
-              {LABELS[tab]}
-              {active && (
-                <span
-                  className="absolute bottom-[-1px] left-4 right-4"
-                  style={{ height: 2, background: "#1B8A5A" }}
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
+              Log in
+            </Link>
+          </div>
+        )}
 
-      {/* ── Search Form ─────────────────────────────────────────────────── */}
-      <div className="px-5 pt-5">
-      <div className="flex flex-col gap-[14px] rounded-[14px] border border-[#E6E6E4] bg-[#F7F7F6] p-4" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        {/* Tagline */}
+        <div className="mb-5">
+          <p className="text-[27px] font-bold leading-[1.15] tracking-[-0.03em] text-white">
+            Find parking,
+          </p>
+          <p className="text-[27px] leading-[1.15] tracking-[-0.03em] text-white/55 font-medium">
+            book in seconds.
+          </p>
+        </div>
 
-        {/* Where? */}
-        <div>
-          <p className="mb-2 text-[14px] font-medium text-[#6B6B6B]">Where?</p>
-          <div
-            className="flex items-center gap-3 rounded-[10px] bg-white px-4 py-3"
-            style={{ border: "1.5px solid #D4D4D2" }}
-          >
-            <div className="min-w-0 flex-1">
-              <p className="mb-0.5 text-[13px] font-semibold text-[#B6691A]">Park at</p>
-              <AddressAutocomplete
-                defaultValue={location}
-                placeholder="Enter a place or postcode"
-                inputClassName="w-full bg-transparent text-[17px] font-semibold text-[#111] placeholder:font-normal placeholder:text-[#9A9A9A] outline-none"
-                onPlace={(place) => {
-                  setLocation(place.address);
-                  setLatitude(place.lat);
-                  setLongitude(place.lng);
-                }}
-              />
+        {/* ── Search Card ── */}
+        <div className="rounded-[20px] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+
+          {/* Mode tabs */}
+          <div className="px-4 pt-4">
+            <div className="grid grid-cols-2 rounded-[10px] bg-[#F0F0EE] p-1">
+              {(["hourly", "monthly"] as const).map((tab) => {
+                const active = activeTab === tab;
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => handleTabChange(tab)}
+                    className={`rounded-[8px] py-2 text-[13.5px] font-semibold transition-all duration-150 ${
+                      active
+                        ? "bg-white text-[#111] shadow-[0_1px_4px_rgba(0,0,0,0.12)]"
+                        : "text-[#888]"
+                    }`}
+                  >
+                    {tab === "hourly" ? "Hourly / Daily" : "Monthly"}
+                  </button>
+                );
+              })}
             </div>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9A9A9A" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-              <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
-            </svg>
+          </div>
+
+          {/* Unified form — Booking.com style with dividers */}
+          <div className="mx-4 mt-3 overflow-hidden rounded-[14px]" style={{ border: "1.5px solid #DEDEDD" }}>
+
+            {/* Location row */}
+            <div className="flex items-center gap-3 px-4 py-3.5">
+              <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="#1B8A5A" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                <circle cx="12" cy="9" r="2.5" />
+              </svg>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#888]">Where</p>
+                <AddressAutocomplete
+                  defaultValue={location}
+                  placeholder="City, address or postcode"
+                  inputClassName="w-full bg-transparent text-[15px] font-semibold text-[#111] placeholder:font-normal placeholder:text-[#ABABAB] outline-none mt-0.5"
+                  onPlace={(place) => {
+                    setLocation(place.address);
+                    setLatitude(place.lat);
+                    setLongitude(place.lng);
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Horizontal divider */}
+            <div style={{ height: "1.5px", background: "#DEDEDD" }} />
+
+            {/* Date / time row */}
+            {mode === "monthly" ? (
+              <div className="grid grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen("start")}
+                  className="flex items-center gap-3 px-4 py-3.5 text-left transition active:bg-slate-50"
+                >
+                  <svg className="h-[17px] w-[17px] shrink-0 text-[#1B8A5A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  <div className="min-w-0">
+                    <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#888]">Starting</p>
+                    <p className="mt-0.5 truncate text-[14px] font-semibold text-[#111]">{formatDateOnly(startAt)}</p>
+                  </div>
+                </button>
+                {/* Vertical divider */}
+                <div className="relative">
+                  <div className="absolute bottom-3 left-0 top-3" style={{ width: "1.5px", background: "#DEDEDD" }} />
+                  <div className="flex items-center gap-3 px-4 py-3.5">
+                    <svg className="h-[17px] w-[17px] shrink-0 text-[#ABABAB]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 6h18M7 12h5m5 0h-1M7 18h5m5 0h-1" />
+                    </svg>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#888]">Schedule</p>
+                      <div className="relative mt-0.5">
+                        <select
+                          value={monthlyPlan}
+                          onChange={(e) => setMonthlyPlan(e.target.value as typeof monthlyPlan)}
+                          className="w-full appearance-none bg-transparent text-[14px] font-semibold text-[#111] outline-none"
+                        >
+                          {MONTHLY_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                        <svg className="pointer-events-none absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#ABABAB]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen("start")}
+                  className="flex items-center gap-3 px-4 py-3.5 text-left transition active:bg-slate-50"
+                >
+                  <svg className="h-[17px] w-[17px] shrink-0 text-[#1B8A5A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  <div className="min-w-0">
+                    <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#888]">From</p>
+                    <p className="mt-0.5 truncate text-[14px] font-semibold text-[#111]">{formatDisplay(startAt)}</p>
+                  </div>
+                </button>
+                {/* Vertical divider + Until field */}
+                <div className="relative">
+                  <div className="absolute bottom-3 left-0 top-3" style={{ width: "1.5px", background: "#DEDEDD" }} />
+                  <button
+                    type="button"
+                    onClick={() => setPickerOpen("end")}
+                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-slate-50"
+                  >
+                    <svg className="h-[17px] w-[17px] shrink-0 text-[#ABABAB]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    <div className="min-w-0">
+                      <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#888]">Until</p>
+                      <p className="mt-0.5 truncate text-[14px] font-semibold text-[#111]">{formatDisplay(endAt)}</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* CTA button */}
+          <div className="px-4 pb-4 pt-3">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!location}
+              className="flex h-[52px] w-full items-center justify-center gap-2.5 rounded-[12px] text-[15.5px] font-bold text-white transition disabled:opacity-40"
+              style={{ background: "linear-gradient(135deg, #1a7a52, #1B8A5A)" }}
+            >
+              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              </svg>
+              Search parking spaces
+            </button>
           </div>
         </div>
 
-        {/* When? */}
-        <div>
-          <p className="mb-2 text-[14px] font-medium text-[#6B6B6B]">When?</p>
-          {mode === "monthly" ? (
-            <div className="grid grid-cols-2 gap-[10px]">
-              <button
-                type="button"
-                onClick={() => setPickerOpen("start")}
-                className="flex w-full items-center justify-between rounded-[10px] bg-white px-4 py-3 text-left"
-                style={{ border: "1.5px solid #D4D4D2" }}
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="mb-0.5 text-[13px] font-semibold" style={{ color: "#1B8A5A" }}>From</p>
-                  <p className="truncate text-[15px] font-semibold text-[#111]">{formatDateOnly(startAt)}</p>
-                </div>
-              </button>
-              <label
-                className="relative flex w-full cursor-pointer items-center justify-between rounded-[10px] bg-white px-4 py-3"
-                style={{ border: "1.5px solid #D4D4D2" }}
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="mb-0.5 text-[13px] font-semibold text-[#9A9A9A]">Schedule</p>
-                  <select
-                    value={monthlyPlan}
-                    onChange={(e) => setMonthlyPlan(e.target.value as typeof monthlyPlan)}
-                    className="w-full appearance-none bg-transparent text-[15px] font-semibold text-[#111] outline-none"
-                  >
-                    {MONTHLY_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <svg className="pointer-events-none flex-shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </label>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-[10px]">
-              <button
-                type="button"
-                onClick={() => setPickerOpen("start")}
-                className="flex w-full items-center justify-between rounded-[10px] bg-white px-4 py-3 text-left"
-                style={{ border: "1.5px solid #D4D4D2" }}
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="mb-0.5 text-[13px] font-semibold" style={{ color: "#1B8A5A" }}>From</p>
-                  <p className="truncate text-[15px] font-semibold text-[#111]">{formatDisplay(startAt)}</p>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPickerOpen("end")}
-                className="flex w-full items-center justify-between rounded-[10px] bg-white px-4 py-3 text-left"
-                style={{ border: "1.5px solid #D4D4D2" }}
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="mb-0.5 text-[13px] font-semibold text-[#9A9A9A]">Until</p>
-                  <p className="truncate text-[15px] font-semibold text-[#111]">{formatDisplay(endAt)}</p>
-                </div>
-              </button>
-            </div>
-          )}
+        {/* Trust strip */}
+        <div className="mt-4 flex items-center justify-between px-1 text-[11px] font-medium text-white/55">
+          <span>✓ Best price</span>
+          <span>✓ Instant booking</span>
+          <span>✓ Free cancellation</span>
         </div>
+        </div>
+      </div>
 
-        {/* CTA */}
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!location}
-          className="h-[56px] w-full rounded-[10px] text-[17px] font-bold text-white transition disabled:opacity-40"
-          style={{ background: "#1B8A5A" }}
+      {/* ── Popular destinations ──────────────────────────────────────────── */}
+      <div className="bg-white pt-5 pb-2">
+        <p className="mb-3 px-5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#9A9A9A]">
+          Popular near you
+        </p>
+        <div
+          className="flex gap-2.5 overflow-x-auto pb-1"
+          style={{ paddingLeft: 20, paddingRight: 20, scrollbarWidth: "none" }}
         >
-          Show parking spaces
-        </button>
-      </div>
+          {POPULAR_DESTS.map((dest) => (
+            <button
+              key={dest.name}
+              type="button"
+              onClick={() => launchDest(dest)}
+              className="flex shrink-0 items-center gap-2.5 rounded-[14px] border border-[#E6E6E4] bg-white px-4 py-3 shadow-sm transition active:scale-[0.97]"
+            >
+              <span className="text-xl leading-none">{dest.icon}</span>
+              <div className="text-left">
+                <p className="text-[13px] font-bold text-[#111]">{dest.name}</p>
+                <p className="text-[11px] text-[#9A9A9A]">{dest.sub}</p>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* ── App download ─────────────────────────────────────────────────── */}
-      <div className="mt-8 px-5">
-        <h2 className="text-[20px] font-bold tracking-[-0.02em] text-[#111]">Download the free<br/>FreeSpace app</h2>
-        <p className="mt-2 text-[14px] leading-[1.5] text-[#6B6B6B]">The easiest way to find and book parking near you. Anytime, anywhere.</p>
-        <div className="mt-5 flex gap-3">
-
-          {/* App Store badge */}
+      {/* ── App download ───────────────────────────────────────────────────── */}
+      <div className="mt-6 px-5">
+        <h2 className="text-[20px] font-bold tracking-[-0.02em] text-[#111]">
+          Download the free<br />FreeSpace app
+        </h2>
+        <p className="mt-2 text-[14px] leading-[1.5] text-[#6B6B6B]">
+          The easiest way to find and book parking near you. Anytime, anywhere.
+        </p>
+        <div className="mt-4 flex gap-2.5">
           <a
             href="#"
             aria-label="Download on the App Store"
-            className="flex items-center gap-2.5 rounded-[10px] bg-[#111] px-4 py-2.5 transition hover:bg-[#2a2a2a]"
+            className="flex items-center gap-2.5 rounded-[11px] bg-[#111] px-4 py-2.5 transition hover:bg-[#2a2a2a]"
           >
-            <svg width="20" height="24" viewBox="0 0 20 24" fill="white" aria-hidden="true">
+            <svg width="18" height="22" viewBox="0 0 20 24" fill="white" aria-hidden="true">
               <path d="M16.462 12.748c-.022-2.637 2.153-3.906 2.252-3.969-1.228-1.794-3.136-2.04-3.812-2.063-1.617-.165-3.173.959-3.993.959-.836 0-2.11-.94-3.475-.913-1.78.027-3.434 1.047-4.347 2.642-1.863 3.228-.475 7.993 1.328 10.609.893 1.282 1.946 2.715 3.32 2.663 1.34-.055 1.843-.858 3.462-.858 1.603 0 2.072.858 3.473.827 1.44-.024 2.35-1.297 3.226-2.588.027-.019.053-.037.078-.058-1.395-.636-2.49-1.991-2.512-4.251zM13.98 4.371c.74-.896 1.24-2.136 1.103-3.371-1.068.044-2.361.711-3.127 1.607-.686.793-1.288 2.07-1.127 3.283 1.194.09 2.413-.605 3.151-1.519z"/>
             </svg>
             <div>
@@ -303,23 +375,29 @@ export function MobileSearchLanding({
               <p className="text-[14px] font-semibold leading-tight text-white">App Store</p>
             </div>
           </a>
-
-          {/* Google Play badge */}
           <a
             href="#"
             aria-label="Get it on Google Play"
-            className="flex items-center gap-2.5 rounded-[10px] bg-[#111] px-4 py-2.5 transition hover:bg-[#2a2a2a]"
+            className="flex items-center gap-2.5 rounded-[11px] bg-[#111] px-4 py-2.5 transition hover:bg-[#2a2a2a]"
           >
-            <svg width="20" height="22" viewBox="0 0 20 22" fill="none" aria-hidden="true">
+            <svg width="18" height="20" viewBox="0 0 20 22" fill="none" aria-hidden="true">
               <path d="M.5 1.2C.19 1.54.01 2.06.01 2.73v16.54c0 .67.18 1.19.49 1.53l.08.07 9.27-9.27v-.22L.58 1.13.5 1.2z" fill="url(#gp-a)"/>
               <path d="M12.94 14.73l-3.09-3.09v-.22l3.09-3.09.07.04 3.66 2.08c1.05.59 1.05 1.57 0 2.17l-3.66 2.08-.07.03z" fill="url(#gp-b)"/>
               <path d="M13.01 14.7L9.85 11.5.5 20.85c.34.36.91.41 1.54.05l10.97-6.2z" fill="url(#gp-c)"/>
               <path d="M13.01 8.3L2.04 2.1C1.41 1.74.84 1.79.5 2.15l9.35 9.35 3.16-3.2z" fill="url(#gp-d)"/>
               <defs>
-                <linearGradient id="gp-a" x1="9.1" y1="2.26" x2="-3.77" y2="15.13" gradientUnits="userSpaceOnUse"><stop stopColor="#00A0FF"/><stop offset="1" stopColor="#00FFFF" stopOpacity=".1"/></linearGradient>
-                <linearGradient id="gp-b" x1="17.71" y1="11.5" x2="-.08" y2="11.5" gradientUnits="userSpaceOnUse"><stop stopColor="#FFD900"/><stop offset="1" stopColor="#FF9000" stopOpacity=".1"/></linearGradient>
-                <linearGradient id="gp-c" x1="11.2" y1="13.24" x2="-5.12" y2="29.56" gradientUnits="userSpaceOnUse"><stop stopColor="#FF3A44"/><stop offset="1" stopColor="#C31162" stopOpacity=".1"/></linearGradient>
-                <linearGradient id="gp-d" x1="-1.84" y1="-3.5" x2="5.64" y2="3.98" gradientUnits="userSpaceOnUse"><stop stopColor="#32A071"/><stop offset="1" stopColor="#2DA771" stopOpacity=".1"/></linearGradient>
+                <linearGradient id="gp-a" x1="9.1" y1="2.26" x2="-3.77" y2="15.13" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#00A0FF"/><stop offset="1" stopColor="#00FFFF" stopOpacity=".1"/>
+                </linearGradient>
+                <linearGradient id="gp-b" x1="17.71" y1="11.5" x2="-.08" y2="11.5" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#FFD900"/><stop offset="1" stopColor="#FF9000" stopOpacity=".1"/>
+                </linearGradient>
+                <linearGradient id="gp-c" x1="11.2" y1="13.24" x2="-5.12" y2="29.56" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#FF3A44"/><stop offset="1" stopColor="#C31162" stopOpacity=".1"/>
+                </linearGradient>
+                <linearGradient id="gp-d" x1="-1.84" y1="-3.5" x2="5.64" y2="3.98" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#32A071"/><stop offset="1" stopColor="#2DA771" stopOpacity=".1"/>
+                </linearGradient>
               </defs>
             </svg>
             <div>
@@ -327,24 +405,26 @@ export function MobileSearchLanding({
               <p className="text-[14px] font-semibold leading-tight text-white">Google Play</p>
             </div>
           </a>
-
         </div>
       </div>
 
-      {/* ── List your space ───────────────────────────────────────────────── */}
+      {/* ── List your space ────────────────────────────────────────────────── */}
       <div className="mt-6 px-5">
-        <div className="flex items-center justify-between rounded-[12px] border border-[#E6E6E4] bg-white px-4 py-3.5">
+        <div className="flex items-center justify-between rounded-[14px] border border-[#E6E6E4] bg-white px-4 py-3.5">
           <div>
             <p className="text-[14px] font-semibold text-[#111]">Got a driveway or garage?</p>
             <p className="mt-0.5 text-[12px] text-[#6B6B6B]">Earn up to €2,800 a year</p>
           </div>
-          <Link href="/host" className="ml-4 flex-shrink-0 rounded-full border border-[#D4D4D2] px-3.5 py-1.5 text-[13px] font-semibold text-[#111] transition hover:bg-[#F7F7F6]">
+          <Link
+            href="/host"
+            className="ml-4 flex-shrink-0 rounded-full border border-[#D4D4D2] px-3.5 py-1.5 text-[13px] font-semibold text-[#111] transition hover:bg-[#F7F7F6]"
+          >
             List a space
           </Link>
         </div>
       </div>
 
-      {/* ── Footer ───────────────────────────────────────────────────────── */}
+      {/* ── Footer ─────────────────────────────────────────────────────────── */}
       <footer className="mt-8 border-t border-[#E6E6E4] px-5 py-6">
         <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-[#6B6B6B]">
           {[
@@ -354,13 +434,15 @@ export function MobileSearchLanding({
             { label: "Terms",        href: "/legal/terms" },
             { label: "Privacy",      href: "/legal/privacy" },
           ].map((l) => (
-            <Link key={l.label} href={l.href as any} className="transition hover:text-[#111]">{l.label}</Link>
+            <Link key={l.label} href={l.href as any} className="transition hover:text-[#111]">
+              {l.label}
+            </Link>
           ))}
         </div>
         <p className="mt-4 text-[11px] text-[#9A9A9A]">© 2026 FreeSpace Ltd</p>
       </footer>
 
-      {/* ── Date/time picker sheet ── */}
+      {/* ── Date/time picker sheet ─────────────────────────────────────────── */}
       <AnimatePresence>
         {pickerOpen && (
           <DateTimeSheet
@@ -434,11 +516,11 @@ function DateTimeSheet({
       <div className="relative z-10 flex h-full flex-col bg-white">
         <div className="flex items-center justify-between px-5 py-4">
           <h2 className="text-[18px] font-semibold text-[#0f172a]">{field === "start" ? "Park from" : "Park until"}</h2>
-          <button type="button" onClick={onClose} className="text-[14px] font-semibold text-brand-700">Cancel</button>
+          <button type="button" onClick={onClose} className="text-[14px] font-semibold" style={{ color: "#1B8A5A" }}>Cancel</button>
         </div>
         <div className="flex items-center justify-between px-5 pb-3">
           <span className="text-[14px] font-semibold text-[#1F2937]">{MONTHS_LONG[viewMonth]} {viewYear}</span>
-          <div className="flex items-center gap-3 text-brand-700">
+          <div className="flex items-center gap-3" style={{ color: "#1B8A5A" }}>
             <button type="button" onClick={prevMonth} className="p-1">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
             </button>
@@ -466,10 +548,15 @@ function DateTimeSheet({
                 disabled={isDisabled}
                 onClick={() => { const next = new Date(day); next.setHours(draft.getHours(), draft.getMinutes(), 0, 0); setDraft(next); }}
                 className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full text-[13px] transition
-                  ${isSelected ? "bg-brand-700 font-semibold text-white" :
-                    isToday ? "border border-brand-700 font-semibold text-brand-700" :
+                  ${isSelected ? "font-semibold text-white" :
+                    isToday ? "font-semibold" :
                     isDisabled ? "text-[#C7CDD8]" :
                     "font-medium text-[#0f172a] active:bg-[#F1F5F9]"}`}
+                style={
+                  isSelected ? { background: "#1B8A5A" }
+                  : isToday ? { border: "1.5px solid #1B8A5A", color: "#1B8A5A" }
+                  : {}
+                }
               >
                 {day.getDate()}
               </button>
@@ -492,7 +579,12 @@ function DateTimeSheet({
               />
             </>
           )}
-          <button type="button" onClick={() => onConfirm(draft)} className="ml-auto rounded-xl bg-brand-700 px-6 py-2.5 text-[14px] font-semibold text-white">
+          <button
+            type="button"
+            onClick={() => onConfirm(draft)}
+            className="ml-auto rounded-xl px-6 py-2.5 text-[14px] font-semibold text-white"
+            style={{ background: "#1B8A5A" }}
+          >
             Done
           </button>
         </div>
@@ -504,9 +596,12 @@ function DateTimeSheet({
 function TimeSelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
     <Select.Root value={value} onValueChange={onChange}>
-      <Select.Trigger className="inline-flex items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 py-2.5 text-[14px] font-semibold text-[#0f172a] shadow-sm transition focus:outline-none focus:ring-2 focus:ring-brand-500" aria-label="Select time">
+      <Select.Trigger
+        className="inline-flex items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 py-2.5 text-[14px] font-semibold text-[#0f172a] shadow-sm transition focus:outline-none"
+        aria-label="Select time"
+      >
         <Select.Value />
-        <Select.Icon className="text-brand-700">
+        <Select.Icon style={{ color: "#1B8A5A" }}>
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
         </Select.Icon>
       </Select.Trigger>
@@ -514,9 +609,13 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (value: stri
         <Select.Content className="z-[60] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" position="popper" sideOffset={8}>
           <Select.Viewport className="max-h-64 p-2">
             {TIME_SLOTS.map((t) => (
-              <Select.Item key={t} value={t} className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 data-[state=checked]:bg-brand-50 data-[state=checked]:text-brand-700">
+              <Select.Item
+                key={t}
+                value={t}
+                className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 data-[state=checked]:bg-emerald-50 data-[state=checked]:text-emerald-700"
+              >
                 <Select.ItemText>{t}</Select.ItemText>
-                <Select.ItemIndicator className="text-brand-700">
+                <Select.ItemIndicator style={{ color: "#1B8A5A" }}>
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                 </Select.ItemIndicator>
               </Select.Item>
