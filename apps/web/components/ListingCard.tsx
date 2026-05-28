@@ -39,7 +39,7 @@ export type Listing = {
 
 export function ListingCardSkeleton() {
   return (
-    <div className="flex overflow-hidden rounded-lg border border-slate-200 bg-white">
+    <div className="flex overflow-hidden rounded-xl border border-[#E6E6E4] bg-white">
       <div className="w-[136px] shrink-0 animate-pulse bg-slate-100" style={{ minHeight: 128 }} />
       <div className="flex flex-1 flex-col justify-between px-3.5 py-3">
         <div className="h-4 w-20 animate-pulse rounded-full bg-slate-100" />

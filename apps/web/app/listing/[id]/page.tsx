@@ -344,9 +344,9 @@ export default async function ListingDetailPage({
                     </a>
                   )}
                   {/* Important notice box */}
-                  <div className="mt-5 flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50/60 p-4">
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100">
-                      <ShieldCheckIcon className="h-4 w-4 text-emerald-600" />
+                  <div className="mt-5 flex items-start gap-3 rounded-lg border border-brand-100 bg-brand-50/60 p-4">
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100">
+                      <ShieldCheckIcon className="h-4 w-4 text-brand-600" />
                     </div>
                     <div>
                       <p className="text-[13px] font-semibold text-slate-900">Important notice:</p>
@@ -435,7 +435,7 @@ export default async function ListingDetailPage({
             <aside className="pl-8" style={{ marginTop: "-220px" }}>
               <div className="sticky top-[68px]">
                 {resolvedSearchParams.created && (
-                  <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-700">
+                  <div className="mb-4 rounded-lg border border-brand-100 bg-brand-50 px-3 py-2.5 text-sm text-brand-700">
                     Listing published successfully.
                   </div>
                 )}

@@ -59,7 +59,7 @@ export function WalkTime({ origin }: { origin: { lat: number; lng: number } }) {
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex items-center justify-center border border-emerald-400 px-5 py-3 text-[14px] font-semibold text-emerald-600 transition hover:bg-emerald-50 disabled:opacity-50 sm:w-auto w-full"
+          className="inline-flex items-center justify-center border border-brand-400 px-5 py-3 text-[14px] font-semibold text-brand-600 transition hover:bg-brand-50 disabled:opacity-50 sm:w-auto w-full"
         >
           {loading ? "Calculating…" : "Get time"}
         </button>
@@ -74,7 +74,7 @@ export function WalkTime({ origin }: { origin: { lat: number; lng: number } }) {
       {result && (
         <div className="border-t border-slate-200 pt-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white">
               <ClockIcon className="h-4 w-4" />
             </div>
             <div>

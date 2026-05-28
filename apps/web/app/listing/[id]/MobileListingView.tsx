@@ -229,11 +229,11 @@ export function MobileListingView({
 
           <div className="mt-5 space-y-2 text-[13px] text-slate-500">
             <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
               Exact location confirmed after booking
             </div>
             <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
               Arrival instructions included with your confirmation
             </div>
           </div>
@@ -245,7 +245,7 @@ export function MobileListingView({
             Space overview
           </h2>
           <p className="mt-4 text-[15px] leading-7 text-slate-600">{listing.availability}</p>
-          <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-3">
+          <div className="mt-4 rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3">
             <p className="text-sm font-semibold text-slate-900">Important notice</p>
             <p className="mt-1 text-[13px] leading-6 text-slate-500">
               Access details are shared after booking confirmation.

@@ -167,8 +167,9 @@ export default function HomePage() {
     <div className="min-h-[100dvh] bg-white">
       <SlimNav />
 
-      <main className="mx-auto w-full max-w-6xl px-6 py-6 sm:py-10">
-        <section className="block sm:hidden -mx-6 -mt-6 pt-4">
+      <main className="mx-auto w-full max-w-6xl px-6 py-8 sm:py-12">
+        {/* ── Mobile ── */}
+        <section className="block sm:hidden -mx-6 -mt-8">
           <MobileSearchLanding
             initialFilters={defaultFilters}
             onSearch={(filters) => handleSearch(filters)}
@@ -176,26 +177,30 @@ export default function HomePage() {
           />
         </section>
 
-        <section className="hidden items-center gap-10 sm:grid lg:grid-cols-[1.1fr,0.9fr]">
-          <div className="space-y-5">
-            <h1 className="hidden font-display text-4xl font-semibold tracking-tight text-slate-900 sm:block sm:text-5xl">
-              The smarter way to find<br />parking in seconds.
+        {/* ── Desktop hero ── */}
+        <section className="hidden sm:grid lg:grid-cols-[1fr_460px] gap-8 lg:gap-14 items-center">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500 mb-5">Dublin · Ireland</p>
+            <h1 className="font-display tracking-tight">
+              <span className="block text-[40px] font-medium leading-[1.06] text-slate-800 lg:text-[58px]">The smarter way to</span>
+              <span className="block text-[40px] font-extrabold leading-[1.06] text-brand-500 lg:text-[58px]">find parking.</span>
             </h1>
-            <p className="hidden text-base text-slate-600 sm:block">
-              Search thousands of trusted spaces, compare prices, and book instantly.
+            <p className="mt-5 max-w-[380px] text-[15px] leading-relaxed text-slate-500">
+              Search thousands of trusted spaces across Dublin. Compare prices and book instantly — no stress, no surprises.
             </p>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col">
-              <div className="flex gap-2 rounded-full border border-slate-200 bg-slate-100 p-1 text-sm font-semibold shadow-sm">
+            {/* Search card — shadow depth, no heavy border */}
+            <div className="mt-8 overflow-hidden rounded-3xl bg-white shadow-[0_4px_32px_rgba(0,0,0,0.09)] ring-1 ring-slate-900/[0.06]">
+              <div className="flex border-b border-slate-100 px-6">
                 {(["daily", "monthly"] as const).map((value) => (
                   <button
                     key={value}
                     type="button"
                     onClick={() => setMode(value)}
-                    className={`font-display flex-1 rounded-full py-2.5 transition ${
+                    className={`font-display flex-1 -mb-px border-b-2 py-4 text-sm font-bold transition ${
                       mode === value
-                        ? "bg-emerald-600 text-white shadow-[0_8px_18px_rgba(16,185,129,0.35)]"
-                        : "text-slate-600 hover:text-slate-900"
+                        ? "border-brand-500 text-brand-600"
+                        : "border-transparent text-slate-400 hover:text-slate-700"
                     }`}
                   >
                     {value === "daily" ? "Hourly / Daily" : "Monthly"}
@@ -203,11 +208,11 @@ export default function HomePage() {
                 ))}
               </div>
 
-              <div className="mt-4 space-y-3 flex-1">
+              <div className="space-y-3 p-6">
                 <AddressAutocomplete
                   defaultValue={location}
                   placeholder="Where would you like to park?"
-                  inputClassName="w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm focus:border-emerald-400 focus:outline-none"
+                  inputClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-300 focus:border-brand-500 focus:bg-white focus:outline-none"
                   onPlace={(place) => {
                     setLocation(place.address);
                     setLatitude(place.lat);
@@ -216,7 +221,7 @@ export default function HomePage() {
                 />
 
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="flex flex-col gap-1 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+                  <label className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 cursor-pointer">
                     <SearchDateTimePicker
                       label="From"
                       inlineLabel={mode === "monthly" ? "Start" : "From"}
@@ -229,13 +234,13 @@ export default function HomePage() {
                     />
                   </label>
                   {mode === "monthly" ? (
-                    <label className="flex flex-col gap-1 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
-                      <span className="text-[11px] text-slate-500">Plan</span>
+                    <label className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 cursor-pointer">
+                      <span className="text-[11px] text-slate-400">Plan</span>
                       <div className="relative">
                         <select
                           value={monthlyPlan}
                           onChange={(event) => setMonthlyPlan(event.target.value as NonNullable<SearchFilters["monthlyPlan"]>)}
-                          className="w-full appearance-none rounded-lg bg-transparent px-1 py-1 text-sm font-semibold text-slate-800 outline-none"
+                          className="w-full appearance-none bg-transparent px-1 py-1 text-sm font-semibold text-slate-800 outline-none"
                         >
                           <option value="full_week">Everyday</option>
                           <option value="weekdays">Mon - Fri only</option>
@@ -247,7 +252,7 @@ export default function HomePage() {
                       </div>
                     </label>
                   ) : (
-                    <label className="flex flex-col gap-1 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+                    <label className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 cursor-pointer">
                       <SearchDateTimePicker
                         label="Until"
                         value={endDateTime}
@@ -263,17 +268,25 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={submit}
-                  className="font-display w-full rounded-full bg-emerald-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
+                  className="font-display flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-4 text-[15px] font-bold text-white transition hover:bg-brand-600 hover:shadow-[0_8px_24px_rgba(27,138,90,0.35)]"
                 >
-                  Show parking spaces
+                  Find parking spaces
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg>
                 </button>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-4 text-sm text-slate-600">
-              <span>Best price guarantee</span>
-              <span>Trusted by thousands</span>
-              <span>Flexible cancellation</span>
+            <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-400">
+              {["Best price guarantee", "Trusted by thousands", "Flexible cancellation"].map((t) => (
+                <span key={t} className="flex items-center gap-1.5">
+                  <svg className="h-3.5 w-3.5 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  {t}
+                </span>
+              ))}
             </div>
           </div>
 
@@ -283,73 +296,123 @@ export default function HomePage() {
               alt="Person using phone with car"
               fill
               priority
-              sizes="(min-width: 1024px) 520px, 0px"
+              sizes="(min-width: 1024px) 460px, 0px"
               className="object-contain"
             />
           </div>
         </section>
 
-        <section className="mt-10 grid gap-6 rounded-2xl border border-slate-200 bg-white px-6 py-8 sm:grid-cols-3">
+        {/* ── Stats strip ── */}
+        <div className="mt-12 hidden sm:grid sm:grid-cols-3 divide-x divide-slate-100 border-y border-slate-100 py-7">
           {[
-            { title: "Stress-free booking", body: "Reserve a space in seconds and skip the parking scramble." },
-            { title: "No surprises", body: "See the total cost before you book. No hidden fees." },
-            { title: "Quick arrival", body: "Clear instructions and easy access when you arrive." },
+            { stat: "5,000+", label: "Spaces listed across Dublin" },
+            { stat: "Instant", label: "Booking confirmation" },
+            { stat: "Best price", label: "Guarantee on every space" },
           ].map((item) => (
-            <div key={item.title} className="space-y-2">
-              <h3 className="font-display text-sm font-semibold text-slate-900">{item.title}</h3>
-              <p className="text-sm text-slate-600">{item.body}</p>
+            <div key={item.stat} className="px-6 first:pl-0 last:pr-0 lg:px-10">
+              <p className="font-display text-xl font-extrabold text-slate-900 lg:text-2xl">{item.stat}</p>
+              <p className="mt-0.5 text-sm text-slate-400">{item.label}</p>
             </div>
           ))}
-        </section>
+        </div>
 
-        <section className="mt-8 space-y-5">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">Ways to park</p>
-            <h2 className="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+        {/* ── Ways to park — bento grid ── */}
+        <section className="mt-16 hidden sm:block">
+          <div className="mb-7">
+            <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500">Ways to park</p>
+            <h2 className="font-display mt-2 text-3xl font-bold tracking-tight text-slate-900">
               Parking for every kind of trip
             </h2>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {homepageScenarios.map((scenario) => (
-              <button
-                key={scenario.title}
-                type="button"
-                onClick={() => launchScenario(scenario.filters)}
-                className="rounded-2xl border border-slate-200 bg-white px-5 py-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
-              >
-                <div className="space-y-3">
-                  <div className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                    {scenario.title}
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="font-display text-lg font-semibold text-slate-900">{scenario.title}</h3>
-                    <p className="text-sm leading-6 text-slate-600">{scenario.body}</p>
-                  </div>
-                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
-                    {scenario.cta}
-                    <span aria-hidden>→</span>
-                  </span>
-                </div>
-              </button>
-            ))}
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+            {/* Monthly — large, brand green — full width sm, 2/3 lg */}
+            <button
+              type="button"
+              onClick={() => launchScenario(homepageScenarios[0].filters)}
+              className="group col-span-2 flex min-h-[160px] flex-col justify-between rounded-3xl bg-brand-600 px-6 py-6 text-left transition hover:bg-brand-700 lg:min-h-[180px] lg:px-8 lg:py-7"
+            >
+              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-brand-200/70">{homepageScenarios[0].title}</p>
+              <div>
+                <h3 className="font-display text-xl font-bold text-white lg:text-2xl">{homepageScenarios[0].title}</h3>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-brand-100/70">{homepageScenarios[0].body}</p>
+                <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-brand-200 transition group-hover:gap-3">
+                  {homepageScenarios[0].cta}
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+                </span>
+              </div>
+            </button>
+            {/* Airport — sm: half row, lg: 1/3 */}
+            <button
+              type="button"
+              onClick={() => launchScenario(homepageScenarios[1].filters)}
+              className="group flex min-h-[160px] flex-col justify-between rounded-3xl bg-[#F3F3F1] px-5 py-5 text-left transition hover:bg-[#ECEAE8] lg:min-h-[180px] lg:px-6 lg:py-6"
+            >
+              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">{homepageScenarios[1].title}</p>
+              <div>
+                <h3 className="font-display text-lg font-bold text-slate-900 lg:text-xl">{homepageScenarios[1].title}</h3>
+                <p className="mt-1 text-[12px] leading-relaxed text-slate-500 lg:text-[13px]">{homepageScenarios[1].body}</p>
+                <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-brand-600 transition group-hover:gap-3">
+                  {homepageScenarios[1].cta}
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+                </span>
+              </div>
+            </button>
+            {/* Event — sm: half row, lg: 1/3 */}
+            <button
+              type="button"
+              onClick={() => launchScenario(homepageScenarios[2].filters)}
+              className="group flex min-h-[160px] flex-col justify-between rounded-3xl bg-[#F3F3F1] px-5 py-5 text-left transition hover:bg-[#ECEAE8] lg:min-h-[180px] lg:px-6 lg:py-6"
+            >
+              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">{homepageScenarios[2].title}</p>
+              <div>
+                <h3 className="font-display text-lg font-bold text-slate-900 lg:text-xl">{homepageScenarios[2].title}</h3>
+                <p className="mt-1 text-[12px] leading-relaxed text-slate-500 lg:text-[13px]">{homepageScenarios[2].body}</p>
+                <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-brand-600 transition group-hover:gap-3">
+                  {homepageScenarios[2].cta}
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+                </span>
+              </div>
+            </button>
+            {/* EV — full width sm, 2/3 lg */}
+            <button
+              type="button"
+              onClick={() => launchScenario(homepageScenarios[3].filters)}
+              className="group col-span-2 flex min-h-[160px] flex-col justify-between rounded-3xl bg-slate-900 px-6 py-6 text-left transition hover:bg-slate-800 lg:min-h-[180px] lg:px-8 lg:py-7"
+            >
+              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500">{homepageScenarios[3].title}</p>
+              <div>
+                <h3 className="font-display text-xl font-bold text-white lg:text-2xl">{homepageScenarios[3].title}</h3>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-slate-400">{homepageScenarios[3].body}</p>
+                <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-slate-300 transition group-hover:gap-3">
+                  {homepageScenarios[3].cta}
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+                </span>
+              </div>
+            </button>
           </div>
         </section>
 
-        <section className="mt-8 rounded-2xl border border-slate-200 bg-white px-6 py-8">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">How it works</p>
-            <h2 className="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+        {/* ── How it works — editorial numbered ── */}
+        <section className="mt-16 hidden sm:block pb-16">
+          <div className="mb-8">
+            <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500">How it works</p>
+            <h2 className="font-display mt-2 text-3xl font-bold tracking-tight text-slate-900">
               Search, book, park
             </h2>
           </div>
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div>
             {howItWorks.map((step, index) => (
-              <div key={step.title} className="rounded-[22px] bg-slate-50 px-5 py-5">
-                <div className="mb-4 inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
-                  {index + 1}
+              <div
+                key={step.title}
+                className="flex items-start gap-8 border-b border-slate-100 py-8 last:border-0"
+              >
+                <span className="w-16 shrink-0 select-none font-display text-[72px] font-extrabold leading-none text-slate-100">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div className="pt-3">
+                  <h3 className="font-display text-xl font-bold text-slate-900">{step.title}</h3>
+                  <p className="mt-1.5 text-[15px] leading-relaxed text-slate-500">{step.body}</p>
                 </div>
-                <h3 className="font-display text-lg font-semibold text-slate-900">{step.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{step.body}</p>
               </div>
             ))}
           </div>

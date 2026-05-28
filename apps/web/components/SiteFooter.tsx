@@ -35,7 +35,7 @@ export function SiteFooter() {
               );
             })}
             <li>
-              <Link href="/legal" className="font-medium text-emerald-700 hover:text-emerald-800">
+              <Link href="/legal" className="font-medium text-brand-700 hover:text-brand-800">
                 View all policies
               </Link>
             </li>

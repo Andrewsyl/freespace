@@ -5,12 +5,12 @@ export function LegalDocumentPage({ doc }: { doc: LegalDoc }) {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-4xl px-6 py-10 sm:py-14">
-        <Link href="/" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">
+        <Link href="/" className="text-sm font-medium text-brand-700 hover:text-brand-800">
           ← Back to FreeSpace
         </Link>
 
         <div className="mt-6 rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600">Legal</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-600">Legal</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
             {doc.title}
           </h1>
@@ -49,7 +49,7 @@ export function LegalDocumentPage({ doc }: { doc: LegalDoc }) {
               </div>
               <div>
                 <p className="font-semibold text-slate-900">Support</p>
-                <a href={`mailto:${LEGAL_CONTACT.supportEmail}`} className="text-emerald-700 hover:text-emerald-800">
+                <a href={`mailto:${LEGAL_CONTACT.supportEmail}`} className="text-brand-700 hover:text-brand-800">
                   {LEGAL_CONTACT.supportEmail}
                 </a>
               </div>
@@ -73,7 +73,7 @@ export function LegalDocumentPage({ doc }: { doc: LegalDoc }) {
                 <Link
                   key={item.slug}
                   href={`/legal/${item.slug}`}
-                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700"
+                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-brand-300 hover:text-brand-700"
                 >
                   {item.title}
                 </Link>

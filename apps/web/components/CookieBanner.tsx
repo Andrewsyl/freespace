@@ -36,7 +36,7 @@ export function CookieBanner() {
           <p className="mt-2 text-sm leading-6 text-slate-600">
             FreeSpace uses necessary cookies for login, booking, and security. We only use optional
             analytics or preference cookies where permitted. Read the{" "}
-            <Link href="/legal/cookie-policy" className="font-semibold text-emerald-700 hover:text-emerald-800">
+            <Link href="/legal/cookie-policy" className="font-semibold text-brand-700 hover:text-brand-800">
               cookie policy
             </Link>
             .
@@ -46,7 +46,7 @@ export function CookieBanner() {
           <button
             type="button"
             onClick={() => saveChoice("accepted")}
-            className="rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500"
+            className="rounded-full bg-brand-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-500"
           >
             Accept cookies
           </button>

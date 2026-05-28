@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import * as Select from "@radix-ui/react-select";
-import { AddressAutocomplete } from "./AddressAutocomplete";
 import type { SearchFilters } from "./SearchForm";
+
+type PlaceResult = { address: string; lat: number; lng: number };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -85,6 +86,7 @@ export function MobileSearchLanding({
   const [startAt,   setStartAt]   = useState(defaultStart);
   const [endAt,     setEndAt]     = useState(defaultEnd);
   const [pickerOpen, setPickerOpen] = useState<"start" | "end" | null>(null);
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
 
   type ActiveTab = "hourly" | "monthly";
   const [activeTab, setActiveTab] = useState<ActiveTab>(
@@ -125,7 +127,7 @@ export function MobileSearchLanding({
       {/* ── HERO — photo + dark scrim ──────────────────────────────────── */}
       <div
         className="relative overflow-hidden px-5 pb-7"
-        style={{ paddingTop: hideHeader ? "20px" : "calc(env(safe-area-inset-top) + 16px)" }}
+        style={{ paddingTop: hideHeader ? "0" : "calc(env(safe-area-inset-top) + 16px)" }}
       >
         {/* Background photo */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -139,7 +141,7 @@ export function MobileSearchLanding({
         <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/60 to-black/65" />
 
         {/* Content sits above the overlay */}
-        <div className="relative">
+        <div className="relative pt-7">
 
         {/* Nav row — only when shown standalone (search page landing) */}
         {!hideHeader && (
@@ -161,10 +163,10 @@ export function MobileSearchLanding({
 
         {/* Tagline */}
         <div className="mb-5">
-          <p className="text-[27px] font-bold leading-[1.15] tracking-[-0.03em] text-white">
+          <p className="text-[27px] font-medium leading-[1.15] tracking-[-0.03em] text-white/70">
             Find parking,
           </p>
-          <p className="text-[27px] leading-[1.15] tracking-[-0.03em] text-white/55 font-medium">
+          <p className="text-[27px] font-extrabold leading-[1.15] tracking-[-0.03em] text-white">
             book in seconds.
           </p>
         </div>
@@ -199,25 +201,22 @@ export function MobileSearchLanding({
           <div className="mx-4 mt-3 overflow-hidden rounded-[14px]" style={{ border: "1.5px solid #DEDEDD" }}>
 
             {/* Location row */}
-            <div className="flex items-center gap-3 px-4 py-3.5">
+            <button
+              type="button"
+              onClick={() => setLocationSheetOpen(true)}
+              className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-slate-50"
+            >
               <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="#1B8A5A" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
                 <circle cx="12" cy="9" r="2.5" />
               </svg>
               <div className="min-w-0 flex-1">
                 <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#888]">Where</p>
-                <AddressAutocomplete
-                  defaultValue={location}
-                  placeholder="City, address or postcode"
-                  inputClassName="w-full bg-transparent text-[15px] font-semibold text-[#111] placeholder:font-normal placeholder:text-[#ABABAB] outline-none mt-0.5"
-                  onPlace={(place) => {
-                    setLocation(place.address);
-                    setLatitude(place.lat);
-                    setLongitude(place.lng);
-                  }}
-                />
+                <p className={`mt-0.5 truncate text-[15px] ${location ? "font-semibold text-[#111]" : "font-normal text-[#ABABAB]"}`}>
+                  {location || "City, address or postcode"}
+                </p>
               </div>
-            </div>
+            </button>
 
             {/* Horizontal divider */}
             <div style={{ height: "1.5px", background: "#DEDEDD" }} />
@@ -235,7 +234,7 @@ export function MobileSearchLanding({
                   </svg>
                   <div className="min-w-0">
                     <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#888]">Starting</p>
-                    <p className="mt-0.5 truncate text-[14px] font-semibold text-[#111]">{formatDateOnly(startAt)}</p>
+                    <p className="mt-0.5 text-[13.5px] font-semibold leading-tight text-[#111]">{formatDateOnly(startAt)}</p>
                   </div>
                 </button>
                 {/* Vertical divider */}
@@ -277,7 +276,8 @@ export function MobileSearchLanding({
                   </svg>
                   <div className="min-w-0">
                     <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#888]">From</p>
-                    <p className="mt-0.5 truncate text-[14px] font-semibold text-[#111]">{formatDisplay(startAt)}</p>
+                    <p className="mt-0.5 text-[13.5px] font-semibold leading-tight text-[#111]">{formatDateOnly(startAt)}</p>
+                    <p className="text-[12.5px] text-[#555]">{formatTime(startAt)}</p>
                   </div>
                 </button>
                 {/* Vertical divider + Until field */}
@@ -293,7 +293,8 @@ export function MobileSearchLanding({
                     </svg>
                     <div className="min-w-0">
                       <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#888]">Until</p>
-                      <p className="mt-0.5 truncate text-[14px] font-semibold text-[#111]">{formatDisplay(endAt)}</p>
+                      <p className="mt-0.5 text-[13.5px] font-semibold leading-tight text-[#111]">{formatDateOnly(endAt)}</p>
+                      <p className="text-[12.5px] text-[#555]">{formatTime(endAt)}</p>
                     </div>
                   </button>
                 </div>
@@ -442,6 +443,23 @@ export function MobileSearchLanding({
         <p className="mt-4 text-[11px] text-[#9A9A9A]">© 2026 FreeSpace Ltd</p>
       </footer>
 
+      {/* ── Location search sheet ────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {locationSheetOpen && (
+          <LocationSheet
+            key="location-sheet"
+            value={location}
+            onSelect={(place) => {
+              setLocation(place.address);
+              setLatitude(place.lat);
+              setLongitude(place.lng);
+              setLocationSheetOpen(false);
+            }}
+            onClose={() => setLocationSheetOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* ── Date/time picker sheet ─────────────────────────────────────────── */}
       <AnimatePresence>
         {pickerOpen && (
@@ -465,6 +483,195 @@ export function MobileSearchLanding({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// ── LocationSheet ─────────────────────────────────────────────────────────────
+
+function LocationSheet({
+  value,
+  onSelect,
+  onClose,
+}: {
+  value: string;
+  onSelect: (place: PlaceResult) => void;
+  onClose: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const svcRef   = useRef<any>(null);
+  const plcRef   = useRef<any>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [query, setQuery] = useState(value || "");
+  const [predictions, setPredictions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const t = setTimeout(() => inputRef.current?.focus(), 60);
+    if ((window as any).google?.maps?.places) {
+      svcRef.current = new (window as any).google.maps.places.AutocompleteService();
+      const div = document.createElement("div");
+      document.body.appendChild(div);
+      plcRef.current = new (window as any).google.maps.places.PlacesService(div);
+    }
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    const q = query.trim();
+    if (!q || !svcRef.current) { setPredictions([]); return; }
+    timerRef.current = setTimeout(() => {
+      svcRef.current.getPlacePredictions(
+        { input: q, componentRestrictions: { country: "ie" } },
+        (preds: any[], status: string) => {
+          setPredictions(status === "OK" && preds?.length ? preds.slice(0, 6) : []);
+        },
+      );
+    }, 200);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [query]);
+
+  const pickPrediction = (pred: any) => {
+    if (plcRef.current) {
+      plcRef.current.getDetails(
+        { placeId: pred.place_id, fields: ["geometry", "formatted_address"] },
+        (place: any, status: string) => {
+          if (status === "OK" && place.geometry?.location) {
+            onSelect({ address: place.formatted_address ?? pred.description, lat: place.geometry.location.lat(), lng: place.geometry.location.lng() });
+          } else {
+            onSelect({ address: pred.description, lat: 53.3498, lng: -6.2603 });
+          }
+        },
+      );
+    } else {
+      onSelect({ address: pred.description, lat: 53.3498, lng: -6.2603 });
+    }
+  };
+
+  const showPopular = query.trim() === "";
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex flex-col bg-white"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+      initial={{ y: "100%", opacity: 0.98 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: "100%", opacity: 0.98 }}
+      transition={{ type: "spring", damping: 28, stiffness: 280 }}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-4 border-b border-slate-100 px-5 py-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <h2 className="text-[17px] font-bold text-[#111]">Where are you parking?</h2>
+      </div>
+
+      {/* Search input */}
+      <div className="px-4 pb-3 pt-4">
+        <div className="flex items-center gap-3 rounded-[14px] border-2 border-[#1B8A5A] bg-[#F9F9F8] px-4 py-3.5">
+          <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="#1B8A5A" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+            <circle cx="12" cy="9" r="2.5" />
+          </svg>
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="City, address or postcode"
+            className="flex-1 bg-transparent text-[16px] font-medium text-[#111] outline-none placeholder:font-normal placeholder:text-[#ABABAB]"
+          />
+          {query.length > 0 && (
+            <button
+              type="button"
+              onClick={() => { setQuery(""); inputRef.current?.focus(); }}
+              className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#B0B0B0] text-white"
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Results list */}
+      <div className="flex-1 overflow-y-auto">
+        {showPopular ? (
+          <>
+            <p className="px-5 pb-2 pt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#9A9A9A]">
+              Popular near you
+            </p>
+            {POPULAR_DESTS.map((dest) => (
+              <button
+                key={dest.name}
+                type="button"
+                onClick={() => onSelect({ address: dest.name, lat: dest.lat, lng: dest.lng })}
+                className="flex w-full items-center gap-4 border-b border-slate-100 px-5 py-4 text-left transition active:bg-slate-50"
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[20px] leading-none">
+                  {dest.icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-semibold text-[#111]">{dest.name}</p>
+                  <p className="text-[13px] text-[#6B6B6B]">{dest.sub}</p>
+                </div>
+                <svg className="h-4 w-4 shrink-0 text-[#CACACA]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            ))}
+          </>
+        ) : predictions.length > 0 ? (
+          predictions.map((pred) => {
+            const main = pred.structured_formatting?.main_text ?? pred.description;
+            const secondary = pred.structured_formatting?.secondary_text ?? "";
+            return (
+              <button
+                key={pred.place_id}
+                type="button"
+                onClick={() => pickPrediction(pred)}
+                className="flex w-full items-center gap-4 border-b border-slate-100 px-5 py-4 text-left transition active:bg-slate-50"
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100">
+                  <svg className="h-5 w-5 text-[#1B8A5A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                    <circle cx="12" cy="9" r="2.5" />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-semibold text-[#111]">{main}</p>
+                  {secondary && <p className="truncate text-[13px] text-[#6B6B6B]">{secondary}</p>}
+                </div>
+              </button>
+            );
+          })
+        ) : (
+          <button
+            type="button"
+            onClick={() => onSelect({ address: query.trim(), lat: 53.3498, lng: -6.2603 })}
+            className="flex w-full items-center gap-4 px-5 py-4 text-left transition active:bg-slate-50"
+          >
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100">
+              <svg className="h-5 w-5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[15px] font-semibold text-[#111]">Search &quot;{query}&quot;</p>
+              <p className="text-[13px] text-[#6B6B6B]">Use as parking location</p>
+            </div>
+          </button>
+        )}
+      </div>
+    </motion.div>
   );
 }
 
@@ -612,7 +819,7 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (value: stri
               <Select.Item
                 key={t}
                 value={t}
-                className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 data-[state=checked]:bg-emerald-50 data-[state=checked]:text-emerald-700"
+                className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 data-[state=checked]:bg-brand-50 data-[state=checked]:text-brand-700"
               >
                 <Select.ItemText>{t}</Select.ItemText>
                 <Select.ItemIndicator style={{ color: "#1B8A5A" }}>

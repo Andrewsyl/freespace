@@ -512,9 +512,9 @@ function ListingOverlay({
             <span className="text-[11.5px] text-slate-400">{listing.distanceKm.toFixed(1)} km away</span>
           )}
           <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
-            isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+            isAvailable ? "bg-brand-50 text-brand-700" : "bg-slate-100 text-slate-500"
           }`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${isAvailable ? "bg-emerald-500" : "bg-slate-400"}`} />
+            <span className={`h-1.5 w-1.5 rounded-full ${isAvailable ? "bg-brand-500" : "bg-slate-400"}`} />
             {isAvailable ? "Available" : "Unavailable"}
           </span>
         </div>

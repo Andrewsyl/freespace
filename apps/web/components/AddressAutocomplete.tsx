@@ -111,7 +111,7 @@ export function AddressAutocomplete({
         defaultValue={defaultValue}
         placeholder={placeholder ?? "Search address"}
         className={inputClassName ?? "w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none hover:border-brand-200"}
-        style={{ fontFamily: '"Poppins","Inter",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif', fontWeight: 600 }}
+        style={{ fontFamily: '"Plus Jakarta Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif', fontWeight: 600 }}
         onBlur={(e) => {
           if ((window as any).google?.maps?.places) return;
           if (!e.target.value) return;
@@ -125,7 +125,7 @@ export function AddressAutocomplete({
           title={locating ? "Finding your location…" : "Use my current location"}
           onClick={handleUseLocation}
           disabled={locating}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-60"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-brand-50 hover:text-brand-600 disabled:opacity-60"
         >
           {locating ? (
             <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>

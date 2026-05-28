@@ -126,7 +126,7 @@ export default function CheckoutPage() {
       <SlimNav />
       <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 pb-28 pt-8 sm:px-6">
         <header className="space-y-2">
-          <p className="text-sm font-semibold tracking-wide text-emerald-600">Booking confirmation</p>
+          <p className="text-sm font-semibold tracking-wide text-brand-600">Booking confirmation</p>
           <h1 className="text-3xl tracking-tight font-semibold text-slate-900">{listing.title}</h1>
           <p className="text-sm text-slate-600">{listing.address}</p>
         </header>
@@ -161,7 +161,7 @@ export default function CheckoutPage() {
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none"
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:outline-none"
                   required
                 />
               </label>
@@ -171,7 +171,7 @@ export default function CheckoutPage() {
                   <TimeSelect
                     value={startTime}
                     onChange={setStartTime}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:outline-none"
                     required
                   />
                 </label>
@@ -180,7 +180,7 @@ export default function CheckoutPage() {
                   <TimeSelect
                     value={endTime}
                     onChange={setEndTime}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:outline-none"
                     required
                   />
                 </label>
@@ -224,10 +224,10 @@ export default function CheckoutPage() {
                 <span className="text-xs font-semibold tracking-wide text-slate-400">PLATFORM FEE</span>
                 <span className="text-sm font-semibold text-slate-900">{platformFeeLabel}</span>
               </div>
-              <div className="rounded-lg bg-emerald-50 px-4 py-3">
+              <div className="rounded-lg bg-brand-50 px-4 py-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold tracking-wide text-emerald-600">TOTAL DUE TODAY</span>
-                  <span className="text-lg font-semibold text-emerald-700">€{totalPrice.toFixed(2)}</span>
+                  <span className="text-xs font-semibold tracking-wide text-brand-600">TOTAL DUE TODAY</span>
+                  <span className="text-lg font-semibold text-brand-700">€{totalPrice.toFixed(2)}</span>
                 </div>
               </div>
               <p className="text-xs leading-5 text-slate-500">No hidden fees will be added after checkout.</p>
@@ -261,7 +261,7 @@ export default function CheckoutPage() {
                 onClick={() => setPaymentMethod("card")}
                 className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm font-semibold transition ${
                   paymentMethod === "card"
-                    ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                    ? "border-brand-500 bg-brand-50 text-brand-700"
                     : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
                 }`}
               >
@@ -275,7 +275,7 @@ export default function CheckoutPage() {
             <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
           )}
           {status === "success" && checkoutUrl && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            <div className="rounded-lg border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-700">
               Redirecting to Stripe… If not redirected,{" "}
               <a className="underline" href={checkoutUrl}>
                 click here
@@ -287,7 +287,7 @@ export default function CheckoutPage() {
 
         <p className="text-xs text-slate-500">
           FreeSpace is the booking marketplace. Hosts manage the physical space and site rules. By booking, you agree to the{" "}
-          <Link href="/legal/parking-terms-liability" className="font-semibold text-emerald-700 hover:text-emerald-800">
+          <Link href="/legal/parking-terms-liability" className="font-semibold text-brand-700 hover:text-brand-800">
             parking terms and liability policy
           </Link>
           .
@@ -303,7 +303,7 @@ export default function CheckoutPage() {
           <button
             type="submit"
             form="checkout-form"
-            className="h-full w-44 rounded-lg bg-emerald-500 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-emerald-300"
+            className="h-full w-44 rounded-lg bg-brand-500 text-sm font-semibold text-white shadow-md transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300"
             disabled={status === "loading" || !hostPayoutReady}
           >
             {status === "loading"
