@@ -147,7 +147,7 @@ export function MobileSearchLanding({
         {!hideHeader && (
           <div className="mb-5 flex items-center justify-between">
             <img
-              src="/freespace-logo.png"
+              src="/favicon.png"
               alt="FreeSpace"
               className="h-9 w-auto"
               style={{ filter: "brightness(0) invert(1)" }}

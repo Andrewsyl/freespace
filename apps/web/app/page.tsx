@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { AddressAutocomplete } from "../components/AddressAutocomplete";
 import { SearchDateTimePicker, type SearchFilters } from "../components/SearchForm";
 import { SlimNav } from "../components/SlimNav";
-import { MobileSearchLanding } from "../components/MobileSearchLanding";
+import { SiteFooter } from "../components/SiteFooter";
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -167,30 +167,22 @@ export default function HomePage() {
     <div className="min-h-[100dvh] bg-white">
       <SlimNav />
 
-      <main className="mx-auto w-full max-w-6xl px-6 py-8 sm:py-12">
-        {/* ── Mobile ── */}
-        <section className="block sm:hidden -mx-6 -mt-8">
-          <MobileSearchLanding
-            initialFilters={defaultFilters}
-            onSearch={(filters) => handleSearch(filters)}
-            hideHeader
-          />
-        </section>
 
-        {/* ── Desktop hero ── */}
-        <section className="hidden sm:grid lg:grid-cols-[1fr_460px] gap-8 lg:gap-14 items-center">
+      <main className="mx-auto w-full max-w-6xl px-6 py-8 sm:py-12">
+        {/* ── Hero ── */}
+        <section className="grid lg:grid-cols-[1fr_460px] gap-8 lg:gap-14 items-center">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500 mb-5">Dublin · Ireland</p>
             <h1 className="font-display tracking-tight">
-              <span className="block text-[40px] font-medium leading-[1.06] text-slate-800 lg:text-[58px]">The smarter way to</span>
-              <span className="block text-[40px] font-extrabold leading-[1.06] text-brand-500 lg:text-[58px]">find parking.</span>
+              <span className="block text-[30px] font-medium leading-[1.06] text-slate-800 sm:text-[40px] lg:text-[58px]">The smarter way to</span>
+              <span className="block text-[30px] font-extrabold leading-[1.06] text-brand-500 sm:text-[40px] lg:text-[58px]">find parking.</span>
             </h1>
             <p className="mt-5 max-w-[380px] text-[15px] leading-relaxed text-slate-500">
               Search thousands of trusted spaces across Dublin. Compare prices and book instantly — no stress, no surprises.
             </p>
 
             {/* Search card — shadow depth, no heavy border */}
-            <div className="mt-8 overflow-hidden rounded-3xl bg-white shadow-[0_4px_32px_rgba(0,0,0,0.09)] ring-1 ring-slate-900/[0.06]">
+            <div className="mt-8 rounded-3xl bg-white shadow-[0_4px_32px_rgba(0,0,0,0.09)] ring-1 ring-slate-900/[0.06]">
               <div className="flex border-b border-slate-100 px-6">
                 {(["daily", "monthly"] as const).map((value) => (
                   <button
@@ -220,7 +212,7 @@ export default function HomePage() {
                   }}
                 />
 
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-2 gap-3">
                   <label className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 cursor-pointer">
                     <SearchDateTimePicker
                       label="From"
@@ -303,100 +295,123 @@ export default function HomePage() {
         </section>
 
         {/* ── Stats strip ── */}
-        <div className="mt-12 hidden sm:grid sm:grid-cols-3 divide-x divide-slate-100 border-y border-slate-100 py-7">
+        <div className="mt-8 grid grid-cols-3 divide-x divide-slate-100 border-y border-slate-100 py-5 sm:mt-12 sm:py-7">
           {[
-            { stat: "5,000+", label: "Spaces listed across Dublin" },
-            { stat: "Instant", label: "Booking confirmation" },
-            { stat: "Best price", label: "Guarantee on every space" },
+            { stat: "5,000+", label: "Spaces in Dublin", accent: true },
+            { stat: "Instant", label: "Confirmation" },
+            { stat: "Best price", label: "Guarantee" },
           ].map((item) => (
-            <div key={item.stat} className="px-6 first:pl-0 last:pr-0 lg:px-10">
-              <p className="font-display text-xl font-extrabold text-slate-900 lg:text-2xl">{item.stat}</p>
-              <p className="mt-0.5 text-sm text-slate-400">{item.label}</p>
+            <div key={item.stat} className="px-3 first:pl-0 last:pr-0 sm:px-6 lg:px-10">
+              <p className={`font-display text-base font-extrabold sm:text-xl lg:text-2xl ${(item as any).accent ? "text-brand-500" : "text-slate-900"}`}>{item.stat}</p>
+              <p className="mt-0.5 text-[10px] text-slate-400 sm:text-sm">{item.label}</p>
             </div>
           ))}
         </div>
 
         {/* ── Ways to park — bento grid ── */}
-        <section className="mt-16 hidden sm:block">
+        <section className="mt-10 sm:mt-16">
           <div className="mb-7">
             <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500">Ways to park</p>
-            <h2 className="font-display mt-2 text-3xl font-bold tracking-tight text-slate-900">
+            <h2 className="font-display mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
               Parking for every kind of trip
             </h2>
           </div>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-            {/* Monthly — large, brand green — full width sm, 2/3 lg */}
+
+            {/* Monthly — brand green, 2/3 at lg */}
             <button
               type="button"
               onClick={() => launchScenario(homepageScenarios[0].filters)}
-              className="group col-span-2 flex min-h-[160px] flex-col justify-between rounded-3xl bg-brand-600 px-6 py-6 text-left transition hover:bg-brand-700 lg:min-h-[180px] lg:px-8 lg:py-7"
+              className="group relative col-span-2 overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-brand-600 px-6 py-6 text-left transition hover:bg-brand-700 lg:min-h-[220px] lg:px-8 lg:py-8"
             >
-              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-brand-200/70">{homepageScenarios[0].title}</p>
-              <div>
-                <h3 className="font-display text-xl font-bold text-white lg:text-2xl">{homepageScenarios[0].title}</h3>
+              <svg className="pointer-events-none absolute -right-6 -top-6 h-44 w-44 text-white/[0.07]" viewBox="0 0 24 24" fill="currentColor">
+                <path fillRule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clipRule="evenodd" />
+              </svg>
+              <div className="relative flex items-start justify-between gap-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-brand-200/70">{homepageScenarios[0].title}</p>
+                <span className="shrink-0 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white/90">from €80/mo</span>
+              </div>
+              <div className="relative">
+                <h3 className="font-display text-2xl font-bold text-white lg:text-3xl">{homepageScenarios[0].title}</h3>
                 <p className="mt-1.5 text-[13px] leading-relaxed text-brand-100/70">{homepageScenarios[0].body}</p>
-                <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-brand-200 transition group-hover:gap-3">
+                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-brand-200 transition group-hover:gap-3">
                   {homepageScenarios[0].cta}
                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                 </span>
               </div>
             </button>
-            {/* Airport — sm: half row, lg: 1/3 */}
+
+            {/* Airport — warm cream, 1/3 at lg */}
             <button
               type="button"
               onClick={() => launchScenario(homepageScenarios[1].filters)}
-              className="group flex min-h-[160px] flex-col justify-between rounded-3xl bg-[#F3F3F1] px-5 py-5 text-left transition hover:bg-[#ECEAE8] lg:min-h-[180px] lg:px-6 lg:py-6"
+              className="group relative overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-[#FBF8F2] px-5 py-5 text-left transition hover:bg-[#F4EFE5] lg:min-h-[220px] lg:px-6 lg:py-6"
             >
-              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">{homepageScenarios[1].title}</p>
-              <div>
+              <svg className="pointer-events-none absolute -right-5 -top-5 h-32 w-32 text-amber-400/20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+              </svg>
+              <p className="relative text-[10px] font-bold uppercase tracking-[0.28em] text-amber-800/40">{homepageScenarios[1].title}</p>
+              <div className="relative">
                 <h3 className="font-display text-lg font-bold text-slate-900 lg:text-xl">{homepageScenarios[1].title}</h3>
                 <p className="mt-1 text-[12px] leading-relaxed text-slate-500 lg:text-[13px]">{homepageScenarios[1].body}</p>
-                <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-brand-600 transition group-hover:gap-3">
+                <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-amber-700 transition group-hover:gap-3">
                   {homepageScenarios[1].cta}
                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                 </span>
               </div>
             </button>
-            {/* Event — sm: half row, lg: 1/3 */}
+
+            {/* Event — cool indigo-tinted, 1/3 at lg */}
             <button
               type="button"
               onClick={() => launchScenario(homepageScenarios[2].filters)}
-              className="group flex min-h-[160px] flex-col justify-between rounded-3xl bg-[#F3F3F1] px-5 py-5 text-left transition hover:bg-[#ECEAE8] lg:min-h-[180px] lg:px-6 lg:py-6"
+              className="group relative overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-[#F0F2FA] px-5 py-5 text-left transition hover:bg-[#E7EAF5] lg:min-h-[220px] lg:px-6 lg:py-6"
             >
-              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">{homepageScenarios[2].title}</p>
-              <div>
+              <svg className="pointer-events-none absolute -right-5 -top-5 h-32 w-32 text-indigo-400/20" viewBox="0 0 24 24" fill="currentColor">
+                <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+              </svg>
+              <p className="relative text-[10px] font-bold uppercase tracking-[0.28em] text-indigo-400/60">{homepageScenarios[2].title}</p>
+              <div className="relative">
                 <h3 className="font-display text-lg font-bold text-slate-900 lg:text-xl">{homepageScenarios[2].title}</h3>
                 <p className="mt-1 text-[12px] leading-relaxed text-slate-500 lg:text-[13px]">{homepageScenarios[2].body}</p>
-                <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-brand-600 transition group-hover:gap-3">
+                <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-indigo-600 transition group-hover:gap-3">
                   {homepageScenarios[2].cta}
                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                 </span>
               </div>
             </button>
-            {/* EV — full width sm, 2/3 lg */}
+
+            {/* EV charging — dark, 2/3 at lg */}
             <button
               type="button"
               onClick={() => launchScenario(homepageScenarios[3].filters)}
-              className="group col-span-2 flex min-h-[160px] flex-col justify-between rounded-3xl bg-slate-900 px-6 py-6 text-left transition hover:bg-slate-800 lg:min-h-[180px] lg:px-8 lg:py-7"
+              className="group relative col-span-2 overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-slate-900 px-6 py-6 text-left transition hover:bg-slate-800 lg:min-h-[220px] lg:px-8 lg:py-8"
             >
-              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500">{homepageScenarios[3].title}</p>
-              <div>
-                <h3 className="font-display text-xl font-bold text-white lg:text-2xl">{homepageScenarios[3].title}</h3>
+              <svg className="pointer-events-none absolute -right-4 -top-4 h-44 w-44 text-brand-500/[0.13]" viewBox="0 0 24 24" fill="currentColor">
+                <path fillRule="evenodd" d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z" clipRule="evenodd" />
+              </svg>
+              <div className="relative flex items-start justify-between gap-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500">{homepageScenarios[3].title}</p>
+                <span className="shrink-0 rounded-full bg-brand-500/20 px-3 py-1 text-[11px] font-bold text-brand-400">EV friendly</span>
+              </div>
+              <div className="relative">
+                <h3 className="font-display text-2xl font-bold text-white lg:text-3xl">{homepageScenarios[3].title}</h3>
                 <p className="mt-1.5 text-[13px] leading-relaxed text-slate-400">{homepageScenarios[3].body}</p>
-                <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-slate-300 transition group-hover:gap-3">
+                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-slate-300 transition group-hover:gap-3">
                   {homepageScenarios[3].cta}
                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                 </span>
               </div>
             </button>
+
           </div>
         </section>
 
         {/* ── How it works — editorial numbered ── */}
-        <section className="mt-16 hidden sm:block pb-16">
+        <section className="mt-10 pb-10 sm:mt-16 sm:pb-16">
           <div className="mb-8">
             <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500">How it works</p>
-            <h2 className="font-display mt-2 text-3xl font-bold tracking-tight text-slate-900">
+            <h2 className="font-display mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
               Search, book, park
             </h2>
           </div>
@@ -406,7 +421,7 @@ export default function HomePage() {
                 key={step.title}
                 className="flex items-start gap-8 border-b border-slate-100 py-8 last:border-0"
               >
-                <span className="w-16 shrink-0 select-none font-display text-[72px] font-extrabold leading-none text-slate-100">
+                <span className="w-12 shrink-0 select-none font-display text-[56px] font-extrabold leading-none text-slate-300 sm:w-16 sm:text-[72px]">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <div className="pt-3">
@@ -418,6 +433,7 @@ export default function HomePage() {
           </div>
         </section>
       </main>
+      <SiteFooter />
     </div>
   );
 }

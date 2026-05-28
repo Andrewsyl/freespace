@@ -218,7 +218,7 @@ export function MobileSearchLayout({
           {/* Logo mark */}
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_4px_12px_rgba(15,23,42,0.18)]">
             <img
-              src="/freespace-logo.png"
+              src="/favicon.png"
               alt="FreeSpace"
               className="h-6 w-6 object-contain mix-blend-multiply"
             />

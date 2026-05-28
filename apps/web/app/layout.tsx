@@ -12,9 +12,9 @@ export const metadata: Metadata = {
   title: "FreeSpace",
   description: "Find and book parking in minutes",
   icons: {
-    icon: "/freespace-logo.png",
-    shortcut: "/freespace-logo.png",
-    apple: "/freespace-logo.png",
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
   },
 };
 
