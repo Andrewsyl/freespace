@@ -195,12 +195,12 @@ export default function HomePage() {
               <span className="block text-[30px] font-extrabold leading-[1.06] text-brand-500 sm:text-[40px] lg:text-[58px]">find parking.</span>
             </h1>
             <p className="mt-5 max-w-[380px] text-[15px] leading-relaxed text-slate-500">
-              Find and book parking spaces near you. Compare prices, check availability, and reserve instantly.
+              Search thousands of trusted spaces. Compare great prices and book instantly — no stress, no surprises.
             </p>
 
             {/* ── Mobile search card (phones only) ── */}
-            <div className="mt-8 sm:hidden rounded-3xl bg-white shadow-[0_4px_32px_rgba(0,0,0,0.09)] ring-1 ring-slate-900/[0.06]">
-              <div className="flex border-b border-slate-100 px-6">
+            <div className="mt-8 sm:hidden rounded-3xl bg-white shadow-[0_4px_32px_rgba(0,0,0,0.14)] ring-1 ring-slate-900/[0.10]">
+              <div className="flex border-b border-slate-200 px-6">
                 {(["daily", "monthly"] as const).map((value) => (
                   <button
                     key={value}
@@ -218,14 +218,14 @@ export default function HomePage() {
               </div>
 
               <div className="space-y-3 p-4">
-                <div className="overflow-hidden rounded-2xl border border-slate-200">
+                <div className="overflow-hidden rounded-2xl border border-slate-300">
                   {/* WHERE */}
                   <div className="flex items-center gap-3 px-4 py-3.5">
                     <svg className="h-[18px] w-[18px] shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" /><circle cx="12" cy="9" r="2.5" />
                     </svg>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-400">Where</p>
+                      <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-500">Where</p>
                       <AddressAutocomplete
                         defaultValue={location}
                         placeholder="City, address or postcode"
@@ -239,7 +239,7 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-200" />
+                  <div className="border-t border-slate-300" />
 
                   {/* FROM + UNTIL/PLAN */}
                   <div className="grid grid-cols-2">
@@ -249,7 +249,7 @@ export default function HomePage() {
                         <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
                       </svg>
                       <div className="min-w-0">
-                        <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-400">{mode === "monthly" ? "Starting" : "From"}</p>
+                        <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-500">{mode === "monthly" ? "Starting" : "From"}</p>
                         <p className="mt-0.5 text-[13.5px] font-semibold leading-tight text-slate-900">{formatDateShort(startDateTime)}</p>
                         {mode !== "monthly" && <p className="text-[12px] text-slate-500">{formatTimeAMPM(startDateTime)}</p>}
                       </div>
@@ -270,14 +270,14 @@ export default function HomePage() {
                     </label>
 
                     {/* UNTIL / PLAN */}
-                    <div className="relative border-l border-slate-200">
+                    <div className="relative border-l border-slate-300">
                       {mode === "monthly" ? (
                         <label className="flex cursor-pointer items-center gap-3 px-4 py-3.5">
                           <svg className="h-[17px] w-[17px] shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                             <path d="M3 6h18M7 12h5m5 0h-1M7 18h5" />
                           </svg>
                           <div className="min-w-0 flex-1">
-                            <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-400">Schedule</p>
+                            <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-500">Schedule</p>
                             <div className="relative mt-0.5">
                               <select
                                 value={monthlyPlan}
@@ -300,7 +300,7 @@ export default function HomePage() {
                             <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
                           </svg>
                           <div className="min-w-0">
-                            <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-400">Until</p>
+                            <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-500">Until</p>
                             <p className="mt-0.5 text-[13.5px] font-semibold leading-tight text-slate-900">{formatDateShort(endDateTime)}</p>
                             <p className="text-[12px] text-slate-500">{formatTimeAMPM(endDateTime)}</p>
                           </div>
@@ -334,8 +334,8 @@ export default function HomePage() {
             </div>
 
             {/* ── Desktop search card (sm and above) ── */}
-            <div className="mt-8 hidden sm:block rounded-3xl bg-white shadow-[0_4px_32px_rgba(0,0,0,0.09)] ring-1 ring-slate-900/[0.06]">
-              <div className="flex border-b border-slate-100 px-6">
+            <div className="mt-8 hidden sm:block rounded-3xl bg-white shadow-[0_4px_32px_rgba(0,0,0,0.14)] ring-1 ring-slate-900/[0.10]">
+              <div className="flex border-b border-slate-200 px-6">
                 {(["daily", "monthly"] as const).map((value) => (
                   <button
                     key={value}
@@ -422,7 +422,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100 pt-5">
+            <div className="mt-5 grid grid-cols-3 divide-x divide-slate-200 border-t border-slate-200 pt-5">
               {[
                 { stat: "Instant", label: "Booking" },
                 { stat: "Flexible", label: "Cancellation" },
@@ -430,7 +430,7 @@ export default function HomePage() {
               ].map((item, i) => (
                 <div key={item.stat} className={i === 0 ? "pr-4" : i === 1 ? "px-4" : "pl-4"}>
                   <p className="font-display text-sm font-extrabold text-slate-900">{item.stat}</p>
-                  <p className="mt-0.5 text-[11px] text-slate-400">{item.label}</p>
+                  <p className="mt-0.5 text-[11px] text-slate-500">{item.label}</p>
                 </div>
               ))}
             </div>
@@ -490,10 +490,10 @@ export default function HomePage() {
               <svg className="pointer-events-none absolute -right-5 -top-5 h-32 w-32 text-amber-400/20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
               </svg>
-              <p className="relative text-[10px] font-bold uppercase tracking-[0.28em] text-amber-800/40">{homepageScenarios[1].title}</p>
+              <p className="relative text-[10px] font-bold uppercase tracking-[0.28em] text-amber-700/70">{homepageScenarios[1].title}</p>
               <div className="relative">
                 <h3 className="font-display text-lg font-bold text-slate-900 lg:text-xl">{homepageScenarios[1].title}</h3>
-                <p className="mt-1 text-[12px] leading-relaxed text-slate-500 lg:text-[13px]">{homepageScenarios[1].body}</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-slate-600 lg:text-[13px]">{homepageScenarios[1].body}</p>
                 <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-amber-700 transition group-hover:gap-3">
                   {homepageScenarios[1].cta}
                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
@@ -510,10 +510,10 @@ export default function HomePage() {
               <svg className="pointer-events-none absolute -right-5 -top-5 h-32 w-32 text-indigo-400/20" viewBox="0 0 24 24" fill="currentColor">
                 <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
               </svg>
-              <p className="relative text-[10px] font-bold uppercase tracking-[0.28em] text-indigo-400/60">{homepageScenarios[2].title}</p>
+              <p className="relative text-[10px] font-bold uppercase tracking-[0.28em] text-indigo-500/80">{homepageScenarios[2].title}</p>
               <div className="relative">
                 <h3 className="font-display text-lg font-bold text-slate-900 lg:text-xl">{homepageScenarios[2].title}</h3>
-                <p className="mt-1 text-[12px] leading-relaxed text-slate-500 lg:text-[13px]">{homepageScenarios[2].body}</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-slate-600 lg:text-[13px]">{homepageScenarios[2].body}</p>
                 <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-indigo-600 transition group-hover:gap-3">
                   {homepageScenarios[2].cta}
                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
@@ -559,14 +559,14 @@ export default function HomePage() {
             {howItWorks.map((step, index) => (
               <div
                 key={step.title}
-                className="flex items-start gap-8 border-b border-slate-100 py-8 last:border-0"
+                className="flex items-start gap-8 border-b border-slate-200 py-8 last:border-0"
               >
                 <span className="w-12 shrink-0 select-none font-display text-[56px] font-extrabold leading-none text-slate-300 sm:w-16 sm:text-[72px]">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <div className="pt-3">
                   <h3 className="font-display text-xl font-bold text-slate-900">{step.title}</h3>
-                  <p className="mt-1.5 text-[15px] leading-relaxed text-slate-500">{step.body}</p>
+                  <p className="mt-1.5 text-[15px] leading-relaxed text-slate-600">{step.body}</p>
                 </div>
               </div>
             ))}
