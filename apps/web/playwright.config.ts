@@ -16,7 +16,7 @@ export default defineConfig({
   ],
   webServer: {
     command:
-      "NEXT_PUBLIC_API_BASE=http://127.0.0.1:4000 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=test NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_123 NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID=test npm run start -- --hostname 127.0.0.1 --port 3100",
+      "NEXT_PUBLIC_API_BASE=http://127.0.0.1:4000 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=test NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_123 NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID=test PORT=3100 HOSTNAME=127.0.0.1 node .next/standalone/apps/web/server.js",
     port: 3100,
     reuseExistingServer: !process.env.CI,
     cwd: process.cwd(),

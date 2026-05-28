@@ -15,6 +15,10 @@ Release only when:
 ### Before release
 - Confirm latest CI run is green.
 - Confirm API smoke checks pass locally or in staging.
+- Run the local push gate before pushing:
+  - `yarn prepush:check`
+- Install the Git hook once per machine so `git push` runs the gate automatically:
+  - `yarn setup:git-hooks`
 - Run:
   - `yarn test:api`
   - `yarn test:web:e2e`
