@@ -28,11 +28,11 @@ async function handleResponse<T>(res: Response): Promise<{ data: T | null; error
 
 export async function searchSpaces(filters: SearchFilters): Promise<Listing[]> {
   const radiusKm = Math.min(50, Math.max(0.1, Number(filters.radiusKm) || 5));
-  const fromValue = new Date(`${filters.date}T${filters.startTime}:00Z`);
-  const rawToValue = new Date(`${(filters.endDate ?? filters.date)}T${filters.endTime}:00Z`);
+  const fromValue = new Date(`${filters.date}T${filters.startTime}:00`);
+  const rawToValue = new Date(`${(filters.endDate ?? filters.date)}T${filters.endTime}:00`);
   const toValue =
-    rawToValue.getTime() <= fromValue.getTime() && !filters.endDate
-      ? new Date(rawToValue.getTime() + 24 * 60 * 60 * 1000)
+    rawToValue.getTime() <= fromValue.getTime()
+      ? new Date(fromValue.getTime() + 2 * 60 * 60 * 1000)
       : rawToValue;
   const params = new URLSearchParams({
     lat: String(filters.latitude ?? 53.3498),

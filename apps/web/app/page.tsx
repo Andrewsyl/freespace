@@ -22,6 +22,10 @@ function toTimeString(d: Date) {
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
+function toDateString(d: Date) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
 const WEEKDAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -43,20 +47,20 @@ function formatTimeAMPM(d: Date): string {
 function addMonths(date: string, count: number) {
   const d = new Date(`${date}T00:00:00`);
   d.setMonth(d.getMonth() + count);
-  return d.toISOString().split("T")[0];
+  return toDateString(d);
 }
 
 const now = roundUpToHalfHour(new Date());
 const defaultEnd = new Date(now.getTime() + 120 * 60000);
 const defaultFilters: SearchFilters = {
-  location: "City Centre",
-  date: now.toISOString().split("T")[0],
-  endDate: defaultEnd.toISOString().split("T")[0],
+  location: "",
+  date: toDateString(now),
+  endDate: toDateString(defaultEnd),
   startTime: toTimeString(now),
   endTime: toTimeString(defaultEnd),
   radiusKm: 5,
-  latitude: 53.3498,
-  longitude: -6.2603,
+  latitude: undefined,
+  longitude: undefined,
   mode: "daily",
 };
 
@@ -133,6 +137,7 @@ export default function HomePage() {
   const [startTime, setStartTime] = useState(defaultFilters.startTime);
   const [endTime, setEndTime] = useState(defaultFilters.endTime);
   const [monthlyPlan, setMonthlyPlan] = useState<NonNullable<SearchFilters["monthlyPlan"]>>("full_week");
+  const [locationError, setLocationError] = useState(false);
 
   const startDateTime = useMemo(() => new Date(`${date}T${startTime}:00`), [date, startTime]);
   const endDateTime = useMemo(() => new Date(`${date}T${endTime}:00`), [date, endTime]);
@@ -154,7 +159,11 @@ export default function HomePage() {
   };
 
   const submit = () => {
-    if (!location.trim()) return;
+    if (!location.trim()) {
+      setLocationError(true);
+      return;
+    }
+    setLocationError(false);
     handleSearch({
       ...defaultFilters,
       location,
@@ -216,7 +225,6 @@ export default function HomePage() {
                   </button>
                 ))}
               </div>
-
               <div className="space-y-3 p-4">
                 <div className="overflow-hidden rounded-2xl border border-slate-300">
                   {/* WHERE */}
@@ -229,13 +237,15 @@ export default function HomePage() {
                       <AddressAutocomplete
                         defaultValue={location}
                         placeholder="City, address or postcode"
-                        inputClassName="mt-0.5 w-full bg-transparent text-[15px] font-semibold text-slate-800 outline-none placeholder:font-normal placeholder:text-slate-400"
+                        inputClassName={`mt-0.5 w-full bg-transparent text-[15px] font-semibold outline-none placeholder:font-normal placeholder:text-slate-400 ${locationError ? "text-brand-600 placeholder:text-brand-400" : "text-slate-800"}`}
                         onPlace={(place) => {
+                          setLocationError(false);
                           setLocation(place.address);
                           setLatitude(place.lat);
                           setLongitude(place.lng);
                         }}
                       />
+                      {locationError && <p className="mt-0.5 text-[11px] font-medium text-brand-600">Enter a location first</p>}
                     </div>
                   </div>
 
@@ -257,7 +267,7 @@ export default function HomePage() {
                         <button
                           type="button"
                           onClick={toggle}
-                          className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-slate-50"
+                          className="flex w-full h-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-slate-50"
                         >
                           <svg className="h-[17px] w-[17px] shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                             <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
@@ -274,7 +284,7 @@ export default function HomePage() {
                     {/* UNTIL / PLAN */}
                     <div className="relative border-l border-slate-300">
                       {mode === "monthly" ? (
-                        <label className="flex cursor-pointer items-center gap-3 px-4 py-3.5">
+                        <label className="flex h-full cursor-pointer items-center gap-3 px-4 py-3.5">
                           <svg className="h-[17px] w-[17px] shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                             <path d="M3 6h18M7 12h5m5 0h-1M7 18h5" />
                           </svg>
@@ -284,7 +294,7 @@ export default function HomePage() {
                               <select
                                 value={monthlyPlan}
                                 onChange={(e) => setMonthlyPlan(e.target.value as NonNullable<SearchFilters["monthlyPlan"]>)}
-                                className="w-full appearance-none bg-transparent text-[13.5px] font-semibold text-slate-900 outline-none"
+                                className="w-full appearance-none bg-transparent text-[13.5px] font-semibold leading-tight text-slate-900 outline-none"
                               >
                                 <option value="full_week">Everyday</option>
                                 <option value="weekdays">Mon – Fri</option>
@@ -358,16 +368,18 @@ export default function HomePage() {
                   </button>
                 ))}
               </div>
-
               <div className="space-y-3 p-5">
                 {/* Location */}
-                <div className="rounded-xl border border-[#d5dbe3] bg-white px-4 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.08)]">
-                  <p className="text-[11px] font-semibold text-brand-600">Where</p>
+                <div className={`rounded-xl border bg-white px-4 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition ${locationError ? "border-brand-300" : "border-[#d5dbe3]"}`}>
+                  <p className={`text-[11px] font-semibold ${locationError ? "text-brand-600" : "text-brand-600"}`}>
+                    {locationError ? "Enter a location to search" : "Where"}
+                  </p>
                   <AddressAutocomplete
                     defaultValue={location}
                     placeholder="Enter a location"
                     inputClassName="mt-0.5 w-full bg-transparent text-[16px] font-semibold text-slate-800 outline-none placeholder:font-normal placeholder:text-slate-400"
                     onPlace={(place) => {
+                      setLocationError(false);
                       setLocation(place.address);
                       setLatitude(place.lat);
                       setLongitude(place.lng);
@@ -387,22 +399,25 @@ export default function HomePage() {
                     dateOnly={mode === "monthly"}
                   />
                   {mode === "monthly" ? (
-                    <div className="rounded-lg border border-[#E5E7EB] bg-white px-3.5 py-2.5 shadow-sm">
-                      <span className="text-[11px] font-semibold text-brand-600">Schedule</span>
-                      <div className="relative mt-0.5">
-                        <select
-                          value={monthlyPlan}
-                          onChange={(e) => setMonthlyPlan(e.target.value as NonNullable<SearchFilters["monthlyPlan"]>)}
-                          className="w-full appearance-none bg-transparent text-[14px] font-semibold text-slate-800 outline-none"
-                        >
-                          <option value="full_week">Everyday</option>
-                          <option value="weekdays">Mon – Fri</option>
-                          <option value="any_3_days">Any 3 days</option>
-                        </select>
-                        <svg className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
-                        </svg>
+                    <div className="relative flex items-center justify-between rounded-lg border border-[#E5E7EB] bg-white px-3.5 py-2.5 shadow-sm">
+                      <div className="flex min-w-0 flex-col gap-0.5">
+                        <span className="text-[11px] font-semibold text-brand-600">Schedule</span>
+                        <span className="tabular-nums text-[13px] font-bold text-slate-900">
+                          {monthlyPlan === "full_week" ? "Everyday" : monthlyPlan === "weekdays" ? "Mon – Fri" : "Any 3 days"}
+                        </span>
                       </div>
+                      <svg className="pointer-events-none h-4 w-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+                      </svg>
+                      <select
+                        value={monthlyPlan}
+                        onChange={(e) => setMonthlyPlan(e.target.value as NonNullable<SearchFilters["monthlyPlan"]>)}
+                        className="absolute inset-0 cursor-pointer opacity-0"
+                      >
+                        <option value="full_week">Everyday</option>
+                        <option value="weekdays">Mon – Fri</option>
+                        <option value="any_3_days">Any 3 days</option>
+                      </select>
                     </div>
                   ) : (
                     <SearchDateTimePicker

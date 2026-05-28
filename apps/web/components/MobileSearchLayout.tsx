@@ -201,6 +201,7 @@ export function MobileSearchLayout({
           controlsOffset={{ bottom: 160, right: 12 }}
           showCenterPin
           centerPinRadius={500}
+          priceMode={filters.mode ?? "daily"}
           selectedListingId={selectedListingId ?? undefined}
           onSelectListing={onMarkerSelect}
           onMarkerClick={onMarkerClick}
@@ -516,7 +517,7 @@ export function MobileSearchLayout({
             startAt={startAt}
             endAt={endAt}
             onConfirm={(next) => {
-              const toDate = (d: Date) => d.toISOString().split("T")[0];
+              const toDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
               const toTime = (d: Date) =>
                 `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
               if (pickerOpen === "start") {

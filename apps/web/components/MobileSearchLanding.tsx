@@ -76,7 +76,7 @@ export function MobileSearchLanding({
   const defaultStart = useMemo(() => snapTo30(new Date()), []);
   const defaultEnd   = useMemo(() => addMinutes(defaultStart, 120), [defaultStart]);
 
-  const [mode, setMode] = useState<"daily" | "monthly">(initialFilters.mode ?? "daily");
+  const mode = initialFilters.mode ?? "daily";
   const [monthlyPlan, setMonthlyPlan] = useState<"full_week" | "weekdays" | "any_3_days">(
     initialFilters.monthlyPlan ?? "full_week",
   );
@@ -88,22 +88,12 @@ export function MobileSearchLanding({
   const [pickerOpen, setPickerOpen] = useState<"start" | "end" | null>(null);
   const [locationSheetOpen, setLocationSheetOpen] = useState(false);
 
-  type ActiveTab = "hourly" | "monthly";
-  const [activeTab, setActiveTab] = useState<ActiveTab>(
-    initialFilters.mode === "monthly" ? "monthly" : "hourly",
-  );
-
-  const handleTabChange = (tab: ActiveTab) => {
-    setActiveTab(tab);
-    setMode(tab === "monthly" ? "monthly" : "daily");
-  };
-
   const formatDisplay = (d: Date): string => {
     if (mode === "monthly") return formatDateOnly(d);
     return `${formatDateOnly(d)}, ${formatTime(d)}`;
   };
 
-  const toDate = (d: Date) => d.toISOString().split("T")[0];
+  const toDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const toTime = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 
   const handleSubmit = () => {
@@ -174,31 +164,8 @@ export function MobileSearchLanding({
         {/* ── Search Card ── */}
         <div className="rounded-[20px] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
 
-          {/* Mode tabs */}
-          <div className="px-4 pt-4">
-            <div className="grid grid-cols-2 rounded-[10px] bg-[#F0F0EE] p-1">
-              {(["hourly", "monthly"] as const).map((tab) => {
-                const active = activeTab === tab;
-                return (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => handleTabChange(tab)}
-                    className={`rounded-[8px] py-2 text-[13.5px] font-semibold transition-all duration-150 ${
-                      active
-                        ? "bg-white text-[#111] shadow-[0_1px_4px_rgba(0,0,0,0.12)]"
-                        : "text-[#888]"
-                    }`}
-                  >
-                    {tab === "hourly" ? "Hourly / Daily" : "Monthly"}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Unified form — Booking.com style with dividers */}
-          <div className="mx-4 mt-3 overflow-hidden rounded-[14px]" style={{ border: "1.5px solid #DEDEDD" }}>
+          <div className="mx-4 mt-4 overflow-hidden rounded-[14px]" style={{ border: "1.5px solid #DEDEDD" }}>
 
             {/* Location row */}
             <button

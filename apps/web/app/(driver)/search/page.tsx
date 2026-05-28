@@ -28,17 +28,21 @@ function toTimeString(d: Date) {
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
+function toDateStr(d: Date) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
 const now = roundUpToHalfHour(new Date());
 const defaultEnd = new Date(now.getTime() + 120 * 60000);
 const defaultFilters: SearchFilters = {
-  location: "City Centre",
-  date: now.toISOString().split("T")[0],
-  endDate: defaultEnd.toISOString().split("T")[0],
+  location: "",
+  date: toDateStr(now),
+  endDate: toDateStr(defaultEnd),
   startTime: toTimeString(now),
   endTime: toTimeString(defaultEnd),
   radiusKm: 5,
-  latitude: 53.3498,
-  longitude: -6.2603,
+  latitude: undefined,
+  longitude: undefined,
   mode: "daily",
 };
 
@@ -148,6 +152,12 @@ function SearchPageContainer() {
   const lastAppliedCenter = useRef<{ lat: number; lng: number } | null>(null);
   const ignoreInitialBounds = useRef(true);
   const initialized = useRef(false);
+  const searchParamsRef = useRef(searchParams.toString());
+  const filtersRef = useRef(filters);
+
+  // Keep refs in sync with latest values
+  useEffect(() => { searchParamsRef.current = searchParams.toString(); });
+  useEffect(() => { filtersRef.current = filters; });
 
   // Reset ignoreInitialBounds when the active layout changes (MapView remounts)
   useEffect(() => {
@@ -191,7 +201,7 @@ function SearchPageContainer() {
     if (next.vehicleSize) p.set("vehicleSize", next.vehicleSize);
     if (next.spaceType) p.set("spaceType", next.spaceType);
     if (next.instantBook) p.set("instantBook", "true");
-    if (p.toString() !== searchParams.toString()) {
+    if (p.toString() !== searchParamsRef.current) {
       router.replace(`/search?${p.toString()}`);
     }
 
@@ -217,7 +227,7 @@ function SearchPageContainer() {
     } finally {
       if (preserve) setAreaSearching(false);
     }
-  }, [router, searchParams]);
+  }, [router]);
 
   // ── Initialise from URL on first render ──
   useEffect(() => {
@@ -237,8 +247,8 @@ function SearchPageContainer() {
       if (merged.latitude && merged.longitude) {
         lastAppliedCenter.current = { lat: merged.latitude, lng: merged.longitude };
       }
-      // On mobile, don't auto-search — wait for the landing form submission
-      if (!isMobile || hasUrlParams) {
+      // Only auto-search when a location is actually present
+      if (merged.location && merged.latitude && merged.longitude && (!isMobile || hasUrlParams)) {
         void runSearch(merged, true);
       }
     } else {
@@ -275,15 +285,16 @@ function SearchPageContainer() {
         return;
       }
       if (!userInteracted) return;
+      const f = filtersRef.current;
       const last = lastAppliedCenter.current;
-      const curr = { lat: filters.latitude ?? 0, lng: filters.longitude ?? 0 };
+      const curr = { lat: f.latitude ?? 0, lng: f.longitude ?? 0 };
       const delta = (a: typeof c, b2: typeof c) => Math.sqrt((a.lat - b2.lat) ** 2 + (a.lng - b2.lng) ** 2);
       const movedMeaningfully = (!last || delta(last, c) > 0.003) && delta(curr, c) > 0.003;
       if (!movedMeaningfully) return;
 
       if (searchAsMove) {
         const radiusKm = radiusFromBounds(b, c);
-        const updated = { ...filters, latitude: c.lat, longitude: c.lng, radiusKm };
+        const updated = { ...f, latitude: c.lat, longitude: c.lng, radiusKm };
         void runSearch(updated, true, { preserveViewport: true });
         lastAppliedCenter.current = c;
         setPendingCenter(null);
@@ -295,20 +306,20 @@ function SearchPageContainer() {
         setMapDirty(true);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filters, searchAsMove],
+    [searchAsMove, runSearch],
   );
 
   const handleSearchArea = useCallback(() => {
     if (!pendingCenter) return;
-    const radiusKm = pendingBounds ? radiusFromBounds(pendingBounds, pendingCenter) : filters.radiusKm;
-    const updated = { ...filters, latitude: pendingCenter.lat, longitude: pendingCenter.lng, radiusKm };
+    const f = filtersRef.current;
+    const radiusKm = pendingBounds ? radiusFromBounds(pendingBounds, pendingCenter) : f.radiusKm;
+    const updated = { ...f, latitude: pendingCenter.lat, longitude: pendingCenter.lng, radiusKm };
     void runSearch(updated, true, { preserveViewport: true });
     lastAppliedCenter.current = pendingCenter;
     setPendingCenter(null);
     setPendingBounds(null);
     setMapDirty(false);
-  }, [pendingCenter, pendingBounds, filters, runSearch]);
+  }, [pendingCenter, pendingBounds, runSearch]);
 
   const handleAddressChange = useCallback(
     (place: { address: string; lat: number; lng: number }) => {

@@ -63,6 +63,7 @@ export function SearchForm({
   variant?: "default" | "desktop-inline";
 }) {
   const router = useRouter();
+  const [locationError, setLocationError] = useState(false);
   const skipAutoSearch = useRef(true);
   const syncingFromProps = useRef(false);
 
@@ -81,9 +82,9 @@ export function SearchForm({
         ? buildDateTime(initialValues.endDate, initialValues.endTime)
         : addMinutes(startFromProps, 180);
     return {
-      location: initialValues?.location ?? "City Centre",
-      latitude: initialValues?.latitude ?? 53.3498,
-      longitude: initialValues?.longitude ?? -6.2603,
+      location: initialValues?.location ?? "",
+      latitude: initialValues?.latitude,
+      longitude: initialValues?.longitude,
       mode: initialValues?.mode ?? "daily",
       monthlyPlan: initialValues?.monthlyPlan ?? "full_week",
       startAt: startFromProps,
@@ -207,6 +208,11 @@ export function SearchForm({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!state.location.trim()) {
+      setLocationError(true);
+      return;
+    }
+    setLocationError(false);
     const submission = buildFilters();
 
     if (redirectToSearch && (!submission.latitude || !submission.longitude)) {
@@ -261,6 +267,7 @@ export function SearchForm({
   };
 
   const addressOnPlace = useCallback((place: { address: string; lat: number; lng: number }) => {
+    setLocationError(false);
     setState((prev) => ({
       ...prev,
       location: place.address,
@@ -270,18 +277,6 @@ export function SearchForm({
     onAddressChange?.({ address: place.address, lat: place.lat, lng: place.lng });
   }, [onAddressChange]);
 
-  const setMode = (mode: "daily" | "monthly") => {
-    setState((prev) => {
-      if (prev.mode === mode) return prev;
-      const nextEnd =
-        mode === "monthly"
-          ? addMonths(prev.startAt, 1)
-          : prev.endAt <= prev.startAt || prev.endAt.getTime() - prev.startAt.getTime() > 14 * 24 * 60 * 60 * 1000
-            ? addMinutes(prev.startAt, 180)
-            : prev.endAt;
-      return { ...prev, mode, endAt: nextEnd };
-    });
-  };
 
   const MONTHLY_OPTIONS = [
     { value: "full_week", label: "Everyday" },
@@ -294,23 +289,7 @@ export function SearchForm({
     return (
       <div className="w-full">
         <form onSubmit={handleSubmit}>
-          {/* Mode toggle */}
-          <div className="mb-2 flex items-center gap-1.5">
-            {(["daily", "monthly"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMode(m)}
-                className={`rounded-full px-3.5 py-1 text-[12.5px] font-semibold transition ${
-                  state.mode === m
-                    ? "bg-brand-500 text-white shadow-sm"
-                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                }`}
-              >
-                {m === "daily" ? "Hourly / Daily" : "Monthly"}
-              </button>
-            ))}
-          </div>
+
           <div className="grid grid-cols-[minmax(0,1fr)_302px_302px] gap-3">
             <div className="flex min-w-0 items-stretch rounded-md border border-[#d5dbe3] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.08)]">
               <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-2.5">
@@ -391,30 +370,18 @@ export function SearchForm({
         onSubmit={handleSubmit}
         className="flex w-full flex-col gap-3 rounded-lg border border-[#E5E7EB] bg-white p-4 shadow-sm"
       >
-        {/* Mode toggle */}
-        <div className="flex gap-1.5 rounded-xl border border-[#E5E7EB] bg-slate-50 p-1">
-          {(["daily", "monthly"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMode(m)}
-              className={`flex-1 rounded-lg py-2 text-[13px] font-semibold transition ${
-                state.mode === m
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              {m === "daily" ? "Hourly / Daily" : "Monthly"}
-            </button>
-          ))}
-        </div>
 
-        <AddressAutocomplete
-          defaultValue={state.location}
-          placeholder="Enter area or landmark"
-          inputClassName="w-full h-12 rounded-lg border border-[#E5E7EB] bg-white px-9 text-[15px] font-semibold text-[#0f172a] transition focus:border-brand-500 focus:outline-none"
-          onPlace={addressOnPlace}
-        />
+        <div>
+          <AddressAutocomplete
+            defaultValue={state.location}
+            placeholder="Enter area or landmark"
+            inputClassName={`w-full h-12 rounded-lg border bg-white px-9 text-[15px] font-semibold text-[#0f172a] transition focus:outline-none ${locationError ? "border-brand-400 focus:border-brand-500" : "border-[#E5E7EB] focus:border-brand-500"}`}
+            onPlace={addressOnPlace}
+          />
+          {locationError && (
+            <p className="mt-1.5 text-[12px] font-medium text-brand-600">Please enter a location to search</p>
+          )}
+        </div>
 
         {state.mode === "monthly" ? (
           <div className="grid grid-cols-2 gap-2">
@@ -788,7 +755,7 @@ function DateTimePicker({
 
 function buildDateTime(date: string, time: string) {
   const [h, m] = time.split(":").map(Number);
-  const d = new Date(date);
+  const d = new Date(`${date}T00:00:00`); // local time, not UTC
   d.setHours(h ?? 0, m ?? 0, 0, 0);
   return d;
 }
@@ -804,7 +771,10 @@ function formatTrigger(date: Date, dateOnly = false) {
 }
 
 function toDateString(date: Date) {
-  return date.toISOString().split("T")[0];
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 function toTimeString(date: Date) {

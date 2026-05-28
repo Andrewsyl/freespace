@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { LEGAL_CONTACT } from "../lib/legal-content";
 
@@ -84,12 +86,13 @@ export function SiteFooter() {
               The smarter way to find and book parking.
             </p>
           </div>
-          <Link
-            href="/search"
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             className="shrink-0 self-start rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-brand-700 transition hover:bg-brand-50 sm:self-auto"
           >
             Find a space →
-          </Link>
+          </button>
         </div>
       </div>
 
