@@ -31,7 +31,7 @@ function toTimeString(d: Date) {
 const now = roundUpToHalfHour(new Date());
 const defaultEnd = new Date(now.getTime() + 120 * 60000);
 const defaultFilters: SearchFilters = {
-  location: "Dublin City Centre",
+  location: "City Centre",
   date: now.toISOString().split("T")[0],
   endDate: defaultEnd.toISOString().split("T")[0],
   startTime: toTimeString(now),

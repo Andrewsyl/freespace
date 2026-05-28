@@ -17,9 +17,9 @@ const navColumns = [
     heading: "Parking",
     links: [
       { label: "Find parking", href: "/search" },
-      { label: "Airport parking", href: "/search?location=Dublin+Airport&lat=53.4264&lng=-6.2499&mode=daily" },
+      { label: "Airport parking", href: "/search?location=Airport&lat=53.4264&lng=-6.2499&mode=daily" },
       { label: "Monthly parking", href: "/search?mode=monthly" },
-      { label: "Event parking", href: "/search?location=Aviva+Stadium%2C+Dublin&lat=53.3352&lng=-6.2285&mode=daily" },
+      { label: "Event parking", href: "/search?location=Aviva+Stadium&lat=53.3352&lng=-6.2285&mode=daily" },
       { label: "EV charging", href: "/search?ev=true" },
       { label: "Host your space", href: "/host" },
     ],
@@ -79,7 +79,7 @@ export function SiteFooter() {
       <div className="bg-brand-600">
         <div className="mx-auto flex max-w-6xl flex-col gap-5 px-6 py-10 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-brand-200/60">Dublin&apos;s parking platform</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-brand-200/60">Your parking platform</p>
             <p className="mt-1.5 font-display text-xl font-bold text-white sm:text-2xl">
               The smarter way to find and book parking.
             </p>
@@ -100,7 +100,7 @@ export function SiteFooter() {
         <div className="mx-auto max-w-6xl border-b border-white/[0.06] px-6 py-8">
           <div className="flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-8">
-              <img src="/favicon.png" alt={LEGAL_CONTACT.brandName} className="h-9 w-auto brightness-0 invert" />
+              <img src="/freespace-logo.png" alt={LEGAL_CONTACT.brandName} className="h-8 w-auto brightness-0 invert" />
               <div className="flex items-center gap-4">
                 {socials.map((s) => (
                   <a

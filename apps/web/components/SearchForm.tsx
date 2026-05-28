@@ -77,7 +77,7 @@ export function SearchForm({
         ? buildDateTime(initialValues.endDate, initialValues.endTime)
         : addMinutes(startFromProps, 180);
     return {
-      location: initialValues?.location ?? "Dublin City Centre",
+      location: initialValues?.location ?? "City Centre",
       latitude: initialValues?.latitude ?? 53.3498,
       longitude: initialValues?.longitude ?? -6.2603,
       mode: initialValues?.mode ?? "daily",

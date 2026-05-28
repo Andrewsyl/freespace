@@ -57,7 +57,7 @@ function snapTo30(d: Date): Date {
 
 const POPULAR_DESTS = [
   { name: "Aviva Stadium",    sub: "105 spaces", icon: "🏟️", lat: 53.3352, lng: -6.2285 },
-  { name: "Dublin Airport",   sub: "312 spaces", icon: "✈️", lat: 53.4264, lng: -6.2499 },
+  { name: "Airport",          sub: "312 spaces", icon: "✈️", lat: 53.4264, lng: -6.2499 },
   { name: "Trinity College",  sub: "48 spaces",  icon: "🎓", lat: 53.3458, lng: -6.2597 },
   { name: "Grand Canal Dock", sub: "76 spaces",  icon: "🌊", lat: 53.3396, lng: -6.2319 },
 ] as const;

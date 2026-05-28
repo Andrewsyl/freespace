@@ -56,9 +56,16 @@ export function SlimNav() {
           )}
 
           {user && (
-            <div className="ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-[12px] font-bold text-white shadow-sm">
-              {initials(user.email)}
-            </div>
+            <Link
+              href="/dashboard"
+              className="ml-2 flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+              aria-label="My account"
+            >
+              <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </Link>
           )}
         </nav>
 
@@ -122,8 +129,10 @@ export function SlimNav() {
               {/* Account card */}
               {user && (
                 <div className="mx-5 mt-5 flex items-center gap-3.5 rounded-2xl bg-slate-50 px-4 py-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-500 text-[14px] font-bold text-white shadow-sm">
-                    {initials(user.email)}
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500">
+                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+                    </svg>
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-[14px] font-semibold text-slate-900">My account</p>

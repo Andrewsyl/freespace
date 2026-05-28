@@ -22,6 +22,24 @@ function toTimeString(d: Date) {
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
+const WEEKDAYS_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function formatDateShort(d: Date): string {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+  const day = new Date(d); day.setHours(0, 0, 0, 0);
+  if (day.getTime() === today.getTime()) return "Today";
+  if (day.getTime() === tomorrow.getTime()) return "Tomorrow";
+  return `${WEEKDAYS_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
+}
+
+function formatTimeAMPM(d: Date): string {
+  const h = d.getHours();
+  const m = pad2(d.getMinutes());
+  return `${h % 12 || 12}:${m} ${h >= 12 ? "pm" : "am"}`;
+}
+
 function addMonths(date: string, count: number) {
   const d = new Date(`${date}T00:00:00`);
   d.setMonth(d.getMonth() + count);
@@ -31,7 +49,7 @@ function addMonths(date: string, count: number) {
 const now = roundUpToHalfHour(new Date());
 const defaultEnd = new Date(now.getTime() + 120 * 60000);
 const defaultFilters: SearchFilters = {
-  location: "Dublin City Centre",
+  location: "City Centre",
   date: now.toISOString().split("T")[0],
   endDate: defaultEnd.toISOString().split("T")[0],
   startTime: toTimeString(now),
@@ -48,7 +66,7 @@ const homepageScenarios = [
     body: "Lock in a regular space near home, work, or your weekday commute.",
     cta: "Browse monthly",
     filters: {
-      location: "Dublin City Centre",
+      location: "City Centre",
       latitude: 53.3498,
       longitude: -6.2603,
       mode: "monthly" as const,
@@ -59,7 +77,7 @@ const homepageScenarios = [
     body: "Book ahead for early departures, weekend trips, and longer stays.",
     cta: "Near the airport",
     filters: {
-      location: "Dublin Airport",
+      location: "Airport",
       latitude: 53.4264,
       longitude: -6.2499,
       mode: "daily" as const,
@@ -70,7 +88,7 @@ const homepageScenarios = [
     body: "Get closer to stadiums, gigs, and matchday venues before the rush.",
     cta: "Find event parking",
     filters: {
-      location: "Aviva Stadium, Dublin",
+      location: "Aviva Stadium",
       latitude: 53.3352,
       longitude: -6.2285,
       mode: "daily" as const,
@@ -81,7 +99,7 @@ const homepageScenarios = [
     body: "Search spaces with charging so parking and topping up happen in one stop.",
     cta: "Spaces with EV",
     filters: {
-      location: "Dublin City Centre",
+      location: "City Centre",
       latitude: 53.3498,
       longitude: -6.2603,
       mode: "daily" as const,
@@ -172,17 +190,16 @@ export default function HomePage() {
         {/* ── Hero ── */}
         <section className="grid lg:grid-cols-[1fr_460px] gap-8 lg:gap-14 items-center">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500 mb-5">Dublin · Ireland</p>
             <h1 className="font-display tracking-tight">
               <span className="block text-[30px] font-medium leading-[1.06] text-slate-800 sm:text-[40px] lg:text-[58px]">The smarter way to</span>
               <span className="block text-[30px] font-extrabold leading-[1.06] text-brand-500 sm:text-[40px] lg:text-[58px]">find parking.</span>
             </h1>
             <p className="mt-5 max-w-[380px] text-[15px] leading-relaxed text-slate-500">
-              Search thousands of trusted spaces across Dublin. Compare prices and book instantly — no stress, no surprises.
+              Find and book parking spaces near you. Compare prices, check availability, and reserve instantly.
             </p>
 
-            {/* Search card — shadow depth, no heavy border */}
-            <div className="mt-8 rounded-3xl bg-white shadow-[0_4px_32px_rgba(0,0,0,0.09)] ring-1 ring-slate-900/[0.06]">
+            {/* ── Mobile search card (phones only) ── */}
+            <div className="mt-8 sm:hidden rounded-3xl bg-white shadow-[0_4px_32px_rgba(0,0,0,0.09)] ring-1 ring-slate-900/[0.06]">
               <div className="flex border-b border-slate-100 px-6">
                 {(["daily", "monthly"] as const).map((value) => (
                   <button
@@ -200,60 +217,195 @@ export default function HomePage() {
                 ))}
               </div>
 
-              <div className="space-y-3 p-6">
-                <AddressAutocomplete
-                  defaultValue={location}
-                  placeholder="Where would you like to park?"
-                  inputClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-300 focus:border-brand-500 focus:bg-white focus:outline-none"
-                  onPlace={(place) => {
-                    setLocation(place.address);
-                    setLatitude(place.lat);
-                    setLongitude(place.lng);
-                  }}
-                />
+              <div className="space-y-3 p-4">
+                <div className="overflow-hidden rounded-2xl border border-slate-200">
+                  {/* WHERE */}
+                  <div className="flex items-center gap-3 px-4 py-3.5">
+                    <svg className="h-[18px] w-[18px] shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" /><circle cx="12" cy="9" r="2.5" />
+                    </svg>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-400">Where</p>
+                      <AddressAutocomplete
+                        defaultValue={location}
+                        placeholder="City, address or postcode"
+                        inputClassName="mt-0.5 w-full bg-transparent text-[15px] font-semibold text-slate-800 outline-none placeholder:font-normal placeholder:text-slate-400"
+                        onPlace={(place) => {
+                          setLocation(place.address);
+                          setLatitude(place.lat);
+                          setLongitude(place.lng);
+                        }}
+                      />
+                    </div>
+                  </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 cursor-pointer">
-                    <SearchDateTimePicker
-                      label="From"
-                      inlineLabel={mode === "monthly" ? "Start" : "From"}
-                      value={startDateTime}
-                      onChange={(next) => {
-                        setDate(next.toISOString().split("T")[0]);
-                        setStartTime(mode === "monthly" ? "00:00" : toTimeString(next));
-                      }}
-                      dateOnly={mode === "monthly"}
-                    />
-                  </label>
-                  {mode === "monthly" ? (
-                    <label className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 cursor-pointer">
-                      <span className="text-[11px] text-slate-400">Plan</span>
-                      <div className="relative">
-                        <select
-                          value={monthlyPlan}
-                          onChange={(event) => setMonthlyPlan(event.target.value as NonNullable<SearchFilters["monthlyPlan"]>)}
-                          className="w-full appearance-none bg-transparent px-1 py-1 text-sm font-semibold text-slate-800 outline-none"
-                        >
-                          <option value="full_week">Everyday</option>
-                          <option value="weekdays">Mon - Fri only</option>
-                          <option value="any_3_days">Any 3 days</option>
-                        </select>
-                        <svg className="pointer-events-none absolute right-1 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
-                        </svg>
+                  <div className="border-t border-slate-200" />
+
+                  {/* FROM + UNTIL/PLAN */}
+                  <div className="grid grid-cols-2">
+                    {/* FROM */}
+                    <label className="relative flex cursor-pointer items-center gap-3 px-4 py-3.5 transition active:bg-slate-50">
+                      <svg className="h-[17px] w-[17px] shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      <div className="min-w-0">
+                        <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-400">{mode === "monthly" ? "Starting" : "From"}</p>
+                        <p className="mt-0.5 text-[13.5px] font-semibold leading-tight text-slate-900">{formatDateShort(startDateTime)}</p>
+                        {mode !== "monthly" && <p className="text-[12px] text-slate-500">{formatTimeAMPM(startDateTime)}</p>}
                       </div>
-                    </label>
-                  ) : (
-                    <label className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 cursor-pointer">
-                      <SearchDateTimePicker
-                        label="Until"
-                        value={endDateTime}
-                        onChange={(next) => {
-                          setDate(next.toISOString().split("T")[0]);
-                          setEndTime(toTimeString(next));
+                      <input
+                        type={mode === "monthly" ? "date" : "datetime-local"}
+                        className="absolute inset-0 cursor-pointer opacity-0"
+                        value={mode === "monthly" ? date : `${date}T${startTime}`}
+                        onChange={(e) => {
+                          if (mode === "monthly") {
+                            setDate(e.target.value);
+                          } else {
+                            const [d, t] = e.target.value.split("T");
+                            if (d) setDate(d);
+                            if (t) setStartTime(t.slice(0, 5));
+                          }
                         }}
                       />
                     </label>
+
+                    {/* UNTIL / PLAN */}
+                    <div className="relative border-l border-slate-200">
+                      {mode === "monthly" ? (
+                        <label className="flex cursor-pointer items-center gap-3 px-4 py-3.5">
+                          <svg className="h-[17px] w-[17px] shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 6h18M7 12h5m5 0h-1M7 18h5" />
+                          </svg>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-400">Schedule</p>
+                            <div className="relative mt-0.5">
+                              <select
+                                value={monthlyPlan}
+                                onChange={(e) => setMonthlyPlan(e.target.value as NonNullable<SearchFilters["monthlyPlan"]>)}
+                                className="w-full appearance-none bg-transparent text-[13.5px] font-semibold text-slate-900 outline-none"
+                              >
+                                <option value="full_week">Everyday</option>
+                                <option value="weekdays">Mon – Fri</option>
+                                <option value="any_3_days">Any 3 days</option>
+                              </select>
+                              <svg className="pointer-events-none absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </label>
+                      ) : (
+                        <label className="relative flex cursor-pointer items-center gap-3 px-4 py-3.5 transition active:bg-slate-50">
+                          <svg className="h-[17px] w-[17px] shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                          </svg>
+                          <div className="min-w-0">
+                            <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-400">Until</p>
+                            <p className="mt-0.5 text-[13.5px] font-semibold leading-tight text-slate-900">{formatDateShort(endDateTime)}</p>
+                            <p className="text-[12px] text-slate-500">{formatTimeAMPM(endDateTime)}</p>
+                          </div>
+                          <input
+                            type="datetime-local"
+                            className="absolute inset-0 cursor-pointer opacity-0"
+                            value={`${date}T${endTime}`}
+                            onChange={(e) => {
+                              const [d, t] = e.target.value.split("T");
+                              if (d) setDate(d);
+                              if (t) setEndTime(t.slice(0, 5));
+                            }}
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={submit}
+                  className="font-display flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-4 text-[15px] font-bold text-white transition hover:bg-brand-600"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                  </svg>
+                  Search parking spaces
+                </button>
+              </div>
+            </div>
+
+            {/* ── Desktop search card (sm and above) ── */}
+            <div className="mt-8 hidden sm:block rounded-3xl bg-white shadow-[0_4px_32px_rgba(0,0,0,0.09)] ring-1 ring-slate-900/[0.06]">
+              <div className="flex border-b border-slate-100 px-6">
+                {(["daily", "monthly"] as const).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setMode(value)}
+                    className={`font-display flex-1 -mb-px border-b-2 py-4 text-sm font-bold transition ${
+                      mode === value
+                        ? "border-brand-500 text-brand-600"
+                        : "border-transparent text-slate-400 hover:text-slate-700"
+                    }`}
+                  >
+                    {value === "daily" ? "Hourly / Daily" : "Monthly"}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-3 p-5">
+                {/* Location */}
+                <div className="rounded-xl border border-[#d5dbe3] bg-white px-4 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.08)]">
+                  <p className="text-[11px] font-semibold text-brand-600">Where</p>
+                  <AddressAutocomplete
+                    defaultValue={location}
+                    placeholder="Enter a location"
+                    inputClassName="mt-0.5 w-full bg-transparent text-[16px] font-semibold text-slate-800 outline-none placeholder:font-normal placeholder:text-slate-400"
+                    onPlace={(place) => {
+                      setLocation(place.address);
+                      setLatitude(place.lat);
+                      setLongitude(place.lng);
+                    }}
+                  />
+                </div>
+
+                {/* From + Until/Plan */}
+                <div className="grid grid-cols-2 gap-3">
+                  <SearchDateTimePicker
+                    label="From"
+                    value={startDateTime}
+                    onChange={(next) => {
+                      setDate(next.toISOString().split("T")[0]);
+                      setStartTime(mode === "monthly" ? "00:00" : toTimeString(next));
+                    }}
+                    dateOnly={mode === "monthly"}
+                  />
+                  {mode === "monthly" ? (
+                    <div className="rounded-lg border border-[#E5E7EB] bg-white px-3.5 py-2.5 shadow-sm">
+                      <span className="text-[11px] font-semibold text-brand-600">Schedule</span>
+                      <div className="relative mt-0.5">
+                        <select
+                          value={monthlyPlan}
+                          onChange={(e) => setMonthlyPlan(e.target.value as NonNullable<SearchFilters["monthlyPlan"]>)}
+                          className="w-full appearance-none bg-transparent text-[14px] font-semibold text-slate-800 outline-none"
+                        >
+                          <option value="full_week">Everyday</option>
+                          <option value="weekdays">Mon – Fri</option>
+                          <option value="any_3_days">Any 3 days</option>
+                        </select>
+                        <svg className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+                        </svg>
+                      </div>
+                    </div>
+                  ) : (
+                    <SearchDateTimePicker
+                      label="Until"
+                      value={endDateTime}
+                      onChange={(next) => {
+                        setDate(next.toISOString().split("T")[0]);
+                        setEndTime(toTimeString(next));
+                      }}
+                    />
                   )}
                 </div>
 
@@ -262,22 +414,24 @@ export default function HomePage() {
                   onClick={submit}
                   className="font-display flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-4 text-[15px] font-bold text-white transition hover:bg-brand-600 hover:shadow-[0_8px_24px_rgba(27,138,90,0.35)]"
                 >
-                  Find parking spaces
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                   </svg>
+                  Search parking spaces
                 </button>
               </div>
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-400">
-              {["Best price guarantee", "Trusted by thousands", "Flexible cancellation"].map((t) => (
-                <span key={t} className="flex items-center gap-1.5">
-                  <svg className="h-3.5 w-3.5 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                  {t}
-                </span>
+            <div className="mt-5 grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100 pt-5">
+              {[
+                { stat: "Instant", label: "Booking" },
+                { stat: "Flexible", label: "Cancellation" },
+                { stat: "Secure", label: "Payments" },
+              ].map((item, i) => (
+                <div key={item.stat} className={i === 0 ? "pr-4" : i === 1 ? "px-4" : "pl-4"}>
+                  <p className="font-display text-sm font-extrabold text-slate-900">{item.stat}</p>
+                  <p className="mt-0.5 text-[11px] text-slate-400">{item.label}</p>
+                </div>
               ))}
             </div>
           </div>
@@ -293,20 +447,6 @@ export default function HomePage() {
             />
           </div>
         </section>
-
-        {/* ── Stats strip ── */}
-        <div className="mt-8 grid grid-cols-3 divide-x divide-slate-100 border-y border-slate-100 py-5 sm:mt-12 sm:py-7">
-          {[
-            { stat: "5,000+", label: "Spaces in Dublin", accent: true },
-            { stat: "Instant", label: "Confirmation" },
-            { stat: "Best price", label: "Guarantee" },
-          ].map((item) => (
-            <div key={item.stat} className="px-3 first:pl-0 last:pr-0 sm:px-6 lg:px-10">
-              <p className={`font-display text-base font-extrabold sm:text-xl lg:text-2xl ${(item as any).accent ? "text-brand-500" : "text-slate-900"}`}>{item.stat}</p>
-              <p className="mt-0.5 text-[10px] text-slate-400 sm:text-sm">{item.label}</p>
-            </div>
-          ))}
-        </div>
 
         {/* ── Ways to park — bento grid ── */}
         <section className="mt-10 sm:mt-16">
