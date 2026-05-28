@@ -244,30 +244,32 @@ export default function HomePage() {
                   {/* FROM + UNTIL/PLAN */}
                   <div className="grid grid-cols-2">
                     {/* FROM */}
-                    <label className="relative flex cursor-pointer items-center gap-3 px-4 py-3.5 transition active:bg-slate-50">
-                      <svg className="h-[17px] w-[17px] shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-                      </svg>
-                      <div className="min-w-0">
-                        <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-500">{mode === "monthly" ? "Starting" : "From"}</p>
-                        <p className="mt-0.5 text-[13.5px] font-semibold leading-tight text-slate-900">{formatDateShort(startDateTime)}</p>
-                        {mode !== "monthly" && <p className="text-[12px] text-slate-500">{formatTimeAMPM(startDateTime)}</p>}
-                      </div>
-                      <input
-                        type={mode === "monthly" ? "date" : "datetime-local"}
-                        className="absolute inset-0 cursor-pointer opacity-0"
-                        value={mode === "monthly" ? date : `${date}T${startTime}`}
-                        onChange={(e) => {
-                          if (mode === "monthly") {
-                            setDate(e.target.value);
-                          } else {
-                            const [d, t] = e.target.value.split("T");
-                            if (d) setDate(d);
-                            if (t) setStartTime(t.slice(0, 5));
-                          }
-                        }}
-                      />
-                    </label>
+                    <SearchDateTimePicker
+                      label="From"
+                      value={startDateTime}
+                      dateOnly={mode === "monthly"}
+                      portalPopup
+                      onChange={(next) => {
+                        setDate(next.toISOString().split("T")[0]);
+                        setStartTime(mode === "monthly" ? "00:00" : toTimeString(next));
+                      }}
+                      renderTrigger={({ toggle }) => (
+                        <button
+                          type="button"
+                          onClick={toggle}
+                          className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-slate-50"
+                        >
+                          <svg className="h-[17px] w-[17px] shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                          </svg>
+                          <div className="min-w-0">
+                            <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-500">{mode === "monthly" ? "Starting" : "From"}</p>
+                            <p className="mt-0.5 text-[13.5px] font-semibold leading-tight text-slate-900">{formatDateShort(startDateTime)}</p>
+                            {mode !== "monthly" && <p className="text-[12px] text-slate-500">{formatTimeAMPM(startDateTime)}</p>}
+                          </div>
+                        </button>
+                      )}
+                    />
 
                     {/* UNTIL / PLAN */}
                     <div className="relative border-l border-slate-300">
@@ -295,26 +297,31 @@ export default function HomePage() {
                           </div>
                         </label>
                       ) : (
-                        <label className="relative flex cursor-pointer items-center gap-3 px-4 py-3.5 transition active:bg-slate-50">
-                          <svg className="h-[17px] w-[17px] shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-                          </svg>
-                          <div className="min-w-0">
-                            <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-500">Until</p>
-                            <p className="mt-0.5 text-[13.5px] font-semibold leading-tight text-slate-900">{formatDateShort(endDateTime)}</p>
-                            <p className="text-[12px] text-slate-500">{formatTimeAMPM(endDateTime)}</p>
-                          </div>
-                          <input
-                            type="datetime-local"
-                            className="absolute inset-0 cursor-pointer opacity-0"
-                            value={`${date}T${endTime}`}
-                            onChange={(e) => {
-                              const [d, t] = e.target.value.split("T");
-                              if (d) setDate(d);
-                              if (t) setEndTime(t.slice(0, 5));
-                            }}
-                          />
-                        </label>
+                        <SearchDateTimePicker
+                          label="Until"
+                          value={endDateTime}
+                          portalPopup
+                          onChange={(next) => {
+                            setDate(next.toISOString().split("T")[0]);
+                            setEndTime(toTimeString(next));
+                          }}
+                          renderTrigger={({ toggle }) => (
+                            <button
+                              type="button"
+                              onClick={toggle}
+                              className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-slate-50"
+                            >
+                              <svg className="h-[17px] w-[17px] shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                              </svg>
+                              <div className="min-w-0">
+                                <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-500">Until</p>
+                                <p className="mt-0.5 text-[13.5px] font-semibold leading-tight text-slate-900">{formatDateShort(endDateTime)}</p>
+                                <p className="text-[12px] text-slate-500">{formatTimeAMPM(endDateTime)}</p>
+                              </div>
+                            </button>
+                          )}
+                        />
                       )}
                     </div>
                   </div>
