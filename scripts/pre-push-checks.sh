@@ -17,5 +17,4 @@ echo "pre-push: building web"
 yarn build:web
 
 echo "pre-push: running web e2e"
-yarn test:web:e2e
-
+npm --workspace apps/web run test:e2e -- --workers=1 --reporter=line

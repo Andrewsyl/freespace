@@ -25,6 +25,7 @@ done
 
 if [ "$run_web" = true ]; then
   echo "pre-commit: verifying web build"
+  rm -rf apps/web/.next
   npm --workspace apps/web run build
 fi
 

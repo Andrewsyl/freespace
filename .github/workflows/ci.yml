@@ -71,4 +71,4 @@ jobs:
         run: yarn smoke:web:local
 
       - name: Web e2e
-        run: yarn test:web:e2e
+        run: npm --workspace apps/web run test:e2e -- --workers=1 --reporter=line

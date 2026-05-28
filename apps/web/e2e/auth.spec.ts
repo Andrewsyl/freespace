@@ -7,7 +7,7 @@ test("login page renders auth controls", async ({ page }) => {
   await expect(page.getByLabel("Email")).toBeVisible();
   await expect(page.getByLabel("Password")).toBeVisible();
   await expect(page.getByRole("link", { name: "Forgot password?" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
 });
 
 test("reset password request flow shows success notice", async ({ page }) => {
