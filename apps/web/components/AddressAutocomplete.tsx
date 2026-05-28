@@ -24,6 +24,7 @@ export function AddressAutocomplete({
   showLocationButton?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -48,6 +49,26 @@ export function AddressAutocomplete({
       (window as any).google?.maps?.event?.clearInstanceListeners(autocomplete);
     };
   }, [onPlace]);
+
+  // Force pac-container to match this component's container width
+  useEffect(() => {
+    const bodyObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if ((node as HTMLElement).classList?.contains("pac-container")) {
+            if (!containerRef.current) return;
+            const pac = node as HTMLElement;
+            const { width, left } = containerRef.current.getBoundingClientRect();
+            pac.style.setProperty("width", `${width}px`, "important");
+            pac.style.setProperty("left", `${left + window.scrollX}px`, "important");
+          }
+        }
+      }
+    });
+
+    bodyObserver.observe(document.body, { childList: true });
+    return () => bodyObserver.disconnect();
+  }, []);
 
   const handleUseLocation = () => {
     if (!navigator.geolocation) {
@@ -104,7 +125,7 @@ export function AddressAutocomplete({
   };
 
   return (
-    <div className="relative w-full">
+    <div ref={containerRef} className="relative w-full">
       <input
         ref={inputRef}
         name={name}

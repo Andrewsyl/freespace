@@ -17,7 +17,7 @@ import {
 import type { Listing } from "../../../components/ListingCard";
 import { ListingMap } from "./MapSection";
 import { trackEvent } from "../../../lib/telemetry";
-import TimeSelect from "../../../components/TimeSelect";
+import { SearchDateTimePicker } from "../../../components/SearchForm";
 
 type Review = {
   id: string;
@@ -64,28 +64,25 @@ export function MobileListingView({
   fallbackImage: string;
 }) {
   const router = useRouter();
-  const today = useMemo(() => new Date().toISOString().split("T")[0], []);
-  const [date, setDate] = useState(today);
-  const [startTime, setStartTime] = useState("13:30");
-  const [endTime, setEndTime] = useState("15:30");
-  const [showBookingEditor, setShowBookingEditor] = useState(false);
+  const defaultStart = useMemo(() => {
+    const d = new Date();
+    d.setMinutes(Math.ceil(d.getMinutes() / 30) * 30, 0, 0);
+    return d;
+  }, []);
+  const [startAt, setStartAt] = useState(defaultStart);
+  const [endAt, setEndAt] = useState(() => new Date(defaultStart.getTime() + 2 * 60 * 60 * 1000));
 
-  const href = `/checkout/${listing.id}?date=${date}&startTime=${startTime}&endTime=${endTime}`;
+  const pad2 = (n: number) => String(n).padStart(2, "0");
+  const toDateStr = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  const toTimeStr = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+
+  const href = `/checkout/${listing.id}?date=${toDateStr(startAt)}&startTime=${toTimeStr(startAt)}&endTime=${toTimeStr(endAt)}`;
   const amenities = listing.amenities ?? [];
   const images = useMemo(
     () => listing.imageUrls ?? listing.image_urls ?? [fallbackImage],
     [fallbackImage, listing.imageUrls, listing.image_urls],
   );
   const heroImage = images[0] ?? fallbackImage;
-  const selectedDateLabel = useMemo(
-    () =>
-      new Date(`${date}T00:00:00`).toLocaleDateString("en-GB", {
-        weekday: "short",
-        day: "2-digit",
-        month: "short",
-      }),
-    [date],
-  );
 
   return (
     <>
@@ -165,67 +162,29 @@ export function MobileListingView({
 
         {/* ── Choose your time ── */}
         <section className="border-b border-slate-200 bg-white px-5 py-6">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-[20px] font-bold leading-tight tracking-[-0.04em] text-slate-950">
-              Choose your time
-            </h2>
-            <button
-              type="button"
-              onClick={() => setShowBookingEditor((v) => !v)}
-              className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition active:bg-slate-50"
-            >
-              {showBookingEditor ? "Done" : "Change"}
-            </button>
-          </div>
+          <h2 className="text-[20px] font-bold leading-tight tracking-[-0.04em] text-slate-950">
+            Choose your time
+          </h2>
 
-          <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-              {selectedDateLabel}
-            </p>
-            <p className="mt-0.5 text-[22px] font-bold tracking-[-0.03em] text-slate-950">
-              {startTime}{" "}
-              <span className="font-light text-slate-300">→</span>{" "}
-              {endTime}
-            </p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <SearchDateTimePicker
+              label="From"
+              value={startAt}
+              portalPopup
+              onChange={(next) => {
+                setStartAt(next);
+                if (next >= endAt) setEndAt(new Date(next.getTime() + 2 * 60 * 60 * 1000));
+              }}
+            />
+            <SearchDateTimePicker
+              label="Until"
+              value={endAt}
+              portalPopup
+              onChange={(next) => {
+                if (next > startAt) setEndAt(next);
+              }}
+            />
           </div>
-
-          {showBookingEditor && (
-            <div className="mt-4 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <label className="space-y-1.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    From
-                  </span>
-                  <TimeSelect
-                    value={startTime}
-                    onChange={setStartTime}
-                    className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-brand-500"
-                  />
-                </label>
-                <label className="space-y-1.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Until
-                  </span>
-                  <TimeSelect
-                    value={endTime}
-                    onChange={setEndTime}
-                    className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-brand-500"
-                  />
-                </label>
-              </div>
-              <label className="block space-y-1.5">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Date
-                </span>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-brand-500"
-                />
-              </label>
-            </div>
-          )}
 
           <div className="mt-5 space-y-2 text-[13px] text-slate-500">
             <div className="flex items-center gap-2">
@@ -351,9 +310,9 @@ export function MobileListingView({
             onClick={() =>
               void trackEvent("web_booking_started", {
                 listingId: listing.id,
-                date,
-                startTime,
-                endTime,
+                date: toDateStr(startAt),
+                startTime: toTimeStr(startAt),
+                endTime: toTimeStr(endAt),
               })
             }
             className="flex flex-1 items-center justify-center rounded-xl bg-brand-500 py-3.5 text-[15px] font-bold text-white shadow-sm transition active:bg-brand-600"
