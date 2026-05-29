@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   },
   fallback: {
     color: colors.text,
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
     fontWeight: "600",
     letterSpacing: 0.4,

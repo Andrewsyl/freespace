@@ -393,7 +393,7 @@ export function ListingScreen({ navigation, route }: Props) {
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         {loading ? (
           <View style={styles.centered}>
-            <ActivityIndicator color="#1B8A5A" size="large" />
+            <ActivityIndicator color="#ff6363" size="large" />
           </View>
         ) : error ? (
           <View style={styles.centered}>
@@ -551,13 +551,13 @@ export function ListingScreen({ navigation, route }: Props) {
                       onPress={() => setEndAt(new Date(extendOffer.endOfDay))}
                     >
                       <View style={styles.offerIconWrap}>
-                        <Ionicons name="flash" size={15} color="#1B8A5A" />
+                        <Ionicons name="flash" size={15} color="#ff6363" />
                       </View>
                       <Text style={styles.offerText}>
                         Extend to end of day for only{" "}
                         <Text style={styles.offerTextBold}>€{extendOffer.extra}</Text>
                       </Text>
-                      <Ionicons name="chevron-forward" size={15} color="#1B8A5A" />
+                      <Ionicons name="chevron-forward" size={15} color="#ff6363" />
                     </Pressable>
                   ) : null}
                 </View>
@@ -679,7 +679,7 @@ export function ListingScreen({ navigation, route }: Props) {
                     ) : null}
                   </View>
                   {reviewsLoading ? (
-                    <ActivityIndicator color="#1B8A5A" style={{ marginTop: 12, alignSelf: "flex-start" }} />
+                    <ActivityIndicator color="#ff6363" style={{ marginTop: 12, alignSelf: "flex-start" }} />
                   ) : reviews.length ? (
                     <View style={styles.reviewList}>
                       {reviews.slice(0, 3).map((review) => {
@@ -907,7 +907,7 @@ export function ListingScreen({ navigation, route }: Props) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design tokens (spec)
-const GREEN = "#1B8A5A";
+const GREEN = "#ff6363";
 const GREEN_SOFT = "#E6F2EC";
 const FG = "#111111";
 const FG_2 = "#3D3D3D";
@@ -924,7 +924,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   errorText: {
-    fontFamily: "Inter-Regular", fontSize: 15, color: colors.danger,
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: colors.danger,
     textAlign: "center", paddingHorizontal: 24,
   },
 
@@ -937,7 +937,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 5,
     alignSelf: "flex-end",
   },
-  photoCounterText: { fontFamily: "Inter-SemiBold", fontSize: 11, color: "#fff", letterSpacing: 0.5 },
+  photoCounterText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: "#fff", letterSpacing: 0.5 },
 
   // Floating controls
   headerOverlay: {
@@ -979,23 +979,23 @@ const styles = StyleSheet.create({
   // Title block
   titleBlock: { paddingBottom: 14 },
   titleText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 22, lineHeight: 28, letterSpacing: -0.35,
     color: "#151b1b", marginBottom: 8,
   },
   metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6, marginBottom: 4 },
   starPill: { flexDirection: "row", alignItems: "center", gap: 4 },
-  starPillText: { fontFamily: "Inter-SemiBold", fontSize: 13, color: FG },
-  starPillCount: { fontFamily: "Inter-Regular", fontSize: 13, color: FG_MUTED },
+  starPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
+  starPillCount: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED },
   metaDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: LINE_2 },
   availPulseDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: GREEN, marginRight: 4 },
   availPulseDotOff: { backgroundColor: colors.danger },
-  availText: { fontFamily: "Inter-Medium", fontSize: 13, color: GREEN },
+  availText: { fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: GREEN },
   availTextOff: { color: colors.danger },
   addressRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  addressText: { fontFamily: "Inter-Regular", fontSize: 13, color: FG_MUTED, flex: 1, flexShrink: 1 },
-  addressSep: { fontFamily: "Inter-Regular", fontSize: 13, color: LINE_2, flexShrink: 0 },
-  distanceText: { fontFamily: "Inter-Medium", fontSize: 13, color: FG_MUTED, flexShrink: 0 },
+  addressText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, flex: 1, flexShrink: 1 },
+  addressSep: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: LINE_2, flexShrink: 0 },
+  distanceText: { fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: FG_MUTED, flexShrink: 0 },
 
   // Stats strip — inline card, border only, no shadow
   statsStrip: {
@@ -1006,11 +1006,11 @@ const styles = StyleSheet.create({
   },
   statsCell: { flex: 1, paddingVertical: 14, paddingHorizontal: 10, alignItems: "center", gap: 4 },
   statsCellLabel: {
-    fontFamily: "Inter-SemiBold", fontSize: 11,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
     color: FG_SUBTLE, letterSpacing: 0.7, textTransform: "uppercase",
   },
   statsCellValue: {
-    fontFamily: "Inter-SemiBold", fontSize: 17,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 17,
     color: FG, letterSpacing: -0.2,
   },
   statsVDivider: { width: 1, backgroundColor: LINE, marginVertical: 10 },
@@ -1058,7 +1058,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dateTimeLabel: {
-    fontFamily: "Inter-Medium",
+    fontFamily: "PlusJakartaSans-Medium",
     fontSize: 10,
     color: FG_SUBTLE,
     textTransform: "uppercase",
@@ -1067,7 +1067,7 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   dateTimeValue: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     fontWeight: "600",
     color: FG,
@@ -1085,8 +1085,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
-  offerText: { flex: 1, fontFamily: "Inter-Regular", fontSize: 13, color: FG, lineHeight: 19 },
-  offerTextBold: { fontFamily: "Inter-SemiBold", color: GREEN },
+  offerText: { flex: 1, fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG, lineHeight: 19 },
+  offerTextBold: { fontFamily: "PlusJakartaSans-SemiBold", color: GREEN },
 
   // Sections
   sectionDivider: { height: 1, backgroundColor: LINE, marginHorizontal: -spacing.screenX },
@@ -1099,28 +1099,28 @@ const styles = StyleSheet.create({
     backgroundColor: GREEN_SOFT, borderRadius: 8,
     paddingHorizontal: 10, marginHorizontal: -8,
   },
-  availabilityDay: { fontFamily: "Inter-Regular", fontSize: 15, color: FG_2, flex: 1 },
-  availabilityDayToday: { color: GREEN, fontFamily: "Inter-SemiBold" },
-  availabilityHours: { fontFamily: "Inter-Regular", fontSize: 13, color: FG_MUTED, textAlign: "right" },
+  availabilityDay: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: FG_2, flex: 1 },
+  availabilityDayToday: { color: GREEN, fontFamily: "PlusJakartaSans-SemiBold" },
+  availabilityHours: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, textAlign: "right" },
   availabilityHoursToday: { color: GREEN },
   section: { paddingVertical: 20 },
   sectionTitle: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 20, lineHeight: 25, color: FG, letterSpacing: -0.2, marginBottom: 14,
   },
-  sectionBody: { fontFamily: "Inter-Regular", fontSize: 15, lineHeight: 24, color: FG_2 },
-  readMore: { fontFamily: "Inter-SemiBold", fontSize: 15, color: FG, marginTop: 10 },
+  sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, lineHeight: 24, color: FG_2 },
+  readMore: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG, marginTop: 10 },
 
   // Local area map
   localAreaCard: { backgroundColor: "transparent", padding: 0, gap: 12 },
   localAreaHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   localAreaHeaderTextWrap: { flex: 1 },
   localAreaAddress: {
-    fontFamily: "Inter-SemiBold", fontSize: 15, lineHeight: 21,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, lineHeight: 21,
     color: FG, letterSpacing: -0.1,
   },
   localAreaSub: {
-    marginTop: 4, fontFamily: "Inter-Regular",
+    marginTop: 4, fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13, lineHeight: 18, color: FG_MUTED,
   },
   localAreaMap: {
@@ -1143,7 +1143,7 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center", paddingHorizontal: 16,
   },
   localAreaButtonSecondaryText: {
-    fontFamily: "Inter-SemiBold", fontSize: 13, color: FG,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG,
   },
 
   // Feature chips — pill shape, bg-2 fill, no border (spec .chip pattern)
@@ -1158,7 +1158,7 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   featureChipLabel: {
-    fontFamily: "Inter-Medium", fontSize: 13, color: FG_2,
+    fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: FG_2,
   },
 
   // Guarantee strip
@@ -1174,22 +1174,22 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
   guaranteeCopy: { flex: 1 },
-  guaranteeTitle: { fontFamily: "Inter-SemiBold", fontSize: 15, color: FG, letterSpacing: -0.1 },
-  guaranteeSub: { fontFamily: "Inter-Regular", fontSize: 13, color: FG_MUTED, marginTop: 2 },
+  guaranteeTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG, letterSpacing: -0.1 },
+  guaranteeSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, marginTop: 2 },
 
   // Reviews
   reviewsHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 0 },
   reviewsLink: { marginLeft: "auto" },
   reviewsLinkText: {
-    fontFamily: "Inter-SemiBold", fontSize: 13,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13,
     color: GREEN,
   },
   ratingPill: {
     flexDirection: "row", alignItems: "center", gap: 4,
     backgroundColor: BG_2, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5,
   },
-  ratingPillText: { fontFamily: "Inter-SemiBold", fontSize: 12, color: FG },
-  ratingPillCount: { fontFamily: "Inter-Regular", fontSize: 11, color: FG_MUTED },
+  ratingPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
+  ratingPillCount: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: FG_MUTED },
   reviewList: { gap: 12, marginTop: 12 },
   reviewCard: {
     backgroundColor: "#ffffff",
@@ -1200,16 +1200,16 @@ const styles = StyleSheet.create({
     width: 36, height: 36, borderRadius: 18,
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
-  reviewAvatarText: { fontFamily: "Inter-Bold", fontSize: 15, color: FG },
+  reviewAvatarText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG },
   reviewMetaBlock: { flex: 1 },
-  reviewAuthorName: { fontFamily: "Inter-SemiBold", fontSize: 15, color: FG, letterSpacing: -0.1 },
-  reviewDateText: { fontFamily: "Inter-Regular", fontSize: 13, color: FG_MUTED, marginTop: 1 },
+  reviewAuthorName: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG, letterSpacing: -0.1 },
+  reviewDateText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, marginTop: 1 },
   reviewStarPill: {
     flexDirection: "row", alignItems: "center", gap: 3,
     backgroundColor: BG_2, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
   },
-  reviewStarPillText: { fontFamily: "Inter-SemiBold", fontSize: 12, color: FG },
-  reviewComment: { fontFamily: "Inter-Regular", fontSize: 13, lineHeight: 20, color: FG_2 },
+  reviewStarPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
+  reviewComment: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, lineHeight: 20, color: FG_2 },
 
   // Auth modal — bottom sheet
   authModalRoot: { flex: 1, justifyContent: "flex-end" },
@@ -1227,12 +1227,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06, shadowRadius: 12, elevation: 16,
   },
   authModalTitle: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 20, lineHeight: 25, letterSpacing: -0.2,
     color: FG, marginBottom: 6,
   },
   authModalBody: {
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 15, lineHeight: 22,
     color: FG_MUTED, marginBottom: 20,
   },
@@ -1242,7 +1242,7 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center", marginBottom: 10,
   },
   authModalPrimaryText: {
-    fontFamily: "Inter-SemiBold", fontSize: 15, color: "#ffffff",
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#ffffff",
   },
   authModalSecondary: {
     backgroundColor: BG_2,
@@ -1252,11 +1252,11 @@ const styles = StyleSheet.create({
     marginBottom: 10, paddingHorizontal: 16,
   },
   authModalSecondaryText: {
-    fontFamily: "Inter-SemiBold", fontSize: 15,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15,
     color: FG, textAlign: "center",
   },
   authModalLink: { alignItems: "center", justifyContent: "center", paddingVertical: 10 },
-  authModalLinkText: { fontFamily: "Inter-SemiBold", fontSize: 15, color: GREEN },
+  authModalLinkText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: GREEN },
 
   // Bottom dock — fixed, border-top separator, sheet shadow
   bottomBar: {
@@ -1273,16 +1273,16 @@ const styles = StyleSheet.create({
   },
   bottomLeft: { flex: 1, justifyContent: "center" },
   bottomLabel: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11, color: FG_SUBTLE,
     letterSpacing: 0.7, marginBottom: 2,
     textTransform: "uppercase",
   },
   bottomPrice: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 24, color: FG, letterSpacing: -0.5, lineHeight: 29,
   },
-  bottomDuration: { fontFamily: "Inter-Regular", fontSize: 13, color: FG_MUTED, marginTop: 1 },
+  bottomDuration: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, marginTop: 1 },
   reserveBtn: {
     backgroundColor: GREEN,
     borderRadius: 12,
@@ -1291,8 +1291,8 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   reserveBtnDisabled: { backgroundColor: LINE },
-  reserveBtnText: { fontFamily: "Inter-SemiBold", fontSize: 15, color: "#ffffff", letterSpacing: -0.1 },
-  reserveBtnDisabledText: { fontFamily: "Inter-Regular", fontSize: 15, color: FG_MUTED },
+  reserveBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#ffffff", letterSpacing: -0.1 },
+  reserveBtnDisabledText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: FG_MUTED },
 
   // Picker modal — bottom sheet
   pickerBackdrop: {
@@ -1316,7 +1316,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   pickerTitle: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 18,
     fontWeight: "700",
     color: FG,
@@ -1334,7 +1334,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   pickerDoneBtnText: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 17,
     fontWeight: "700",
     color: "#ffffff",
@@ -1350,25 +1350,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 8,
     backgroundColor: "rgba(255,255,255,0.14)", borderRadius: 999,
   },
-  viewerCloseText: { fontFamily: "Inter-SemiBold", fontSize: 13, color: "#fff" },
+  viewerCloseText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: "#fff" },
 
   // Unused legacy styles (kept for compatibility with any unused JSX branches)
   airSummaryHeaderRow: { flexDirection: "row", alignItems: "center", gap: 16, paddingHorizontal: 4, marginBottom: 14 },
   airSummaryThumb: { width: 84, height: 84, borderRadius: 42, backgroundColor: BG_2 },
   taxiSummaryAvatarPlaceholder: { justifyContent: "center", alignItems: "center" },
   airSummaryHeaderContent: { flex: 1, minWidth: 0 },
-  airSummaryTitle: { fontFamily: "Inter-Bold", fontSize: 24, lineHeight: 29, color: FG, marginBottom: 4 },
-  airSummarySub: { fontFamily: "Inter-Regular", fontSize: 13, lineHeight: 19, color: FG_MUTED },
+  airSummaryTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 24, lineHeight: 29, color: FG, marginBottom: 4 },
+  airSummarySub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, lineHeight: 19, color: FG_MUTED },
   airSummaryStars: { flexDirection: "row", alignItems: "center", gap: 2 },
   airReviewSummaryLine: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
-  airReviewSummarySecondary: { fontFamily: "Inter-Regular", fontSize: 13, color: FG_MUTED },
+  airReviewSummarySecondary: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED },
   airStatsPills: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 18 },
   airStatPill: {
     flexDirection: "row", alignItems: "center", gap: 6,
     borderWidth: 1, borderColor: LINE, backgroundColor: BG_2,
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999,
   },
-  airStatPillText: { fontFamily: "Inter-SemiBold", fontSize: 13, color: FG_2 },
+  airStatPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG_2 },
   typePill: { alignSelf: "flex-start", backgroundColor: GREEN_SOFT, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginBottom: 10 },
-  typePillText: { fontFamily: "Inter-SemiBold", fontSize: 11, color: GREEN, letterSpacing: 0.5 },
+  typePillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: GREEN, letterSpacing: 0.5 },
 });

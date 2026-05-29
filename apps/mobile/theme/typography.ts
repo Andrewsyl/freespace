@@ -1,30 +1,12 @@
-import { Platform } from "react-native";
 import { colors } from "./colors";
 import { mobileDesignTokens as designTokens } from "../designTokens";
 
 const type = designTokens.typography;
 
-// Inter font family for both iOS and Android
-// Note: Currently using system fonts as fallback
-// - iOS: San Francisco (similar to Inter)
-// - Android: Roboto (similar to Inter)
-// To use custom Inter fonts, add font files to assets/fonts/ and load with expo-font
 const fontFamily = {
-  regular: Platform.select({
-    ios: "System",
-    android: "System",
-    default: "System",
-  }),
-  medium: Platform.select({
-    ios: "System",
-    android: "System",
-    default: "System",
-  }),
-  semiBold: Platform.select({
-    ios: "System",
-    android: "System",
-    default: "System",
-  }),
+  regular: "PlusJakartaSans-Regular",
+  medium: "PlusJakartaSans-Medium",
+  semiBold: "PlusJakartaSans-SemiBold",
 };
 
 export const typography = {

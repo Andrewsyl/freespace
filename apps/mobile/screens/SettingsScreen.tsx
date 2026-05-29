@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.textMuted,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 21,
   },
@@ -96,14 +96,14 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: colors.text,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     fontWeight: "600",
     lineHeight: 20,
   },
   cardBody: {
     color: colors.textMuted,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 21,
     marginTop: 6,

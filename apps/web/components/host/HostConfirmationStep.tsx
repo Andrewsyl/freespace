@@ -19,7 +19,7 @@ const ACCESS_TYPE_LABELS: Record<string, string> = {
 function Row({ label, value, missing }: { label: string; value?: string | null; missing?: boolean }) {
   return (
     <div className="flex items-start gap-3 border-b border-slate-100 py-2.5 last:border-0">
-      <dt className="w-28 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</dt>
+      <dt className="w-28 shrink-0 text-xs font-semibold uppercase tracking-wide text-brand-300">{label}</dt>
       <dd className={`flex-1 text-sm ${missing ? "italic text-slate-400" : "font-medium text-slate-900"}`}>
         {value || (missing ? "Not set" : "—")}
       </dd>
@@ -45,7 +45,7 @@ export function HostConfirmationStep({ data }: HostStepProps) {
 
       {/* Details */}
       <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Your listing</p>
+        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-brand-300">Your listing</p>
         <dl>
           <Row label="Address"    value={data.address}                          missing={!data.address} />
           <Row label="Space type" value={data.spaceType ? prettySpaceType(data.spaceType) : undefined} missing={!data.spaceType} />
@@ -75,10 +75,10 @@ export function HostConfirmationStep({ data }: HostStepProps) {
       {/* Amenities */}
       {data.amenities.length > 0 && (
         <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Features</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-300">Features</p>
           <div className="flex flex-wrap gap-2">
             {data.amenities.map((item) => (
-              <span key={item} className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200">
+              <span key={item} className="rounded-full bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 ring-1 ring-brand-200">
                 {item}
               </span>
             ))}
@@ -97,9 +97,9 @@ export function HostConfirmationStep({ data }: HostStepProps) {
       )}
 
       {/* Publish callout */}
-      <div className="rounded-lg bg-emerald-50 px-4 py-4 ring-1 ring-emerald-100">
-        <p className="text-sm font-semibold text-emerald-900">Ready to go live?</p>
-        <p className="mt-1 text-xs leading-relaxed text-emerald-700">
+      <div className="rounded-lg bg-brand-50 px-4 py-4 ring-1 ring-brand-100">
+        <p className="text-sm font-semibold text-brand-800">Ready to go live?</p>
+        <p className="mt-1 text-xs leading-relaxed text-brand-700">
           Your listing will appear on the map immediately. You can edit details, pause, or remove it anytime from your host dashboard.
         </p>
       </div>

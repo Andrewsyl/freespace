@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: 17,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   content: {
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   rowTitle: {
     color: colors.text,
     fontSize: 14,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   rowSubtitle: {
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: "#ffffff",
     fontSize: 14,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
 });

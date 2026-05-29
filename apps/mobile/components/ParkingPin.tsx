@@ -74,7 +74,7 @@ export function ParkingPin({ price, isSelected = false, onPress }: ParkingPinPro
         {/* Main pin container */}
         {isSelected ? (
           <LinearGradient
-            colors={["#2ECC8F", "#2ECC8F"]} // emerald-500 to teal-600
+            colors={["#ff6363", "#ff6363"]} // emerald-500 to teal-600
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={[styles.pinContainer, styles.selectedContainer]}
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     minWidth: 50,
   },
   selectedContainer: {
-    shadowColor: "#2ECC8F",
+    shadowColor: "#ff6363",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     borderRadius: 999,
     borderWidth: 1.5,
-    borderColor: "#a7f3d0", // emerald-200
+    borderColor: "#ffbebe", // emerald-200
   },
   selectedText: {
     color: "#ffffff",
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   unselectedText: {
-    color: "#2ECC8F", // emerald-700
+    color: "#ff6363", // emerald-700
     fontSize: 13,
     fontWeight: "600",
   },
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 8.5,
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
-    borderTopColor: "#a7f3d0", // emerald-200 border
+    borderTopColor: "#ffbebe", // emerald-200 border
   },
   triangle: {
     width: 0,
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     borderRightColor: "transparent",
   },
   triangleSelected: {
-    borderTopColor: "#2ECC8F", // teal-600
+    borderTopColor: "#ff6363", // teal-600
   },
   triangleUnselected: {
     borderTopColor: "#ffffff",
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     left: -8,
     right: -8,
     bottom: -8,
-    backgroundColor: "#34d399", // emerald-400
+    backgroundColor: "#ff7878", // emerald-400
     borderRadius: 999,
   },
 });

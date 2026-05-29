@@ -190,7 +190,7 @@ export function PaymentsScreen() {
         {loading ? (
           <View style={styles.loadingOverlay} pointerEvents="none">
             <View style={styles.loadingBadge}>
-              <ActivityIndicator size="small" color="#2ECC8F" />
+              <ActivityIndicator size="small" color="#ff6363" />
               <Text style={styles.loadingText}>Loading payments…</Text>
             </View>
           </View>
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: 24,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     letterSpacing: -0.4,
     marginTop: 6,
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.textMuted,
     fontSize: 12,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   section: {
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     color: colors.text,
     fontSize: 18,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     marginBottom: 10,
     marginTop: 8,
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
   poweredBy: {
     color: colors.textSoft,
     fontSize: 12,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     textAlign: "center",
   },
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.text,
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   addButton: {
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
   addCardLabel: {
     color: colors.text,
     fontSize: 13,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   cardFieldContainer: {
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
   rowTitle: {
     color: colors.text,
     fontSize: 14,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   rowSubtitle: {
@@ -486,13 +486,13 @@ const styles = StyleSheet.create({
   rowActionText: {
     color: colors.text,
     fontSize: 11,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   rowStatus: {
     color: "#16a34a",
     fontSize: 11,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   rowDelete: {
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
   rowDeleteText: {
     color: "#b42318",
     fontSize: 11,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   rowRetry: {

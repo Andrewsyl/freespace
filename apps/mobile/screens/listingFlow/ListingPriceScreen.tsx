@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   kicker: textStyles.kicker,
   title: {
     color: colors.text,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 26,
     fontWeight: "600",
     letterSpacing: -0.6,
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.textMuted,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     fontWeight: "400",
     lineHeight: 22,
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   },
   modeTabText: {
     color: colors.textMuted,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     fontWeight: "600",
     textAlign: "center",
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   },
   priceRowHint: {
     color: colors.textSoft,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
     fontWeight: "400",
     marginTop: 5,
@@ -385,14 +385,14 @@ const styles = StyleSheet.create({
   },
   warningTitle: {
     color: "#9A3412",
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 4,
   },
   warningBody: {
     color: "#9A3412",
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     fontWeight: "400",
     lineHeight: 20,
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   },
   continueBtnText: {
     color: "#FFFFFF",
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     fontWeight: "600",
     letterSpacing: -0.2,

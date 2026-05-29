@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
   },
   profileEmail: {
     color: colors.textMuted,
-    fontFamily: "Inter-Medium",
+    fontFamily: "PlusJakartaSans-Medium",
     fontSize: 11.5,
     fontWeight: "500",
     marginTop: 1,
@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fef3c7",
   },
   statusPillText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 9.5,
     fontWeight: "600",
   },

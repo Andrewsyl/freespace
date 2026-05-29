@@ -114,7 +114,7 @@ export function HostStreetViewStep({ data, onUpdate }: HostStepProps) {
 
       {/* Saved confirmation */}
       {data.coverHeading != null && (
-        <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700">
+        <div className="flex items-center gap-2 rounded-lg bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-700">
           <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
             <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
           </svg>
@@ -127,7 +127,7 @@ export function HostStreetViewStep({ data, onUpdate }: HostStepProps) {
         <button
           type="button"
           onClick={handleUseView}
-          className="flex-1 rounded-lg bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500"
+          className="flex-1 rounded-lg bg-brand-600 py-3 text-sm font-semibold text-white transition hover:bg-brand-500"
         >
           Use this view
         </button>

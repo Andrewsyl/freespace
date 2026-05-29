@@ -147,13 +147,13 @@ const styles = StyleSheet.create({
   },
   kicker: {
     ...textStyles.kicker,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
   },
   title: {
     color: colors.text,
     fontSize: 26,
     lineHeight: 31,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     marginTop: 10,
     letterSpacing: -0.6,
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   subtitle: {
     color: "#667085",
     fontSize: 14,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     marginTop: 8,
     lineHeight: 22,
   },
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   webFallbackText: {
     color: colors.textMuted,
     fontSize: 14,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     textAlign: "center",
     lineHeight: 22,
   },
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.cardBg,
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     letterSpacing: -0.2,
   },
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: colors.textMuted,
     fontSize: 14,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
 });

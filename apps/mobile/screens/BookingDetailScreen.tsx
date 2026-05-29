@@ -117,7 +117,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     if (isInProgress) return {
       label: "In progress",
       icon: "play-circle" as const,
-      cardGradient: ["#1B8A5A", "#000000"] as const,
+      cardGradient: ["#ff6363", "#000000"] as const,
     };
     if (isUpcoming) return {
       label: "Confirmed",
@@ -592,7 +592,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const SCREEN_BG  = "#EFEEEC";
-const GREEN      = "#1B8A5A";
+const GREEN      = "#ff6363";
 const GREEN_SOFT = "#E6F2EC";
 const FG         = "#111111";
 const FG_MUTED   = "#6B6B6B";
@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: FG,
     letterSpacing: -0.1,
     paddingHorizontal: 8,
@@ -670,18 +670,18 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   statusChipText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
     color: "#fff",
   },
   ticketPrice: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 28,
     color: "#fff",
     letterSpacing: -0.8,
   },
   ticketTitle: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 20,
     color: "#fff",
     letterSpacing: -0.4,
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   ticketAddress: {
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     color: "rgba(255,255,255,0.58)",
     marginBottom: 24,
@@ -703,20 +703,20 @@ const styles = StyleSheet.create({
   timeCol: { flex: 1 },
   timeColRight: { alignItems: "flex-end" },
   timeEyebrow: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 9,
     color: "rgba(255,255,255,0.55)",
     letterSpacing: 0.9,
     marginBottom: 4,
   },
   timeBig: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 26,
     color: "#fff",
     letterSpacing: -0.5,
   },
   timeSub: {
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
     color: "rgba(255,255,255,0.55)",
     marginTop: 2,
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
   },
   durationText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
     color: "rgba(255,255,255,0.8)",
   },
@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
   },
   extendBtnText: {
     flex: 1,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     color: "rgba(255,255,255,0.88)",
   },
@@ -775,7 +775,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   refEyebrow: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 9,
     color: GREEN,
     letterSpacing: 0.8,
@@ -783,7 +783,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   refCode: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 22,
     color: FG,
     letterSpacing: 2.5,
@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   plateChipText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
     color: FG_MUTED,
   },
@@ -823,7 +823,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     color: "#fff",
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
   },
   outlineBtn: {
     backgroundColor: "#fff",
@@ -839,7 +839,7 @@ const styles = StyleSheet.create({
   outlineBtnText: {
     color: FG,
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
   },
   dangerBtn: {
     borderWidth: 1,
@@ -852,14 +852,14 @@ const styles = StyleSheet.create({
   dangerBtnText: {
     color: "#DC2626",
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
   },
   btnDisabled: { opacity: 0.6 },
   errorText: {
     color: "#DC2626",
     fontSize: 14,
     textAlign: "center",
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
   },
 
   // ── Info cards ───────────────────────────────────────────────────────────
@@ -873,14 +873,14 @@ const styles = StyleSheet.create({
   infoCardTitle: {
     color: FG,
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     marginBottom: 8,
   },
   infoCardBody: {
     color: FG_MUTED,
     fontSize: 14,
     lineHeight: 22,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
   },
   accessCodeWrap: {
     marginTop: 14,
@@ -894,13 +894,13 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.7,
     marginBottom: 6,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
   },
   accessCodeValue: {
     color: FG,
     fontSize: 20,
     letterSpacing: 2.5,
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
   },
   secondaryLinkBtn: {
     marginTop: 12,
@@ -913,7 +913,7 @@ const styles = StyleSheet.create({
   secondaryLinkBtnText: {
     color: GREEN,
     fontSize: 13,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
   },
 
   // ── Cancellation timeline card ───────────────────────────────────────────
@@ -925,7 +925,7 @@ const styles = StyleSheet.create({
     borderColor: LINE,
   },
   cancelEyebrow: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 10,
     color: FG_MUTED,
     letterSpacing: 0.9,
@@ -933,7 +933,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   cancelNote: {
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     color: FG_MUTED,
     lineHeight: 22,
@@ -970,12 +970,12 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
   },
   timelineTitle: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
     color: FG,
   },
   timelineSub: {
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     color: FG_MUTED,
     marginTop: 2,
@@ -984,7 +984,7 @@ const styles = StyleSheet.create({
   // ── Review CTA ───────────────────────────────────────────────────────────
   reviewCta: {
     borderRadius: 16,
-    backgroundColor: "#1B8A5A",
+    backgroundColor: "#ff6363",
     paddingVertical: 22,
     paddingHorizontal: 20,
     alignItems: "center",
@@ -996,7 +996,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   reviewCtaQuestion: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 17,
     color: "#fff",
     textAlign: "center",
@@ -1033,12 +1033,12 @@ const styles = StyleSheet.create({
   helpRowBody: { flex: 1 },
   helpRowTitle: {
     fontSize: 14,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: FG,
   },
   helpRowSub: {
     fontSize: 12,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     color: FG_MUTED,
     marginTop: 2,
   },

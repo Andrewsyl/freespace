@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   topTitle: {
     color: colors.text,
     fontSize: 17,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     letterSpacing: -0.2,
   },
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     color: colors.text,
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     textAlign: "center",
   },
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   earningsTitle: {
     color: colors.text,
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   earningsRow: {
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
   payoutTitle: {
     color: colors.text,
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   payoutBody: {
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 14,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   listMeta: {
@@ -575,18 +575,18 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   primaryButtonDisabled: {
-    backgroundColor: "#a7f3d0",
+    backgroundColor: "#ffbebe",
   },
   primaryButtonText: {
     color: colors.cardBg,
     fontSize: 14,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   actionText: {
     color: colors.text,
     fontSize: 13,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
 });

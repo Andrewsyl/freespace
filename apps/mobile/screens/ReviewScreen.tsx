@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   ctaBtn: {
-    backgroundColor: "#1B8A5A",
+    backgroundColor: "#ff6363",
     borderRadius: 12,
     minHeight: 50,
     alignItems: "center",
@@ -342,13 +342,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#E0E0DE",
   },
   ctaBtnText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     color: "#ffffff",
     letterSpacing: -0.1,
   },
   ctaBtnTextDisabled: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     color: "#9A9A9A",
     letterSpacing: -0.1,

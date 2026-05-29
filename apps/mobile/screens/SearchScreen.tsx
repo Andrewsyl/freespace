@@ -1559,7 +1559,7 @@ export function SearchScreen({ navigation }: Props) {
                             }}
                           >
                             <View style={styles.resultIcon}>
-                              <MapPinIcon size={17} color="#2ECC8F" strokeWidth={2.3} />
+                              <MapPinIcon size={17} color="#ff6363" strokeWidth={2.3} />
                             </View>
                             <View style={styles.resultCopy}>
                               <Text style={styles.resultTitle}>{mainText}</Text>
@@ -2089,7 +2089,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     color: colors.text,
-    fontFamily: "Inter-Medium",
+    fontFamily: "PlusJakartaSans-Medium",
     fontSize: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -2280,7 +2280,7 @@ const styles = StyleSheet.create({
     width: 40,
   },
   resultIconDot: {
-    backgroundColor: "#2ECC8F",
+    backgroundColor: "#ff6363",
     borderRadius: 6,
     height: 12,
     width: 12,

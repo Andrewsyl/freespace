@@ -16,8 +16,10 @@ import Constants from "expo-constants";
 import { useFonts } from "expo-font";
 import {
   PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 import * as SplashScreen from "expo-splash-screen";
 import { StripeProvider } from "@stripe/stripe-react-native";
@@ -114,17 +116,11 @@ function getSentry():
 export default function App() {
   const [launchComplete, setLaunchComplete] = useState(true);
   const [fontsLoaded] = useFonts({
-    "Inter-Regular": require("./assets/fonts/Inter-Regular.ttf"),
-    "Inter-Medium": require("./assets/fonts/Inter-Medium.ttf"),
-    "Inter-SemiBold": require("./assets/fonts/Inter-SemiBold.ttf"),
-    "Inter-Bold": require("./assets/fonts/Inter-Bold.ttf"),
-    "Poppins-Regular": require("./assets/fonts/Poppins-Regular.ttf"),
-    "Poppins-Medium": require("./assets/fonts/Poppins-Medium.ttf"),
-    "Poppins-SemiBold": require("./assets/fonts/Poppins-SemiBold.ttf"),
-    "Poppins-Bold": require("./assets/fonts/Poppins-Bold.ttf"),
     "PlusJakartaSans-Regular": PlusJakartaSans_400Regular,
+    "PlusJakartaSans-Medium": PlusJakartaSans_500Medium,
     "PlusJakartaSans-SemiBold": PlusJakartaSans_600SemiBold,
     "PlusJakartaSans-Bold": PlusJakartaSans_700Bold,
+    "PlusJakartaSans-ExtraBold": PlusJakartaSans_800ExtraBold,
     "UKNumberPlate": require("./assets/fonts/UKNumberPlate.ttf"),
   });
 
@@ -456,7 +452,7 @@ function MainTabs() {
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,
-        tabBarActiveTintColor: "#2ECC8F",
+        tabBarActiveTintColor: "#ff6363",
         tabBarInactiveTintColor: "#98a4ab",
         tabBarStyle: baseTabBarStyle,
         tabBarBackground: () => <View style={styles.tabBarChrome} />,
@@ -665,8 +661,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   navIconShellActive: {
-    backgroundColor: "#2ECC8F",
-    shadowColor: "#2ECC8F",
+    backgroundColor: "#ff6363",
+    shadowColor: "#ff6363",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 6,

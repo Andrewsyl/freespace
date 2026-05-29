@@ -219,13 +219,13 @@ const styles = StyleSheet.create({
   },
   kicker: {
     ...textStyles.kicker,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
   },
   title: {
     color: colors.text,
     fontSize: 26,
     lineHeight: 31,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     marginTop: 12,
     letterSpacing: -0.6,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   subtitle: {
     color: "#667085",
     fontSize: 14,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     marginTop: 10,
     lineHeight: 22,
   },
@@ -256,13 +256,13 @@ const styles = StyleSheet.create({
   uploadButtonText: {
     color: colors.cardBg,
     fontSize: 16,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   uploadHint: {
     color: colors.textSoft,
     fontSize: 12,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     marginTop: 10,
   },
   grid: {
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   continueButtonText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     fontWeight: "600",
     letterSpacing: -0.2,
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.danger,
     fontSize: 12,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     marginTop: 10,
   },

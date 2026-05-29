@@ -418,12 +418,12 @@ const styles = StyleSheet.create({
   },
   accessChoiceText: {
     color: hostFlowColors.text,
-    fontFamily: "Inter-Medium",
+    fontFamily: "PlusJakartaSans-Medium",
     fontSize: 16,
     lineHeight: 22,
   },
   accessChoiceTextActive: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
   },
   container: {
     backgroundColor: hostFlowColors.appBg,
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
   },
   featureChipText: {
     color: hostFlowColors.text,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     fontWeight: "600",
     lineHeight: 16,
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     color: hostFlowColors.text,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 21,
     marginTop: 12,
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: hostFlowColors.cardBg,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     fontWeight: "600",
     letterSpacing: -0.2,
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
   },
   privacyNote: {
     color: hostFlowColors.textSoft,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
     lineHeight: 18,
     marginTop: 8,
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   },
   questionBody: {
     color: hostFlowColors.textMuted,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 22,
   },
@@ -546,14 +546,14 @@ const styles = StyleSheet.create({
   },
   questionTitle: {
     color: hostFlowColors.text,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 20,
     fontWeight: "600",
     lineHeight: 25,
   },
   sectionBody: {
     color: hostFlowColors.textMuted,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     fontWeight: "400",
     lineHeight: 22,
@@ -563,8 +563,8 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   sectionLabel: {
-    color: hostFlowColors.textSoft,
-    fontFamily: "Inter-SemiBold",
+    color: "#ff9595",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
     fontWeight: "700",
     letterSpacing: 0.5,
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: hostFlowColors.text,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 20,
     fontWeight: "600",
     letterSpacing: -0.4,
@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: hostFlowColors.textMuted,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     fontWeight: "400",
     lineHeight: 22,
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: hostFlowColors.text,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 26,
     fontWeight: "600",
     letterSpacing: -0.6,
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     color: hostFlowColors.textMuted,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 17,
     fontWeight: "600",
     lineHeight: 24,

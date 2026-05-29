@@ -450,13 +450,13 @@ const styles = StyleSheet.create({
   },
   kicker: {
     ...textStyles.kicker,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
   },
   title: {
     color: colors.text,
     fontSize: 26,
     lineHeight: 31,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     marginTop: 12,
     letterSpacing: -0.6,
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
   subtitle: {
     color: "#667085",
     fontSize: 14,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     marginTop: 8,
     lineHeight: 22,
   },
@@ -479,20 +479,20 @@ const styles = StyleSheet.create({
   guidanceTitle: {
     color: colors.text,
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   guidanceBody: {
     color: colors.textMuted,
     fontSize: 14,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     lineHeight: 22,
     marginTop: 6,
   },
   guidanceBullet: {
     color: colors.text,
     fontSize: 13,
-    fontFamily: "Inter-Medium",
+    fontFamily: "PlusJakartaSans-Medium",
     lineHeight: 20,
     marginTop: 8,
   },
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.danger,
     fontSize: 12,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     marginTop: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
   editTitle: {
     color: colors.text,
     fontSize: 14,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     paddingHorizontal: 16,
     paddingTop: 14,
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
   editLabel: {
     color: colors.text,
     fontSize: 14,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   mapPreview: {
@@ -597,26 +597,26 @@ const styles = StyleSheet.create({
   confirmTitle: {
     color: colors.text,
     fontSize: 14,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   confirmSubtitle: {
     color: colors.textMuted,
     fontSize: 12,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     marginTop: 4,
   },
   label: {
     color: colors.textMuted,
     fontSize: 12,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     letterSpacing: 0.2,
   },
   value: {
     color: colors.text,
     fontSize: 14,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     marginTop: 6,
   },
@@ -655,14 +655,14 @@ const styles = StyleSheet.create({
   successTitle: {
     color: colors.text,
     fontSize: 18,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     marginTop: 6,
   },
   successBody: {
     color: colors.textMuted,
     fontSize: 13,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     marginTop: 4,
     textAlign: "center",
   },
@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: colors.cardBg,
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     letterSpacing: -0.2,
   },
@@ -696,7 +696,7 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: colors.textMuted,
     fontSize: 13,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
 });

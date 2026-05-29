@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   topTitle: {
     color: colors.text,
     fontSize: 17,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     letterSpacing: -0.2,
   },
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     color: colors.textSoft,
     fontSize: 12,
     lineHeight: 16,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     marginBottom: 8,
     letterSpacing: 0.2,

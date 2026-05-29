@@ -27,7 +27,7 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
                 onClick={() => onUpdate({ availabilityText: active ? "" : preset })}
                 className={`rounded-full px-3.5 py-2 text-sm font-semibold transition ${
                   active
-                    ? "bg-emerald-100 text-emerald-800 ring-1 ring-[#2ECC8F]"
+                    ? "bg-brand-100 text-brand-700 ring-1 ring-[#ff6363]"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
               >
@@ -46,7 +46,7 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
           onChange={(e) => onUpdate({ availabilityText: e.target.value })}
           rows={3}
           placeholder="e.g. Available 24/7 — call on arrival for gate code."
-          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#2ECC8F] focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#ff6363] focus:outline-none focus:ring-2 focus:ring-brand-100"
         />
         <p className="text-xs text-slate-400">This text appears on your public listing.</p>
       </div>

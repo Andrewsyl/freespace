@@ -136,7 +136,7 @@ export function MapBottomCard({
                 <Ionicons
                   name={isFavorite ? "heart" : "heart-outline"}
                   size={19}
-                  color={isFavorite ? "#2ECC8F" : "#2ECC8F"}
+                  color={isFavorite ? "#ff6363" : "#ff6363"}
                 />
               </Pressable>
             ) : null}
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     borderColor: "#e2e7eb",
   },
   metaLine: {
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
     lineHeight: 16,
     color: "#4b5563",
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   priceLabel: {
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 11.5,
     lineHeight: 15,
     color: "#7a8288",
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
   },
   soldOutText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     color: "#94A3B8",
     textTransform: "uppercase",

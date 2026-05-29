@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.textMuted,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 21,
   },
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.text,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     fontWeight: "600",
     lineHeight: 20,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   selectEyebrow: {
     color: colors.textSoft,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
     lineHeight: 14,
     letterSpacing: 0.5,
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     color: colors.text,
-    fontFamily: "Inter-Medium",
+    fontFamily: "PlusJakartaSans-Medium",
     fontSize: 15,
     fontWeight: "600",
   },

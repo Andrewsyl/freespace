@@ -491,7 +491,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       >
         {loadingListing ? (
           <View style={styles.centered}>
-            <ActivityIndicator size="small" color="#2ECC8F" />
+            <ActivityIndicator size="small" color="#ff6363" />
             <Text style={styles.muted}>Loading booking…</Text>
           </View>
         ) : !user ? (
@@ -701,7 +701,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: "600",
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: "#151b1b",
   },
   headerSpacer: { width: 34 },
@@ -720,7 +720,7 @@ const styles = StyleSheet.create({
   listingName: {
     fontSize: 26,
     fontWeight: "700",
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     color: "#151b1b",
     letterSpacing: -0.6,
     lineHeight: 32,
@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
   },
   listingAddress: {
     fontSize: 14,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     color: "#8b949b",
     flex: 1,
     lineHeight: 20,
@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 11,
     fontWeight: "700",
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: "#8b949b",
     textTransform: "uppercase",
     letterSpacing: 1,
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
   editBtnText: {
     fontSize: 13,
     fontWeight: "600",
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: "#151b1b",
   },
 
@@ -795,7 +795,7 @@ const styles = StyleSheet.create({
   dateChipLabel: {
     fontSize: 10,
     fontWeight: "700",
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: "#9A9A9A",
     textTransform: "uppercase",
     letterSpacing: 1,
@@ -803,14 +803,14 @@ const styles = StyleSheet.create({
   },
   dateChipDate: {
     fontSize: 12,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     color: "#6B6B6B",
     marginBottom: 3,
   },
   dateChipTime: {
     fontSize: 20,
     fontWeight: "700",
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     color: "#111111",
     letterSpacing: -0.4,
   },
@@ -833,9 +833,9 @@ const styles = StyleSheet.create({
   },
   durationPillText: {
     fontSize: 13,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
-    color: "#1B8A5A",
+    color: "#ff6363",
   },
 
   // ── Vehicle / Reg plate ─────────────────────────────────────
@@ -874,7 +874,7 @@ const styles = StyleSheet.create({
   },
   regPlaceholder: {
     fontSize: 15,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     color: "#8b949b",
     letterSpacing: 0,
     textTransform: "none",
@@ -887,12 +887,12 @@ const styles = StyleSheet.create({
   },
   vehicleInfoText: {
     fontSize: 13,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     color: "#6b747b",
   },
   regHint: {
     fontSize: 13,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     color: "#F59E0B",
     marginTop: 10,
     lineHeight: 18,
@@ -909,18 +909,18 @@ const styles = StyleSheet.create({
   },
   priceLabel: {
     fontSize: 15,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     color: "#6b747b",
   },
   priceValue: {
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: "#151b1b",
     fontWeight: "600",
   },
   priceMuted: {
     fontSize: 14,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     color: "#8b949b",
   },
   priceTotalRow: {
@@ -933,13 +933,13 @@ const styles = StyleSheet.create({
   priceTotalLabel: {
     fontSize: 16,
     fontWeight: "600",
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: "#151b1b",
   },
   priceTotalValue: {
     fontSize: 26,
     fontWeight: "700",
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     color: "#151b1b",
     letterSpacing: -0.6,
   },
@@ -964,14 +964,14 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   footerPriceLabel: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
     color: "#8b949b",
     letterSpacing: 0.8,
     textTransform: "uppercase",
   },
   footerPriceValue: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 26,
     fontWeight: "700",
     color: "#151b1b",
@@ -979,7 +979,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.7,
   },
   footerPriceMeta: {
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
     color: "#8b949b",
     marginTop: 2,
@@ -990,13 +990,13 @@ const styles = StyleSheet.create({
     minHeight: 52,
     minWidth: 152,
     borderRadius: 14,
-    backgroundColor: "#1B8A5A",
+    backgroundColor: "#ff6363",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 28,
   },
   footerButtonText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 16,
     fontWeight: "600",
     color: "#ffffff",
@@ -1018,14 +1018,14 @@ const styles = StyleSheet.create({
   },
   centeredSubtitle: {
     fontSize: 15,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     color: "#6b747b",
     marginTop: 8,
     textAlign: "center",
   },
   muted: {
     fontSize: 13,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     color: "#6b747b",
     marginTop: 8,
   },
@@ -1061,7 +1061,7 @@ const styles = StyleSheet.create({
   pickerTitle: {
     fontSize: 18,
     fontWeight: "700",
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     color: "#111111",
     marginBottom: 4,
     textAlign: "center",
@@ -1070,7 +1070,7 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     marginHorizontal: 20,
     marginTop: 16,
-    backgroundColor: "#2ECC8F",
+    backgroundColor: "#ff6363",
     borderRadius: 14,
     minHeight: 54,
     alignItems: "center",
@@ -1079,7 +1079,7 @@ const styles = StyleSheet.create({
   pickerDoneBtnText: {
     fontSize: 17,
     fontWeight: "700",
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     color: "#ffffff",
     letterSpacing: -0.2,
   },

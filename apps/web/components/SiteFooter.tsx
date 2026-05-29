@@ -83,7 +83,7 @@ export function SiteFooter() {
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-brand-200/60">Your parking platform</p>
             <p className="mt-1.5 font-display text-xl font-bold text-white sm:text-2xl">
-              The smarter way to find and book parking.
+              Find your space, stress free.
             </p>
           </div>
           <button

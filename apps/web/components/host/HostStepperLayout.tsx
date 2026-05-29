@@ -39,17 +39,17 @@ export function HostStepperLayout({
       <div className="pt-6 pb-2">
         {/* Step counter + progress */}
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+          <span className="text-xs font-semibold uppercase tracking-widest text-brand-300">
             Step {step} of {totalSteps}
           </span>
-          <span className="text-xs font-semibold" style={{ color: "#2ECC8F" }}>
+          <span className="text-xs font-semibold" style={{ color: "#ff6363" }}>
             {progress}%
           </span>
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
           <div
             className="h-full rounded-full transition-all duration-300"
-            style={{ width: `${progress}%`, backgroundColor: "#2ECC8F" }}
+            style={{ width: `${progress}%`, backgroundColor: "#ff6363" }}
           />
         </div>
 
@@ -103,7 +103,7 @@ export function HostStepperLayout({
             onClick={onNext}
             disabled={nextDisabled}
             className="flex h-12 flex-1 items-center justify-center rounded-lg text-sm font-semibold text-white transition disabled:opacity-50"
-            style={{ backgroundColor: nextDisabled ? "#a3a3a3" : "#2ECC8F" }}
+            style={{ backgroundColor: nextDisabled ? "#a3a3a3" : "#ff6363" }}
           >
             {loading ? "Saving…" : nextLabel}
           </button>

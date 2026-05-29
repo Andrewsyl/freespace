@@ -37,14 +37,14 @@ const styles = StyleSheet.create({
   label: {
     color: hostFlowColors.textSoft,
     fontSize: 14,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "700",
     letterSpacing: 0.2,
   },
   percent: {
     color: hostFlowColors.textMuted,
     fontSize: 13,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   bar: {

@@ -205,7 +205,7 @@ export function PersonalInfoScreen({ navigation }: Props) {
                 <View style={styles.statusRow}>
                   {user?.emailVerified ? (
                     <>
-                      <Ionicons name="checkmark-circle" size={15} color="#2ECC8F" />
+                      <Ionicons name="checkmark-circle" size={15} color="#ff6363" />
                       <Text style={styles.statusOk}>Verified</Text>
                     </>
                   ) : (
@@ -236,7 +236,7 @@ export function PersonalInfoScreen({ navigation }: Props) {
                 <View style={styles.statusRow}>
                   {phoneVerified ? (
                     <>
-                      <Ionicons name="checkmark-circle" size={15} color="#2ECC8F" />
+                      <Ionicons name="checkmark-circle" size={15} color="#ff6363" />
                       <Text style={styles.statusOk}>Verified</Text>
                     </>
                   ) : (
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.textMuted,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 21,
   },
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     color: colors.text,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     fontWeight: "600",
     lineHeight: 20,
@@ -386,14 +386,14 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   statusOk: {
-    color: "#2ECC8F",
-    fontFamily: "Inter-Medium",
+    color: "#ff6363",
+    fontFamily: "PlusJakartaSans-Medium",
     fontSize: 13,
     lineHeight: 18,
   },
   statusMuted: {
     color: "#6B7280",
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     lineHeight: 18,
   },
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   },
   inlineButtonText: {
     color: "#111111",
-    fontFamily: "Inter-Medium",
+    fontFamily: "PlusJakartaSans-Medium",
     fontSize: 13,
     lineHeight: 18,
   },
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
   },
   verifyHelp: {
     color: "#6B7280",
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     lineHeight: 19,
   },
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
   },
   previewLinkText: {
     color: colors.accent,
-    fontFamily: "Inter-Medium",
+    fontFamily: "PlusJakartaSans-Medium",
     fontSize: 13,
     lineHeight: 19,
   },

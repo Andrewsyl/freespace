@@ -200,8 +200,8 @@ export default function HomePage() {
         <section className="grid lg:grid-cols-[1fr_460px] gap-8 lg:gap-14 items-center">
           <div>
             <h1 className="font-display tracking-tight">
-              <span className="block text-[30px] font-medium leading-[1.06] text-slate-800 sm:text-[40px] lg:text-[58px]">The smarter way to</span>
-              <span className="block text-[30px] font-extrabold leading-[1.06] text-brand-500 sm:text-[40px] lg:text-[58px]">find parking.</span>
+              <span className="block text-[30px] font-medium leading-[1.06] text-slate-800 sm:text-[40px] lg:text-[58px]">Find your space,</span>
+              <span className="block text-[30px] font-extrabold leading-[1.06] text-brand-500 sm:text-[40px] lg:text-[58px]">stress free.</span>
             </h1>
             <p className="mt-5 max-w-[380px] text-[15px] leading-relaxed text-slate-500">
               Search thousands of trusted spaces. Compare great prices and book instantly — no stress, no surprises.

@@ -475,13 +475,13 @@ const styles = StyleSheet.create({
   },
   kicker: {
     ...textStyles.kicker,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
   },
   title: {
     color: colors.text,
     fontSize: 26,
     lineHeight: 31,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     marginTop: 12,
     letterSpacing: -0.6,
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   subtitle: {
     color: colors.textMuted,
     fontSize: 14,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     marginTop: 8,
     lineHeight: 22,
   },
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
   customSummary: {
     color: colors.text,
     fontSize: 14,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     lineHeight: 22,
     marginTop: 4,
   },
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
   customSummaryLabel: {
     color: colors.textMuted,
     fontSize: 12,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     letterSpacing: 0.2,
     textTransform: "uppercase",
@@ -542,13 +542,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 18,
     lineHeight: 23,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   optionBody: {
     color: colors.textMuted,
     fontSize: 14,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     marginTop: 6,
     lineHeight: 22,
   },
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
   timePillLabel: {
     color: colors.textMuted,
     fontSize: 12,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     letterSpacing: 0.2,
   },
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
   warningText: {
     color: colors.danger,
     fontSize: 12,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     marginTop: 10,
   },
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   continueButtonText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     fontWeight: "600",
     letterSpacing: -0.2,
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: colors.text,
     fontSize: 24,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     paddingHorizontal: 8,
     letterSpacing: -0.4,
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
   modalSubtitle: {
     color: colors.textMuted,
     fontSize: 14,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     marginTop: 10,
     lineHeight: 22,
     marginBottom: 8,
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
   dayLabel: {
     color: colors.text,
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
   },
   dayToggleTrack: {
     backgroundColor: colors.border,

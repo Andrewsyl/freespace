@@ -229,7 +229,7 @@ export default function HostWizardPage() {
           <Link
             href="/login"
             className="flex h-12 items-center justify-center rounded-lg text-sm font-semibold text-white"
-            style={{ backgroundColor: "#2ECC8F" }}
+            style={{ backgroundColor: "#ff6363" }}
           >
             Sign in
           </Link>

@@ -13,7 +13,7 @@ type Props = {
 };
 
 // Design tokens
-const GREEN        = "#1B8A5A";
+const GREEN        = "#ff6363";
 const GREEN_SOFT   = "#E6F2EC";
 const GREEN_STRIP  = "#F0FAF5";
 const FG           = "#111111";
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   },
   imagePillText: {
     fontSize: 10,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     letterSpacing: 0.1,
   },
 
@@ -223,20 +223,20 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     fontSize: 15,
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     color: FG,
     lineHeight: 20,
     letterSpacing: -0.2,
   },
   price: {
     fontSize: 18,
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     color: GREEN,
     letterSpacing: -0.3,
   },
   address: {
     fontSize: 13,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     color: FG_MUTED,
   },
   metaRow: {
@@ -253,12 +253,12 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     color: FG_MUTED,
   },
   secondaryMeta: {
     fontSize: 12,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: GREEN,
     flexShrink: 1,
     textAlign: "right",
@@ -279,20 +279,20 @@ const styles = StyleSheet.create({
   },
   timeLabel: {
     fontSize: 9,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: GREEN,
     letterSpacing: 0.8,
     marginBottom: 3,
   },
   timeValue: {
     fontSize: 14,
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     color: FG,
     letterSpacing: -0.2,
   },
   timeDate: {
     fontSize: 11,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     color: FG_MUTED,
     marginTop: 1,
   },
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 13,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: GREEN,
   },
 });

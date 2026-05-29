@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   groupLabel: {
     color: colors.text,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     fontWeight: "600",
     lineHeight: 20,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     color: colors.text,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     fontWeight: "600",
     lineHeight: 20,
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.textMuted,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 21,
   },

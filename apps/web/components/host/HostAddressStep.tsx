@@ -91,7 +91,7 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
             <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
               {movePinMode ? (
                 <>
-                  <div className="rounded-full bg-emerald-600/90 px-3 py-1.5 text-xs font-semibold text-white shadow backdrop-blur-sm">
+                  <div className="rounded-full bg-brand-500/90 px-3 py-1.5 text-xs font-semibold text-white shadow backdrop-blur-sm">
                     Drag map to position
                   </div>
                   <button
@@ -133,7 +133,7 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
                       setShowAddressPrompt(false);
                       setPendingAddress(null);
                     }}
-                    className="flex-1 rounded-lg bg-emerald-600 py-2 text-xs font-semibold text-white hover:bg-emerald-500"
+                    className="flex-1 rounded-lg bg-brand-600 py-2 text-xs font-semibold text-white hover:bg-brand-500"
                   >
                     Use new address
                   </button>
@@ -144,8 +144,8 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
         ) : (
           /* No address yet */
           <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 ring-2 ring-emerald-100">
-              <svg className="h-10 w-10 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-50 ring-2 ring-brand-100">
+              <svg className="h-10 w-10 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
               </svg>
@@ -171,7 +171,7 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
             <button
               type="button"
               onClick={() => onUpdate({ locationConfirmed: true })}
-              className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700"
+              className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-300 hover:text-brand-700"
             >
               Confirm location
             </button>

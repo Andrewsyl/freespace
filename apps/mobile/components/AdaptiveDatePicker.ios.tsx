@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     lineHeight: 22,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: "#111827",
     textAlign: "center",
     marginBottom: 8,
@@ -128,19 +128,19 @@ const styles = StyleSheet.create({
   actionGhostText: {
     fontSize: 15,
     lineHeight: 20,
-    fontFamily: "Inter-Medium",
+    fontFamily: "PlusJakartaSans-Medium",
     color: "#475569",
   },
   actionPrimary: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: "#2ECC8F",
+    backgroundColor: "#ff6363",
   },
   actionPrimaryText: {
     fontSize: 15,
     lineHeight: 20,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: "#FFFFFF",
   },
 });

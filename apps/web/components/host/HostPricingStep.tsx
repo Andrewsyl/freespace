@@ -123,7 +123,7 @@ export function HostPricingStep({ data, onUpdate }: HostStepProps) {
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Suggested daily prices</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Suggested daily prices</p>
         <div className="flex flex-wrap gap-2">
           {SUGGESTED_PRICES.map((p) => (
             <button
@@ -132,7 +132,7 @@ export function HostPricingStep({ data, onUpdate }: HostStepProps) {
               onClick={() => onUpdate({ pricePerDay: p })}
               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 dailyPrice === p
-                  ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300"
+                  ? "bg-brand-100 text-brand-700 ring-1 ring-brand-200"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
@@ -162,7 +162,7 @@ export function HostPricingStep({ data, onUpdate }: HostStepProps) {
             <button
               type="button"
               onClick={enableMonthly}
-              className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-600"
+              className="rounded-full bg-brand-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-brand-600"
             >
               Add monthly
             </button>
@@ -172,7 +172,7 @@ export function HostPricingStep({ data, onUpdate }: HostStepProps) {
         {monthlyEnabled ? (
           <div className="space-y-3">
             <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monthly price</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-brand-300">Monthly price</span>
               <div className="mt-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
                 <span className="text-lg font-semibold text-slate-500">€</span>
                 <input

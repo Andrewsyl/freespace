@@ -281,7 +281,7 @@ const col = StyleSheet.create({
   listPad: { paddingVertical: ITEM_HEIGHT * PAD },
   item: { height: ITEM_HEIGHT, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
   text: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 17,
     color: "#111111",
     textAlign: "center",

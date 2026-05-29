@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 // Shared design tokens
-const GREEN      = "#1B8A5A";
+const GREEN      = "#ff6363";
 const GREEN_SOFT = "#E6F2EC";
 const GREEN_BAND = "#F0FAF5";
 const GREEN_LINE = "rgba(27,138,90,0.14)";
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     backgroundColor: GREEN,
   },
   brandName: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     color: FG_MUTED,
   },
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   paidChipText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
     color: GREEN,
   },
@@ -209,14 +209,14 @@ const styles = StyleSheet.create({
     paddingBottom: 26,
   },
   listingName: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 20,
     color: FG,
     letterSpacing: -0.4,
     lineHeight: 26,
   },
   listingAddress: {
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     color: FG_MUTED,
     marginTop: 3,
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
   priceEyebrow: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 10,
     color: FG_SUBTLE,
     letterSpacing: 0.7,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   priceValue: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 40,
     color: GREEN,
     letterSpacing: -1.5,
@@ -258,20 +258,20 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   timeEyebrow: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 9,
     color: GREEN,
     letterSpacing: 0.9,
     marginBottom: 4,
   },
   timeValue: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 24,
     color: FG,
     letterSpacing: -0.6,
   },
   timeDate: {
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
     color: FG_MUTED,
     marginTop: 2,
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   },
   extendText: {
     flex: 1,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     color: GREEN,
   },
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
   },
   refEyebrow: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 9,
     color: GREEN,
     letterSpacing: 0.8,
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   refValue: {
-    fontFamily: "Inter-Bold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 19,
     color: FG,
     letterSpacing: 2,

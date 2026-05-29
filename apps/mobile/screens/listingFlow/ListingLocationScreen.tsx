@@ -274,7 +274,7 @@ export function ListingLocationScreen({ navigation }: Props) {
                   onPress={() => void handleSelectSuggestion(suggestion)}
                 >
                   <View style={styles.suggestionIconCircle}>
-                    <MapPinned size={15} color="#2ECC8F" strokeWidth={2.2} />
+                    <MapPinned size={15} color="#ff6363" strokeWidth={2.2} />
                   </View>
                   <View style={styles.suggestionCopy}>
                     <Text style={styles.suggestionText}>{mainText}</Text>
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     color: hostFlowColors.text,
     fontSize: 26,
     lineHeight: 31,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     marginTop: 12,
     letterSpacing: -0.6,
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   subtitle: {
     color: hostFlowColors.textMuted,
     fontSize: 14,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontWeight: "400",
     marginTop: 8,
     lineHeight: 22,
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
     color: hostFlowColors.text,
     flex: 1,
     fontSize: 17,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontWeight: "400",
     lineHeight: 24,
     minHeight: 24,
@@ -532,19 +532,19 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     color: hostFlowColors.text,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
   },
   suggestionSubText: {
     color: hostFlowColors.textSoft,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
     marginTop: 1,
   },
   suggestionMuted: {
     color: hostFlowColors.textSoft,
     fontSize: 12,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -585,14 +585,14 @@ const styles = StyleSheet.create({
   mapPlaceholderTitle: {
     color: hostFlowColors.text,
     fontSize: 16,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     textAlign: "center",
   },
   mapPlaceholderText: {
     color: hostFlowColors.textMuted,
     fontSize: 14,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     lineHeight: 22,
     textAlign: "center",
   },
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
   movePinToggleText: {
     color: "#ffffff",
     fontSize: 12,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     letterSpacing: 0.2,
   },
@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
   movePinHintText: {
     color: hostFlowColors.text,
     fontSize: 12,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   addressPrompt: {
@@ -652,19 +652,19 @@ const styles = StyleSheet.create({
   addressPromptTitle: {
     color: hostFlowColors.text,
     fontSize: 14,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   addressPromptBody: {
     color: hostFlowColors.textMuted,
     fontSize: 12,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     marginTop: 6,
   },
   addressPromptValue: {
     color: hostFlowColors.text,
     fontSize: 13,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     marginTop: 4,
   },
@@ -684,7 +684,7 @@ const styles = StyleSheet.create({
   addressPromptGhostText: {
     color: hostFlowColors.text,
     fontSize: 12,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     textAlign: "center",
   },
@@ -697,7 +697,7 @@ const styles = StyleSheet.create({
   addressPromptPrimaryText: {
     color: colors.cardBg,
     fontSize: 12,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     textAlign: "center",
   },
@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: "#FFFFFF",
     fontSize: 15,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     letterSpacing: -0.2,
   },

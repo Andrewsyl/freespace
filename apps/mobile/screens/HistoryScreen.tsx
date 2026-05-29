@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   title: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 24,
     lineHeight: 30,
     color: colors.accent,
@@ -668,14 +668,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mapCtaTitle: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     lineHeight: 20,
     color: colors.accent,
     marginBottom: 2,
   },
   mapCtaBody: {
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     lineHeight: 18,
     color: colors.textMuted,
@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   mapCtaButtonText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     color: "#ffffff",
   },
@@ -704,7 +704,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   inlineLoadingText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: colors.textMuted,
     fontSize: 13,
   },
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   tabText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: colors.textMuted,
     fontSize: 14,
     letterSpacing: 0.1,
@@ -753,7 +753,7 @@ const styles = StyleSheet.create({
     paddingTop: 14,
   },
   monthLabel: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: colors.textSoft,
     fontSize: 11,
     letterSpacing: 0.7,
@@ -779,14 +779,14 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   cardTitle: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 16,
     lineHeight: 22,
     color: colors.text,
     marginBottom: 8,
   },
   cardBody: {
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 21,
     color: colors.textMuted,
@@ -802,7 +802,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBg,
   },
   loadMoreText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     color: colors.accent,
   },
@@ -868,14 +868,14 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   emptyTitle: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 20,
     lineHeight: 26,
     color: colors.accent,
     marginBottom: 8,
   },
   emptyBody: {
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 15,
     lineHeight: 22,
     color: colors.textMuted,
@@ -894,7 +894,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   primaryButtonText: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
     color: "#ffffff",
   },
@@ -923,7 +923,7 @@ const styles = StyleSheet.create({
     width: 140,
   },
   successTitle: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 18,
     lineHeight: 24,
     color: colors.accent,
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   successBody: {
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 20,
     color: colors.textMuted,

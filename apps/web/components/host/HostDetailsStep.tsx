@@ -103,14 +103,14 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
       <button
         type="button"
         onClick={() => onUpdate({ spaceType: undefined, spaceCount: "", vehicleSize: undefined })}
-        className="flex w-full items-center gap-3 rounded-lg border border-[#2ECC8F] bg-white px-4 py-3.5 text-left transition hover:bg-emerald-50"
+        className="flex w-full items-center gap-3 rounded-lg border border-[#ff6363] bg-white px-4 py-3.5 text-left transition hover:bg-brand-50"
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
           <SpaceTypeIcon type={data.spaceType!} />
         </div>
         <span className="flex-1 text-base font-bold tracking-tight text-slate-900">{data.spaceType}</span>
         {/* Green checkmark */}
-        <svg className="h-5 w-5 shrink-0 text-[#2ECC8F]" viewBox="0 0 24 24" fill="currentColor">
+        <svg className="h-5 w-5 shrink-0 text-[#ff6363]" viewBox="0 0 24 24" fill="currentColor">
           <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
         </svg>
       </button>
@@ -145,8 +145,8 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
       {hasCount && (
         <div className="space-y-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Vehicle fit</p>
-            <p className="mt-1 text-sm text-slate-500">What size vehicles fit best?</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-300">Vehicle fit</p>
+            <p className="mt-1 text-sm text-slate-500">What size vehicles fit your space?</p>
           </div>
           <div className="space-y-2">
             {VEHICLE_SIZES.map((opt) => {
@@ -157,7 +157,7 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
                   type="button"
                   onClick={() => onUpdate({ vehicleSize: opt.value })}
                   className={`flex w-full items-center gap-4 rounded-lg border px-4 py-3.5 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${
-                    active ? "border-[#2ECC8F] bg-white" : "border-slate-200 bg-white"
+                    active ? "border-[#ff6363] bg-white" : "border-slate-200 bg-white"
                   }`}
                 >
                   <span className="text-2xl">{opt.emoji}</span>
@@ -166,7 +166,7 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
                     <p className="text-sm text-slate-500">{opt.example}</p>
                   </div>
                   {active && (
-                    <svg className="h-5 w-5 shrink-0 text-[#2ECC8F]" viewBox="0 0 24 24" fill="currentColor">
+                    <svg className="h-5 w-5 shrink-0 text-[#ff6363]" viewBox="0 0 24 24" fill="currentColor">
                       <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
                     </svg>
                   )}

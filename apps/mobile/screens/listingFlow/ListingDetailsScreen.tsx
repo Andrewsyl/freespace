@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   },
   inlinePromptTitle: {
     color: hostFlowColors.textMuted,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     fontWeight: "400",
     letterSpacing: 0,
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: activeIconColor,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     fontWeight: "600",
     letterSpacing: -0.2,
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   },
   sectionBody: {
     color: hostFlowColors.textMuted,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     fontWeight: "400",
     lineHeight: 22,
@@ -417,8 +417,8 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   sectionLabel: {
-    color: hostFlowColors.textSoft,
-    fontFamily: "Inter-SemiBold",
+    color: "#ff9595",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
     fontWeight: "700",
     letterSpacing: 0.5,
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: hostFlowColors.text,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 26,
     fontWeight: "600",
     letterSpacing: -0.6,
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
   },
   typePromptTitle: {
     color: hostFlowColors.textMuted,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     fontWeight: "400",
     letterSpacing: 0,
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   },
   vehicleExample: {
     color: hostFlowColors.textMuted,
-    fontFamily: "Inter-Regular",
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     fontWeight: "400",
     lineHeight: 19,

@@ -173,7 +173,7 @@ export function MobileSearchLanding({
               onClick={() => setLocationSheetOpen(true)}
               className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-slate-50"
             >
-              <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="#1B8A5A" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="#ff6363" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
                 <circle cx="12" cy="9" r="2.5" />
               </svg>
@@ -196,7 +196,7 @@ export function MobileSearchLanding({
                   onClick={() => setPickerOpen("start")}
                   className="flex items-center gap-3 px-4 py-3.5 text-left transition active:bg-slate-50"
                 >
-                  <svg className="h-[17px] w-[17px] shrink-0 text-[#1B8A5A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <svg className="h-[17px] w-[17px] shrink-0 text-[#ff6363]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
                   </svg>
                   <div className="min-w-0">
@@ -238,7 +238,7 @@ export function MobileSearchLanding({
                   onClick={() => setPickerOpen("start")}
                   className="flex items-center gap-3 px-4 py-3.5 text-left transition active:bg-slate-50"
                 >
-                  <svg className="h-[17px] w-[17px] shrink-0 text-[#1B8A5A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <svg className="h-[17px] w-[17px] shrink-0 text-[#ff6363]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
                   </svg>
                   <div className="min-w-0">
@@ -276,7 +276,7 @@ export function MobileSearchLanding({
               onClick={handleSubmit}
               disabled={!location}
               className="flex h-[52px] w-full items-center justify-center gap-2.5 rounded-[12px] text-[15.5px] font-bold text-white transition disabled:opacity-40"
-              style={{ background: "linear-gradient(135deg, #1a7a52, #1B8A5A)" }}
+              style={{ background: "linear-gradient(135deg, #e84040, #ff6363)" }}
             >
               <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
@@ -542,8 +542,8 @@ function LocationSheet({
 
       {/* Search input */}
       <div className="px-4 pb-3 pt-4">
-        <div className="flex items-center gap-3 rounded-[14px] border-2 border-[#1B8A5A] bg-[#F9F9F8] px-4 py-3.5">
-          <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="#1B8A5A" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <div className="flex items-center gap-3 rounded-[14px] border-2 border-[#ff6363] bg-[#F9F9F8] px-4 py-3.5">
+          <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="#ff6363" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
             <circle cx="12" cy="9" r="2.5" />
           </svg>
@@ -608,7 +608,7 @@ function LocationSheet({
                 className="flex w-full items-center gap-4 border-b border-slate-100 px-5 py-4 text-left transition active:bg-slate-50"
               >
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100">
-                  <svg className="h-5 w-5 text-[#1B8A5A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <svg className="h-5 w-5 text-[#ff6363]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
                     <circle cx="12" cy="9" r="2.5" />
                   </svg>
@@ -690,11 +690,11 @@ function DateTimeSheet({
       <div className="relative z-10 flex h-full flex-col bg-white">
         <div className="flex items-center justify-between px-5 py-4">
           <h2 className="text-[18px] font-semibold text-[#0f172a]">{field === "start" ? "Park from" : "Park until"}</h2>
-          <button type="button" onClick={onClose} className="text-[14px] font-semibold" style={{ color: "#1B8A5A" }}>Cancel</button>
+          <button type="button" onClick={onClose} className="text-[14px] font-semibold" style={{ color: "#ff6363" }}>Cancel</button>
         </div>
         <div className="flex items-center justify-between px-5 pb-3">
           <span className="text-[14px] font-semibold text-[#1F2937]">{MONTHS_LONG[viewMonth]} {viewYear}</span>
-          <div className="flex items-center gap-3" style={{ color: "#1B8A5A" }}>
+          <div className="flex items-center gap-3" style={{ color: "#ff6363" }}>
             <button type="button" onClick={prevMonth} className="p-1">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
             </button>
@@ -727,8 +727,8 @@ function DateTimeSheet({
                     isDisabled ? "text-[#C7CDD8]" :
                     "font-medium text-[#0f172a] active:bg-[#F1F5F9]"}`}
                 style={
-                  isSelected ? { background: "#1B8A5A" }
-                  : isToday ? { border: "1.5px solid #1B8A5A", color: "#1B8A5A" }
+                  isSelected ? { background: "#ff6363" }
+                  : isToday ? { border: "1.5px solid #ff6363", color: "#ff6363" }
                   : {}
                 }
               >
@@ -757,7 +757,7 @@ function DateTimeSheet({
             type="button"
             onClick={() => onConfirm(draft)}
             className="ml-auto rounded-xl px-6 py-2.5 text-[14px] font-semibold text-white"
-            style={{ background: "#1B8A5A" }}
+            style={{ background: "#ff6363" }}
           >
             Done
           </button>
@@ -775,7 +775,7 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (value: stri
         aria-label="Select time"
       >
         <Select.Value />
-        <Select.Icon style={{ color: "#1B8A5A" }}>
+        <Select.Icon style={{ color: "#ff6363" }}>
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
         </Select.Icon>
       </Select.Trigger>
@@ -789,7 +789,7 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (value: stri
                 className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 data-[state=checked]:bg-brand-50 data-[state=checked]:text-brand-700"
               >
                 <Select.ItemText>{t}</Select.ItemText>
-                <Select.ItemIndicator style={{ color: "#1B8A5A" }}>
+                <Select.ItemIndicator style={{ color: "#ff6363" }}>
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                 </Select.ItemIndicator>
               </Select.Item>
