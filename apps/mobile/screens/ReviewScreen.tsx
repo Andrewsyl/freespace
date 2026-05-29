@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   ctaBtn: {
-    backgroundColor: "#ff6363",
+    backgroundColor: "#22c55e",
     borderRadius: 12,
     minHeight: 50,
     alignItems: "center",

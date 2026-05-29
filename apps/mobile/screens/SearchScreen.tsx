@@ -1559,7 +1559,7 @@ export function SearchScreen({ navigation }: Props) {
                             }}
                           >
                             <View style={styles.resultIcon}>
-                              <MapPinIcon size={17} color="#ff6363" strokeWidth={2.3} />
+                              <MapPinIcon size={17} color="#22c55e" strokeWidth={2.3} />
                             </View>
                             <View style={styles.resultCopy}>
                               <Text style={styles.resultTitle}>{mainText}</Text>
@@ -2280,7 +2280,7 @@ const styles = StyleSheet.create({
     width: 40,
   },
   resultIconDot: {
-    backgroundColor: "#ff6363",
+    backgroundColor: "#22c55e",
     borderRadius: 6,
     height: 12,
     width: 12,

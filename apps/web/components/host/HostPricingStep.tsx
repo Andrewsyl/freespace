@@ -1,205 +1,138 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { HostStepProps } from "./types";
 
-const SUGGESTED_PRICES = [5, 8, 10, 15, 20, 25];
-const MIN_PRICE = 1;
-const MAX_PRICE = 999;
-const DEFAULT_DAILY = 12;
+function ClockIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+}
+function CalendarIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+}
+
+const PRICING_MODES = [
+  { key: "hourly_daily", label: "Hourly / Daily" },
+  { key: "monthly",      label: "Monthly" },
+  { key: "both",         label: "Both" },
+] as const;
+
+const DEFAULT_HOURLY  = 1;
+const DEFAULT_DAILY   = 12;
 const DEFAULT_MONTHLY = 100;
 
-function roundMoney(value: number) {
-  return Math.round(value * 100) / 100;
+function sanitize(value: string) {
+  const normalized = value.replace(",", ".").replace(/[^\d.]/g, "");
+  const [whole, ...rest] = normalized.split(".");
+  return rest.length > 0 ? `${whole}.${rest.join("").slice(0, 2)}` : whole;
 }
 
-function formatMoney(value: number) {
-  return roundMoney(value).toFixed(2);
+function parseMoney(value: string) {
+  const parsed = parseFloat(value);
+  return isFinite(parsed) && parsed > 0 ? Math.round(parsed * 100) / 100 : null;
 }
 
-function parseNumber(raw: string) {
-  const parsed = Number.parseFloat(raw);
-  return Number.isFinite(parsed) ? parsed : null;
+function PricingRow({
+  icon,
+  label,
+  value,
+  onChange,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 last:border-0">
+      <div className="flex items-center gap-3">
+        <span className="text-slate-800">{icon}</span>
+        <span className="text-base font-bold text-slate-900">{label}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-lg font-bold text-slate-800">€</span>
+        <div className="min-w-[120px] rounded-xl border border-slate-200 bg-white px-4 py-3.5">
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={value}
+            onChange={(e) => onChange(sanitize(e.target.value))}
+            placeholder="0.00"
+            className="w-full bg-transparent text-lg font-bold text-slate-900 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function HostPricingStep({ data, onUpdate }: HostStepProps) {
-  const dailyPrice = typeof data.pricePerDay === "number" ? data.pricePerDay : DEFAULT_DAILY;
-  const monthlyEnabled = typeof data.pricePerMonth === "number" && data.pricePerMonth > 0;
-  const suggestedMonthly = useMemo(() => DEFAULT_MONTHLY, []);
-  const [dailyInput, setDailyInput] = useState(
-    typeof data.pricePerDay === "number" ? String(data.pricePerDay) : String(DEFAULT_DAILY)
-  );
-  const [monthlyInput, setMonthlyInput] = useState(
-    typeof data.pricePerMonth === "number" ? String(data.pricePerMonth) : ""
-  );
+  const pricingMode = data.pricingMode ?? "both";
+
+  const [hourly,  setHourly]  = useState(String(data.pricePerHour  ?? DEFAULT_HOURLY));
+  const [daily,   setDaily]   = useState(String(data.pricePerDay   ?? DEFAULT_DAILY));
+  const [monthly, setMonthly] = useState(String(data.pricePerMonth ?? DEFAULT_MONTHLY));
 
   useEffect(() => {
-    const next = typeof data.pricePerDay === "number" ? String(data.pricePerDay) : String(DEFAULT_DAILY);
-    setDailyInput((prev) => (prev === next ? prev : next));
-  }, [data.pricePerDay]);
-
-  useEffect(() => {
-    const next = typeof data.pricePerMonth === "number" ? String(data.pricePerMonth) : "";
-    setMonthlyInput((prev) => (prev === next ? prev : next));
-  }, [data.pricePerMonth]);
-
-  const adjustDailyPrice = (delta: number) => {
-    const next = Math.min(MAX_PRICE, Math.max(MIN_PRICE, dailyPrice + delta));
-    onUpdate({ pricePerDay: next });
-  };
-
-  const handleDailyChange = (raw: string) => {
-    setDailyInput(raw);
-    const parsed = parseNumber(raw);
-    if (!raw) {
-      onUpdate({ pricePerDay: undefined });
-    } else if (parsed !== null && parsed >= 0) {
-      onUpdate({ pricePerDay: Math.min(MAX_PRICE, parsed) });
-    }
-  };
-
-  const handleMonthlyChange = (raw: string) => {
-    setMonthlyInput(raw);
-    const parsed = parseNumber(raw);
-    if (!raw) {
-      onUpdate({ pricePerMonth: undefined });
-    } else if (parsed !== null && parsed >= 0) {
-      onUpdate({ pricePerMonth: Math.min(MAX_PRICE * 31, parsed) });
-    }
-  };
-
-  const enableMonthly = () => {
-    const nextMonthly = data.pricePerMonth ?? suggestedMonthly ?? DEFAULT_MONTHLY;
-    setMonthlyInput(String(nextMonthly));
     onUpdate({
-      pricePerMonth: nextMonthly,
+      pricePerHour:  parseMoney(hourly)  ?? undefined,
+      pricePerDay:   parseMoney(daily)   ?? undefined,
+      pricePerMonth: parseMoney(monthly) ?? undefined,
     });
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hourly, daily, monthly]);
+
+  const hourlyVal  = parseMoney(hourly)  ?? 0;
+  const dailyVal   = parseMoney(daily)   ?? 0;
+  const pricingWarning =
+    hourlyVal > 0 && dailyVal > 0 && dailyVal > hourlyVal * 24
+      ? `Your daily price (€${dailyVal.toFixed(2)}) is higher than 24× your hourly rate (€${(hourlyVal * 24).toFixed(2)}). Drivers would pay less booking 24 individual hours.`
+      : null;
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <p className="text-sm font-semibold text-slate-800">Daily price</p>
-        <div className="flex items-center justify-center gap-6 py-4">
+    <div className="space-y-5">
+      <p className="text-sm text-slate-500">
+        Choose whether this space is for short stays, monthly commuter parking, or both.
+      </p>
+
+      {/* Mode tabs */}
+      <div className="flex gap-2 rounded-2xl bg-slate-100 p-1.5">
+        {PRICING_MODES.map(({ key, label }) => (
           <button
+            key={key}
             type="button"
-            onClick={() => adjustDailyPrice(-1)}
-            disabled={dailyPrice <= MIN_PRICE}
-            className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white text-2xl font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
+            onClick={() => onUpdate({ pricingMode: key })}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
+              pricingMode === key
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
           >
-            −
+            {label}
           </button>
+        ))}
+      </div>
 
-          <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-bold text-slate-400">€</span>
-            <input
-              type="number"
-              min={MIN_PRICE}
-              max={MAX_PRICE}
-              step="0.01"
-              value={dailyInput}
-              onChange={(e) => handleDailyChange(e.target.value)}
-              placeholder="0"
-              className="w-28 bg-transparent text-center text-5xl font-bold text-slate-900 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            />
-            <span className="self-end pb-1 text-base font-semibold text-slate-500">/ day</span>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => adjustDailyPrice(1)}
-            disabled={dailyPrice >= MAX_PRICE}
-            className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-white text-2xl font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
-          >
-            +
-          </button>
-        </div>
-
-        {dailyPrice > 0 && (
-          <p className="text-center text-xs text-slate-400">
-            You keep <span className="font-semibold text-slate-600">€{(dailyPrice * 0.9).toFixed(2)}</span> after the 10% platform fee
-          </p>
+      {/* Price rows */}
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        {(pricingMode === "hourly_daily" || pricingMode === "both") && (
+          <PricingRow icon={<ClockIcon />} label="Hourly" value={hourly} onChange={setHourly} />
+        )}
+        {(pricingMode === "hourly_daily" || pricingMode === "both") && (
+          <PricingRow icon={<CalendarIcon />} label="Daily" value={daily} onChange={setDaily} />
+        )}
+        {(pricingMode === "monthly" || pricingMode === "both") && (
+          <PricingRow icon={<CalendarIcon />} label="Monthly" value={monthly} onChange={setMonthly} />
         )}
       </div>
 
-      <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Suggested daily prices</p>
-        <div className="flex flex-wrap gap-2">
-          {SUGGESTED_PRICES.map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => onUpdate({ pricePerDay: p })}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                dailyPrice === p
-                  ? "bg-brand-100 text-brand-700 ring-1 ring-brand-200"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              €{p}
-            </button>
-          ))}
+      {/* Pricing conflict warning */}
+      {pricingWarning && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5">
+          <p className="text-sm font-semibold text-amber-900">Pricing conflict</p>
+          <p className="mt-1 text-sm text-amber-800">{pricingWarning}</p>
         </div>
-      </div>
-
-      <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-slate-900">Offer a monthly rate</p>
-            <p className="mt-1 text-xs leading-relaxed text-slate-500">
-              Add a separate commuter-style monthly price for hosts who want longer-term bookings. Leave it off if this space is short-stay only.
-            </p>
-          </div>
-          {monthlyEnabled ? (
-            <button
-              type="button"
-              onClick={() => onUpdate({ pricePerMonth: undefined })}
-              className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
-            >
-              Remove
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={enableMonthly}
-              className="rounded-full bg-brand-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-brand-600"
-            >
-              Add monthly
-            </button>
-          )}
-        </div>
-
-        {monthlyEnabled ? (
-          <div className="space-y-3">
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-wide text-brand-300">Monthly price</span>
-              <div className="mt-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                <span className="text-lg font-semibold text-slate-500">€</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={MAX_PRICE * 31}
-                  step="0.01"
-                  value={monthlyInput}
-                  onChange={(e) => handleMonthlyChange(e.target.value)}
-                  placeholder={suggestedMonthly ? formatMoney(suggestedMonthly) : "100.00"}
-                  className="w-full bg-transparent text-xl font-semibold text-slate-900 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                />
-                <span className="text-sm font-semibold text-slate-500">/ month</span>
-              </div>
-            </label>
-            {suggestedMonthly ? (
-              <p className="text-xs text-slate-500">
-                Suggested starting point: <span className="font-semibold text-slate-700">€{formatMoney(suggestedMonthly)}</span>.
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      <p className="rounded-lg bg-slate-50 px-4 py-3 text-xs text-slate-500">
-        Monthly pricing is optional. Drivers will only see a monthly option when you set a monthly rate.
-      </p>
+      )}
     </div>
   );
 }

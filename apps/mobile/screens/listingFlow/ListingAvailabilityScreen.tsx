@@ -16,6 +16,7 @@ import { ChevronRight, X } from "lucide-react-native";
 import { Button } from "../../components/ui";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
+import { hostFlowColors } from "./hostFlowTheme";
 import { cardShadow, colors, radius, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
@@ -352,14 +353,19 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
         ) : null}
       </ScrollView>
       <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
-        <Button
-          size="medium"
-          title="Continue"
-          onPress={() => navigation.navigate("ListingPrice")}
-          disabled={!canSave}
-          style={styles.continueButton}
-          textStyle={styles.continueButtonText}
-        />
+        <View style={styles.footerRow}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.backButtonText}>← Back</Text>
+          </Pressable>
+          <Button
+            size="medium"
+            title="Continue"
+            onPress={() => navigation.navigate("ListingPrice")}
+            disabled={!canSave}
+            style={styles.continueButton}
+            textStyle={styles.continueButtonText}
+          />
+        </View>
       </View>
       {customVisible ? (
         <Modal animationType="slide" transparent>
@@ -693,5 +699,25 @@ const styles = StyleSheet.create({
   },
   dayToggleKnobActive: {
     marginLeft: 18,
+  },
+  footerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  backButton: {
+    alignItems: 'center',
+    borderColor: hostFlowColors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 50,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  backButtonText: {
+    color: hostFlowColors.textMuted,
+    fontFamily: 'PlusJakartaSans-SemiBold',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

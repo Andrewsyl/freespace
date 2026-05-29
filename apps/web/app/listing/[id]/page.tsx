@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { StarIcon } from "@heroicons/react/24/solid";
 import {
   BoltIcon,
@@ -134,11 +135,11 @@ export default async function ListingDetailPage({
 
           {/* Breadcrumb */}
           <nav className="flex items-center gap-1.5 text-[12px] text-slate-400">
-            <a href="/search" className="transition hover:text-brand-500">Find parking</a>
+            <Link href="/" className="transition hover:text-brand-500">Find parking</Link>
             <span>›</span>
-            <a href="/search" className="transition hover:text-brand-500">
+            <Link href="/" className="transition hover:text-brand-500">
               {listing.address.split(",").slice(-2).join(",").trim()}
-            </a>
+            </Link>
             <span>›</span>
             <span className="text-slate-600">{listing.title}</span>
           </nav>

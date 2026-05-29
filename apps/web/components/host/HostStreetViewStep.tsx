@@ -34,7 +34,7 @@ type GoogleWindow = Window & {
   };
 };
 
-export function HostStreetViewStep({ data, onUpdate }: HostStepProps) {
+export function HostStreetViewStep({ data, onUpdate, onSkip }: HostStepProps & { onSkip?: () => void }) {
   const viewerRef = useRef<HTMLDivElement>(null);
   const panoRef = useRef<StreetViewPanoramaLike | null>(null);
   const hasCoords = typeof data.latitude === "number" && typeof data.longitude === "number";
@@ -80,11 +80,13 @@ export function HostStreetViewStep({ data, onUpdate }: HostStepProps) {
     if (panoRef.current && g?.maps) {
       const pov = panoRef.current.getPov();
       onUpdate({ coverHeading: Math.round(pov.heading), coverPitch: Math.round(pov.pitch) });
+      onSkip?.();
     }
   };
 
   const handleSkip = () => {
     onUpdate({ coverHeading: null });
+    onSkip?.();
   };
 
   if (!hasCoords) {
@@ -102,8 +104,8 @@ export function HostStreetViewStep({ data, onUpdate }: HostStepProps) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-500">
-        Look around to find the angle that best shows your parking spot entrance. This angle will be used as the listing cover.
+      <p className="rounded-lg border border-brand-200 bg-brand-50 px-3.5 py-2.5 text-sm font-semibold text-brand-600">
+        Can&apos;t see your space from here? Skip this — you can add your own photos at a later step.
       </p>
 
       {/* Street View viewer */}
@@ -112,15 +114,6 @@ export function HostStreetViewStep({ data, onUpdate }: HostStepProps) {
         className="h-80 w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-100"
       />
 
-      {/* Saved confirmation */}
-      {data.coverHeading != null && (
-        <div className="flex items-center gap-2 rounded-lg bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-700">
-          <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-            <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
-          </svg>
-          View saved — heading {data.coverHeading}°
-        </div>
-      )}
 
       {/* Actions */}
       <div className="flex gap-3">

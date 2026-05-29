@@ -11,6 +11,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { WebView } from "react-native-webview";
 import { StepProgress } from "./StepProgress";
 import { useListingFlow } from "./context";
+import { hostFlowColors } from "./hostFlowTheme";
 import { colors, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
@@ -65,8 +66,8 @@ export function ListingStreetViewScreen({ navigation }: Props) {
         <Text style={styles.kicker}>Street view</Text>
         <StepProgress current={2} total={7} />
         <Text style={styles.title}>Choose your cover image</Text>
-        <Text style={styles.subtitle}>
-          Pick the view that best represents the exact parking spot.
+        <Text style={styles.hint}>
+          Can't see your space from here? Skip this — you can add your own photos at a later step.
         </Text>
       </View>
       <View style={styles.viewer}>
@@ -107,6 +108,10 @@ export function ListingStreetViewScreen({ navigation }: Props) {
         )}
       </View>
       <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
+        <View style={styles.footerRow}>
+        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Text style={styles.backButtonText}>← Back</Text>
+        </Pressable>
         <Pressable
           style={[styles.primaryButton, !canUseView && styles.primaryButtonDisabled]}
           onPress={() => {
@@ -131,6 +136,7 @@ export function ListingStreetViewScreen({ navigation }: Props) {
         >
           <Text style={styles.secondaryButtonText}>Skip for now</Text>
         </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -164,6 +170,19 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Regular",
     marginTop: 8,
     lineHeight: 22,
+  },
+  hint: {
+    backgroundColor: hostFlowColors.accentSoft,
+    borderColor: hostFlowColors.accentSoftBorder,
+    borderRadius: 10,
+    borderWidth: 1,
+    color: hostFlowColors.accent,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   viewer: {
     marginTop: 16,
@@ -229,5 +248,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
+  },
+  footerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  backButton: {
+    alignItems: 'center',
+    borderColor: hostFlowColors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 50,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  backButtonText: {
+    color: hostFlowColors.textMuted,
+    fontFamily: 'PlusJakartaSans-SemiBold',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

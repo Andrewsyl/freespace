@@ -42,14 +42,14 @@ export function HostStepperLayout({
           <span className="text-xs font-semibold uppercase tracking-widest text-brand-300">
             Step {step} of {totalSteps}
           </span>
-          <span className="text-xs font-semibold" style={{ color: "#ff6363" }}>
+          <span className="text-xs font-semibold text-brand-500">
             {progress}%
           </span>
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
           <div
-            className="h-full rounded-full transition-all duration-300"
-            style={{ width: `${progress}%`, backgroundColor: "#ff6363" }}
+            className="h-full rounded-full bg-brand-500 transition-all duration-300"
+            style={{ width: `${progress}%` }}
           />
         </div>
 
@@ -102,8 +102,7 @@ export function HostStepperLayout({
             type="button"
             onClick={onNext}
             disabled={nextDisabled}
-            className="flex h-12 flex-1 items-center justify-center rounded-lg text-sm font-semibold text-white transition disabled:opacity-50"
-            style={{ backgroundColor: nextDisabled ? "#a3a3a3" : "#ff6363" }}
+            className="flex h-12 flex-1 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
           >
             {loading ? "Saving…" : nextLabel}
           </button>

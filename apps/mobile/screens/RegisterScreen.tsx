@@ -17,7 +17,7 @@ import { BackButton, Button, TextInput as AppTextInput } from "../components/ui"
 import { colors, radius, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Register">;
-const AUTH_GREEN = "#ff6363";
+const AUTH_GREEN = "#22c55e";
 
 export function RegisterScreen({ navigation }: Props) {
   const { register } = useAuth();

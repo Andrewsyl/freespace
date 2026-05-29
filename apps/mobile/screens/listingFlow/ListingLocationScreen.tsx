@@ -274,7 +274,7 @@ export function ListingLocationScreen({ navigation }: Props) {
                   onPress={() => void handleSelectSuggestion(suggestion)}
                 >
                   <View style={styles.suggestionIconCircle}>
-                    <MapPinned size={15} color="#ff6363" strokeWidth={2.2} />
+                    <MapPinned size={15} color="#22c55e" strokeWidth={2.2} />
                   </View>
                   <View style={styles.suggestionCopy}>
                     <Text style={styles.suggestionText}>{mainText}</Text>
@@ -409,15 +409,20 @@ export function ListingLocationScreen({ navigation }: Props) {
         )}
       </View>
       <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
-        <Pressable
-          style={[styles.primaryButton, !mapVisible && styles.primaryButtonDisabled]}
-          onPress={() => navigation.navigate("ListingStreetView")}
-          disabled={loading || !mapVisible}
-        >
-          <Text style={styles.primaryButtonText}>
-            {loading ? "Loading..." : "Confirm location"}
-          </Text>
-        </Pressable>
+        <View style={styles.footerRow}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.backButtonText}>← Back</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.primaryButton, !mapVisible && styles.primaryButtonDisabled]}
+            onPress={() => navigation.navigate("ListingStreetView")}
+            disabled={loading || !mapVisible}
+          >
+            <Text style={styles.primaryButtonText}>
+              {loading ? "Loading..." : "Confirm location"}
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -725,5 +730,25 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     letterSpacing: -0.2,
+  },
+  footerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  backButton: {
+    alignItems: 'center',
+    borderColor: hostFlowColors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 50,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  backButtonText: {
+    color: hostFlowColors.textMuted,
+    fontFamily: 'PlusJakartaSans-SemiBold',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

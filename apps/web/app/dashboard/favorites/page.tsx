@@ -81,7 +81,7 @@ export default function FavouritesPage() {
             </p>
           </div>
           <Link
-            href="/search"
+            href="/"
             className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-emerald-400"
           >
             Find more spaces
@@ -105,7 +105,7 @@ export default function FavouritesPage() {
             Tap the heart icon on any listing to save it here.
           </p>
           <Link
-            href="/search"
+            href="/"
             className="mt-4 inline-flex items-center rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
           >
             Browse spaces

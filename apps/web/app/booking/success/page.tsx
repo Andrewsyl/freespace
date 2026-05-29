@@ -33,7 +33,7 @@ function BookingSuccessContent() {
         <Link href="/dashboard" className="btn-primary">
           View dashboard
         </Link>
-        <Link href="/search" className="rounded-lg px-3 py-2 font-semibold text-slate-700 hover:bg-slate-100">
+        <Link href="/" className="rounded-lg px-3 py-2 font-semibold text-slate-700 hover:bg-slate-100">
           Find another space
         </Link>
       </div>

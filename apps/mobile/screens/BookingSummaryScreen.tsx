@@ -491,7 +491,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       >
         {loadingListing ? (
           <View style={styles.centered}>
-            <ActivityIndicator size="small" color="#ff6363" />
+            <ActivityIndicator size="small" color="#22c55e" />
             <Text style={styles.muted}>Loading booking…</Text>
           </View>
         ) : !user ? (
@@ -835,7 +835,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
-    color: "#ff6363",
+    color: "#22c55e",
   },
 
   // ── Vehicle / Reg plate ─────────────────────────────────────
@@ -990,7 +990,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     minWidth: 152,
     borderRadius: 14,
-    backgroundColor: "#ff6363",
+    backgroundColor: "#22c55e",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 28,
@@ -1070,7 +1070,7 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     marginHorizontal: 20,
     marginTop: 16,
-    backgroundColor: "#ff6363",
+    backgroundColor: "#22c55e",
     borderRadius: 14,
     minHeight: 54,
     alignItems: "center",

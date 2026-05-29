@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   primaryButtonDisabled: {
-    backgroundColor: "#ffbebe",
+    backgroundColor: "#bbf7d0",
   },
   primaryButtonText: {
     color: colors.cardBg,

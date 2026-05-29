@@ -26,7 +26,7 @@ export function SlimNav() {
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-2 sm:flex">
-          <NavLink href="/search">Find parking</NavLink>
+          <NavLink href="/">Find parking</NavLink>
           <NavLink href="/host">List a space</NavLink>
           <div className="ml-2 h-4 w-px bg-slate-200" />
 
@@ -144,7 +144,7 @@ export function SlimNav() {
               {/* Nav links */}
               <nav className="flex-1 overflow-y-auto px-5 py-5">
                 <div className="space-y-1">
-                  <DrawerLink href="/search" onClick={close} icon={<ParkingIcon />}>
+                  <DrawerLink href="/" onClick={close} icon={<ParkingIcon />}>
                     Find parking
                   </DrawerLink>
                   <DrawerLink href="/host" onClick={close} icon={<ListIcon />}>

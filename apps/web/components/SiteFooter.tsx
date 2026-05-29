@@ -18,11 +18,11 @@ const navColumns = [
   {
     heading: "Parking",
     links: [
-      { label: "Find parking", href: "/search" },
-      { label: "Airport parking", href: "/search?location=Airport&lat=53.4264&lng=-6.2499&mode=daily" },
-      { label: "Monthly parking", href: "/search?mode=monthly" },
-      { label: "Event parking", href: "/search?location=Aviva+Stadium&lat=53.3352&lng=-6.2285&mode=daily" },
-      { label: "EV charging", href: "/search?ev=true" },
+      { label: "Find parking", href: "/" },
+      { label: "Airport parking", href: "/?location=Airport&lat=53.4264&lng=-6.2499&mode=daily" },
+      { label: "Monthly parking", href: "/?mode=monthly" },
+      { label: "Event parking", href: "/?location=Aviva+Stadium&lat=53.3352&lng=-6.2285&mode=daily" },
+      { label: "EV charging", href: "/?ev=true" },
       { label: "Host your space", href: "/host" },
     ],
   },

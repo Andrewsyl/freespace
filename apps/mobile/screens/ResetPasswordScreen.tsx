@@ -17,7 +17,7 @@ import { colors, radius, spacing, textStyles } from "../styles/theme";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPassword">;
-const AUTH_GREEN = "#ff6363";
+const AUTH_GREEN = "#22c55e";
 
 export function ResetPasswordScreen({ navigation, route }: Props) {
   const scrollRef = useRef<ScrollView | null>(null);

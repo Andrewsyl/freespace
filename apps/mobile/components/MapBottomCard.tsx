@@ -136,7 +136,7 @@ export function MapBottomCard({
                 <Ionicons
                   name={isFavorite ? "heart" : "heart-outline"}
                   size={19}
-                  color={isFavorite ? "#ff6363" : "#ff6363"}
+                  color={isFavorite ? "#22c55e" : "#22c55e"}
                 />
               </Pressable>
             ) : null}

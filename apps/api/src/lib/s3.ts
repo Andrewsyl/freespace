@@ -149,3 +149,39 @@ export async function getPresignedPostUpload({
     );
   }
 }
+
+export async function uploadBufferToS3({
+  buffer,
+  contentType,
+  userId,
+}: {
+  buffer: Buffer;
+  contentType: string;
+  userId: string;
+}): Promise<{ publicUrl: string }> {
+  if (!s3Client || !AWS_REGION || !S3_BUCKET_NAME) {
+    throw new S3UploadConfigError(
+      "Missing S3 configuration. Set AWS_REGION and S3_BUCKET_NAME."
+    );
+  }
+  const normalizedType = contentType.trim().toLowerCase();
+  const canonicalType = CONTENT_TYPE_ALIASES[normalizedType] ?? normalizedType;
+  if (!ALLOWED_CONTENT_TYPES.has(canonicalType)) {
+    throw new S3UploadConfigError("Unsupported file type.");
+  }
+  const extension = CONTENT_TYPE_EXTENSIONS[canonicalType] ?? "jpg";
+  const fileKey = `listing-images/${userId}/${randomUUID()}.${extension}`;
+  try {
+    await s3Client.send(new PutObjectCommand({
+      Bucket: S3_BUCKET_NAME,
+      Key: fileKey,
+      Body: buffer,
+      ContentType: canonicalType,
+    }));
+  } catch {
+    throw new S3UploadConfigError(
+      "Invalid AWS credentials for S3 image upload. Check your AWS credentials or instance role."
+    );
+  }
+  return { publicUrl: `https://${S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${fileKey}` };
+}

@@ -30,7 +30,7 @@ function BookingCancelContent() {
         </div>
       )}
       <div className="flex justify-center gap-3 text-sm">
-        <Link href="/search" className="btn-primary">
+        <Link href="/" className="btn-primary">
           Find another slot
         </Link>
         <Link href="/dashboard" className="rounded-lg px-3 py-2 font-semibold text-slate-700 hover:bg-slate-100">

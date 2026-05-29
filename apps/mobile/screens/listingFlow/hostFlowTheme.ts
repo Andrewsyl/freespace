@@ -1,6 +1,6 @@
 export const hostFlowColors = {
   appBg: "#FFFFFF",
-  appBgDeep: "#fff2f2",
+  appBgDeep: "#f0fdf4",
   cardBg: "#FFFFFF",
   cardBgMuted: "#F5F7F7",
   border: "#CDD6D6",
@@ -8,10 +8,10 @@ export const hostFlowColors = {
   text: "#101414",
   textMuted: "#5F6868",
   textSoft: "#8C9494",
-  accent: "#ff6363",
-  accentSoft: "#fff2f2",
-  accentSoftBorder: "#ffe3e3",
-  mint: "#ff9595",
+  accent: "#22c55e",
+  accentSoft: "#f0fdf4",
+  accentSoftBorder: "#dcfce7",
+  mint: "#86efac",
 };
 
 export const hostFlowShadow = {

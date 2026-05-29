@@ -114,8 +114,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   circleCompleted: {
-    backgroundColor: "#ff6363",
-    borderColor: "#ff6363",
+    backgroundColor: "#22c55e",
+    borderColor: "#22c55e",
     borderWidth: 2,
   },
   circleActive: {
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   checkmark: {
-    color: "#ff6363",
+    color: "#22c55e",
     fontSize: 12,
     fontWeight: "600",
   },
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   labelCompleted: {
-    color: "#ff6363",
+    color: "#22c55e",
   },
   labelActive: {
     color: "#111827",
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   lineActive: {
-    backgroundColor: "#ff6363",
+    backgroundColor: "#22c55e",
   },
   lineUpcoming: {
     backgroundColor: "#D1D5DB",

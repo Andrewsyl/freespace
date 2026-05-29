@@ -17,6 +17,7 @@ import { useAuth } from "../../auth";
 import { Button } from "../../components/ui";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
+import { hostFlowColors } from "./hostFlowTheme";
 import { colors, spacing, textStyles } from "../../styles/theme";
 import { Plus, X } from "lucide-react-native";
 
@@ -186,22 +187,19 @@ export function ListingPhotosScreen({ navigation }: Props) {
         ) : null}
       </ScrollView>
       <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
-        <Button
-          size="medium"
-          title="Continue"
-          onPress={() => navigation.navigate("ListingReview")}
-          disabled={!hasPhoto || uploading}
-          style={styles.continueButton}
-          textStyle={styles.continueButtonText}
-        />
-        <Button
-          size="medium"
-          title="Skip for now"
-          variant="secondary"
-          onPress={() => navigation.navigate("ListingReview")}
-          style={styles.secondaryButton}
-          textStyle={styles.continueButtonText}
-        />
+        <View style={styles.footerRow}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.backButtonText}>← Back</Text>
+          </Pressable>
+          <Button
+            size="medium"
+            title={hasPhoto ? "Continue" : "Skip for now"}
+            onPress={() => navigation.navigate("ListingReview")}
+            disabled={uploading}
+            style={styles.continueButton}
+            textStyle={styles.continueButtonText}
+          />
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -326,5 +324,25 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
     marginTop: 10,
+  },
+  footerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  backButton: {
+    alignItems: 'center',
+    borderColor: hostFlowColors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 50,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  backButtonText: {
+    color: hostFlowColors.textMuted,
+    fontFamily: 'PlusJakartaSans-SemiBold',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

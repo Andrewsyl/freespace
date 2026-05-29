@@ -10,8 +10,6 @@ const MapView = dynamic(() => import("../MapView").then((mod) => mod.MapView), {
 export function HostAddressStep({ data, onUpdate }: HostStepProps) {
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [movePinMode, setMovePinMode] = useState(true);
-  const [pendingAddress, setPendingAddress] = useState<string | null>(null);
-  const [showAddressPrompt, setShowAddressPrompt] = useState(false);
   const [addressVersion, setAddressVersion] = useState(0);
 
   const hasCoords = typeof data.latitude === "number" && typeof data.longitude === "number";
@@ -21,21 +19,6 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
     const { lat, lng } = mapCenter;
     onUpdate({ latitude: lat, longitude: lng, locationConfirmed: false });
     setMovePinMode(false);
-
-    // Reverse geocode via Nominatim (OpenStreetMap) — no API key required
-    fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
-      { headers: { "Accept-Language": "en", "User-Agent": "CarPark/1.0" } }
-    )
-      .then((r) => r.json())
-      .then((json) => {
-        const addr: string | undefined = json?.display_name;
-        if (addr && addr !== data.address) {
-          setPendingAddress(addr);
-          setShowAddressPrompt(true);
-        }
-      })
-      .catch(() => {/* ignore network errors */});
   };
 
   return (
@@ -51,8 +34,6 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
           onPlace={(place) => {
             onUpdate({ address: place.address, latitude: place.lat, longitude: place.lng, locationConfirmed: false });
             setMovePinMode(true);
-            setShowAddressPrompt(false);
-            setPendingAddress(null);
             setAddressVersion((v) => v + 1);
           }}
           name="address"
@@ -113,33 +94,6 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
               )}
             </div>
 
-            {/* Address update prompt */}
-            {showAddressPrompt && pendingAddress && (
-              <div className="absolute bottom-3 left-3 right-3 rounded-lg border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm">
-                <p className="text-xs font-semibold text-slate-900">Update address?</p>
-                <p className="mt-1 truncate text-xs text-slate-600">{pendingAddress}</p>
-                <div className="mt-2 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => { setShowAddressPrompt(false); setPendingAddress(null); }}
-                    className="flex-1 rounded-lg border border-slate-200 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Keep original
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (pendingAddress) onUpdate({ address: pendingAddress });
-                      setShowAddressPrompt(false);
-                      setPendingAddress(null);
-                    }}
-                    className="flex-1 rounded-lg bg-brand-600 py-2 text-xs font-semibold text-white hover:bg-brand-500"
-                  >
-                    Use new address
-                  </button>
-                </div>
-              </div>
-            )}
           </>
         ) : (
           /* No address yet */

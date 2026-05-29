@@ -190,7 +190,7 @@ export function PaymentsScreen() {
         {loading ? (
           <View style={styles.loadingOverlay} pointerEvents="none">
             <View style={styles.loadingBadge}>
-              <ActivityIndicator size="small" color="#ff6363" />
+              <ActivityIndicator size="small" color="#22c55e" />
               <Text style={styles.loadingText}>Loading payments…</Text>
             </View>
           </View>

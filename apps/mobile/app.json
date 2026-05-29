@@ -54,7 +54,7 @@
       "buildToolsVersion": "35.0.0",
       "notification": {
         "icon": "./assets/notification-icon.png",
-        "color": "#ff6363"
+        "color": "#22c55e"
       },
       "googleServicesFile": "./google-services.json",
       "config": {

@@ -30,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <span>Admin</span>
             </Link>
             <nav className="hidden items-center gap-4 text-sm font-semibold text-slate-600 md:flex">
-              <Link href="/search" className="hover:text-slate-900">Search</Link>
+              <Link href="/" className="hover:text-slate-900">Search</Link>
               <Link href="/admin/dashboard" className="hover:text-slate-900">Dashboard</Link>
               <Link href="/admin/listings" className="hover:text-slate-900">Listings</Link>
               <Link href="/admin/bookings" className="hover:text-slate-900">Bookings</Link>

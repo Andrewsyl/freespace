@@ -116,17 +116,17 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
                 type="button"
                 onClick={() => toggleFeature(label)}
                 className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition ${
-                  active ? "border-[#ff6363] bg-white" : "border-slate-200 bg-white hover:border-slate-300"
+                  active ? "border-brand-500 bg-white" : "border-slate-200 bg-white hover:border-slate-300"
                 }`}
               >
                 <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                  active ? "bg-brand-50 text-[#ff6363]" : "bg-slate-100 text-slate-500"
+                  active ? "bg-brand-50 text-brand-500" : "bg-slate-100 text-slate-500"
                 }`}>
                   {icon}
                 </div>
                 <span className="flex-1 text-sm font-semibold text-slate-800">{label}</span>
                 {active && (
-                  <svg className="h-5 w-5 shrink-0 text-[#ff6363]" viewBox="0 0 24 24" fill="currentColor">
+                  <svg className="h-5 w-5 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="currentColor">
                     <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
                   </svg>
                 )}
@@ -162,7 +162,7 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
                 }
                 className={`flex h-12 flex-1 items-center justify-center rounded-lg border text-sm font-semibold transition ${
                   active
-                    ? "border-[#ff6363] text-slate-900"
+                    ? "border-brand-500 text-slate-900"
                     : "border-slate-200 text-slate-500 hover:border-slate-300"
                 }`}
               >
@@ -184,14 +184,14 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
                     type="button"
                     onClick={() => selectAccessType(choice.id)}
                     className={`flex w-full items-center justify-between rounded-lg border px-4 py-3.5 text-left transition ${
-                      active ? "border-[#ff6363] bg-white" : "border-slate-200 bg-white hover:border-slate-300"
+                      active ? "border-brand-500 bg-white" : "border-slate-200 bg-white hover:border-slate-300"
                     }`}
                   >
                     <span className={`text-sm font-semibold ${active ? "text-slate-900" : "text-slate-700"}`}>
                       {choice.label}
                     </span>
                     {active && (
-                      <svg className="h-5 w-5 shrink-0 text-[#ff6363]" viewBox="0 0 24 24" fill="currentColor">
+                      <svg className="h-5 w-5 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="currentColor">
                         <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
                       </svg>
                     )}

@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   primaryButton: {
-    backgroundColor: "#ff6363",
+    backgroundColor: "#22c55e",
     borderRadius: 28,
     paddingVertical: 16,
     paddingHorizontal: 28,
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 360,
     marginBottom: 14,
-    shadowColor: "#ff6363",
+    shadowColor: "#22c55e",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   tertiaryButtonText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#ff6363",
+    color: "#22c55e",
   },
   buttonDisabled: {
     opacity: 0.7,

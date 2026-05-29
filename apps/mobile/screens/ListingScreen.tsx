@@ -393,7 +393,7 @@ export function ListingScreen({ navigation, route }: Props) {
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         {loading ? (
           <View style={styles.centered}>
-            <ActivityIndicator color="#ff6363" size="large" />
+            <ActivityIndicator color="#22c55e" size="large" />
           </View>
         ) : error ? (
           <View style={styles.centered}>
@@ -551,13 +551,13 @@ export function ListingScreen({ navigation, route }: Props) {
                       onPress={() => setEndAt(new Date(extendOffer.endOfDay))}
                     >
                       <View style={styles.offerIconWrap}>
-                        <Ionicons name="flash" size={15} color="#ff6363" />
+                        <Ionicons name="flash" size={15} color="#22c55e" />
                       </View>
                       <Text style={styles.offerText}>
                         Extend to end of day for only{" "}
                         <Text style={styles.offerTextBold}>€{extendOffer.extra}</Text>
                       </Text>
-                      <Ionicons name="chevron-forward" size={15} color="#ff6363" />
+                      <Ionicons name="chevron-forward" size={15} color="#22c55e" />
                     </Pressable>
                   ) : null}
                 </View>
@@ -679,7 +679,7 @@ export function ListingScreen({ navigation, route }: Props) {
                     ) : null}
                   </View>
                   {reviewsLoading ? (
-                    <ActivityIndicator color="#ff6363" style={{ marginTop: 12, alignSelf: "flex-start" }} />
+                    <ActivityIndicator color="#22c55e" style={{ marginTop: 12, alignSelf: "flex-start" }} />
                   ) : reviews.length ? (
                     <View style={styles.reviewList}>
                       {reviews.slice(0, 3).map((review) => {
@@ -907,7 +907,7 @@ export function ListingScreen({ navigation, route }: Props) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design tokens (spec)
-const GREEN = "#ff6363";
+const GREEN = "#22c55e";
 const GREEN_SOFT = "#E6F2EC";
 const FG = "#111111";
 const FG_2 = "#3D3D3D";

@@ -14,7 +14,7 @@ import {
   getListingHostId,
   insertEventLog,
 } from "../lib/db.js";
-import { getPresignedPostUpload, MAX_LISTING_IMAGE_BYTES, S3UploadConfigError } from "../lib/s3.js";
+import { getPresignedPostUpload, uploadBufferToS3, MAX_LISTING_IMAGE_BYTES, S3UploadConfigError } from "../lib/s3.js";
 import { geocodeAddress } from "../lib/geocode.js";
 import { requireAuth } from "../middleware/auth.js";
 import { enforceBlockedList, getFraudSettings, getUserRiskProfile, shouldEnforceFraud } from "../middleware/fraud.js";
@@ -134,6 +134,32 @@ router.post("/image-upload-url", requireAuth, enforceBlockedList, listingWriteLi
     if (!gate.ok) return res.status(403).json({ message: gate.message });
     const upload = await getPresignedPostUpload({ contentType, userId, fileSizeBytes });
     res.json(upload);
+  } catch (error) {
+    if (error instanceof S3UploadConfigError) {
+      return res.status(503).json({ message: error.message });
+    }
+    next(error);
+  }
+});
+
+const directUploadSchema = z.object({
+  data: z.string().min(1),
+  contentType: z.string().min(1),
+  fileSizeBytes: z.number().positive().max(MAX_LISTING_IMAGE_BYTES),
+});
+
+router.post("/upload-image", requireAuth, enforceBlockedList, listingWriteLimiter, async (req, res, next) => {
+  try {
+    const { data, contentType, fileSizeBytes } = directUploadSchema.parse(req.body);
+    const userId = req.user!.userId;
+    const gate = await requireActiveHost(userId);
+    if (!gate.ok) return res.status(403).json({ message: gate.message });
+    if (fileSizeBytes > MAX_LISTING_IMAGE_BYTES) {
+      return res.status(400).json({ message: "Image must be 10MB or smaller." });
+    }
+    const buffer = Buffer.from(data, "base64");
+    const { publicUrl } = await uploadBufferToS3({ buffer, contentType, userId });
+    res.json({ publicUrl });
   } catch (error) {
     if (error instanceof S3UploadConfigError) {
       return res.status(503).json({ message: error.message });

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useAuth } from "./AuthProvider";
-import { getImageUploadUrl } from "../lib/api";
+import { uploadImage } from "../lib/api";
 
 type UploadState = "idle" | "uploading" | "success" | "error";
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -28,43 +28,13 @@ export function ImageUploader({ onUpload }: { onUpload: (url: string) => void })
       return;
     }
 
-    const guessContentType = (file: File) => {
-      if (file.type) return file.type;
-      const lower = file.name.toLowerCase();
-      if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
-      if (lower.endsWith(".png")) return "image/png";
-      if (lower.endsWith(".webp")) return "image/webp";
-      if (lower.endsWith(".heic")) return "image/heic";
-      if (lower.endsWith(".heif")) return "image/heif";
-      return "";
-    };
-
     for (const file of filesToUpload) {
       setUploadState((prev) => ({ ...prev, [file.name]: "uploading" }));
       try {
-        const contentType = guessContentType(file);
-        if (!contentType) {
-          throw new Error("Unsupported file type. Please upload a JPG, PNG, or WEBP image.");
-        }
         if (file.size > MAX_FILE_SIZE_BYTES) {
           throw new Error("Each image must be 10MB or smaller.");
         }
-        const { uploadUrl, uploadFields, publicUrl } = await getImageUploadUrl(contentType, file.size, token);
-
-        const formData = new FormData();
-        Object.entries(uploadFields).forEach(([key, value]) => {
-          formData.append(key, value);
-        });
-        formData.append("file", file);
-        const uploadRes = await fetch(uploadUrl, {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!uploadRes.ok) {
-          throw new Error(`Upload failed (${uploadRes.status})`);
-        }
-
+        const publicUrl = await uploadImage(file, token);
         onUpload(publicUrl);
         setUploadState((prev) => ({ ...prev, [file.name]: "success" }));
       } catch (error) {

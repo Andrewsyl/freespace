@@ -1,16 +1,16 @@
 export const designTokens = {
   color: {
     brand: {
-      50: "#fff2f2",
-      100: "#ffe3e3",
-      200: "#ffbebe",
-      300: "#ff9595",
-      400: "#ff7878",
-      500: "#ff6363",
-      600: "#e84040",
-      700: "#c02a2a",
-      800: "#961f1f",
-      900: "#6e1616",
+      50: "#f0fdf4",
+      100: "#dcfce7",
+      200: "#bbf7d0",
+      300: "#86efac",
+      400: "#4ade80",
+      500: "#22c55e",
+      600: "#16a34a",
+      700: "#15803d",
+      800: "#166534",
+      900: "#14532d",
     },
     surface: {
       page: "#F7F7F6",
@@ -21,7 +21,7 @@ export const designTokens = {
       accent: "#edf7f2",
       overlayLight: "rgba(255, 255, 255, 0.95)",
       overlayDark: "rgba(15, 23, 42, 0.6)",
-      splash: "#1e90ff",
+      splash: "#22c55e",
     },
     text: {
       primary: "#0f172a",

@@ -228,8 +228,7 @@ export default function HostWizardPage() {
         <div className="flex w-full max-w-xs flex-col gap-3">
           <Link
             href="/login"
-            className="flex h-12 items-center justify-center rounded-lg text-sm font-semibold text-white"
-            style={{ backgroundColor: "#ff6363" }}
+            className="flex h-12 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white hover:bg-brand-600 transition"
           >
             Sign in
           </Link>
@@ -248,7 +247,7 @@ export default function HostWizardPage() {
   const renderStep = () => {
     switch (stepIndex) {
       case 0: return <HostAddressStep    data={draft} onUpdate={updateDraft} />;
-      case 1: return <HostStreetViewStep data={draft} onUpdate={updateDraft} />;
+      case 1: return <HostStreetViewStep data={draft} onUpdate={updateDraft} onSkip={handleNext} />;
       case 2: return <HostDetailsStep    data={draft} onUpdate={updateDraft} />;
       case 3: return <HostFeaturesStep   data={draft} onUpdate={updateDraft} />;
       case 4: return <HostAvailabilityStep data={draft} onUpdate={updateDraft} />;

@@ -179,12 +179,15 @@ export default function HomePage() {
   };
 
   const launchScenario = (overrides: Partial<SearchFilters>) => {
+    // If the scenario has its own destination (e.g. Airport), use it.
+    // Otherwise inherit whatever the user has already typed in the search form.
+    const hasScenarioLocation = overrides.latitude !== undefined && overrides.longitude !== undefined;
     handleSearch({
       ...defaultFilters,
       ...overrides,
-      location: overrides.location ?? defaultFilters.location,
-      latitude: overrides.latitude ?? defaultFilters.latitude,
-      longitude: overrides.longitude ?? defaultFilters.longitude,
+      location: hasScenarioLocation ? (overrides.location ?? defaultFilters.location) : (location || overrides.location || defaultFilters.location),
+      latitude: hasScenarioLocation ? overrides.latitude : (latitude ?? overrides.latitude ?? defaultFilters.latitude),
+      longitude: hasScenarioLocation ? overrides.longitude : (longitude ?? overrides.longitude ?? defaultFilters.longitude),
       mode: overrides.mode ?? defaultFilters.mode,
       evCharging: overrides.evCharging,
     });

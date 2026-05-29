@@ -279,13 +279,18 @@ export function ListingDetailsScreen({ navigation }: Props) {
       </ScrollView>
 
       <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
-        <Pressable
-          style={[styles.primaryButton, !canContinue && styles.primaryButtonDisabled]}
-          onPress={() => navigation.navigate("ListingFeaturesAccess")}
-          disabled={!canContinue}
-        >
-          <Text style={styles.primaryButtonText}>Continue</Text>
-        </Pressable>
+        <View style={styles.footerRow}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.backButtonText}>← Back</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.primaryButton, !canContinue && styles.primaryButtonDisabled]}
+            onPress={() => navigation.navigate("ListingFeaturesAccess")}
+            disabled={!canContinue}
+          >
+            <Text style={styles.primaryButtonText}>Continue</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -417,7 +422,7 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   sectionLabel: {
-    color: "#ff9595",
+    color: "#86efac",
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
     fontWeight: "700",
@@ -600,5 +605,25 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: "800",
     lineHeight: 24,
+  },
+  footerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  backButton: {
+    alignItems: 'center',
+    borderColor: hostFlowColors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 50,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  backButtonText: {
+    color: hostFlowColors.textMuted,
+    fontFamily: 'PlusJakartaSans-SemiBold',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

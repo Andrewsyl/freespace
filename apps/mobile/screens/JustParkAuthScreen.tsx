@@ -92,7 +92,7 @@ export function JustParkAuthScreen() {
 
           <View style={styles.socialRow}>
             <TouchableOpacity style={styles.socialButton}>
-              <MaterialCommunityIcons name="facebook" size={22} color="#ff6363" />
+              <MaterialCommunityIcons name="facebook" size={22} color="#22c55e" />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.socialButton}
@@ -128,10 +128,10 @@ export function JustParkAuthScreen() {
                 }
               }}
             >
-              <MaterialCommunityIcons name="google" size={22} color="#ff6363" />
+              <MaterialCommunityIcons name="google" size={22} color="#22c55e" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.socialButton}>
-              <MaterialCommunityIcons name="apple" size={22} color="#ff6363" />
+              <MaterialCommunityIcons name="apple" size={22} color="#22c55e" />
             </TouchableOpacity>
           </View>
           {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
@@ -151,7 +151,7 @@ export function JustParkAuthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ff6363",
+    backgroundColor: "#22c55e",
   },
   screen: {
     flex: 1,
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     paddingTop: 30,
   },
   formTitle: {
-    color: "#ff6363",
+    color: "#22c55e",
     fontSize: 28,
     fontWeight: "700",
     marginBottom: 18,
@@ -219,12 +219,12 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   forgotText: {
-    color: "#ff6363",
+    color: "#22c55e",
     fontSize: 13,
     fontWeight: "600",
   },
   primaryButton: {
-    backgroundColor: "#ff6363",
+    backgroundColor: "#22c55e",
     borderRadius: 30,
     height: 55,
     alignItems: "center",
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   footerLink: {
-    color: "#ff6363",
+    color: "#22c55e",
     fontWeight: "700",
   },
 });

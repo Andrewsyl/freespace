@@ -248,7 +248,7 @@ export function SearchForm({
       if (submission.vehicleSize) params.set("vehicleSize", submission.vehicleSize);
       if (submission.spaceType) params.set("spaceType", submission.spaceType);
       if (submission.instantBook) params.set("instantBook", "true");
-      router.push(`/search?${params.toString()}`);
+      router.push(`/?${params.toString()}`);
       return;
     }
   };

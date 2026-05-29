@@ -154,6 +154,19 @@ export async function createListing(input: CreateListingInput, token?: string) {
   return data!;
 }
 
+export async function uploadImage(file: File, token: string): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+  const res = await fetch(`${API_BASE}/api/listings/upload-image`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ data: base64, contentType: file.type, fileSizeBytes: file.size }),
+  });
+  const { data, error } = await handleResponse<{ publicUrl: string }>(res);
+  if (error) throw new Error(error);
+  return data!.publicUrl;
+}
+
 export async function getImageUploadUrl(contentType: string, fileSizeBytes: number, token?: string) {
   if (!token) throw new Error("Authentication required");
   const res = await fetch(`${API_BASE}/api/listings/image-upload-url`, {

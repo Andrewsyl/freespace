@@ -14,6 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { CalendarDays, Clock3 } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
+import { hostFlowColors } from "./hostFlowTheme";
 import { colors, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
@@ -226,9 +227,14 @@ export function ListingPriceScreen({ navigation }: Props) {
       </ScrollView>
 
       <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
-        <Pressable style={styles.continueBtn} onPress={() => navigation.navigate("ListingPhotos")}>
-          <Text style={styles.continueBtnText}>Continue</Text>
-        </Pressable>
+        <View style={styles.footerRow}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.backButtonText}>← Back</Text>
+          </Pressable>
+          <Pressable style={styles.continueBtn} onPress={() => navigation.navigate("ListingPhotos")}>
+            <Text style={styles.continueBtnText}>Continue</Text>
+          </Pressable>
+        </View>
       </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -418,5 +424,25 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     letterSpacing: -0.2,
+  },
+  footerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  backButton: {
+    alignItems: 'center',
+    borderColor: hostFlowColors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 50,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  backButtonText: {
+    color: hostFlowColors.textMuted,
+    fontFamily: 'PlusJakartaSans-SemiBold',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
