@@ -5,6 +5,42 @@ import { trackEvent } from "../../../lib/telemetry";
 import { useEffect, useRef, useMemo, useState } from "react";
 import { calculateListingTotal, formatPriceValue } from "../../../lib/pricing";
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function roundUpToHalfHour(d: Date): Date {
+  const out = new Date(d);
+  const m = out.getMinutes();
+  if (m === 0) return out;
+  out.setMinutes(m <= 30 ? 30 : 60, 0, 0);
+  return out;
+}
+
+function toTimeString(d: Date): string {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+function defaultStartTime(): string {
+  return toTimeString(roundUpToHalfHour(new Date()));
+}
+
+function defaultEndTime(fromStartTime?: string): string {
+  if (fromStartTime) {
+    const [h, m] = fromStartTime.split(":").map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return toTimeString(new Date(d.getTime() + 2 * 60 * 60 * 1000));
+  }
+  const start = roundUpToHalfHour(new Date());
+  return toTimeString(new Date(start.getTime() + 2 * 60 * 60 * 1000));
+}
+
+function addHoursToTime(time: string, hours: number): string {
+  const [h, m] = time.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return toTimeString(new Date(d.getTime() + hours * 60 * 60 * 1000));
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MONTH_NAMES = [
@@ -21,12 +57,23 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   return `${String(h).padStart(2,"0")}:${m}`;
 });
 
-const PRESETS = [
-  { label: "2 hrs",    start: "09:00", end: "11:00" },
-  { label: "4 hrs",    start: "09:00", end: "13:00" },
-  { label: "Full day", start: "08:00", end: "20:00" },
-  { label: "Evening",  start: "17:00", end: "22:00" },
-] as const;
+type DurationPreset = {
+  label: string;
+  durationHours: number;
+};
+
+type FixedPreset = {
+  label: string;
+  fixedStart: string;
+  fixedEnd: string;
+};
+
+const PRESETS: Array<DurationPreset | FixedPreset> = [
+  { label: "2 hrs",    durationHours: 2 },
+  { label: "4 hrs",    durationHours: 4 },
+  { label: "Full day", fixedStart: "08:00", fixedEnd: "20:00" },
+  { label: "Evening",  fixedStart: "17:00", fixedEnd: "22:00" },
+];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -307,9 +354,9 @@ export function BookingSelector({
   }, []);
 
   const [startDate, setStartDate] = useState(defaultDate);
-  const [startTime, setStartTime] = useState(initialValues?.startTime ?? "09:00");
+  const [startTime, setStartTime] = useState(initialValues?.startTime ?? defaultStartTime());
   const [endDate,   setEndDate]   = useState(initialValues?.endDate ?? initialValues?.startDate ?? defaultDate);
-  const [endTime,   setEndTime]   = useState(initialValues?.endTime ?? "18:00");
+  const [endTime,   setEndTime]   = useState(initialValues?.endTime ?? defaultEndTime(initialValues?.startTime));
   const [openPicker, setOpenPicker] = useState<"start"|"end"|null>(null);
 
   const href = `/checkout/${listingId}?date=${startDate}&startTime=${startTime}&endDate=${endDate}&endTime=${endTime}`;
@@ -400,12 +447,37 @@ export function BookingSelector({
       {/* Quick-select chips */}
       <div className="flex flex-wrap gap-1.5 pt-1">
         {PRESETS.map((p) => {
-          const active = startTime === p.start && endTime === p.end;
+          const isFixedPreset = "fixedStart" in p;
+          if (isFixedPreset) {
+            const active = startTime === p.fixedStart && endTime === p.fixedEnd;
+            return (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => {
+                  setStartTime(p.fixedStart);
+                  setEndTime(p.fixedEnd);
+                }}
+                className={`rounded-full border px-3 py-1 text-[12px] font-semibold transition ${
+                  active
+                    ? "border-brand-500 bg-brand-500 text-white"
+                    : "border-slate-200 text-slate-600 hover:border-brand-400 hover:text-brand-600"
+                }`}
+              >
+                {p.label}
+              </button>
+            );
+          }
+
+          const expectedEnd = addHoursToTime(startTime, p.durationHours);
+          const active = endTime === expectedEnd;
           return (
             <button
               key={p.label}
               type="button"
-              onClick={() => { setStartTime(p.start); setEndTime(p.end); }}
+              onClick={() => {
+                setEndTime(addHoursToTime(startTime, p.durationHours));
+              }}
               className={`rounded-full border px-3 py-1 text-[12px] font-semibold transition ${
                 active
                   ? "border-brand-500 bg-brand-500 text-white"

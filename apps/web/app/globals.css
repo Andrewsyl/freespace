@@ -44,9 +44,9 @@
   --text-strong: #111827;
   --text-muted: #6b7280;
   --text-soft: #9ca3af;
-  --accent: #1B8A5A;
-  --accent-soft: #d1ede2;
-  --accent-muted: #edf7f2;
+  --accent: #ff6363;
+  --accent-soft: #ffe3e3;
+  --accent-muted: #fff2f2;
   --shadow-card: 0 16px 40px rgba(15, 23, 42, 0.08);
   --radius-card: 1rem;
 }
@@ -80,6 +80,7 @@ body {
   font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
   margin-top: 8px !important;
   padding: 6px !important;
+  min-width: 340px !important;
   overflow: hidden;
 }
 
@@ -111,10 +112,10 @@ body {
   background: #f1f5f9 !important;
 }
 
-/* Replace Google's sprite icon with a brand-green circle + pin */
+/* Replace Google's sprite icon with a brand circle + pin */
 .pac-icon {
-  background-color: #e6f9f2 !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231B8A5A'%3E%3Cpath fill-rule='evenodd' d='M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z' clip-rule='evenodd'/%3E%3C/svg%3E") !important;
+  background-color: #fff2f2 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ff6363'%3E%3Cpath fill-rule='evenodd' d='M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z' clip-rule='evenodd'/%3E%3C/svg%3E") !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
   background-size: 14px 14px !important;

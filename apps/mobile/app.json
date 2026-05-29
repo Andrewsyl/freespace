@@ -54,7 +54,7 @@
       "buildToolsVersion": "35.0.0",
       "notification": {
         "icon": "./assets/notification-icon.png",
-        "color": "#2ECC8F"
+        "color": "#ff6363"
       },
       "googleServicesFile": "./google-services.json",
       "config": {
@@ -65,11 +65,11 @@
     },
     "androidStatusBar": {
       "translucent": true,
-      "backgroundColor": "#2ECC8F",
+      "backgroundColor": "#ffffff",
       "barStyle": "dark-content"
     },
     "androidNavigationBar": {
-      "backgroundColor": "#2ECC8F",
+      "backgroundColor": "#ffffff",
       "barStyle": "dark-content"
     },
     "ios": {

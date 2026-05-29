@@ -780,8 +780,8 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (value: stri
         </Select.Icon>
       </Select.Trigger>
       <Select.Portal>
-        <Select.Content className="z-[60] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" position="popper" sideOffset={8}>
-          <Select.Viewport className="max-h-64 p-2">
+        <Select.Content className="z-[60] rounded-2xl border border-slate-200 bg-white shadow-2xl" position="popper" sideOffset={8}>
+          <Select.Viewport className="max-h-[60vh] overflow-y-auto p-2">
             {TIME_SLOTS.map((t) => (
               <Select.Item
                 key={t}

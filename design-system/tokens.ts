@@ -21,7 +21,7 @@ export const designTokens = {
       accent: "#edf7f2",
       overlayLight: "rgba(255, 255, 255, 0.95)",
       overlayDark: "rgba(15, 23, 42, 0.6)",
-      splash: "#ff6363",
+      splash: "#1e90ff",
     },
     text: {
       primary: "#0f172a",

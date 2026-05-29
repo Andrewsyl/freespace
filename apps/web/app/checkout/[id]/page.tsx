@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createBooking, getListing, type ListingDetail } from "../../../lib/api";
 import { calculateListingTotal, formatListingPriceLine } from "../../../lib/pricing";
@@ -12,6 +12,7 @@ import TimeSelect from "../../../components/TimeSelect";
 export default function CheckoutPage() {
   const { user, token, loading } = useAuth();
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "success">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -19,9 +20,9 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<"card" | "google">("card");
 
   const today = useMemo(() => new Date().toISOString().split("T")[0], []);
-  const [date, setDate] = useState(today);
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("18:00");
+  const [date, setDate] = useState(searchParams?.get("date") ?? today);
+  const [startTime, setStartTime] = useState(searchParams?.get("startTime") ?? "");
+  const [endTime, setEndTime] = useState(searchParams?.get("endTime") ?? "");
 
   const startDateTime = useMemo(() => new Date(`${date}T${startTime}:00`), [date, startTime]);
   const endDateTime = useMemo(() => new Date(`${date}T${endTime}:00`), [date, endTime]);

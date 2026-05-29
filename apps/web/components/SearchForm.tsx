@@ -80,7 +80,7 @@ export function SearchForm({
     const endFromProps =
       initialValues?.endDate && initialValues?.endTime
         ? buildDateTime(initialValues.endDate, initialValues.endTime)
-        : addMinutes(startFromProps, 180);
+        : addMinutes(startFromProps, 120);
     return {
       location: initialValues?.location ?? "",
       latitude: initialValues?.latitude,
@@ -254,13 +254,13 @@ export function SearchForm({
   };
 
   const setStart = (next: Date) => {
-    const adjustedEnd = state.endAt <= next ? addMinutes(next, 180) : state.endAt;
+    const adjustedEnd = state.endAt <= next ? addMinutes(next, 120) : state.endAt;
     setState((prev) => ({ ...prev, startAt: next, endAt: adjustedEnd }));
   };
 
   const setEnd = (next: Date) => {
     if (next <= state.startAt) {
-      setState((prev) => ({ ...prev, endAt: addMinutes(prev.startAt, 180) }));
+      setState((prev) => ({ ...prev, endAt: addMinutes(prev.startAt, 120) }));
       return;
     }
     setState((prev) => ({ ...prev, endAt: next }));
