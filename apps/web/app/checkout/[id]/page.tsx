@@ -7,7 +7,7 @@ import { createBooking, getListing, type ListingDetail } from "../../../lib/api"
 import { calculateListingTotal, formatListingPriceLine } from "../../../lib/pricing";
 import { useAuth } from "../../../components/AuthProvider";
 import { SlimNav } from "../../../components/SlimNav";
-import TimeSelect from "../../../components/TimeSelect";
+import { SearchDateTimePicker } from "../../../components/SearchForm";
 
 export default function CheckoutPage() {
   const { user, token, loading } = useAuth();
@@ -19,25 +19,47 @@ export default function CheckoutPage() {
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "google">("card");
 
-  const today = useMemo(() => new Date().toISOString().split("T")[0], []);
-  const [date, setDate] = useState(searchParams?.get("date") ?? today);
-  const [startTime, setStartTime] = useState(searchParams?.get("startTime") ?? "");
-  const [endTime, setEndTime] = useState(searchParams?.get("endTime") ?? "");
+  const defaultStart = useMemo(() => {
+    const now = new Date();
+    now.setMinutes(Math.ceil(now.getMinutes() / 30) * 30, 0, 0);
+    const date = searchParams?.get("date");
+    const startTime = searchParams?.get("startTime");
+    if (date && startTime) {
+      const parsed = new Date(`${date}T${startTime}:00`);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+    return now;
+  }, [searchParams]);
+  const defaultEnd = useMemo(() => {
+    const endDate = searchParams?.get("endDate") ?? searchParams?.get("date");
+    const endTime = searchParams?.get("endTime");
+    if (endDate && endTime) {
+      const parsed = new Date(`${endDate}T${endTime}:00`);
+      if (!Number.isNaN(parsed.getTime()) && parsed.getTime() > defaultStart.getTime()) {
+        return parsed;
+      }
+    }
+    return new Date(defaultStart.getTime() + 2 * 60 * 60 * 1000);
+  }, [defaultStart, searchParams]);
+  const [startAt, setStartAt] = useState(defaultStart);
+  const [endAt, setEndAt] = useState(defaultEnd);
 
-  const startDateTime = useMemo(() => new Date(`${date}T${startTime}:00`), [date, startTime]);
-  const endDateTime = useMemo(() => new Date(`${date}T${endTime}:00`), [date, endTime]);
   const pricing = useMemo(
-    () => (listing ? calculateListingTotal(listing, startDateTime, endDateTime) : null),
-    [endDateTime, listing, startDateTime]
+    () => (listing ? calculateListingTotal(listing, startAt, endAt) : null),
+    [endAt, listing, startAt]
   );
   const durationHours = useMemo(() => {
-    const diff = endDateTime.getTime() - startDateTime.getTime();
+    const diff = endAt.getTime() - startAt.getTime();
     return Math.max(1, Math.ceil(diff / (1000 * 60 * 60)));
-  }, [endDateTime, startDateTime]);
+  }, [endAt, startAt]);
   const totalPrice = pricing?.total ?? 0;
   const parkingFee = totalPrice;
   const platformFeeLabel = "Included";
-  const hostPayoutReady = Boolean(listing?.hostStripeAccountId && !listing.hostStripeAccountId.startsWith("acct_mock_"));
+  const pad2 = (n: number) => String(n).padStart(2, "0");
+  const toDateStr = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  const toTimeStr = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 
   useEffect(() => {
     const id = params?.id;
@@ -53,15 +75,11 @@ export default function CheckoutPage() {
       setError("Please sign in to book.");
       return;
     }
-    if (!hostPayoutReady) {
-      setError("This host has not completed payout setup yet.");
-      return;
-    }
     setStatus("loading");
     setError(null);
     try {
-      const from = `${date}T${startTime}:00Z`;
-      const to = `${date}T${endTime}:00Z`;
+      const from = `${toDateStr(startAt)}T${toTimeStr(startAt)}:00Z`;
+      const to = `${toDateStr(endAt)}T${toTimeStr(endAt)}:00Z`;
       const amountCents = Math.max(1, Math.round(totalPrice * 100));
       const res = await createBooking(
         {
@@ -132,12 +150,6 @@ export default function CheckoutPage() {
           <p className="text-sm text-slate-600">{listing.address}</p>
         </header>
 
-        {!hostPayoutReady && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            This host has not finished payout onboarding yet, so checkout is temporarily unavailable for this space.
-          </div>
-        )}
-
         <div className="rounded-lg border border-slate-200/80 bg-white p-5 shadow-sm">
           <h2 className="text-xl font-semibold text-slate-900">Parking location</h2>
           <p className="mt-2 text-sm text-slate-600">Review the space details before confirming.</p>
@@ -155,42 +167,33 @@ export default function CheckoutPage() {
                 {durationHours} hrs
               </span>
             </div>
-            <div className="mt-4 space-y-3">
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-600">
-                Date
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:outline-none"
-                  required
-                />
-              </label>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="flex flex-col gap-2 text-sm font-medium text-slate-600">
-                  Start time
-                  <TimeSelect
-                    value={startTime}
-                    onChange={setStartTime}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:outline-none"
-                    required
-                  />
-                </label>
-                <label className="flex flex-col gap-2 text-sm font-medium text-slate-600">
-                  End time
-                  <TimeSelect
-                    value={endTime}
-                    onChange={setEndTime}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:outline-none"
-                    required
-                  />
-                </label>
-              </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <SearchDateTimePicker
+                label="From"
+                value={startAt}
+                portalPopup
+                onChange={(next) => {
+                  setStartAt(next);
+                  if (next >= endAt) {
+                    setEndAt(new Date(next.getTime() + 2 * 60 * 60 * 1000));
+                  }
+                }}
+              />
+              <SearchDateTimePicker
+                label="Until"
+                value={endAt}
+                portalPopup
+                onChange={(next) => {
+                  if (next > startAt) {
+                    setEndAt(next);
+                  }
+                }}
+              />
             </div>
             <div className="mt-5 rounded-lg border border-slate-200">
               {[
-                { label: "START", value: startDateTime.toLocaleString() },
-                { label: "END", value: endDateTime.toLocaleString() },
+                { label: "START", value: startAt.toLocaleString() },
+                { label: "END", value: endAt.toLocaleString() },
                 { label: "DURATION", value: `${durationHours} hours` },
               ].map((row, index) => (
                 <div
@@ -308,7 +311,7 @@ export default function CheckoutPage() {
             type="submit"
             form="checkout-form"
             className="flex h-12 min-w-[160px] items-center justify-center rounded-xl bg-brand-500 px-6 text-[15px] font-bold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={status === "loading" || !hostPayoutReady}
+            disabled={status === "loading"}
           >
             {status === "loading"
               ? "Processing…"

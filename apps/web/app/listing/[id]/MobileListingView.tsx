@@ -101,6 +101,7 @@ export function MobileListingView({
     [fallbackImage, listing.imageUrls, listing.image_urls],
   );
   const heroImage = images[0] ?? fallbackImage;
+  const [isImageFullscreen, setIsImageFullscreen] = useState(false);
 
   return (
     <>
@@ -111,7 +112,14 @@ export function MobileListingView({
       >
         {/* ── Hero image ── */}
         <div className="relative h-80 overflow-hidden bg-slate-200">
-          <img src={heroImage} alt={listing.title} className="h-full w-full object-cover" />
+          <button
+            type="button"
+            onClick={() => setIsImageFullscreen(true)}
+            className="absolute inset-0 z-0"
+            aria-label="Open image fullscreen"
+          >
+            <img src={heroImage} alt={listing.title} className="h-full w-full object-cover" />
+          </button>
           {/* Gradient scrim */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/20" />
 
@@ -339,6 +347,33 @@ export function MobileListingView({
           </Link>
         </div>
       </div>
+
+      {isImageFullscreen && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/95 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setIsImageFullscreen(false)}
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm"
+            style={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
+            aria-label="Close fullscreen image"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsImageFullscreen(false)}
+            className="absolute inset-0"
+            aria-label="Close fullscreen image backdrop"
+          />
+          <img
+            src={heroImage}
+            alt={listing.title}
+            className="relative z-10 max-h-[100dvh] w-full object-contain"
+          />
+        </div>
+      )}
     </>
   );
 }
