@@ -31,6 +31,7 @@ import {
 } from "../lib/db.js";
 import { isMailerConfigured, sendMail } from "../lib/mailer.js";
 import { getAuthEmailFrom, getSenderAddress } from "../lib/emailSenders.js";
+import { buildVerificationEmail, buildPasswordResetEmail } from "../lib/emailTemplates.js";
 import { sendSms, SmsConfigError } from "../lib/sms.js";
 import { requireAuth } from "../middleware/auth.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
@@ -57,9 +58,6 @@ const accountDeleteLimiter = createRateLimiter({
   keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
 });
 
-function getAuthEmailFooterAddress() {
-  return getSenderAddress(getAuthEmailFrom());
-}
 
 const toPublicUser = (user: UserRecord) => ({
   id: user.id,
@@ -801,74 +799,6 @@ router.delete("/me", requireAuth, accountDeleteLimiter, async (req, res, next) =
 });
 
 export default router;
-
-function buildEmailShell({
-  eyebrow,
-  title,
-  body,
-  ctaLabel,
-  url,
-  secondary,
-}: {
-  eyebrow: string;
-  title: string;
-  body: string;
-  ctaLabel: string;
-  url: string;
-  secondary: string;
-}) {
-  const webBase = (process.env.WEB_BASE_URL ?? 'https://freespace.ie').replace(/\/$/, '');
-  const logoUrl = `${webBase}/freespace-logo.png`;
-  return `
-  <div style="margin:0; padding:32px 16px; background:#f4f7fb; font-family:Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color:#0f172a;">
-    <div style="max-width:560px; margin:0 auto; overflow:hidden; background:#ffffff; border:1px solid #dbe4ee; border-radius:24px; box-shadow:0 18px 45px rgba(15, 23, 42, 0.08);">
-      <div style="padding:28px 28px 18px; background:linear-gradient(135deg, #eff6ff 0%, #ffffff 58%, #f8fafc 100%); border-bottom:1px solid #e2e8f0;">
-        <img src="${logoUrl}" alt="FreeSpace" width="132" height="34" style="display:block; width:132px; height:auto; margin:0 0 16px;" />
-        <div style="font-size:12px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#1d4ed8;">${eyebrow}</div>
-        <h1 style="margin:10px 0 0; font-size:28px; line-height:1.2; font-weight:800; color:#0f172a;">${title}</h1>
-      </div>
-      <div style="padding:24px 28px 28px;">
-        <p style="margin:0 0 22px; font-size:15px; line-height:1.7; color:#334155;">${body}</p>
-        <a href="${url}" style="display:inline-block; padding:14px 20px; background:#0f172a; color:#ffffff; border-radius:14px; text-decoration:none; font-size:15px; font-weight:700;">${ctaLabel}</a>
-        <div style="margin:16px 0 0; font-size:13px; line-height:1.6; color:#64748b;">
-          If the button does not work in your email app, use this fallback link:
-        </div>
-        <div style="margin:8px 0 0;">
-          <a href="${url}" style="color:#1d4ed8; font-size:14px; font-weight:700; text-decoration:none; word-break:break-all;">Open fallback link</a>
-        </div>
-        <div style="margin:24px 0 0; padding:16px 18px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px;">
-          <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; margin-bottom:8px;">Secure link</div>
-          <a href="${url}" style="font-size:13px; line-height:1.6; color:#475569; text-decoration:none; word-break:break-all;">${url}</a>
-        </div>
-        <p style="margin:18px 0 0; font-size:13px; line-height:1.6; color:#64748b;">${secondary}</p>
-        <p style="margin:18px 0 0; font-size:12px; line-height:1.6; color:#94a3b8;">FreeSpace Accounts · ${getAuthEmailFooterAddress()}</p>
-      </div>
-    </div>
-  </div>
-  `;
-}
-
-function buildVerificationEmail(url: string) {
-  return buildEmailShell({
-    eyebrow: 'FreeSpace account',
-    title: 'Verify your email',
-    body: 'Confirm your email address to finish setting up your FreeSpace account and unlock bookings, payments, and hosting features.',
-    ctaLabel: 'Verify email',
-    url,
-    secondary: 'If you did not create a FreeSpace account, you can ignore this message.',
-  });
-}
-
-function buildPasswordResetEmail(url: string) {
-  return buildEmailShell({
-    eyebrow: 'FreeSpace security',
-    title: 'Reset your password',
-    body: 'Use the secure link below to set a new password for your FreeSpace account. This link expires in 1 hour.',
-    ctaLabel: 'Reset password',
-    url,
-    secondary: 'If you did not request a password reset, you can ignore this email and your password will stay unchanged.',
-  });
-}
 
 function buildVerificationResultPage({
   title,

@@ -13,7 +13,7 @@ type Props = {
 };
 
 // Design tokens
-const GREEN        = "#22c55e";
+const GREEN        = "#0fa968";
 const GREEN_SOFT   = "#E6F2EC";
 const GREEN_STRIP  = "#F0FAF5";
 const FG           = "#111111";

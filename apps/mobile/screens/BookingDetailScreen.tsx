@@ -117,7 +117,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     if (isInProgress) return {
       label: "In progress",
       icon: "play-circle" as const,
-      cardGradient: ["#22c55e", "#000000"] as const,
+      cardGradient: ["#0fa968", "#000000"] as const,
     };
     if (isUpcoming) return {
       label: "Confirmed",
@@ -592,7 +592,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const SCREEN_BG  = "#EFEEEC";
-const GREEN      = "#22c55e";
+const GREEN      = "#0fa968";
 const GREEN_SOFT = "#E6F2EC";
 const FG         = "#111111";
 const FG_MUTED   = "#6B6B6B";
@@ -984,7 +984,7 @@ const styles = StyleSheet.create({
   // ── Review CTA ───────────────────────────────────────────────────────────
   reviewCta: {
     borderRadius: 16,
-    backgroundColor: "#22c55e",
+    backgroundColor: "#0fa968",
     paddingVertical: 22,
     paddingHorizontal: 20,
     alignItems: "center",

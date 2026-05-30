@@ -12,6 +12,7 @@ import {
   StyleSheet,
   StatusBar,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -36,7 +37,7 @@ import { isMobileE2EActive } from "../e2e/testMode";
 import { trackEvent } from "../analytics";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { formatDateLabel, formatDateTimeLabel, formatTimeLabel } from "../utils/dateFormat";
-import { calculateListingTotal } from "../utils/pricing";
+import { calculateListingTotal, formatListingPriceLine } from "../utils/pricing";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingSummary">;
 
@@ -478,7 +479,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <ArrowLeft size={22} color="#151b1b" />
+          <ArrowLeft size={22} color="#111827" />
         </Pressable>
         <Text style={styles.headerTitle}>Review booking</Text>
         <View style={styles.headerSpacer} />
@@ -491,7 +492,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       >
         {loadingListing ? (
           <View style={styles.centered}>
-            <ActivityIndicator size="small" color="#22c55e" />
+            <ActivityIndicator size="small" color="#0fa968" />
             <Text style={styles.muted}>Loading booking…</Text>
           </View>
         ) : !user ? (
@@ -515,47 +516,81 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* ── Listing ── */}
-            <View style={styles.listingBlock}>
-              <Text style={styles.listingName}>{listing.title || "Parking space"}</Text>
-              <View style={styles.listingAddressRow}>
-                <Ionicons name="location-outline" size={14} color="#8b949b" />
-                <Text style={styles.listingAddress}>{listing.address || ""}</Text>
+            {/* ── Page header ── */}
+            <View style={styles.pageHeader}>
+              <Text style={styles.pageLabel}>Booking confirmation</Text>
+              <Text style={styles.pageTitle}>{listing.title || "Parking space"}</Text>
+              <View style={styles.pageAddressRow}>
+                <Ionicons name="location-outline" size={14} color="#9ca3af" />
+                <Text style={styles.pageAddress}>{listing.address || ""}</Text>
               </View>
             </View>
 
-            <View style={styles.divider} />
-
-            {/* ── Parking window ── */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Parking window</Text>
-              <View style={styles.dateChipRow}>
-                <Pressable style={styles.dateChip} onPress={() => openPicker("start")}>
-                  <Text style={styles.dateChipLabel}>From</Text>
-                  <Text style={styles.dateChipDate}>{formatDateLabel(start)}</Text>
-                  <Text style={styles.dateChipTime}>{formatTimeLabel(start)}</Text>
-                  <View style={styles.dateChipEditHint}>
-                    <Ionicons name="pencil-outline" size={11} color="#9A9A9A" />
-                  </View>
-                </Pressable>
-                <Ionicons name="arrow-forward" size={14} color="#BEBEBE" style={styles.dateChipArrow} />
-                <Pressable style={styles.dateChip} onPress={() => openPicker("end")}>
-                  <Text style={styles.dateChipLabel}>Until</Text>
-                  <Text style={styles.dateChipDate}>{formatDateLabel(end)}</Text>
-                  <Text style={styles.dateChipTime}>{formatTimeLabel(end)}</Text>
-                  <View style={styles.dateChipEditHint}>
-                    <Ionicons name="pencil-outline" size={11} color="#9A9A9A" />
-                  </View>
-                </Pressable>
+            {/* ── Parking location card ── */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Parking location</Text>
+              <Text style={styles.cardSubtitle}>Review the space details before confirming.</Text>
+              <View style={styles.locationBox}>
+                <Text style={styles.locationBoxTitle}>{listing.title}</Text>
+                <Text style={styles.locationBoxAddress}>{listing.address}</Text>
               </View>
             </View>
 
-            <View style={styles.divider} />
+            {/* ── Session details card ── */}
+            <View style={styles.card}>
+              <View style={styles.cardTitleRow}>
+                <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Session details</Text>
+                {priceSummary?.durationLabel ? (
+                  <View style={styles.durationPill}>
+                    <Text style={styles.durationPillText}>{priceSummary.durationLabel}</Text>
+                  </View>
+                ) : null}
+              </View>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Date</Text>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => openPicker("start")}>
+                  <View style={styles.fieldPicker}>
+                    <Text style={styles.fieldPickerText}>{formatDateLabel(start)}</Text>
+                    <Ionicons name="chevron-down" size={16} color="#9ca3af" />
+                  </View>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Start time</Text>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => openPicker("start")}>
+                  <View style={styles.fieldPicker}>
+                    <Text style={styles.fieldPickerText}>{formatTimeLabel(start)}</Text>
+                    <Ionicons name="chevron-down" size={16} color="#9ca3af" />
+                  </View>
+                </TouchableOpacity>
+              </View>
+              <View style={[styles.fieldGroup, { marginBottom: 16 }]}>
+                <Text style={styles.fieldLabel}>End time</Text>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => openPicker("end")}>
+                  <View style={styles.fieldPicker}>
+                    <Text style={styles.fieldPickerText}>{formatTimeLabel(end)}</Text>
+                    <Ionicons name="chevron-down" size={16} color="#9ca3af" />
+                  </View>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.summaryBox}>
+                {([
+                  { label: "START",    value: formatDateTimeLabel(start) },
+                  { label: "END",      value: formatDateTimeLabel(end) },
+                  { label: "DURATION", value: priceSummary?.durationLabel ?? "" },
+                ] as const).map((row, i) => (
+                  <View key={row.label} style={[styles.summaryRow, i > 0 && styles.summaryRowBorder]}>
+                    <Text style={styles.summaryRowLabel}>{row.label}</Text>
+                    <Text style={styles.summaryRowValue}>{row.value}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
 
-            {/* ── Vehicle ── */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionLabel}>Vehicle</Text>
+            {/* ── Vehicle card ── */}
+            <View style={styles.card}>
+              <View style={styles.cardTitleRow}>
+                <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Vehicle</Text>
                 <Pressable
                   style={styles.editBtn}
                   onPress={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary" })}
@@ -587,26 +622,45 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               ) : null}
             </View>
 
-            <View style={styles.divider} />
-
-            {/* ── Price ── */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionLabel}>Price breakdown</Text>
+            {/* ── Price breakdown card ── */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Price breakdown</Text>
+              <View style={styles.summaryBox}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryRowLabel}>HOST RATE</Text>
+                  <Text style={styles.summaryRowValue}>{formatListingPriceLine(listing)}</Text>
+                </View>
+                <View style={[styles.summaryRow, styles.summaryRowBorder]}>
+                  <Text style={styles.summaryRowLabel}>BILLING PERIOD</Text>
+                  <Text style={styles.summaryRowValue}>{priceSummary?.durationLabel ?? ""}</Text>
+                </View>
+                <View style={[styles.summaryRow, styles.summaryRowBorder]}>
+                  <Text style={styles.summaryRowLabel}>PARKING FEE</Text>
+                  <Text style={styles.summaryRowValue}>€{pricing.parkingFee.toFixed(2)}</Text>
+                </View>
+                <View style={[styles.summaryRow, styles.summaryRowBorder]}>
+                  <Text style={styles.summaryRowLabel}>PLATFORM FEE</Text>
+                  <Text style={styles.summaryRowMuted}>Included</Text>
+                </View>
               </View>
-              <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Parking fee</Text>
-                <Text style={styles.priceValue}>€{Math.round(pricing.parkingFee)}</Text>
+              <View style={styles.totalBox}>
+                <Text style={styles.totalBoxLabel}>TOTAL DUE TODAY</Text>
+                <Text style={styles.totalBoxValue}>€{pricing.finalPrice.toFixed(2)}</Text>
               </View>
-              <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Platform fee</Text>
-                <Text style={styles.priceMuted}>Included</Text>
-              </View>
-              <View style={styles.priceTotalRow}>
-                <Text style={styles.priceTotalLabel}>Total</Text>
-                <Text style={styles.priceTotalValue}>€{Math.round(pricing.finalPrice)}</Text>
-              </View>
+              <Text style={styles.noHiddenFees}>No hidden fees will be added after checkout.</Text>
             </View>
+
+            {/* ── Cancellation policy card ── */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Cancellation policy</Text>
+              <Text style={styles.cardBody}>
+                Cancel up to 2 hours before the start time for a full refund. Late cancellations may incur a fee.
+              </Text>
+            </View>
+
+            <Text style={styles.legalText}>
+              FreeSpace is the booking marketplace. By booking, you agree to the parking terms and liability policy.
+            </Text>
 
           </ScrollView>
         ) : (
@@ -617,9 +671,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       </KeyboardAvoidingView>
 
       {listing && user ? (
-        <View style={[styles.footerBar, { paddingBottom: 12 + insets.bottom }]}>
+        <View style={[styles.footerBar, { paddingBottom: 14 + insets.bottom }]}>
           <View style={styles.footerPriceBlock}>
-            <Text style={styles.footerPriceLabel}>Total</Text>
             <Text style={styles.footerPriceValue}>€{Math.round(pricing.finalPrice)}</Text>
             <Text style={styles.footerPriceMeta}>{priceSummary?.durationLabel ?? ""}</Text>
           </View>
@@ -636,7 +689,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.footerButtonText}>
-                  {confirmingBooking ? "Finalizing..." : "Book Now"}
+                  {confirmingBooking ? "Confirming…" : "Pay & reserve"}
                 </Text>
               )}
             </View>
@@ -681,161 +734,199 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   // ── Shell ────────────────────────────────────────────────────
-  container: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-  },
+  container: { flex: 1, backgroundColor: "#F7F7F6" },
   flex: { flex: 1 },
 
-  // ── Header ──────────────────────────────────────────────────
+  // ── Nav header ──────────────────────────────────────────────
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#BEBEBE",
+    borderBottomColor: "#E6E6E4",
+    backgroundColor: "#F7F7F6",
   },
   backButton: { padding: 6, marginLeft: -6 },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: "600",
     fontFamily: "PlusJakartaSans-SemiBold",
-    color: "#151b1b",
+    fontSize: 16,
+    color: "#111827",
   },
   headerSpacer: { width: 34 },
 
   // ── Scroll ──────────────────────────────────────────────────
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 110, // extended inline with insets.bottom
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    gap: 12,
   },
 
-  // ── Listing block ───────────────────────────────────────────
-  listingBlock: {
-    marginBottom: 4,
+  // ── Page header ─────────────────────────────────────────────
+  pageHeader: { paddingHorizontal: 4 },
+  pageLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    color: "#0a8050",
+    letterSpacing: 0.2,
+    marginBottom: 6,
   },
-  listingName: {
-    fontSize: 26,
-    fontWeight: "700",
+  pageTitle: {
     fontFamily: "PlusJakartaSans-Bold",
-    color: "#151b1b",
+    fontSize: 26,
+    color: "#111827",
     letterSpacing: -0.6,
     lineHeight: 32,
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  listingAddressRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  listingAddress: {
-    fontSize: 14,
+  pageAddressRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  pageAddress: {
     fontFamily: "PlusJakartaSans-Regular",
-    color: "#8b949b",
+    fontSize: 14,
+    color: "#6b7280",
     flex: 1,
     lineHeight: 20,
   },
 
-  // ── Divider ─────────────────────────────────────────────────
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: "#BEBEBE",
-    marginVertical: 22,
+  // ── Cards ────────────────────────────────────────────────────
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E6E6E4",
+    padding: 20,
   },
-
-  // ── Section chrome ──────────────────────────────────────────
-  section: {},
-  sectionHeaderRow: {
+  cardTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  cardTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 20,
+    color: "#111827",
+    marginBottom: 10,
+  },
+  cardSubtitle: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    color: "#6b7280",
+    lineHeight: 20,
     marginBottom: 14,
   },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "700",
+  cardBody: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    color: "#6b7280",
+    lineHeight: 22,
+  },
+
+  // ── Parking location inner box ───────────────────────────────
+  locationBox: {
+    backgroundColor: "#F7F7F6",
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  locationBoxTitle: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    color: "#8b949b",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 14,
+    fontSize: 14,
+    color: "#111827",
+    marginBottom: 4,
   },
+  locationBoxAddress: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    color: "#6b7280",
+    lineHeight: 20,
+  },
+
+  // ── Form-style date/time fields ──────────────────────────────
+  fieldGroup: { marginBottom: 12 },
+  fieldLabel: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    color: "#6b7280",
+    marginBottom: 8,
+  },
+  fieldPicker: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#EFEFEE",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  fieldPickerText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 15,
+    color: "#111827",
+  },
+
+  // ── Edit button ──────────────────────────────────────────────
   editBtn: {
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#D8D8D8",
-    backgroundColor: "#ffffff",
+    borderColor: "#E6E6E4",
   },
   editBtnText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
-    fontWeight: "600",
-    fontFamily: "PlusJakartaSans-SemiBold",
-    color: "#151b1b",
+    color: "#111827",
   },
 
-  // ── Date chips (parking window) ─────────────────────────────
-  dateChipRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  dateChip: {
-    flex: 1,
-    backgroundColor: "#F7F7F6",
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-  },
-  dateChipLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    fontFamily: "PlusJakartaSans-SemiBold",
-    color: "#9A9A9A",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 5,
-  },
-  dateChipDate: {
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans-Regular",
-    color: "#6B6B6B",
-    marginBottom: 3,
-  },
-  dateChipTime: {
-    fontSize: 20,
-    fontWeight: "700",
-    fontFamily: "PlusJakartaSans-Bold",
-    color: "#111111",
-    letterSpacing: -0.4,
-  },
-  dateChipEditHint: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-  },
-  dateChipArrow: {
-    marginTop: 14,
-  },
-
+  // ── Duration pill ────────────────────────────────────────────
   durationPill: {
-    alignSelf: "flex-start",
     backgroundColor: "#EDF7F2",
     borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   durationPillText: {
-    fontSize: 13,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    color: "#22c55e",
+    fontSize: 12,
+    color: "#0fa968",
+  },
+
+  // ── Summary rows ─────────────────────────────────────────────
+  summaryBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E6E6E4",
+    overflow: "hidden",
+  },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  summaryRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#E6E6E4",
+  },
+  summaryRowLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    color: "#9ca3af",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  summaryRowValue: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    color: "#111827",
+  },
+  summaryRowMuted: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    color: "#9ca3af",
   },
 
   // ── Vehicle / Reg plate ─────────────────────────────────────
@@ -845,7 +936,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#3D6FB6",
     overflow: "hidden",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#ffffff",
     alignItems: "center",
     marginBottom: 10,
   },
@@ -863,9 +954,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   regInput: {
-    color: "#151b1b",
-    fontSize: 28,
     fontFamily: "UKNumberPlate",
+    fontSize: 28,
+    color: "#111827",
     letterSpacing: 2,
     textTransform: "uppercase",
     paddingHorizontal: 0,
@@ -873,75 +964,66 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   regPlaceholder: {
-    fontSize: 15,
     fontFamily: "PlusJakartaSans-Regular",
-    color: "#8b949b",
+    fontSize: 15,
+    color: "#9ca3af",
     letterSpacing: 0,
     textTransform: "none",
   },
-  vehicleInfoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    marginBottom: 4,
-  },
+  vehicleInfoRow: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 4 },
   vehicleInfoText: {
-    fontSize: 13,
     fontFamily: "PlusJakartaSans-Regular",
-    color: "#6b747b",
+    fontSize: 13,
+    color: "#6b7280",
   },
   regHint: {
-    fontSize: 13,
     fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
     color: "#F59E0B",
     marginTop: 10,
     lineHeight: 18,
   },
 
-  // ── Price breakdown ─────────────────────────────────────────
-  priceRow: {
+  // ── Price total box ──────────────────────────────────────────
+  totalBox: {
+    backgroundColor: "#EDF7F2",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginTop: 12,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#EBEBEB",
-  },
-  priceLabel: {
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-Regular",
-    color: "#6b747b",
-  },
-  priceValue: {
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    color: "#151b1b",
-    fontWeight: "600",
-  },
-  priceMuted: {
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans-Regular",
-    color: "#8b949b",
-  },
-  priceTotalRow: {
-    flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 16,
-    paddingBottom: 2,
   },
-  priceTotalLabel: {
-    fontSize: 16,
-    fontWeight: "600",
+  totalBoxLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    color: "#151b1b",
+    fontSize: 11,
+    color: "#0a8050",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
-  priceTotalValue: {
-    fontSize: 26,
-    fontWeight: "700",
+  totalBoxValue: {
     fontFamily: "PlusJakartaSans-Bold",
-    color: "#151b1b",
-    letterSpacing: -0.6,
+    fontSize: 20,
+    color: "#0a8050",
+    letterSpacing: -0.4,
+  },
+  noHiddenFees: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: "#9ca3af",
+    marginTop: 10,
+    lineHeight: 18,
+  },
+
+  // ── Legal text ───────────────────────────────────────────────
+  legalText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: "#9ca3af",
+    lineHeight: 18,
+    paddingHorizontal: 4,
+    paddingBottom: 8,
   },
 
   // ── Sticky footer ───────────────────────────────────────────
@@ -952,53 +1034,40 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: "#ffffff",
     paddingHorizontal: 24,
-    paddingTop: 14,
+    paddingTop: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#BEBEBE",
+    borderTopColor: "#E6E6E4",
   },
-  footerPriceBlock: {
-    flex: 1,
-    paddingRight: 16,
-  },
-  footerPriceLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    color: "#8b949b",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
+  footerPriceBlock: { flex: 1, paddingRight: 16 },
   footerPriceValue: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 26,
-    fontWeight: "700",
-    color: "#151b1b",
-    marginTop: 1,
-    letterSpacing: -0.7,
+    fontSize: 24,
+    color: "#111827",
+    letterSpacing: -0.6,
   },
   footerPriceMeta: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
-    color: "#8b949b",
+    color: "#9ca3af",
     marginTop: 2,
   },
   footerButton: {},
   footerButtonDisabled: { opacity: 0.45 },
   footerButtonPill: {
-    minHeight: 52,
+    height: 48,
     minWidth: 152,
     borderRadius: 14,
-    backgroundColor: "#22c55e",
+    backgroundColor: "#0fa968",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 28,
   },
   footerButtonText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 15,
     color: "#ffffff",
     letterSpacing: -0.2,
   },
@@ -1070,7 +1139,7 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     marginHorizontal: 20,
     marginTop: 16,
-    backgroundColor: "#22c55e",
+    backgroundColor: "#0fa968",
     borderRadius: 14,
     minHeight: 54,
     alignItems: "center",

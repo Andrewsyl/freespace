@@ -1559,7 +1559,7 @@ export function SearchScreen({ navigation }: Props) {
                             }}
                           >
                             <View style={styles.resultIcon}>
-                              <MapPinIcon size={17} color="#22c55e" strokeWidth={2.3} />
+                              <MapPinIcon size={17} color="#0fa968" strokeWidth={2.3} />
                             </View>
                             <View style={styles.resultCopy}>
                               <Text style={styles.resultTitle}>{mainText}</Text>
@@ -2280,7 +2280,7 @@ const styles = StyleSheet.create({
     width: 40,
   },
   resultIconDot: {
-    backgroundColor: "#22c55e",
+    backgroundColor: "#0fa968",
     borderRadius: 6,
     height: 12,
     width: 12,
@@ -2463,10 +2463,10 @@ const styles = StyleSheet.create({
   pickerFooterGhostText: {
     ...textStyles.bodyStrong,
     fontSize: 13,
-    color: "#16a34a",
+    color: "#0a8050",
   },
   pickerFooterPrimary: {
-    backgroundColor: "#16a34a",
+    backgroundColor: "#0a8050",
     borderRadius: 8,
     paddingHorizontal: 18,
     paddingVertical: 10,

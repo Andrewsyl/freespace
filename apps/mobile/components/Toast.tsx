@@ -13,7 +13,7 @@ type ToastProps = {
 };
 
 const variantStyles = {
-  success: { accent: "#22c55e", icon: "checkmark-circle" as const, label: "Success" },
+  success: { accent: "#0fa968", icon: "checkmark-circle" as const, label: "Success" },
   info: { accent: "#2563eb", icon: "information-circle" as const, label: "Notice" },
   danger: { accent: "#b42318", icon: "alert-circle" as const, label: "Error" },
 } as const;

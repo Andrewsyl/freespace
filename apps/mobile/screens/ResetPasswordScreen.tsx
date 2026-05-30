@@ -17,18 +17,17 @@ import { colors, radius, spacing, textStyles } from "../styles/theme";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPassword">;
-const AUTH_GREEN = "#22c55e";
+const AUTH_GREEN = "#0fa968";
 
 export function ResetPasswordScreen({ navigation, route }: Props) {
   const scrollRef = useRef<ScrollView | null>(null);
   const emailFieldY = useRef(0);
-  const tokenFieldY = useRef(0);
   const passwordFieldY = useRef(0);
   const confirmPasswordFieldY = useRef(0);
   const [step, setStep] = useState<"request" | "reset">("request");
   const [email, setEmail] = useState("");
-  const [token, setToken] = useState("");
-  const [apiBaseOverride, setApiBaseOverride] = useState<string | undefined>(route.params?.apiBase);
+  const [token, setToken] = useState(route.params?.token ?? "");
+  const [apiBaseOverride] = useState<string | undefined>(route.params?.apiBase);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -45,15 +44,7 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
       setToken(route.params.token);
       setStep("reset");
     }
-    if (route.params?.apiBase) {
-      setApiBaseOverride(route.params.apiBase);
-    }
-  }, [route.params?.apiBase, route.params?.token]);
-
-  const extractToken = (url: string) => {
-    const match = url.match(/token=([^&]+)/);
-    return match?.[1] ?? "";
-  };
+  }, [route.params?.token]);
 
   const handleRequest = async () => {
     const trimmed = email.trim();
@@ -67,11 +58,7 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
     try {
       const result = await requestPasswordReset(trimmed);
       setPreviewUrl(result.previewUrl ?? null);
-      setNotice(
-        result.previewUrl
-          ? "Reset link ready. Open it or paste the token below."
-          : "If an account exists, we sent a reset link."
-      );
+      setNotice("If an account exists, we sent a reset link. Check your inbox and tap the link.");
       setStep("reset");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Reset request failed");
@@ -81,10 +68,6 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
   };
 
   const handleReset = async () => {
-    if (token.trim().length < 10) {
-      setError("Paste the reset token from your email.");
-      return;
-    }
     if (password.length < 6) {
       setError("Password must be at least 6 characters.");
       return;
@@ -140,9 +123,7 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
               <>
                 <View
                   style={styles.field}
-                  onLayout={(event) => {
-                    emailFieldY.current = event.nativeEvent.layout.y;
-                  }}
+                  onLayout={(event) => { emailFieldY.current = event.nativeEvent.layout.y; }}
                 >
                   <Text style={styles.label}>Email</Text>
                   <AppTextInput
@@ -173,38 +154,11 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
                       style={styles.linkButton}
                       onPress={() => Linking.openURL(previewUrl)}
                     />
-                    <Button
-                      title="Use token"
-                      variant="secondary"
-                      size="medium"
-                      style={styles.secondaryButton}
-                      onPress={() => setToken(extractToken(previewUrl))}
-                    />
-                  </View>
-                ) : null}
-                {!launchedFromEmailLink ? (
-                  <View
-                    style={styles.field}
-                    onLayout={(event) => {
-                      tokenFieldY.current = event.nativeEvent.layout.y;
-                    }}
-                  >
-                    <Text style={styles.label}>Reset token</Text>
-                    <AppTextInput
-                      containerStyle={styles.fieldInput}
-                      value={token}
-                      onChangeText={setToken}
-                      autoCapitalize="none"
-                      placeholder="Paste the token from your email"
-                      onFocus={() => scrollToField(tokenFieldY.current)}
-                    />
                   </View>
                 ) : null}
                 <View
                   style={styles.field}
-                  onLayout={(event) => {
-                    passwordFieldY.current = event.nativeEvent.layout.y;
-                  }}
+                  onLayout={(event) => { passwordFieldY.current = event.nativeEvent.layout.y; }}
                 >
                   <Text style={styles.label}>New password</Text>
                   <AppTextInput
@@ -218,9 +172,7 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
                 </View>
                 <View
                   style={styles.field}
-                  onLayout={(event) => {
-                    confirmPasswordFieldY.current = event.nativeEvent.layout.y;
-                  }}
+                  onLayout={(event) => { confirmPasswordFieldY.current = event.nativeEvent.layout.y; }}
                 >
                   <Text style={styles.label}>Confirm password</Text>
                   <AppTextInput
@@ -233,7 +185,7 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
                   />
                 </View>
                 <Button
-                  title={submitting ? "Updating..." : "Update password"}
+                  title={submitting ? "Updating..." : "Set new password"}
                   onPress={handleReset}
                   disabled={submitting}
                   loading={submitting}
@@ -305,9 +257,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     backgroundColor: AUTH_GREEN,
     borderColor: AUTH_GREEN,
-  },
-  secondaryButton: {
-    flex: 1,
   },
   ghostButton: {
     alignSelf: "center",

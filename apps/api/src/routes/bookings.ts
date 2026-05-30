@@ -30,7 +30,7 @@ import {
   cancelBookingWithRefundByHost,
 } from "../lib/db.js";
 import { createCheckoutSession, stripe } from "../lib/stripe.js";
-import { sendBookingEmail } from "../lib/email.js";
+import { sendBookingEmail, sendBookingStatusEmail } from "../lib/email.js";
 import { sendPushNotification } from "../lib/notifications.js";
 import { reportOperationalAlert } from "../lib/opsAlerts.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -324,30 +324,17 @@ async function sendDriverBookingLifecycleEmail(input: {
 }) {
   if (!input.driverEmail) return;
   const windowText = formatBookingWindow(input.startTime, input.endTime);
-  const lines = [
-    input.status === "confirmed" ? "Your parking booking is confirmed." : "Your parking booking has been canceled.",
-    "",
-    `Booking reference: ${input.bookingId}`,
-    `Listing: ${input.listingTitle}`,
-    `Address: ${input.listingAddress}`,
-    `Time: ${windowText}`,
-  ];
-
-  if (input.status === "confirmed" && input.arrivalInstructions) {
-    lines.push("", `Arrival instructions: ${input.arrivalInstructions}`);
-  }
-  if (input.status === "confirmed" && input.accessCode) {
-    lines.push("", `Entry code: ${input.accessCode}`);
-  }
-  if (input.receiptUrl) {
-    lines.push("", `Receipt: ${input.receiptUrl}`);
-  }
-
   try {
-    await sendBookingEmail({
+    await sendBookingStatusEmail({
       to: input.driverEmail,
-      subject: input.status === "confirmed" ? "FreeSpace booking confirmed" : "FreeSpace booking canceled",
-      body: lines.join("\n"),
+      status: input.status,
+      bookingId: input.bookingId,
+      listingTitle: input.listingTitle,
+      listingAddress: input.listingAddress,
+      windowText,
+      accessCode: input.accessCode,
+      arrivalInstructions: input.arrivalInstructions,
+      receiptUrl: input.receiptUrl,
     });
   } catch (error) {
     await insertEventLog({
@@ -640,11 +627,14 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
     });
 
     try {
-      if (driver?.email) {
-        await sendBookingEmail({
+      if (driver?.email && listingWithHost) {
+        await sendBookingStatusEmail({
           to: driver.email,
-          subject: "Parking booking created",
-          body: `Your booking is confirmed.\n\nListing: ${listingWithHost?.title ?? payload.listingId}\nFrom: ${payload.from}\nTo: ${payload.to}`,
+          status: "confirmed",
+          bookingId: payload.listingId,
+          listingTitle: listingWithHost.title ?? "Parking space",
+          listingAddress: listingWithHost.address ?? "",
+          windowText: formatBookingWindow(new Date(payload.from), new Date(payload.to)),
         });
       }
     } catch (emailError) {

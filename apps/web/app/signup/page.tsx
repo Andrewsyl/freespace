@@ -16,6 +16,7 @@ export default function SignupPage() {
   const [phone, setPhone] = useState("");
   const [smsCode, setSmsCode] = useState("");
   const [phoneStep, setPhoneStep] = useState<"form" | "verify">("form");
+  const [showEmailForm, setShowEmailForm] = useState(false);
   const [smsLoading, setSmsLoading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
@@ -58,36 +59,104 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-slate-50 px-4 pb-12 pt-8">
-      <div className="mx-auto max-w-md">
-        <div className="space-y-3 text-center">
-          <img src="/freespace-logo.png" alt="FreeSpace" className="mx-auto h-16 w-auto mix-blend-multiply sm:h-20" />
-          <p className="text-xs font-semibold tracking-[0.2em] text-brand-700">HOST OR DRIVER</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Create account</h1>
-          <p className="text-sm text-slate-600">Book spaces or start earning from your driveway.</p>
+    <div className="flex min-h-[100dvh] flex-col bg-white px-5 pb-10 pt-12">
+      <div className="mx-auto w-full max-w-sm">
+
+        {/* Logo + heading */}
+        <div className="mb-8 text-center">
+          <img
+            src="/freespace-logo.png"
+            alt="FreeSpace"
+            className="mx-auto mb-6 h-10 w-auto mix-blend-multiply"
+          />
+          <h1 className="text-[28px] font-bold tracking-tight text-slate-900">Create account</h1>
+          <p className="mt-1.5 text-[15px] text-slate-500">Book spaces or earn from your driveway</p>
         </div>
 
-        <div className="mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.08)]">
-          {/* ── Google sign-up (primary / prominent) — only on the initial form step ── */}
-          {phoneStep === "form" && googleClientId && (
-            <div className="mb-5">
-              <GoogleSignInButton
-                text="signup_with"
-                onSuccess={handleGoogle}
-                onError={() => setNotice("Google sign-in failed. Try again.")}
-              />
-              <div className="mt-5 flex items-center gap-3 text-xs font-semibold text-slate-400">
-                <span className="h-px flex-1 bg-slate-200" />
-                or create account with email
-                <span className="h-px flex-1 bg-slate-200" />
-              </div>
+        {phoneStep === "verify" ? (
+          /* ── SMS verification step ── */
+          <div className="space-y-3">
+            <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-[14px] text-slate-600">
+              Enter the 6-digit code sent to <strong>{phone}</strong>
             </div>
-          )}
+            <TextField
+              required
+              label="Verification code"
+              inputMode="numeric"
+              value={smsCode}
+              onChange={(e) => setSmsCode(e.target.value)}
+            />
+            <button
+              type="button"
+              className="flex h-12 w-full items-center justify-center rounded-full bg-brand-500 text-[15px] font-bold text-white shadow-sm transition hover:bg-brand-600 disabled:opacity-50"
+              disabled={smsLoading || !smsCode.trim()}
+              onClick={async () => {
+                try {
+                  setSmsLoading(true);
+                  const authToken = token ?? localStorage.getItem("auth_token") ?? undefined;
+                  const res = await verifyPhone(smsCode.trim(), authToken ?? undefined);
+                  if (res.user) setUser(res.user);
+                  router.push("/dashboard");
+                } catch (err) {
+                  const msg = err instanceof Error ? err.message : "Verification failed.";
+                  setNotice(msg);
+                } finally {
+                  setSmsLoading(false);
+                }
+              }}
+            >
+              {smsLoading ? "Verifying…" : "Verify phone"}
+            </button>
+            <button
+              type="button"
+              className="w-full py-2 text-[14px] font-semibold text-slate-500 underline underline-offset-2"
+              onClick={async () => {
+                try {
+                  setSmsLoading(true);
+                  const authToken = token ?? localStorage.getItem("auth_token") ?? undefined;
+                  await requestPhoneVerification(phone.trim(), authToken ?? undefined);
+                  setNotice("Code resent.");
+                } catch (err) {
+                  setNotice(err instanceof Error ? err.message : "Could not resend code.");
+                } finally {
+                  setSmsLoading(false);
+                }
+              }}
+            >
+              Resend code
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Google sign-up */}
+            {googleClientId && (
+              <div className="mb-4">
+                <GoogleSignInButton
+                  text="signup_with"
+                  onSuccess={handleGoogle}
+                  onError={() => setNotice("Google sign-in failed. Try again.")}
+                />
+              </div>
+            )}
 
-          {/* ── Email / phone form ── */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {phoneStep === "form" && (
-              <>
+            {/* Divider */}
+            <div className="mb-4 flex items-center gap-3">
+              <span className="h-px flex-1 bg-slate-100" />
+              <span className="text-[13px] font-medium text-slate-400">or</span>
+              <span className="h-px flex-1 bg-slate-100" />
+            </div>
+
+            {/* Email form */}
+            {!showEmailForm ? (
+              <button
+                type="button"
+                onClick={() => setShowEmailForm(true)}
+                className="flex h-12 w-full items-center justify-center rounded-full border border-slate-200 bg-white text-[15px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+              >
+                Continue with email
+              </button>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-3">
                 <TextField
                   required
                   type="email"
@@ -110,86 +179,38 @@ export default function SignupPage() {
                   placeholder="+353871234567"
                   hint="Use E.164 format, e.g. +353871234567"
                 />
-                <button type="submit" className="btn-primary w-full" disabled={loading || smsLoading}>
-                  {loading ? "Creating..." : "Create account"}
-                </button>
-              </>
-            )}
-
-            {phoneStep === "verify" && (
-              <div className="space-y-3">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
-                  Enter the 6-digit code sent to {phone}.
-                </div>
-                <TextField
-                  required
-                  label="Verification code"
-                  inputMode="numeric"
-                  value={smsCode}
-                  onChange={(e) => setSmsCode(e.target.value)}
-                />
                 <button
-                  type="button"
-                  className="btn-primary w-full"
-                  disabled={smsLoading || !smsCode.trim()}
-                  onClick={async () => {
-                    try {
-                      setSmsLoading(true);
-                      const authToken = token ?? localStorage.getItem("auth_token") ?? undefined;
-                      const res = await verifyPhone(smsCode.trim(), authToken ?? undefined);
-                      if (res.user) setUser(res.user);
-                      setNotice("Phone verified. You're all set.");
-                      router.push("/dashboard");
-                    } catch (err) {
-                      const msg = err instanceof Error ? err.message : "Verification failed.";
-                      setNotice(msg);
-                    } finally {
-                      setSmsLoading(false);
-                    }
-                  }}
+                  type="submit"
+                  className="flex h-12 w-full items-center justify-center rounded-full bg-brand-500 text-[15px] font-bold text-white shadow-sm transition hover:bg-brand-600 disabled:opacity-50"
+                  disabled={loading || smsLoading}
                 >
-                  {smsLoading ? "Verifying..." : "Verify phone"}
+                  {loading ? "Creating…" : "Create account"}
                 </button>
-                <button
-                  type="button"
-                  className="w-full rounded-lg border border-slate-200 py-3 text-sm font-semibold text-slate-700"
-                  onClick={async () => {
-                    try {
-                      setSmsLoading(true);
-                      const authToken = token ?? localStorage.getItem("auth_token") ?? undefined;
-                      await requestPhoneVerification(phone.trim(), authToken ?? undefined);
-                      setNotice("Code resent.");
-                    } catch (err) {
-                      const msg = err instanceof Error ? err.message : "Could not resend code.";
-                      setNotice(msg);
-                    } finally {
-                      setSmsLoading(false);
-                    }
-                  }}
-                >
-                  Resend code
-                </button>
-              </div>
+              </form>
             )}
+          </>
+        )}
 
-            {error && (
-              <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {error}
-              </div>
-            )}
-            {notice && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                {notice}
-              </div>
-            )}
-            <p className="text-center text-sm text-slate-600">
-              Already registered?{" "}
-              <Link href="/login" className="font-semibold text-brand-700">
-                Sign in
-              </Link>
-            </p>
-          </form>
-        </div>
+        {/* Errors / notices */}
+        {error && (
+          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
+          </div>
+        )}
+        {notice && (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {notice}
+          </div>
+        )}
+
+        {/* Footer */}
+        <p className="mt-8 text-center text-[14px] text-slate-500">
+          Already have an account?{" "}
+          <Link href="/login" className="font-semibold text-brand-700">
+            Sign in
+          </Link>
+        </p>
+
       </div>
     </div>
   );

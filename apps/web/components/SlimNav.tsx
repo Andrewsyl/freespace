@@ -69,63 +69,66 @@ export function SlimNav() {
           )}
         </nav>
 
-        {/* Mobile hamburger */}
+        {/* Mobile menu button — morphs burger → × */}
         <button
           type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Open menu"
+          onClick={() => setOpen((v) => !v)}
+          aria-label={open ? "Close menu" : "Open menu"}
           className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition hover:bg-slate-50 sm:hidden"
         >
-          <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          <svg viewBox="0 0 18 18" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round">
+            {/* Top bar — rotates to top-left → bottom-right diagonal */}
+            <line
+              x1="2" y1="5" x2="16" y2="5"
+              className="origin-center transition-all duration-300"
+              style={{
+                transform: open ? "rotate(45deg) translate(0px, 4px)" : "none",
+                transformOrigin: "9px 5px",
+              }}
+            />
+            {/* Middle bar — fades out */}
+            <line
+              x1="2" y1="9" x2="16" y2="9"
+              className="transition-all duration-300"
+              style={{ opacity: open ? 0 : 1 }}
+            />
+            {/* Bottom bar — rotates to top-right → bottom-left diagonal */}
+            <line
+              x1="2" y1="13" x2="16" y2="13"
+              className="origin-center transition-all duration-300"
+              style={{
+                transform: open ? "rotate(-45deg) translate(0px, -4px)" : "none",
+                transformOrigin: "9px 13px",
+              }}
+            />
           </svg>
         </button>
       </header>
 
-      {/* ── Full-screen mobile menu ── */}
+      {/* ── Mobile menu ── */}
       <AnimatePresence>
         {open && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              key="backdrop"
-              className="fixed inset-0 z-40 bg-black/30"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={close}
-            />
-
-            {/* Drawer */}
-            <motion.div
-              key="drawer"
-              className="fixed inset-0 z-50 flex flex-col bg-white"
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 30, stiffness: 280 }}
-            >
-              {/* Drawer header */}
-              <div
-                className="flex items-center justify-between border-b border-slate-100 px-5 pb-4"
-                style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}
-              >
-                <Link href="/" onClick={close}>
-                  <img src="/freespace-logo.png" alt="FreeSpace" className="h-9 w-auto" />
-                </Link>
-                <button
-                  type="button"
-                  onClick={close}
-                  aria-label="Close menu"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50"
-                >
-                  <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
+          <motion.div
+            key="backdrop"
+            className="fixed bottom-0 left-0 right-0 top-16 z-40 bg-black/30"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={close}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="drawer"
+            className="fixed bottom-0 left-0 right-0 top-16 z-50 flex flex-col bg-white shadow-2xl"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 280 }}
+          >
               {/* Account card */}
               {user && (
                 <div className="mx-5 mt-5 flex items-center gap-3.5 rounded-2xl bg-slate-50 px-4 py-4">
@@ -205,9 +208,8 @@ export function SlimNav() {
                 )}
               </div>
             </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
     </>
   );
 }

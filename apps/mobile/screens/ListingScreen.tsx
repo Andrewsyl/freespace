@@ -393,7 +393,7 @@ export function ListingScreen({ navigation, route }: Props) {
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         {loading ? (
           <View style={styles.centered}>
-            <ActivityIndicator color="#22c55e" size="large" />
+            <ActivityIndicator color="#0fa968" size="large" />
           </View>
         ) : error ? (
           <View style={styles.centered}>
@@ -551,13 +551,13 @@ export function ListingScreen({ navigation, route }: Props) {
                       onPress={() => setEndAt(new Date(extendOffer.endOfDay))}
                     >
                       <View style={styles.offerIconWrap}>
-                        <Ionicons name="flash" size={15} color="#22c55e" />
+                        <Ionicons name="flash" size={15} color="#0fa968" />
                       </View>
                       <Text style={styles.offerText}>
                         Extend to end of day for only{" "}
                         <Text style={styles.offerTextBold}>€{extendOffer.extra}</Text>
                       </Text>
-                      <Ionicons name="chevron-forward" size={15} color="#22c55e" />
+                      <Ionicons name="chevron-forward" size={15} color="#0fa968" />
                     </Pressable>
                   ) : null}
                 </View>
@@ -568,7 +568,7 @@ export function ListingScreen({ navigation, route }: Props) {
                   style={styles.section}
                   onPress={() => { if (aboutText.length > 140) setShowFullAbout((p) => !p); }}
                 >
-                  <Text style={styles.sectionTitle}>About this property</Text>
+                  <Text style={styles.sectionTitle}>Space overview</Text>
                   <Text style={styles.sectionBody} numberOfLines={showFullAbout ? undefined : 3}>
                     {aboutText}
                   </Text>
@@ -679,7 +679,7 @@ export function ListingScreen({ navigation, route }: Props) {
                     ) : null}
                   </View>
                   {reviewsLoading ? (
-                    <ActivityIndicator color="#22c55e" style={{ marginTop: 12, alignSelf: "flex-start" }} />
+                    <ActivityIndicator color="#0fa968" style={{ marginTop: 12, alignSelf: "flex-start" }} />
                   ) : reviews.length ? (
                     <View style={styles.reviewList}>
                       {reviews.slice(0, 3).map((review) => {
@@ -907,15 +907,15 @@ export function ListingScreen({ navigation, route }: Props) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design tokens (spec)
-const GREEN = "#22c55e";
-const GREEN_SOFT = "#E6F2EC";
-const FG = "#111111";
-const FG_2 = "#3D3D3D";
-const FG_MUTED = "#6B6B6B";
-const FG_SUBTLE = "#9A9A9A";
-const LINE = "#E6E6E4";
-const LINE_2 = "#BEBEBE";
-const BG_2 = "#F7F7F6";
+const GREEN      = "#0fa968";
+const GREEN_SOFT = "#edf7f2";
+const FG         = "#111827";
+const FG_2       = "#374151";
+const FG_MUTED   = "#6b7280";
+const FG_SUBTLE  = "#9ca3af";
+const LINE       = "#E6E6E4";
+const LINE_2     = "#E6E6E4";
+const BG_2       = "#F7F7F6";
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "transparent" },
@@ -979,9 +979,9 @@ const styles = StyleSheet.create({
   // Title block
   titleBlock: { paddingBottom: 14 },
   titleText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 22, lineHeight: 28, letterSpacing: -0.35,
-    color: "#151b1b", marginBottom: 8,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 25, lineHeight: 30, letterSpacing: -0.5,
+    color: FG, marginBottom: 8,
   },
   metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6, marginBottom: 4 },
   starPill: { flexDirection: "row", alignItems: "center", gap: 4 },
@@ -1006,12 +1006,12 @@ const styles = StyleSheet.create({
   },
   statsCell: { flex: 1, paddingVertical: 14, paddingHorizontal: 10, alignItems: "center", gap: 4 },
   statsCellLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
-    color: FG_SUBTLE, letterSpacing: 0.7, textTransform: "uppercase",
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 10,
+    color: FG_SUBTLE, letterSpacing: 1.8, textTransform: "uppercase",
   },
   statsCellValue: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 17,
-    color: FG, letterSpacing: -0.2,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 17,
+    color: FG, letterSpacing: -0.5,
   },
   statsVDivider: { width: 1, backgroundColor: LINE, marginVertical: 10 },
 
@@ -1099,16 +1099,16 @@ const styles = StyleSheet.create({
     backgroundColor: GREEN_SOFT, borderRadius: 8,
     paddingHorizontal: 10, marginHorizontal: -8,
   },
-  availabilityDay: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: FG_2, flex: 1 },
+  availabilityDay: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: "#475569", flex: 1 },
   availabilityDayToday: { color: GREEN, fontFamily: "PlusJakartaSans-SemiBold" },
   availabilityHours: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, textAlign: "right" },
   availabilityHoursToday: { color: GREEN },
   section: { paddingVertical: 20 },
   sectionTitle: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 20, lineHeight: 25, color: FG, letterSpacing: -0.2, marginBottom: 14,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 20, lineHeight: 24, color: FG, letterSpacing: -0.8, marginBottom: 14,
   },
-  sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, lineHeight: 24, color: FG_2 },
+  sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, lineHeight: 26, color: "#475569" },
   readMore: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG, marginTop: 10 },
 
   // Local area map
@@ -1158,7 +1158,7 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   featureChipLabel: {
-    fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: FG_2,
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: "#1e293b",
   },
 
   // Guarantee strip
@@ -1209,7 +1209,7 @@ const styles = StyleSheet.create({
     backgroundColor: BG_2, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
   },
   reviewStarPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
-  reviewComment: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, lineHeight: 20, color: FG_2 },
+  reviewComment: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, lineHeight: 22, color: "#475569" },
 
   // Auth modal — bottom sheet
   authModalRoot: { flex: 1, justifyContent: "flex-end" },

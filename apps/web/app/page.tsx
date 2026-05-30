@@ -453,7 +453,7 @@ export default function HomePage() {
                 { stat: "Flexible", label: "Cancellation" },
                 { stat: "Secure", label: "Payments" },
               ].map((item, i) => (
-                <div key={item.stat} className={i === 0 ? "pr-4" : i === 1 ? "px-4" : "pl-4"}>
+                <div key={item.stat} className={`text-center ${i === 0 ? "pr-4" : i === 1 ? "px-4" : "pl-4"}`}>
                   <p className="font-display text-sm font-extrabold text-slate-900">{item.stat}</p>
                   <p className="mt-0.5 text-[11px] text-slate-500">{item.label}</p>
                 </div>

@@ -190,7 +190,7 @@ export function PaymentsScreen() {
         {loading ? (
           <View style={styles.loadingOverlay} pointerEvents="none">
             <View style={styles.loadingBadge}>
-              <ActivityIndicator size="small" color="#22c55e" />
+              <ActivityIndicator size="small" color="#0fa968" />
               <Text style={styles.loadingText}>Loading payments…</Text>
             </View>
           </View>
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   rowStatus: {
-    color: "#16a34a",
+    color: "#0a8050",
     fontSize: 11,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",

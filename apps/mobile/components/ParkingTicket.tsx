@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 // Shared design tokens
-const GREEN      = "#22c55e";
+const GREEN      = "#0fa968";
 const GREEN_SOFT = "#E6F2EC";
 const GREEN_BAND = "#F0FAF5";
 const GREEN_LINE = "rgba(27,138,90,0.14)";

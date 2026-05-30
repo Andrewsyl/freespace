@@ -274,7 +274,7 @@ export function ListingLocationScreen({ navigation }: Props) {
                   onPress={() => void handleSelectSuggestion(suggestion)}
                 >
                   <View style={styles.suggestionIconCircle}>
-                    <MapPinned size={15} color="#22c55e" strokeWidth={2.2} />
+                    <MapPinned size={15} color="#0fa968" strokeWidth={2.2} />
                   </View>
                   <View style={styles.suggestionCopy}>
                     <Text style={styles.suggestionText}>{mainText}</Text>

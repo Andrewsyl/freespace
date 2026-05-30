@@ -19,7 +19,7 @@ import { BackButton, Button, TextInput as AppTextInput } from "../components/ui"
 import { colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
-const AUTH_GREEN = "#22c55e";
+const AUTH_GREEN = "#0fa968";
 
 export function SignInScreen({ navigation }: Props) {
   const { login } = useAuth();
