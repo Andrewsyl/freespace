@@ -95,9 +95,9 @@ function createCenterPinEl(): HTMLDivElement {
   // Brand-green teardrop. anchor="bottom" places the tail tip on the coordinate.
   el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38" fill="none">
     <ellipse cx="15" cy="36.5" rx="6" ry="2" fill="rgba(0,0,0,0.13)"/>
-    <path d="M15 2C8.925 2 4 6.925 4 13c0 8.4 11 23 11 23S26 21.4 26 13C26 6.925 21.075 2 15 2Z" fill="#ff6363"/>
+    <path d="M15 2C8.925 2 4 6.925 4 13c0 8.4 11 23 11 23S26 21.4 26 13C26 6.925 21.075 2 15 2Z" fill="#0fa968"/>
     <circle cx="15" cy="13" r="5" fill="white"/>
-    <circle cx="15" cy="13" r="3.1" fill="#ff6363" stroke="#c02a2a" stroke-width="2.4"/>
+    <circle cx="15" cy="13" r="3.1" fill="#0fa968" stroke="#0a8050" stroke-width="2.4"/>
   </svg>`;
   return el;
 }
@@ -375,7 +375,7 @@ export function MapView({
       type: "fill",
       source: RADIUS_SOURCE,
       paint: {
-        "fill-color": "#ff6363",
+        "fill-color": "#0fa968",
         "fill-opacity": 0.08,
       },
     });
@@ -385,7 +385,7 @@ export function MapView({
       type: "line",
       source: RADIUS_SOURCE,
       paint: {
-        "line-color": "#ff6363",
+        "line-color": "#0fa968",
         "line-width": 1.5,
         "line-opacity": 0.5,
         "line-dasharray": [3, 2],

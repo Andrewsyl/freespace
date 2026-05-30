@@ -177,7 +177,7 @@ export default function AdminDashboardPage() {
                   formatter={(value: any) => [formatCurrency(Number(value)), "GMV"]}
                   labelFormatter={(label) => formatShortDate(label)}
                 />
-                <Bar dataKey="gmvCents" fill="#16a34a" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="gmvCents" fill="#0a8050" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

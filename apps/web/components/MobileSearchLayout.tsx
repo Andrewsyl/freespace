@@ -15,6 +15,7 @@ import { SearchForm } from "./SearchForm";
 import { MapView } from "./MapView";
 import { FiltersPanel } from "./FiltersPanel";
 import { listingGradient } from "./DesktopSearchLayout";
+import { SlimNav } from "./SlimNav";
 import type { SharedLayoutProps } from "./searchLayoutTypes";
 import type { Listing } from "./ListingCard";
 import { calculateListingTotal, formatPriceValue } from "../lib/pricing";
@@ -124,7 +125,7 @@ function buildSearchPriceDisplay(
 
 // ── Bottom sheet snap ────────────────────────────────────────────────────────
 
-const PEEK_H = 92; // px of sheet visible in peek state
+const PEEK_H = 92; // px of sheet visible in peek state (above the nav bar)
 
 // ── Main component ───────────────────────────────────────────────────────────
 
@@ -239,7 +240,9 @@ export function MobileSearchLayout({
   }
 
   return (
-    <div className="mobile-search relative h-[100dvh] overflow-hidden bg-slate-900">
+    <>
+    <SlimNav />
+    <div className="mobile-search relative overflow-hidden bg-slate-900" style={{ height: "calc(100dvh - 64px)" }}>
       {/* ── Full-screen map ── */}
       <motion.div
         className="absolute inset-0"
@@ -269,20 +272,8 @@ export function MobileSearchLayout({
       </motion.div>
 
       {/* ── Top bar ── */}
-      <div
-        className="pointer-events-none absolute left-0 right-0 top-0 z-20 px-3"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}
-      >
-        <div className="pointer-events-auto flex items-center gap-2.5">
-          {/* Logo mark */}
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_4px_12px_rgba(15,23,42,0.18)]">
-            <img
-              src="/favicon.png"
-              alt="FreeSpace"
-              className="h-6 w-6 object-contain mix-blend-multiply"
-            />
-          </div>
-
+      <div className="pointer-events-none absolute left-0 right-0 top-0 z-20 px-3 pt-2">
+        <div className="pointer-events-auto flex items-center">
           {/* Search + date pill */}
           <button
             type="button"
@@ -332,10 +323,11 @@ export function MobileSearchLayout({
       {/* ── Results bottom sheet ── */}
       <motion.div
         ref={sheetRef}
-        className="pointer-events-auto absolute bottom-0 left-0 right-0 z-20 flex flex-col overflow-hidden bg-white shadow-[0_-6px_40px_rgba(15,23,42,0.20)]"
+        className="pointer-events-auto absolute left-0 right-0 z-20 flex flex-col overflow-hidden bg-white shadow-[0_-6px_40px_rgba(15,23,42,0.20)]"
         style={{
           y: sheetY,
-          height: "100dvh",
+          bottom: 0,
+          height: "100%",
           borderTopLeftRadius: sheetState === "full" ? 0 : 26,
           borderTopRightRadius: sheetState === "full" ? 0 : 26,
         }}
@@ -362,10 +354,7 @@ export function MobileSearchLayout({
         >
           {/* Full-state top row (covers safe area, shows map/search controls) */}
           {sheetState === "full" ? (
-            <div
-              className="flex items-center gap-2.5 px-4 pb-1"
-              style={{ paddingTop: "calc(env(safe-area-inset-top) + 10px)" }}
-            >
+            <div className="flex items-center gap-2.5 px-4 pb-1 pt-2.5">
               <button
                 type="button"
                 onClick={() => snapTo("half")}
@@ -653,6 +642,7 @@ export function MobileSearchLayout({
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 }
 
