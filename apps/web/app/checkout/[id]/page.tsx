@@ -295,22 +295,25 @@ export default function CheckoutPage() {
         </p>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
-        <div className="mx-auto flex h-14 max-w-2xl items-stretch justify-between gap-4 px-4 sm:px-6">
+      <div
+        className="fixed inset-x-0 bottom-0 border-t border-slate-100 bg-white"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div>
-            <p className="text-lg font-semibold text-slate-900">€{totalPrice.toFixed(2)}</p>
-            <p className="text-sm text-slate-500">{durationHours} hours</p>
+            <p className="text-[22px] font-bold tracking-tight text-slate-900">€{totalPrice.toFixed(2)}</p>
+            <p className="text-[12px] text-slate-400">{durationHours} hour{durationHours !== 1 ? "s" : ""} total</p>
           </div>
           <button
             type="submit"
             form="checkout-form"
-            className="h-full w-44 rounded-lg bg-brand-500 text-sm font-semibold text-white shadow-md transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300"
+            className="flex h-12 min-w-[160px] items-center justify-center rounded-xl bg-brand-500 px-6 text-[15px] font-bold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={status === "loading" || !hostPayoutReady}
           >
             {status === "loading"
-              ? "Processing..."
+              ? "Processing…"
               : paymentMethod === "google"
-                ? "Buy with Google Pay"
+                ? "Buy with G Pay"
                 : "Pay & reserve"}
           </button>
         </div>
