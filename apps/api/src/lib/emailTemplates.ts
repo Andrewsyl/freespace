@@ -36,7 +36,7 @@ function buildEmailShell({
   const iconBlock = iconSvg
     ? `
       <div style="text-align:center; margin-bottom:20px;">
-        <div style="display:inline-flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; background:#edf7f2;">
+        <div class="icon-circle" style="display:inline-flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; background-color:#edf7f2;">
           ${iconSvg}
         </div>
       </div>`
@@ -59,25 +59,35 @@ function buildEmailShell({
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="light" />
-  <meta name="supported-color-schemes" content="light" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="supported-color-schemes" content="light dark" />
   <style>
-    :root { color-scheme: light only; }
-    body { background-color: #ffffff !important; color: #111827 !important; }
-    /* Block Gmail/Outlook dark mode recoloring */
-    [data-ogsc] body,
-    [data-ogsb] body { background-color: #ffffff !important; }
+    /* ── Light mode (default) ── */
+    body, .email-body   { background-color: #ffffff !important; color: #111827 !important; }
+    .email-card         { background-color: #ffffff !important; }
+    .email-footer       { background-color: #f8fafc !important; }
+    .email-heading      { color: #111827 !important; }
+    .email-body-text    { color: #475569 !important; }
+    .email-muted        { color: #94a3b8 !important; }
+    .logo-img           { filter: none !important; }
+    .icon-circle        { background-color: #edf7f2 !important; }
+
+    /* ── Dark mode — look intentional rather than broken ── */
     @media (prefers-color-scheme: dark) {
-      body { background-color: #ffffff !important; color: #111827 !important; }
-      .email-wrapper { background-color: #ffffff !important; }
-      .email-card { background-color: #ffffff !important; }
-      .email-footer { background-color: #f8fafc !important; }
-      h1, p, div, span, td { color: inherit !important; }
+      body, .email-body { background-color: #0f1117 !important; color: #f1f5f9 !important; }
+      .email-card       { background-color: #1a1f2e !important; }
+      .email-footer     { background-color: #111827 !important; border-top-color: #1e293b !important; }
+      .email-heading    { color: #f8fafc !important; }
+      .email-body-text  { color: #94a3b8 !important; }
+      .email-muted      { color: #475569 !important; }
+      /* Flip the dark logo to white */
+      .logo-img         { filter: brightness(0) invert(1) !important; }
+      .icon-circle      { background-color: #064e3b !important; }
     }
   </style>
 </head>
-<body style="margin:0; padding:0; background-color:#ffffff; color:#111827; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color-scheme:light;">
-  <table class="email-wrapper" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff !important; padding:40px 16px;">
+<body class="email-body" bgcolor="#ffffff" style="margin:0; padding:0; background-color:#ffffff; color:#111827; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+  <table class="email-body" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background-color:#ffffff; padding:40px 16px;">
     <tr>
       <td align="center">
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
@@ -85,7 +95,7 @@ function buildEmailShell({
           <!-- Logo + eyebrow -->
           <tr>
             <td style="text-align:center; padding-bottom:24px;">
-              <img src="${logo}" alt="FreeSpace" width="130" height="auto" style="display:inline-block; height:auto; border:0; mix-blend-mode:multiply;" />
+              <img class="logo-img" src="${logo}" alt="FreeSpace" width="130" height="auto" style="display:inline-block; height:auto; border:0;" />
               <div style="margin-top:14px; font-size:11px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:#0fa968;">
                 ${esc(eyebrow)}
               </div>
@@ -94,12 +104,12 @@ function buildEmailShell({
 
           <!-- Card -->
           <tr>
-            <td class="email-card" style="background-color:#ffffff !important; border-radius:18px; overflow:hidden;">
+            <td class="email-card" bgcolor="#ffffff" style="background-color:#ffffff; border-radius:18px; overflow:hidden;">
               <div style="padding:36px 32px 32px;">
 
                 ${iconBlock}
 
-                <h1 style="margin:0 0 12px; font-size:26px; line-height:1.2; font-weight:800; color:#111827; text-align:center; letter-spacing:-0.4px;">
+                <h1 class="email-heading" style="margin:0 0 12px; font-size:26px; line-height:1.2; font-weight:800; color:#111827; text-align:center; letter-spacing:-0.4px;">
                   ${esc(title)}
                 </h1>
 
@@ -109,8 +119,8 @@ function buildEmailShell({
               </div>
 
               <!-- Footer -->
-              <div class="email-footer" style="padding:16px 32px; background-color:#f8fafc !important; border-top:1px solid #f1f5f9; text-align:center;">
-                <p style="margin:0; font-size:12px; color:#94a3b8;">${footer}</p>
+              <div class="email-footer" style="padding:16px 32px; background-color:#f8fafc; border-top:1px solid #f1f5f9; text-align:center;">
+                <p class="email-muted" style="margin:0; font-size:12px; color:#94a3b8;">${footer}</p>
               </div>
             </td>
           </tr>
@@ -154,9 +164,8 @@ export function buildVerificationEmail(url: string) {
   return buildEmailShell({
     eyebrow: "FreeSpace account",
     title: "Verify your email",
-    iconSvg: envelopeIcon,
     bodyHtml: `
-      <p style="margin:0 0 20px; font-size:15px; line-height:1.65; color:#475569; text-align:center;">
+      <p class="email-body-text" style="margin:0 0 20px; font-size:15px; line-height:1.65; color:#475569; text-align:center;">
         Confirm your email address to finish setting up your FreeSpace account and unlock bookings, payments, and hosting features.
       </p>
       <div style="margin:20px 0 0; padding:12px 16px; background:#f8fafc; border-radius:10px; text-align:center;">
@@ -175,9 +184,8 @@ export function buildPasswordResetEmail(url: string) {
   return buildEmailShell({
     eyebrow: "Account recovery",
     title: "Reset your password",
-    iconSvg: lockIcon,
     bodyHtml: `
-      <p style="margin:0 0 20px; font-size:15px; line-height:1.65; color:#475569; text-align:center;">
+      <p class="email-body-text" style="margin:0 0 20px; font-size:15px; line-height:1.65; color:#475569; text-align:center;">
         We received a request to reset your FreeSpace password. Click the button below — this link expires in 1 hour.
       </p>
       <div style="margin:20px 0 0; padding:12px 16px; background:#f8fafc; border-radius:10px; text-align:center;">
@@ -238,7 +246,6 @@ export function buildBookingConfirmationEmail({
   return buildEmailShell({
     eyebrow: "Booking confirmed",
     title: "You're booked in",
-    iconSvg: checkIcon,
     bodyHtml: `
       <p style="margin:0 0 24px; font-size:15px; line-height:1.65; color:#475569; text-align:center;">
         Your parking space at <strong style="color:#111827;">${esc(listingTitle)}</strong> is confirmed.
