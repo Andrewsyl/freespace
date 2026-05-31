@@ -9,7 +9,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
+import { ArrowLeft } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import { CardField, useStripe } from "@stripe/stripe-react-native";
 import { colors, radius, spacing, textStyles } from "../styles/theme";
@@ -159,11 +160,12 @@ export function PaymentsScreen() {
   if (!user) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-        <View style={styles.stickyHeader}>
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={20} color={colors.text} />
-            <Text style={styles.backText}>Back</Text>
+        <View style={styles.navBar}>
+          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <ArrowLeft size={22} color="#111827" />
           </Pressable>
+          <Text style={styles.navTitle}>Payments</Text>
+          <View style={styles.navSpacer} />
         </View>
         <View style={styles.emptyState}>
           <Text style={styles.title}>Payments</Text>
@@ -313,23 +315,15 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     paddingTop: 8,
   },
-  stickyHeader: {
-    backgroundColor: colors.appBg,
-    paddingHorizontal: spacing.screenX,
-    paddingTop: spacing.screenY,
-    paddingBottom: spacing.xs,
-    zIndex: 5,
+  navBar: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 20, paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E6E6E4",
+    backgroundColor: "#ffffff",
   },
-  backButton: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    gap: 4,
-  },
-  backText: {
-    ...textStyles.body,
-    color: colors.text,
-  },
+  backBtn: { padding: 6, marginLeft: -6 },
+  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#111827" },
+  navSpacer: { width: 34 },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
@@ -352,14 +346,14 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 24,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    letterSpacing: -0.4,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 27,
+    letterSpacing: -0.8,
+    lineHeight: 32,
     marginTop: 6,
   },
   subtitle: {
-    color: colors.textMuted,
+    color: "#6B6B6B",
     fontSize: 14,
     lineHeight: 21,
     marginTop: 6,
@@ -385,9 +379,9 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     color: colors.text,
-    fontSize: 18,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
+    fontSize: 17,
+    fontFamily: "PlusJakartaSans-Bold",
+    letterSpacing: -0.3,
     marginBottom: 10,
     marginTop: 8,
   },
@@ -408,10 +402,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   sectionTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
+    color: "#888888",
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 11,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
   },
   addButton: {
     minHeight: 38,

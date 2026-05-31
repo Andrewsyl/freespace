@@ -33,7 +33,7 @@ function pad2(n: number) { return String(n).padStart(2, "0"); }
 
 function roundUpToHalfHour(d: Date): Date {
   const out = new Date(d);
-  out.setMinutes(Math.ceil(out.getMinutes() / 30) * 30, 0, 0);
+  out.setMinutes(Math.ceil(out.getMinutes() / 5) * 5, 0, 0);
   return out;
 }
 

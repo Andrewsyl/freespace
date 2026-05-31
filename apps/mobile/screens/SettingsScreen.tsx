@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { ArrowLeft } from "lucide-react-native";
 import type { RootStackParamList } from "../types";
 import { colors, spacing, textStyles } from "../styles/theme";
 
@@ -10,11 +10,12 @@ type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 export function SettingsScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.stickyHeader}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={20} color={colors.text} />
-          <Text style={styles.backText}>Back</Text>
+      <View style={styles.navBar}>
+        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <ArrowLeft size={22} color="#111827" />
         </Pressable>
+        <Text style={styles.navTitle}>Settings</Text>
+        <View style={styles.navSpacer} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
@@ -47,24 +48,23 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
     paddingBottom: spacing.lg,
   },
-  stickyHeader: {
-    backgroundColor: colors.appBg,
-    paddingTop: spacing.screenY,
-    paddingBottom: spacing.xs,
-    zIndex: 5,
+  navBar: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 20, paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E6E6E4",
+    backgroundColor: "#ffffff",
   },
   title: {
     color: colors.text,
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 24,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-    lineHeight: 29,
+    fontSize: 27,
+    letterSpacing: -0.8,
+    lineHeight: 32,
     marginBottom: 4,
     marginTop: spacing.xs,
   },
   subtitle: {
-    color: colors.textMuted,
+    color: "#6B6B6B",
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 21,
@@ -73,18 +73,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.screenX,
     paddingTop: 0,
   },
-  backButton: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    gap: 4,
-    marginLeft: spacing.screenX,
-    marginTop: spacing.screenY,
-  },
-  backText: {
-    ...textStyles.body,
-    color: colors.text,
-  },
+  backBtn: { padding: 6, marginLeft: -6 },
+  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#111827" },
+  navSpacer: { width: 34 },
   card: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,

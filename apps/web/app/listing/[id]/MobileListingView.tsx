@@ -69,7 +69,7 @@ export function MobileListingView({
       return new Date(`${initialBooking.startDate}T${initialBooking.startTime}:00`);
     }
     const d = new Date();
-    d.setMinutes(Math.ceil(d.getMinutes() / 30) * 30, 0, 0);
+    d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
     return d;
   }, [initialBooking?.startDate, initialBooking?.startTime]);
   const [startAt, setStartAt] = useState(defaultStart);

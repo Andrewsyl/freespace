@@ -596,6 +596,7 @@ export type CreateBookingInput = {
   amountCents: number;
   currency?: string;
   platformFeePercent?: number;
+  vehiclePlate?: string;
 };
 
 export async function createBooking(input: CreateBookingInput, token?: string) {

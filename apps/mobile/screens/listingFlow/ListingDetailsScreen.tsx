@@ -376,6 +376,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   primaryButton: {
+    flex: 1,
     alignItems: "center",
     backgroundColor: hostFlowColors.accent,
     borderRadius: 16,

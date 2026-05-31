@@ -1,9 +1,8 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { colors, spacing, textStyles } from "../styles/theme";
+import { Linking, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { ArrowLeft, ChevronRight } from "lucide-react-native";
 import type { RootStackParamList } from "../types";
-import { BackButton } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Legal">;
 
@@ -27,9 +26,10 @@ const POLICY_LINKS = [
 ] as const;
 
 export function LegalScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
+
   const openEmail = (subject: string) => {
-    const url = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`;
-    void Linking.openURL(url);
+    void Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`);
   };
   const openPolicy = (slug: string) => {
     void Linking.openURL(`${WEBSITE_BASE}/legal/${slug}`);
@@ -37,171 +37,159 @@ export function LegalScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <View style={styles.header}>
-          <Text style={styles.title}>Terms & privacy</Text>
-          <Text style={styles.subtitle}>Policies, support, and company details</Text>
+      <StatusBar barStyle="dark-content" />
+
+      {/* Nav bar */}
+      <View style={styles.navBar}>
+        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <ArrowLeft size={22} color="#111827" />
+        </Pressable>
+        <Text style={styles.navTitle}>Terms & privacy</Text>
+        <View style={styles.navSpacer} />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 32 + insets.bottom }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Page header */}
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageLabel}>Legal</Text>
+          <Text style={styles.pageTitle}>Terms & privacy</Text>
+          <Text style={styles.pageSubtitle}>Policies, support, and company details</Text>
         </View>
 
-        <Text style={styles.sectionKicker}>Legal</Text>
-        <Text style={styles.sectionTitle}>FreeSpace policies</Text>
-        <Text style={styles.body}>
-          Review the live legal documents that govern bookings, hosting, privacy, refunds, community conduct, parking rules, and enforcement.
-        </Text>
+        {/* ── FreeSpace policies ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>FreeSpace policies</Text>
+          <Text style={styles.sectionBody}>
+            Review the live legal documents that govern bookings, hosting, privacy, refunds, community conduct, parking rules, and enforcement.
+          </Text>
+          <View style={styles.listBox}>
+            {POLICY_LINKS.map((policy, i) => (
+              <Pressable
+                key={policy.slug}
+                style={[styles.listRow, i > 0 && styles.listRowBorder]}
+                onPress={() => openPolicy(policy.slug)}
+              >
+                <View style={styles.listRowContent}>
+                  <Text style={styles.listRowTitle}>{policy.title}</Text>
+                  <Text style={styles.listRowSub}>{policy.description}</Text>
+                </View>
+                <ChevronRight size={16} color="#9ca3af" />
+              </Pressable>
+            ))}
+          </View>
+        </View>
 
-        {POLICY_LINKS.map((policy) => (
-          <View style={styles.card} key={policy.slug}>
-            <Text style={styles.cardTitle}>{policy.title}</Text>
-            <Text style={styles.cardBody}>{policy.description}</Text>
-            <Pressable style={styles.cardAction} onPress={() => openPolicy(policy.slug)}>
-              <Text style={styles.cardActionText}>Open policy</Text>
-              <Text style={styles.cardActionChevron}>›</Text>
+        {/* ── GDPR ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Your rights</Text>
+          <Text style={styles.sectionBody}>
+            You can request a copy of your data or ask us to delete your account at any time. We handle requests within 30 days.
+          </Text>
+          <View style={styles.listBox}>
+            <Pressable style={styles.listRow} onPress={() => openEmail("GDPR data export request")}>
+              <View style={styles.listRowContent}>
+                <Text style={styles.listRowTitle}>Export my data</Text>
+                <Text style={styles.listRowSub}>We'll email you a downloadable copy of your data.</Text>
+              </View>
+              <ChevronRight size={16} color="#9ca3af" />
+            </Pressable>
+            <Pressable style={[styles.listRow, styles.listRowBorder]} onPress={() => openEmail("GDPR delete account request")}>
+              <View style={styles.listRowContent}>
+                <Text style={[styles.listRowTitle, styles.listRowTitleDanger]}>Delete my account</Text>
+                <Text style={styles.listRowSub}>We'll confirm before removing your account and anonymising your bookings.</Text>
+              </View>
+              <ChevronRight size={16} color="#9ca3af" />
             </Pressable>
           </View>
-        ))}
-
-        <Text style={styles.sectionKicker}>GDPR requests</Text>
-        <Text style={styles.sectionTitle}>Your rights</Text>
-        <Text style={styles.body}>
-          You can request a copy of your data or ask us to delete your account at any time. We
-          handle requests within 30 days.
-        </Text>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Export my data</Text>
-          <Text style={styles.cardBody}>We’ll email you a downloadable copy of your data.</Text>
-          <Pressable
-            style={styles.cardAction}
-            onPress={() => openEmail("GDPR data export request")}
-          >
-            <Text style={styles.cardActionText}>Request export</Text>
-            <Text style={styles.cardActionChevron}>›</Text>
-          </Pressable>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Delete my account</Text>
-          <Text style={styles.cardBody}>
-            We’ll confirm before removing your account and anonymising your bookings.
-          </Text>
-          <Pressable
-            style={[styles.cardAction, styles.cardActionDanger]}
-            onPress={() => openEmail("GDPR delete account request")}
-          >
-            <Text style={[styles.cardActionText, styles.cardActionTextDanger]}>
-              Request deletion
-            </Text>
-            <Text style={[styles.cardActionChevron, styles.cardActionTextDanger]}>›</Text>
-          </Pressable>
-        </View>
-
-        <Text style={styles.sectionKicker}>Company</Text>
-        <Text style={styles.sectionTitle}>Support and registered business details</Text>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{COMPANY_NAME}</Text>
-          <Text style={styles.cardBody}>Support email: {SUPPORT_EMAIL}</Text>
-          <Text style={styles.cardBody}>Registered business: {REGISTERED_NAME}</Text>
-          <Text style={styles.cardBody}>Registered address: {REGISTERED_ADDRESS}</Text>
-          <Text style={styles.footnote}>
-            Replace the registered business name and address above with the exact launch entity and registered office before public launch.
-          </Text>
-          <Pressable style={styles.cardAction} onPress={() => openEmail("Support request")}>
-            <Text style={styles.cardActionText}>Email support</Text>
-            <Text style={styles.cardActionChevron}>›</Text>
-          </Pressable>
+        {/* ── Company ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Company</Text>
+          <View style={styles.listBox}>
+            <View style={styles.listRow}>
+              <View style={styles.listRowContent}>
+                <Text style={styles.listRowTitle}>{COMPANY_NAME}</Text>
+                <Text style={styles.listRowSub}>Support: {SUPPORT_EMAIL}</Text>
+                <Text style={styles.listRowSub}>Registered: {REGISTERED_NAME}</Text>
+                <Text style={styles.listRowSub}>{REGISTERED_ADDRESS}</Text>
+              </View>
+            </View>
+            <Pressable style={[styles.listRow, styles.listRowBorder]} onPress={() => openEmail("Support request")}>
+              <View style={styles.listRowContent}>
+                <Text style={styles.listRowTitle}>Email support</Text>
+                <Text style={styles.listRowSub}>{SUPPORT_EMAIL}</Text>
+              </View>
+              <ChevronRight size={16} color="#9ca3af" />
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+const GREEN  = "#0fa968";
+const LINE   = "#E6E6E4";
+const FG     = "#111827";
+const MUTED  = "#6b7280";
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.appBg,
+  container: { flex: 1, backgroundColor: "#ffffff" },
+
+  // ── Nav bar ──────────────────────────────────────────────────
+  navBar: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 20, paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
   },
-  header: {
-    paddingBottom: spacing.md,
+  backBtn: { padding: 6, marginLeft: -6 },
+  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG },
+  navSpacer: { width: 34 },
+
+  // ── Page header ──────────────────────────────────────────────
+  pageHeader: {
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
   },
-  title: {
-    color: colors.text,
-    fontSize: 30,
-    fontWeight: "600",
+  pageLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
+    color: GREEN, letterSpacing: 1.4, textTransform: "uppercase", marginBottom: 4,
   },
-  subtitle: {
-    color: colors.textMuted,
-    fontSize: 15,
-    marginTop: 4,
-    marginBottom: 8,
+  pageTitle: {
+    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 27,
+    color: FG, letterSpacing: -0.8, lineHeight: 32, marginBottom: 4,
   },
-  content: {
-    paddingHorizontal: spacing.screenX,
-    paddingBottom: 32,
-    paddingTop: 16,
-  },
-  sectionKicker: {
-    ...textStyles.kicker,
-    marginTop: 12,
+  pageSubtitle: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: "#6B6B6B" },
+
+  // ── Sections ─────────────────────────────────────────────────
+  section: {
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    paddingHorizontal: 20, paddingVertical: 20,
   },
   sectionTitle: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: "600",
-    marginTop: 8,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 17,
+    color: FG, letterSpacing: -0.3, marginBottom: 8,
   },
-  body: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 22,
-    marginTop: 8,
+  sectionBody: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 14,
+    color: MUTED, lineHeight: 22, marginBottom: 16,
   },
-  card: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginTop: 16,
-    padding: spacing.card,
+
+  // ── List box (bordered rows) ──────────────────────────────────
+  listBox: {
+    borderRadius: 14, borderWidth: 1, borderColor: LINE, overflow: "hidden",
   },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
+  listRow: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    paddingHorizontal: 16, paddingVertical: 14, backgroundColor: "#ffffff",
   },
-  cardBody: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 8,
-  },
-  cardAction: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 12,
-  },
-  cardActionDanger: {
-  },
-  cardActionText: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  cardActionTextDanger: {
-    color: "#b42318",
-  },
-  cardActionChevron: {
-    color: colors.textSoft,
-    fontSize: 18,
-    lineHeight: 18,
-    marginTop: -1,
-  },
-  footnote: {
-    color: colors.textSoft,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 10,
-  },
+  listRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  listRowContent: { flex: 1 },
+  listRowTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG },
+  listRowTitleDanger: { color: "#b42318" },
+  listRowSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 2 },
 });

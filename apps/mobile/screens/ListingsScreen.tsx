@@ -1,9 +1,10 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState } from "react";
-import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ArrowLeft, Plus, Pencil, Trash2, TrendingUp, CreditCard } from "lucide-react-native";
 import {
   createHostPayoutLink,
   deleteListing,
@@ -15,14 +16,19 @@ import {
 import { useAuth } from "../auth";
 import { useToastOnMessage } from "../components/GlobalToast";
 import type { ListingSummary, RootStackParamList } from "../types";
-import { colors, radius, spacing } from "../styles/theme";
-import { Ionicons } from "@expo/vector-icons";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { formatListingPriceLine } from "../utils/pricing";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Listings">;
 
+const GREEN  = "#0fa968";
+const LINE   = "#E6E6E4";
+const FG     = "#111827";
+const MUTED  = "#6b7280";
+const SUBTLE = "#9ca3af";
+
 export function ListingsScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { token, user } = useAuth();
   const platformFeePercent = 10;
   const [listings, setListings] = useState<ListingSummary[]>([]);
@@ -59,25 +65,17 @@ export function ListingsScreen({ navigation }: Props) {
     }
   }, [hideGlobalLoading, showGlobalLoading, token]);
 
-  const formatAmount = (cents?: number) => {
-    const value = typeof cents === "number" ? cents : 0;
-    return `€${(value / 100).toFixed(2)}`;
-  };
+  const fmt = (cents?: number) => `€${((cents ?? 0) / 100).toFixed(2)}`;
 
-  const emptyListingsState = (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>No listings yet</Text>
-      <Text style={styles.cardBody}>
-        Create a listing to start earning from your parking space.
-      </Text>
-      <Pressable
-        style={styles.primaryButton}
-        onPress={() => navigation.navigate("CreateListingFlow")}
-      >
-        <Text style={styles.primaryButtonText}>List a space</Text>
-      </Pressable>
-    </View>
-  );
+  const payoutStatusMessage = (() => {
+    if (!payoutStatus) return null;
+    if (payoutStatus.payoutsEnabled) return "Payouts active — transfers arrive automatically.";
+    if (payoutIsMock) return "Mock payout account. Start setup to create a real Stripe account.";
+    if (payoutStatus.requirementsDue.length > 0) return "Stripe needs a few more details before payouts can go live.";
+    if (payoutStatus.detailsSubmitted) return "Details submitted — Stripe is reviewing your payout account.";
+    if (payoutStatus.accountId) return "Finish payout setup to receive earnings.";
+    return "Connect Stripe to start receiving host payouts.";
+  })();
 
   const handlePayoutSetup = useCallback(async () => {
     if (!token) return;
@@ -86,23 +84,13 @@ export function ListingsScreen({ navigation }: Props) {
     try {
       const link = await createHostPayoutLink({
         token,
-        accountId:
-          payoutStatus?.accountId && !payoutStatus.accountId.startsWith("acct_mock_")
-            ? payoutStatus.accountId
-            : undefined,
+        accountId: payoutStatus?.accountId && !payoutStatus.accountId.startsWith("acct_mock_")
+          ? payoutStatus.accountId : undefined,
       });
       if (link.onboardingUrl) {
         await Linking.openURL(link.onboardingUrl);
-      } else if (link.mock || link.accountId.startsWith("acct_mock_")) {
-        Alert.alert(
-          "Payout setup unavailable",
-          "Stripe Connect is not fully enabled in this environment yet, so host payout onboarding can't open here."
-        );
       } else {
-        Alert.alert(
-          "Payout setup unavailable",
-          "We couldn't open the payout onboarding link right now. Please try again in a moment."
-        );
+        Alert.alert("Payout setup unavailable", "We couldn't open the payout onboarding link right now. Please try again.");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not start payout setup");
@@ -111,482 +99,325 @@ export function ListingsScreen({ navigation }: Props) {
     }
   }, [payoutStatus?.accountId, token]);
 
-  const payoutStatusMessage = (() => {
-    if (!payoutStatus) return null;
-    if (payoutStatus.payoutsEnabled) {
-      return "Payouts are active. Transfers will arrive automatically.";
-    }
-    if (payoutIsMock) {
-      return "This is a local mock payout account. Start setup to create a real Stripe test account.";
-    }
-    if (payoutStatus.requirementsDue.length > 0) {
-      return "Stripe still needs a few details before payouts can be enabled.";
-    }
-    if (payoutStatus.detailsSubmitted) {
-      return "Your details were submitted. Stripe is still reviewing the payout account.";
-    }
-    if (payoutStatus.accountId) {
-      return "Finish payout setup to receive earnings.";
-    }
-    return "Connect Stripe to receive host payouts.";
-  })();
-
-  const handleDelete = useCallback(
-    (listingId: string) => {
-      if (!token) {
-        setError("Sign in to delete listings.");
-        return;
-      }
-      Alert.alert("Delete listing", "This will permanently remove the listing.", [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            setDeletingId(listingId);
-            try {
-              await deleteListing({ token, listingId });
-              setListings((prev) => prev.filter((item) => item.id !== listingId));
-              await AsyncStorage.setItem("deletedListingId", listingId);
-              await AsyncStorage.setItem("searchRefreshToken", Date.now().toString());
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Could not delete listing");
-            } finally {
-              setDeletingId(null);
-            }
-          },
+  const handleDelete = useCallback((listingId: string) => {
+    if (!token) return;
+    Alert.alert("Delete listing", "This will permanently remove the listing.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          setDeletingId(listingId);
+          try {
+            await deleteListing({ token, listingId });
+            setListings((prev) => prev.filter((item) => item.id !== listingId));
+            await AsyncStorage.setItem("deletedListingId", listingId);
+            await AsyncStorage.setItem("searchRefreshToken", Date.now().toString());
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Could not delete listing");
+          } finally {
+            setDeletingId(null);
+          }
         },
-      ]);
-    },
-    [token]
-  );
+      },
+    ]);
+  }, [token]);
 
-  useFocusEffect(
-    useCallback(() => {
-      void loadListings();
-    }, [loadListings])
-  );
+  useFocusEffect(useCallback(() => { void loadListings(); }, [loadListings]));
+
+  const goBack = () => {
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.navigate("Tabs", { screen: "Search" });
+  };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <View style={styles.topBar}>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => {
-            if (navigation.canGoBack()) {
-              navigation.goBack();
-            } else {
-              navigation.navigate("Tabs", { screen: "Search" });
-            }
-          }}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+    <SafeAreaView style={styles.container} edges={[]}>
+      <StatusBar barStyle="dark-content" />
+
+      {/* Nav bar */}
+      <View style={[styles.navBar, { paddingTop: insets.top + 8 }]}>
+        <Pressable style={styles.backBtn} onPress={goBack}>
+          <ArrowLeft size={22} color={FG} />
         </Pressable>
-        <Text style={styles.topTitle}>Your listings</Text>
-        <Pressable
-          style={styles.actionButton}
-          onPress={() => navigation.navigate("CreateListingFlow")}
-        >
-          <Ionicons name="add" size={16} color={colors.text} />
-          <Text style={styles.actionText}>Add</Text>
+        <Text style={styles.navTitle}>Manage spaces</Text>
+        <Pressable style={styles.addBtn} onPress={() => navigation.navigate("CreateListingFlow")}>
+          <Plus size={16} color={GREEN} strokeWidth={2.5} />
+          <Text style={styles.addBtnText}>New</Text>
         </Pressable>
       </View>
-      <View style={styles.contentWrapper}>
-        <ScrollView contentContainerStyle={styles.content}>
-          {!user ? (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Sign in to host</Text>
-              <Text style={styles.cardBody}>
-                Log in to manage listings and start earning from your space.
-              </Text>
-              <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
-                <Text style={styles.primaryButtonText}>Sign in</Text>
-              </Pressable>
-            </View>
+
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: 40 + insets.bottom }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Page header */}
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageLabel}>Hosting</Text>
+          <Text style={styles.pageTitle}>Manage spaces</Text>
+          {listings.length > 0 ? (
+            <Text style={styles.pageSubtitle}>{listings.length} listing{listings.length !== 1 ? "s" : ""}</Text>
           ) : (
-            <>
-            {loading && listings.length === 0 ? (
-              <Text style={styles.muted}>Loading listings…</Text>
-            ) : null}
+            <Text style={styles.pageSubtitle}>Your parking spaces, all in one place</Text>
+          )}
+        </View>
+
+        {!user ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>Sign in to host</Text>
+            <Text style={styles.emptyBody}>Log in to manage listings and start earning.</Text>
+            <Pressable style={styles.ctaBtn} onPress={() => navigation.navigate("Welcome")}>
+              <Text style={styles.ctaBtnText}>Sign in</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            {/* Earnings strip */}
             {earnings ? (
-              <View style={styles.earningsCard}>
-                <View style={styles.earningsTitleRow}>
-                <Ionicons name="wallet-outline" size={16} color={colors.accent} />
-                <Text style={styles.earningsTitle}>Earnings summary</Text>
-              </View>
-                <View style={styles.earningsRow}>
-                  <Text style={styles.earningsLabel}>Total earned</Text>
-                  <Text style={styles.earningsValue}>{formatAmount(earnings.totalCents)}</Text>
+              <View style={styles.section}>
+                <View style={styles.sectionTitleRow}>
+                  <TrendingUp size={16} color={GREEN} />
+                  <Text style={styles.sectionTitle}>Earnings</Text>
                 </View>
-                <View style={styles.earningsRow}>
-                  <Text style={styles.earningsLabel}>Platform fee</Text>
-                  <Text style={styles.earningsValue}>{formatAmount(earnings.feeCents)}</Text>
-                </View>
-                <Text style={styles.earningsHint}>
-                  {platformFeePercent}% platform fee applied per booking.
-                </Text>
-                <View style={[styles.earningsRow, styles.earningsRowStrong]}>
-                  <Text style={styles.earningsLabelStrong}>Net payout</Text>
-                  <Text style={styles.earningsValueStrong}>{formatAmount(earnings.netCents)}</Text>
+                <View style={styles.statsRow}>
+                  <View style={styles.statCell}>
+                    <Text style={styles.statLabel}>Total earned</Text>
+                    <Text style={styles.statValue}>{fmt(earnings.totalCents)}</Text>
+                  </View>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statCell}>
+                    <Text style={styles.statLabel}>Platform fee ({platformFeePercent}%)</Text>
+                    <Text style={styles.statValue}>{fmt(earnings.feeCents)}</Text>
+                  </View>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statCell}>
+                    <Text style={styles.statLabel}>Net payout</Text>
+                    <Text style={[styles.statValue, styles.statValueGreen]}>{fmt(earnings.netCents)}</Text>
+                  </View>
                 </View>
               </View>
             ) : null}
+
+            {/* Payout status */}
             {payoutStatus ? (
-              <View style={styles.payoutCard}>
-                <View style={styles.payoutTitleRow}>
-                  <Ionicons name="card-outline" size={16} color={colors.accent} />
-                  <Text style={styles.payoutTitle}>Payouts</Text>
+              <View style={styles.section}>
+                <View style={styles.sectionTitleRow}>
+                  <CreditCard size={16} color={payoutStatus.payoutsEnabled ? GREEN : MUTED} />
+                  <Text style={styles.sectionTitle}>Payouts</Text>
+                  {payoutStatus.payoutsEnabled ? (
+                    <View style={styles.activePill}>
+                      <Text style={styles.activePillText}>Active</Text>
+                    </View>
+                  ) : null}
                 </View>
                 <Text style={styles.payoutBody}>{payoutStatusMessage}</Text>
                 {payoutStatus.requirementsDue.length > 0 ? (
                   <Text style={styles.payoutHint}>
-                    Missing: {payoutStatus.requirementsDue.slice(0, 3).join(", ")}
-                    {payoutStatus.requirementsDue.length > 3 ? "..." : ""}
+                    Missing: {payoutStatus.requirementsDue.slice(0, 3).join(", ")}{payoutStatus.requirementsDue.length > 3 ? "…" : ""}
                   </Text>
                 ) : null}
                 {!payoutStatus.payoutsEnabled && !payoutIsMock ? (
                   <Pressable
-                    style={[styles.primaryButton, payoutBusy && styles.primaryButtonDisabled]}
+                    style={[styles.ctaBtn, styles.ctaBtnSm, payoutBusy && styles.ctaBtnDisabled]}
                     onPress={handlePayoutSetup}
                     disabled={payoutBusy}
                   >
-                    <Text style={styles.primaryButtonText}>
-                      {payoutBusy ? "Opening..." : "Complete payout setup"}
+                    <Text style={styles.ctaBtnText}>
+                      {payoutBusy ? "Opening…" : "Complete payout setup"}
                     </Text>
                   </Pressable>
                 ) : null}
               </View>
             ) : null}
-            {listings.length === 0 && !loading ? (
-              emptyListingsState
-            ) : (
-              <View style={styles.list}>
-                {listings.map((listing) => (
-                  <Pressable
-                    key={listing.id}
-                    style={styles.listCard}
-                  onPress={() =>
-                    navigation.navigate("CreateListingFlow", { listingId: listing.id })
-                  }
-                >
-                    {listing.image_urls?.[0] ? (
-                      <Image source={{ uri: listing.image_urls[0] }} style={styles.listImage} />
-                    ) : (
-                      <View style={styles.listPlaceholder}>
-                        <Text style={styles.listPlaceholderText}>No image</Text>
-                      </View>
-                    )}
-                    <View style={styles.listBody}>
-                      <View style={styles.listTitleRow}>
-                        <Text style={styles.listTitle} numberOfLines={1}>
-                          {listing.title}
-                        </Text>
-                        <Ionicons name="chevron-forward" size={14} color={colors.textSoft} />
-                      </View>
-                      <Text style={styles.listMeta} numberOfLines={1}>
-                        {listing.address}
-                      </Text>
-                      <View style={styles.listFooter}>
-                        <Text style={styles.listPrice}>{formatListingPriceLine(listing)}</Text>
-                        <Pressable
-                          style={styles.deleteButton}
-                          onPress={() => handleDelete(listing.id)}
-                          disabled={deletingId === listing.id}
-                        >
-                          <Text style={styles.deleteButtonText}>
-                            {deletingId === listing.id ? "Deleting..." : "Delete"}
-                          </Text>
-                        </Pressable>
-                      </View>
-                    </View>
-                  </Pressable>
-                ))}
+
+            {/* Listings */}
+            <View style={styles.section}>
+              <View style={styles.sectionTitleRow}>
+                <Text style={styles.sectionTitle}>Your listings</Text>
               </View>
-            )}
-            </>
-          )}
-        </ScrollView>
-      </View>
+
+              {loading && listings.length === 0 ? (
+                <View style={styles.loadingWrap}>
+                  <ActivityIndicator size="small" color={GREEN} />
+                  <Text style={styles.loadingText}>Loading…</Text>
+                </View>
+              ) : listings.length === 0 ? (
+                <View style={styles.emptyBox}>
+                  <Text style={styles.emptyTitle}>No listings yet</Text>
+                  <Text style={styles.emptyBody}>Create a listing to start earning from your parking space.</Text>
+                  <Pressable style={styles.ctaBtn} onPress={() => navigation.navigate("CreateListingFlow")}>
+                    <Text style={styles.ctaBtnText}>List a space</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={styles.listingGrid}>
+                  {listings.map((listing) => (
+                    <Pressable
+                      key={listing.id}
+                      style={({ pressed }) => [styles.listingCard, pressed && { opacity: 0.92 }]}
+                      onPress={() => navigation.navigate("CreateListingFlow", { listingId: listing.id })}
+                    >
+                      {listing.image_urls?.[0] ? (
+                        <Image source={{ uri: listing.image_urls[0] }} style={styles.listingImage} />
+                      ) : (
+                        <View style={styles.listingImagePlaceholder}>
+                          <Text style={styles.listingImagePlaceholderText}>No photo</Text>
+                        </View>
+                      )}
+                      <View style={styles.listingBody}>
+                        <View style={styles.listingTitleRow}>
+                          <Text style={styles.listingTitle} numberOfLines={1}>{listing.title}</Text>
+                          <Pencil size={13} color={SUBTLE} />
+                        </View>
+                        <Text style={styles.listingAddress} numberOfLines={1}>{listing.address}</Text>
+                        <View style={styles.listingFooter}>
+                          <Text style={styles.listingPrice}>{formatListingPriceLine(listing)}</Text>
+                          <Pressable
+                            style={styles.deleteBtn}
+                            onPress={() => handleDelete(listing.id)}
+                            disabled={deletingId === listing.id}
+                          >
+                            {deletingId === listing.id
+                              ? <ActivityIndicator size={12} color="#b42318" />
+                              : <Trash2 size={14} color="#b42318" />
+                            }
+                          </Pressable>
+                        </View>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+          </>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.appBg,
-    flex: 1,
+  container: { flex: 1, backgroundColor: "#ffffff" },
+
+  // ── Nav bar ──────────────────────────────────────────────────
+  navBar: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 20, paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    backgroundColor: "#ffffff",
   },
-  contentWrapper: {
-    flex: 1,
-    backgroundColor: colors.appBg,
+  backBtn: { padding: 6, marginLeft: -6 },
+  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG },
+  addBtn: { flexDirection: "row", alignItems: "center", gap: 4, padding: 6, marginRight: -6 },
+  addBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: GREEN },
+
+  // ── Page header ──────────────────────────────────────────────
+  pageHeader: {
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
   },
-  topBar: {
-    alignItems: "center",
-    backgroundColor: colors.appBg,
+  pageLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
+    color: GREEN, letterSpacing: 1.4, textTransform: "uppercase", marginBottom: 4,
+  },
+  pageTitle: {
+    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 27,
+    color: FG, letterSpacing: -0.8, lineHeight: 32, marginBottom: 2,
+  },
+  pageSubtitle: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },
+
+  // ── Scroll ───────────────────────────────────────────────────
+  scroll: {},
+
+  // ── Sections ─────────────────────────────────────────────────
+  section: {
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    paddingHorizontal: 20, paddingVertical: 20,
+  },
+  sectionTitleRow: {
+    flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14,
+  },
+  sectionTitle: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 17,
+    color: FG, letterSpacing: -0.3, flex: 1,
+  },
+
+  // ── Earnings stats ───────────────────────────────────────────
+  statsRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 8,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderRadius: 14, borderWidth: 1, borderColor: LINE, overflow: "hidden",
   },
-  backButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 12,
-    backgroundColor: colors.cardBg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    width: 40,
-    height: 40,
+  statCell: {
+    flex: 1, alignItems: "center", paddingVertical: 14, paddingHorizontal: 8,
   },
-  actionButton: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 5,
-    borderRadius: 12,
-    backgroundColor: colors.cardBg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 12,
-    height: 40,
-    justifyContent: "center",
+  statDivider: { width: StyleSheet.hairlineWidth, backgroundColor: LINE },
+  statLabel: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: MUTED,
+    textAlign: "center", marginBottom: 4,
   },
-  topTitle: {
-    color: colors.text,
-    fontSize: 17,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    letterSpacing: -0.2,
+  statValue: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: FG, letterSpacing: -0.3,
   },
-  content: {
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 14,
-    paddingBottom: 24,
-    gap: 14,
+  statValueGreen: { color: GREEN },
+
+  // ── Payout ───────────────────────────────────────────────────
+  activePill: {
+    backgroundColor: "#EDF7F2", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3,
   },
-  card: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 18,
-    alignItems: "center",
+  activePillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: GREEN },
+  payoutBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, lineHeight: 21 },
+  payoutHint: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: SUBTLE, marginTop: 6 },
+
+  // ── CTA button ───────────────────────────────────────────────
+  ctaBtn: {
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: GREEN, borderRadius: 14,
+    height: 50, marginTop: 16,
   },
-  emptyIllustration: {
-    width: 220,
-    height: 150,
-    marginBottom: 16,
+  ctaBtnSm: { height: 44, marginTop: 14 },
+  ctaBtnDisabled: { opacity: 0.5 },
+  ctaBtnText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#ffffff", letterSpacing: -0.2 },
+
+  // ── Empty / loading ──────────────────────────────────────────
+  emptyBox: {
+    borderRadius: 14, borderWidth: 1, borderColor: LINE,
+    padding: 24, alignItems: "center",
   },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    textAlign: "center",
+  emptyTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG, letterSpacing: -0.3 },
+  emptyBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, textAlign: "center", marginTop: 6, lineHeight: 21 },
+  loadingWrap: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12 },
+  loadingText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED },
+
+  // ── Listing cards ────────────────────────────────────────────
+  listingGrid: { gap: 12 },
+  listingCard: {
+    borderRadius: 14, borderWidth: 1, borderColor: LINE,
+    overflow: "hidden", backgroundColor: "#ffffff",
   },
-  cardBody: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 6,
-    textAlign: "center",
+  listingImage: { width: "100%", height: 160 },
+  listingImagePlaceholder: {
+    width: "100%", height: 160,
+    backgroundColor: "#F7F7F6", alignItems: "center", justifyContent: "center",
   },
-  muted: {
-    color: colors.textMuted,
-    fontSize: 12,
-    marginBottom: 10,
+  listingImagePlaceholderText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: SUBTLE },
+  listingBody: { padding: 14 },
+  listingTitleRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8,
   },
-  earningsCard: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 18,
+  listingTitle: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: FG,
+    letterSpacing: -0.3, flex: 1,
   },
-  earningsTitleRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 6,
-    marginBottom: 8,
+  listingAddress: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 3,
   },
-  earningsTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
+  listingFooter: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    marginTop: 12, paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE,
   },
-  earningsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
-  earningsRowStrong: {
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    marginTop: 12,
-    paddingTop: 12,
-  },
-  earningsHint: {
-    color: colors.textMuted,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 6,
-  },
-  earningsLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  earningsValue: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  earningsLabelStrong: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  earningsValueStrong: {
-    color: colors.accent,
-    fontSize: 17,
-    fontWeight: "700",
-  },
-  payoutCard: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 18,
-  },
-  payoutTitleRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 6,
-  },
-  payoutTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-  },
-  payoutBody: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 6,
-  },
-  payoutHint: {
-    color: colors.textSoft,
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 8,
-  },
-  list: {
-    gap: 12,
-  },
-  listCard: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 12,
-    padding: 12,
-  },
-  listImage: {
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    height: 82,
-    width: 100,
-  },
-  listPlaceholder: {
-    alignItems: "center",
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 10,
-    borderWidth: 1,
-    height: 82,
-    justifyContent: "center",
-    width: 100,
-  },
-  listPlaceholderText: {
-    color: colors.textSoft,
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  listBody: {
-    flex: 1,
-    gap: 3,
-    justifyContent: "space-between",
-  },
-  listTitleRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 4,
-    justifyContent: "space-between",
-  },
-  listFooter: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  listTitle: {
-    color: colors.text,
-    flex: 1,
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-  },
-  listMeta: {
-    color: colors.textMuted,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  listPrice: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  deleteButton: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  deleteButtonText: {
-    color: colors.danger,
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    marginTop: 14,
-    minHeight: 46,
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-  },
-  primaryButtonDisabled: {
-    backgroundColor: "#bbf7d0",
-  },
-  primaryButtonText: {
-    color: colors.cardBg,
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-  },
-  actionText: {
-    color: colors.text,
-    fontSize: 13,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
+  listingPrice: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG },
+  deleteBtn: {
+    padding: 8, borderRadius: 10, borderWidth: 1, borderColor: "#fcd5d5",
+    backgroundColor: "#fff5f5",
   },
 });

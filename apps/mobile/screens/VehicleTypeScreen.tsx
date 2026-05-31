@@ -3,14 +3,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
   Platform,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
 import { updateMe } from "../api";
 import { useAuth } from "../auth";
@@ -388,6 +389,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
   const [brandFocused, setBrandFocused] = useState(false);
   const [modelFocused, setModelFocused] = useState(false);
   const [plateFocused, setPlateFocused] = useState(false);
+  const [colorSheetVisible, setColorSheetVisible] = useState(false);
 
   useEffect(() => {
     setSelectedMake(user?.vehicleMake ?? "");
@@ -590,23 +592,15 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
               }}
             >
               <Text style={styles.sectionLabel}>Color</Text>
-              <View style={styles.select}>
-                <Picker
-                  selectedValue={selectedColor || ""}
-                  onValueChange={(value) => setSelectedColor(String(value || ""))}
-                  style={styles.picker}
-                  dropdownIconColor={colors.textMuted}
-                >
-                  <Picker.Item label="Select color" value="" color={colors.textMuted} />
-                  {VEHICLE_COLORS.map((color) => (
-                    <Picker.Item
-                      key={color}
-                      label={`${VEHICLE_COLOR_MARKERS[color] ?? "▪️"} ${color}`}
-                      value={color}
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <Pressable style={styles.colorSelect} onPress={() => setColorSheetVisible(true)}>
+                {selectedColor ? (
+                  <View style={[styles.colorSelectSwatch, { backgroundColor: VEHICLE_COLOR_SWATCHES[selectedColor] ?? "#ccc" }, selectedColor === "White" && styles.colorSelectSwatchBorder]} />
+                ) : null}
+                <Text style={[styles.colorSelectText, !selectedColor && styles.colorSelectPlaceholder]}>
+                  {selectedColor || "Select colour"}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
+              </Pressable>
             </View>
 
             <View
@@ -653,6 +647,35 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
           />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal transparent animationType="slide" visible={colorSheetVisible}>
+        <View style={styles.sheetBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setColorSheetVisible(false)} />
+          <View style={[styles.sheetContainer, { paddingBottom: Math.max(24, insets.bottom + 12) }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Colour</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {VEHICLE_COLORS.map((color, i) => (
+                <TouchableOpacity
+                  key={color}
+                  style={[styles.sheetRow, i > 0 && styles.sheetRowBorder]}
+                  activeOpacity={0.6}
+                  onPress={() => {
+                    setSelectedColor(color);
+                    setColorSheetVisible(false);
+                  }}
+                >
+                  <View style={[styles.sheetSwatch, { backgroundColor: VEHICLE_COLOR_SWATCHES[color] ?? "#ccc" }, color === "White" && styles.colorSelectSwatchBorder]} />
+                  <Text style={styles.sheetRowText}>{color}</Text>
+                  {selectedColor === color ? (
+                    <Ionicons name="checkmark" size={18} color="#0fa968" />
+                  ) : null}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -709,15 +732,14 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 24,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-    lineHeight: 29,
+    fontSize: 27,
+    letterSpacing: -0.8,
+    lineHeight: 32,
     marginBottom: 4,
     marginTop: spacing.xs,
   },
   subtitle: {
-    color: colors.textMuted,
+    color: "#6B6B6B",
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 21,
@@ -726,12 +748,12 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sectionLabel: {
-    color: colors.text,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    fontWeight: "600",
-    letterSpacing: 0.1,
-    lineHeight: 20,
+    color: "#888888",
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 11,
+    letterSpacing: 0.8,
+    lineHeight: 16,
+    textTransform: "uppercase",
     marginBottom: 10,
   },
   brandInputWrap: {
@@ -774,17 +796,28 @@ const styles = StyleSheet.create({
     ...textStyles.bodyStrong,
     color: colors.text,
   },
-  select: {
-    backgroundColor: "#FCFEFD",
-    borderColor: "#D7DEE7",
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: "hidden",
+  colorSelect: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    backgroundColor: "#FCFEFD", borderColor: "#D7DEE7",
+    borderRadius: 16, borderWidth: 1,
+    paddingHorizontal: 14, paddingVertical: 14,
   },
-  picker: {
-    color: colors.text,
-    marginVertical: -6,
+  colorSelectSwatch: { width: 18, height: 18, borderRadius: 9 },
+  colorSelectSwatchBorder: { borderWidth: 1, borderColor: "#D7DEE7" },
+  colorSelectText: { flex: 1, fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: colors.text },
+  colorSelectPlaceholder: { color: colors.textMuted, fontFamily: "PlusJakartaSans-Regular" },
+
+  sheetBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  sheetContainer: {
+    backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    paddingTop: 12, maxHeight: "70%",
   },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#E0E0E0", alignSelf: "center", marginBottom: 16 },
+  sheetTitle: { fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 20, color: colors.text, letterSpacing: -0.4, paddingHorizontal: 20, marginBottom: 8 },
+  sheetRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 20, paddingVertical: 14 },
+  sheetRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#E6E6E4" },
+  sheetSwatch: { width: 22, height: 22, borderRadius: 11 },
+  sheetRowText: { flex: 1, fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: colors.text },
   regRow: {
     alignItems: "center",
     backgroundColor: "#FFFFFF",

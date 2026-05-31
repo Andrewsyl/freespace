@@ -602,6 +602,7 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   continueButton: {
+    flex: 1,
     borderRadius: 16,
     minHeight: 48,
   },

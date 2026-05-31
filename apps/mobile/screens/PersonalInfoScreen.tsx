@@ -11,6 +11,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import { ArrowLeft } from "lucide-react-native";
 import * as Linking from "expo-linking";
 import { useAuth } from "../auth";
 import { requestPhoneVerification, updateMe, verifyPhone } from "../api";
@@ -154,11 +155,12 @@ export function PersonalInfoScreen({ navigation }: Props) {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
-        <View style={styles.stickyHeader}>
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={20} color={colors.text} />
-            <Text style={styles.backText}>Back</Text>
+        <View style={styles.navBar}>
+          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <ArrowLeft size={22} color="#111827" />
           </Pressable>
+          <Text style={styles.navTitle}>Personal information</Text>
+          <View style={styles.navSpacer} />
         </View>
         <ScrollView
           ref={scrollRef}
@@ -315,24 +317,15 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing.xl,
   },
-  stickyHeader: {
-    backgroundColor: colors.appBg,
-    paddingTop: spacing.screenY,
-    paddingBottom: spacing.xs,
-    zIndex: 5,
+  navBar: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 20, paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E6E6E4",
+    backgroundColor: "#ffffff",
   },
-  backButton: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    gap: 4,
-    marginLeft: spacing.screenX,
-    marginTop: spacing.screenY,
-  },
-  backText: {
-    ...textStyles.body,
-    color: colors.text,
-  },
+  backBtn: { padding: 6, marginLeft: -6 },
+  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#111827" },
+  navSpacer: { width: 34 },
   header: {
     paddingHorizontal: spacing.screenX,
     paddingTop: spacing.xs,
@@ -341,15 +334,14 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 24,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-    lineHeight: 29,
+    fontSize: 27,
+    letterSpacing: -0.8,
+    lineHeight: 32,
     marginBottom: 4,
     marginTop: spacing.xs,
   },
   subtitle: {
-    color: colors.textMuted,
+    color: "#6B6B6B",
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 21,
@@ -363,11 +355,12 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   sectionLabel: {
-    color: colors.text,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    fontWeight: "600",
-    lineHeight: 20,
+    color: "#888888",
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 11,
+    letterSpacing: 0.8,
+    lineHeight: 16,
+    textTransform: "uppercase",
     marginBottom: 10,
   },
   phoneStatusRow: {

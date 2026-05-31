@@ -5,7 +5,7 @@ import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
 import { colors, radius, spacing } from "../styles/theme";
 import type { RootStackParamList } from "../types";
-import { Ionicons } from "@expo/vector-icons";
+import { ArrowLeft } from "lucide-react-native";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Favorites">;
 
@@ -31,12 +31,12 @@ export function FavoritesScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+      <View style={styles.navBar}>
+        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <ArrowLeft size={22} color="#111827" />
         </Pressable>
-        <Text style={styles.title}>Favourites</Text>
-        <View style={styles.backButton} />
+        <Text style={styles.navTitle}>Favourites</Text>
+        <View style={styles.navSpacer} />
       </View>
       <View style={styles.contentWrapper}>
         <ScrollView contentContainerStyle={styles.content}>
@@ -83,27 +83,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.appBg,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: colors.appBg,
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 8,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+  navBar: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 20, paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E6E6E4",
+    backgroundColor: "#ffffff",
   },
-  backButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.cardBg,
-  },
+  backBtn: { padding: 6, marginLeft: -6 },
+  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#111827" },
+  navSpacer: { width: 34 },
   title: {
     color: colors.text,
     fontSize: 17,

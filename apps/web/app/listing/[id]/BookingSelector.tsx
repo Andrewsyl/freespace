@@ -11,7 +11,7 @@ function roundUpToHalfHour(d: Date): Date {
   const out = new Date(d);
   const m = out.getMinutes();
   if (m === 0) return out;
-  out.setMinutes(m <= 30 ? 30 : 60, 0, 0);
+  out.setMinutes(Math.ceil(m / 5) * 5, 0, 0);
   return out;
 }
 

@@ -477,11 +477,12 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar barStyle="dark-content" />
 
+      {/* Nav bar */}
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
           <ArrowLeft size={22} color="#111827" />
         </Pressable>
-        <Text style={styles.headerTitle}>Review booking</Text>
+        <Text style={styles.headerTitle}>Confirm booking</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -493,7 +494,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         {loadingListing ? (
           <View style={styles.centered}>
             <ActivityIndicator size="small" color="#0fa968" />
-            <Text style={styles.muted}>Loading booking…</Text>
           </View>
         ) : !user ? (
           <View style={styles.centered}>
@@ -501,84 +501,55 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             <Text style={styles.centeredSubtitle}>Log in or create an account to confirm your booking.</Text>
             <View style={styles.authButtons}>
               <Button style={styles.authButton} onPress={() => navigation.navigate("SignIn")} title="Sign in" />
-              <Button
-                variant="secondary"
-                style={styles.authButton}
-                onPress={() => navigation.navigate("Register")}
-                title="Create account"
-              />
+              <Button variant="secondary" style={styles.authButton} onPress={() => navigation.navigate("Register")} title="Create account" />
             </View>
           </View>
         ) : listing ? (
           <ScrollView
             style={styles.flex}
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: 110 + insets.bottom }]}
+            contentContainerStyle={{ paddingBottom: 110 + insets.bottom }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
             {/* ── Page header ── */}
             <View style={styles.pageHeader}>
-              <Text style={styles.pageLabel}>Booking confirmation</Text>
+              <Text style={styles.pageLabel}>Confirm booking</Text>
               <Text style={styles.pageTitle}>{listing.title || "Parking space"}</Text>
-              <View style={styles.pageAddressRow}>
-                <Ionicons name="location-outline" size={14} color="#9ca3af" />
-                <Text style={styles.pageAddress}>{listing.address || ""}</Text>
-              </View>
+              <Text style={styles.pageAddress}>{listing.address || ""}</Text>
             </View>
 
-            {/* ── Parking location card ── */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Parking location</Text>
-              <Text style={styles.cardSubtitle}>Review the space details before confirming.</Text>
-              <View style={styles.locationBox}>
-                <Text style={styles.locationBoxTitle}>{listing.title}</Text>
-                <Text style={styles.locationBoxAddress}>{listing.address}</Text>
-              </View>
-            </View>
-
-            {/* ── Session details card ── */}
-            <View style={styles.card}>
-              <View style={styles.cardTitleRow}>
-                <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Session details</Text>
+            {/* ── Your session ── */}
+            <View style={styles.section}>
+              <View style={styles.sectionTitleRow}>
+                <Text style={styles.sectionTitle}>Your session</Text>
                 {priceSummary?.durationLabel ? (
                   <View style={styles.durationPill}>
                     <Text style={styles.durationPillText}>{priceSummary.durationLabel}</Text>
                   </View>
                 ) : null}
               </View>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Date</Text>
-                <TouchableOpacity activeOpacity={0.7} onPress={() => openPicker("start")}>
-                  <View style={styles.fieldPicker}>
-                    <Text style={styles.fieldPickerText}>{formatDateLabel(start)}</Text>
-                    <Ionicons name="chevron-down" size={16} color="#9ca3af" />
+              <View style={styles.pickerRow}>
+                <TouchableOpacity style={styles.pickerField} activeOpacity={0.7} onPress={() => openPicker("start")}>
+                  <View style={styles.pickerFieldInner}>
+                    <Text style={styles.pickerFieldLabel}>From</Text>
+                    <Text style={styles.pickerFieldValue}>{formatDateTimeLabel(start)}</Text>
                   </View>
+                  <Ionicons name="chevron-down" size={14} color="#9ca3af" />
                 </TouchableOpacity>
-              </View>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Start time</Text>
-                <TouchableOpacity activeOpacity={0.7} onPress={() => openPicker("start")}>
-                  <View style={styles.fieldPicker}>
-                    <Text style={styles.fieldPickerText}>{formatTimeLabel(start)}</Text>
-                    <Ionicons name="chevron-down" size={16} color="#9ca3af" />
+                <TouchableOpacity style={styles.pickerField} activeOpacity={0.7} onPress={() => openPicker("end")}>
+                  <View style={styles.pickerFieldInner}>
+                    <Text style={styles.pickerFieldLabel}>Until</Text>
+                    <Text style={styles.pickerFieldValue}>{formatDateTimeLabel(end)}</Text>
                   </View>
-                </TouchableOpacity>
-              </View>
-              <View style={[styles.fieldGroup, { marginBottom: 16 }]}>
-                <Text style={styles.fieldLabel}>End time</Text>
-                <TouchableOpacity activeOpacity={0.7} onPress={() => openPicker("end")}>
-                  <View style={styles.fieldPicker}>
-                    <Text style={styles.fieldPickerText}>{formatTimeLabel(end)}</Text>
-                    <Ionicons name="chevron-down" size={16} color="#9ca3af" />
-                  </View>
+                  <Ionicons name="chevron-down" size={14} color="#9ca3af" />
                 </TouchableOpacity>
               </View>
               <View style={styles.summaryBox}>
-                {([
-                  { label: "START",    value: formatDateTimeLabel(start) },
-                  { label: "END",      value: formatDateTimeLabel(end) },
-                  { label: "DURATION", value: priceSummary?.durationLabel ?? "" },
-                ] as const).map((row, i) => (
+                {[
+                  { label: "Arrives",  value: formatDateTimeLabel(start) },
+                  { label: "Departs",  value: formatDateTimeLabel(end) },
+                  { label: "Duration", value: priceSummary?.durationLabel ?? "" },
+                ].map((row, i) => (
                   <View key={row.label} style={[styles.summaryRow, i > 0 && styles.summaryRowBorder]}>
                     <Text style={styles.summaryRowLabel}>{row.label}</Text>
                     <Text style={styles.summaryRowValue}>{row.value}</Text>
@@ -587,80 +558,101 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               </View>
             </View>
 
-            {/* ── Vehicle card ── */}
-            <View style={styles.card}>
-              <View style={styles.cardTitleRow}>
-                <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Vehicle</Text>
-                <Pressable
-                  style={styles.editBtn}
-                  onPress={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary" })}
-                >
+            {/* ── Vehicle ── */}
+            <View style={styles.section}>
+              <View style={styles.sectionTitleRow}>
+                <Text style={styles.sectionTitle}>Vehicle</Text>
+                <Pressable style={styles.editBtn} onPress={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary" })}>
                   <Text style={styles.editBtnText}>{vehicleMake ? "Edit" : "Add"}</Text>
                 </Pressable>
               </View>
+
+              {vehicleMake ? (
+                <View style={styles.vehicleInfoRow}>
+                  <VehicleBrandLogo make={vehicleMake} size={36} />
+                  <View style={styles.vehicleDetails}>
+                    <Text style={styles.vehicleMakeText}>{vehicleMake}</Text>
+                    {(vehicleColor || user?.vehicleType) ? (
+                      <Text style={styles.vehicleSubText}>
+                        {[vehicleColor, user?.vehicleType].filter(Boolean).join(" · ")}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+              ) : null}
+
               <Pressable
-                style={styles.regRow}
+                style={[styles.plate, vehicleMake && styles.plateMt]}
                 onPress={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary", focusField: "plate" })}
               >
-                <View style={styles.plateCountry} />
-                <View style={styles.regDetails}>
-                  <Text style={[styles.regInput, !hasVehiclePlate && styles.regPlaceholder]}>
+                <View style={styles.plateEuBadge} />
+                <View style={styles.plateBody}>
+                  <Text style={[styles.plateNumber, !hasVehiclePlate && styles.platePlaceholder]}>
                     {hasVehiclePlate ? vehiclePlate : "Enter reg plate"}
                   </Text>
                 </View>
               </Pressable>
-              {vehicleMake ? (
-                <View style={styles.vehicleInfoRow}>
-                  <VehicleBrandLogo make={vehicleMake} size={16} />
-                  <Text style={styles.vehicleInfoText}>
-                    {[vehicleMake, vehicleColor, user?.vehicleType].filter(Boolean).join(" · ")}
-                  </Text>
-                </View>
-              ) : null}
+
               {requiresVehicleDetails ? (
                 <Text style={styles.regHint}>Add your vehicle details to continue.</Text>
               ) : null}
             </View>
 
-            {/* ── Price breakdown card ── */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Price breakdown</Text>
-              <View style={styles.summaryBox}>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryRowLabel}>HOST RATE</Text>
-                  <Text style={styles.summaryRowValue}>{formatListingPriceLine(listing)}</Text>
+            {/* ── Price breakdown ── */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Price breakdown</Text>
+              <View style={styles.priceRows}>
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceRowLabel}>Rate</Text>
+                  <Text style={styles.priceRowValue}>{formatListingPriceLine(listing)}</Text>
                 </View>
-                <View style={[styles.summaryRow, styles.summaryRowBorder]}>
-                  <Text style={styles.summaryRowLabel}>BILLING PERIOD</Text>
-                  <Text style={styles.summaryRowValue}>{priceSummary?.durationLabel ?? ""}</Text>
+                <View style={[styles.priceRow, styles.priceRowBorder]}>
+                  <Text style={styles.priceRowLabel}>Billing period</Text>
+                  <Text style={styles.priceRowValue}>{priceSummary?.durationLabel ?? ""}</Text>
                 </View>
-                <View style={[styles.summaryRow, styles.summaryRowBorder]}>
-                  <Text style={styles.summaryRowLabel}>PARKING FEE</Text>
-                  <Text style={styles.summaryRowValue}>€{pricing.parkingFee.toFixed(2)}</Text>
+                <View style={[styles.priceRow, styles.priceRowBorder]}>
+                  <Text style={styles.priceRowLabel}>Platform fee</Text>
+                  <Text style={styles.priceRowMuted}>Included</Text>
                 </View>
-                <View style={[styles.summaryRow, styles.summaryRowBorder]}>
-                  <Text style={styles.summaryRowLabel}>PLATFORM FEE</Text>
-                  <Text style={styles.summaryRowMuted}>Included</Text>
+                <View style={[styles.priceRow, styles.priceRowBorder]}>
+                  <Text style={styles.priceTotalLabel}>Total</Text>
+                  <Text style={styles.priceTotalValue}>€{pricing.finalPrice.toFixed(2)}</Text>
                 </View>
               </View>
-              <View style={styles.totalBox}>
-                <Text style={styles.totalBoxLabel}>TOTAL DUE TODAY</Text>
-                <Text style={styles.totalBoxValue}>€{pricing.finalPrice.toFixed(2)}</Text>
-              </View>
-              <Text style={styles.noHiddenFees}>No hidden fees will be added after checkout.</Text>
+              <Text style={styles.noHiddenFees}>No hidden fees will be added at checkout.</Text>
             </View>
 
-            {/* ── Cancellation policy card ── */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Cancellation policy</Text>
-              <Text style={styles.cardBody}>
+            {/* ── Payment method ── */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Payment method</Text>
+              <View style={styles.paymentOptions}>
+                <View style={styles.paymentOption}>
+                  <Text style={styles.paymentOptionLabel}>
+                    {Platform.OS === "ios" ? "Apple Pay" : "Google Pay"}
+                  </Text>
+                  <Text style={styles.paymentOptionSub}>Fast checkout</Text>
+                </View>
+                <View style={[styles.paymentOption, styles.paymentOptionBorder]}>
+                  <Text style={styles.paymentOptionLabel}>Card</Text>
+                  <Text style={styles.paymentOptionSub}>Stripe</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* ── Cancellation policy ── */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Cancellation policy</Text>
+              <Text style={styles.sectionBody}>
                 Cancel up to 2 hours before the start time for a full refund. Late cancellations may incur a fee.
               </Text>
             </View>
 
-            <Text style={styles.legalText}>
-              FreeSpace is the booking marketplace. By booking, you agree to the parking terms and liability policy.
-            </Text>
+            {/* ── Legal ── */}
+            <View style={styles.legalBlock}>
+              <Text style={styles.legalText}>
+                By booking you agree to the FreeSpace parking terms and liability policy.
+              </Text>
+            </View>
 
           </ScrollView>
         ) : (
@@ -673,26 +665,21 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       {listing && user ? (
         <View style={[styles.footerBar, { paddingBottom: 14 + insets.bottom }]}>
           <View style={styles.footerPriceBlock}>
-            <Text style={styles.footerPriceValue}>€{Math.round(pricing.finalPrice)}</Text>
             <Text style={styles.footerPriceMeta}>{priceSummary?.durationLabel ?? ""}</Text>
+            <Text style={styles.footerPriceValue}>€{pricing.finalPrice.toFixed(2)}</Text>
           </View>
           <Pressable
-            style={[
-              styles.footerButton,
-              (bookingBusy || bookingConfirmed || requiresVehicleDetails) && styles.footerButtonDisabled,
-            ]}
+            style={[styles.footerBtn, (bookingBusy || bookingConfirmed || requiresVehicleDetails) && styles.footerBtnDisabled]}
             onPress={handlePayment}
             disabled={bookingBusy || bookingConfirmed || requiresVehicleDetails}
           >
-            <View style={styles.footerButtonPill}>
-              {bookingBusy ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.footerButtonText}>
-                  {confirmingBooking ? "Confirming…" : "Pay & reserve"}
-                </Text>
-              )}
-            </View>
+            {bookingBusy ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.footerBtnText}>
+                {confirmingBooking ? "Confirming…" : "Pay & reserve"}
+              </Text>
+            )}
           </Pressable>
         </View>
       ) : null}
@@ -732,430 +719,194 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   );
 }
 
+const GREEN = "#0fa968";
+const LINE  = "#E6E6E4";
+const FG    = "#111827";
+const MUTED = "#6b7280";
+const SUBTLE = "#9ca3af";
+
 const styles = StyleSheet.create({
-  // ── Shell ────────────────────────────────────────────────────
-  container: { flex: 1, backgroundColor: "#F7F7F6" },
+  container: { flex: 1, backgroundColor: "#ffffff" },
   flex: { flex: 1 },
 
   // ── Nav header ──────────────────────────────────────────────
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E6E6E4",
-    backgroundColor: "#F7F7F6",
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 20, paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    backgroundColor: "#ffffff",
   },
   backButton: { padding: 6, marginLeft: -6 },
-  headerTitle: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
-    color: "#111827",
-  },
+  headerTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG },
   headerSpacer: { width: 34 },
 
-  // ── Scroll ──────────────────────────────────────────────────
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    gap: 12,
-  },
-
   // ── Page header ─────────────────────────────────────────────
-  pageHeader: { paddingHorizontal: 4 },
+  pageHeader: {
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
+  },
   pageLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13,
-    color: "#0a8050",
-    letterSpacing: 0.2,
-    marginBottom: 6,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
+    color: GREEN, letterSpacing: 1.4, textTransform: "uppercase", marginBottom: 4,
   },
   pageTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 26,
-    color: "#111827",
-    letterSpacing: -0.6,
-    lineHeight: 32,
-    marginBottom: 6,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 22,
+    color: FG, letterSpacing: -0.5, lineHeight: 28, marginBottom: 2,
   },
-  pageAddressRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  pageAddress: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    color: "#6b7280",
-    flex: 1,
-    lineHeight: 20,
-  },
+  pageAddress: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },
 
-  // ── Cards ────────────────────────────────────────────────────
-  card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E6E6E4",
-    padding: 20,
+  // ── Sections ────────────────────────────────────────────────
+  section: {
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    paddingHorizontal: 20, paddingVertical: 20,
   },
-  cardTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  sectionTitleRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     marginBottom: 16,
   },
-  cardTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 20,
-    color: "#111827",
-    marginBottom: 10,
+  sectionTitle: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 17,
+    color: FG, letterSpacing: -0.3,
   },
-  cardSubtitle: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    color: "#6b7280",
-    lineHeight: 20,
-    marginBottom: 14,
-  },
-  cardBody: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    color: "#6b7280",
-    lineHeight: 22,
+  sectionBody: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 14,
+    color: MUTED, lineHeight: 22, marginTop: 8,
   },
 
-  // ── Parking location inner box ───────────────────────────────
-  locationBox: {
-    backgroundColor: "#F7F7F6",
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+  // ── Date/time picker fields ──────────────────────────────────
+  pickerRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  pickerField: {
+    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    backgroundColor: "#F7F7F6", borderRadius: 12,
+    borderWidth: 1, borderColor: LINE,
+    paddingHorizontal: 12, paddingVertical: 10,
   },
-  locationBoxTitle: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
-    color: "#111827",
-    marginBottom: 4,
+  pickerFieldInner: { flex: 1, gap: 2 },
+  pickerFieldLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
+    color: GREEN, textTransform: "uppercase", letterSpacing: 0.6,
   },
-  locationBoxAddress: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    color: "#6b7280",
-    lineHeight: 20,
-  },
-
-  // ── Form-style date/time fields ──────────────────────────────
-  fieldGroup: { marginBottom: 12 },
-  fieldLabel: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    color: "#6b7280",
-    marginBottom: 8,
-  },
-  fieldPicker: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#EFEFEE",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-  },
-  fieldPickerText: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 15,
-    color: "#111827",
-  },
-
-  // ── Edit button ──────────────────────────────────────────────
-  editBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#E6E6E4",
-  },
-  editBtnText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13,
-    color: "#111827",
+  pickerFieldValue: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 13, color: FG,
   },
 
   // ── Duration pill ────────────────────────────────────────────
   durationPill: {
-    backgroundColor: "#EDF7F2",
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    backgroundColor: "#EDF7F2", borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 5,
   },
-  durationPillText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
-    color: "#0fa968",
-  },
+  durationPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: GREEN },
 
-  // ── Summary rows ─────────────────────────────────────────────
+  // ── Session summary box ──────────────────────────────────────
   summaryBox: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E6E6E4",
-    overflow: "hidden",
+    borderRadius: 14, borderWidth: 1, borderColor: LINE, overflow: "hidden",
   },
   summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    paddingHorizontal: 14, paddingVertical: 11,
   },
-  summaryRowBorder: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#E6E6E4",
-  },
-  summaryRowLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    color: "#9ca3af",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  summaryRowValue: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13,
-    color: "#111827",
-  },
-  summaryRowMuted: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    color: "#9ca3af",
-  },
+  summaryRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  summaryRowLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },
+  summaryRowValue: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
 
-  // ── Vehicle / Reg plate ─────────────────────────────────────
-  regRow: {
+  // ── Vehicle ─────────────────────────────────────────────────
+  editBtn: {
+    paddingVertical: 5, paddingHorizontal: 14,
+    borderRadius: 20, borderWidth: 1, borderColor: LINE,
+  },
+  editBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
+
+  vehicleInfoRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  vehicleDetails: { flex: 1 },
+  vehicleMakeText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG, letterSpacing: -0.3 },
+  vehicleSubText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 2 },
+
+  // ── Irish number plate ───────────────────────────────────────
+  plate: {
     flexDirection: "row",
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#3D6FB6",
-    overflow: "hidden",
+    borderRadius: 8, borderWidth: 2, borderColor: "#111827",
+    overflow: "hidden", backgroundColor: "#FAFAF8", alignItems: "center",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10, shadowRadius: 4, elevation: 3,
+  },
+  plateMt: { marginTop: 14 },
+  plateEuBadge: { width: 38, alignSelf: "stretch", backgroundColor: "#003399" },
+  plateBody: { flex: 1, paddingHorizontal: 16, paddingVertical: 14 },
+  plateNumber: {
+    fontFamily: "UKNumberPlate", fontSize: 28, color: "#111827",
+    letterSpacing: 2, textTransform: "uppercase", includeFontPadding: false,
+  },
+  platePlaceholder: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: SUBTLE, letterSpacing: 0, textTransform: "none" },
+  regHint: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: "#F59E0B", marginTop: 10, lineHeight: 18 },
+
+  // ── Price rows ───────────────────────────────────────────────
+  priceRows: { marginTop: 12 },
+  priceRow: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 11,
+  },
+  priceRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  priceRowLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },
+  priceRowValue: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
+  priceRowMuted: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: SUBTLE },
+  priceTotalLabel: { fontFamily: "PlusJakartaSans-Bold", fontSize: 14, color: FG },
+  priceTotalValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 20, color: GREEN, letterSpacing: -0.4 },
+  noHiddenFees: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: SUBTLE, marginTop: 8 },
+
+  // ── Payment method ──────────────────────────────────────────
+  paymentOptions: { marginTop: 16, borderRadius: 16, borderWidth: 1, borderColor: LINE, overflow: "hidden" },
+  paymentOption: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 16, paddingVertical: 14,
     backgroundColor: "#ffffff",
-    alignItems: "center",
-    marginBottom: 10,
   },
-  plateCountry: {
-    width: 38,
-    alignSelf: "stretch",
-    backgroundColor: "#3D6FB6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  regDetails: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-    justifyContent: "center",
-  },
-  regInput: {
-    fontFamily: "UKNumberPlate",
-    fontSize: 28,
-    color: "#111827",
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    includeFontPadding: false,
-  },
-  regPlaceholder: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 15,
-    color: "#9ca3af",
-    letterSpacing: 0,
-    textTransform: "none",
-  },
-  vehicleInfoRow: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 4 },
-  vehicleInfoText: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    color: "#6b7280",
-  },
-  regHint: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    color: "#F59E0B",
-    marginTop: 10,
-    lineHeight: 18,
-  },
+  paymentOptionBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  paymentOptionLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG },
+  paymentOptionSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: SUBTLE },
 
-  // ── Price total box ──────────────────────────────────────────
-  totalBox: {
-    backgroundColor: "#EDF7F2",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginTop: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  totalBoxLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    color: "#0a8050",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  totalBoxValue: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 20,
-    color: "#0a8050",
-    letterSpacing: -0.4,
-  },
-  noHiddenFees: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
-    color: "#9ca3af",
-    marginTop: 10,
-    lineHeight: 18,
-  },
-
-  // ── Legal text ───────────────────────────────────────────────
-  legalText: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
-    color: "#9ca3af",
-    lineHeight: 18,
-    paddingHorizontal: 4,
-    paddingBottom: 8,
-  },
+  // ── Legal ────────────────────────────────────────────────────
+  legalBlock: { paddingHorizontal: 20, paddingVertical: 16 },
+  legalText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: SUBTLE, lineHeight: 18 },
 
   // ── Sticky footer ───────────────────────────────────────────
   footerBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#E6E6E4",
+    position: "absolute", bottom: 0, left: 0, right: 0,
+    backgroundColor: "#ffffff", paddingHorizontal: 20, paddingTop: 12,
+    flexDirection: "row", alignItems: "center", gap: 14,
+    shadowColor: "#111111", shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.07, shadowRadius: 10, elevation: 12,
   },
-  footerPriceBlock: { flex: 1, paddingRight: 16 },
-  footerPriceValue: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 24,
-    color: "#111827",
-    letterSpacing: -0.6,
+  footerPriceBlock: { flex: 1 },
+  footerPriceMeta: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: SUBTLE },
+  footerPriceValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 22, color: FG, letterSpacing: -0.5 },
+  footerBtn: {
+    height: 48, minWidth: 148, borderRadius: 14,
+    backgroundColor: GREEN, alignItems: "center", justifyContent: "center", paddingHorizontal: 24,
   },
-  footerPriceMeta: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
-    color: "#9ca3af",
-    marginTop: 2,
-  },
-  footerButton: {},
-  footerButtonDisabled: { opacity: 0.45 },
-  footerButtonPill: {
-    height: 48,
-    minWidth: 152,
-    borderRadius: 14,
-    backgroundColor: "#0fa968",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 28,
-  },
-  footerButtonText: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 15,
-    color: "#ffffff",
-    letterSpacing: -0.2,
-  },
+  footerBtnDisabled: { opacity: 0.45 },
+  footerBtnText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#ffffff", letterSpacing: -0.2 },
 
   // ── Empty / auth states ─────────────────────────────────────
-  centered: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-  centeredTitle: {
-    fontSize: 20,
-    fontFamily: "PlusJakartaSans-Bold",
-    color: "#151b1b",
-    textAlign: "center",
-  },
-  centeredSubtitle: {
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-Regular",
-    color: "#6b747b",
-    marginTop: 8,
-    textAlign: "center",
-  },
-  muted: {
-    fontSize: 13,
-    fontFamily: "PlusJakartaSans-Regular",
-    color: "#6b747b",
-    marginTop: 8,
-  },
-  authButtons: {
-    marginTop: 16,
-    width: "100%",
-    maxWidth: 320,
-    gap: 10,
-  },
+  centered: { alignItems: "center", flex: 1, justifyContent: "center", paddingHorizontal: 20 },
+  centeredTitle: { fontSize: 20, fontFamily: "PlusJakartaSans-Bold", color: FG, textAlign: "center" },
+  centeredSubtitle: { fontSize: 15, fontFamily: "PlusJakartaSans-Regular", color: MUTED, marginTop: 8, textAlign: "center" },
+  muted: { fontSize: 13, fontFamily: "PlusJakartaSans-Regular", color: MUTED, marginTop: 8 },
+  authButtons: { marginTop: 16, width: "100%", maxWidth: 320, gap: 10 },
   authButton: { width: "100%" },
 
   // ── Date picker modal ───────────────────────────────────────
-  pickerBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
+  pickerBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
   pickerSheet: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 36,
-    alignItems: "center",
-    paddingTop: 12,
+    backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    paddingBottom: 36, alignItems: "center", paddingTop: 12,
   },
-  pickerHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#E0E0E0",
-    marginBottom: 18,
-  },
-  pickerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    fontFamily: "PlusJakartaSans-Bold",
-    color: "#111111",
-    marginBottom: 4,
-    textAlign: "center",
-  },
+  pickerHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#E0E0E0", marginBottom: 18 },
+  pickerTitle: { fontSize: 18, fontFamily: "PlusJakartaSans-Bold", color: FG, marginBottom: 4, textAlign: "center" },
   pickerDoneBtn: {
-    alignSelf: "stretch",
-    marginHorizontal: 20,
-    marginTop: 16,
-    backgroundColor: "#0fa968",
-    borderRadius: 14,
-    minHeight: 54,
-    alignItems: "center",
-    justifyContent: "center",
+    alignSelf: "stretch", marginHorizontal: 20, marginTop: 16,
+    backgroundColor: GREEN, borderRadius: 14, minHeight: 54, alignItems: "center", justifyContent: "center",
   },
-  pickerDoneBtnText: {
-    fontSize: 17,
-    fontWeight: "700",
-    fontFamily: "PlusJakartaSans-Bold",
-    color: "#ffffff",
-    letterSpacing: -0.2,
-  },
+  pickerDoneBtnText: { fontSize: 17, fontFamily: "PlusJakartaSans-Bold", color: "#ffffff", letterSpacing: -0.2 },
 
   // ── Overlay ─────────────────────────────────────────────────
-  successOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15, 23, 42, 0.35)",
-  },
+  successOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(15, 23, 42, 0.35)" },
 });

@@ -715,6 +715,7 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   primaryButton: {
+    flex: 1,
     alignItems: "center",
     backgroundColor: hostFlowColors.accent,
     borderRadius: 12,

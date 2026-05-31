@@ -70,7 +70,7 @@ export function SearchForm({
 
   const initialStart = useMemo(() => {
     const now = new Date();
-    now.setMinutes(Math.ceil(now.getMinutes() / 30) * 30, 0, 0);
+    now.setMinutes(Math.ceil(now.getMinutes() / 5) * 5, 0, 0);
     return now;
   }, []);
 

@@ -504,13 +504,21 @@ export function ListingScreen({ navigation, route }: Props) {
 
                 <View style={styles.statsStrip}>
                   <View style={styles.statsCell}>
-                    <Text style={styles.statsCellLabel}>DURATION</Text>
-                    <Text style={styles.statsCellValue}>{priceSummary?.durationLabel ?? "—"}</Text>
+                    <Text style={styles.statsCellLabel}>PRICE</Text>
+                    <Text style={styles.statsCellValue}>€{priceSummary?.total ?? "—"}</Text>
+                    {priceSummary ? <Text style={styles.statsCellSub}>{priceSummary.durationLabel}</Text> : null}
                   </View>
                   <View style={styles.statsVDivider} />
                   <View style={styles.statsCell}>
-                    <Text style={styles.statsCellLabel}>FEE</Text>
-                    <Text style={styles.statsCellValue}>€{priceSummary?.total ?? "—"}</Text>
+                    <Text style={styles.statsCellLabel}>RATING</Text>
+                    {hasReviews ? (
+                      <Text style={styles.statsCellValue}>★ {listing.rating?.toFixed(1)}</Text>
+                    ) : (
+                      <>
+                        <Text style={styles.statsCellValue}>★ 0.0</Text>
+                        <Text style={styles.statsCellSub}>New</Text>
+                      </>
+                    )}
                   </View>
                   <View style={styles.statsVDivider} />
                   <View style={styles.statsCell}>
@@ -568,7 +576,7 @@ export function ListingScreen({ navigation, route }: Props) {
                   style={styles.section}
                   onPress={() => { if (aboutText.length > 140) setShowFullAbout((p) => !p); }}
                 >
-                  <Text style={styles.sectionTitle}>Space overview</Text>
+                  <Text style={styles.sectionTitle}>About this space</Text>
                   <Text style={styles.sectionBody} numberOfLines={showFullAbout ? undefined : 3}>
                     {aboutText}
                   </Text>
@@ -580,7 +588,7 @@ export function ListingScreen({ navigation, route }: Props) {
                 {/* ── Features (horizontal scroll chips) ───── */}
                 <View style={styles.sectionDivider} />
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Included features</Text>
+                  <Text style={styles.sectionTitle}>Features</Text>
                   <View style={styles.chipsGrid}>
                     {featureLabels.map((feature) => (
                       <View key={feature} style={styles.featureChip}>
@@ -597,6 +605,7 @@ export function ListingScreen({ navigation, route }: Props) {
 
                 <View style={styles.sectionDivider} />
                 <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Location</Text>
                   <View style={styles.localAreaCard}>
                     {hasCoordinates ? (
                       <View style={styles.localAreaMapWrap}>
@@ -638,7 +647,7 @@ export function ListingScreen({ navigation, route }: Props) {
                 {/* ── Availability ─────────────────────────── */}
                 <View style={styles.sectionDivider} />
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Available times</Text>
+                  <Text style={styles.sectionTitle}>Availability</Text>
                   <View style={styles.availabilityList}>
                     {openingHours.map((entry) => (
                       <View
@@ -715,7 +724,7 @@ export function ListingScreen({ navigation, route }: Props) {
                       })}
                     </View>
                   ) : (
-                    <Text style={[styles.sectionBody, { marginTop: 8 }]}>No reviews yet.</Text>
+                    <Text style={[styles.sectionBody, { marginTop: 8, color: FG_SUBTLE }]}>No reviews yet.</Text>
                   )}
                 </View>
 
@@ -1106,7 +1115,11 @@ const styles = StyleSheet.create({
   section: { paddingVertical: 20 },
   sectionTitle: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 20, lineHeight: 24, color: FG, letterSpacing: -0.8, marginBottom: 14,
+    fontSize: 18, lineHeight: 22, color: FG, letterSpacing: -0.5, marginBottom: 14,
+  },
+  statsCellSub: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 10,
+    color: FG_SUBTLE, marginTop: 1,
   },
   sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, lineHeight: 26, color: "#475569" },
   readMore: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG, marginTop: 10 },

@@ -152,11 +152,11 @@ function rankResultsForSearch(results: ListingSummary[], start: Date, end: Date)
 export function SearchScreen({ navigation }: Props) {
   const today = useMemo(() => {
     const now = new Date();
-    const start = new Date(now);
-    const end = new Date(start);
+    now.setMinutes(Math.ceil(now.getMinutes() / 5) * 5, 0, 0);
+    const end = new Date(now);
     end.setHours(end.getHours() + 2);
     return {
-      from: start.toISOString(),
+      from: now.toISOString(),
       to: end.toISOString(),
     };
   }, []);

@@ -1,45 +1,107 @@
 import { useEffect, useState } from "react";
-import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Alert, Linking, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import { ChevronRight } from "lucide-react-native";
 import * as Notifications from "expo-notifications";
 import { requestEmailVerification } from "../api";
 import { useAuth } from "../auth";
 import { useGlobalToast } from "../components/GlobalToast";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
-import { Button, Card, Screen, SectionHeader } from "../components/ui";
-import { colors, radius, spacing, textStyles } from "../styles/theme";
 import type { RootStackParamList } from "../types";
-import { Ionicons } from "@expo/vector-icons";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Profile">;
 
+const GREEN  = "#0fa968";
+const LINE   = "#E6E6E4";
+const FG     = "#111827";
+const MUTED  = "#6b7280";
+const SUBTLE = "#9ca3af";
+
+type RowProps = {
+  icon: string;
+  label: string;
+  sub?: string;
+  onPress?: () => void;
+  right?: React.ReactNode;
+  danger?: boolean;
+  first?: boolean;
+};
+
+function Row({ icon, label, sub, onPress, right, danger, first }: RowProps) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.row,
+        !first && styles.rowBorder,
+        pressed && !!onPress && styles.rowPressed,
+      ]}
+      onPress={onPress}
+      disabled={!onPress}
+    >
+      <View style={styles.iconWrap}>
+        <Ionicons
+          name={icon as any}
+          size={20}
+          color={danger ? "#b42318" : MUTED}
+        />
+      </View>
+      <View style={styles.rowBody}>
+        <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
+        {sub ? <Text style={styles.rowSub}>{sub}</Text> : null}
+      </View>
+      {right ?? (onPress ? <ChevronRight size={15} color={SUBTLE} /> : null)}
+    </Pressable>
+  );
+}
+
 export function ProfileScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
   const { showError, showSuccess } = useGlobalToast();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [sending, setSending] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
-    const timer = setTimeout(() => setResendCooldown((value) => value - 1), 1000);
+    const timer = setTimeout(() => setResendCooldown((v) => v - 1), 1000);
     return () => clearTimeout(timer);
   }, [resendCooldown]);
+
+  const syncNotifications = async () => {
+    const s = await Notifications.getPermissionsAsync();
+    setNotificationsEnabled(s.granted);
+  };
+
+  useEffect(() => { void syncNotifications(); }, []);
+
+  const handleToggleNotifications = async () => {
+    if (notificationsEnabled) {
+      Alert.alert("Turn off notifications", "Notifications are managed in your device settings.", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Open settings", onPress: () => void Linking.openSettings() },
+      ]);
+      return;
+    }
+    const result = await Notifications.requestPermissionsAsync();
+    if (!result.granted) {
+      Alert.alert("Enable notifications", "Open system settings to enable them.", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Open settings", onPress: () => void Linking.openSettings() },
+      ]);
+      return;
+    }
+    await syncNotifications();
+  };
 
   const resendVerification = async () => {
     if (!user?.email) return;
     setSending(true);
     try {
-      const url = await requestEmailVerification(user.email);
-      setPreviewUrl(url);
-      showSuccess(
-        url
-          ? "Verification email sent. Check your email to confirm your address."
-          : "Verification email sent. Check your email to confirm your address."
-      );
+      await requestEmailVerification(user.email);
+      showSuccess("Verification email sent. Check your inbox.");
       setResendCooldown(30);
     } catch (err) {
       showError(err instanceof Error ? err.message : "Could not send verification email");
@@ -48,751 +110,360 @@ export function ProfileScreen({ navigation }: Props) {
     }
   };
 
-  const syncNotificationStatus = async () => {
-    const settings = await Notifications.getPermissionsAsync();
-    setNotificationsEnabled(settings.granted);
-  };
+  const initial = user?.name?.trim()?.charAt(0)?.toUpperCase()
+    || user?.email?.charAt(0)?.toUpperCase()
+    || "U";
 
-  const handleToggleNotifications = async () => {
-    if (notificationsEnabled) {
-      Alert.alert(
-        "Turn off notifications",
-        "Notifications are managed in your device settings.",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Open settings",
-            onPress: () => {
-              void Linking.openSettings();
-            },
-          },
-        ]
-      );
-      return;
-    }
-    const result = await Notifications.requestPermissionsAsync();
-    if (!result.granted) {
-      Alert.alert(
-        "Enable notifications",
-        "Notifications are off. Open system settings to enable them.",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Open settings",
-            onPress: () => {
-              void Linking.openSettings();
-            },
-          },
-        ]
-      );
-      return;
-    }
-    await syncNotificationStatus();
-  };
-
-  useEffect(() => {
-    void syncNotificationStatus();
-  }, []);
-
-  const showPlaceholder = (title: string) => {
-    Alert.alert(title, "This section is coming soon.");
-  };
-
-  const promptLogin = () => navigation.navigate("Welcome");
-  const gatedPress = (callback?: () => void) => () => {
-    if (!user) {
-      promptLogin();
-      return;
-    }
-    callback?.();
-  };
-
+  // ── Logged out ────────────────────────────────────────────────
   if (!user) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <Screen scroll scrollProps={{ contentContainerStyle: styles.content as any }}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Profile</Text>
-            <Text style={styles.subtitle}>Manage your account, payments, hosting, and support.</Text>
+      <SafeAreaView style={styles.container} edges={[]}>
+        <StatusBar barStyle="dark-content" />
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 28, paddingBottom: Math.max(insets.bottom + 96, 120) }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.pageHeader}>
+            <Text style={styles.pageTitle}>Profile</Text>
           </View>
 
-          <View style={styles.contentBody}>
-            <Card style={styles.section} noPadding>
-              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
-                <View style={styles.avatarShell}>
-                  <Text style={styles.avatarText}>U</Text>
-                </View>
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>Your account</Text>
-                  <Text style={styles.rowSubtitle}>Sign in to access your profile</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-              </Pressable>
-            </Card>
+          <Pressable
+            style={({ pressed }) => [styles.signInCard, pressed && { opacity: 0.85 }]}
+            onPress={() => navigation.navigate("Welcome")}
+          >
+            <View style={styles.signInAvatar}>
+              <Ionicons name="person-outline" size={28} color={GREEN} />
+            </View>
+            <View style={styles.rowBody}>
+              <Text style={styles.signInTitle}>Sign in to FreeSpace</Text>
+              <Text style={styles.signInSub}>Access your bookings, vehicle and payments</Text>
+            </View>
+            <ChevronRight size={16} color={SUBTLE} />
+          </Pressable>
 
-            <SectionHeader title="Account" style={styles.sectionHeaderWrap} />
-            <Card style={styles.section} noPadding>
-              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
-                <View style={styles.iconShell}>
-                  <MaterialIcons name="credit-card" size={20} color={colors.accent} />
-                </View>
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>Payment methods</Text>
-                  <Text style={styles.rowSubtitle}>Add cards or bank accounts</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-              </Pressable>
-              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
-                <View style={styles.iconShell}>
-                  <MaterialIcons name="directions-car" size={20} color={colors.accent} />
-                </View>
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>My vehicle</Text>
-                  <Text style={styles.rowSubtitle}>Add your car brand and model</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-              </Pressable>
-              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
-                <View style={styles.iconShell}>
-                  <MaterialIcons name="lock-outline" size={20} color={colors.accent} />
-                </View>
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>Login & security</Text>
-                  <Text style={styles.rowSubtitle}>Password, 2FA, devices</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-              </Pressable>
-            </Card>
-
-            <SectionHeader title="Hosting" style={styles.sectionHeaderWrap} />
-            <Card style={styles.section} noPadding>
-              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
-                <View style={styles.iconShell}>
-                  <MaterialIcons name="add-business" size={20} color={colors.accent} />
-                </View>
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>List your space</Text>
-                  <Text style={styles.rowSubtitle}>Earn from your parking spot</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-              </Pressable>
-              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
-                <View style={styles.iconShell}>
-                  <MaterialIcons name="home-work" size={20} color={colors.accent} />
-                </View>
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>Manage spaces</Text>
-                  <Text style={styles.rowSubtitle}>Edit listings and availability</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-              </Pressable>
-            </Card>
-
-            <SectionHeader title="Support" style={styles.sectionHeaderWrap} />
-            <Card style={styles.section} noPadding>
-              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
-                <View style={styles.iconShell}>
-                  <MaterialIcons name="help-outline" size={20} color={colors.accent} />
-                </View>
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>Help centre</Text>
-                  <Text style={styles.rowSubtitle}>FAQs and guides</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-              </Pressable>
-              <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={promptLogin}>
-                <View style={styles.iconShell}>
-                  <MaterialIcons name="support-agent" size={20} color={colors.accent} />
-                </View>
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>Contact support</Text>
-                  <Text style={styles.rowSubtitle}>Send a message to our team</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-              </Pressable>
-            </Card>
-            <View style={styles.bottomSpacer} />
+          <Text style={styles.groupLabel}>Account</Text>
+          <View style={styles.group}>
+            <Row first icon="card-outline" label="Payment methods" sub="Cards and bank accounts" onPress={() => navigation.navigate("Welcome")} />
+            <Row icon="car-outline" label="My vehicle" sub="Car brand, model and plate" onPress={() => navigation.navigate("Welcome")} />
+            <Row icon="lock-closed-outline" label="Login & security" sub="Password and devices" onPress={() => navigation.navigate("Welcome")} />
           </View>
-        </Screen>
+
+          <Text style={styles.groupLabel}>Hosting</Text>
+          <View style={styles.group}>
+            <Row first icon="home-outline" label="List your space" sub="Earn from your driveway or garage" onPress={() => navigation.navigate("Welcome")} />
+            <Row icon="list-outline" label="Manage spaces" sub="Edit listings and availability" onPress={() => navigation.navigate("Welcome")} />
+          </View>
+
+          <Text style={styles.groupLabel}>Support</Text>
+          <View style={styles.group}>
+            <Row first icon="chatbubble-outline" label="Contact support" sub="Send a message to our team" onPress={() => navigation.navigate("Welcome")} />
+            <Row icon="document-text-outline" label="Terms & privacy" sub="Legal and policies" onPress={() => navigation.navigate("Welcome")} />
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
 
+  // ── Logged in ─────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <Screen
-        scroll
-        scrollProps={{ contentContainerStyle: styles.content as any }}
+    <SafeAreaView style={styles.container} edges={[]}>
+      <StatusBar barStyle="dark-content" />
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 28, paddingBottom: Math.max(insets.bottom + 96, 120) }]}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Profile</Text>
-          <Text style={styles.subtitle}>Manage your account, verification, hosting, and support.</Text>
-        </View>
-
-        <View style={styles.contentBody}>
-        <Card style={styles.section} noPadding>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("PersonalInfo")}
-          >
-            <View style={styles.avatarShell}>
-              <Text style={styles.avatarText}>
-                {user.name?.trim()?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || "U"}
-              </Text>
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>{user.name?.trim() || "Your account"}</Text>
-              <Text style={styles.rowSubtitle}>Profile</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-        </Card>
-
-        <Card style={styles.section} noPadding>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("Favorites")}
-          >
-            <View style={styles.iconShell}>
-              <MaterialIcons name="favorite-border" size={20} color={colors.accent} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>Favourites</Text>
-              <Text style={styles.rowSubtitle}>Saved spaces</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("Settings")}
-          >
-            <View style={styles.iconShell}>
-              <MaterialIcons name="settings" size={20} color={colors.accent} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>Settings</Text>
-              <Text style={styles.rowSubtitle}>Preferences</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-        </Card>
-
-        <SectionHeader title="Account" style={styles.sectionHeaderWrap} />
-        <Card style={styles.section} noPadding>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("Payments")}
-          >
-            <View style={styles.iconShell}>
-              <MaterialIcons name="credit-card" size={20} color={colors.accent} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>Payment methods</Text>
-              <Text style={styles.rowSubtitle}>Add cards or bank accounts</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("VehicleType")}
-          >
-            <View style={styles.iconShell}>
-              <MaterialIcons name="directions-car" size={20} color={colors.accent} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>My vehicle</Text>
-              <Text style={styles.rowSubtitle}>
-                {user.vehicleMake && user.vehicleType
-                  ? `${user.vehicleMake} - ${user.vehicleType}`
-                  : "Add your car brand and model"}
-              </Text>
-            </View>
-            <View style={styles.rowActions}>
-              {user.vehicleMake ? <VehicleBrandLogo make={user.vehicleMake} size={30} /> : null}
-              <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-            </View>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={handleToggleNotifications}
-          >
-            <View style={styles.iconShell}>
-              <MaterialIcons name="notifications-none" size={20} color={colors.accent} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>Notifications</Text>
-              <Text style={styles.rowSubtitle}>Trips, reminders, updates</Text>
-            </View>
-            <View
-              style={[
-                styles.toggleTrack,
-                notificationsEnabled && styles.toggleTrackActive,
-              ]}
-            >
-              <View
-                style={[
-                  styles.toggleKnob,
-                  notificationsEnabled && styles.toggleKnobActive,
-                ]}
-              />
-            </View>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("LoginSecurity")}
-          >
-            <View style={styles.iconShell}>
-              <MaterialIcons name="lock-outline" size={20} color={colors.accent} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>Login & security</Text>
-              <Text style={styles.rowSubtitle}>Password, 2FA, devices</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => showPlaceholder("Promo codes")}
-          >
-            <View style={styles.iconShell}>
-              <MaterialIcons name="local-offer" size={20} color={colors.accent} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>Promo codes</Text>
-              <Text style={styles.rowSubtitle}>Apply discounts</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-          <View style={styles.row}>
-            <View style={styles.iconShell}>
-              <MaterialIcons
-                name={user.emailVerified ? "verified" : "mark-email-unread"}
-                size={20}
-                color={colors.accent}
-              />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>
-                {user.emailVerified ? "Email verified" : "Verify your email"}
-              </Text>
-              <Text style={styles.rowSubtitle}>
-                {user.emailVerified ? "Your email is confirmed." : "Finish verification."}
-              </Text>
-            </View>
-            {!user.emailVerified ? (
-              <Pressable
-                style={styles.inlineButton}
-                onPress={resendVerification}
-                disabled={sending || resendCooldown > 0}
-              >
-                <Text style={styles.inlineButtonText}>
-                  {sending
-                    ? "Sending..."
-                    : resendCooldown > 0
-                      ? `Retry in ${resendCooldown}s`
-                      : "Resend"}
-                </Text>
-              </Pressable>
-            ) : (
-              <Text style={styles.inlineStatus}>Verified</Text>
-            )}
+        {/* ── Profile header ── */}
+        <Pressable
+          style={({ pressed }) => [styles.profileCard, pressed && styles.profileCardPressed]}
+          onPress={() => navigation.navigate("PersonalInfo")}
+        >
+          <View style={styles.avatar}>
+            <Text style={styles.avatarInitial}>{initial}</Text>
           </View>
-          {previewUrl ? (
-            <Pressable style={styles.linkButton} onPress={() => Linking.openURL(previewUrl)}>
-              <Text style={styles.linkButtonText}>Open verification link</Text>
-            </Pressable>
-          ) : null}
-        </Card>
-
-        <SectionHeader title="Hosting" style={styles.sectionHeaderWrap} />
-        <Card style={styles.section} noPadding>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("CreateListingFlow")}
-          >
-            <View style={styles.iconShell}>
-              <MaterialIcons name="add-business" size={20} color={colors.accent} />
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>{user.name?.trim() || "Your account"}</Text>
+            <Text style={styles.profileEmail} numberOfLines={1}>{user.email}</Text>
+          </View>
+          {user.emailVerified ? (
+            <View style={styles.verifiedPill}>
+              <Ionicons name="checkmark-circle" size={13} color={GREEN} />
+              <Text style={styles.verifiedText}>Verified</Text>
             </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>List your space</Text>
-              <Text style={styles.rowSubtitle}>Earn from your parking spot</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("Listings")}
-          >
-            <View style={styles.iconShell}>
-              <MaterialIcons name="home-work" size={20} color={colors.accent} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>Manage spaces</Text>
-              <Text style={styles.rowSubtitle}>Edit listings and availability</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => showPlaceholder("Space owner guide")}
-          >
-            <View style={styles.iconShell}>
-              <MaterialIcons name="menu-book" size={20} color={colors.accent} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>View our space owner guide</Text>
-              <Text style={styles.rowSubtitle}>Best practices and tips</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-        </Card>
-
-        <SectionHeader title="Support" style={styles.sectionHeaderWrap} />
-        <Card style={styles.section} noPadding>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => showPlaceholder("Help centre")}
-          >
-            <View style={styles.iconShell}>
-              <MaterialIcons name="help-outline" size={20} color={colors.accent} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>Help centre</Text>
-              <Text style={styles.rowSubtitle}>FAQs and guides</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("Support")}
-          >
-            <View style={styles.iconShell}>
-              <MaterialIcons name="support-agent" size={20} color={colors.accent} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>Contact support</Text>
-              <Text style={styles.rowSubtitle}>Send a message to our team</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => navigation.navigate("Legal")}
-          >
-            <View style={styles.iconShell}>
-              <MaterialIcons name="info-outline" size={20} color={colors.accent} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>Terms & privacy</Text>
-              <Text style={styles.rowSubtitle}>Legal and policies</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-        </Card>
-
-        <SectionHeader title="Account" style={styles.sectionHeaderWrap} />
-        <Card style={styles.section} noPadding>
-          {user?.role === "admin" ? (
+          ) : (
             <Pressable
-              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-              onPress={() => navigation.navigate("Admin")}
+              style={styles.verifyBtn}
+              onPress={resendVerification}
+              disabled={sending || resendCooldown > 0}
             >
-              <View style={styles.iconShell}>
-                <MaterialIcons name="admin-panel-settings" size={20} color={colors.accent} />
-              </View>
-              <View style={styles.rowText}>
-                <Text style={styles.rowTitle}>Admin panel</Text>
-                <Text style={styles.rowSubtitle}>Moderate users and listings</Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+              <Text style={styles.verifyBtnText}>
+                {sending ? "Sending…" : resendCooldown > 0 ? `${resendCooldown}s` : "Verify email"}
+              </Text>
             </Pressable>
-          ) : null}
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+          )}
+        </Pressable>
+
+        {/* ── Hosting CTA ── */}
+        <Pressable
+          style={({ pressed }) => [styles.hostingCta, pressed && { opacity: 0.88 }]}
+          onPress={() => navigation.navigate("CreateListingFlow")}
+        >
+          <View style={styles.hostingCtaIcon}>
+            <Ionicons name="home" size={22} color={GREEN} />
+          </View>
+          <View style={styles.rowBody}>
+            <Text style={styles.hostingCtaTitle}>Got a parking space?</Text>
+            <Text style={styles.hostingCtaSub}>List it on FreeSpace and start earning</Text>
+          </View>
+          <ChevronRight size={15} color={GREEN} />
+        </Pressable>
+
+        {/* ── Account ── */}
+        <Text style={styles.groupLabel}>Account</Text>
+        <View style={styles.group}>
+          <Row
+            first
+            icon="card-outline"
+            label="Payment methods"
+            sub="Cards and bank accounts"
+            onPress={() => navigation.navigate("Payments")}
+          />
+          <Row
+            icon="car-outline"
+            label="My vehicle"
+            sub={
+              user.vehicleMake && user.vehicleType
+                ? `${user.vehicleMake} · ${user.vehicleType}${user.vehiclePlate ? ` · ${user.vehiclePlate}` : ""}`
+                : "Add your car brand, model and plate"
+            }
+            onPress={() => navigation.navigate("VehicleType")}
+            right={
+              <View style={styles.rowRight}>
+                {user.vehicleMake ? <VehicleBrandLogo make={user.vehicleMake} size={20} /> : null}
+                <ChevronRight size={15} color={SUBTLE} />
+              </View>
+            }
+          />
+          <Row
+            icon="notifications-outline"
+            label="Notifications"
+            sub={notificationsEnabled ? "Enabled" : "Disabled"}
+            onPress={handleToggleNotifications}
+            right={
+              <View style={[styles.toggle, notificationsEnabled && styles.toggleOn]}>
+                <View style={[styles.toggleKnob, notificationsEnabled && styles.toggleKnobOn]} />
+              </View>
+            }
+          />
+          <Row
+            icon="lock-closed-outline"
+            label="Login & security"
+            sub="Password and devices"
             onPress={() => navigation.navigate("LoginSecurity")}
-          >
-            <View style={styles.iconShellDanger}>
-              <MaterialIcons name="delete-outline" size={20} color={colors.danger} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={[styles.rowTitle, styles.rowTitleDanger]}>Delete account</Text>
-              <Text style={styles.rowSubtitle}>Permanently remove your profile, bookings, and listings</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => logout()}
-          >
-            <View style={styles.iconShell}>
-              <MaterialIcons name="logout" size={20} color={colors.accent} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowTitle}>Sign out</Text>
-              <Text style={styles.rowSubtitle}>Log out of this device</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-          </Pressable>
-        </Card>
-        <View style={styles.bottomSpacer} />
+          />
+          <Row
+            icon="heart-outline"
+            label="Favourites"
+            sub="Saved spaces"
+            onPress={() => navigation.navigate("Favorites")}
+          />
+          <Row
+            icon="settings-outline"
+            label="Settings"
+            sub="App preferences"
+            onPress={() => navigation.navigate("Settings")}
+          />
         </View>
-      </Screen>
+
+        {/* ── Hosting ── */}
+        <Text style={styles.groupLabel}>Hosting</Text>
+        <View style={styles.group}>
+          <Row
+            first
+            icon="home-outline"
+            label="List your space"
+            sub="Earn from your driveway or garage"
+            onPress={() => navigation.navigate("CreateListingFlow")}
+          />
+          <Row
+            icon="list-outline"
+            label="Manage spaces"
+            sub="Edit listings and availability"
+            onPress={() => navigation.navigate("Listings")}
+          />
+        </View>
+
+        {/* ── Support ── */}
+        <Text style={styles.groupLabel}>Support</Text>
+        <View style={styles.group}>
+          <Row
+            first
+            icon="chatbubble-outline"
+            label="Contact support"
+            sub="Send a message to our team"
+            onPress={() => navigation.navigate("Support")}
+          />
+          <Row
+            icon="document-text-outline"
+            label="Terms & privacy"
+            sub="Legal and policies"
+            onPress={() => navigation.navigate("Legal")}
+          />
+        </View>
+
+        {/* ── Sign out / danger ── */}
+        <View style={[styles.group, { marginTop: 24 }]}>
+          {user.role === "admin" ? (
+            <Row
+              first
+              icon="shield-outline"
+              label="Admin panel"
+              sub="Moderate users and listings"
+              onPress={() => navigation.navigate("Admin")}
+            />
+          ) : null}
+          <Row
+            first={user.role !== "admin"}
+            icon="log-out-outline"
+            label="Sign out"
+            onPress={() => logout()}
+          />
+          <Row
+            icon="trash-outline"
+            label="Delete account"
+            sub="Permanently remove your profile and data"
+            danger
+            onPress={() => navigation.navigate("LoginSecurity")}
+          />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.appBg,
+  container: { flex: 1, backgroundColor: "#f2f2f0" },
+  scroll: { paddingHorizontal: 16 },
+
+  // ── Page header ──────────────────────────────────────────────
+  pageHeader: { paddingBottom: 12, paddingHorizontal: 4 },
+  pageTitle: {
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 27, color: FG, letterSpacing: -0.8,
   },
-  content: {
-    paddingBottom: spacing.section,
-    paddingTop: 16,
-  },
-  header: {
+
+  // ── Profile card ─────────────────────────────────────────────
+  profileCard: {
+    flexDirection: "row", alignItems: "center", gap: 14,
+    backgroundColor: "#ffffff", borderRadius: 16,
+    borderWidth: 1, borderColor: LINE,
+    paddingHorizontal: 16, paddingVertical: 14,
     marginBottom: 10,
   },
-  title: {
-    ...textStyles.titleSmall,
-    color: colors.text,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontWeight: "800",
-    marginTop: 0,
+  profileCardPressed: { opacity: 0.88 },
+  avatar: {
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: "#EDF7F2",
+    alignItems: "center", justifyContent: "center",
+    flexShrink: 0,
   },
-  subtitle: {
-    ...textStyles.meta,
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 19,
-    marginTop: 2,
+  avatarInitial: {
+    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 22, color: GREEN,
   },
-  avatarShell: {
-    alignItems: "center",
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 40,
-    justifyContent: "center",
-    width: 40,
-  },
-  avatarText: {
-    color: colors.accent,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  profileText: {
-    flex: 1,
-  },
+  profileInfo: { flex: 1, minWidth: 0 },
   profileName: {
-    color: colors.text,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 16,
-    fontWeight: "700",
-    lineHeight: 21,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 17,
+    color: FG, letterSpacing: -0.3,
   },
   profileEmail: {
-    color: colors.textMuted,
-    fontFamily: "PlusJakartaSans-Medium",
-    fontSize: 11.5,
-    fontWeight: "500",
-    marginTop: 1,
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
+    color: MUTED, marginTop: 2,
   },
-  statusPill: {
-    borderRadius: radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+  verifiedPill: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: "#EDF7F2", borderRadius: 20,
+    paddingHorizontal: 10, paddingVertical: 5, flexShrink: 0,
   },
-  statusPillVerified: {
-    backgroundColor: "#e8faf2",
+  verifiedText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: GREEN },
+  verifyBtn: {
+    borderRadius: 20, borderWidth: 1, borderColor: LINE,
+    paddingHorizontal: 12, paddingVertical: 6, flexShrink: 0,
   },
-  statusPillPending: {
-    backgroundColor: "#fef3c7",
+  verifyBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
+
+  // ── Sign in card (logged out) ────────────────────────────────
+  signInCard: {
+    flexDirection: "row", alignItems: "center", gap: 14,
+    backgroundColor: "#ffffff", borderRadius: 16,
+    borderWidth: 1, borderColor: LINE,
+    paddingHorizontal: 16, paddingVertical: 16,
+    marginBottom: 12,
   },
-  statusPillText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 9.5,
-    fontWeight: "600",
+  signInAvatar: {
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: "#EDF7F2",
+    alignItems: "center", justifyContent: "center",
   },
-  statusPillTextVerified: {
-    color: "#127c63",
-  },
-  statusPillTextPending: {
-    color: "#a16207",
-  },
-  contentBody: {
-    marginTop: 14,
-  },
-  section: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 10,
-    overflow: "hidden",
-  },
-  sectionHeaderWrap: {
+  signInTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: FG },
+  signInSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 2 },
+
+  // ── Hosting CTA ──────────────────────────────────────────────
+  hostingCta: {
+    flexDirection: "row", alignItems: "center", gap: 14,
+    backgroundColor: "#EDF7F2", borderRadius: 16,
+    borderWidth: 1, borderColor: "#c6ead8",
+    paddingHorizontal: 16, paddingVertical: 13,
     marginBottom: 4,
-    marginTop: 12,
   },
+  hostingCtaIcon: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: "#ffffff",
+    alignItems: "center", justifyContent: "center",
+    flexShrink: 0,
+  },
+  hostingCtaTitle: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#0a6640", letterSpacing: -0.2,
+  },
+  hostingCtaSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: "#2d8a5e", marginTop: 1 },
+
+  // ── Group ────────────────────────────────────────────────────
+  groupLabel: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 11, color: "#888",
+    letterSpacing: 0.8, textTransform: "uppercase",
+    marginBottom: 6, marginTop: 18, paddingHorizontal: 4,
+  },
+  group: {
+    borderRadius: 14, borderWidth: 1, borderColor: LINE,
+    overflow: "hidden", backgroundColor: "#ffffff",
+  },
+
+  // ── Rows ─────────────────────────────────────────────────────
   row: {
-    alignItems: "center",
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    gap: 10,
-    minHeight: 54,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    flexDirection: "row", alignItems: "center", gap: 12,
+    paddingHorizontal: 16, paddingVertical: 11,
+    backgroundColor: "#ffffff", minHeight: 48,
   },
-  rowPressed: {
-    backgroundColor: colors.cardBgMuted,
-  },
-  iconShell: {
-    alignItems: "center",
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.border,
-    borderRadius: 10,
-    borderWidth: 1,
-    height: 30,
+  rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  rowPressed: { backgroundColor: "#f5f5f3" },
+  iconWrap: { width: 22, alignItems: "center", flexShrink: 0 },
+  rowBody: { flex: 1 },
+  rowLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG },
+  rowLabelDanger: { color: "#b42318" },
+  rowSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 1 },
+  rowRight: { flexDirection: "row", alignItems: "center", gap: 6 },
+
+  // ── Toggle ───────────────────────────────────────────────────
+  toggle: {
+    width: 44, height: 26, borderRadius: 13,
+    backgroundColor: LINE, padding: 3,
     justifyContent: "center",
-    width: 30,
   },
-  iconShellDanger: {
-    alignItems: "center",
-    backgroundColor: "#fff1f1",
-    borderColor: "#f4d4d4",
-    borderRadius: 10,
-    borderWidth: 1,
-    height: 30,
-    justifyContent: "center",
-    width: 30,
-  },
-  toggleTrack: {
-    backgroundColor: colors.border,
-    borderRadius: radius.pill,
-    height: 26,
-    padding: 3,
-    width: 48,
-  },
-  toggleTrackActive: {
-    backgroundColor: colors.accent,
-  },
+  toggleOn: { backgroundColor: GREEN },
   toggleKnob: {
-    backgroundColor: colors.cardBg,
-    borderRadius: radius.pill,
-    height: 20,
-    width: 20,
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: "#ffffff",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15, shadowRadius: 2, elevation: 2,
   },
-  toggleKnobActive: {
-    marginLeft: 22,
-  },
-  rowText: {
-    flex: 1,
-  },
-  rowActions: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-  },
-  rowTitle: {
-    color: colors.text,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14.5,
-    fontWeight: "600",
-    lineHeight: 18,
-  },
-  rowTitleDanger: {
-    color: colors.danger,
-  },
-  rowSubtitle: {
-    ...textStyles.bodyMedium,
-    color: colors.textMuted,
-    fontSize: 11.5,
-    lineHeight: 15,
-    marginTop: 1,
-  },
-  inlineButton: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  inlineButtonText: {
-    ...textStyles.meta,
-    color: colors.accent,
-  },
-  linkButton: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    marginTop: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  linkButtonText: {
-    ...textStyles.meta,
-    color: colors.accent,
-  },
-  inlineStatus: {
-    ...textStyles.meta,
-    color: colors.accent,
-  },
-  emptyState: {
-    alignItems: "center",
-    backgroundColor: colors.appBg,
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
-  emptyHero: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-  },
-  emptyLogoWrap: {
-    alignItems: "center",
-    height: 170,
-    justifyContent: "center",
-    marginBottom: 10,
-    overflow: "visible",
-    width: "100%",
-  },
-  emptyLogo: {
-    height: 190,
-    transform: [{ scale: 2.1 }],
-    width: 430,
-  },
-  emptyIllustration: {
-    height: 268,
-    marginBottom: 28,
-    width: 408,
-  },
-  primaryButton: {
-    marginTop: 0,
-    width: "100%",
-  },
-  emptyLoginRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginTop: 24,
-  },
-  emptyLoginText: {
-    color: colors.textMuted,
-    fontSize: 14,
-  },
-  emptyLoginLink: {
-    color: colors.accent,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  bottomSpacer: {
-    height: 96,
-  },
+  toggleKnobOn: { alignSelf: "flex-end" },
 });
