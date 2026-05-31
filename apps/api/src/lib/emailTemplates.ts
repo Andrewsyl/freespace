@@ -55,13 +55,29 @@ function buildEmailShell({
 
   return `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <meta name="supported-color-schemes" content="light" />
+  <style>
+    :root { color-scheme: light only; }
+    body { background-color: #ffffff !important; color: #111827 !important; }
+    /* Block Gmail/Outlook dark mode recoloring */
+    [data-ogsc] body,
+    [data-ogsb] body { background-color: #ffffff !important; }
+    @media (prefers-color-scheme: dark) {
+      body { background-color: #ffffff !important; color: #111827 !important; }
+      .email-wrapper { background-color: #ffffff !important; }
+      .email-card { background-color: #ffffff !important; }
+      .email-footer { background-color: #f8fafc !important; }
+      h1, p, div, span, td { color: inherit !important; }
+    }
+  </style>
 </head>
-<body style="margin:0; padding:0; background:#ffffff; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color:#111827;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff; padding:40px 16px;">
+<body style="margin:0; padding:0; background-color:#ffffff; color:#111827; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color-scheme:light;">
+  <table class="email-wrapper" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff !important; padding:40px 16px;">
     <tr>
       <td align="center">
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
@@ -78,7 +94,7 @@ function buildEmailShell({
 
           <!-- Card -->
           <tr>
-            <td style="background:#ffffff; border-radius:18px; overflow:hidden;">
+            <td class="email-card" style="background-color:#ffffff !important; border-radius:18px; overflow:hidden;">
               <div style="padding:36px 32px 32px;">
 
                 ${iconBlock}
@@ -93,7 +109,7 @@ function buildEmailShell({
               </div>
 
               <!-- Footer -->
-              <div style="padding:16px 32px; background:#f8fafc; border-top:1px solid #f1f5f9; text-align:center;">
+              <div class="email-footer" style="padding:16px 32px; background-color:#f8fafc !important; border-top:1px solid #f1f5f9; text-align:center;">
                 <p style="margin:0; font-size:12px; color:#94a3b8;">${footer}</p>
               </div>
             </td>
