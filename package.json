@@ -27,6 +27,7 @@
     "test:mobile:e2e": "npm --workspace apps/mobile run test:e2e",
     "test:api": "npm --workspace apps/api run test",
     "test:web:e2e": "npm --workspace apps/web run test:e2e",
+    "test:web:e2e:local": "sh scripts/run-web-e2e.sh",
     "prepush:check": "sh scripts/pre-push-checks.sh",
     "build:web": "npm --workspace apps/web run build",
     "start:web:prod": "node apps/web/.next/standalone/apps/web/server.js",

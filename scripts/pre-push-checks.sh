@@ -24,7 +24,7 @@ rm -rf apps/web/.next
 
 echo "pre-push: running web e2e"
 e2e_log="$(mktemp)"
-if npm --workspace apps/web run test:e2e -- --workers=1 --reporter=line 2>&1 | tee "$e2e_log"; then
+if yarn test:web:e2e:local 2>&1 | tee "$e2e_log"; then
   rm -f "$e2e_log"
 else
   if grep -q 'MachPortRendezvousServer.*Permission denied (1100)' "$e2e_log"; then
