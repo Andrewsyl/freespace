@@ -167,54 +167,33 @@ export function MobileListingView({
         </div>
 
         {/* ── Quick stats bar ── */}
-        {reviews.length > 0 ? (
-          <div className={`grid divide-x divide-slate-200 border-b border-slate-200 bg-white ${distanceKm != null ? "grid-cols-4" : "grid-cols-3"}`}>
+        <div className={`grid divide-x divide-slate-200 border-b border-slate-200 bg-white ${distanceKm != null ? "grid-cols-3" : "grid-cols-2"}`}>
+          <div className="flex flex-col justify-center px-3 py-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Price</p>
+            <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
+              €{formatPriceValue(bookingTotal.total)}{" "}
+              <span className="text-[10px] font-medium text-slate-400">{bookingTotal.durationLabel}</span>
+            </p>
+          </div>
+          <div className="flex flex-col justify-center px-3 py-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Rating</p>
+            <p className="mt-1 flex items-baseline gap-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
+              <StarIcon className="h-4 w-4 translate-y-[1px] text-amber-400" />
+              {reviews.length > 0 ? listing.rating?.toFixed(1) : "0.0"}
+              {reviews.length === 0 && (
+                <span className="text-[10px] font-medium text-slate-400">New</span>
+              )}
+            </p>
+          </div>
+          {distanceKm != null && (
             <div className="flex flex-col justify-center px-3 py-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Price</p>
-              <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">€{formatPriceValue(bookingTotal.total)}</p>
-              <p className="text-[10px] text-slate-400">{bookingTotal.durationLabel}</p>
-            </div>
-            <div className="flex flex-col justify-center px-3 py-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Rating</p>
-              <p className="mt-1 flex items-center gap-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
-                <StarIcon className="h-4 w-4 text-amber-400" />
-                {listing.rating?.toFixed(1)}
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Distance</p>
+              <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
+                {distanceKm.toFixed(1)}<span className="text-[11px] font-medium text-slate-400"> km</span>
               </p>
             </div>
-            <div className="flex flex-col justify-center px-3 py-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Reviews</p>
-              <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">{reviews.length}</p>
-            </div>
-            {distanceKm != null && (
-              <div className="flex flex-col justify-center px-3 py-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Distance</p>
-                <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
-                  {distanceKm.toFixed(1)}<span className="text-[11px] font-medium text-slate-400"> km</span>
-                </p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className={`grid divide-x divide-slate-200 border-b border-slate-200 bg-white ${distanceKm != null ? "grid-cols-3" : "grid-cols-2"}`}>
-            <div className="flex flex-col justify-center px-3 py-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Price</p>
-              <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">€{formatPriceValue(bookingTotal.total)}</p>
-              <p className="text-[10px] text-slate-400">{bookingTotal.durationLabel}</p>
-            </div>
-            <div className="flex flex-col justify-center px-3 py-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Rating</p>
-              <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">New</p>
-            </div>
-            {distanceKm != null && (
-              <div className="flex flex-col justify-center px-3 py-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Distance</p>
-                <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
-                  {distanceKm.toFixed(1)}<span className="text-[11px] font-medium text-slate-400"> km</span>
-                </p>
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
 
         {/* ── Choose your time ── */}
         <section className="border-b border-slate-200 bg-white px-5 py-6">
