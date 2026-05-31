@@ -7,10 +7,14 @@ import { useAuth } from "../../components/AuthProvider";
 import { requestPhoneVerification, verifyPhone } from "../../lib/api";
 import { TextField } from "../../components/ui";
 import { GoogleSignInButton } from "../../components/GoogleSignInButton";
+import { useToast } from "../../components/Toaster";
 
 export default function SignupPage() {
   const { signUp, signInWithGoogle, loading, error, token, setUser } = useAuth();
   const router = useRouter();
+  const { showToast } = useToast();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
@@ -24,7 +28,7 @@ export default function SignupPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
-      await signUp(email, password, phone || undefined);
+      await signUp(email, password, phone || undefined, firstName.trim() || undefined, lastName.trim() || undefined);
       if (phone.trim()) {
         const authToken = token ?? localStorage.getItem("auth_token") ?? undefined;
         setSmsLoading(true);
@@ -40,8 +44,8 @@ export default function SignupPage() {
           setSmsLoading(false);
         }
       } else {
-        setNotice("Account created. Check your email to verify your address.");
-        router.push("/dashboard");
+        showToast(firstName.trim() ? `Welcome, ${firstName.trim()}!` : "Account created — welcome!");
+        router.push("/");
       }
     } catch {
       // errors handled in context
@@ -52,7 +56,8 @@ export default function SignupPage() {
     setNotice(null);
     try {
       await signInWithGoogle(credential);
-      router.push("/dashboard");
+      showToast("Welcome to FreeSpace!");
+      router.push("/");
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Google sign-in failed. Try again.");
     }
@@ -157,6 +162,22 @@ export default function SignupPage() {
               </button>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <TextField
+                    required
+                    label="First name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    autoComplete="given-name"
+                  />
+                  <TextField
+                    required
+                    label="Last name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    autoComplete="family-name"
+                  />
+                </div>
                 <TextField
                   required
                   type="email"

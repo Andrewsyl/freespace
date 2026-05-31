@@ -8,6 +8,7 @@ import { useAuth } from "../../components/AuthProvider";
 import { requestVerification } from "../../lib/api";
 import { TextField } from "../../components/ui";
 import { GoogleSignInButton } from "../../components/GoogleSignInButton";
+import { useToast } from "../../components/Toaster";
 
 export default function LoginPage() {
   return (
@@ -18,18 +19,21 @@ export default function LoginPage() {
 }
 
 function LoginPageContent() {
-  const { signIn, signInWithGoogle, loading, error } = useAuth();
+  const { signIn, signInWithGoogle, loading, error, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { showToast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
 
-  const redirect = () => {
+  const redirect = (name?: string | null) => {
     const next = searchParams.get("next");
-    router.push((next || "/dashboard") as Route);
+    const greeting = name ? `Welcome back, ${name.split(" ")[0]}` : "Welcome back";
+    showToast(greeting);
+    router.push((next || "/") as Route);
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -37,7 +41,7 @@ function LoginPageContent() {
     setNotice(null);
     try {
       await signIn(email, password);
-      redirect();
+      redirect(user?.name);
     } catch {
       // error shown via AuthProvider
     }
@@ -47,7 +51,7 @@ function LoginPageContent() {
     setNotice(null);
     try {
       await signInWithGoogle(credential);
-      redirect();
+      redirect(user?.name);
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Google sign-in failed. Try again.");
     }

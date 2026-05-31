@@ -81,12 +81,20 @@ export function GoogleSignInButton({
   const handleClick = () => {
     if (busy) return;
     const gis = getGis();
-    if (!gis) { errorRef.current?.(); return; }
+    if (!gis) { setShowFallback(true); return; }
     setBusy(true);
     initGis(gis);
+
+    // Safety net: if the prompt callback never fires (FedCM, Safari, blocked),
+    // bail after 1.5 s and surface the standard GIS renderButton instead.
+    const bailout = setTimeout(() => {
+      setBusy(false);
+      setShowFallback(true);
+    }, 1500);
+
     gis.prompt((notification) => {
+      clearTimeout(bailout);
       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        // One Tap unavailable — surface the standard GIS button as fallback
         setBusy(false);
         setShowFallback(true);
       }

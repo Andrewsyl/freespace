@@ -723,12 +723,12 @@ export async function getHostEarningsSummary(token?: string) {
 export type AuthResponse = {
   token: string;
   refreshToken?: string;
-  user: { id: string; email: string; role?: string; emailVerified?: boolean; phone?: string | null; phoneVerified?: boolean };
+  user: { id: string; email: string; name?: string | null; role?: string; emailVerified?: boolean; phone?: string | null; phoneVerified?: boolean };
 };
 
 const LEGAL_VERSION = "2026-01-10";
 
-export async function register(email: string, password: string, phone?: string) {
+export async function register(email: string, password: string, phone?: string, firstName?: string, lastName?: string) {
   const res = await fetch(`${API_BASE}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -736,6 +736,8 @@ export async function register(email: string, password: string, phone?: string) 
       email,
       password,
       phone: phone || undefined,
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
       termsVersion: LEGAL_VERSION,
       privacyVersion: LEGAL_VERSION,
     }),

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { useAuth } from "./AuthProvider";
+import { useToast } from "./Toaster";
 
 function initials(email?: string | null) {
   if (!email) return "?";
@@ -12,9 +13,15 @@ function initials(email?: string | null) {
 
 export function SlimNav() {
   const { user, signOut } = useAuth();
+  const { showToast } = useToast();
   const [open, setOpen] = useState(false);
 
   const close = () => setOpen(false);
+
+  const handleSignOut = () => {
+    signOut();
+    showToast("You've been signed out", "info");
+  };
 
   return (
     <>
@@ -33,7 +40,7 @@ export function SlimNav() {
           {user ? (
             <button
               type="button"
-              onClick={signOut}
+              onClick={handleSignOut}
               className="ml-2 rounded-full px-3 py-1.5 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
             >
               Log out
@@ -180,7 +187,7 @@ export function SlimNav() {
                 {user ? (
                   <button
                     type="button"
-                    onClick={() => { close(); signOut(); }}
+                    onClick={() => { close(); handleSignOut(); }}
                     className="flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-[15px] font-semibold text-rose-600 transition hover:bg-rose-50"
                   >
                     <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
