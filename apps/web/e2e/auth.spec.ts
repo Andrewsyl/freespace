@@ -24,7 +24,7 @@ test("reset password request flow shows success notice", async ({ page }) => {
   await page.goto("/reset-password");
 
   await expect(page.getByRole("heading", { name: "Reset password" })).toBeVisible();
-  await page.getByLabel("Email address").fill("driver@example.com");
+  await page.getByPlaceholder("you@example.com").fill("driver@example.com");
   await page.getByRole("button", { name: "Send reset link" }).click();
 
   await expect(page.getByText("Check your inbox")).toBeVisible();
@@ -42,8 +42,8 @@ test("reset password form submits a new password", async ({ page }) => {
 
   await page.goto("/reset-password?token=test-reset-token-12345");
 
-  await page.getByLabel("New password").fill("password123");
-  await page.getByLabel("Confirm password").fill("password123");
+  await page.getByPlaceholder("••••••••").first().fill("password123");
+  await page.getByPlaceholder("••••••••").nth(1).fill("password123");
   await page.getByRole("button", { name: "Set new password" }).click();
 
   await expect(page).toHaveURL(/\/login$/);
