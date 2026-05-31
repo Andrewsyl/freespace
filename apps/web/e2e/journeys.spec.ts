@@ -85,7 +85,7 @@ test("signed-in driver can start a booking checkout", async ({ page, baseURL }) 
   await page.goto("/checkout/listing-1");
 
   await expect(page.getByRole("heading", { name: "Mountjoy Square Parking" })).toBeVisible();
-  await expect(page.getByText("Parking location")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your session" })).toBeVisible();
 
   await page.evaluate(() => {
     const form = document.getElementById("checkout-form") as HTMLFormElement | null;

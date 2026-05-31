@@ -24,9 +24,11 @@ rm -rf apps/web/.next
 
 echo "pre-push: running web e2e"
 e2e_log="$(mktemp)"
-if yarn test:web:e2e:local 2>&1 | tee "$e2e_log"; then
+if yarn test:web:e2e:local >"$e2e_log" 2>&1; then
+  cat "$e2e_log"
   rm -f "$e2e_log"
 else
+  cat "$e2e_log"
   if grep -q 'MachPortRendezvousServer.*Permission denied (1100)' "$e2e_log"; then
     echo "pre-push: skipping local web e2e because Chromium launch is blocked by this macOS session"
     rm -f "$e2e_log"
