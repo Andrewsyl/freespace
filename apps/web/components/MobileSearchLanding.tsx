@@ -454,6 +454,30 @@ export function MobileSearchLanding({
 
 // ── LocationSheet ─────────────────────────────────────────────────────────────
 
+const RECENT_KEY = "fs_recent_locations";
+const MAX_RECENT = 5;
+
+type RecentPlace = { address: string; lat: number; lng: number };
+
+function loadRecents(): RecentPlace[] {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
+  } catch { return []; }
+}
+
+function saveRecent(place: RecentPlace) {
+  try {
+    const existing = loadRecents().filter((r) => r.address !== place.address);
+    localStorage.setItem(RECENT_KEY, JSON.stringify([place, ...existing].slice(0, MAX_RECENT)));
+  } catch {}
+}
+
+function removeRecent(address: string) {
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(loadRecents().filter((r) => r.address !== address)));
+  } catch {}
+}
+
 function LocationSheet({
   value,
   onSelect,
@@ -470,6 +494,9 @@ function LocationSheet({
 
   const [query, setQuery] = useState(value || "");
   const [predictions, setPredictions] = useState<any[]>([]);
+  const [recents, setRecents] = useState<RecentPlace[]>([]);
+
+  useEffect(() => { setRecents(loadRecents()); }, []);
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 60);
@@ -497,20 +524,25 @@ function LocationSheet({
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [query]);
 
+  const handleSelect = (place: PlaceResult) => {
+    saveRecent(place);
+    onSelect(place);
+  };
+
   const pickPrediction = (pred: any) => {
     if (plcRef.current) {
       plcRef.current.getDetails(
         { placeId: pred.place_id, fields: ["geometry", "formatted_address"] },
         (place: any, status: string) => {
           if (status === "OK" && place.geometry?.location) {
-            onSelect({ address: place.formatted_address ?? pred.description, lat: place.geometry.location.lat(), lng: place.geometry.location.lng() });
+            handleSelect({ address: place.formatted_address ?? pred.description, lat: place.geometry.location.lat(), lng: place.geometry.location.lng() });
           } else {
-            onSelect({ address: pred.description, lat: 53.3498, lng: -6.2603 });
+            handleSelect({ address: pred.description, lat: 53.3498, lng: -6.2603 });
           }
         },
       );
     } else {
-      onSelect({ address: pred.description, lat: 53.3498, lng: -6.2603 });
+      handleSelect({ address: pred.description, lat: 53.3498, lng: -6.2603 });
     }
   };
 
@@ -572,6 +604,39 @@ function LocationSheet({
       <div className="flex-1 overflow-y-auto">
         {showPopular ? (
           <>
+            {recents.length > 0 && (
+              <>
+                <p className="px-5 pb-2 pt-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#9A9A9A]">
+                  Recent searches
+                </p>
+                {recents.map((r) => (
+                  <div key={r.address} className="flex items-center border-b border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(r)}
+                      className="flex flex-1 items-center gap-4 px-5 py-4 text-left transition active:bg-slate-50"
+                    >
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100">
+                        <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                        </svg>
+                      </div>
+                      <p className="flex-1 truncate text-[15px] font-semibold text-[#111]">{r.address}</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { removeRecent(r.address); setRecents(loadRecents()); }}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center text-[#CACACA] transition active:text-slate-500"
+                      aria-label="Remove"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </>
+            )}
             <p className="px-5 pb-2 pt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#9A9A9A]">
               Popular near you
             </p>
@@ -579,7 +644,7 @@ function LocationSheet({
               <button
                 key={dest.name}
                 type="button"
-                onClick={() => onSelect({ address: dest.name, lat: dest.lat, lng: dest.lng })}
+                onClick={() => handleSelect({ address: dest.name, lat: dest.lat, lng: dest.lng })}
                 className="flex w-full items-center gap-4 border-b border-slate-100 px-5 py-4 text-left transition active:bg-slate-50"
               >
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[20px] leading-none">
@@ -622,7 +687,7 @@ function LocationSheet({
         ) : (
           <button
             type="button"
-            onClick={() => onSelect({ address: query.trim(), lat: 53.3498, lng: -6.2603 })}
+            onClick={() => handleSelect({ address: query.trim(), lat: 53.3498, lng: -6.2603 })}
             className="flex w-full items-center gap-4 px-5 py-4 text-left transition active:bg-slate-50"
           >
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100">
