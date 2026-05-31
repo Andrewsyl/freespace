@@ -627,14 +627,24 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               <Text style={styles.sectionTitle}>Payment method</Text>
               <View style={styles.paymentOptions}>
                 <View style={styles.paymentOption}>
-                  <Text style={styles.paymentOptionLabel}>
-                    {Platform.OS === "ios" ? "Apple Pay" : "Google Pay"}
-                  </Text>
-                  <Text style={styles.paymentOptionSub}>Fast checkout</Text>
+                  <Ionicons
+                    name={Platform.OS === "ios" ? "logo-apple" : "logo-google"}
+                    size={18}
+                    color={FG}
+                  />
+                  <View style={styles.paymentOptionText}>
+                    <Text style={styles.paymentOptionLabel}>
+                      {Platform.OS === "ios" ? "Apple Pay" : "Google Pay"}
+                    </Text>
+                    <Text style={styles.paymentOptionSub}>Fast checkout</Text>
+                  </View>
                 </View>
                 <View style={[styles.paymentOption, styles.paymentOptionBorder]}>
-                  <Text style={styles.paymentOptionLabel}>Card</Text>
-                  <Text style={styles.paymentOptionSub}>Stripe</Text>
+                  <Ionicons name="card-outline" size={18} color={FG} />
+                  <View style={styles.paymentOptionText}>
+                    <Text style={styles.paymentOptionLabel}>Card</Text>
+                    <Text style={styles.paymentOptionSub}>Stripe</Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -859,6 +869,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 14,
     backgroundColor: "#ffffff",
   },
+  paymentOptionText: { flex: 1, marginLeft: 12 },
   paymentOptionBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
   paymentOptionLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG },
   paymentOptionSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: SUBTLE },

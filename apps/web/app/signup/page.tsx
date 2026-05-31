@@ -8,6 +8,7 @@ import { requestPhoneVerification, verifyPhone } from "../../lib/api";
 import { TextField } from "../../components/ui";
 import { GoogleSignInButton } from "../../components/GoogleSignInButton";
 import { useToast } from "../../components/Toaster";
+import { SlimNav } from "../../components/SlimNav";
 
 export default function SignupPage() {
   return (
@@ -74,7 +75,9 @@ function SignupPageContent() {
   };
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-white px-5 pb-10 pt-12">
+    <div className="flex min-h-[100dvh] flex-col bg-white">
+      <SlimNav />
+      <div className="flex flex-1 flex-col px-5 pb-10 pt-8">
       <div className="mx-auto w-full max-w-sm">
 
         {/* Logo + heading */}
@@ -242,6 +245,7 @@ function SignupPageContent() {
           </Link>
         </p>
 
+      </div>
       </div>
     </div>
   );

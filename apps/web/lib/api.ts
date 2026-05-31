@@ -724,8 +724,19 @@ export async function getHostEarningsSummary(token?: string) {
 export type AuthResponse = {
   token: string;
   refreshToken?: string;
-  user: { id: string; email: string; name?: string | null; role?: string; emailVerified?: boolean; phone?: string | null; phoneVerified?: boolean };
+  user: { id: string; email: string; name?: string | null; role?: string; emailVerified?: boolean; phone?: string | null; phoneVerified?: boolean; vehiclePlate?: string | null; vehicleMake?: string | null; vehicleType?: string | null; vehicleColor?: string | null };
 };
+
+export async function updateMe(token: string, payload: { vehiclePlate?: string | null; vehicleMake?: string | null; vehicleType?: string | null; vehicleColor?: string | null }) {
+  const res = await fetch(`${API_BASE}/api/auth/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(payload),
+  });
+  const { data, error } = await handleResponse<{ user: AuthResponse["user"] }>(res);
+  if (error) throw new Error(error);
+  return data!;
+}
 
 const LEGAL_VERSION = "2026-01-10";
 

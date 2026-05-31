@@ -18,7 +18,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "google">("card");
-  const [vehiclePlate, setVehiclePlate] = useState("");
+  const [vehiclePlate, setVehiclePlate] = useState(() => user?.vehiclePlate ?? "");
 
   const defaultStart = useMemo(() => {
     const now = new Date();
@@ -69,6 +69,10 @@ export default function CheckoutPage() {
       .then(setListing)
       .catch(() => setError("Listing not found"));
   }, [params?.id]);
+
+  useEffect(() => {
+    if (user?.vehiclePlate) setVehiclePlate(user.vehiclePlate);
+  }, [user?.vehiclePlate]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -193,20 +197,32 @@ export default function CheckoutPage() {
 
         {/* ── Vehicle ── */}
         <section className="border-b border-slate-200 px-5 py-6">
-          <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Vehicle</h2>
-          <div className="mt-4 flex overflow-hidden rounded-lg border-2 border-slate-900 shadow-sm">
-            <div className="w-9 shrink-0 bg-[#003399]" />
-            <input
-              type="text"
-              value={vehiclePlate}
-              onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())}
-              placeholder="Enter reg plate"
-              className="flex-1 bg-[#FAFAF8] px-4 py-3.5 text-[22px] font-bold uppercase tracking-[0.1em] text-slate-900 outline-none placeholder:text-[15px] placeholder:font-normal placeholder:normal-case placeholder:tracking-normal placeholder:text-slate-400"
-              maxLength={12}
-              spellCheck={false}
-              autoComplete="off"
-            />
+          <div className="flex items-center justify-between">
+            <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Vehicle</h2>
+            <Link
+              href={`/dashboard/vehicle?next=${encodeURIComponent(`/checkout/${params?.id}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`)}`}
+              className="text-[13px] font-semibold text-brand-600 active:opacity-70"
+            >
+              {vehiclePlate ? "Edit" : "Add"}
+            </Link>
           </div>
+          {vehiclePlate ? (
+            <div className="mt-4 flex overflow-hidden rounded-lg border-2 border-slate-900 shadow-sm">
+              <div className="w-9 shrink-0 bg-[#003399]" />
+              <div className="flex flex-1 items-center bg-[#FAFAF8] px-4 py-3.5">
+                <span className="text-[20px] font-bold uppercase tracking-[0.1em] text-slate-900">
+                  {vehiclePlate}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <Link
+              href={`/dashboard/vehicle?next=${encodeURIComponent(`/checkout/${params?.id}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`)}`}
+              className="mt-4 flex h-14 w-full items-center justify-center rounded-lg border-2 border-dashed border-slate-200 text-[14px] font-semibold text-slate-400 active:bg-slate-50"
+            >
+              + Add your registration plate
+            </Link>
+          )}
         </section>
 
         {/* ── Price breakdown ── */}

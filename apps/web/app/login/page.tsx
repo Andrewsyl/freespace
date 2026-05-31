@@ -9,6 +9,7 @@ import { requestVerification } from "../../lib/api";
 import { TextField } from "../../components/ui";
 import { GoogleSignInButton } from "../../components/GoogleSignInButton";
 import { useToast } from "../../components/Toaster";
+import { SlimNav } from "../../components/SlimNav";
 
 export default function LoginPage() {
   return (
@@ -58,7 +59,9 @@ function LoginPageContent() {
   };
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-white px-5 pb-10 pt-12">
+    <div className="flex min-h-[100dvh] flex-col bg-white">
+      <SlimNav />
+      <div className="flex flex-1 flex-col px-5 pb-10 pt-8">
       <div className="mx-auto w-full max-w-sm">
 
         {/* Logo + heading */}
@@ -167,6 +170,7 @@ function LoginPageContent() {
           </button>
         </div>
 
+      </div>
       </div>
     </div>
   );
