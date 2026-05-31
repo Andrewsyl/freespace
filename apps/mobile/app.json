@@ -48,6 +48,25 @@
     "android": {
       "userInterfaceStyle": "light",
       "package": "ie.freespace.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "freespace.ie",
+              "pathPrefix": "/verify-email"
+            },
+            {
+              "scheme": "https",
+              "host": "freespace.ie",
+              "pathPrefix": "/reset-password"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "usesCleartextTraffic": true,
       "compileSdkVersion": 35,
       "targetSdkVersion": 35,
@@ -75,6 +94,9 @@
     "ios": {
       "bundleIdentifier": "com.andrewsyl.carparking",
       "jsEngine": "jsc",
+      "associatedDomains": [
+        "applinks:freespace.ie"
+      ],
       "config": {
         "googleMapsApiKey": "AIzaSyC1h1NFLFz7SPauw85Udh0O1CBlN5bqOek"
       }

@@ -119,7 +119,8 @@ function buildVerificationUrl(token: string) {
   if (process.env.NODE_ENV !== "production" && !process.env.PUBLIC_API_BASE_URL) {
     return buildVerificationAppUrl(token);
   }
-  return `${getPublicApiBaseUrl()}/api/auth/verify-email?token=${token}`;
+  const webBase = (process.env.WEB_BASE_URL ?? "https://freespace.ie").replace(/\/$/, "");
+  return `${webBase}/verify-email?token=${encodeURIComponent(token)}`;
 }
 
 function buildVerificationAppUrl(token: string, apiBase = process.env.PUBLIC_API_BASE_URL?.replace(/\/$/, "")) {
@@ -143,7 +144,8 @@ function buildPasswordResetUrl(token: string) {
   if (process.env.NODE_ENV !== "production" && !process.env.PUBLIC_API_BASE_URL) {
     return buildPasswordResetAppUrl(token);
   }
-  return `${getPublicApiBaseUrl()}/api/auth/reset-password?token=${encodeURIComponent(token)}`;
+  const webBase = (process.env.WEB_BASE_URL ?? "https://freespace.ie").replace(/\/$/, "");
+  return `${webBase}/reset-password?token=${encodeURIComponent(token)}`;
 }
 
 function buildPasswordResetAppUrl(token: string, apiBase = process.env.PUBLIC_API_BASE_URL?.replace(/\/$/, "")) {
