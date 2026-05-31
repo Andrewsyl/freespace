@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../components/AuthProvider";
 import { requestPhoneVerification, verifyPhone } from "../../lib/api";
@@ -10,9 +10,19 @@ import { GoogleSignInButton } from "../../components/GoogleSignInButton";
 import { useToast } from "../../components/Toaster";
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-md px-4 py-10 text-sm text-slate-600">Loading…</div>}>
+      <SignupPageContent />
+    </Suspense>
+  );
+}
+
+function SignupPageContent() {
   const { signUp, signInWithGoogle, loading, error, token, setUser } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
+  const nextUrl = searchParams?.get("next") || "/";
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -39,13 +49,13 @@ export default function SignupPage() {
         } catch (err) {
           const msg = err instanceof Error ? err.message : "Could not send SMS verification.";
           setNotice(msg);
-          router.push("/dashboard");
+          router.push(nextUrl as any);
         } finally {
           setSmsLoading(false);
         }
       } else {
         showToast(firstName.trim() ? `Welcome, ${firstName.trim()}!` : "Account created — welcome!");
-        router.push("/");
+        router.push(nextUrl as any);
       }
     } catch {
       // errors handled in context
@@ -57,7 +67,7 @@ export default function SignupPage() {
     try {
       await signInWithGoogle(credential);
       showToast("Welcome to FreeSpace!");
-      router.push("/");
+      router.push(nextUrl as any);
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Google sign-in failed. Try again.");
     }
@@ -101,7 +111,7 @@ export default function SignupPage() {
                   const authToken = token ?? localStorage.getItem("auth_token") ?? undefined;
                   const res = await verifyPhone(smsCode.trim(), authToken ?? undefined);
                   if (res.user) setUser(res.user);
-                  router.push("/dashboard");
+                  router.push(nextUrl as any);
                 } catch (err) {
                   const msg = err instanceof Error ? err.message : "Verification failed.";
                   setNotice(msg);

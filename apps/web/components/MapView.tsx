@@ -247,7 +247,7 @@ export function MapView({
 
     const signature = listings
       .filter((l) => typeof l.latitude === "number" && typeof l.longitude === "number")
-      .map((l) => `${l.id}-${l.latitude}-${l.longitude}-${priceForListing ? priceForListing(l) : priceMode === "monthly" ? (l.pricePerMonth ?? l.pricePerDay) : l.pricePerDay}-${selectedListingId === l.id ? "selected" : "default"}-${priceKey ?? "base"}`)
+      .map((l) => `${l.id}-${l.latitude}-${l.longitude}-${priceForListing ? priceForListing(l) : priceMode === "monthly" ? (l.pricePerMonth ?? l.pricePerDay) : l.pricePerDay}-${priceKey ?? "base"}`)
       .join("|");
 
     if (signature === markerSignatureRef.current) return;

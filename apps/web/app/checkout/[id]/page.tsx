@@ -113,16 +113,19 @@ export default function CheckoutPage() {
   }
 
   if (!user) {
+    const currentPath = `/checkout/${params?.id}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`;
+    const loginHref = `/login?next=${encodeURIComponent(currentPath)}`;
+    const signupHref = `/signup?next=${encodeURIComponent(currentPath)}`;
     return (
       <div className="min-h-screen bg-[#f5f7fb]">
         <SlimNav />
         <div className="mx-auto max-w-2xl space-y-4 px-4 py-10">
           <p className="text-sm text-slate-700">Sign in to start a booking.</p>
           <div className="flex gap-2 text-sm">
-            <Link href="/login" className="btn-primary">
+            <Link href={loginHref as any} className="btn-primary">
               Sign in
             </Link>
-            <Link href="/signup" className="rounded-lg px-3 py-2 font-semibold text-slate-700 hover:bg-slate-100">
+            <Link href={signupHref as any} className="rounded-lg px-3 py-2 font-semibold text-slate-700 hover:bg-slate-100">
               Create account
             </Link>
           </div>

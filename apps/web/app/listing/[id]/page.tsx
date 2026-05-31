@@ -68,6 +68,8 @@ export default async function ListingDetailPage({
     startTime?: string;
     endDate?: string;
     endTime?: string;
+    fromLat?: string;
+    fromLng?: string;
   }>;
 }) {
   const { id } = await params;
@@ -83,7 +85,7 @@ export default async function ListingDetailPage({
     distanceKm: 0,
     availability: listing.availability,
     pricePerDay: listing.pricePerDay,
-    rating: listing.rating ?? 5,
+    rating: listing.rating ?? undefined,
     ratingCount: listing.ratingCount ?? 0,
   };
 
@@ -97,8 +99,20 @@ export default async function ListingDetailPage({
   const images = listing.imageUrls && listing.imageUrls.length ? listing.imageUrls : [fallback];
   const unitPrice = getListingUnitPrice(listing);
   const hasCoords = listing.latitude != null && listing.longitude != null;
-  const rating = listing.rating ?? 5;
-  const ratingCount = listing.ratingCount ?? 0;
+  const fromLat = resolvedSearchParams.fromLat ? Number(resolvedSearchParams.fromLat) : null;
+  const fromLng = resolvedSearchParams.fromLng ? Number(resolvedSearchParams.fromLng) : null;
+  const distanceKm = (fromLat != null && fromLng != null && hasCoords)
+    ? (() => {
+        const toRad = (v: number) => (v * Math.PI) / 180;
+        const R = 6371;
+        const dLat = toRad(listing.latitude! - fromLat);
+        const dLng = toRad(listing.longitude! - fromLng);
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(fromLat)) * Math.cos(toRad(listing.latitude!)) * Math.sin(dLng / 2) ** 2;
+        return Math.round(2 * R * Math.asin(Math.sqrt(a)) * 10) / 10;
+      })()
+    : null;
+  const rating = listing.rating ?? null;
+  const ratingCount = reviews.length;
   const streetViewHref = hasCoords
     ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${listing.latitude},${listing.longitude}`
     : undefined;
@@ -124,6 +138,7 @@ export default async function ListingDetailPage({
           reviews={reviews as any}
           fallbackImage={fallback}
           initialBooking={initialBooking}
+          distanceKm={distanceKm ?? undefined}
         />
       </div>
 
@@ -152,13 +167,17 @@ export default async function ListingDetailPage({
                 {listing.title}
               </h1>
               <p className="mt-1 text-[14px] text-slate-500">{listing.address}</p>
-              <div className="mt-2 flex items-center gap-2">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <StarFill key={n} filled={n <= Math.round(rating)} />
-                ))}
-                <span className="text-[13px] font-semibold text-slate-800">{rating.toFixed(1)}</span>
-                <span className="text-[13px] text-slate-400">· {ratingCount} bookings</span>
-              </div>
+              {ratingCount > 0 && rating != null ? (
+                <div className="mt-2 flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <StarFill key={n} filled={n <= Math.round(rating)} />
+                  ))}
+                  <span className="text-[13px] font-semibold text-slate-800">{rating.toFixed(1)}</span>
+                  <span className="text-[13px] text-slate-400">· {ratingCount} reviews</span>
+                </div>
+              ) : (
+                <p className="mt-1.5 text-[13px] text-slate-500">New listing</p>
+              )}
             </div>
 
             {/* Secure booking badge */}
@@ -356,18 +375,6 @@ export default async function ListingDetailPage({
                       Open Street View
                     </a>
                   )}
-                  {/* Important notice box */}
-                  <div className="mt-5 flex items-start gap-3 rounded-lg border border-brand-100 bg-brand-50/60 p-4">
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100">
-                      <ShieldCheckIcon className="h-4 w-4 text-brand-600" />
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-semibold text-slate-900">Important notice:</p>
-                      <p className="mt-0.5 text-[13px] leading-6 text-slate-600">
-                        The full address of the parking space will be provided following a successful booking.
-                      </p>
-                    </div>
-                  </div>
                 </section>
 
                 {/* Included features */}

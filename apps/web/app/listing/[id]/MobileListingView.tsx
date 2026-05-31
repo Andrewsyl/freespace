@@ -18,6 +18,7 @@ import type { Listing } from "../../../components/ListingCard";
 import { ListingMap } from "./MapSection";
 import { trackEvent } from "../../../lib/telemetry";
 import { SearchDateTimePicker } from "../../../components/SearchForm";
+import { calculateListingTotal, formatPriceValue } from "../../../lib/pricing";
 
 type Review = {
   id: string;
@@ -56,6 +57,7 @@ export function MobileListingView({
   areaLabel,
   reviews,
   fallbackImage,
+  distanceKm,
   initialBooking,
 }: {
   listing: Listing & { amenities?: string[]; accessCode?: string | null };
@@ -63,6 +65,7 @@ export function MobileListingView({
   areaLabel: string;
   reviews: Review[];
   fallbackImage: string;
+  distanceKm?: number;
   initialBooking?: {
     startDate?: string;
     startTime?: string;
@@ -95,6 +98,7 @@ export function MobileListingView({
   const toTimeStr = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 
   const href = `/checkout/${listing.id}?date=${toDateStr(startAt)}&startTime=${toTimeStr(startAt)}&endDate=${toDateStr(endAt)}&endTime=${toTimeStr(endAt)}`;
+  const bookingTotal = useMemo(() => calculateListingTotal(listing, startAt, endAt), [listing, startAt, endAt]);
   const amenities = listing.amenities ?? [];
   const images = useMemo(
     () => listing.imageUrls ?? listing.image_urls ?? [fallbackImage],
@@ -136,13 +140,13 @@ export function MobileListingView({
           </button>
 
           {/* Rating badge */}
-          {(listing.rating ?? 0) > 0 && (
+          {listing.rating != null && reviews.length > 0 && (
             <div
               className="absolute right-4 rounded-full bg-black/70 px-3 py-1 backdrop-blur-sm"
               style={{ top: "calc(env(safe-area-inset-top) + 14px)" }}
             >
               <span className="text-[13px] font-bold text-white">
-                ★ {(listing.rating ?? 0).toFixed(1)}
+                ★ {listing.rating.toFixed(1)}
               </span>
             </div>
           )}
@@ -163,28 +167,54 @@ export function MobileListingView({
         </div>
 
         {/* ── Quick stats bar ── */}
-        <div className="grid grid-cols-3 border-b border-slate-200 bg-white">
-          <div className="border-r border-slate-200 px-4 py-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Price</p>
-            <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
-              {listing.pricePerDay ? `€${listing.pricePerDay}` : "—"}
-              <span className="text-[11px] font-medium text-slate-400">/day</span>
-            </p>
+        {reviews.length > 0 ? (
+          <div className={`grid divide-x divide-slate-200 border-b border-slate-200 bg-white ${distanceKm != null ? "grid-cols-4" : "grid-cols-3"}`}>
+            <div className="flex flex-col justify-center px-3 py-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Price</p>
+              <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">€{formatPriceValue(bookingTotal.total)}</p>
+              <p className="text-[10px] text-slate-400">{bookingTotal.durationLabel}</p>
+            </div>
+            <div className="flex flex-col justify-center px-3 py-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Rating</p>
+              <p className="mt-1 flex items-center gap-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
+                <StarIcon className="h-4 w-4 text-amber-400" />
+                {listing.rating?.toFixed(1)}
+              </p>
+            </div>
+            <div className="flex flex-col justify-center px-3 py-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Reviews</p>
+              <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">{reviews.length}</p>
+            </div>
+            {distanceKm != null && (
+              <div className="flex flex-col justify-center px-3 py-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Distance</p>
+                <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
+                  {distanceKm.toFixed(1)}<span className="text-[11px] font-medium text-slate-400"> km</span>
+                </p>
+              </div>
+            )}
           </div>
-          <div className="border-r border-slate-200 px-4 py-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Rating</p>
-            <p className="mt-1 flex items-center gap-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
-              <StarIcon className="h-4 w-4 text-amber-400" />
-              {listing.rating?.toFixed(1) ?? "5.0"}
-            </p>
+        ) : (
+          <div className={`grid divide-x divide-slate-200 border-b border-slate-200 bg-white ${distanceKm != null ? "grid-cols-3" : "grid-cols-2"}`}>
+            <div className="flex flex-col justify-center px-3 py-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Price</p>
+              <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">€{formatPriceValue(bookingTotal.total)}</p>
+              <p className="text-[10px] text-slate-400">{bookingTotal.durationLabel}</p>
+            </div>
+            <div className="flex flex-col justify-center px-3 py-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Rating</p>
+              <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">New</p>
+            </div>
+            {distanceKm != null && (
+              <div className="flex flex-col justify-center px-3 py-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Distance</p>
+                <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
+                  {distanceKm.toFixed(1)}<span className="text-[11px] font-medium text-slate-400"> km</span>
+                </p>
+              </div>
+            )}
           </div>
-          <div className="px-4 py-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Reviews</p>
-            <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
-              {listing.ratingCount ?? 0}
-            </p>
-          </div>
-        </div>
+        )}
 
         {/* ── Choose your time ── */}
         <section className="border-b border-slate-200 bg-white px-5 py-6">
@@ -230,12 +260,6 @@ export function MobileListingView({
             Space overview
           </h2>
           <p className="mt-4 text-[15px] leading-7 text-slate-600">{listing.availability}</p>
-          <div className="mt-4 rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3">
-            <p className="text-sm font-semibold text-slate-900">Important notice</p>
-            <p className="mt-1 text-[13px] leading-6 text-slate-500">
-              Access details are shared after booking confirmation.
-            </p>
-          </div>
         </section>
 
         {/* ── Features ── */}
@@ -267,7 +291,7 @@ export function MobileListingView({
         {listing.latitude != null && listing.longitude != null && (
           <section className="border-b border-slate-200 bg-white px-5 py-6">
             <h2 className="text-[20px] font-bold leading-tight tracking-[-0.04em] text-slate-950">
-              The local area
+              Location
             </h2>
             <div className="mt-4 h-52 overflow-hidden rounded-xl">
               <ListingMap
@@ -325,10 +349,10 @@ export function MobileListingView({
         <div className="flex items-center gap-4">
           <div className="shrink-0">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-              Per day
+              {bookingTotal.durationLabel}
             </p>
             <p className="text-[22px] font-extrabold tracking-tight text-slate-900">
-              {listing.pricePerDay ? `€${listing.pricePerDay}` : "—"}
+              €{formatPriceValue(bookingTotal.total)}
             </p>
           </div>
           <Link

@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AnimatePresence,
   motion,
-  useMotionValue,
-  useDragControls,
-  animate,
 } from "framer-motion";
-import type { PanInfo } from "framer-motion";
 import * as Select from "@radix-ui/react-select";
 import { SearchForm } from "./SearchForm";
 import { MapView } from "./MapView";
@@ -123,10 +119,6 @@ function buildSearchPriceDisplay(
   };
 }
 
-// ── Bottom sheet snap ────────────────────────────────────────────────────────
-
-const PEEK_H = 92; // px of sheet visible in peek state (above the nav bar)
-
 // ── Main component ───────────────────────────────────────────────────────────
 
 export function MobileSearchLayout({
@@ -158,8 +150,10 @@ export function MobileSearchLayout({
     params.set("endTime", filters.endTime);
     if (filters.mode) params.set("mode", filters.mode);
     if (filters.monthlyPlan) params.set("monthlyPlan", filters.monthlyPlan);
+    if (filters.latitude != null) params.set("fromLat", String(filters.latitude));
+    if (filters.longitude != null) params.set("fromLng", String(filters.longitude));
     return (listingId: string) => `/listing/${listingId}?${params.toString()}`;
-  }, [filters.date, filters.endDate, filters.endTime, filters.mode, filters.monthlyPlan, filters.startTime]);
+  }, [filters.date, filters.endDate, filters.endTime, filters.latitude, filters.longitude, filters.mode, filters.monthlyPlan, filters.startTime]);
   const getSearchPrice = useMemo(
     () => (listing: Listing) => buildSearchPriceDisplay(listing, filters, searchStart, searchEnd),
     [filters, searchEnd, searchStart]
@@ -168,12 +162,7 @@ export function MobileSearchLayout({
   const [pickerOpen, setPickerOpen] = useState<"start" | "end" | null>(null);
   const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
   const [sortMode, setSortMode] = useState("recommended");
-
-  // Bottom sheet drag
-  const sheetRef = useRef<HTMLDivElement>(null);
-  const dragControls = useDragControls();
-  const sheetY = useMotionValue(0);
-  const [sheetState, setSheetState] = useState<"peek" | "half" | "full">("peek");
+  const [viewMode, setViewMode] = useState<"map" | "list">("map");
 
   const selectedListing = selectedListingId
     ? results.find((l) => l.id === selectedListingId) ?? null
@@ -196,252 +185,209 @@ export function MobileSearchLayout({
     filters.endTime ?? formatTime(fallbackEnd),
   );
 
-  // Initialize sheet position on mount
-  useEffect(() => {
-    const h = sheetRef.current?.clientHeight ?? 600;
-    sheetY.set(h - PEEK_H);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // When a listing is selected, collapse sheet so card is visible
-  useEffect(() => {
-    if (selectedListing) snapTo("peek");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedListingId]);
-
-  function snapTo(state: "peek" | "half" | "full") {
-    const h = sheetRef.current?.clientHeight ?? 600;
-    const targets = { peek: h - PEEK_H, half: h * 0.5, full: 0 };
-    animate(sheetY, targets[state], { type: "spring", damping: 32, stiffness: 320 });
-    setSheetState(state);
+  function switchToList() {
+    setViewMode("list");
+    onMarkerSelect("");
   }
 
-  function handleDragEnd(_: unknown, info: PanInfo) {
-    const h = sheetRef.current?.clientHeight ?? 600;
-    const current = sheetY.get();
-    const velocity = info.velocity.y;
-    const PEEK_Y = h - PEEK_H;
-    const HALF_Y = h * 0.5;
-
-    let target: "peek" | "half" | "full";
-    if (velocity < -500) {
-      target = current < HALF_Y ? "full" : "half";
-    } else if (velocity > 500) {
-      target = current > HALF_Y ? "peek" : "half";
-    } else {
-      const dists = [
-        { s: "peek" as const, d: Math.abs(current - PEEK_Y) },
-        { s: "half" as const, d: Math.abs(current - HALF_Y) },
-        { s: "full" as const, d: Math.abs(current - 0) },
-      ];
-      target = dists.sort((a, b) => a.d - b.d)[0].s;
-    }
-    snapTo(target);
+  function switchToMap() {
+    setViewMode("map");
   }
 
   return (
     <>
     <SlimNav />
-    <div className="mobile-search relative overflow-hidden bg-slate-900" style={{ height: "calc(100dvh - 64px)" }}>
-      {/* ── Full-screen map ── */}
-      <motion.div
-        className="absolute inset-0"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.35 }}
-      >
-        <MapView
-          listings={results}
-          center={center}
-          initialZoom={16}
-          maxZoom={17}
-          minFitZoom={16}
-          controlsPosition="bottom-right"
-          controlsOffset={{ bottom: 160, right: 12 }}
-          showCenterPin
-          centerPinRadius={500}
-          priceMode={filters.mode ?? "daily"}
-          priceForListing={(listing) => getSearchPrice(listing).sortValue}
-          priceKey={`${filters.mode ?? "daily"}-${filters.date}-${filters.startTime}-${filters.endDate ?? filters.date}-${filters.endTime}`}
-          selectedListingId={selectedListingId ?? undefined}
-          onSelectListing={onMarkerSelect}
-          onMarkerClick={onMarkerClick}
-          disableAutoFit={lockViewport}
-          onBoundsChanged={onBoundsChanged}
-        />
-      </motion.div>
+    <div className="mobile-search relative overflow-hidden" style={{ height: "calc(100dvh - 64px)" }}>
 
-      {/* ── Top bar ── */}
-      <div className="pointer-events-none absolute left-0 right-0 top-0 z-20 px-3 pt-2">
-        <div className="pointer-events-auto flex items-center">
-          {/* Search + date pill */}
-          <button
-            type="button"
-            onClick={() => setSearchPanelOpen(true)}
-            className="flex h-12 flex-1 items-center gap-3 rounded-2xl bg-white px-4 shadow-[0_4px_16px_rgba(15,23,42,0.16)]"
+      {/* ── Map View ── */}
+      {viewMode === "map" && (
+        <>
+          {/* Full-screen map */}
+          <motion.div
+            className="absolute inset-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.35 }}
           >
-            <SearchIcon />
-            <div className="min-w-0 flex-1 text-left">
-              <p className="truncate text-[13.5px] font-semibold leading-tight text-slate-900">
-                {filters.location || "Where are you parking?"}
-              </p>
-              <p className="text-[11px] leading-tight text-slate-400">
-                {formatDate(startAt)} · {formatTime(startAt)} → {formatTime(endAt)}
-              </p>
-            </div>
-            <svg
-              className="h-3.5 w-3.5 shrink-0 text-slate-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-        </div>
-      </div>
+            <MapView
+              listings={results}
+              center={center}
+              initialZoom={16}
+              maxZoom={17}
+              minFitZoom={16}
+              controlsPosition="bottom-right"
+              controlsOffset={{ bottom: 80, right: 12 }}
+              showCenterPin
+              centerPinRadius={500}
+              priceMode={filters.mode ?? "daily"}
+              priceForListing={(listing) => getSearchPrice(listing).sortValue}
+              priceKey={`${filters.mode ?? "daily"}-${filters.date}-${filters.startTime}-${filters.endDate ?? filters.date}-${filters.endTime}`}
+              selectedListingId={selectedListingId ?? undefined}
+              onSelectListing={onMarkerSelect}
+              onMarkerClick={onMarkerClick}
+              disableAutoFit={lockViewport}
+              onBoundsChanged={onBoundsChanged}
+            />
+          </motion.div>
 
-      {/* ── "Search this area" button ── */}
-      {pendingCenter && mapDirty && !searchAsMove && (
-        <div
-          className="pointer-events-none absolute inset-x-0 z-10 flex justify-center"
-          style={{ top: "calc(env(safe-area-inset-top) + 72px)" }}
-        >
-          <button
-            type="button"
-            disabled={areaSearching}
-            onClick={onSearchArea}
-            className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-[0_4px_16px_rgba(15,23,42,0.18)] ring-1 ring-brand-200 disabled:opacity-60"
-          >
-            <RefreshIcon />
-            {areaSearching ? "Searching…" : "Search this area"}
-          </button>
-        </div>
-      )}
-
-      {/* ── Results bottom sheet ── */}
-      <motion.div
-        ref={sheetRef}
-        className="pointer-events-auto absolute left-0 right-0 z-20 flex flex-col overflow-hidden bg-white shadow-[0_-6px_40px_rgba(15,23,42,0.20)]"
-        style={{
-          y: sheetY,
-          bottom: 0,
-          height: "100%",
-          borderTopLeftRadius: sheetState === "full" ? 0 : 26,
-          borderTopRightRadius: sheetState === "full" ? 0 : 26,
-        }}
-        drag="y"
-        dragControls={dragControls}
-        dragListener={false}
-        dragConstraints={{ top: 0, bottom: 10000 }}
-        dragElastic={0.05}
-        onDrag={() => {
-          const h = sheetRef.current?.clientHeight ?? 600;
-          const maxY = h - PEEK_H;
-          const clamped = Math.max(0, Math.min(sheetY.get(), maxY));
-          if (Math.abs(sheetY.get() - clamped) > 1) sheetY.set(clamped);
-        }}
-        onDragEnd={handleDragEnd}
-      >
-        {/* ── Drag handle area ── */}
-        <div
-          className="shrink-0 select-none"
-          onPointerDown={(e) => {
-            if ((e.target as HTMLElement).closest("button")) return;
-            dragControls.start(e);
-          }}
-        >
-          {/* Full-state top row (covers safe area, shows map/search controls) */}
-          {sheetState === "full" ? (
-            <div className="flex items-center gap-2.5 px-4 pb-1 pt-2.5">
-              <button
-                type="button"
-                onClick={() => snapTo("half")}
-                className="flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-2 text-[13px] font-semibold text-slate-700 active:bg-slate-200"
-              >
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5-5m0 0l5-5m-5 5h14" />
-                </svg>
-                Map
-              </button>
+          {/* Top bar */}
+          <div className="pointer-events-none absolute left-0 right-0 top-0 z-20 px-3 pt-2">
+            <div className="pointer-events-auto flex items-center">
               <button
                 type="button"
                 onClick={() => setSearchPanelOpen(true)}
-                className="flex flex-1 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2 active:bg-slate-100"
+                className="flex h-12 flex-1 items-center gap-3 rounded-2xl bg-white px-4 shadow-[0_4px_16px_rgba(15,23,42,0.16)]"
               >
                 <SearchIcon />
-                <span className="truncate text-[13px] font-semibold text-slate-700">
-                  {filters.location || "Search…"}
-                </span>
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="truncate text-[13.5px] font-semibold leading-tight text-slate-900">
+                    {filters.location || "Where are you parking?"}
+                  </p>
+                  <p className="text-[11px] leading-tight text-slate-400">
+                    {formatDate(startAt)} · {formatTime(startAt)} → {formatTime(endAt)}
+                  </p>
+                </div>
+                <svg className="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
             </div>
-          ) : (
-            /* Handle pill for peek / half states */
-            <div className="flex justify-center pt-2.5">
-              <div className="h-1 w-9 rounded-full bg-slate-200" />
+          </div>
+
+          {/* "Search this area" button */}
+          {pendingCenter && mapDirty && !searchAsMove && (
+            <div
+              className="pointer-events-none absolute inset-x-0 z-10 flex justify-center"
+              style={{ top: "calc(env(safe-area-inset-top) + 72px)" }}
+            >
+              <button
+                type="button"
+                disabled={areaSearching}
+                onClick={onSearchArea}
+                className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-[0_4px_16px_rgba(15,23,42,0.18)] ring-1 ring-brand-200 disabled:opacity-60"
+              >
+                <RefreshIcon />
+                {areaSearching ? "Searching…" : "Search this area"}
+              </button>
             </div>
           )}
 
-          {/* Count + filters row */}
-          <div className="flex items-center justify-between gap-3 px-4 py-3">
-            <div className="min-w-0">
-              <p className="text-[14px] font-semibold text-slate-900">
+          {/* "List" toggle — hidden when a card is shown */}
+          {!selectedListing && (
+            <div
+              className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 flex justify-center"
+              style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
+            >
+              <button
+                type="button"
+                onClick={switchToList}
+                className="pointer-events-auto flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[13px] font-semibold text-slate-800 shadow-[0_4px_20px_rgba(15,23,42,0.22)] ring-1 ring-slate-200 active:bg-slate-50"
+              >
+                <ListIcon />
+                {results.length > 0 ? `List · ${results.length}` : "List"}
+              </button>
+            </div>
+          )}
+
+          {/* Selected listing card */}
+          <AnimatePresence>
+            {selectedListing && (
+              <motion.div
+                key={selectedListing.id}
+                className="absolute bottom-0 left-0 right-0 z-30 px-4"
+                style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 14px)" }}
+                initial={{ y: 80, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 80, opacity: 0 }}
+                transition={{ type: "spring", damping: 28, stiffness: 280 }}
+              >
+                <MapBottomCard
+                  listing={selectedListing}
+                  priceDisplay={getSearchPrice(selectedListing)}
+                  onDismiss={() => onMarkerSelect("")}
+                  onOpen={() => router.push(listingHref(selectedListing.id) as any)}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
+
+      {/* ── List View ── */}
+      <AnimatePresence>
+      {viewMode === "list" && (
+        <motion.div
+          className="absolute inset-0 z-10 flex flex-col bg-white"
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%" }}
+          transition={{ type: "spring", damping: 32, stiffness: 300 }}
+        >
+          {/* Sticky header */}
+          <div className="shrink-0 bg-white px-3 pt-2 pb-0 shadow-[0_1px_0_rgba(15,23,42,0.08)]">
+            {/* Search pill + filter button */}
+            <div className="flex items-center gap-2 pb-2">
+              <button
+                type="button"
+                onClick={() => setSearchPanelOpen(true)}
+                className="flex h-11 flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3.5"
+              >
+                <SearchIcon />
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="truncate text-[13px] font-semibold leading-tight text-slate-900">
+                    {filters.location || "Where are you parking?"}
+                  </p>
+                  <p className="text-[10.5px] leading-tight text-slate-400">
+                    {formatDate(startAt)} · {formatTime(startAt)} → {formatTime(endAt)}
+                  </p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFiltersPanelOpen(true)}
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-600 active:bg-slate-100"
+              >
+                <FiltersIcon />
+                {hasActiveFilters(filters) && (
+                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-brand-500 ring-2 ring-white" />
+                )}
+              </button>
+            </div>
+
+            {/* Count row */}
+            <div className="flex items-center justify-between pb-1">
+              <p className="text-[13px] font-semibold text-slate-500">
                 {status === "loading"
                   ? "Searching…"
                   : results.length === 0
-                    ? filters.location
-                      ? "No spaces found"
-                      : "Search to find spaces"
+                    ? filters.location ? "No spaces found" : "Search to find spaces"
                     : `${results.length} space${results.length === 1 ? "" : "s"} nearby`}
               </p>
-              {filters.location && results.length > 0 && (
-                <p className="truncate text-[11px] text-slate-400">{filters.location}</p>
-              )}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setFiltersPanelOpen(true)}
-              className="relative flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[12px] font-semibold text-slate-600 transition active:bg-slate-100"
-            >
-              <FiltersIcon />
-              Filters
-              {hasActiveFilters(filters) && (
-                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-brand-500 ring-2 ring-white" />
-              )}
-            </button>
+            {/* Sort tabs */}
+            {results.length > 0 && (
+              <div className="flex border-t border-slate-100">
+                {SORT_TABS.map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setSortMode(tab.key)}
+                    className={`pb-2.5 pr-5 pt-2 text-[12.5px] font-semibold transition ${
+                      sortMode === tab.key
+                        ? "border-b-[2.5px] border-brand-500 text-brand-600"
+                        : "border-b-[2.5px] border-transparent text-slate-400"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Sort tabs */}
-          {results.length > 0 && (
-            <div className="flex border-t border-slate-100 px-4">
-              {SORT_TABS.map((tab) => (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => setSortMode(tab.key)}
-                  className={`pb-2.5 pr-5 pt-2 text-[12.5px] font-semibold transition ${
-                    sortMode === tab.key
-                      ? "border-b-[2.5px] border-brand-500 text-brand-600"
-                      : "border-b-[2.5px] border-transparent text-slate-400"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-          {/* ── Scrollable results list ── */}
-          <div
-            className="flex-1 overflow-y-auto overscroll-contain"
-            onPointerDown={(e) => {
-              // Prevent drag from firing when scrolling the list
-              e.stopPropagation();
-            }}
-          >
+          {/* Scrollable results */}
+          <div className="flex-1 overflow-y-auto overscroll-contain">
             {status === "loading" && (
               <div className="flex items-center justify-center py-14">
                 <div className="flex flex-col items-center gap-3">
@@ -484,39 +430,30 @@ export function MobileSearchLayout({
                   onOpen={() => router.push(listingHref(listing.id) as any)}
                   onSelect={() => {
                     onMarkerSelect(listing.id);
-                    // snapTo handled by the useEffect watching selectedListingId
+                    switchToMap();
                   }}
                 />
               ))}
 
-            {/* Safe area padding at bottom */}
-            <div style={{ height: "calc(env(safe-area-inset-bottom) + 20px)" }} />
+            <div style={{ height: "calc(env(safe-area-inset-bottom) + 80px)" }} />
+          </div>
+
+          {/* "Map" toggle bar */}
+          <div
+            className="shrink-0 flex justify-center border-t border-slate-100 bg-white py-3"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+          >
+            <button
+              type="button"
+              onClick={switchToMap}
+              className="flex items-center gap-2 rounded-full bg-slate-900 px-7 py-2.5 text-[13px] font-semibold text-white shadow-md active:bg-slate-700"
+            >
+              <MapPinIcon />
+              Map
+            </button>
           </div>
         </motion.div>
-
-      {/* ── MapBottomCard — slides up over sheet when pin selected ── */}
-      <AnimatePresence>
-        {selectedListing && (
-          <motion.div
-            key={selectedListing.id}
-            className="absolute bottom-0 left-0 right-0 z-30 px-4"
-            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 14px)" }}
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
-            transition={{ type: "spring", damping: 28, stiffness: 280 }}
-          >
-            <MapBottomCard
-              listing={selectedListing}
-              priceDisplay={getSearchPrice(selectedListing)}
-              onDismiss={() => {
-                onMarkerSelect("");
-                snapTo("half");
-              }}
-              onOpen={() => router.push(listingHref(selectedListing.id) as any)}
-            />
-          </motion.div>
-        )}
+      )}
       </AnimatePresence>
 
       {/* ── Full-screen search panel ── */}
@@ -696,7 +633,12 @@ function ResultCard({
               <span className="text-[10px] font-semibold text-slate-400">{priceDisplay.suffix}</span>
             </p>
           </div>
-          <p className="mt-0.5 line-clamp-1 text-[11.5px] text-slate-400">{listing.address}</p>
+          <div className="mt-0.5 flex items-center gap-1.5">
+            <p className="line-clamp-1 text-[11.5px] text-slate-400">{listing.address}</p>
+            {typeof listing.distanceKm === "number" && (
+              <span className="shrink-0 text-[11px] font-medium text-slate-400">· {listing.distanceKm.toFixed(1)} km</span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center justify-between">
@@ -1087,6 +1029,21 @@ function RefreshIcon() {
   return (
     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
       <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function ListIcon() {
+  return (
+    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function MapPinIcon() {
+  return (
+    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path d="M12 2C8.686 2 6 4.686 6 8c0 5.25 6 14 6 14s6-8.75 6-14c0-3.314-2.686-6-6-6z" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="8" r="2" />
     </svg>
   );
 }
