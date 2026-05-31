@@ -69,7 +69,6 @@ function buildEmailShell({
     .email-heading      { color: #111827 !important; }
     .email-body-text    { color: #475569 !important; }
     .email-muted        { color: #94a3b8 !important; }
-    .logo-img           { filter: none !important; }
     .icon-circle        { background-color: #edf7f2 !important; }
 
     /* ── Dark mode — look intentional rather than broken ── */
@@ -80,8 +79,6 @@ function buildEmailShell({
       .email-heading    { color: #f8fafc !important; }
       .email-body-text  { color: #94a3b8 !important; }
       .email-muted      { color: #475569 !important; }
-      /* Flip the dark logo to white */
-      .logo-img         { filter: brightness(0) invert(1) !important; }
       .icon-circle      { background-color: #064e3b !important; }
     }
   </style>
@@ -95,7 +92,9 @@ function buildEmailShell({
           <!-- Logo + eyebrow -->
           <tr>
             <td style="text-align:center; padding-bottom:24px;">
-              <img class="logo-img" src="${logo}" alt="FreeSpace" width="130" height="auto" style="display:inline-block; height:auto; border:0;" />
+              <div style="display:inline-block; background-color:#ffffff; border-radius:14px; padding:14px 24px;">
+                <img src="${logo}" alt="FreeSpace" width="120" height="auto" style="display:block; height:auto; border:0;" />
+              </div>
               <div style="margin-top:14px; font-size:11px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:#0fa968;">
                 ${esc(eyebrow)}
               </div>
