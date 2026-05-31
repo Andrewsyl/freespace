@@ -10,7 +10,7 @@ import { FiltersPanel } from "./FiltersPanel";
 import type { SharedLayoutProps } from "./searchLayoutTypes";
 import type { Listing } from "./ListingCard";
 import { SlimNav } from "./SlimNav";
-import { AdjustmentsHorizontalIcon } from "@heroicons/react/24/outline";
+import { SlidersHorizontal } from "lucide-react";
 import { calculateListingTotal, formatPriceValue, getListingRateType } from "../lib/pricing";
 
 export function DesktopSearchLayout({
@@ -288,7 +288,7 @@ export function DesktopSearchLayout({
                 onClick={() => setShowFilters((s) => !s)}
                 className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-[12.5px] font-semibold text-slate-700 shadow-[0_2px_8px_rgba(15,23,42,0.14)] backdrop-blur-sm transition hover:border-slate-300 hover:shadow-md"
               >
-                <AdjustmentsHorizontalIcon className="h-4 w-4" />
+                <SlidersHorizontal className="h-4 w-4" />
                 Filters
                 {activeFilterCount > 0 && (
                   <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold text-white">

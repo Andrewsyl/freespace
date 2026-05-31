@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { ChevronLeft } from "lucide-react";
 
 type Props = {
   title: string;
@@ -34,75 +35,61 @@ export function HostStepperLayout({
   const progress = Math.round((step / totalSteps) * 100);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col bg-white px-5">
+    <div className="mx-auto flex min-h-screen max-w-2xl flex-col bg-white">
       {/* ── Header ── */}
-      <div className="pt-6 pb-2">
-        {/* Step counter + progress */}
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-widest text-brand-300">
+      <div className="border-b border-slate-200 px-5 pb-5 pt-6">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
             Step {step} of {totalSteps}
           </span>
-          <span className="text-xs font-semibold text-brand-500">
-            {progress}%
-          </span>
+          <span className="text-[11px] font-semibold text-brand-500">{progress}%</span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+        <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100">
           <div
             className="h-full rounded-full bg-brand-500 transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
-
-        {/* Title */}
-        <h1 className="mt-5 text-2xl font-semibold leading-snug tracking-tight text-slate-900">
-          {title}
-        </h1>
+        <h1 className="mt-5 text-[22px] font-bold tracking-[-0.03em] text-slate-900">{title}</h1>
         {description && (
-          <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{description}</p>
+          <p className="mt-1 text-[14px] leading-relaxed text-slate-500">{description}</p>
         )}
       </div>
 
       {/* ── Error banner ── */}
       {error && (
-        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+        <div className="mx-5 mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
           {error}
         </div>
       )}
 
       {/* ── Step content ── */}
-      <div className="flex-1 py-5">{children}</div>
+      <div className="flex-1 px-5 py-6">{children}</div>
 
       {/* ── Footer ── */}
-      <div className="border-t border-slate-100 py-4 pb-10">
+      <div
+        className="bg-white px-5 shadow-[0_-4px_20px_rgba(15,23,42,0.08)]"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)", paddingTop: "12px" }}
+      >
         <div className="flex items-center gap-3">
           {onBack ? (
             <button
               type="button"
               onClick={onBack}
               disabled={backDisabled}
-              className="flex h-12 shrink-0 items-center gap-1 rounded-lg px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+              className="flex h-12 shrink-0 items-center gap-1.5 rounded-2xl border border-slate-200 px-4 text-[14px] font-semibold text-slate-700 transition active:bg-slate-50 disabled:opacity-40"
             >
-              <svg
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
+              <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
               Back
             </button>
           ) : (
-            /* Spacer so the continue button stays right-aligned on step 1 */
             <div className="w-[88px] shrink-0" />
           )}
-
           <button
             type="button"
             onClick={onNext}
             disabled={nextDisabled}
-            className="flex h-12 flex-1 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
+            className="flex h-12 flex-1 items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white shadow-sm transition active:bg-brand-600 disabled:opacity-50"
           >
             {loading ? "Saving…" : nextLabel}
           </button>

@@ -1,64 +1,18 @@
 "use client";
 
 import type { HostStepProps } from "./types";
+import { Camera, Zap, Home, Lightbulb, Lock, ArrowUpDown, CheckCircle } from "lucide-react";
 
 // ── Feature chips ─────────────────────────────────────────────────────────────
 
 const FEATURES = [
-  { label: "CCTV",           icon: <CctvIcon /> },
-  { label: "EV charging",    icon: <ZapIcon /> },
-  { label: "Sheltered",      icon: <ShelterIcon /> },
-  { label: "Well lit",       icon: <LightIcon /> },
-  { label: "Gated access",   icon: <FenceIcon /> },
-  { label: "Height-friendly",icon: <HeightIcon /> },
+  { label: "CCTV",           icon: <Camera size={16} strokeWidth={2.1} /> },
+  { label: "EV charging",    icon: <Zap size={16} strokeWidth={2.1} /> },
+  { label: "Sheltered",      icon: <Home size={16} strokeWidth={2.1} /> },
+  { label: "Well lit",       icon: <Lightbulb size={16} strokeWidth={2.1} /> },
+  { label: "Gated access",   icon: <Lock size={16} strokeWidth={2.1} /> },
+  { label: "Height-friendly",icon: <ArrowUpDown size={16} strokeWidth={2.1} /> },
 ];
-
-function CctvIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
-      <path d="m16.75 12 3.58 7.18A2 2 0 0 1 18.54 22H5.46a2 2 0 0 1-1.79-2.82L7.25 12" />
-      <rect x="7" y="2" width="10" height="10" rx="2" />
-      <path d="m12 12 .01 0" />
-    </svg>
-  );
-}
-function ZapIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
-    </svg>
-  );
-}
-function ShelterIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
-      <rect width="16" height="10" x="4" y="8" rx="2" />
-      <path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M8 21v-3M16 21v-3" />
-    </svg>
-  );
-}
-function LightIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
-      <path d="M9 18h6M10 22h4" />
-    </svg>
-  );
-}
-function FenceIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 3 2 5v15h4V5L4 3zM20 3l2 2v15h-4V5l2-2zM12 3l2 2v15h-4V5l2-2zM2 12h4M18 12h4M8 12h8" />
-    </svg>
-  );
-}
-function HeightIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4" />
-    </svg>
-  );
-}
 
 // ── Access choices ────────────────────────────────────────────────────────────
 
@@ -126,9 +80,7 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
                 </div>
                 <span className="flex-1 text-sm font-semibold text-slate-800">{label}</span>
                 {active && (
-                  <svg className="h-5 w-5 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="currentColor">
-                    <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
-                  </svg>
+                  <CheckCircle className="h-5 w-5 shrink-0 text-brand-500" fill="none" strokeWidth={2} />
                 )}
               </button>
             );
@@ -191,9 +143,7 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
                       {choice.label}
                     </span>
                     {active && (
-                      <svg className="h-5 w-5 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="currentColor">
-                        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
-                      </svg>
+                      <CheckCircle className="h-5 w-5 shrink-0 text-brand-500" strokeWidth={2} />
                     )}
                   </button>
 

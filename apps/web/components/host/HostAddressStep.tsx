@@ -1,4 +1,5 @@
 "use client";
+import { MapPin } from "lucide-react";
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
@@ -99,10 +100,7 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
           /* No address yet */
           <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-50 ring-2 ring-brand-100">
-              <svg className="h-10 w-10 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-              </svg>
+              <MapPin className="h-10 w-10 text-brand-500" strokeWidth={1.6} />
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900">No location selected</p>

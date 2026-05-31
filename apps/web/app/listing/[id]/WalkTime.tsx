@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MapPinIcon, ClockIcon } from "@heroicons/react/24/outline";
+import { MapPin, Clock } from "lucide-react";
 import { AddressAutocomplete } from "../../../components/AddressAutocomplete";
 
 async function getWalkingTime(origin: { lat: number; lng: number }, destination: { address: string; lat: number; lng: number }) {
@@ -75,12 +75,12 @@ export function WalkTime({ origin }: { origin: { lat: number; lng: number } }) {
         <div className="border-t border-slate-200 pt-4">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white">
-              <ClockIcon className="h-4 w-4" />
+              <Clock className="h-4 w-4" />
             </div>
             <div>
               <p className="text-[18px] font-semibold text-slate-950">{result.durationText} walk</p>
               <p className="mt-0.5 flex items-center gap-1.5 text-[14px] text-slate-500">
-                <MapPinIcon className="h-4 w-4 text-brand-500" />
+                <MapPin className="h-4 w-4 text-brand-500" />
                 {result.destinationAddress}
                 <span className="text-slate-400">({result.distanceText})</span>
               </p>

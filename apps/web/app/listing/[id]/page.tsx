@@ -1,16 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { StarIcon } from "@heroicons/react/24/solid";
-import {
-  BoltIcon,
-  CameraIcon,
-  HomeIcon,
-  KeyIcon,
-  LockClosedIcon,
-  MapPinIcon,
-  ShieldCheckIcon,
-  TruckIcon,
-} from "@heroicons/react/24/outline";
+import { Star, Zap, Camera, Home, Key, Lock, MapPin, ShieldCheck, Truck } from "lucide-react";
 import { getListing, listListingReviews } from "../../../lib/api";
 import { getListingUnitPrice } from "../../../lib/pricing";
 import type { Listing } from "../../../components/ListingCard";
@@ -38,20 +28,20 @@ function formatReviewDate(value?: string | null) {
 
 function amenityToIcon(label: string) {
   const n = label.toLowerCase();
-  if (n.includes("ev") || n.includes("charger")) return BoltIcon;
-  if (n.includes("cctv") || n.includes("camera")) return CameraIcon;
-  if (n.includes("covered") || n.includes("roof") || n.includes("shelter")) return HomeIcon;
-  if (n.includes("gated") || n.includes("barrier") || n.includes("gate")) return LockClosedIcon;
-  if (n.includes("permit") || n.includes("secure")) return ShieldCheckIcon;
-  if (n.includes("code") || n.includes("key")) return KeyIcon;
-  if (n.includes("van") || n.includes("large")) return TruckIcon;
-  return ShieldCheckIcon;
+  if (n.includes("ev") || n.includes("charger")) return Zap;
+  if (n.includes("cctv") || n.includes("camera")) return Camera;
+  if (n.includes("covered") || n.includes("roof") || n.includes("shelter")) return Home;
+  if (n.includes("gated") || n.includes("barrier") || n.includes("gate")) return Lock;
+  if (n.includes("permit") || n.includes("secure")) return ShieldCheck;
+  if (n.includes("code") || n.includes("key")) return Key;
+  if (n.includes("van") || n.includes("large")) return Truck;
+  return ShieldCheck;
 }
 
 // Simple star fill helper
 function StarFill({ filled }: { filled: boolean }) {
   return (
-    <StarIcon
+    <Star
       className={`h-4 w-4 ${filled ? "text-amber-400" : "text-slate-200"}`}
     />
   );
@@ -183,7 +173,7 @@ export default async function ListingDetailPage({
             {/* Secure booking badge */}
             <div className="shrink-0 rounded-lg border border-slate-200 px-4 py-3">
               <div className="flex items-center gap-2">
-                <ShieldCheckIcon className="h-4 w-4 text-brand-500" />
+                <ShieldCheck className="h-4 w-4 text-brand-500" />
                 <span className="text-[13px] font-semibold text-slate-950">Secure booking</span>
               </div>
               <p className="mt-1 text-[11px] text-slate-400">Payments encrypted &amp; protected</p>
@@ -254,7 +244,7 @@ export default async function ListingDetailPage({
                     {listing.address.split(",")[0]}
                   </h2>
                   <p className="mt-1 flex items-center gap-1.5 text-[13px] text-white">
-                    <MapPinIcon className="h-3.5 w-3.5 shrink-0" />
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
                     {listing.address.split(",").slice(1, 3).join(",").trim()}
                   </p>
                 </div>
@@ -265,7 +255,7 @@ export default async function ListingDetailPage({
                     rel="noreferrer"
                     className="flex items-center gap-1.5 rounded-full bg-white/20 px-3.5 py-2 text-[12px] font-semibold text-white backdrop-blur-sm transition hover:bg-white/30"
                   >
-                    <MapPinIcon className="h-3.5 w-3.5" />
+                    <MapPin className="h-3.5 w-3.5" />
                     Street view
                   </a>
                 )}
@@ -371,7 +361,7 @@ export default async function ListingDetailPage({
                       rel="noreferrer"
                       className="mt-5 inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50"
                     >
-                      <MapPinIcon className="h-4 w-4" />
+                      <MapPin className="h-4 w-4" />
                       Open Street View
                     </a>
                   )}

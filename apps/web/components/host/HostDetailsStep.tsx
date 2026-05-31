@@ -48,13 +48,15 @@ function SpaceTypeIcon({ type, size = 20 }: { type: string; size?: number }) {
   }
 }
 
+import { Car, Truck, Van } from "lucide-react";
+
 // ── Vehicle sizes ─────────────────────────────────────────────────────────────
 
 const VEHICLE_SIZES = [
-  { value: "small",  label: "Small",  example: "e.g. VW Polo, Ford Fiesta",      emoji: "🚗" },
-  { value: "medium", label: "Medium", example: "e.g. Audi A3, Toyota Camry",     emoji: "🚙" },
-  { value: "large",  label: "Large",  example: "e.g. Volvo XC90, BMW X5",        emoji: "🚐" },
-  { value: "van",    label: "Van",    example: "e.g. Transit Custom, Sprinter",  emoji: "🚌" },
+  { value: "small",  label: "Small",  example: "e.g. VW Polo, Ford Fiesta",     Icon: Car },
+  { value: "medium", label: "Medium", example: "e.g. Audi A3, Toyota Camry",    Icon: Car },
+  { value: "large",  label: "Large",  example: "e.g. Volvo XC90, BMW X5",       Icon: Truck },
+  { value: "van",    label: "Van",    example: "e.g. Transit Custom, Sprinter", Icon: Van },
 ];
 
 const MIN_COUNT = 0;
@@ -145,8 +147,8 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
       {hasCount && (
         <div className="space-y-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-brand-300">Vehicle fit</p>
-            <p className="mt-1 text-sm text-slate-500">What size vehicles fit your space?</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Vehicle fit</p>
+            <p className="mt-1 text-[14px] text-slate-500">What size vehicles fit your space?</p>
           </div>
           <div className="space-y-2">
             {VEHICLE_SIZES.map((opt) => {
@@ -160,7 +162,7 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
                     active ? "border-brand-500 bg-white" : "border-slate-200 bg-white"
                   }`}
                 >
-                  <span className="text-2xl">{opt.emoji}</span>
+                  <opt.Icon size={28} strokeWidth={1.5} className={active ? "text-brand-600" : "text-slate-500"} />
                   <div className="min-w-0 flex-1">
                     <p className="text-base font-bold tracking-tight text-slate-900">{opt.label}</p>
                     <p className="text-sm text-slate-500">{opt.example}</p>

@@ -1,4 +1,4 @@
-import { CalendarDaysIcon, MapPinIcon } from "@heroicons/react/24/outline";
+import { CalendarDays, MapPin } from "lucide-react";
 
 export type Booking = {
   id: string;
@@ -40,11 +40,11 @@ export function BookingCard({ booking }: { booking: Booking }) {
       <h3 className="text-base font-semibold text-slate-900">{booking.title ?? booking.address}</h3>
       <div className="flex flex-col gap-2 text-sm text-slate-600">
         <span className="inline-flex items-center gap-2">
-          <CalendarDaysIcon className="h-4 w-4" /> {booking.date} • {booking.timeRange}
+          <CalendarDays className="h-4 w-4" /> {booking.date} • {booking.timeRange}
         </span>
         {booking.driver && (
           <span className="inline-flex items-center gap-2">
-            <MapPinIcon className="h-4 w-4" /> Driver: {booking.driver}
+            <MapPin className="h-4 w-4" /> Driver: {booking.driver}
           </span>
         )}
       </div>

@@ -15,6 +15,7 @@ import { SlimNav } from "./SlimNav";
 import type { SharedLayoutProps } from "./searchLayoutTypes";
 import type { Listing } from "./ListingCard";
 import { calculateListingTotal, formatPriceValue } from "../lib/pricing";
+import { Search, SlidersHorizontal, X, RefreshCw, List, MapPin, Star, ChevronLeft, ChevronRight, Check, Camera, Zap, Lock, Home } from "lucide-react";
 
 // ── Date/time helpers ────────────────────────────────────────────────────────
 
@@ -247,9 +248,7 @@ export function MobileSearchLayout({
                     {formatDate(startAt)} · {formatTime(startAt)} → {formatTime(endAt)}
                   </p>
                 </div>
-                <svg className="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
+                <ChevronLeft className="h-3.5 w-3.5 shrink-0 -rotate-90 text-slate-400" strokeWidth={2.5} />
               </button>
             </div>
           </div>
@@ -750,14 +749,10 @@ function DateTimeSheet({
           </span>
           <div className="flex items-center gap-3">
             <button type="button" onClick={prevMonth} className="p-1 text-brand-600">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
+              <ChevronLeft className="h-4 w-4" strokeWidth={2} />
             </button>
             <button type="button" onClick={nextMonth} className="p-1 text-brand-600">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
+              <ChevronRight className="h-4 w-4" strokeWidth={2} />
             </button>
           </div>
         </div>
@@ -846,9 +841,7 @@ function TimeSelect({
       >
         <Select.Value />
         <Select.Icon className="text-brand-500">
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
+          <ChevronLeft className="h-4 w-4 -rotate-90" strokeWidth={2.5} />
         </Select.Icon>
       </Select.Trigger>
       <Select.Portal>
@@ -866,9 +859,7 @@ function TimeSelect({
               >
                 <Select.ItemText>{t}</Select.ItemText>
                 <Select.ItemIndicator className="text-brand-500">
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
+                  <Check className="h-4 w-4" strokeWidth={2.5} />
                 </Select.ItemIndicator>
               </Select.Item>
             ))}
@@ -882,27 +873,10 @@ function TimeSelect({
 // ── MapBottomCard ─────────────────────────────────────────────────────────────
 
 const AMENITY_ICONS: Record<string, React.ReactElement> = {
-  CCTV: (
-    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2}>
-      <path d="M15 10l4.553-2.069A1 1 0 0121 8.87V15.13a1 1 0 01-1.447.9L15 14M3 8h12a2 2 0 012 2v4a2 2 0 01-2 2H3a2 2 0 01-2-2v-4a2 2 0 012-2z" strokeLinecap="round" />
-    </svg>
-  ),
-  "EV charging": (
-    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2}>
-      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  Gated: (
-    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2}>
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0110 0v4" />
-    </svg>
-  ),
-  Covered: (
-    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2}>
-      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
+  CCTV:        <Camera className="h-3.5 w-3.5" strokeWidth={2} />,
+  "EV charging": <Zap className="h-3.5 w-3.5" strokeWidth={2} />,
+  Gated:       <Lock className="h-3.5 w-3.5" strokeWidth={2} />,
+  Covered:     <Home className="h-3.5 w-3.5" strokeWidth={2} />,
 };
 
 function normaliseAmenity(v: string): string {
@@ -1003,47 +977,9 @@ function MapBottomCard({
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
-function SearchIcon() {
-  return (
-    <svg className="h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.35-4.35" strokeLinecap="round" />
-    </svg>
-  );
-}
-function FiltersIcon() {
-  return (
-    <svg className="h-3.5 w-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path d="M3 6h18M7 12h10M11 18h2" strokeLinecap="round" />
-    </svg>
-  );
-}
-function CloseIcon() {
-  return (
-    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" />
-    </svg>
-  );
-}
-function RefreshIcon() {
-  return (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function ListIcon() {
-  return (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function MapPinIcon() {
-  return (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <path d="M12 2C8.686 2 6 4.686 6 8c0 5.25 6 14 6 14s6-8.75 6-14c0-3.314-2.686-6-6-6z" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="12" cy="8" r="2" />
-    </svg>
-  );
-}
+function SearchIcon() { return <Search className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={2.5} />; }
+function FiltersIcon() { return <SlidersHorizontal className="h-3.5 w-3.5 text-slate-600" strokeWidth={2} />; }
+function CloseIcon() { return <X className="h-3 w-3" strokeWidth={2.5} />; }
+function RefreshIcon() { return <RefreshCw className="h-3.5 w-3.5" strokeWidth={2.5} />; }
+function ListIcon() { return <List className="h-3.5 w-3.5" strokeWidth={2.5} />; }
+function MapPinIcon() { return <MapPin className="h-3.5 w-3.5" strokeWidth={2.5} />; }

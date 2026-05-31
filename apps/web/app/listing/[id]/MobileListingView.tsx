@@ -3,17 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import {
-  BoltIcon,
-  CameraIcon,
-  HomeIcon,
-  KeyIcon,
-  LockClosedIcon,
-  MapPinIcon,
-  ShieldCheckIcon,
-  StarIcon,
-  TruckIcon,
-} from "@heroicons/react/24/outline";
+import { Zap, Camera, Home, Key, Lock, MapPin, ShieldCheck, Star, Truck } from "lucide-react";
 import type { Listing } from "../../../components/ListingCard";
 import { ListingMap } from "./MapSection";
 import { trackEvent } from "../../../lib/telemetry";
@@ -30,14 +20,14 @@ type Review = {
 
 function amenityToIcon(label: string) {
   const normalized = label.toLowerCase();
-  if (normalized.includes("ev") || normalized.includes("charger")) return BoltIcon;
-  if (normalized.includes("cctv") || normalized.includes("camera")) return CameraIcon;
-  if (normalized.includes("covered") || normalized.includes("roof") || normalized.includes("shelter")) return HomeIcon;
-  if (normalized.includes("gated") || normalized.includes("barrier") || normalized.includes("gate")) return LockClosedIcon;
-  if (normalized.includes("permit") || normalized.includes("secure")) return ShieldCheckIcon;
-  if (normalized.includes("code") || normalized.includes("key")) return KeyIcon;
-  if (normalized.includes("van") || normalized.includes("large")) return TruckIcon;
-  return ShieldCheckIcon;
+  if (normalized.includes("ev") || normalized.includes("charger")) return Zap;
+  if (normalized.includes("cctv") || normalized.includes("camera")) return Camera;
+  if (normalized.includes("covered") || normalized.includes("roof") || normalized.includes("shelter")) return Home;
+  if (normalized.includes("gated") || normalized.includes("barrier") || normalized.includes("gate")) return Lock;
+  if (normalized.includes("permit") || normalized.includes("secure")) return ShieldCheck;
+  if (normalized.includes("code") || normalized.includes("key")) return Key;
+  if (normalized.includes("van") || normalized.includes("large")) return Truck;
+  return ShieldCheck;
 }
 
 function formatReviewDate(value?: string | null) {
@@ -160,7 +150,7 @@ export function MobileListingView({
               {listing.title}
             </h1>
             <p className="mt-1.5 flex items-center gap-1.5 text-[13px] text-white/80">
-              <MapPinIcon className="h-3.5 w-3.5 shrink-0" />
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
               {areaLabel}
             </p>
           </div>
@@ -178,7 +168,7 @@ export function MobileListingView({
           <div className="flex flex-col justify-center px-3 py-4">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Rating</p>
             <p className="mt-1 flex items-baseline gap-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
-              <StarIcon className="h-4 w-4 translate-y-[1px] text-amber-400" />
+              <Star className="h-4 w-4 translate-y-[1px] text-amber-400" />
               {reviews.length > 0 ? listing.rating?.toFixed(1) : "0.0"}
               {reviews.length === 0 && (
                 <span className="text-[10px] font-medium text-slate-400">New</span>
@@ -298,7 +288,7 @@ export function MobileListingView({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
                       {Array.from({ length: 5 }, (_, i) => (
-                        <StarIcon
+                        <Star
                           key={i}
                           className={`h-3 w-3 ${i < Math.round(review.rating) ? "fill-amber-400 text-amber-400" : "text-slate-200"}`}
                         />

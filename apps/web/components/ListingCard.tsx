@@ -1,4 +1,4 @@
-import { MapPinIcon } from "@heroicons/react/24/solid";
+import { MapPin } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import clsx from "clsx";
@@ -238,7 +238,7 @@ export function ListingCard({
             {listing.title}
           </Link>
           <p className="mt-0.5 flex items-center gap-1 text-[11.5px] text-slate-500">
-            <MapPinIcon className="h-3 w-3 shrink-0 text-slate-400" />
+            <MapPin className="h-3 w-3 shrink-0 text-slate-400" />
             <span className="line-clamp-1">{listing.address}</span>
           </p>
         </div>

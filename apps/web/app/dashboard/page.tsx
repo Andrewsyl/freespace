@@ -159,179 +159,141 @@ export default function DashboardPage() {
 
   if (!user) {
     return (
-      <div className="space-y-4">
-        <p className="text-sm text-slate-700">Sign in to view your bookings.</p>
-        <div className="flex gap-2 text-sm">
-          <Link href="/login" className="btn-primary">
-            Sign in
-          </Link>
-          <Link href="/signup" className="rounded-lg px-3 py-2 font-semibold text-slate-700 hover:bg-slate-100">
-            Create account
-          </Link>
+      <div className="px-5 py-10">
+        <p className="text-[14px] text-slate-600">Sign in to view your bookings.</p>
+        <div className="mt-4 flex flex-col gap-3">
+          <Link href="/login" className="flex h-12 items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white">Sign in</Link>
+          <Link href="/signup" className="flex h-12 items-center justify-center rounded-2xl border border-slate-200 text-[15px] font-semibold text-slate-700">Create account</Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      <header className="space-y-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-6 text-white shadow-lg">
-        <div className="text-xs font-semibold tracking-[0.28em] text-emerald-200">Dashboard</div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl tracking-tight font-semibold leading-tight sm:text-4xl">Welcome back{user?.email ? `, ${user.email}` : ""}</h1>
-            <p className="text-sm text-emerald-100/85">Track bookings, payouts, and saved payment methods.</p>
-          </div>
-          <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-100">
-            <Link href="/dashboard/payments" className="rounded-full bg-white/10 px-3 py-1.5 hover:bg-white/15">
-              Payments
-            </Link>
-            <Link href="/dashboard/earnings" className="rounded-full bg-white/10 px-3 py-1.5 hover:bg-white/15">
-              Earnings
-            </Link>
-            <Link href="/dashboard/favorites" className="rounded-full bg-white/10 px-3 py-1.5 hover:bg-white/15">
-              ♥ Favourites
-            </Link>
-            <Link href="/host" className="rounded-full bg-emerald-500 px-3 py-1.5 text-slate-900 hover:bg-emerald-400">
-              List a space
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="Driver bookings" value={stats.driverCount.toString()} hint="Completed + upcoming" />
-        <StatCard
-          label="Host earnings"
-          value={`€${stats.hostEarnings.toFixed(2)}`}
-          hint="Gross payouts (test mode)"
-          accent
-        />
-        <StatCard label="Host bookings" value={stats.hostCount.toString()} hint="Confirmed + pending" />
-      </section>
-
-      {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
-      {status === "loading" && <div className="text-sm text-slate-600">Loading bookings…</div>}
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="space-y-4 rounded-lg border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold tracking-wide text-emerald-600">Driver</p>
-              <h2 className="text-xl font-semibold text-slate-900">Your trips</h2>
-            </div>
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-              {driverBookings.length} total
-            </span>
-          </div>
-          <div className="grid gap-3">
-            {driverBookings.map((booking) => (
-              <button key={booking.id} onClick={() => openSelected(booking)} className="text-left">
-                <BookingCard booking={booking} />
-              </button>
-            ))}
-            {driverBookings.length === 0 && status === "idle" && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
-                <div className="grid items-center gap-3 md:grid-cols-[160px_1fr]">
-                  <div className="mx-auto w-full max-w-[160px]">
-                    <Image
-                      src="/illustrations/city-driver-alt.svg.png"
-                      alt="No trips illustration"
-                      width={720}
-                      height={720}
-                      className="h-auto w-full"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-base font-semibold text-slate-900">No driver bookings yet</p>
-                    <p className="text-sm text-slate-600">Head to search to book your first parking space.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="space-y-4 rounded-lg border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold tracking-wide text-slate-700">Host</p>
-              <h2 className="text-xl font-semibold text-slate-900">Earnings</h2>
-            </div>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-              {hostBookings.length} payouts
-            </span>
-          </div>
-          <div className="grid gap-3">
-            {hostBookings.map((booking) => (
-              <button key={booking.id} onClick={() => openSelected(booking)} className="text-left">
-                <BookingCard booking={booking} />
-              </button>
-            ))}
-            {hostBookings.length === 0 && status === "idle" && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
-                <div className="grid items-center gap-3 md:grid-cols-[160px_1fr]">
-                  <div className="mx-auto w-full max-w-[160px]">
-                    <Image
-                      src="/illustrations/by-my-car-alt.svg.png"
-                      alt="No host bookings illustration"
-                      width={720}
-                      height={720}
-                      className="h-auto w-full"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-base font-semibold text-slate-900">No host bookings yet</p>
-                    <p className="text-sm text-slate-600">List a space to start earning from host bookings.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="rounded-lg border border-dashed border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            Payouts flow via Stripe Connect. Store each host Stripe account and send application fees per booking.
-          </div>
-        </section>
+    <div>
+      {/* Page header */}
+      <div className="border-b border-slate-200 px-5 py-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Dashboard</p>
+        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">
+          Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
+        </h1>
       </div>
 
-      {selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="card w-full max-w-lg space-y-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-xl font-semibold text-slate-900">
-                  {selected.title ?? selected.address}
-                </h3>
-                <p className="text-sm text-slate-600">
-                  {selected.date} • {selected.timeRange}
-                </p>
-              </div>
-              <button
-                onClick={() => setSelected(null)}
-                className="rounded-lg px-3 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                Close
+      {/* Quick nav */}
+      <div className="flex gap-2 overflow-x-auto border-b border-slate-200 px-5 py-3">
+        {[
+          { href: "/dashboard/payments", label: "Payments" },
+          { href: "/dashboard/earnings", label: "Earnings" },
+          { href: "/dashboard/favorites", label: "Favourites" },
+          { href: "/host", label: "+ List a space" },
+        ].map(({ href, label }) => (
+          <Link key={href} href={href as any}
+            className="shrink-0 rounded-full border border-slate-200 px-3.5 py-1.5 text-[12px] font-semibold text-slate-700 active:bg-slate-50 last:border-brand-200 last:text-brand-700 last:bg-brand-50">
+            {label}
+          </Link>
+        ))}
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 divide-x divide-slate-200 border-b border-slate-200">
+        <div className="flex flex-col justify-center px-4 py-4 text-center">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Trips</p>
+          <p className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">{stats.driverCount}</p>
+        </div>
+        <div className="flex flex-col justify-center px-4 py-4 text-center">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Earnings</p>
+          <p className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-brand-600">€{stats.hostEarnings.toFixed(0)}</p>
+        </div>
+        <div className="flex flex-col justify-center px-4 py-4 text-center">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Payouts</p>
+          <p className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">{stats.hostCount}</p>
+        </div>
+      </div>
+
+      {error && <div className="mx-5 mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}
+
+      {/* Driver bookings */}
+      <section className="border-b border-slate-200 px-5 py-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Your trips</h2>
+          {driverBookings.length > 0 && (
+            <span className="text-[12px] font-medium text-slate-400">{driverBookings.length} total</span>
+          )}
+        </div>
+        {status === "loading" && driverBookings.length === 0 ? (
+          <div className="mt-4 flex items-center justify-center py-8"><div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /></div>
+        ) : driverBookings.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center">
+            <p className="text-[14px] font-semibold text-slate-700">No bookings yet</p>
+            <p className="mt-1 text-[13px] text-slate-400">Search for a space to make your first booking.</p>
+            <Link href="/" className="mt-4 inline-flex items-center justify-center rounded-full bg-brand-500 px-5 py-2.5 text-[13px] font-semibold text-white">Find a space</Link>
+          </div>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {driverBookings.map((booking) => (
+              <button key={booking.id} onClick={() => openSelected(booking)} className="w-full text-left">
+                <BookingCard booking={booking} />
               </button>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Host bookings */}
+      <section className="px-5 py-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Host payouts</h2>
+          {hostBookings.length > 0 && (
+            <span className="text-[12px] font-medium text-slate-400">{hostBookings.length} total</span>
+          )}
+        </div>
+        {hostBookings.length === 0 && status === "idle" ? (
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center">
+            <p className="text-[14px] font-semibold text-slate-700">No host bookings yet</p>
+            <p className="mt-1 text-[13px] text-slate-400">List a space to start earning.</p>
+            <Link href="/host" className="mt-4 inline-flex items-center justify-center rounded-full bg-brand-500 px-5 py-2.5 text-[13px] font-semibold text-white">List a space</Link>
+          </div>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {hostBookings.map((booking) => (
+              <button key={booking.id} onClick={() => openSelected(booking)} className="w-full text-left">
+                <BookingCard booking={booking} />
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center" onClick={() => setSelected(null)}>
+          <div className="w-full max-w-lg overflow-hidden rounded-t-2xl bg-white sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="border-b border-slate-200 px-5 py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[15px] font-bold text-slate-900">{selected.title ?? selected.address}</p>
+                  <p className="mt-0.5 text-[13px] text-slate-500">{selected.date} · {selected.timeRange}</p>
+                </div>
+                <button onClick={() => setSelected(null)} className="shrink-0 rounded-full border border-slate-200 px-3 py-1 text-[12px] font-semibold text-slate-600 active:bg-slate-50">
+                  Close
+                </button>
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                  selected.status === "pending" ? "bg-amber-50 text-amber-700"
+                  : selected.status === "confirmed" ? "bg-brand-50 text-brand-700"
+                  : selected.status === "canceled" ? "bg-rose-50 text-rose-700"
+                  : "bg-slate-100 text-slate-700"}`}>
+                  {selected.status}
+                </span>
+                {typeof selected.payout === "number" && selected.payout > 0 && (
+                  <span className="text-[13px] font-semibold text-slate-700">€{selected.payout.toFixed(2)} payout</span>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-sm font-semibold tracking-wide">
-              <span
-                className={`rounded-full px-2 py-1 ${
-                  selected.status === "pending"
-                    ? "bg-amber-100 text-amber-800"
-                    : selected.status === "confirmed"
-                    ? "bg-emerald-100 text-emerald-800"
-                    : selected.status === "canceled"
-                    ? "bg-rose-100 text-rose-700"
-                    : "bg-slate-100 text-slate-800"
-                }`}
-              >
-                {selected.status}
-              </span>
-              {typeof selected.payout === "number" && <span>€{selected.payout.toFixed(2)} payout</span>}
-            </div>
-            <p className="text-sm text-slate-700">Driver: {selected.driver ?? "You"}</p>
+            <div className="max-h-[70vh] overflow-y-auto px-5 py-4 space-y-4">
+            <p className="text-[13px] text-slate-600">Driver: {selected.driver ?? "You"}</p>
             {selected.noShowAt ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
                 This booking has been marked as a no-show.
               </div>
             ) : null}
@@ -345,25 +307,22 @@ export default function DashboardPage() {
               if (!isDriverBooking || !isConfirmed || !isEnded) return null;
               if (alreadyReviewed) {
                 return (
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                  <div className="rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] text-brand-700">
                     ✓ Review submitted — thank you!
                   </div>
                 );
               }
               if (!reviewMode) {
                 return (
-                  <button
-                    type="button"
-                    onClick={() => setReviewMode(true)}
-                    className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100"
-                  >
+                  <button type="button" onClick={() => setReviewMode(true)}
+                    className="w-full rounded-2xl border border-amber-200 bg-amber-50 py-3 text-[13px] font-semibold text-amber-800 active:bg-amber-100">
                     ★ Leave a review
                   </button>
                 );
               }
               return (
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
-                  <p className="text-sm font-semibold text-slate-900">Leave a review</p>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                  <p className="text-[14px] font-bold text-slate-900">Leave a review</p>
                   <div className="flex gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -381,22 +340,15 @@ export default function DashboardPage() {
                     onChange={(e) => setReviewComment(e.target.value)}
                     placeholder="Share your experience (optional)"
                     rows={3}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-emerald-400 focus:outline-none resize-none"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-800 focus:border-brand-500 focus:outline-none resize-none"
                   />
                   <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setReviewMode(false)}
-                      className="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100"
-                    >
+                    <button type="button" onClick={() => setReviewMode(false)}
+                      className="rounded-2xl border border-slate-200 px-4 py-2 text-[13px] font-semibold text-slate-600 active:bg-slate-50">
                       Cancel
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleSubmitReview}
-                      disabled={reviewSubmitting}
-                      className="rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
-                    >
+                    <button type="button" onClick={handleSubmitReview} disabled={reviewSubmitting}
+                      className="flex-1 rounded-2xl bg-brand-500 py-2 text-[13px] font-semibold text-white active:bg-brand-600 disabled:opacity-60">
                       {reviewSubmitting ? "Submitting…" : "Submit review"}
                     </button>
                   </div>
@@ -404,48 +356,20 @@ export default function DashboardPage() {
               );
             })()}
 
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-              <p className="font-semibold text-slate-900">Booking handling</p>
-              <ul className="mt-2 space-y-1">
-                <li>If you cancel, the driver is notified and any eligible refund is sent back to their original payment method.</li>
-                <li>If the driver does not show, mark it through admin/support rather than editing the booking window manually.</li>
-                <li>If the driver overstays or ignores access rules, report it with timestamps and any evidence so support can review it.</li>
-              </ul>
-            </div>
             {selected.status !== "canceled" ? (
-              <button
-                onClick={handleHostCancel}
-                disabled={cancelingHostBooking}
-                className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-60"
-              >
-                {cancelingHostBooking ? "Canceling booking…" : "Host cancel booking"}
+              <button onClick={handleHostCancel} disabled={cancelingHostBooking}
+                className="w-full rounded-2xl border border-rose-200 bg-rose-50 py-3 text-[13px] font-semibold text-rose-700 active:bg-rose-100 disabled:opacity-60">
+                {cancelingHostBooking ? "Canceling…" : "Cancel booking"}
               </button>
             ) : selected.cancellationSource === "host" ? (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                This booking was canceled by the host. Refund tracking should be reviewed if the driver reports an issue.
+              <div className="rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] text-brand-700">
+                Booking was canceled by the host. Refund sent where eligible.
               </div>
             ) : null}
+            </div>
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function StatCard({ label, value, hint, accent }: { label: string; value: string; hint?: string; accent?: boolean }) {
-  return (
-    <div
-      className={`rounded-lg border px-4 py-3 shadow-sm ${
-        accent
-          ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-          : "border-slate-200 bg-white/80 text-slate-900 backdrop-blur"
-      }`}
-    >
-      <p className={`text-xs font-semibold tracking-wide ${accent ? "text-emerald-700" : "text-slate-500"}`}>
-        {label}
-      </p>
-      <div className="text-2xl tracking-tight font-semibold">{value}</div>
-      {hint && <p className={`text-xs ${accent ? "text-emerald-800/80" : "text-slate-500"}`}>{hint}</p>}
     </div>
   );
 }

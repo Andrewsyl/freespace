@@ -215,27 +215,15 @@ export default function HostWizardPage() {
   // ── Not signed in ────────────────────────────────────────────────────────────
   if (!loading && !user) {
     return (
-      <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-6 px-5 text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 ring-2 ring-emerald-100">
-          <svg className="h-10 w-10 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 21V10.75m0 0c0-1.033 1.117-1.545 1.875-.875L12 15.5l7.875-5.625c.758-.67 1.875-.158 1.875.875" />
-          </svg>
-        </div>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">List your space</h1>
-          <p className="mt-2 text-sm text-slate-500">Sign in to start earning from your parking space.</p>
-        </div>
-        <div className="flex w-full max-w-xs flex-col gap-3">
-          <Link
-            href="/login"
-            className="flex h-12 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white hover:bg-brand-600 transition"
-          >
+      <div className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center bg-white px-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">List your space</p>
+        <h1 className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Sign in to get started</h1>
+        <p className="mt-1 text-[14px] text-slate-500">You need an account to list your parking space.</p>
+        <div className="mt-6 flex flex-col gap-3">
+          <Link href="/login" className="flex items-center justify-center rounded-2xl bg-brand-500 py-3.5 text-[15px] font-bold text-white active:bg-brand-600">
             Sign in
           </Link>
-          <Link
-            href="/signup"
-            className="flex h-12 items-center justify-center rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
+          <Link href="/signup" className="flex items-center justify-center rounded-2xl border border-slate-200 py-3.5 text-[15px] font-semibold text-slate-700 active:bg-slate-50">
             Create account
           </Link>
         </div>

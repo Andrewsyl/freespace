@@ -1,4 +1,5 @@
 "use client";
+import { MapPin } from "lucide-react";
 
 import { useEffect, useRef } from "react";
 import type { HostStepProps } from "./types";
@@ -92,10 +93,7 @@ export function HostStreetViewStep({ data, onUpdate, onSkip }: HostStepProps & {
   if (!hasCoords) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 py-16 text-center">
-        <svg className="h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.4}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-        </svg>
+        <MapPin className="h-10 w-10 text-slate-300" strokeWidth={1.4} />
         <p className="text-sm font-semibold text-slate-700">No location set</p>
         <p className="text-xs text-slate-500">Go back and confirm your address first</p>
       </div>

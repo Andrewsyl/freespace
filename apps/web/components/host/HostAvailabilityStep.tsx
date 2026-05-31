@@ -1,4 +1,5 @@
 "use client";
+import { ChevronRight, X } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import type { HostStepProps } from "./types";
@@ -123,7 +124,7 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
           <p className="text-base font-semibold text-slate-900">Custom</p>
           <p className="mt-1 text-sm text-slate-500">Personalised settings</p>
         </div>
-        <svg className="h-4 w-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6"/></svg>
+        <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={2.5} />
       </button>
 
       {/* Custom summary */}
@@ -144,7 +145,7 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
             <div className="mb-1 flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900">Custom availability</h3>
               <button type="button" onClick={() => setCustomOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                <X className="h-5 w-5" strokeWidth={2.5} />
               </button>
             </div>
             <p className="mb-4 text-sm text-slate-500">Choose the days and times you want to make your space available.</p>

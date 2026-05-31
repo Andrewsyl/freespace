@@ -1,4 +1,5 @@
 "use client";
+import { Info } from "lucide-react";
 
 import type { HostStepProps } from "./types";
 import { buildTitleFromDraft, prettySpaceType } from "./utils";
@@ -89,9 +90,7 @@ export function HostConfirmationStep({ data }: HostStepProps) {
       {/* No photos nudge */}
       {data.imageUrls.length === 0 && (
         <div className="flex items-start gap-3 rounded-lg border border-dashed border-slate-200 px-4 py-3">
-          <svg className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
-          </svg>
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" strokeWidth={1.8} />
           <p className="text-xs text-slate-500">No photos added — go back to add some for better conversion.</p>
         </div>
       )}
