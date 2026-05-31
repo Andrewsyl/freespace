@@ -29,7 +29,7 @@ function BookingSuccessContent() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Booking confirmed</p>
           <h1 className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Payment successful</h1>
           <p className="mt-2 text-[14px] leading-6 text-slate-500">
-            Your booking is confirmed. You'll find it in your dashboard shortly.
+            Your booking is confirmed. You&apos;ll find it in your dashboard shortly.
           </p>
           {sessionId && (
             <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[12px] text-slate-500">
