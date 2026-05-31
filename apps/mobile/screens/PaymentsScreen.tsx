@@ -177,11 +177,12 @@ export function PaymentsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.stickyHeader}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={20} color={colors.text} />
-          <Text style={styles.backText}>Back</Text>
+      <View style={styles.navBar}>
+        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <ArrowLeft size={22} color="#111827" />
         </Pressable>
+        <Text style={styles.navTitle}>Payments</Text>
+        <View style={styles.navSpacer} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
