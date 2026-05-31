@@ -197,10 +197,9 @@ export function MobileListingView({
 
         {/* ── Choose your time ── */}
         <section className="border-b border-slate-200 bg-white px-5 py-6">
-          <h2 className="text-[20px] font-bold leading-tight tracking-[-0.04em] text-slate-950">
+          <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">
             Choose your time
           </h2>
-
           <div className="mt-4 grid grid-cols-2 gap-3">
             <SearchDateTimePicker
               label="From"
@@ -220,45 +219,47 @@ export function MobileListingView({
               }}
             />
           </div>
-
-          <div className="mt-5 space-y-2 text-[13px] text-slate-500">
-            <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-              Exact location confirmed after booking
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-              Arrival instructions included with your confirmation
-            </div>
+          <div className="mt-4 space-y-2">
+            {[
+              "Exact location confirmed after booking",
+              "Arrival instructions included with your confirmation",
+            ].map((note) => (
+              <div key={note} className="flex items-center gap-2.5 text-[13px] text-slate-500">
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+                  <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </span>
+                {note}
+              </div>
+            ))}
           </div>
         </section>
 
         {/* ── Space overview ── */}
-        <section className="border-b border-slate-200 bg-white px-5 py-6">
-          <h2 className="text-[20px] font-bold leading-tight tracking-[-0.04em] text-slate-950">
-            Space overview
-          </h2>
-          <p className="mt-4 text-[15px] leading-7 text-slate-600">{listing.availability}</p>
-        </section>
+        {listing.availability && (
+          <section className="border-b border-slate-200 bg-white px-5 py-6">
+            <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">About this space</h2>
+            <p className="mt-3 text-[14px] leading-6 text-slate-600">{listing.availability}</p>
+          </section>
+        )}
 
         {/* ── Features ── */}
         {amenities.length > 0 && (
           <section className="border-b border-slate-200 bg-white px-5 py-6">
-            <h2 className="text-[20px] font-bold leading-tight tracking-[-0.04em] text-slate-950">
-              Included features
-            </h2>
-            <div className="mt-5">
+            <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Features</h2>
+            <div className="mt-4">
               {amenities.slice(0, 6).map((amenity) => {
                 const Icon = amenityToIcon(amenity);
                 return (
                   <div
                     key={amenity}
-                    className="flex items-center gap-3 border-b border-slate-100 py-3.5 last:border-b-0"
+                    className="flex items-center gap-3 border-b border-slate-100 py-3 last:border-b-0"
                   >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100">
-                      <Icon className="h-4.5 w-4.5 text-slate-500" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50">
+                      <Icon className="h-4 w-4 text-brand-600" />
                     </div>
-                    <span className="text-[15px] text-slate-800">{amenity}</span>
+                    <span className="text-[14px] font-medium text-slate-800">{amenity}</span>
                   </div>
                 );
               })}
@@ -266,13 +267,11 @@ export function MobileListingView({
           </section>
         )}
 
-        {/* ── Local area map ── */}
+        {/* ── Location map ── */}
         {listing.latitude != null && listing.longitude != null && (
           <section className="border-b border-slate-200 bg-white px-5 py-6">
-            <h2 className="text-[20px] font-bold leading-tight tracking-[-0.04em] text-slate-950">
-              Location
-            </h2>
-            <div className="mt-4 h-52 overflow-hidden rounded-xl">
+            <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Location</h2>
+            <div className="mt-4 h-52 overflow-hidden rounded-2xl">
               <ListingMap
                 listing={listingForMap}
                 center={{ lat: listing.latitude, lng: listing.longitude }}
@@ -284,34 +283,33 @@ export function MobileListingView({
 
         {/* ── Reviews ── */}
         <section className="bg-white px-5 py-6">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-[20px] font-bold leading-tight tracking-[-0.04em] text-slate-950">
-              Reviews
-            </h2>
-            <span className="text-[13px] text-slate-400">{reviews.length} total</span>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Reviews</h2>
+            {reviews.length > 0 && (
+              <span className="text-[12px] font-medium text-slate-400">{reviews.length} total</span>
+            )}
           </div>
-
           {reviews.length === 0 ? (
-            <p className="mt-4 text-[15px] text-slate-500">No reviews yet.</p>
+            <p className="mt-3 text-[13px] text-slate-400">No reviews yet.</p>
           ) : (
-            <div className="mt-5">
+            <div className="mt-4">
               {reviews.slice(0, 4).map((review) => (
-                <div key={review.id} className="border-b border-slate-100 py-5 last:border-b-0">
+                <div key={review.id} className="border-b border-slate-100 py-4 last:border-b-0">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       {Array.from({ length: 5 }, (_, i) => (
                         <StarIcon
                           key={i}
-                          className={`h-3.5 w-3.5 ${i < Math.round(review.rating) ? "fill-amber-400 text-amber-400" : "text-slate-200"}`}
+                          className={`h-3 w-3 ${i < Math.round(review.rating) ? "fill-amber-400 text-amber-400" : "text-slate-200"}`}
                         />
                       ))}
                     </div>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-[11px] text-slate-400">
                       {formatReviewDate(review.createdAt ?? review.created_at)}
                     </span>
                   </div>
                   {review.comment && (
-                    <p className="mt-2.5 text-[14px] leading-6 text-slate-600">{review.comment}</p>
+                    <p className="mt-2 text-[13px] leading-[1.6] text-slate-600">{review.comment}</p>
                   )}
                 </div>
               ))}
@@ -322,15 +320,13 @@ export function MobileListingView({
 
       {/* ── Sticky booking footer ── */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white px-4 py-3 lg:hidden"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+        className="fixed bottom-0 left-0 right-0 z-30 bg-white px-4 shadow-[0_-4px_20px_rgba(15,23,42,0.10)] lg:hidden"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)", paddingTop: "12px" }}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="shrink-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-              {bookingTotal.durationLabel}
-            </p>
-            <p className="text-[22px] font-extrabold tracking-tight text-slate-900">
+            <p className="text-[11px] font-semibold text-slate-400">{bookingTotal.durationLabel}</p>
+            <p className="text-[20px] font-extrabold tracking-tight text-slate-900">
               €{formatPriceValue(bookingTotal.total)}
             </p>
           </div>
@@ -344,7 +340,7 @@ export function MobileListingView({
                 endTime: toTimeStr(endAt),
               })
             }
-            className="flex flex-1 items-center justify-center rounded-xl bg-brand-500 py-3.5 text-[15px] font-bold text-white shadow-sm transition active:bg-brand-600"
+            className="flex flex-1 items-center justify-center rounded-2xl bg-brand-500 py-3.5 text-[15px] font-bold text-white shadow-sm transition active:bg-brand-600"
           >
             Book now
           </Link>

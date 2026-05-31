@@ -105,9 +105,8 @@ export default function CheckoutPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f5f7fb]">
-        <SlimNav />
-        <div className="px-4 py-10 text-sm text-slate-600">Loading...</div>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
       </div>
     );
   }
@@ -117,15 +116,16 @@ export default function CheckoutPage() {
     const loginHref = `/login?next=${encodeURIComponent(currentPath)}`;
     const signupHref = `/signup?next=${encodeURIComponent(currentPath)}`;
     return (
-      <div className="min-h-screen bg-[#f5f7fb]">
+      <div className="min-h-screen bg-white">
         <SlimNav />
-        <div className="mx-auto max-w-2xl space-y-4 px-4 py-10">
-          <p className="text-sm text-slate-700">Sign in to start a booking.</p>
-          <div className="flex gap-2 text-sm">
-            <Link href={loginHref as any} className="btn-primary">
+        <div className="px-5 py-10">
+          <p className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Sign in to book</p>
+          <p className="mt-1 text-[14px] text-slate-500">You need an account to complete this booking.</p>
+          <div className="mt-5 flex flex-col gap-3">
+            <Link href={loginHref as any} className="flex items-center justify-center rounded-2xl bg-brand-500 py-3.5 text-[15px] font-bold text-white active:bg-brand-600">
               Sign in
             </Link>
-            <Link href={signupHref as any} className="rounded-lg px-3 py-2 font-semibold text-slate-700 hover:bg-slate-100">
+            <Link href={signupHref as any} className="flex items-center justify-center rounded-2xl border border-slate-200 py-3.5 text-[15px] font-semibold text-slate-700 active:bg-slate-50">
               Create account
             </Link>
           </div>
@@ -136,191 +136,164 @@ export default function CheckoutPage() {
 
   if (!listing) {
     return (
-      <div className="min-h-screen bg-[#f5f7fb]">
-        <SlimNav />
-        <div className="px-4 py-10 text-sm text-slate-600">Loading listing…</div>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f7fb]">
+    <div className="min-h-screen bg-white">
       <SlimNav />
-      <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 pb-28 pt-8 sm:px-6">
-        <header className="space-y-2">
-          <p className="text-sm font-semibold tracking-wide text-brand-600">Booking confirmation</p>
-          <h1 className="text-3xl tracking-tight font-semibold text-slate-900">{listing.title}</h1>
-          <p className="text-sm text-slate-600">{listing.address}</p>
-        </header>
 
-        <div className="rounded-lg border border-slate-200/80 bg-white p-5 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">Parking location</h2>
-          <p className="mt-2 text-sm text-slate-600">Review the space details before confirming.</p>
-          <div className="mt-4 rounded-lg border border-slate-200 px-4 py-3">
-            <p className="text-sm font-semibold text-slate-900">{listing.title}</p>
-            <p className="text-sm text-slate-600">{listing.address}</p>
-          </div>
-        </div>
-
-        <form id="checkout-form" onSubmit={handleSubmit} className="space-y-5">
-          <div className="rounded-lg border border-slate-200/80 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-slate-900">Session details</h2>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-600">
-                {durationHours} hrs
-              </span>
-            </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <SearchDateTimePicker
-                label="From"
-                value={startAt}
-                portalPopup
-                onChange={(next) => {
-                  setStartAt(next);
-                  if (next >= endAt) {
-                    setEndAt(new Date(next.getTime() + 2 * 60 * 60 * 1000));
-                  }
-                }}
-              />
-              <SearchDateTimePicker
-                label="Until"
-                value={endAt}
-                portalPopup
-                onChange={(next) => {
-                  if (next > startAt) {
-                    setEndAt(next);
-                  }
-                }}
-              />
-            </div>
-            <div className="mt-5 rounded-lg border border-slate-200">
-              {[
-                { label: "START", value: startAt.toLocaleString() },
-                { label: "END", value: endAt.toLocaleString() },
-                { label: "DURATION", value: `${durationHours} hours` },
-              ].map((row, index) => (
-                <div
-                  key={row.label}
-                  className={`flex items-center justify-between px-4 py-3 text-sm ${index !== 0 ? "border-t border-slate-200" : ""}`}
-                >
-                  <span className="text-xs font-semibold tracking-wide text-slate-400">{row.label}</span>
-                  <span className="text-sm font-semibold text-slate-900">{row.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-slate-200/80 bg-white p-5 shadow-sm">
-            <h2 className="text-xl font-semibold text-slate-900">Price breakdown</h2>
-            <div className="mt-4 space-y-3 text-sm text-slate-600">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold tracking-wide text-slate-400">HOST RATE</span>
-                <span className="text-sm font-semibold text-slate-900">{formatListingPriceLine(listing)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold tracking-wide text-slate-400">BILLING PERIOD</span>
-                <span className="text-sm font-semibold text-slate-900">
-                  {pricing?.billingCount ?? 0} {pricing?.billingUnit ?? "day"}{pricing?.billingCount === 1 ? "" : "s"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold tracking-wide text-slate-400">PARKING FEE</span>
-                <span className="text-sm font-semibold text-slate-900">€{parkingFee.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold tracking-wide text-slate-400">PLATFORM FEE</span>
-                <span className="text-sm font-semibold text-slate-900">{platformFeeLabel}</span>
-              </div>
-              <div className="rounded-lg bg-brand-50 px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold tracking-wide text-brand-600">TOTAL DUE TODAY</span>
-                  <span className="text-lg font-semibold text-brand-700">€{totalPrice.toFixed(2)}</span>
-                </div>
-              </div>
-              <p className="text-xs leading-5 text-slate-500">No hidden fees will be added after checkout.</p>
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-slate-200/80 bg-white p-5 shadow-sm">
-            <h2 className="text-xl font-semibold text-slate-900">Cancellation policy</h2>
-            <p className="mt-3 text-sm text-slate-600">
-              Cancel up to 2 hours before the start time for a full refund. Late cancellations may incur a fee.
-            </p>
-          </div>
-
-          <div className="rounded-lg border border-slate-200/80 bg-white p-5 shadow-sm">
-            <h2 className="text-xl font-semibold text-slate-900">Payment method</h2>
-            <div className="mt-4 space-y-3">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("google")}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm font-semibold transition ${
-                  paymentMethod === "google"
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
-                }`}
-              >
-                <span>Google Pay</span>
-                <span className="text-xs font-semibold tracking-wide">Fast checkout</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("card")}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm font-semibold transition ${
-                  paymentMethod === "card"
-                    ? "border-brand-500 bg-brand-50 text-brand-700"
-                    : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
-                }`}
-              >
-                <span>Add card</span>
-                <span className="text-xs font-semibold tracking-wide text-slate-500">Stripe</span>
-              </button>
-            </div>
-          </div>
-
-          {error && (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
-          )}
-          {status === "success" && checkoutUrl && (
-            <div className="rounded-lg border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-700">
-              Redirecting to Stripe… If not redirected,{" "}
-              <a className="underline" href={checkoutUrl}>
-                click here
-              </a>
-              .
-            </div>
-          )}
-        </form>
-
-        <p className="text-xs text-slate-500">
-          FreeSpace is the booking marketplace. Hosts manage the physical space and site rules. By booking, you agree to the{" "}
-          <Link href="/legal/parking-terms-liability" className="font-semibold text-brand-700 hover:text-brand-800">
-            parking terms and liability policy
-          </Link>
-          .
-        </p>
+      {/* ── Page header ── */}
+      <div className="border-b border-slate-200 px-5 py-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Confirm booking</p>
+        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">{listing.title}</h1>
+        <p className="mt-0.5 text-[13px] text-slate-500">{listing.address}</p>
       </div>
 
+      <form id="checkout-form" onSubmit={handleSubmit}>
+
+        {/* ── Session details ── */}
+        <section className="border-b border-slate-200 px-5 py-6">
+          <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Your session</h2>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <SearchDateTimePicker
+              label="From"
+              value={startAt}
+              portalPopup
+              onChange={(next) => {
+                setStartAt(next);
+                if (next >= endAt) setEndAt(new Date(next.getTime() + 2 * 60 * 60 * 1000));
+              }}
+            />
+            <SearchDateTimePicker
+              label="Until"
+              value={endAt}
+              portalPopup
+              onChange={(next) => { if (next > startAt) setEndAt(next); }}
+            />
+          </div>
+          <div className="mt-4 divide-y divide-slate-100 rounded-2xl border border-slate-200 overflow-hidden">
+            {[
+              { label: "Arrives", value: startAt.toLocaleString("en-IE", { dateStyle: "medium", timeStyle: "short" }) },
+              { label: "Departs", value: endAt.toLocaleString("en-IE", { dateStyle: "medium", timeStyle: "short" }) },
+              { label: "Duration", value: `${durationHours} hour${durationHours !== 1 ? "s" : ""}` },
+            ].map((row) => (
+              <div key={row.label} className="flex items-center justify-between px-4 py-3">
+                <span className="text-[13px] text-slate-500">{row.label}</span>
+                <span className="text-[13px] font-semibold text-slate-900">{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Price breakdown ── */}
+        <section className="border-b border-slate-200 px-5 py-6">
+          <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Price breakdown</h2>
+          <div className="mt-4 divide-y divide-slate-100">
+            <div className="flex items-center justify-between py-3">
+              <span className="text-[13px] text-slate-500">Rate</span>
+              <span className="text-[13px] font-semibold text-slate-900">{formatListingPriceLine(listing)}</span>
+            </div>
+            <div className="flex items-center justify-between py-3">
+              <span className="text-[13px] text-slate-500">Billing period</span>
+              <span className="text-[13px] font-semibold text-slate-900">
+                {pricing?.billingCount ?? 0} {pricing?.billingUnit ?? "day"}{pricing?.billingCount === 1 ? "" : "s"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-3">
+              <span className="text-[13px] text-slate-500">Platform fee</span>
+              <span className="text-[13px] font-semibold text-slate-900">{platformFeeLabel}</span>
+            </div>
+            <div className="flex items-center justify-between py-3">
+              <span className="text-[14px] font-bold text-slate-900">Total</span>
+              <span className="text-[18px] font-extrabold tracking-tight text-brand-600">€{totalPrice.toFixed(2)}</span>
+            </div>
+          </div>
+          <p className="mt-1 text-[11px] text-slate-400">No hidden fees will be added at checkout.</p>
+        </section>
+
+        {/* ── Payment method ── */}
+        <section className="border-b border-slate-200 px-5 py-6">
+          <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Payment method</h2>
+          <div className="mt-4 space-y-3">
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("google")}
+              className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-[14px] font-semibold transition active:scale-[0.99] ${
+                paymentMethod === "google"
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-200 bg-white text-slate-900 active:bg-slate-50"
+              }`}
+            >
+              <span>Google Pay</span>
+              <span className={`text-[11px] font-semibold ${paymentMethod === "google" ? "text-white/60" : "text-slate-400"}`}>Fast checkout</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("card")}
+              className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-[14px] font-semibold transition active:scale-[0.99] ${
+                paymentMethod === "card"
+                  ? "border-brand-500 bg-brand-50 text-brand-700"
+                  : "border-slate-200 bg-white text-slate-900 active:bg-slate-50"
+              }`}
+            >
+              <span>Card</span>
+              <span className={`text-[11px] font-semibold ${paymentMethod === "card" ? "text-brand-400" : "text-slate-400"}`}>Stripe</span>
+            </button>
+          </div>
+        </section>
+
+        {/* ── Cancellation policy ── */}
+        <section className="border-b border-slate-200 px-5 py-6">
+          <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Cancellation policy</h2>
+          <p className="mt-3 text-[14px] leading-6 text-slate-600">
+            Cancel up to 2 hours before the start time for a full refund. Late cancellations may incur a fee.
+          </p>
+        </section>
+
+        {/* ── Legal ── */}
+        <div className="px-5 py-5">
+          <p className="text-[12px] leading-5 text-slate-400">
+            By booking you agree to the{" "}
+            <Link href="/legal/parking-terms-liability" className="font-semibold text-slate-600 underline underline-offset-2">
+              parking terms and liability policy
+            </Link>
+            .
+          </p>
+        </div>
+
+        {error && (
+          <div className="mx-5 mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>
+        )}
+        {status === "success" && checkoutUrl && (
+          <div className="mx-5 mb-4 rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] text-brand-700">
+            Redirecting to Stripe…{" "}
+            <a className="font-semibold underline underline-offset-2" href={checkoutUrl}>Click here</a> if nothing happens.
+          </div>
+        )}
+
+      </form>
+
+      {/* ── Sticky footer ── */}
       <div
-        className="fixed inset-x-0 bottom-0 border-t border-slate-100 bg-white"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        className="fixed inset-x-0 bottom-0 bg-white px-4 shadow-[0_-4px_20px_rgba(15,23,42,0.10)]"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)", paddingTop: "12px" }}
       >
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <div>
-            <p className="text-[22px] font-bold tracking-tight text-slate-900">€{totalPrice.toFixed(2)}</p>
-            <p className="text-[12px] text-slate-400">{durationHours} hour{durationHours !== 1 ? "s" : ""} total</p>
+        <div className="flex items-center gap-3">
+          <div className="shrink-0">
+            <p className="text-[11px] font-semibold text-slate-400">{durationHours} hour{durationHours !== 1 ? "s" : ""}</p>
+            <p className="text-[20px] font-extrabold tracking-tight text-slate-900">€{totalPrice.toFixed(2)}</p>
           </div>
           <button
             type="submit"
             form="checkout-form"
-            className="flex h-12 min-w-[160px] items-center justify-center rounded-xl bg-brand-500 px-6 text-[15px] font-bold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex flex-1 items-center justify-center rounded-2xl bg-brand-500 py-3.5 text-[15px] font-bold text-white shadow-sm transition active:bg-brand-600 disabled:opacity-50"
             disabled={status === "loading"}
           >
-            {status === "loading"
-              ? "Processing…"
-              : paymentMethod === "google"
-                ? "Buy with G Pay"
-                : "Pay & reserve"}
+            {status === "loading" ? "Processing…" : paymentMethod === "google" ? "Buy with G Pay" : "Pay & reserve"}
           </button>
         </div>
       </div>
