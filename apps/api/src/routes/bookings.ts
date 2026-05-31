@@ -28,6 +28,10 @@ import {
   createUser,
   getBookingByPaymentIntent,
   cancelBookingWithRefundByHost,
+  listDuePayoutsForHost,
+  markPayoutProcessing,
+  markPayoutTransferred,
+  markPayoutPending,
 } from "../lib/db.js";
 import { createCheckoutSession, stripe } from "../lib/stripe.js";
 import { sendBookingEmail, sendBookingStatusEmail } from "../lib/email.js";
@@ -49,9 +53,6 @@ import { env } from "../env.js";
 const router = Router();
 const DEFAULT_DAILY_HOURS = 8;
 
-function hasUsableHostPayoutAccount(accountId?: string | null) {
-  return Boolean(accountId && !accountId.startsWith("acct_mock_"));
-}
 
 function calculateListingChargeCents(input: {
   rateType?: string | null;
@@ -558,9 +559,6 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
     if (!listingWithHost) {
       return res.status(404).json({ message: "Listing not found" });
     }
-    if (env.NODE_ENV === "production" && !hasUsableHostPayoutAccount(listingWithHost.hostStripeAccountId)) {
-      return res.status(409).json({ message: "This host has not completed payout setup yet." });
-    }
     const expectedAmountCents = calculateListingChargeCents({
       rateType: listingWithHost.rateType,
       pricePerDay: listingWithHost.pricePerDay,
@@ -737,9 +735,6 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
     const listingWithHost = await getListingWithHostAccount(payload.listingId);
     if (!listingWithHost) {
       return res.status(404).json({ message: "Listing not found" });
-    }
-    if (env.NODE_ENV === "production" && !hasUsableHostPayoutAccount(listingWithHost.hostStripeAccountId)) {
-      return res.status(409).json({ message: "This host has not completed payout setup yet." });
     }
     const expectedAmountCents = calculateListingChargeCents({
       rateType: listingWithHost.rateType,
@@ -1984,6 +1979,34 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           startTime: new Date(targets.start_time),
           endTime: new Date(targets.end_time),
         });
+
+        if (process.env.STRIPE_CONNECT_ENABLED === "true" && stripe) {
+          const hostUser = await findUserById(targets.host_id);
+          const accountId = hostUser?.host_stripe_account_id;
+          if (accountId && !accountId.startsWith("acct_mock_")) {
+            const due = await listDuePayoutsForHost(targets.host_id);
+            for (const payoutBooking of due) {
+              const locked = await markPayoutProcessing(payoutBooking.id);
+              if (!locked) continue;
+              const net = Math.max(0, Number(payoutBooking.amount_cents) - Number(payoutBooking.fee_cents));
+              if (net <= 0) {
+                await markPayoutPending(payoutBooking.id);
+                continue;
+              }
+              try {
+                const transfer = await stripe.transfers.create({
+                  amount: net,
+                  currency: (payoutBooking.currency ?? "eur").toLowerCase(),
+                  destination: accountId,
+                  metadata: { booking_id: payoutBooking.id },
+                });
+                await markPayoutTransferred({ bookingId: payoutBooking.id, transferId: transfer.id });
+              } catch {
+                await markPayoutPending(payoutBooking.id);
+              }
+            }
+          }
+        }
       }
     }
 
@@ -2027,6 +2050,41 @@ router.get("/me", requireAuth, bookingReadLimiter, async (req, res, next) => {
     res.json(bookings);
   } catch (error) {
     next(error);
+  }
+});
+
+router.post("/connect-webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  const signature = req.headers["stripe-signature"];
+  const connectWebhookSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
+
+  if (!stripe || !connectWebhookSecret) {
+    return res.json({ received: true, skipped: true });
+  }
+
+  if (!signature) {
+    return res.status(400).json({ message: "Missing signature" });
+  }
+
+  try {
+    const event = stripe.webhooks.constructEvent(req.body, signature, connectWebhookSecret);
+
+    if (event.type === "account.updated") {
+      const account = event.data.object as any;
+      await insertEventLog({
+        eventType: "connect_account_updated",
+        payload: {
+          accountId: account.id,
+          chargesEnabled: account.charges_enabled,
+          payoutsEnabled: account.payouts_enabled,
+          detailsSubmitted: account.details_submitted,
+        },
+      });
+    }
+
+    res.json({ received: true });
+  } catch (err) {
+    console.error("Stripe Connect webhook error", err);
+    return res.status(400).json({ message: "Invalid webhook" });
   }
 });
 

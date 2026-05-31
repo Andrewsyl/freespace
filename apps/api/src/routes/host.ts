@@ -202,8 +202,8 @@ router.post("/payout", requireAuth, enforceBlockedList, payoutLimiter, async (re
     let onboardingUrl: string | null = null;
     if (connectEnabled && stripe && !accountId.startsWith("acct_mock_")) {
       const baseUrl = process.env.WEB_BASE_URL ?? "http://localhost:3000";
-      const refreshUrl = payload.refreshUrl ?? `${baseUrl}/host/payouts`;
-      const returnUrl = payload.returnUrl ?? `${baseUrl}/host/payouts`;
+      const refreshUrl = payload.refreshUrl ?? `${baseUrl}/host/dashboard`;
+      const returnUrl = payload.returnUrl ?? `${baseUrl}/host/dashboard`;
       try {
         const link = await stripe.accountLinks.create({
           account: accountId,

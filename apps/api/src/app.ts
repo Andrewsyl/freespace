@@ -117,7 +117,7 @@ export function createApp() {
 
   app.use(csrfProtection);
   app.use((req, res, next) => {
-    if (req.originalUrl === "/api/bookings/webhook") {
+    if (req.originalUrl === "/api/bookings/webhook" || req.originalUrl === "/api/bookings/connect-webhook") {
       return next();
     }
     return express.json()(req, res, next);
