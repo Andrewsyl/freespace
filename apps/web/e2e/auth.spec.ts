@@ -24,7 +24,7 @@ test("reset password request flow shows success notice", async ({ page }) => {
   await page.goto("/reset-password");
 
   await expect(page.getByRole("heading", { name: "Reset password" })).toBeVisible();
-  await page.getByLabel("Email").fill("driver@example.com");
+  await page.getByLabel("Email address").fill("driver@example.com");
   await page.getByRole("button", { name: "Send reset link" }).click();
 
   await expect(page.getByText("Check your inbox")).toBeVisible();
