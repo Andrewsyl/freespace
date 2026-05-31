@@ -58,7 +58,7 @@ describe("BookingSummaryScreen", () => {
       <GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider>
     );
 
-    await waitFor(() => expect(getByText("Review booking")).toBeTruthy());
+    await waitFor(() => expect(getByText("Confirm booking")).toBeTruthy());
   });
 
   it("starts payment when tapping the pay button", async () => {
