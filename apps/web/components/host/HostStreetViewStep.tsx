@@ -92,8 +92,8 @@ export function HostStreetViewStep({ data, onUpdate, onSkip }: HostStepProps & {
 
   if (!hasCoords) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 py-16 text-center">
-        <MapPin className="h-10 w-10 text-slate-300" strokeWidth={1.4} />
+      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 py-10 text-center">
+        <MapPin className="h-8 w-8 text-slate-300" strokeWidth={1.4} />
         <p className="text-sm font-semibold text-slate-700">No location set</p>
         <p className="text-xs text-slate-500">Go back and confirm your address first</p>
       </div>
@@ -101,10 +101,19 @@ export function HostStreetViewStep({ data, onUpdate, onSkip }: HostStepProps & {
   }
 
   return (
-    <div className="space-y-4">
-      <p className="rounded-lg border border-brand-200 bg-brand-50 px-3.5 py-2.5 text-sm font-semibold text-brand-600">
-        Can&apos;t see your space from here? Skip this — you can add your own photos at a later step.
-      </p>
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm text-slate-500">
+          Can&apos;t see your space from here? You can add your own photos at a later step.
+        </p>
+        <button
+          type="button"
+          onClick={handleSkip}
+          className="mt-1.5 text-[13px] font-semibold text-brand-500 hover:text-brand-600"
+        >
+          Skip for now →
+        </button>
+      </div>
 
       {/* Street View viewer */}
       <div
@@ -112,24 +121,14 @@ export function HostStreetViewStep({ data, onUpdate, onSkip }: HostStepProps & {
         className="h-80 w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-100"
       />
 
-
       {/* Actions */}
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={handleUseView}
-          className="flex-1 rounded-lg bg-brand-600 py-3 text-sm font-semibold text-white transition hover:bg-brand-500"
-        >
-          Use this view
-        </button>
-        <button
-          type="button"
-          onClick={handleSkip}
-          className="rounded-lg border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-        >
-          Skip for now
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={handleUseView}
+        className="w-full rounded-xl bg-brand-500 py-3 text-[15px] font-bold text-white transition hover:bg-brand-600"
+      >
+        Use this view
+      </button>
     </div>
   );
 }

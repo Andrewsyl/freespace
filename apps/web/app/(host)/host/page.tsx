@@ -253,7 +253,7 @@ export default function HostWizardPage() {
       description={STEPS[stepIndex].description}
       step={stepIndex + 1}
       totalSteps={STEPS.length}
-      onBack={stepIndex === 0 ? undefined : handleBack}
+      onBack={stepIndex === 0 ? () => router.push("/host/dashboard") : handleBack}
       onNext={isLastStep ? handlePublish : handleNext}
       nextLabel={isLastStep ? "Publish listing" : "Continue"}
       nextDisabled={nextDisabled}

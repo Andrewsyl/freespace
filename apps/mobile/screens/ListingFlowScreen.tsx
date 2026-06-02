@@ -65,6 +65,7 @@ const defaultDraft: ListingDraft = {
   pricePerHour: "1.00",
   pricePerMonth: "100.00",
   photos: [],
+  capacity: 1,
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, "CreateListingFlow">;
@@ -176,6 +177,7 @@ export function ListingFlowScreen({ route }: Props) {
               ? String((listing as { price_per_month?: number | null }).price_per_month)
               : prev.pricePerMonth,
           photos: listing.image_urls ?? prev.photos,
+          capacity: (listing as { capacity?: number | null }).capacity ?? 1,
         }));
         if (token) {
           try {

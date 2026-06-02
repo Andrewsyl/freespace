@@ -24,10 +24,10 @@ type Props = NativeStackScreenProps<FlowStackParamList, "ListingDetails">;
 
 const spaceTypes = ["Private Driveway", "Garage", "Car park", "Private road"];
 const vehicleSizeOptions = [
-  { value: "small",  label: "Small",  example: "e.g. VW Polo, Ford Fiesta",    image: "https://img.icons8.com/color/96/hatchback.png" },
-  { value: "medium", label: "Medium", example: "e.g. Audi A3, BMW 3 Series",   image: "https://img.icons8.com/color/96/sedan.png" },
-  { value: "large",  label: "Large",  example: "e.g. Volvo XC90, BMW X5",      image: "https://img.icons8.com/color/96/suv.png" },
-  { value: "van",    label: "Van",    example: "e.g. Ford Transit, Sprinter",   image: "https://img.icons8.com/color/96/van.png" },
+  { value: "small",  label: "Hatchback",   example: "Small & city cars",           image: "https://img.icons8.com/color/96/hatchback.png" },
+  { value: "medium", label: "Saloon",      example: "Saloons & family cars",       image: "https://img.icons8.com/color/96/sedan.png" },
+  { value: "large",  label: "SUV / Jeep",  example: "SUVs, jeeps & 4x4s",         image: "https://img.icons8.com/color/96/suv.png" },
+  { value: "van",    label: "Van",         example: "Vans, minibuses & campervans", image: "https://img.icons8.com/color/96/van.png" },
 ];
 
 type DetailStep = "type" | "count" | "vehicle";
@@ -53,6 +53,9 @@ function SpaceTypeIcon({ type, active }: { type: string; active: boolean }) {
   }
 }
 
+const MIN_CAPACITY = 1;
+const MAX_CAPACITY = 20;
+
 export function ListingDetailsScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
   const insets = useSafeAreaInsets();
@@ -60,6 +63,15 @@ export function ListingDetailsScreen({ navigation }: Props) {
   const [spaceCountInput, setSpaceCountInput] = useState<number>(
     () => parseSpaceCount(draft.spaceCount) ?? MIN_SPACE_COUNT
   );
+  const [capacityInput, setCapacityInput] = useState<number>(
+    () => Math.min(MAX_CAPACITY, Math.max(MIN_CAPACITY, draft.capacity ?? 1))
+  );
+
+  const adjustCapacity = (delta: number) => {
+    const next = Math.min(MAX_CAPACITY, Math.max(MIN_CAPACITY, capacityInput + delta));
+    setCapacityInput(next);
+    setDraft((current) => ({ ...current, capacity: next }));
+  };
 
   const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boolean(draft.vehicleSize);
   const confirmedSpaceCount = parseSpaceCount(draft.spaceCount);
@@ -222,6 +234,38 @@ export function ListingDetailsScreen({ navigation }: Props) {
                     </Pressable>
                   );
                 })}
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* ── Capacity ── */}
+        {showVehicleSection && (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.section}>
+              <Text style={styles.sectionHeading}>Number of spaces</Text>
+              <Text style={styles.sectionPrompt}>
+                How many drivers can book this listing at the same time?
+              </Text>
+              <View style={styles.counterRow}>
+                <Pressable
+                  style={[styles.counterButton, capacityInput <= MIN_CAPACITY && styles.counterButtonDisabled]}
+                  onPress={() => adjustCapacity(-1)}
+                  disabled={capacityInput <= MIN_CAPACITY}
+                >
+                  <Text style={styles.counterButtonText}>−</Text>
+                </Pressable>
+                <View style={styles.counterValueBox}>
+                  <Text style={styles.counterValueText}>{capacityInput}</Text>
+                </View>
+                <Pressable
+                  style={[styles.counterButton, capacityInput >= MAX_CAPACITY && styles.counterButtonDisabled]}
+                  onPress={() => adjustCapacity(1)}
+                  disabled={capacityInput >= MAX_CAPACITY}
+                >
+                  <Text style={styles.counterButtonText}>+</Text>
+                </Pressable>
               </View>
             </View>
           </>

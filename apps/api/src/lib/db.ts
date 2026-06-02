@@ -92,6 +92,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       rating,
       rating_count,
       availability_text,
+      capacity,
       ST_X(geom) AS longitude,
       ST_Y(geom) AS latitude,
       ST_Distance(
@@ -107,12 +108,12 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
     AND status <> 'archived'
     AND ($6::text IS NULL OR lower(title) LIKE $6)
     AND ($7::text <> 'monthly' OR price_per_month IS NOT NULL)
-    AND NOT EXISTS (
-      SELECT 1 FROM bookings b
+    AND (
+      SELECT COUNT(*) FROM bookings b
       WHERE b.listing_id = listings.id
       AND (b.status IS NULL OR b.status <> 'canceled')
       AND tstzrange(b.start_time, b.end_time, '[)') && tstzrange($4::timestamptz, $5::timestamptz, '[)')
-    )
+    ) < COALESCE(listings.capacity, 1)
     AND NOT EXISTS (
       SELECT 1 FROM listing_availability a
       WHERE a.listing_id = listings.id
@@ -206,6 +207,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       availability: row.availability_text,
       imageUrls: row.image_urls ?? [],
       amenities: row.amenities ?? [],
+      capacity: row.capacity != null ? Number(row.capacity) : 1,
       distanceKm: Math.round((row.distance_m / 1000) * 10) / 10,
       latitude: row.latitude,
       longitude: row.longitude,
@@ -225,6 +227,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       availability: row.availability_text,
       imageUrls: [],
       amenities: [],
+      capacity: 1,
       distanceKm: Math.round((row.distance_m / 1000) * 10) / 10,
       latitude: row.latitude,
       longitude: row.longitude,
@@ -238,12 +241,12 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
     ? `%${spaceType.trim().toLowerCase()}%`
     : null;
   const availabilityCheck = `
-    NOT EXISTS (
-      SELECT 1 FROM bookings b
+    (
+      SELECT COUNT(*) FROM bookings b
       WHERE b.listing_id = listings.id
       AND (b.status IS NULL OR b.status <> 'canceled')
       AND tstzrange(b.start_time, b.end_time, '[)') && tstzrange($4::timestamptz, $5::timestamptz, '[)')
-    )
+    ) < COALESCE(listings.capacity, 1)
     AND NOT EXISTS (
       SELECT 1 FROM listing_availability a
       WHERE a.listing_id = listings.id
@@ -296,6 +299,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
       rating,
       rating_count,
       availability_text,
+      capacity,
       (${availabilityCheck}) AS is_available,
       ST_X(geom) AS longitude,
       ST_Y(geom) AS latitude,
@@ -362,6 +366,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
       availability: row.availability_text,
       imageUrls: row.image_urls ?? [],
       amenities: row.amenities ?? [],
+      capacity: row.capacity != null ? Number(row.capacity) : 1,
       distanceKm: Math.round((row.distance_m / 1000) * 10) / 10,
       latitude: row.latitude,
       longitude: row.longitude,
@@ -381,6 +386,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
       availability: row.availability_text,
       imageUrls: [],
       amenities: [],
+      capacity: 1,
       distanceKm: Math.round((row.distance_m / 1000) * 10) / 10,
       latitude: row.latitude,
       longitude: row.longitude,
@@ -406,6 +412,7 @@ export type NewListing = {
   accessCode?: string | null;
   arrivalInstructions?: string | null;
   permissionDeclared?: boolean;
+  capacity?: number | null;
 };
 
 export async function createListing(listing: NewListing) {
@@ -424,9 +431,10 @@ export async function createListing(listing: NewListing) {
       image_urls,
       access_code,
       arrival_instructions,
-      permission_declared
+      permission_declared,
+      capacity
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, ST_SetSRID(ST_MakePoint($10, $11), 4326), $12, $13, $14, $15)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, ST_SetSRID(ST_MakePoint($10, $11), 4326), $12, $13, $14, $15, $16)
     RETURNING id;
   `;
   const params = [
@@ -445,6 +453,7 @@ export async function createListing(listing: NewListing) {
     listing.accessCode ?? null,
     listing.arrivalInstructions ?? null,
     listing.permissionDeclared ?? false,
+    listing.capacity ?? 1,
   ];
   try {
     const result = await pool.query(query, params);
@@ -989,6 +998,7 @@ export async function updateListingForHost({
   accessCode,
   arrivalInstructions,
   permissionDeclared,
+  capacity,
 }: {
   listingId: string;
   hostId: string;
@@ -1006,6 +1016,7 @@ export async function updateListingForHost({
   accessCode?: string | null;
   arrivalInstructions?: string | null;
   permissionDeclared?: boolean;
+  capacity?: number | null;
 }) {
   const fields: string[] = [];
   const values: any[] = [];
@@ -1058,6 +1069,10 @@ export async function updateListingForHost({
   if (typeof permissionDeclared === "boolean") {
     fields.push(`permission_declared = $${idx++}`);
     values.push(permissionDeclared);
+  }
+  if (typeof capacity === "number" && capacity >= 1) {
+    fields.push(`capacity = $${idx++}`);
+    values.push(Math.min(20, Math.floor(capacity)));
   }
   if (typeof latitude === "number" && typeof longitude === "number") {
     fields.push(`geom = ST_SetSRID(ST_MakePoint($${idx++}, $${idx++}), 4326)`);
@@ -1155,6 +1170,7 @@ export async function getListingById(listingId: string) {
         host_id,
         rating,
         rating_count,
+        capacity,
         ST_X(geom) AS longitude,
         ST_Y(geom) AS latitude
       FROM listings
@@ -1208,6 +1224,7 @@ export async function getListingById(listingId: string) {
     hostId: row.host_id,
     rating: row.rating != null ? Number(row.rating) : null,
     ratingCount: Number(row.rating_count ?? 0),
+    capacity: row.capacity != null ? Number(row.capacity) : 1,
     latitude: row.latitude,
     longitude: row.longitude,
   };
@@ -1286,6 +1303,7 @@ export async function getListingByIdWithAvailability(
         host_id,
         rating,
         rating_count,
+        capacity,
         (${availabilityCheck}) AS is_available,
         ST_X(geom) AS longitude,
         ST_Y(geom) AS latitude
@@ -1341,6 +1359,7 @@ export async function getListingByIdWithAvailability(
     hostId: row.host_id,
     rating: row.rating != null ? Number(row.rating) : null,
     ratingCount: Number(row.rating_count ?? 0),
+    capacity: row.capacity != null ? Number(row.capacity) : 1,
     latitude: row.latitude,
     longitude: row.longitude,
     isAvailable: row.is_available,
@@ -1694,6 +1713,7 @@ export async function getListingWithHostAccount(listingId: string) {
       l.rating,
       l.rating_count,
       l.image_urls,
+      l.capacity,
       ST_X(l.geom) AS longitude,
       ST_Y(l.geom) AS latitude,
       u.host_stripe_account_id
@@ -1719,6 +1739,7 @@ export async function getListingWithHostAccount(listingId: string) {
     rating: row.rating != null ? Number(row.rating) : null,
     ratingCount: Number(row.rating_count ?? 0),
     imageUrls: row.image_urls ?? [],
+    capacity: row.capacity != null ? Number(row.capacity) : 1,
     latitude: row.latitude,
     longitude: row.longitude,
   };

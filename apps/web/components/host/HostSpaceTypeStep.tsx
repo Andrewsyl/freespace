@@ -54,7 +54,7 @@ export function HostSpaceTypeStep({ data, onUpdate }: HostStepProps) {
   return (
     <div className="space-y-3">
       <p className="text-sm text-slate-500">Pick the shape that best matches your space</p>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-2.5 sm:grid-cols-2">
         {OPTIONS.map((option) => {
           const selected = data.spaceType === option.id;
           return (

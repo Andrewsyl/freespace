@@ -13,6 +13,15 @@ import { useAuth } from "../../../components/AuthProvider";
 import { SlimNav } from "../../../components/SlimNav";
 import type { Listing } from "../../../components/ListingCard";
 
+function getAreaLabel(address: string): string {
+  const isPostcode = (s: string) => /^(Dublin\s*\d+|[A-Z]\d{2}\s*[A-Z0-9]{4})$/i.test(s);
+  const parts = address.split(",").map((p) => p.trim()).filter(Boolean);
+  const trimmed = [...parts];
+  while (trimmed.length > 1 && isPostcode(trimmed[trimmed.length - 1])) trimmed.pop();
+  const first = trimmed[0].replace(/^\d+[A-Za-z0-9\-\/]*\s+/, "").trim();
+  return [first || trimmed[0], ...trimmed.slice(1)].join(", ");
+}
+
 type PayoutStatus = {
   accountId: string | null;
   chargesEnabled: boolean;
@@ -273,7 +282,7 @@ export default function HostDashboardPage() {
                     <div className="flex flex-1 flex-col gap-2.5 p-3.5">
                       <div>
                         <p className="line-clamp-1 text-[14px] font-bold text-slate-900">{listing.title}</p>
-                        <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-400">{listing.address}</p>
+                        <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-400">{listing.address ? getAreaLabel(listing.address) : ""}</p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <a href={`/listing/${listing.id}`} className="rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-700 active:bg-slate-50">

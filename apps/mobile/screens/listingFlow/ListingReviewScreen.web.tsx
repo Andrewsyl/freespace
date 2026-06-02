@@ -95,6 +95,7 @@ export function ListingReviewScreen({ navigation }: Props) {
           accessCode: draft.accessCode.trim() || null,
           arrivalInstructions: draft.arrivalInstructions.trim() || null,
           permissionDeclared: draft.permissionDeclared,
+          capacity: draft.capacity,
         });
       } else {
         await createListing({
@@ -115,6 +116,7 @@ export function ListingReviewScreen({ navigation }: Props) {
           accessCode: draft.accessCode.trim() || null,
           arrivalInstructions: draft.arrivalInstructions.trim() || null,
           permissionDeclared: draft.permissionDeclared,
+          capacity: draft.capacity,
         });
       }
       setPublished(true);

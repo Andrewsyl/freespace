@@ -109,7 +109,17 @@ export function ListingScreen({ navigation, route }: Props) {
     listing?.latitude && listing?.longitude
       ? `${listing.latitude},${listing.longitude}`
       : "53.3498,-6.2603";
-  const areaLabel = listing?.address ? getAddressWithoutHouseNumber(listing.address) : "";
+  const areaLabel = (() => {
+    if (!listing?.address) return "";
+    const parts = listing.address.split(",").map((p) => p.trim()).filter(Boolean);
+    const isPostcode = (s: string) => /^(Dublin\s*\d+|[A-Z]\d{2}\s*[A-Z0-9]{4})$/i.test(s);
+    // Strip postcode from the end
+    const trimmed = [...parts];
+    while (trimmed.length > 1 && isPostcode(trimmed[trimmed.length - 1])) trimmed.pop();
+    // Strip house number from the first segment
+    const first = trimmed[0].replace(/^\d+[A-Za-z0-9\-\/]*\s+/, "").trim();
+    return [first || trimmed[0], ...trimmed.slice(1)].join(", ");
+  })();
 
   const isBookingTimes =
     booking &&
@@ -312,10 +322,17 @@ export function ListingScreen({ navigation, route }: Props) {
   }, [listing]);
 
   const displayTitle = useMemo(() => {
-    const street = listing?.address
-      ? listing.address.split(",")[0].replace(/^\d+[A-Za-z0-9\-\/]*\s+/, "").trim()
-      : "";
-    return street ? `${spaceTypeLabel} on ${street}` : (listing?.title ?? "");
+    const parts = (listing?.address ?? "").split(",").map((p) => p.trim()).filter(Boolean);
+    const stripped = (parts[0] ?? "").replace(/^\d+[A-Za-z0-9\-\/]*\s+/, "").trim();
+    const isRealStreet = stripped.length > 2 && !/^\d+$/.test(stripped);
+    if (isRealStreet) return `${spaceTypeLabel} on ${stripped}`;
+    // Fall back to first non-postcode segment
+    const area = parts.slice(1).find((p) => !/^(Dublin\s*\d+|D\d{2})/i.test(p));
+    if (area) {
+      const prep = /\b(street|road|avenue|drive|lane|close|way|place|terrace|crescent|grove|court|walk|quay|square|gardens|st|rd|ave|dr)\b/i.test(area) ? "on" : "in";
+      return `${spaceTypeLabel} ${prep} ${area}`;
+    }
+    return listing?.title ?? spaceTypeLabel;
   }, [listing, spaceTypeLabel]);
 
   const heroHeight = Math.round(width * 0.8);

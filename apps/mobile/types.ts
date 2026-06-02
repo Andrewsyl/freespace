@@ -94,6 +94,7 @@ export type ListingSummary = {
   distance_m?: number | null;
   image_urls?: string[] | null;
   imageUrls?: string[] | null;
+  capacity?: number | null;
 };
 
 export type ListingDetail = ListingSummary & {

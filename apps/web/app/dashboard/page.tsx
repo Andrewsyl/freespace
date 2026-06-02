@@ -25,6 +25,7 @@ export default function DashboardPage() {
     hostCount: 0,
     hostEarnings: 0,
   });
+  const [tripsTab, setTripsTab] = useState<"upcoming" | "active" | "past">("upcoming");
 
   const formatDateRange = (start: string, end: string) => {
     const startDate = new Date(start);
@@ -213,28 +214,67 @@ export default function DashboardPage() {
       {error && <div className="mx-5 mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}
 
       {/* Driver bookings */}
-      <section className="border-b border-slate-200 px-5 py-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Your trips</h2>
-          {driverBookings.length > 0 && (
-            <span className="text-[12px] font-medium text-slate-400">{driverBookings.length} total</span>
-          )}
-        </div>
-        {status === "loading" && driverBookings.length === 0 ? (
-          <div className="mt-4 flex items-center justify-center py-8"><div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /></div>
-        ) : driverBookings.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center">
+      <section className="border-b border-slate-200 px-5 py-5">
+        <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Your trips</h2>
+
+        {/* Tabs */}
+        {driverBookings.length > 0 && (() => {
+          const now = new Date();
+          const upcoming = driverBookings.filter((b) => new Date(b.startTime) > now && b.status !== "canceled");
+          const active   = driverBookings.filter((b) => new Date(b.startTime) <= now && new Date(b.endTime) >= now && b.status !== "canceled");
+          const past     = driverBookings.filter((b) => b.status === "canceled" || new Date(b.endTime) < now);
+          const counts: Record<string, number> = { upcoming: upcoming.length, active: active.length, past: past.length };
+          const visible  = tripsTab === "upcoming" ? upcoming : tripsTab === "active" ? active : past;
+          const emptyMsg: Record<string, string> = {
+            upcoming: "No upcoming trips",
+            active:   "No active trips right now",
+            past:     "No past trips",
+          };
+          return (
+            <>
+              <div className="mt-3 flex gap-1 rounded-xl border border-slate-200 p-1">
+                {(["upcoming", "active", "past"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTripsTab(t)}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-semibold capitalize transition ${
+                      tripsTab === t ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    {t}
+                    {counts[t] > 0 && (
+                      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                        tripsTab === t ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                      }`}>{counts[t]}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              {visible.length === 0 ? (
+                <p className="mt-4 text-[13px] text-slate-400">{emptyMsg[tripsTab]}</p>
+              ) : (
+                <div className="mt-3 space-y-2.5">
+                  {visible.map((booking) => (
+                    <button key={booking.id} onClick={() => openSelected(booking)} className="w-full text-left">
+                      <BookingCard booking={booking} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          );
+        })()}
+
+        {status === "loading" && driverBookings.length === 0 && (
+          <div className="mt-4 flex items-center justify-center py-6">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+          </div>
+        )}
+        {status !== "loading" && driverBookings.length === 0 && (
+          <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-6 text-center">
             <p className="text-[14px] font-semibold text-slate-700">No bookings yet</p>
             <p className="mt-1 text-[13px] text-slate-400">Search for a space to make your first booking.</p>
-            <Link href="/" className="mt-4 inline-flex items-center justify-center rounded-full bg-brand-500 px-5 py-2.5 text-[13px] font-semibold text-white">Find a space</Link>
-          </div>
-        ) : (
-          <div className="mt-4 space-y-3">
-            {driverBookings.map((booking) => (
-              <button key={booking.id} onClick={() => openSelected(booking)} className="w-full text-left">
-                <BookingCard booking={booking} />
-              </button>
-            ))}
+            <Link href="/" className="mt-3 inline-flex items-center justify-center rounded-full bg-brand-500 px-5 py-2.5 text-[13px] font-semibold text-white">Find a space</Link>
           </div>
         )}
       </section>

@@ -1,17 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import type { HostStepProps } from "./types";
-import { Camera, Zap, Home, Lightbulb, Lock, ArrowUpDown, CheckCircle } from "lucide-react";
+import { Camera, Zap, Home, Lightbulb, Lock, ArrowUpDown, CheckCircle, Accessibility, Clock, Bike, Maximize2 } from "lucide-react";
 
 // ── Feature chips ─────────────────────────────────────────────────────────────
 
-const FEATURES = [
+const COMMON_FEATURES = [
   { label: "CCTV",           icon: <Camera size={16} strokeWidth={2.1} /> },
   { label: "EV charging",    icon: <Zap size={16} strokeWidth={2.1} /> },
   { label: "Sheltered",      icon: <Home size={16} strokeWidth={2.1} /> },
   { label: "Well lit",       icon: <Lightbulb size={16} strokeWidth={2.1} /> },
   { label: "Gated access",   icon: <Lock size={16} strokeWidth={2.1} /> },
-  { label: "Height-friendly",icon: <ArrowUpDown size={16} strokeWidth={2.1} /> },
+];
+
+const EXTRA_FEATURES = [
+  { label: "Height-friendly",   icon: <ArrowUpDown size={16} strokeWidth={2.1} /> },
+  { label: "Disabled access",   icon: <Accessibility size={16} strokeWidth={2.1} /> },
+  { label: "24/7 access",       icon: <Clock size={16} strokeWidth={2.1} /> },
+  { label: "Motorbike friendly", icon: <Bike size={16} strokeWidth={2.1} /> },
+  { label: "Wide bay",          icon: <Maximize2 size={16} strokeWidth={2.1} /> },
 ];
 
 // ── Access choices ────────────────────────────────────────────────────────────
@@ -37,6 +45,10 @@ const ACCESS_CHOICES = [
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
+  const [showAllFeatures, setShowAllFeatures] = useState(
+    EXTRA_FEATURES.some((f) => data.amenities.includes(f.label))
+  );
+
   const toggleFeature = (label: string) => {
     const has = data.amenities.includes(label);
     onUpdate({
@@ -62,7 +74,7 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
           <p className="mt-1 text-base font-semibold text-slate-900">What else does your space offer?</p>
         </div>
         <div className="flex flex-col gap-2">
-          {FEATURES.map(({ label, icon }) => {
+          {[...COMMON_FEATURES, ...(showAllFeatures ? EXTRA_FEATURES : [])].map(({ label, icon }) => {
             const active = data.amenities.includes(label);
             return (
               <button
@@ -85,6 +97,13 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setShowAllFeatures((v) => !v)}
+            className="mt-1 text-left text-[13px] font-semibold text-brand-500 hover:text-brand-600"
+          >
+            {showAllFeatures ? "Show less" : `More features +${EXTRA_FEATURES.length}`}
+          </button>
         </div>
       </div>
 

@@ -150,9 +150,8 @@ export function MapBottomCard({
           <View style={styles.dashedDivider} />
 
           <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Price</Text>
             {isAvailable ? (
-              <Text style={styles.currentPrice}>{price}</Text>
+              <Text style={styles.currentPrice} numberOfLines={1}>{price}</Text>
             ) : (
               <Text style={styles.soldOutText}>SOLD OUT</Text>
             )}
@@ -176,10 +175,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
     overflow: "hidden",
-    paddingTop: 6,
-    paddingLeft: 6,
-    paddingRight: 6,
-    paddingBottom: 4,
+    padding: 6,
   },
   cardPress: {
     width: "100%",
@@ -236,19 +232,19 @@ const styles = StyleSheet.create({
   contentSection: {
     paddingHorizontal: 10,
     paddingTop: 8,
-    paddingBottom: 2,
+    paddingBottom: 8,
     backgroundColor: colors.cardBg,
   },
   titleRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
-    marginBottom: 1,
+    marginBottom: 4,
   },
   title: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 16,
-    lineHeight: 21,
+    fontSize: 15,
+    lineHeight: 20,
     color: "#111827",
     letterSpacing: -0.3,
     flex: 1,
@@ -265,32 +261,33 @@ const styles = StyleSheet.create({
   },
   metaLine: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
-    lineHeight: 16,
-    color: "#4b5563",
-    marginBottom: 4,
+    fontSize: 11,
+    lineHeight: 15,
+    color: "#6b7280",
+    marginBottom: 6,
   },
   dashedDivider: {
     height: 1,
     backgroundColor: "#e4e9ed",
-    marginBottom: 5,
-    marginTop: 0,
+    marginVertical: 5,
   },
   priceRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
   },
   priceLabel: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 11.5,
-    lineHeight: 15,
-    color: "#7a8288",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 10,
+    lineHeight: 14,
+    color: "#9ca3af",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
   },
   currentPrice: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 18,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 20,
     color: "#111827",
     letterSpacing: -0.4,
   },

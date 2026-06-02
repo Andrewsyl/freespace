@@ -183,6 +183,7 @@ const createListingSchema = z.object({
   accessCode: z.string().trim().min(2).max(40).nullable().optional(),
   arrivalInstructions: z.string().trim().min(3).max(240).nullable().optional(),
   permissionDeclared: z.boolean().optional(),
+  capacity: z.coerce.number().int().min(1).max(20).optional(),
 });
 
 router.post("/", requireAuth, enforceBlockedList, listingWriteLimiter, async (req, res, next) => {
@@ -228,6 +229,7 @@ router.post("/", requireAuth, enforceBlockedList, listingWriteLimiter, async (re
       accessCode: payload.accessCode?.trim() || null,
       arrivalInstructions: payload.arrivalInstructions?.trim() || null,
       permissionDeclared: payload.permissionDeclared ?? false,
+      capacity: payload.capacity ?? 1,
       hostStripeAccountId,
     });
     await insertEventLog({
@@ -331,6 +333,7 @@ const updateListingSchema = z.object({
   accessCode: z.string().trim().min(2).max(40).nullable().optional(),
   arrivalInstructions: z.string().trim().min(3).max(240).nullable().optional(),
   permissionDeclared: z.boolean().optional(),
+  capacity: z.coerce.number().int().min(1).max(20).optional(),
 });
 
 router.patch("/:id", requireAuth, listingWriteLimiter, async (req, res, next) => {
@@ -365,6 +368,7 @@ router.patch("/:id", requireAuth, listingWriteLimiter, async (req, res, next) =>
       accessCode: payload.accessCode ?? undefined,
       arrivalInstructions: payload.arrivalInstructions ?? undefined,
       permissionDeclared: payload.permissionDeclared,
+      capacity: payload.capacity,
     });
     if (!updated) return res.status(404).json({ message: "Listing not found" });
     res.json({ listing: updated });

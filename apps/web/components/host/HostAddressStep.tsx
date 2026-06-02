@@ -18,12 +18,12 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
   const handleDropPin = () => {
     if (!mapCenter) return;
     const { lat, lng } = mapCenter;
-    onUpdate({ latitude: lat, longitude: lng, locationConfirmed: false });
+    onUpdate({ latitude: lat, longitude: lng, locationConfirmed: true });
     setMovePinMode(false);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* ── Address search ── */}
       <div className="space-y-1">
         <label className="text-sm font-semibold text-slate-800">Where is your space?</label>
@@ -33,7 +33,7 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
           placeholder="Search for an address"
           showLocationButton
           onPlace={(place) => {
-            onUpdate({ address: place.address, latitude: place.lat, longitude: place.lng, locationConfirmed: false });
+            onUpdate({ address: place.address, latitude: place.lat, longitude: place.lng, locationConfirmed: true });
             setMovePinMode(true);
             setAddressVersion((v) => v + 1);
           }}
@@ -98,9 +98,9 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
           </>
         ) : (
           /* No address yet */
-          <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-50 ring-2 ring-brand-100">
-              <MapPin className="h-10 w-10 text-brand-500" strokeWidth={1.6} />
+          <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 ring-2 ring-brand-100">
+              <MapPin className="h-7 w-7 text-brand-500" strokeWidth={1.6} />
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900">No location selected</p>
@@ -110,26 +110,6 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
         )}
       </div>
 
-      {/* ── Confirm strip ── */}
-      {hasCoords && !movePinMode && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-slate-700">
-              {data.locationConfirmed ? "✓ Location confirmed" : "Does the pin match your entrance?"}
-            </p>
-            <p className="truncate text-xs text-slate-500">{data.address}</p>
-          </div>
-          {!data.locationConfirmed && (
-            <button
-              type="button"
-              onClick={() => onUpdate({ locationConfirmed: true })}
-              className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-300 hover:text-brand-700"
-            >
-              Confirm location
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }

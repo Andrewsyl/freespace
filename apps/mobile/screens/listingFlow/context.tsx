@@ -33,6 +33,7 @@ export type ListingDraft = {
   pricePerHour: string;
   pricePerMonth: string;
   photos: string[];
+  capacity: number;
 };
 
 export type ListingFlowValue = {

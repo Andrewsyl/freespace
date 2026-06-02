@@ -48,15 +48,13 @@ function SpaceTypeIcon({ type, size = 20 }: { type: string; size?: number }) {
   }
 }
 
-import { Car, Truck, Van } from "lucide-react";
-
 // ── Vehicle sizes ─────────────────────────────────────────────────────────────
 
 const VEHICLE_SIZES = [
-  { value: "small",  label: "Small",  example: "e.g. VW Polo, Ford Fiesta",     Icon: Car },
-  { value: "medium", label: "Medium", example: "e.g. Audi A3, Toyota Camry",    Icon: Car },
-  { value: "large",  label: "Large",  example: "e.g. Volvo XC90, BMW X5",       Icon: Truck },
-  { value: "van",    label: "Van",    example: "e.g. Transit Custom, Sprinter", Icon: Van },
+  { value: "small",  label: "Hatchback",  example: "Small & city cars",            imageUrl: "https://img.icons8.com/color/96/hatchback.png" },
+  { value: "medium", label: "Saloon",     example: "Saloons & family cars",        imageUrl: "https://img.icons8.com/color/96/sedan.png" },
+  { value: "large",  label: "SUV / Jeep", example: "SUVs, jeeps & 4x4s",          imageUrl: "https://img.icons8.com/color/96/suv.png" },
+  { value: "van",    label: "Van",        example: "Vans, minibuses & campervans", imageUrl: "https://img.icons8.com/color/96/van.png" },
 ];
 
 const MIN_COUNT = 0;
@@ -162,7 +160,7 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
                     active ? "border-brand-500 bg-white" : "border-slate-200 bg-white"
                   }`}
                 >
-                  <opt.Icon size={28} strokeWidth={1.5} className={active ? "text-brand-600" : "text-slate-500"} />
+                  <img src={opt.imageUrl} alt={opt.label} className="h-10 w-10 shrink-0 object-contain" />
                   <div className="min-w-0 flex-1">
                     <p className="text-base font-bold tracking-tight text-slate-900">{opt.label}</p>
                     <p className="text-sm text-slate-500">{opt.example}</p>

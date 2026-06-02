@@ -48,8 +48,9 @@ export function calculateListingTotal(listing: ListingWithPricing, start: Date, 
   const ms = Math.max(0, end.getTime() - start.getTime());
   const durationHours = Math.max(1, Math.ceil(ms / (1000 * 60 * 60)));
   const durationLabel = formatElapsedDurationLabel(durationHours);
+  const rateType = getListingRateType(listing);
 
-  if (durationHours < 24) {
+  if (durationHours < 24 || rateType === "hourly") {
     const total = Math.max(0, roundMoney(getListingUnitPrice(listing) * durationHours));
     return {
       total,
@@ -60,7 +61,11 @@ export function calculateListingTotal(listing: ListingWithPricing, start: Date, 
   }
 
   const billingDays = Math.max(1, Math.ceil(durationHours / 24));
-  const total = Math.max(0, roundMoney(getListingUnitPrice(listing) * billingDays));
+  const dailyPrice =
+    typeof listing.price_per_day === "number" && Number(listing.price_per_day) > 0
+      ? Number(listing.price_per_day)
+      : getListingUnitPrice(listing) * DEFAULT_DAILY_HOURS;
+  const total = Math.max(0, roundMoney(dailyPrice * billingDays));
   return {
     total,
     totalCents: Math.round(total * 100),

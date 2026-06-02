@@ -363,16 +363,21 @@ async function hasBookingOverlap({
 }) {
   const overlap = await pool.query(
     `
-    SELECT 1 FROM bookings
-    WHERE listing_id = $1
-      AND id <> $2
-      AND (status IS NULL OR status <> 'canceled')
-      AND tstzrange(start_time, end_time, '[)') && tstzrange($3::timestamptz, $4::timestamptz, '[)')
-    LIMIT 1
+    SELECT
+      (SELECT COUNT(*) FROM bookings
+       WHERE listing_id = $1
+         AND id <> $2
+         AND (status IS NULL OR status <> 'canceled')
+         AND tstzrange(start_time, end_time, '[)') && tstzrange($3::timestamptz, $4::timestamptz, '[)')
+      ) AS booked_count,
+      COALESCE(capacity, 1) AS capacity
+    FROM listings WHERE id = $1 LIMIT 1
     `,
     [listingId, bookingId, startTime, endTime]
   );
-  return overlap.rowCount && overlap.rowCount > 0;
+  const row = overlap.rows[0];
+  if (!row) return false;
+  return Number(row.booked_count) >= Number(row.capacity);
 }
 
 async function sendBookingStatusPush({
@@ -582,17 +587,21 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
       });
     }
 
-    const overlapCheck = await pool.query(
-      `SELECT 1 FROM bookings
-       WHERE listing_id = $1
-         AND (status IS NULL OR status <> 'canceled')
-         AND tstzrange(start_time, end_time, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
-       LIMIT 1`,
+    const capacityCheck = await pool.query(
+      `SELECT
+         (SELECT COUNT(*) FROM bookings
+          WHERE listing_id = $1
+            AND (status IS NULL OR status <> 'canceled')
+            AND tstzrange(start_time, end_time, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+         ) AS booked_count,
+         COALESCE(capacity, 1) AS capacity
+       FROM listings WHERE id = $1 LIMIT 1`,
       [payload.listingId, payload.from, payload.to]
     );
 
-    if (overlapCheck.rowCount && overlapCheck.rowCount > 0) {
-      return res.status(409).json({ message: "Time slot already booked" });
+    const capacityRow = capacityCheck.rows[0];
+    if (capacityRow && Number(capacityRow.booked_count) >= Number(capacityRow.capacity)) {
+      return res.status(409).json({ error: "No spaces available for the selected time" });
     }
 
     const driver = await findUserById(driverId);
@@ -759,17 +768,21 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
       });
     }
 
-    const overlapCheck = await pool.query(
-      `SELECT 1 FROM bookings
-       WHERE listing_id = $1
-         AND (status IS NULL OR status <> 'canceled')
-         AND tstzrange(start_time, end_time, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
-       LIMIT 1`,
+    const capacityCheck = await pool.query(
+      `SELECT
+         (SELECT COUNT(*) FROM bookings
+          WHERE listing_id = $1
+            AND (status IS NULL OR status <> 'canceled')
+            AND tstzrange(start_time, end_time, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+         ) AS booked_count,
+         COALESCE(capacity, 1) AS capacity
+       FROM listings WHERE id = $1 LIMIT 1`,
       [payload.listingId, payload.from, payload.to]
     );
 
-    if (overlapCheck.rowCount && overlapCheck.rowCount > 0) {
-      return res.status(409).json({ message: "Time slot already booked" });
+    const capacityRow = capacityCheck.rows[0];
+    if (capacityRow && Number(capacityRow.booked_count) >= Number(capacityRow.capacity)) {
+      return res.status(409).json({ error: "No spaces available for the selected time" });
     }
 
     const user = await findUserById(driverId);
@@ -901,16 +914,20 @@ router.post("/portal", enforceBlockedList, portalBookingLimiter, async (req, res
       }
     }
 
-    const overlapCheck = await pool.query(
-      `SELECT 1 FROM bookings
-       WHERE listing_id = $1
-         AND (status IS NULL OR status <> 'canceled')
-         AND tstzrange(start_time, end_time, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
-       LIMIT 1`,
+    const portalCapacityCheck = await pool.query(
+      `SELECT
+         (SELECT COUNT(*) FROM bookings
+          WHERE listing_id = $1
+            AND (status IS NULL OR status <> 'canceled')
+            AND tstzrange(start_time, end_time, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+         ) AS booked_count,
+         COALESCE(capacity, 1) AS capacity
+       FROM listings WHERE id = $1 LIMIT 1`,
       [payload.listingId, startAt.toISOString(), endAt.toISOString()]
     );
-    if (overlapCheck.rowCount && overlapCheck.rowCount > 0) {
-      return res.status(409).json({ message: "Time slot already booked" });
+    const portalCapacityRow = portalCapacityCheck.rows[0];
+    if (portalCapacityRow && Number(portalCapacityRow.booked_count) >= Number(portalCapacityRow.capacity)) {
+      return res.status(409).json({ error: "No spaces available for the selected time" });
     }
 
     const listingWithHost = await getListingWithHostAccount(payload.listingId);
@@ -1385,18 +1402,22 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
         | { id: string; listing_id: string; start_time: Date; end_time: Date }
         | undefined;
       if (!booking) return res.status(404).json({ message: "Booking not found" });
-      const overlapCheck = await pool.query(
+      const confirmCapacityCheck = await pool.query(
         `
-        SELECT 1 FROM bookings
-        WHERE listing_id = $1
-          AND id <> $2
-          AND (status IS NULL OR status <> 'canceled')
-          AND tstzrange(start_time, end_time, '[)') && tstzrange($3::timestamptz, $4::timestamptz, '[)')
-        LIMIT 1
+        SELECT
+          (SELECT COUNT(*) FROM bookings
+           WHERE listing_id = $1
+             AND id <> $2
+             AND (status IS NULL OR status <> 'canceled')
+             AND tstzrange(start_time, end_time, '[)') && tstzrange($3::timestamptz, $4::timestamptz, '[)')
+          ) AS booked_count,
+          COALESCE(capacity, 1) AS capacity
+        FROM listings WHERE id = $1 LIMIT 1
         `,
         [booking.listing_id, booking.id, booking.start_time, booking.end_time]
       );
-      if (overlapCheck.rowCount && overlapCheck.rowCount > 0) {
+      const confirmCapacityRow = confirmCapacityCheck.rows[0];
+      if (confirmCapacityRow && Number(confirmCapacityRow.booked_count) >= Number(confirmCapacityRow.capacity)) {
         await updateBookingStatusByPaymentIntent({
           paymentIntentId,
           status: "canceled",

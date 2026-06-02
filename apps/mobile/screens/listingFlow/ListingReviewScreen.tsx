@@ -213,6 +213,7 @@ export function ListingReviewScreen({ navigation }: Props) {
           accessCode: draft.accessCode.trim() || null,
           arrivalInstructions: draft.arrivalInstructions.trim() || null,
           permissionDeclared: draft.permissionDeclared,
+          capacity: draft.capacity,
         });
         await syncAvailability(listingId);
       } else {
@@ -234,6 +235,7 @@ export function ListingReviewScreen({ navigation }: Props) {
           accessCode: draft.accessCode.trim() || null,
           arrivalInstructions: draft.arrivalInstructions.trim() || null,
           permissionDeclared: draft.permissionDeclared,
+          capacity: draft.capacity,
         });
         await syncAvailability(newListingId);
       }
@@ -323,6 +325,12 @@ export function ListingReviewScreen({ navigation }: Props) {
             <Text style={styles.label}>Space type</Text>
             <Text style={styles.value}>{draft.spaceType || "Not set"}</Text>
           </View>
+          {draft.capacity > 1 && (
+            <View style={styles.row}>
+              <Text style={styles.label}>Number of spaces</Text>
+              <Text style={styles.value}>{draft.capacity}</Text>
+            </View>
+          )}
           <View style={styles.row}>
             <Text style={styles.label}>Availability</Text>
             <Text style={styles.value}>{draft.availability.detail || "Not set"}</Text>

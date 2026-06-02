@@ -64,11 +64,11 @@ export function HostStepperLayout({
       )}
 
       {/* ── Step content ── */}
-      <div className="flex-1 px-5 py-6">{children}</div>
+      <div className="flex-1 px-5 py-6 pb-28">{children}</div>
 
       {/* ── Footer ── */}
       <div
-        className="bg-white px-5 shadow-[0_-4px_20px_rgba(15,23,42,0.08)]"
+        className="sticky bottom-0 bg-white px-5 shadow-[0_-4px_20px_rgba(15,23,42,0.08)]"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)", paddingTop: "12px" }}
       >
         <div className="flex items-center gap-3">

@@ -985,6 +985,7 @@ export async function createListing(payload: {
   accessCode?: string | null;
   arrivalInstructions?: string | null;
   permissionDeclared?: boolean;
+  capacity?: number | null;
 }) {
   if (isMobileE2EActive()) {
     return recordMockListingPublish() ?? "e2e-host-listing-1";
@@ -1010,6 +1011,7 @@ export async function createListing(payload: {
       accessCode: payload.accessCode ?? null,
       arrivalInstructions: payload.arrivalInstructions ?? null,
       permissionDeclared: payload.permissionDeclared ?? false,
+      ...(payload.capacity != null && payload.capacity > 1 ? { capacity: payload.capacity } : {}),
     }),
   });
   if (!response.ok) {
@@ -1066,6 +1068,7 @@ export async function updateListing(payload: {
   accessCode?: string | null;
   arrivalInstructions?: string | null;
   permissionDeclared?: boolean;
+  capacity?: number | null;
 }) {
   const response = await fetch(`${baseUrl}/api/listings/${payload.listingId}`, {
     method: "PATCH",
@@ -1086,6 +1089,7 @@ export async function updateListing(payload: {
       accessCode: payload.accessCode ?? null,
       arrivalInstructions: payload.arrivalInstructions ?? null,
       permissionDeclared: payload.permissionDeclared ?? false,
+      ...(payload.capacity != null && payload.capacity >= 1 ? { capacity: payload.capacity } : {}),
     }),
   });
   if (!response.ok) {
