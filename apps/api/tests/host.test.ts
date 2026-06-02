@@ -117,8 +117,8 @@ describe("host payout routes", () => {
     expect(db.setHostStripeAccountId).toHaveBeenCalledWith("host-1", "acct_123");
     expect(stripeMocks.accountLinksCreate).toHaveBeenCalledWith({
       account: "acct_123",
-      refresh_url: "http://localhost:3000/host/payouts",
-      return_url: "http://localhost:3000/host/payouts",
+      refresh_url: "http://localhost:3000/host/dashboard",
+      return_url: "http://localhost:3000/host/dashboard",
       type: "account_onboarding",
     });
   });
