@@ -14,13 +14,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Constants from "expo-constants";
 import { useFonts } from "expo-font";
-import {
-  PlusJakartaSans_400Regular,
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
-  PlusJakartaSans_800ExtraBold,
-} from "@expo-google-fonts/plus-jakarta-sans";
 import * as SplashScreen from "expo-splash-screen";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -116,11 +109,11 @@ function getSentry():
 export default function App() {
   const [launchComplete, setLaunchComplete] = useState(true);
   const [fontsLoaded] = useFonts({
-    "PlusJakartaSans-Regular": PlusJakartaSans_400Regular,
-    "PlusJakartaSans-Medium": PlusJakartaSans_500Medium,
-    "PlusJakartaSans-SemiBold": PlusJakartaSans_600SemiBold,
-    "PlusJakartaSans-Bold": PlusJakartaSans_700Bold,
-    "PlusJakartaSans-ExtraBold": PlusJakartaSans_800ExtraBold,
+    "PlusJakartaSans-Regular": require("./assets/fonts/PlusJakartaSans_400Regular.ttf"),
+    "PlusJakartaSans-Medium": require("./assets/fonts/PlusJakartaSans_500Medium.ttf"),
+    "PlusJakartaSans-SemiBold": require("./assets/fonts/PlusJakartaSans_600SemiBold.ttf"),
+    "PlusJakartaSans-Bold": require("./assets/fonts/PlusJakartaSans_700Bold.ttf"),
+    "PlusJakartaSans-ExtraBold": require("./assets/fonts/PlusJakartaSans_800ExtraBold.ttf"),
     "UKNumberPlate": require("./assets/fonts/UKNumberPlate.ttf"),
   });
 
