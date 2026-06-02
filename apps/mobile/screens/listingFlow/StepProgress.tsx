@@ -14,10 +14,7 @@ export function StepProgress({ current, total }: Props) {
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.row}>
-        <Text style={styles.label}>Step {current} of {total}</Text>
-        <Text style={styles.percent}>{percent}%</Text>
-      </View>
+      <Text style={styles.label}>Step {current} of {total}</Text>
       <View style={styles.bar}>
         <View style={[styles.barFill, { width: `${percent}%` }]} />
       </View>
@@ -27,12 +24,7 @@ export function StepProgress({ current, total }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    marginTop: 8,
-  },
-  row: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
+    marginTop: 6,
   },
   label: {
     color: hostFlowColors.textSoft,
@@ -40,18 +32,12 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "700",
     letterSpacing: 0.2,
-  },
-  percent: {
-    color: hostFlowColors.textMuted,
-    fontSize: 13,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
+    marginBottom: 6,
   },
   bar: {
     backgroundColor: hostFlowColors.border,
     borderRadius: radius.pill,
     height: 6,
-    marginTop: 10,
     overflow: "hidden",
   },
   barFill: {

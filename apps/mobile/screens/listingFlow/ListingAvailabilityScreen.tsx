@@ -12,11 +12,12 @@ import {
 } from "react-native";
 import DatePicker from "../../components/AdaptiveDatePicker";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronRight, X } from "lucide-react-native";
+import { Briefcase, Check, ChevronRight, Clock, SlidersHorizontal, X } from "lucide-react-native";
 import { Button } from "../../components/ui";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
 import { hostFlowColors } from "./hostFlowTheme";
+import { FlowFooter } from "./FlowFooter";
 import { cardShadow, colors, radius, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
@@ -315,31 +316,52 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
         <Text style={styles.subtitle}>You can change this at any time</Text>
 
         <Pressable
-          style={[styles.optionCard, preset === "always" && styles.optionCardActive]}
+          style={[styles.optionCard, styles.optionCardFirst, preset === "always" && styles.optionCardActive]}
           onPress={() => selectPreset("always")}
         >
-          <Text style={styles.optionTitle}>Always available (Recommended)</Text>
-          <Text style={styles.optionBody}>Monday - Sunday (24 hours)</Text>
+          <View style={styles.optionRow}>
+            <View style={[styles.optionIconBox, preset === "always" && styles.optionIconBoxActive]}>
+              <Clock size={18} color={preset === "always" ? colors.accent : colors.textSoft} strokeWidth={2} />
+            </View>
+            <View style={styles.optionTextWrap}>
+              <Text style={styles.optionTitle}>Always available</Text>
+              <Text style={styles.optionBody}>Mon – Sun · 24 hours · Recommended</Text>
+            </View>
+            {preset === "always" && <Check size={16} color={colors.accent} strokeWidth={2.8} />}
+          </View>
         </Pressable>
 
         <Pressable
           style={[styles.optionCard, preset === "working" && styles.optionCardActive]}
           onPress={() => selectPreset("working")}
         >
-          <Text style={styles.optionTitle}>Working week</Text>
-          <Text style={styles.optionBody}>Monday - Friday (06:00 - 19:00)</Text>
+          <View style={styles.optionRow}>
+            <View style={[styles.optionIconBox, preset === "working" && styles.optionIconBoxActive]}>
+              <Briefcase size={18} color={preset === "working" ? colors.accent : colors.textSoft} strokeWidth={2} />
+            </View>
+            <View style={styles.optionTextWrap}>
+              <Text style={styles.optionTitle}>Working week</Text>
+              <Text style={styles.optionBody}>Mon – Fri · 06:00 – 19:00</Text>
+            </View>
+            {preset === "working" && <Check size={16} color={colors.accent} strokeWidth={2.8} />}
+          </View>
         </Pressable>
 
         <Pressable
           style={[styles.optionCard, preset === "custom" && styles.optionCardActive]}
           onPress={() => selectPreset("custom")}
         >
-          <View style={styles.customRow}>
-            <View style={styles.customText}>
-              <Text style={styles.optionTitle}>Custom</Text>
-              <Text style={styles.optionBody}>Personalised settings</Text>
+          <View style={styles.optionRow}>
+            <View style={[styles.optionIconBox, preset === "custom" && styles.optionIconBoxActive]}>
+              <SlidersHorizontal size={18} color={preset === "custom" ? colors.accent : colors.textSoft} strokeWidth={2} />
             </View>
-            <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />
+            <View style={styles.optionTextWrap}>
+              <Text style={styles.optionTitle}>Custom</Text>
+              <Text style={styles.optionBody}>Choose your own days and times</Text>
+            </View>
+            {preset === "custom"
+              ? <Check size={16} color={colors.accent} strokeWidth={2.8} />
+              : <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />}
           </View>
         </Pressable>
         {preset === "custom" && weekdays.length ? (
@@ -352,21 +374,12 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
           <Text style={styles.warningText}>End time must be after start time.</Text>
         ) : null}
       </ScrollView>
-      <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
-        <View style={styles.footerRow}>
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.backButtonText}>← Back</Text>
-          </Pressable>
-          <Button
-            size="medium"
-            title="Continue"
-            onPress={() => navigation.navigate("ListingPrice")}
-            disabled={!canSave}
-            style={styles.continueButton}
-            textStyle={styles.continueButtonText}
-          />
-        </View>
-      </View>
+      <FlowFooter
+        onBack={() => navigation.goBack()}
+        primaryLabel="Continue"
+        onPrimary={() => navigation.navigate("ListingPrice")}
+        primaryDisabled={!canSave}
+      />
       {customVisible ? (
         <Modal animationType="slide" transparent>
           <View style={styles.modalBackdrop}>
@@ -480,32 +493,61 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   kicker: {
-    ...textStyles.kicker,
-    fontFamily: "PlusJakartaSans-SemiBold",
+    color: hostFlowColors.accent,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: "uppercase",
   },
   title: {
     color: colors.text,
-    fontSize: 26,
-    lineHeight: 31,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    marginTop: 12,
-    letterSpacing: -0.6,
+    fontSize: 28,
+    lineHeight: 35,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontWeight: "800",
+    marginTop: 14,
+    letterSpacing: -1.0,
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "PlusJakartaSans-Regular",
-    marginTop: 8,
-    lineHeight: 22,
+    marginTop: 6,
+    lineHeight: 23,
   },
   optionCard: {
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: 14,
     borderWidth: 1,
-    marginTop: 16,
-    padding: 18,
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
+  },
+  optionCardFirst: {
+    marginTop: 24,
+  },
+  optionRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 14,
+  },
+  optionIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: colors.cardBgMuted,
+    borderColor: colors.border,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  optionIconBoxActive: {
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.accent,
+  },
+  optionTextWrap: {
+    flex: 1,
   },
   customRow: {
     alignItems: "center",
@@ -523,40 +565,41 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   customSummaryCard: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 10,
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.accent,
+    borderRadius: 12,
     borderWidth: 1,
-    marginTop: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   customSummaryLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    letterSpacing: 0.2,
+    color: colors.accent,
+    fontSize: 11,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontWeight: "700",
+    letterSpacing: 1,
     textTransform: "uppercase",
   },
   optionCardActive: {
     borderColor: colors.accent,
-    borderWidth: 1,
-    backgroundColor: colors.cardBg,
+    borderWidth: 2,
+    backgroundColor: colors.accentSoft,
   },
   optionTitle: {
     color: colors.text,
-    fontSize: 18,
-    lineHeight: 23,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontWeight: "800",
+    letterSpacing: -0.2,
   },
   optionBody: {
     color: colors.textMuted,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "PlusJakartaSans-Regular",
-    marginTop: 6,
-    lineHeight: 22,
+    marginTop: 2,
+    lineHeight: 20,
   },
   inlineRow: {
     flexDirection: "row",
@@ -564,27 +607,29 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   timePill: {
-    backgroundColor: colors.cardBg,
+    backgroundColor: colors.cardBgMuted,
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     flex: 1,
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   timePillLabel: {
     color: colors.textMuted,
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    letterSpacing: 0.2,
+    fontSize: 10,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
   },
   timePillValue: {
     color: colors.text,
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontWeight: "700",
-    marginTop: 4,
+    fontSize: 16,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontWeight: "800",
+    marginTop: 3,
+    letterSpacing: -0.3,
   },
   warningText: {
     color: colors.danger,
@@ -642,19 +687,19 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     color: colors.text,
-    fontSize: 24,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
+    fontSize: 20,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontWeight: "800",
     paddingHorizontal: 8,
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
   },
   modalSubtitle: {
     color: colors.textMuted,
     fontSize: 14,
     fontFamily: "PlusJakartaSans-Regular",
-    marginTop: 10,
+    marginTop: 8,
     lineHeight: 22,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   dayList: {
     paddingBottom: 10,
@@ -662,15 +707,15 @@ const styles = StyleSheet.create({
   dayRow: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   dayBlock: {
-    marginTop: 8,
+    marginTop: 10,
   },
   dayTimeRow: {
     flexDirection: "row",
@@ -680,7 +725,9 @@ const styles = StyleSheet.create({
   dayLabel: {
     color: colors.text,
     fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
+    fontFamily: "PlusJakartaSans-Bold",
+    fontWeight: "700",
+    letterSpacing: -0.1,
   },
   dayToggleTrack: {
     backgroundColor: colors.border,

@@ -3,27 +3,43 @@ import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from "react
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { CommonActions } from "@react-navigation/native";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { useAuth } from "../auth";
-import type { RootStackParamList } from "../types";
+import type { AuthReturnTo, RootStackParamList } from "../types";
 import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
 import { trackEvent } from "../analytics";
 import { logInfo, logWarn } from "../logger";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Welcome">;
 
-export function WelcomeScreen({ navigation }: Props) {
+export function WelcomeScreen({ navigation, route }: Props) {
   const { user, loginWithOAuth } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
+  const returnTo = route.params?.returnTo;
 
   useEffect(() => {
     if (user) {
+      navigateAfterAuth(returnTo);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const navigateAfterAuth = (dest?: AuthReturnTo) => {
+    if (dest) {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 1,
+          routes: [{ name: "Tabs" }, { name: dest.screen, params: dest.params }],
+        })
+      );
+    } else {
       navigation.replace("Tabs", { screen: "Search" });
     }
-  }, [navigation, user]);
+  };
 
   useEffect(() => {
     GoogleSignin.configure({
@@ -111,7 +127,7 @@ export function WelcomeScreen({ navigation }: Props) {
           style={styles.secondaryButton}
           onPress={() => {
             void trackEvent("mobile_signin_view_started", { source: "welcome" });
-            navigation.navigate("SignIn");
+            navigation.navigate("SignIn", returnTo ? { returnTo } : undefined);
           }}
         >
           <Text style={styles.secondaryButtonText}>Log in with email or phone number</Text>
@@ -121,7 +137,7 @@ export function WelcomeScreen({ navigation }: Props) {
           style={styles.tertiaryButton}
           onPress={() => {
             void trackEvent("mobile_signup_view_started", { source: "welcome" });
-            navigation.navigate("Register");
+            navigation.navigate("Register", returnTo ? { returnTo } : undefined);
           }}
         >
           <Text style={styles.tertiaryButtonText}>Create account</Text>

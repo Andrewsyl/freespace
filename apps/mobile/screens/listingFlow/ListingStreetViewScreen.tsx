@@ -7,12 +7,13 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import { StepProgress } from "./StepProgress";
 import { useListingFlow } from "./context";
 import { hostFlowColors } from "./hostFlowTheme";
-import { colors, spacing, textStyles } from "../../styles/theme";
+import { colors, spacing } from "../../styles/theme";
+import { FlowFooter } from "./FlowFooter";
 
 type FlowStackParamList = {
   ListingStreetView: undefined;
@@ -23,7 +24,6 @@ type Props = NativeStackScreenProps<FlowStackParamList, "ListingStreetView">;
 
 export function ListingStreetViewScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
-  const insets = useSafeAreaInsets();
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const webViewRef = useRef<WebView>(null);
   const canUseView = Platform.OS !== "web" && !!mapsKey;
@@ -67,8 +67,17 @@ export function ListingStreetViewScreen({ navigation }: Props) {
         <StepProgress current={2} total={7} />
         <Text style={styles.title}>Choose your cover image</Text>
         <Text style={styles.hint}>
-          Can't see your space from here? Skip this — you can add your own photos at a later step.
+          Can't see your space from here? You can add your own photos at a later step.
         </Text>
+        <Pressable
+          style={styles.skipButton}
+          onPress={() => {
+            setDraft((prev) => ({ ...prev, coverHeading: null }));
+            navigation.navigate("ListingDetails");
+          }}
+        >
+          <Text style={styles.skipButtonText}>Skip for now →</Text>
+        </Pressable>
       </View>
       <View style={styles.viewer}>
         {Platform.OS === "web" ? (
@@ -107,37 +116,20 @@ export function ListingStreetViewScreen({ navigation }: Props) {
           />
         )}
       </View>
-      <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
-        <View style={styles.footerRow}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.primaryButton, !canUseView && styles.primaryButtonDisabled]}
-          onPress={() => {
-            if (Platform.OS === "web") {
-              navigation.navigate("ListingDetails");
-              return;
-            }
-            const script =
-              "window.ReactNativeWebView.postMessage(JSON.stringify({type:'pov', pov: window.__getPov ? window.__getPov() : null})); true;";
-            webViewRef.current?.injectJavaScript(script);
-          }}
-          disabled={!canUseView}
-        >
-          <Text style={styles.primaryButtonText}>Use this view</Text>
-        </Pressable>
-        <Pressable
-          style={styles.secondaryButton}
-          onPress={() => {
-            setDraft((prev) => ({ ...prev, coverHeading: null }));
+      <FlowFooter
+        onBack={() => navigation.goBack()}
+        primaryLabel="Use this view"
+        onPrimary={() => {
+          if (Platform.OS === "web") {
             navigation.navigate("ListingDetails");
-          }}
-        >
-          <Text style={styles.secondaryButtonText}>Skip for now</Text>
-        </Pressable>
-        </View>
-      </View>
+            return;
+          }
+          const script =
+            "window.ReactNativeWebView.postMessage(JSON.stringify({type:'pov', pov: window.__getPov ? window.__getPov() : null})); true;";
+          webViewRef.current?.injectJavaScript(script);
+        }}
+        primaryDisabled={!canUseView}
+      />
     </SafeAreaView>
   );
 }
@@ -152,24 +144,19 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   kicker: {
-    ...textStyles.kicker,
+    color: hostFlowColors.accent,
     fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: "uppercase",
   },
   title: {
-    color: colors.text,
+    color: hostFlowColors.text,
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 26,
-    lineHeight: 31,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
+    letterSpacing: -0.8,
+    lineHeight: 34,
     marginTop: 10,
-    letterSpacing: -0.6,
-  },
-  subtitle: {
-    color: "#667085",
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans-Regular",
-    marginTop: 8,
-    lineHeight: 22,
   },
   hint: {
     backgroundColor: hostFlowColors.accentSoft,
@@ -184,14 +171,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
+  skipButton: {
+    marginTop: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  skipButtonText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    color: hostFlowColors.accent,
+  },
   viewer: {
+    flex: 1,
     marginTop: 16,
+    marginBottom: 16,
     marginHorizontal: spacing.screenX,
     borderRadius: 12,
     overflow: "hidden",
     borderColor: colors.border,
     borderWidth: 1,
-    height: 288,
   },
   webView: {
     flex: 1,
@@ -209,64 +207,5 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Regular",
     textAlign: "center",
     lineHeight: 22,
-  },
-  footer: {
-    marginTop: "auto",
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 10,
-    paddingBottom: 2,
-    gap: 8,
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    minHeight: 48,
-    justifyContent: "center",
-  },
-  primaryButtonDisabled: {
-    backgroundColor: "#cbd5e1",
-  },
-  primaryButtonText: {
-    color: colors.cardBg,
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    letterSpacing: -0.2,
-  },
-  secondaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 12,
-    minHeight: 46,
-    justifyContent: "center",
-  },
-  secondaryButtonText: {
-    color: colors.textMuted,
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-  },
-  footerRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 12,
-  },
-  backButton: {
-    alignItems: 'center',
-    borderColor: hostFlowColors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 50,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
-  backButtonText: {
-    color: hostFlowColors.textMuted,
-    fontFamily: 'PlusJakartaSans-SemiBold',
-    fontSize: 15,
-    fontWeight: '600',
   },
 });

@@ -1,14 +1,15 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { KeyboardAvoidingView, LayoutChangeEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { ArrowDownUp, CircleCheck, Cctv, Fence, IdCard, Lightbulb, Warehouse, Zap } from "lucide-react-native";
+import { Accessibility, ArrowDownUp, Bike, CircleCheck, Clock, Cctv, Fence, IdCard, Lightbulb, Maximize2, Warehouse, Zap } from "lucide-react-native";
 import { TextInput as AppTextInput } from "../../components/ui";
-import { spacing } from "../../styles/theme";
+import { spacing, textStyles } from "../../styles/theme";
 import { StepProgress } from "./StepProgress";
 import { useListingFlow } from "./context";
 import { hostFlowColors, hostFlowShadow } from "./hostFlowTheme";
+import { FlowFooter } from "./FlowFooter";
 
 type FlowStackParamList = {
   ListingFeaturesAccess: undefined;
@@ -17,13 +18,19 @@ type FlowStackParamList = {
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingFeaturesAccess">;
 
-const accessOptions = [
+const commonAccessOptions = [
   "CCTV",
   "EV charging",
   "Sheltered",
   "Well lit",
   "Gated access",
+];
+const extraAccessOptions = [
   "Height-friendly",
+  "Disabled access",
+  "24/7 access",
+  "Motorbike friendly",
+  "Wide bay",
 ];
 const gatedAccessChoices = [
   {
@@ -67,6 +74,14 @@ function FeatureIcon({ option, active }: { option: string; active: boolean }) {
       return <Lightbulb size={size} color={color} strokeWidth={strokeWidth} />;
     case "Height-friendly":
       return <ArrowDownUp size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Disabled access":
+      return <Accessibility size={size} color={color} strokeWidth={strokeWidth} />;
+    case "24/7 access":
+      return <Clock size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Motorbike friendly":
+      return <Bike size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Wide bay":
+      return <Maximize2 size={size} color={color} strokeWidth={strokeWidth} />;
     case "Covered":
       return (
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -110,6 +125,7 @@ function SectionHeader({
 export function ListingFeaturesAccessScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
   const insets = useSafeAreaInsets();
+  const [showAllFeatures, setShowAllFeatures] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const accessInputYRef = useRef(0);
   const arrivalInputYRef = useRef(0);
@@ -217,7 +233,7 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
         <View style={styles.surfaceCard}>
           <SectionHeader label="FEATURES" title="What else does your space offer?" />
           <View style={styles.chipWrap}>
-            {accessOptions.map((option) => {
+            {(showAllFeatures ? [...commonAccessOptions, ...extraAccessOptions] : commonAccessOptions).map((option) => {
               const active = draft.accessOptions.includes(option);
               return (
                 <Pressable
@@ -238,6 +254,11 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
               );
             })}
           </View>
+          <Pressable style={styles.showMoreBtn} onPress={() => setShowAllFeatures((v) => !v)}>
+            <Text style={styles.showMoreText}>
+              {showAllFeatures ? "Show less" : `More features +${extraAccessOptions.length}`}
+            </Text>
+          </Pressable>
         </View>
 
         <View style={styles.surfaceCard}>
@@ -370,20 +391,12 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
-        <View style={styles.footerRow}>
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.backButtonText}>← Back</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.primaryButton, !canContinue && styles.primaryButtonDisabled]}
-            onPress={() => navigation.navigate("ListingAvailability")}
-            disabled={!canContinue}
-          >
-            <Text style={styles.primaryButtonText}>Continue</Text>
-          </Pressable>
-        </View>
-      </View>
+      <FlowFooter
+        onBack={() => navigation.goBack()}
+        primaryLabel="Continue"
+        onPrimary={() => navigation.navigate("ListingAvailability")}
+        primaryDisabled={!canContinue}
+      />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -394,7 +407,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
-    marginTop: 14,
+    marginTop: 10,
   },
   accessChoiceCard: {
     alignItems: "center",
@@ -413,8 +426,8 @@ const styles = StyleSheet.create({
     backgroundColor: hostFlowColors.cardBg,
   },
   accessChoiceStack: {
-    gap: 14,
-    marginTop: 12,
+    gap: 10,
+    marginTop: 10,
   },
   accessChoiceSelectedMeta: {
     alignItems: "center",
@@ -463,6 +476,17 @@ const styles = StyleSheet.create({
   featureChipTextActive: {
     color: hostFlowColors.text,
   },
+  showMoreBtn: {
+    alignSelf: "flex-start",
+    marginTop: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+  },
+  showMoreText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    color: hostFlowColors.accent,
+  },
   featureIconWrap: {
     alignItems: "center",
     backgroundColor: "#f7f8f8",
@@ -486,7 +510,7 @@ const styles = StyleSheet.create({
     paddingTop: 6,
   },
   heroCard: {
-    marginTop: 14,
+    marginTop: 10,
     paddingHorizontal: 0,
   },
   input: {
@@ -547,8 +571,8 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   questionStack: {
-    gap: 18,
-    marginTop: 14,
+    gap: 14,
+    marginTop: 10,
   },
   questionTitle: {
     color: hostFlowColors.text,
@@ -569,20 +593,18 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   sectionLabel: {
-    color: "#86efac",
+    color: hostFlowColors.accent,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    lineHeight: 18,
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: "uppercase",
   },
   sectionTitle: {
     color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 20,
-    fontWeight: "600",
-    letterSpacing: -0.4,
-    lineHeight: 25,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 17,
+    letterSpacing: -0.5,
+    lineHeight: 22,
     marginTop: 4,
   },
   subCard: {
@@ -606,16 +628,16 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: hostFlowColors.border,
-    marginTop: 16,
-    padding: 20,
+    marginTop: 12,
+    padding: 16,
   },
   title: {
     color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-SemiBold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 26,
     fontWeight: "600",
-    letterSpacing: -0.6,
-    lineHeight: 31,
+    letterSpacing: -0.8,
+    lineHeight: 34,
   },
   toggleGroup: {
     flexDirection: "row",

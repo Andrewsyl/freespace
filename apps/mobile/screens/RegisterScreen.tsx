@@ -10,17 +10,34 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { CommonActions } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../auth";
-import type { RootStackParamList } from "../types";
+import type { AuthReturnTo, RootStackParamList } from "../types";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 import { colors, radius, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Register">;
 const AUTH_GREEN = "#0fa968";
 
-export function RegisterScreen({ navigation }: Props) {
+export function RegisterScreen({ navigation, route }: Props) {
   const { register } = useAuth();
+  const returnTo = route.params?.returnTo;
+
+  const navigateAfterAuth = (dest?: AuthReturnTo) => {
+    if (dest) {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 1,
+          routes: [{ name: "Tabs" }, { name: dest.screen, params: dest.params }],
+        })
+      );
+    } else {
+      navigation.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: "Tabs", params: { screen: "Search" } }] })
+      );
+    }
+  };
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
@@ -80,6 +97,7 @@ export function RegisterScreen({ navigation }: Props) {
       if (needsLegalAcceptance(result.user)) {
         return;
       }
+      navigateAfterAuth(returnTo);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign up failed");
     } finally {

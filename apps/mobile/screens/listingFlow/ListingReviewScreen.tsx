@@ -18,6 +18,7 @@ import type { RootStackParamList } from "../../types";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
 import { colors, radius, spacing, textStyles } from "../../styles/theme";
+import { hostFlowColors } from "./hostFlowTheme";
 
 type FlowStackParamList = {
   ListingReview: undefined;
@@ -449,17 +450,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   kicker: {
-    ...textStyles.kicker,
+    color: hostFlowColors.accent,
     fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: "uppercase",
   },
   title: {
     color: colors.text,
     fontSize: 26,
-    lineHeight: 31,
-    fontFamily: "PlusJakartaSans-SemiBold",
+    lineHeight: 34,
+    fontFamily: "PlusJakartaSans-Bold",
     fontWeight: "600",
     marginTop: 12,
-    letterSpacing: -0.6,
+    letterSpacing: -0.8,
   },
   subtitle: {
     color: "#667085",
@@ -473,8 +477,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 12,
     borderWidth: 1,
-    marginTop: 20,
-    padding: 18,
+    marginTop: 14,
+    padding: 16,
   },
   guidanceTitle: {
     color: colors.text,
@@ -541,7 +545,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
   },
   editRowLast: {
     borderBottomWidth: 0,
@@ -571,7 +575,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     gap: 12,
-    marginTop: 18,
+    marginTop: 14,
     padding: 16,
   },
   confirmRowActive: {

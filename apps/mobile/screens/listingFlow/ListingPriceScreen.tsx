@@ -15,6 +15,8 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { CalendarDays, Clock3, CalendarRange } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
+import { hostFlowColors } from "./hostFlowTheme";
+import { spacing } from "../../styles/theme";
 
 type FlowStackParamList = {
   ListingPrice: undefined;
@@ -198,16 +200,15 @@ export function ListingPriceScreen({ navigation }: Props) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Page header */}
+          {/* Header — matches all other flow screens */}
           <View style={styles.pageHeader}>
             <Text style={styles.pageLabel}>Space pricing</Text>
+            <StepProgress current={5} total={7} />
             <Text style={styles.pageTitle}>Set your rates</Text>
             <Text style={styles.pageSubtitle}>
               Choose whether this space is for short stays, monthly parking, or both.
             </Text>
           </View>
-
-          <StepProgress current={5} total={7} />
 
           {/* Mode tabs */}
           <View style={styles.modeTabs}>
@@ -292,28 +293,39 @@ const styles = StyleSheet.create({
 
   // ── Header ───────────────────────────────────────────────────
   pageHeader: {
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16,
+    paddingBottom: 8,
   },
   pageLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
-    color: GREEN, letterSpacing: 1.4, textTransform: "uppercase", marginBottom: 4,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    color: hostFlowColors.accent,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    marginBottom: 4,
   },
   pageTitle: {
-    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 27,
-    color: FG, letterSpacing: -0.8, lineHeight: 32, marginBottom: 4,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 26,
+    color: hostFlowColors.text,
+    letterSpacing: -0.8,
+    lineHeight: 34,
+    marginTop: 10,
+    marginBottom: 4,
   },
   pageSubtitle: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, lineHeight: 21,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    color: hostFlowColors.textMuted,
+    lineHeight: 22,
   },
 
-  scroll: { paddingHorizontal: 20 },
+  scroll: { paddingHorizontal: spacing.screenX },
 
   // ── Mode tabs ────────────────────────────────────────────────
   modeTabs: {
     flexDirection: "row", gap: 6,
     backgroundColor: "#EEEEEC", borderRadius: 14,
-    padding: 5, marginTop: 20,
+    padding: 5, marginTop: 14,
   },
   modeTab: {
     flex: 1, alignItems: "center", justifyContent: "center",
@@ -333,7 +345,7 @@ const styles = StyleSheet.create({
   // ── Card ─────────────────────────────────────────────────────
   card: {
     borderRadius: 14, borderWidth: 1, borderColor: LINE,
-    overflow: "hidden", marginTop: 20,
+    overflow: "hidden", marginTop: 14,
   },
 
   // ── Warning ──────────────────────────────────────────────────

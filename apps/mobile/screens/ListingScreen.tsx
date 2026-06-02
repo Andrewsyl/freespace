@@ -254,16 +254,14 @@ export function ListingScreen({ navigation, route }: Props) {
   const availabilityFallbackText = useMemo(() => {
     const raw = (listing?.availability_text ?? "").trim();
     if (!raw) {
-      if (isOpen24) return "Open 24/7";
-      if (listing?.is_available === true) return "Available";
+      if (isOpen24 || listing?.is_available === true) return "All day";
       return "Check availability";
     }
     if (/24\s*\/\s*7|24\s*hours|open\s*24|always available|available every day|every day|monday\s*-\s*sunday/i.test(raw))
-      return "Open 24/7";
+      return "All day";
     if (/closed|by appointment|weekdays|weekends|mon|tue|wed|thu|fri|sat|sun|\d{1,2}:\d{2}/i.test(raw) && raw.length <= 60)
       return raw;
-    if (listing?.is_available === true) return "Available";
-    return "Check availability";
+    return "All day";
   }, [isOpen24, listing?.availability_text, listing?.is_available]);
 
   const availabilityEntries = (listing as { availabilitySchedule?: { startsAt: string; endsAt: string; repeatWeekdays: number[] }[] })?.availabilitySchedule ?? [];
@@ -273,13 +271,13 @@ export function ListingScreen({ navigation, route }: Props) {
   const formatHour = (value: string) =>
     new Date(value).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", hour12: true });
   const weekdayOrder = [
-    { label: "Monday", dow: 1 },
-    { label: "Tuesday", dow: 2 },
-    { label: "Wednesday", dow: 3 },
-    { label: "Thursday", dow: 4 },
-    { label: "Friday", dow: 5 },
-    { label: "Saturday", dow: 6 },
-    { label: "Sunday", dow: 0 },
+    { label: "Mon", dow: 1 },
+    { label: "Tue", dow: 2 },
+    { label: "Wed", dow: 3 },
+    { label: "Thu", dow: 4 },
+    { label: "Fri", dow: 5 },
+    { label: "Sat", dow: 6 },
+    { label: "Sun", dow: 0 },
   ];
   const todayDow = new Date().getDay();
   const openingHours = weekdayOrder.map(({ label, dow }) => {
@@ -354,7 +352,7 @@ export function ListingScreen({ navigation, route }: Props) {
 
   const handleToggleFavorite = async () => {
     if (!listing) return;
-    if (!user) { navigation.navigate("Welcome"); return; }
+    if (!user) { navigation.navigate("Welcome", { returnTo: { screen: "Listing" as const, params: { id, from: startAt.toISOString(), to: endAt.toISOString() } } }); return; }
     const wasFavorite = isFavorite(id);
     await toggle(listing);
     if (!wasFavorite) setShowFavAnim(true);
@@ -384,7 +382,8 @@ export function ListingScreen({ navigation, route }: Props) {
 
   const openAuthScreen = (screen: "Welcome" | "SignIn" | "Register") => {
     closeAuthOverlay();
-    setTimeout(() => navigation.navigate(screen), 180);
+    const returnTo = { screen: "Listing" as const, params: { id, from: startAt.toISOString(), to: endAt.toISOString() } };
+    setTimeout(() => navigation.navigate(screen, { returnTo }), 180);
   };
 
   return (
@@ -415,10 +414,21 @@ export function ListingScreen({ navigation, route }: Props) {
                 </View>
               )}
               <LinearGradient
-                colors={["rgba(0,0,0,0.3)", "transparent", "rgba(0,0,0,0.16)"]}
-                locations={[0, 0.42, 1]}
+                colors={["rgba(0,0,0,0.28)", "transparent", "rgba(0,0,0,0.72)"]}
+                locations={[0, 0.38, 1]}
                 style={styles.heroGradient}
               />
+              {/* Title overlay */}
+              <View style={styles.heroTitleOverlay}>
+                <Text style={styles.heroSpaceTypeLabel}>{spaceTypeLabel}</Text>
+                <Text style={styles.heroTitleText} numberOfLines={2}>{displayTitle}</Text>
+                {areaLabel ? (
+                  <View style={styles.heroAreaRow}>
+                    <Ionicons name="location-outline" size={13} color="rgba(255,255,255,0.8)" />
+                    <Text style={styles.heroAreaText} numberOfLines={1}>{areaLabel}</Text>
+                  </View>
+                ) : null}
+              </View>
             </View>
 
             {/* Floating glass controls */}
@@ -478,35 +488,13 @@ export function ListingScreen({ navigation, route }: Props) {
               <View style={styles.sheet}>
                 <View style={styles.sheetHandle} />
 
-                <View style={styles.titleBlock}>
-                  <Text style={styles.titleText}>{displayTitle}</Text>
-
-                  <View style={styles.metaRow}>
-                    {hasReviews && (
-                      <>
-                        <View style={styles.starPill}>
-                          <Ionicons name="star" size={12} color="#F4B942" />
-                          <Text style={styles.starPillText}>{listing.rating?.toFixed(1)}</Text>
-                          {listing.rating_count ? (
-                            <Text style={styles.starPillCount}>{listing.rating_count}</Text>
-                          ) : null}
-                        </View>
-                        <View style={styles.metaDot} />
-                      </>
-                    )}
-                    <View style={[styles.availPulseDot, !isAvailable && styles.availPulseDotOff]} pointerEvents="none" />
-                    <Text style={[styles.availText, !isAvailable && styles.availTextOff]}>
-                      {availabilityFallbackText}
-                    </Text>
-                  </View>
-
-                </View>
-
                 <View style={styles.statsStrip}>
                   <View style={styles.statsCell}>
                     <Text style={styles.statsCellLabel}>PRICE</Text>
-                    <Text style={styles.statsCellValue}>€{priceSummary?.total ?? "—"}</Text>
-                    {priceSummary ? <Text style={styles.statsCellSub}>{priceSummary.durationLabel}</Text> : null}
+                    <Text style={styles.statsCellValue}>
+                      €{priceSummary?.total ?? "—"}
+                      {priceSummary ? <Text style={styles.statsCellSub}> · {priceSummary.durationLabel}</Text> : null}
+                    </Text>
                   </View>
                   <View style={styles.statsVDivider} />
                   <View style={styles.statsCell}>
@@ -528,28 +516,23 @@ export function ListingScreen({ navigation, route }: Props) {
                 </View>
 
                 {/* ── Booking time boxes ───────────────────── */}
-                <View style={styles.timePickerWrapper}>
-                  <View style={styles.timePickerCard}>
-                    <Pressable style={styles.timePickerColumn} onPress={() => openPicker("start")}>
-                      <View style={styles.timePickerField}>
-                        <View>
-                          <Text style={styles.dateTimeLabel}>From</Text>
-                          <Text style={styles.dateTimeValue}>{formatDateTimeLabel(startAt)}</Text>
-                        </View>
-                        <Ionicons name="chevron-down" size={16} color="#0f766e" />
+                <View style={styles.sectionDivider} />
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Choose your time</Text>
+                  <View style={styles.timePickerRow}>
+                    <Pressable style={styles.timePickerBtn} onPress={() => openPicker("start")}>
+                      <View>
+                        <Text style={styles.timePickerBtnLabel}>From</Text>
+                        <Text style={styles.timePickerBtnValue}>{formatDateTimeLabel(startAt)}</Text>
                       </View>
+                      <Ionicons name="chevron-down" size={16} color="#9ca3af" />
                     </Pressable>
-                    <View style={styles.timePickerArrow}>
-                      <Ionicons name="arrow-forward" size={18} color="#22a06b" />
-                    </View>
-                    <Pressable style={styles.timePickerColumn} onPress={() => openPicker("end")}>
-                      <View style={styles.timePickerField}>
-                        <View>
-                          <Text style={styles.dateTimeLabel}>Until</Text>
-                          <Text style={styles.dateTimeValue}>{formatDateTimeLabel(endAt)}</Text>
-                        </View>
-                        <Ionicons name="chevron-down" size={16} color="#0f766e" />
+                    <Pressable style={styles.timePickerBtn} onPress={() => openPicker("end")}>
+                      <View>
+                        <Text style={styles.timePickerBtnLabel}>Until</Text>
+                        <Text style={styles.timePickerBtnValue}>{formatDateTimeLabel(endAt)}</Text>
                       </View>
+                      <Ionicons name="chevron-down" size={16} color="#9ca3af" />
                     </Pressable>
                   </View>
 
@@ -568,6 +551,19 @@ export function ListingScreen({ navigation, route }: Props) {
                       <Ionicons name="chevron-forward" size={15} color="#0fa968" />
                     </Pressable>
                   ) : null}
+                  <View style={styles.trustNotes}>
+                    {[
+                      "Exact location confirmed after booking",
+                      "Arrival instructions included with your confirmation",
+                    ].map((note) => (
+                      <View key={note} style={styles.trustNoteRow}>
+                        <View style={styles.trustNoteCheck}>
+                          <Ionicons name="checkmark" size={10} color={GREEN} />
+                        </View>
+                        <Text style={styles.trustNoteText}>{note}</Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
 
                 {/* ── About ────────────────────────────────── */}
@@ -649,19 +645,40 @@ export function ListingScreen({ navigation, route }: Props) {
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Availability</Text>
                   <View style={styles.availabilityList}>
-                    {openingHours.map((entry) => (
-                      <View
-                        key={entry.day}
-                        style={[styles.availabilityRow, entry.isToday && styles.availabilityRowToday]}
-                      >
-                        <Text style={[styles.availabilityDay, entry.isToday && styles.availabilityDayToday]}>
-                          {entry.day}
-                        </Text>
-                        <Text style={[styles.availabilityHours, entry.isToday && styles.availabilityHoursToday]}>
-                          {entry.hours}
-                        </Text>
-                      </View>
-                    ))}
+                    {openingHours.map((entry, index) => {
+                      const isClosed = entry.hours === "Closed";
+                      const isLast = index === openingHours.length - 1;
+                      return (
+                        <View
+                          key={entry.day}
+                          style={[
+                            styles.availabilityRow,
+                            !isLast && !entry.isToday && styles.availabilityRowDivider,
+                            entry.isToday && styles.availabilityRowToday,
+                          ]}
+                        >
+                          <View style={styles.availabilityDayCol}>
+                            {entry.isToday
+                              ? <View style={styles.availabilityDot} />
+                              : <View style={styles.availabilityDotPlaceholder} />}
+                            <Text style={[
+                              styles.availabilityDay,
+                              entry.isToday && styles.availabilityDayToday,
+                              isClosed && styles.availabilityDayClosed,
+                            ]}>
+                              {entry.day}
+                            </Text>
+                          </View>
+                          <Text style={[
+                            styles.availabilityHours,
+                            entry.isToday && styles.availabilityHoursToday,
+                            isClosed && styles.availabilityHoursClosed,
+                          ]}>
+                            {entry.hours}
+                          </Text>
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
 
@@ -690,35 +707,39 @@ export function ListingScreen({ navigation, route }: Props) {
                   {reviewsLoading ? (
                     <ActivityIndicator color="#0fa968" style={{ marginTop: 12, alignSelf: "flex-start" }} />
                   ) : reviews.length ? (
-                    <View style={styles.reviewList}>
-                      {reviews.slice(0, 3).map((review) => {
+                    <View style={{ marginTop: 4 }}>
+                      {reviews.slice(0, 4).map((review, index) => {
                         const authorName =
                           (review as { author_name?: string }).author_name ??
                           review.authorName ?? "Guest";
+                        const reviewDate = formatReviewDate(
+                          new Date((review as { created_at?: string }).created_at ?? review.createdAt)
+                        );
                         return (
-                          <View key={review.id} style={styles.reviewCard}>
-                            <View style={styles.reviewCardTop}>
-                              <View style={[styles.reviewAvatar, { backgroundColor: avatarBg(authorName) }]}>
-                                <Text style={styles.reviewAvatarText}>
-                                  {authorName.charAt(0).toUpperCase()}
-                                </Text>
+                          <View
+                            key={review.id}
+                            style={[
+                              styles.reviewListItem,
+                              index === Math.min(reviews.length, 4) - 1 && styles.reviewListItemLast,
+                            ]}
+                          >
+                            <View style={styles.reviewListTop}>
+                              <View style={styles.reviewStarRow}>
+                                {Array.from({ length: 5 }, (_, i) => (
+                                  <Ionicons
+                                    key={i}
+                                    name={i < Math.round(review.rating) ? "star" : "star-outline"}
+                                    size={12}
+                                    color={i < Math.round(review.rating) ? "#F4B942" : "#e2e8f0"}
+                                  />
+                                ))}
                               </View>
-                              <View style={styles.reviewMetaBlock}>
-                                <Text style={styles.reviewAuthorName}>{authorName}</Text>
-                                <Text style={styles.reviewDateText}>
-                                  {formatReviewDate(
-                                    new Date(
-                                      (review as { created_at?: string }).created_at ?? review.createdAt
-                                    )
-                                  )}
-                                </Text>
-                              </View>
-                              <View style={styles.reviewStarPill}>
-                                <Ionicons name="star" size={11} color="#F4B942" />
-                                <Text style={styles.reviewStarPillText}>{review.rating.toFixed(1)}</Text>
-                              </View>
+                              <Text style={styles.reviewDateText}>{reviewDate}</Text>
                             </View>
-                            <Text style={styles.reviewComment}>{review.comment}</Text>
+                            {review.comment ? (
+                              <Text style={styles.reviewComment}>{review.comment}</Text>
+                            ) : null}
+                            <Text style={styles.reviewAuthorName}>{authorName}</Text>
                           </View>
                         );
                       })}
@@ -948,6 +969,43 @@ const styles = StyleSheet.create({
   },
   photoCounterText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: "#fff", letterSpacing: 0.5 },
 
+  // Hero title overlay
+  heroTitleOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingBottom: 60,
+  },
+  heroSpaceTypeLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    letterSpacing: 1.8,
+    textTransform: "uppercase",
+    color: "rgba(255,255,255,0.7)",
+    marginBottom: 4,
+  },
+  heroTitleText: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 26,
+    lineHeight: 28,
+    letterSpacing: -0.5,
+    color: "#ffffff",
+    marginBottom: 6,
+  },
+  heroAreaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  heroAreaText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    color: "rgba(255,255,255,0.8)",
+    flex: 1,
+  },
+
   // Floating controls
   headerOverlay: {
     position: "absolute", left: 16, right: 16, zIndex: 10,
@@ -982,7 +1040,7 @@ const styles = StyleSheet.create({
   sheetHandle: {
     width: 40, height: 4, borderRadius: 999,
     backgroundColor: LINE,
-    alignSelf: "center", marginBottom: 18,
+    alignSelf: "center", marginBottom: 12,
   },
 
   // Title block
@@ -1010,84 +1068,62 @@ const styles = StyleSheet.create({
   statsStrip: {
     flexDirection: "row",
     backgroundColor: "#ffffff",
-    borderRadius: 12, borderWidth: 1, borderColor: LINE_2,
-    overflow: "hidden", marginBottom: 12,
+    borderRadius: 10, borderWidth: 1, borderColor: LINE_2,
+    overflow: "hidden", marginBottom: 10, marginTop: 2,
   },
-  statsCell: { flex: 1, paddingVertical: 14, paddingHorizontal: 10, alignItems: "center", gap: 4 },
+  statsCell: { flex: 1, paddingVertical: 10, paddingHorizontal: 8, alignItems: "center", gap: 2 },
   statsCellLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 10,
-    color: FG_SUBTLE, letterSpacing: 1.8, textTransform: "uppercase",
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 9,
+    color: FG_SUBTLE, letterSpacing: 1.4, textTransform: "uppercase",
   },
   statsCellValue: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 17,
-    color: FG, letterSpacing: -0.5,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 14,
+    color: FG, letterSpacing: -0.3,
   },
-  statsVDivider: { width: 1, backgroundColor: LINE, marginVertical: 10 },
+  statsVDivider: { width: 1, backgroundColor: LINE, marginVertical: 8 },
 
-  // Booking time-picker boxes
-  timePickerWrapper: {
-    overflow: "hidden",
-    borderRadius: 16,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#BEBEBE",
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-    marginBottom: 14,
-  },
-  timePickerCard: {
+  // Booking time-picker buttons (two separate cards, side by side)
+  timePickerRow: {
     flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    gap: 10,
+    marginBottom: 10,
   },
-  timePickerColumn: {
+  timePickerBtn: {
     flex: 1,
-  },
-  timePickerField: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    backgroundColor: "#ffffff",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#BEBEBE",
-    backgroundColor: BG_2,
-    overflow: "hidden",
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  timePickerArrow: {
-    width: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  dateTimeLabel: {
-    fontFamily: "PlusJakartaSans-Medium",
-    fontSize: 10,
-    color: FG_SUBTLE,
-    textTransform: "uppercase",
-    letterSpacing: 0.65,
-    fontWeight: "600",
+  timePickerBtnLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    color: GREEN,
     marginBottom: 3,
   },
-  dateTimeValue: {
-    fontFamily: "PlusJakartaSans-SemiBold",
+  timePickerBtnValue: {
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 13,
-    fontWeight: "600",
-    color: FG,
+    color: "#0f172a",
   },
 
-  // Extend offer — attached bottom section of airRouteCard
+  // Extend offer — standalone card below pickers
   offerRow: {
     flexDirection: "row", alignItems: "center", gap: 12,
     backgroundColor: GREEN_SOFT,
-    borderTopWidth: 1, borderTopColor: LINE,
+    borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 11,
+    marginBottom: 12,
   },
   offerIconWrap: {
     width: 28, height: 28, borderRadius: 14,
@@ -1099,27 +1135,46 @@ const styles = StyleSheet.create({
 
   // Sections
   sectionDivider: { height: 1, backgroundColor: LINE, marginHorizontal: -spacing.screenX },
-  availabilityList: { gap: 2, marginTop: 10 },
+  availabilityList: { marginTop: 0 },
   availabilityRow: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingVertical: 8,
+    flexDirection: "row", alignItems: "center",
+    paddingVertical: 6,
+  },
+  availabilityRowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
   },
   availabilityRowToday: {
     backgroundColor: GREEN_SOFT, borderRadius: 8,
-    paddingHorizontal: 10, marginHorizontal: -8,
+    paddingHorizontal: 8, marginHorizontal: -8,
   },
-  availabilityDay: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: "#475569", flex: 1 },
-  availabilityDayToday: { color: GREEN, fontFamily: "PlusJakartaSans-SemiBold" },
-  availabilityHours: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, textAlign: "right" },
-  availabilityHoursToday: { color: GREEN },
-  section: { paddingVertical: 20 },
+  availabilityHoursToday: { color: GREEN, fontFamily: "PlusJakartaSans-SemiBold" },
+  availabilityDayCol: {
+    flexDirection: "row", alignItems: "center",
+    width: 52, gap: 6,
+  },
+  availabilityDot: {
+    width: 5, height: 5, borderRadius: 3,
+    backgroundColor: GREEN,
+  },
+  availabilityDotPlaceholder: { width: 5 },
+  availabilityDay: {
+    fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: FG_MUTED,
+  },
+  availabilityDayToday: { color: GREEN, fontFamily: "PlusJakartaSans-Bold" },
+  availabilityDayClosed: { color: FG_SUBTLE },
+  availabilityHours: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
+    color: FG_2, flex: 1, textAlign: "right",
+  },
+  availabilityHoursClosed: { color: FG_SUBTLE },
+  section: { paddingVertical: 18 },
   sectionTitle: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 18, lineHeight: 22, color: FG, letterSpacing: -0.5, marginBottom: 14,
+    fontSize: 18, lineHeight: 22, color: FG, letterSpacing: -0.5, marginBottom: 10,
   },
   statsCellSub: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 10,
-    color: FG_SUBTLE, marginTop: 1,
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 9,
+    color: FG_SUBTLE, marginTop: 0,
   },
   sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, lineHeight: 26, color: "#475569" },
   readMore: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG, marginTop: 10 },
@@ -1215,14 +1270,14 @@ const styles = StyleSheet.create({
   },
   reviewAvatarText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG },
   reviewMetaBlock: { flex: 1 },
-  reviewAuthorName: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG, letterSpacing: -0.1 },
-  reviewDateText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, marginTop: 1 },
+  reviewAuthorName: { fontFamily: "PlusJakartaSans-Medium", fontSize: 12, color: FG_SUBTLE },
+  reviewDateText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: FG_SUBTLE },
   reviewStarPill: {
     flexDirection: "row", alignItems: "center", gap: 3,
     backgroundColor: BG_2, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
   },
   reviewStarPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
-  reviewComment: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, lineHeight: 22, color: "#475569" },
+  reviewComment: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, lineHeight: 21, color: "#475569", marginBottom: 6 },
 
   // Auth modal — bottom sheet
   authModalRoot: { flex: 1, justifyContent: "flex-end" },
@@ -1364,6 +1419,39 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.14)", borderRadius: 999,
   },
   viewerCloseText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: "#fff" },
+
+  // Trust notes (below time picker)
+  trustNotes: { gap: 6, marginTop: 10 },
+  trustNoteRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  trustNoteCheck: {
+    width: 18, height: 18, borderRadius: 9,
+    backgroundColor: GREEN_SOFT,
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  trustNoteText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, flex: 1, lineHeight: 18 },
+
+  // Feature list (replaces pill chips)
+  featureListItem: {
+    flexDirection: "row", alignItems: "center", gap: 14,
+    paddingVertical: 13,
+    borderBottomWidth: 1, borderBottomColor: LINE,
+  },
+  featureListItemLast: { borderBottomWidth: 0 },
+  featureListIconWrap: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: GREEN_SOFT,
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  featureListLabel: { fontFamily: "PlusJakartaSans-Medium", fontSize: 15, color: "#1e293b" },
+
+  // Review list (divider style)
+  reviewListItem: {
+    paddingVertical: 13,
+    borderBottomWidth: 1, borderBottomColor: LINE,
+  },
+  reviewListItemLast: { borderBottomWidth: 0 },
+  reviewListTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+  reviewStarRow: { flexDirection: "row", alignItems: "center", gap: 2 },
 
   // Unused legacy styles (kept for compatibility with any unused JSX branches)
   airSummaryHeaderRow: { flexDirection: "row", alignItems: "center", gap: 16, paddingHorizontal: 4, marginBottom: 14 },

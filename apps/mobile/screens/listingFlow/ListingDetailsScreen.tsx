@@ -11,8 +11,9 @@ import {
 } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
-import { hostFlowColors, hostFlowShadow } from "./hostFlowTheme";
+import { hostFlowColors } from "./hostFlowTheme";
 import { spacing } from "../../styles/theme";
+import { FlowFooter } from "./FlowFooter";
 
 type FlowStackParamList = {
   ListingDetails: undefined;
@@ -23,105 +24,51 @@ type Props = NativeStackScreenProps<FlowStackParamList, "ListingDetails">;
 
 const spaceTypes = ["Private Driveway", "Garage", "Car park", "Private road"];
 const vehicleSizeOptions = [
-  {
-    value: "small",
-    label: "Small",
-    example: "i.e. VW Polo, Ford Fiesta",
-    image: "https://img.icons8.com/color/96/hatchback.png",
-  },
-  {
-    value: "medium",
-    label: "Medium",
-    example: "i.e. Audi A3",
-    image: "https://img.icons8.com/color/96/sedan.png",
-  },
-  {
-    value: "large",
-    label: "Large",
-    example: "i.e. Volvo XC90",
-    image: "https://img.icons8.com/color/96/suv.png",
-  },
-  {
-    value: "van",
-    label: "Van",
-    example: "i.e. Transit Custom",
-    image: "https://img.icons8.com/color/96/van.png",
-  },
+  { value: "small",  label: "Small",  example: "e.g. VW Polo, Ford Fiesta",    image: "https://img.icons8.com/color/96/hatchback.png" },
+  { value: "medium", label: "Medium", example: "e.g. Audi A3, BMW 3 Series",   image: "https://img.icons8.com/color/96/sedan.png" },
+  { value: "large",  label: "Large",  example: "e.g. Volvo XC90, BMW X5",      image: "https://img.icons8.com/color/96/suv.png" },
+  { value: "van",    label: "Van",    example: "e.g. Ford Transit, Sprinter",   image: "https://img.icons8.com/color/96/van.png" },
 ];
 
-
-type DetailStep = "type" | "count" | "vehicle" | "access";
+type DetailStep = "type" | "count" | "vehicle";
 
 const MIN_SPACE_COUNT = 0;
 const MAX_SPACE_COUNT = 99;
-const activeIconColor = hostFlowColors.cardBg;
-const transparentColor = "transparent";
 
 function parseSpaceCount(value: string) {
   const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed < MIN_SPACE_COUNT) {
-    return null;
-  }
+  if (!Number.isFinite(parsed) || parsed < MIN_SPACE_COUNT) return null;
   return Math.min(parsed, MAX_SPACE_COUNT);
 }
 
 function SpaceTypeIcon({ type, active }: { type: string; active: boolean }) {
-  const color = active ? activeIconColor : hostFlowColors.text;
+  const color = active ? hostFlowColors.accent : hostFlowColors.text;
   const size = 20;
   const strokeWidth = 1.8;
   switch (type) {
-    case "Private Driveway":
-      return <House size={size} color={color} strokeWidth={strokeWidth} />;
-    case "Garage":
-      return <Warehouse size={size} color={color} strokeWidth={strokeWidth} />;
-    case "Car park":
-      return <CircleParking size={size} color={color} strokeWidth={strokeWidth} />;
-    case "Private road":
-    default:
-      return <Signpost size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Private Driveway": return <House size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Garage":           return <Warehouse size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Car park":         return <CircleParking size={size} color={color} strokeWidth={strokeWidth} />;
+    default:                 return <Signpost size={size} color={color} strokeWidth={strokeWidth} />;
   }
-}
-
-function SectionHeader({
-  label,
-  title,
-  body,
-}: {
-  label: string;
-  title: string;
-  body?: string;
-}) {
-  return (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionLabel}>{label}</Text>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {body ? <Text style={styles.sectionBody}>{body}</Text> : null}
-    </View>
-  );
 }
 
 export function ListingDetailsScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
   const insets = useSafeAreaInsets();
   const [openStep, setOpenStep] = useState<DetailStep>("type");
-  const [spaceCountInput, setSpaceCountInput] = useState<number>(() => parseSpaceCount(draft.spaceCount) ?? MIN_SPACE_COUNT);
+  const [spaceCountInput, setSpaceCountInput] = useState<number>(
+    () => parseSpaceCount(draft.spaceCount) ?? MIN_SPACE_COUNT
+  );
+
   const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boolean(draft.vehicleSize);
   const confirmedSpaceCount = parseSpaceCount(draft.spaceCount);
   const hasConfirmedCount = confirmedSpaceCount !== null && confirmedSpaceCount > 0;
+
   useEffect(() => {
-    if (!draft.spaceType) {
-      setOpenStep("type");
-      return;
-    }
-    if (!draft.spaceCount) {
-      setOpenStep("count");
-      return;
-    }
-    if (!draft.vehicleSize) {
-      setOpenStep("vehicle");
-      return;
-    }
-    setOpenStep("access");
+    if (!draft.spaceType) { setOpenStep("type"); return; }
+    if (!draft.spaceCount) { setOpenStep("count"); return; }
+    if (!draft.vehicleSize) { setOpenStep("vehicle"); return; }
   }, [draft.spaceCount, draft.spaceType, draft.vehicleSize]);
 
   useEffect(() => {
@@ -135,36 +82,33 @@ export function ListingDetailsScreen({ navigation }: Props) {
   const adjustSpaceCount = (delta: number) => {
     const next = Math.min(MAX_SPACE_COUNT, Math.max(MIN_SPACE_COUNT, spaceCountInput + delta));
     setSpaceCountInput(next);
-    setDraft((current) => ({
-      ...current,
-      spaceCount: next > 0 ? String(next) : "",
-    }));
+    setDraft((current) => ({ ...current, spaceCount: next > 0 ? String(next) : "" }));
     setOpenStep(next > 0 ? "vehicle" : "count");
   };
+
+  const showTypeSection  = !draft.spaceType || openStep === "type";
+  const showTypeRow      = draft.spaceType && openStep !== "type";
+  const showCountSection = Boolean(draft.spaceType);
+  const showVehicleSection = draft.spaceType && hasConfirmedCount;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: 104 + Math.max(insets.bottom, 0) },
-        ]}
+        contentContainerStyle={[styles.content, { paddingBottom: 104 + Math.max(insets.bottom, 0) }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerBlock}>
-          <View style={styles.progressShell}>
-            <StepProgress current={3} total={8} />
-          </View>
-          <View style={styles.heroCard}>
-            <Text style={styles.stepEyebrow}>Step 3 of 8</Text>
-            <Text style={styles.title}>What type of space is it?</Text>
-          </View>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.kicker}>Space details</Text>
+          <StepProgress current={3} total={8} />
+          <Text style={styles.title}>What type of space is it?</Text>
         </View>
 
-        <View style={!draft.spaceType ? styles.primaryQuestionCardOpen : styles.primaryQuestionFlow}>
-          {!draft.spaceType || openStep === "type" ? (
+        {/* ── Space type ── */}
+        <View style={styles.section}>
+          {showTypeSection && (
             <>
-              <Text style={styles.typePromptTitle}>Pick the shape that best matches your space</Text>
+              <Text style={styles.sectionPrompt}>Pick the option that best matches your space</Text>
               <View style={styles.typeGrid}>
                 {spaceTypes.map((type) => {
                   const active = draft.spaceType === type;
@@ -181,50 +125,54 @@ export function ListingDetailsScreen({ navigation }: Props) {
                         <View style={[styles.typeIconWrap, active && styles.typeIconWrapActive]}>
                           <SpaceTypeIcon type={type} active={active} />
                         </View>
-                        <View style={[styles.typeCheckBadge, active && styles.typeCheckBadgeActive]}>
-                          {active ? <CircleCheck size={18} color={hostFlowColors.accent} strokeWidth={2.5} /> : null}
-                        </View>
+                        {active && (
+                          <CircleCheck size={18} color={hostFlowColors.accent} strokeWidth={2.5} />
+                        )}
                       </View>
-                      <Text style={styles.typeTitle}>{type}</Text>
+                      <Text style={[styles.typeLabel, active && styles.typeLabelActive]}>{type}</Text>
                     </Pressable>
                   );
                 })}
               </View>
             </>
-          ) : null}
+          )}
 
-          {draft.spaceType && openStep !== "type" ? (
-            <View style={styles.progressiveSection}>
-              <Pressable style={[styles.typeCard, styles.typeCardActive, styles.typeCardSelectedRow]} onPress={() => setOpenStep("type")}>
-                <View style={[styles.typeIconWrap, styles.typeIconWrapActive]}>
-                  <SpaceTypeIcon type={draft.spaceType} active />
-                </View>
-                <Text style={styles.typeTitleSelected}>{draft.spaceType}</Text>
-                <View style={[styles.typeCheckBadge, styles.typeCheckBadgeActive]}>
-                  <CircleCheck size={18} color={hostFlowColors.accent} strokeWidth={2.5} />
-                </View>
-              </Pressable>
+          {showTypeRow && (
+            <Pressable
+              style={styles.selectedTypeRow}
+              onPress={() => setOpenStep("type")}
+            >
+              <View style={[styles.typeIconWrap, styles.typeIconWrapActive]}>
+                <SpaceTypeIcon type={draft.spaceType} active />
+              </View>
+              <Text style={styles.selectedTypeLabel}>{draft.spaceType}</Text>
+              <CircleCheck size={18} color={hostFlowColors.accent} strokeWidth={2.5} />
+            </Pressable>
+          )}
+        </View>
 
-              <Text style={styles.inlinePromptTitle}>How many spaces are available to rent out?</Text>
+        {/* ── Space count ── */}
+        {showCountSection && (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.section}>
+              <Text style={styles.sectionHeading}>How many spaces?</Text>
+              <Text style={styles.sectionPrompt}>
+                The number of individual spaces you're making available to rent.
+              </Text>
               <View style={styles.counterRow}>
                 <Pressable
-                  style={[
-                    styles.counterButton,
-                    spaceCountInput <= MIN_SPACE_COUNT && styles.counterButtonDisabled,
-                  ]}
+                  style={[styles.counterButton, spaceCountInput <= MIN_SPACE_COUNT && styles.counterButtonDisabled]}
                   onPress={() => adjustSpaceCount(-1)}
                   disabled={spaceCountInput <= MIN_SPACE_COUNT}
                 >
-                  <Text style={styles.counterButtonText}>-</Text>
+                  <Text style={styles.counterButtonText}>−</Text>
                 </Pressable>
                 <View style={styles.counterValueBox}>
                   <Text style={styles.counterValueText}>{spaceCountInput}</Text>
                 </View>
                 <Pressable
-                  style={[
-                    styles.counterButton,
-                    spaceCountInput >= MAX_SPACE_COUNT && styles.counterButtonDisabled,
-                  ]}
+                  style={[styles.counterButton, spaceCountInput >= MAX_SPACE_COUNT && styles.counterButtonDisabled]}
                   onPress={() => adjustSpaceCount(1)}
                   disabled={spaceCountInput >= MAX_SPACE_COUNT}
                 >
@@ -232,14 +180,16 @@ export function ListingDetailsScreen({ navigation }: Props) {
                 </Pressable>
               </View>
             </View>
-          ) : null}
+          </>
+        )}
 
-          {draft.spaceType && hasConfirmedCount && openStep !== "type" ? (
-            <View style={styles.progressiveSection}>
-              <SectionHeader
-                label="VEHICLE FIT"
-                title="What size vehicles fit best?"
-              />
+        {/* ── Vehicle fit ── */}
+        {showVehicleSection && (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Vehicle fit</Text>
+              <Text style={styles.sectionHeading}>What size vehicles fit best?</Text>
               <View style={styles.vehicleList}>
                 {vehicleSizeOptions.map((option) => {
                   const active = draft.vehicleSize === option.value;
@@ -249,11 +199,12 @@ export function ListingDetailsScreen({ navigation }: Props) {
                       style={[styles.vehicleCard, active && styles.vehicleCardActive]}
                       onPress={() => {
                         setDraft((prev) => ({ ...prev, vehicleSize: option.value }));
-                        setOpenStep("access");
                       }}
                     >
                       <View style={styles.vehicleTextWrap}>
-                        <Text style={styles.vehicleTitle}>{option.label}</Text>
+                        <Text style={[styles.vehicleTitle, active && styles.vehicleTitleActive]}>
+                          {option.label}
+                        </Text>
                         <Text style={styles.vehicleExample}>{option.example}</Text>
                       </View>
                       <View style={styles.vehicleArtWrap}>
@@ -263,35 +214,26 @@ export function ListingDetailsScreen({ navigation }: Props) {
                           resizeMode="contain"
                         />
                       </View>
-                      {active ? (
+                      {active && (
                         <View style={styles.vehicleCheckBadge}>
                           <CircleCheck size={18} color={hostFlowColors.accent} strokeWidth={2.4} />
                         </View>
-                      ) : null}
+                      )}
                     </Pressable>
                   );
                 })}
               </View>
             </View>
-          ) : null}
-
-        </View>
+          </>
+        )}
       </ScrollView>
 
-      <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
-        <View style={styles.footerRow}>
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.backButtonText}>← Back</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.primaryButton, !canContinue && styles.primaryButtonDisabled]}
-            onPress={() => navigation.navigate("ListingFeaturesAccess")}
-            disabled={!canContinue}
-          >
-            <Text style={styles.primaryButtonText}>Continue</Text>
-          </Pressable>
-        </View>
-      </View>
+      <FlowFooter
+        onBack={() => navigation.goBack()}
+        primaryLabel="Continue"
+        onPrimary={() => navigation.navigate("ListingFeaturesAccess")}
+        primaryDisabled={!canContinue}
+      />
     </SafeAreaView>
   );
 }
@@ -302,8 +244,137 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: spacing.screenX,
     paddingTop: 0,
+  },
+
+  // Header — matches other flow screens
+  header: {
+    paddingHorizontal: spacing.screenX,
+    paddingBottom: 4,
+  },
+  kicker: {
+    color: hostFlowColors.accent,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+  },
+  title: {
+    color: hostFlowColors.text,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 26,
+    letterSpacing: -0.6,
+    lineHeight: 34,
+    marginTop: 10,
+  },
+
+  // Sections — web-style border + generous padding
+  divider: {
+    borderTopWidth: 1,
+    borderTopColor: hostFlowColors.border,
+  },
+  section: {
+    paddingHorizontal: spacing.screenX,
+    paddingVertical: 24,
+  },
+  sectionLabel: {
+    color: hostFlowColors.accent,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  sectionHeading: {
+    color: hostFlowColors.text,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 17,
+    letterSpacing: -0.3,
+    lineHeight: 23,
+    marginBottom: 8,
+  },
+  sectionPrompt: {
+    color: hostFlowColors.textMuted,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+
+  // Space type grid
+  typeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  typeCard: {
+    backgroundColor: hostFlowColors.cardBg,
+    borderColor: hostFlowColors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    minHeight: 104,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    width: "48%",
+  },
+  typeCardActive: {
+    borderColor: hostFlowColors.accent,
+    backgroundColor: hostFlowColors.accentSoft,
+  },
+  typeCardTop: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 14,
+  },
+  typeIconWrap: {
+    alignItems: "center",
+    backgroundColor: "#f1f5f4",
+    borderRadius: 8,
+    height: 34,
+    justifyContent: "center",
+    width: 34,
+  },
+  typeIconWrapActive: {
+    backgroundColor: hostFlowColors.accentSoftBorder,
+  },
+  typeLabel: {
+    color: hostFlowColors.text,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    letterSpacing: -0.2,
+    lineHeight: 20,
+  },
+  typeLabelActive: {
+    color: hostFlowColors.accent,
+  },
+
+  // Selected type row (collapsed)
+  selectedTypeRow: {
+    alignItems: "center",
+    backgroundColor: hostFlowColors.accentSoft,
+    borderColor: hostFlowColors.accent,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  selectedTypeLabel: {
+    color: hostFlowColors.text,
+    flex: 1,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15,
+    letterSpacing: -0.2,
+  },
+
+  // Counter
+  counterRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 16,
+    marginTop: 4,
   },
   counterButton: {
     alignItems: "center",
@@ -311,28 +382,19 @@ const styles = StyleSheet.create({
     borderColor: hostFlowColors.border,
     borderRadius: 999,
     borderWidth: 1,
-    height: 42,
+    height: 44,
     justifyContent: "center",
-    width: 42,
+    width: 44,
   },
   counterButtonDisabled: {
-    opacity: 0.45,
+    opacity: 0.35,
   },
   counterButtonText: {
     color: hostFlowColors.text,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 22,
-    fontWeight: "600",
-    lineHeight: 20,
+    fontSize: 24,
+    lineHeight: 26,
     textAlign: "center",
-    textAlignVertical: "center",
-    marginTop: -3,
-  },
-  counterRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 14,
-    marginTop: 14,
   },
   counterValueBox: {
     alignItems: "center",
@@ -340,291 +402,74 @@ const styles = StyleSheet.create({
     borderColor: hostFlowColors.border,
     borderRadius: 12,
     borderWidth: 1,
-    justifyContent: "center",
     height: 56,
+    justifyContent: "center",
     width: 72,
   },
   counterValueText: {
     color: hostFlowColors.text,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 22,
-    fontWeight: "800",
-    lineHeight: 26,
+    fontSize: 24,
+    letterSpacing: -0.5,
   },
-  footer: {
-    backgroundColor: hostFlowColors.cardBg,
-    borderTopColor: hostFlowColors.border,
-    borderTopWidth: 1,
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 10,
-    paddingBottom: 2,
+
+  // Vehicle size cards
+  vehicleList: {
+    gap: 10,
+    marginTop: 4,
   },
-  headerBlock: {
-    paddingTop: 2,
-  },
-  heroCard: {
-    marginTop: 12,
-    paddingHorizontal: 0,
-  },
-  inlinePromptTitle: {
-    color: hostFlowColors.textMuted,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    fontWeight: "400",
-    letterSpacing: 0,
-    lineHeight: 22,
-    marginTop: 10,
-  },
-  primaryButton: {
-    flex: 1,
+  vehicleCard: {
     alignItems: "center",
-    backgroundColor: hostFlowColors.accent,
-    borderRadius: 16,
-    justifyContent: "center",
-    minHeight: 48,
-  },
-  primaryButtonDisabled: {
-    opacity: 0.5,
-  },
-  primaryButtonText: {
-    color: activeIconColor,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    fontWeight: "600",
-    letterSpacing: -0.2,
-    lineHeight: 20,
-  },
-  primaryQuestionCardOpen: {
-    backgroundColor: transparentColor,
-    elevation: 0,
-    minHeight: 0,
-    padding: 0,
-    shadowOpacity: 0,
-  },
-  primaryQuestionFlow: {
-    marginTop: 10,
-  },
-  progressShell: {
-    paddingHorizontal: 0,
-    paddingVertical: 2,
-  },
-  progressiveSection: {
-    marginTop: 6,
-  },
-  sectionBody: {
-    color: hostFlowColors.textMuted,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    fontWeight: "400",
-    lineHeight: 22,
-    marginTop: 6,
-  },
-  sectionHeader: {
-    marginTop: 0,
-  },
-  sectionLabel: {
-    color: "#86efac",
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    lineHeight: 18,
-  },
-  sectionTitle: {
-    color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 22,
-    fontWeight: "800",
-    letterSpacing: -0.2,
-    lineHeight: 27,
-    marginTop: 2,
-  },
-  stepEyebrow: {
-    color: hostFlowColors.accent,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    fontWeight: "700",
-    lineHeight: 20,
-    marginBottom: 6,
-  },
-  title: {
-    color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 26,
-    fontWeight: "600",
-    letterSpacing: -0.6,
-    lineHeight: 31,
-  },
-  typeCard: {
     backgroundColor: hostFlowColors.cardBg,
     borderColor: hostFlowColors.border,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    minHeight: 118,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    width: "48%",
-  },
-  typeCardActive: {
-    borderColor: hostFlowColors.accent,
-    borderWidth: 1,
-    backgroundColor: hostFlowColors.cardBg,
-  },
-  typeCardSelectedRow: {
-    alignItems: "center",
     flexDirection: "row",
-    gap: 12,
     minHeight: 76,
+    overflow: "hidden",
+    paddingHorizontal: 16,
     paddingVertical: 14,
-    width: "100%",
+    position: "relative",
   },
-  typeCardTop: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    justifyContent: "space-between",
+  vehicleCardActive: {
+    borderColor: hostFlowColors.accent,
+    backgroundColor: hostFlowColors.accentSoft,
   },
-  typeCheckBadge: {
-    alignItems: "center",
-    flexShrink: 0,
-    height: 24,
-    justifyContent: "center",
-    width: 24,
-  },
-  typeCheckBadgeActive: {
-    alignItems: "center",
-    flexShrink: 0,
-    height: 24,
-    justifyContent: "center",
-    width: 24,
-  },
-  typeDescription: {
-    color: hostFlowColors.textMuted,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    fontWeight: "600",
-    lineHeight: 16,
-    marginTop: 3,
-  },
-  typeGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginTop: 12,
-  },
-  typeIconWrap: {
-    alignItems: "center",
-    backgroundColor: "#f7f8f8",
-    borderRadius: 8,
-    flexShrink: 0,
-    height: 32,
-    justifyContent: "center",
-    width: 32,
-  },
-  typeIconWrapActive: {
-    backgroundColor: "#f1f6f4",
-  },
-  typePromptTitle: {
-    color: hostFlowColors.textMuted,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    fontWeight: "400",
-    letterSpacing: 0,
-    lineHeight: 22,
-  },
-  typeTitle: {
-    color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 17,
-    fontWeight: "800",
-    lineHeight: 24,
-    letterSpacing: -0.3,
-    marginTop: 18,
-    width: "82%",
-  },
-  typeTitleSelected: {
-    color: hostFlowColors.text,
+  vehicleTextWrap: {
     flex: 1,
+    justifyContent: "center",
+    paddingRight: 8,
+  },
+  vehicleTitle: {
+    color: hostFlowColors.text,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 18,
-    fontWeight: "800",
-    lineHeight: 24,
-    letterSpacing: -0.3,
+    fontSize: 15,
+    letterSpacing: -0.2,
+    lineHeight: 20,
+  },
+  vehicleTitleActive: {
+    color: hostFlowColors.accent,
+  },
+  vehicleExample: {
+    color: hostFlowColors.textSoft,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 2,
   },
   vehicleArtWrap: {
     alignItems: "flex-end",
     flexShrink: 0,
     justifyContent: "center",
-    marginLeft: 8,
-    width: 84,
+    width: 80,
   },
   vehicleArtImage: {
-    height: 48,
-    width: 84,
-  },
-  vehicleCard: {
-    backgroundColor: hostFlowColors.cardBg,
-    borderColor: hostFlowColors.border,
-    borderRadius: 10,
-    borderWidth: 1,
-    flexDirection: "row",
-    minHeight: 80,
-    overflow: "hidden",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    position: "relative",
-  },
-  vehicleCardActive: {
-    borderColor: hostFlowColors.accent,
-    borderWidth: 1,
-    backgroundColor: hostFlowColors.cardBg,
+    height: 44,
+    width: 80,
   },
   vehicleCheckBadge: {
     position: "absolute",
     right: 14,
     top: 12,
-  },
-  vehicleExample: {
-    color: hostFlowColors.textMuted,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    fontWeight: "400",
-    lineHeight: 19,
-    marginTop: 3,
-  },
-  vehicleList: {
-    gap: 10,
-    marginTop: 12,
-  },
-  vehicleTextWrap: {
-    flex: 1,
-    justifyContent: "center",
-    paddingRight: 6,
-  },
-  vehicleTitle: {
-    color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 19,
-    fontWeight: "800",
-    lineHeight: 24,
-  },
-  footerRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 12,
-  },
-  backButton: {
-    alignItems: 'center',
-    borderColor: hostFlowColors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 50,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
-  backButtonText: {
-    color: hostFlowColors.textMuted,
-    fontFamily: 'PlusJakartaSans-SemiBold',
-    fontSize: 15,
-    fontWeight: '600',
   },
 });

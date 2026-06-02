@@ -28,9 +28,9 @@ export type RootStackParamList = {
         focusField?: "plate";
       }
     | undefined;
-  Welcome: undefined;
-  SignIn: undefined;
-  Register: undefined;
+  Welcome: { returnTo?: AuthReturnTo } | undefined;
+  SignIn: { returnTo?: AuthReturnTo } | undefined;
+  Register: { returnTo?: AuthReturnTo } | undefined;
   ResetPassword:
     | {
         token?: string;
@@ -67,6 +67,10 @@ export type RootStackParamList = {
     id: string;
   };
 };
+
+export type AuthReturnTo =
+  | { screen: "Listing"; params: { id: string; from: string; to: string } }
+  | { screen: "BookingSummary"; params: { id: string; from: string; to: string } };
 
 export type ListingSummary = {
   id: string;

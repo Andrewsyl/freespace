@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { AddressAutocomplete } from "../components/AddressAutocomplete";
 import { SearchDateTimePicker, type SearchFilters } from "../components/SearchForm";
@@ -463,12 +463,12 @@ export default function HomePage() {
 
           <div className="relative hidden h-[520px] overflow-hidden lg:block">
             <Image
-              src="/hero-art.png"
-              alt="Person using phone with car"
+              src="/hero-photo.jpg"
+              alt="Person smiling while parked in their car"
               fill
               priority
               sizes="(min-width: 1024px) 460px, 0px"
-              className="object-contain"
+              className="object-cover rounded-3xl"
             />
           </div>
         </section>

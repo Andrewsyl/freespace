@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { getListingImageUploadUrl } from "../../api";
 import { useAuth } from "../../auth";
@@ -18,6 +18,7 @@ import { Button } from "../../components/ui";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
 import { hostFlowColors } from "./hostFlowTheme";
+import { FlowFooter } from "./FlowFooter";
 import { colors, spacing, textStyles } from "../../styles/theme";
 import { Plus, X } from "lucide-react-native";
 
@@ -33,7 +34,6 @@ const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "i
 
 export function ListingPhotosScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
-  const insets = useSafeAreaInsets();
   const { token } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [uploadLabel, setUploadLabel] = useState<string | null>(null);
@@ -186,21 +186,12 @@ export function ListingPhotosScreen({ navigation }: Props) {
           </View>
         ) : null}
       </ScrollView>
-      <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
-        <View style={styles.footerRow}>
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.backButtonText}>← Back</Text>
-          </Pressable>
-          <Button
-            size="medium"
-            title={hasPhoto ? "Continue" : "Skip for now"}
-            onPress={() => navigation.navigate("ListingReview")}
-            disabled={uploading}
-            style={styles.continueButton}
-            textStyle={styles.continueButtonText}
-          />
-        </View>
-      </View>
+      <FlowFooter
+        onBack={() => navigation.goBack()}
+        primaryLabel={hasPhoto ? "Continue" : "Skip for now"}
+        onPrimary={() => navigation.navigate("ListingReview")}
+        primaryDisabled={uploading}
+      />
     </SafeAreaView>
   );
 }
@@ -216,17 +207,20 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   kicker: {
-    ...textStyles.kicker,
+    color: hostFlowColors.accent,
     fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: "uppercase",
   },
   title: {
     color: colors.text,
     fontSize: 26,
-    lineHeight: 31,
-    fontFamily: "PlusJakartaSans-SemiBold",
+    lineHeight: 34,
+    fontFamily: "PlusJakartaSans-Bold",
     fontWeight: "600",
     marginTop: 12,
-    letterSpacing: -0.6,
+    letterSpacing: -0.8,
   },
   subtitle: {
     color: "#667085",
@@ -239,7 +233,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.accent,
     borderRadius: 12,
-    marginTop: 22,
+    marginTop: 16,
     minHeight: 48,
     justifyContent: "center",
   },
@@ -266,8 +260,8 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
-    marginTop: 18,
+    gap: 10,
+    marginTop: 14,
   },
   photoCard: {
     width: "48%",

@@ -500,8 +500,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             <Text style={styles.centeredTitle}>Sign in to continue</Text>
             <Text style={styles.centeredSubtitle}>Log in or create an account to confirm your booking.</Text>
             <View style={styles.authButtons}>
-              <Button style={styles.authButton} onPress={() => navigation.navigate("SignIn")} title="Sign in" />
-              <Button variant="secondary" style={styles.authButton} onPress={() => navigation.navigate("Register")} title="Create account" />
+              <Button style={styles.authButton} onPress={() => navigation.navigate("SignIn", { returnTo: { screen: "BookingSummary" as const, params: route.params } })} title="Sign in" />
+              <Button variant="secondary" style={styles.authButton} onPress={() => navigation.navigate("Register", { returnTo: { screen: "BookingSummary" as const, params: route.params } })} title="Create account" />
             </View>
           </View>
         ) : listing ? (
@@ -768,11 +768,11 @@ const styles = StyleSheet.create({
   // ── Sections ────────────────────────────────────────────────
   section: {
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
-    paddingHorizontal: 20, paddingVertical: 20,
+    paddingHorizontal: 20, paddingVertical: 18,
   },
   sectionTitleRow: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   sectionTitle: {
     fontFamily: "PlusJakartaSans-Bold", fontSize: 17,
@@ -850,7 +850,7 @@ const styles = StyleSheet.create({
   regHint: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: "#F59E0B", marginTop: 10, lineHeight: 18 },
 
   // ── Price rows ───────────────────────────────────────────────
-  priceRows: { marginTop: 12 },
+  priceRows: { marginTop: 10 },
   priceRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 11,
   },
@@ -863,7 +863,7 @@ const styles = StyleSheet.create({
   noHiddenFees: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: SUBTLE, marginTop: 8 },
 
   // ── Payment method ──────────────────────────────────────────
-  paymentOptions: { marginTop: 16, borderRadius: 16, borderWidth: 1, borderColor: LINE, overflow: "hidden" },
+  paymentOptions: { marginTop: 12, borderRadius: 16, borderWidth: 1, borderColor: LINE, overflow: "hidden" },
   paymentOption: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 16, paddingVertical: 14,
@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20,
     paddingBottom: 36, alignItems: "center", paddingTop: 12,
   },
-  pickerHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#E0E0E0", marginBottom: 18 },
+  pickerHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#E0E0E0", marginBottom: 12 },
   pickerTitle: { fontSize: 18, fontFamily: "PlusJakartaSans-Bold", color: FG, marginBottom: 4, textAlign: "center" },
   pickerDoneBtn: {
     alignSelf: "stretch", marginHorizontal: 20, marginTop: 16,

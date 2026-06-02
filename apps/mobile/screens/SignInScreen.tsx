@@ -11,18 +11,35 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { CommonActions } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuth } from "../auth";
 import { requestEmailVerification } from "../api";
-import type { RootStackParamList } from "../types";
+import type { AuthReturnTo, RootStackParamList } from "../types";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 import { colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
 const AUTH_GREEN = "#0fa968";
 
-export function SignInScreen({ navigation }: Props) {
+export function SignInScreen({ navigation, route }: Props) {
   const { login } = useAuth();
+  const returnTo = route.params?.returnTo;
+
+  const navigateAfterAuth = (dest?: AuthReturnTo) => {
+    if (dest) {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 1,
+          routes: [{ name: "Tabs" }, { name: dest.screen, params: dest.params }],
+        })
+      );
+    } else {
+      navigation.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: "Tabs", params: { screen: "Search" } }] })
+      );
+    }
+  };
   const scrollRef = useRef<ScrollView | null>(null);
   const emailFieldY = useRef(0);
   const passwordFieldY = useRef(0);
@@ -70,7 +87,7 @@ export function SignInScreen({ navigation }: Props) {
         setNotice("Please accept Terms & Privacy to continue.");
         return;
       }
-      setNotice("Signed in successfully.");
+      navigateAfterAuth(returnTo);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
