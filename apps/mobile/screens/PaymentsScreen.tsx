@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { ArrowLeft } from "lucide-react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { CardField, useStripe } from "@stripe/stripe-react-native";
 import { colors, radius, spacing, textStyles } from "../styles/theme";
 import { useToastOnMessage } from "../components/GlobalToast";
@@ -27,9 +27,10 @@ import {
   type PaymentMethod,
 } from "../api";
 import { useAuth } from "../auth";
+import type { RootStackParamList } from "../types";
 
 export function PaymentsScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { token, user } = useAuth();
   const { confirmSetupIntent } = useStripe();
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
@@ -196,7 +197,7 @@ export function PaymentsScreen() {
         {loading ? (
           <View style={styles.loadingOverlay} pointerEvents="none">
             <View style={styles.loadingBadge}>
-              <ActivityIndicator size="small" color="#0fa968" />
+              <ActivityIndicator size="small" color="#0a8050" />
               <Text style={styles.loadingText}>Loading payments…</Text>
             </View>
           </View>

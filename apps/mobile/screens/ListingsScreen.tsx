@@ -4,7 +4,8 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ArrowLeft, Plus, Pencil, Trash2, TrendingUp, CreditCard } from "lucide-react-native";
+import { ArrowLeft, Plus, Pencil, Trash2, TrendingUp, CreditCard, Home, ShieldCheck } from "lucide-react-native";
+import { SkeletonBlock, usePulse } from "../components/ui";
 import {
   createHostPayoutLink,
   deleteListing,
@@ -21,7 +22,7 @@ import { formatListingPriceLine } from "../utils/pricing";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Listings">;
 
-const GREEN  = "#0fa968";
+const GREEN  = "#0a8050";
 const LINE   = "#E6E6E4";
 const FG     = "#111827";
 const MUTED  = "#6b7280";
@@ -34,6 +35,7 @@ export function ListingsScreen({ navigation }: Props) {
   const [listings, setListings] = useState<ListingSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const skeletonPulse = usePulse();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [earnings, setEarnings] = useState<{ totalCents: number; feeCents: number; netCents: number } | null>(null);
   const [payoutStatus, setPayoutStatus] = useState<HostPayoutStatus | null>(null);
@@ -162,12 +164,19 @@ export function ListingsScreen({ navigation }: Props) {
         </View>
 
         {!user ? (
-          <View style={styles.emptyBox}>
+          <View style={styles.gatedCard}>
+            <View style={styles.gatedIconWrap}>
+              <Home size={24} color={GREEN} strokeWidth={2.1} />
+            </View>
             <Text style={styles.emptyTitle}>Sign in to host</Text>
-            <Text style={styles.emptyBody}>Log in to manage listings and start earning.</Text>
+            <Text style={styles.emptyBody}>Manage your spaces, availability, and payouts from one place.</Text>
             <Pressable style={styles.ctaBtn} onPress={() => navigation.navigate("Welcome")}>
               <Text style={styles.ctaBtnText}>Sign in</Text>
             </Pressable>
+            <View style={styles.gatedHintRow}>
+              <ShieldCheck size={14} color={SUBTLE} strokeWidth={2.1} />
+              <Text style={styles.gatedHintText}>Your host dashboard and earnings stay linked to your account.</Text>
+            </View>
           </View>
         ) : (
           <>
@@ -240,9 +249,20 @@ export function ListingsScreen({ navigation }: Props) {
               </View>
 
               {loading && listings.length === 0 ? (
-                <View style={styles.loadingWrap}>
-                  <ActivityIndicator size="small" color={GREEN} />
-                  <Text style={styles.loadingText}>Loading…</Text>
+                <View style={styles.skeletonList}>
+                  {[0, 1].map((i) => (
+                    <View key={i} style={styles.skeletonCard}>
+                      <View style={styles.skeletonCardTop}>
+                        <SkeletonBlock width="68%" height={16} pulse={skeletonPulse} />
+                        <SkeletonBlock width={52} height={22} borderRadius={999} pulse={skeletonPulse} />
+                      </View>
+                      <SkeletonBlock width="50%" height={12} pulse={skeletonPulse} style={{ marginTop: 10 }} />
+                      <View style={styles.skeletonCardBottom}>
+                        <SkeletonBlock width={80} height={12} pulse={skeletonPulse} />
+                        <SkeletonBlock width={64} height={28} borderRadius={8} pulse={skeletonPulse} />
+                      </View>
+                    </View>
+                  ))}
                 </View>
               ) : listings.length === 0 ? (
                 <View style={styles.emptyBox}>
@@ -386,10 +406,60 @@ const styles = StyleSheet.create({
     borderRadius: 14, borderWidth: 1, borderColor: LINE,
     padding: 24, alignItems: "center",
   },
+  gatedCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: LINE,
+    padding: 24,
+    alignItems: "center",
+    marginHorizontal: 20,
+    backgroundColor: "#ffffff",
+  },
+  gatedIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#edf7f2",
+    marginBottom: 14,
+  },
   emptyTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG, letterSpacing: -0.3 },
   emptyBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, textAlign: "center", marginTop: 6, lineHeight: 21 },
+  gatedHintRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 14,
+  },
+  gatedHintText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    lineHeight: 16,
+    color: SUBTLE,
+    textAlign: "center",
+  },
   loadingWrap: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12 },
   loadingText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED },
+  skeletonList: { gap: 12 },
+  skeletonCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: LINE,
+    padding: 16,
+  },
+  skeletonCardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  skeletonCardBottom: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 16,
+  },
 
   // ── Listing cards ────────────────────────────────────────────
   listingGrid: { gap: 12 },

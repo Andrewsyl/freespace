@@ -50,7 +50,7 @@ export default function SupportPage() {
       {status === "success" ? (
         <div className="rounded-xl border border-brand-100 bg-brand-50 px-6 py-8 text-center shadow-sm">
           <p className="text-[16px] font-bold text-brand-700">Message sent</p>
-          <p className="mt-1 text-[13px] text-brand-600">We'll get back to you as soon as possible.</p>
+          <p className="mt-1 text-[13px] text-brand-600">We&apos;ll get back to you as soon as possible.</p>
           <button
             onClick={() => setStatus("idle")}
             className="mt-4 rounded-lg border border-brand-200 px-5 py-2 text-[13px] font-semibold text-brand-700 hover:bg-brand-100"

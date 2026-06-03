@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, type Ref } from "react";
 import {
   Animated,
   FlatList,
@@ -11,13 +11,11 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 
-const ITEM_HEIGHT = 46;
-const VISIBLE = 7; // rows visible (3 above centre + selected + 3 below)
-const PAD = 3;
+const ITEM_HEIGHT = 42;
+const VISIBLE = 5; // rows visible (2 above centre + selected + 2 below)
+const PAD = 2;
 const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE;
 
-// How many times to tile a looping column's data.
-// 100× means the user can spin ~50 full cycles before hitting an edge.
 const LOOP_REPEAT = 100;
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -44,156 +42,183 @@ function pad2(n: number): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Single scrollable column
-// Opacity is driven by an Animated.Value (native driver) so it updates
-// in real-time during scroll — no React state updates, no flicker.
+// DrumColumn — single scrollable wheel
+
+export interface DrumColumnHandle {
+  adjustBy: (delta: number) => void;
+  scrollToRealIndex: (realIdx: number) => void;
+}
 
 interface ColumnProps {
   items: readonly string[];
   initialIndex: number;
-  onIndexChange: (i: number) => void;
+  onIndexChange: (realIdx: number) => void;
   flex?: number;
-  /** If true, tiles the item list so the wheel appears to scroll infinitely. */
   loop?: boolean;
 }
 
-function DrumColumn({ items, initialIndex, onIndexChange, flex = 1, loop = false }: ColumnProps) {
-  const listRef = useRef<FlatList<string>>(null);
+const DrumColumn = forwardRef<DrumColumnHandle, ColumnProps>(
+  function DrumColumn({ items, initialIndex, onIndexChange, flex = 1, loop = false }, ref) {
+    const listRef = useRef<FlatList<string>>(null);
 
-  // For looping columns we tile the data LOOP_REPEAT times and start in the
-  // centre so there's equal travel in both directions before hitting an edge.
-  const loopOffset = loop ? Math.floor(LOOP_REPEAT / 2) * items.length : 0;
+    const loopOffset = loop ? Math.floor(LOOP_REPEAT / 2) * items.length : 0;
 
-  // Build the display list once at mount. For loop columns this is e.g.
-  // 12 minutes × 100 = 1 200 rows; for the date column it's just 91 rows.
-  const displayItems = useMemo<string[]>(
-    () =>
-      loop
-        ? Array.from(
-            { length: items.length * LOOP_REPEAT },
-            (_, i) => items[i % items.length] as string
-          )
-        : (items as string[]),
+    const displayItems = useMemo<string[]>(
+      () =>
+        loop
+          ? Array.from(
+              { length: items.length * LOOP_REPEAT },
+              (_, i) => items[i % items.length] as string
+            )
+          : (items as string[]),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      []
+    );
+
+    const mountIndex = useRef(initialIndex + loopOffset);
+
+    const scrollY = useRef(new Animated.Value(mountIndex.current * ITEM_HEIGHT)).current;
+
+    // Track current tiled index for imperative adjustBy
+    const tiledIdxRef = useRef(mountIndex.current);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [] // stable after mount — items and loop don't change
-  );
+    const opacities = useMemo(
+      () =>
+        displayItems.map((_, index) => {
+          const centre = index * ITEM_HEIGHT;
+          return scrollY.interpolate({
+            inputRange: [
+              centre - ITEM_HEIGHT * 3,
+              centre - ITEM_HEIGHT * 1.5,
+              centre,
+              centre + ITEM_HEIGHT * 1.5,
+              centre + ITEM_HEIGHT * 3,
+            ],
+            outputRange: [0.07, 0.26, 1.0, 0.26, 0.07],
+            extrapolate: "clamp",
+          });
+        }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      []
+    );
 
-  // Capture the effective scroll index at mount and never re-read the prop.
-  // This prevents parent re-renders (triggered by our own onChange callbacks)
-  // from resetting scrollY mid-scroll and causing the selected-item flicker.
-  const mountIndex = useRef(initialIndex + loopOffset);
+    useEffect(() => {
+      const offset = mountIndex.current * ITEM_HEIGHT;
+      const t = setTimeout(() => {
+        listRef.current?.scrollToOffset({ offset, animated: false });
+      }, 60);
+      return () => clearTimeout(t);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-  // Animated scroll offset — seeded from the mount-time index
-  const scrollY = useRef(new Animated.Value(mountIndex.current * ITEM_HEIGHT)).current;
+    const scrollHandler = useMemo(
+      () =>
+        Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        ) as unknown as (e: NativeSyntheticEvent<NativeScrollEvent>) => void,
+      [scrollY]
+    );
 
-  // Pre-compute one interpolation per display row; stable after mount.
-  // Each interpolation is tiny (5 input/output pairs) so even 1 200 of them
-  // is negligible — and FlatList's virtualisation means only ~10 are ever
-  // connected to native views at once.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const opacities = useMemo(
-    () =>
-      displayItems.map((_, index) => {
-        const centre = index * ITEM_HEIGHT;
-        return scrollY.interpolate({
-          inputRange: [
-            centre - ITEM_HEIGHT * 3,
-            centre - ITEM_HEIGHT * 1.5,
-            centre,
-            centre + ITEM_HEIGHT * 1.5,
-            centre + ITEM_HEIGHT * 3,
-          ],
-          outputRange: [0.07, 0.26, 1.0, 0.26, 0.07],
-          extrapolate: "clamp",
-        });
-      }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
+    const lastEmitted = useRef(initialIndex);
 
-  // Scroll to the initial position on mount only.
-  // Empty deps is intentional — see mountIndex comment above.
-  useEffect(() => {
-    const offset = mountIndex.current * ITEM_HEIGHT;
-    const t = setTimeout(() => {
-      listRef.current?.scrollToOffset({ offset, animated: false });
-    }, 60);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const handleScrollEnd = useCallback(
+      (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const raw = e.nativeEvent.contentOffset.y / ITEM_HEIGHT;
+        const tiledIdx = Math.max(0, Math.min(displayItems.length - 1, Math.round(raw)));
+        tiledIdxRef.current = tiledIdx;
+        const realIdx = loop ? tiledIdx % items.length : tiledIdx;
+        if (realIdx === lastEmitted.current) return;
+        lastEmitted.current = realIdx;
+        onIndexChange(realIdx);
+      },
+      [displayItems.length, items.length, loop, onIndexChange]
+    );
 
-  // Animated.event keeps scrollY in sync with the native scroll position
-  const scrollHandler = useMemo(
-    () =>
-      Animated.event(
-        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-        { useNativeDriver: true }
-      ) as unknown as (e: NativeSyntheticEvent<NativeScrollEvent>) => void,
-    [scrollY]
-  );
+    useImperativeHandle(ref, () => ({
+      adjustBy: (delta: number) => {
+        const newTiledIdx = Math.max(
+          0,
+          Math.min(displayItems.length - 1, tiledIdxRef.current + delta)
+        );
+        tiledIdxRef.current = newTiledIdx;
+        const newRealIdx = loop ? newTiledIdx % items.length : newTiledIdx;
+        lastEmitted.current = newRealIdx;
+        listRef.current?.scrollToOffset({ offset: newTiledIdx * ITEM_HEIGHT, animated: true });
+      },
+      scrollToRealIndex: (realIdx: number) => {
+        // Find the tiled position nearest to where the wheel currently sits
+        const cur = tiledIdxRef.current;
+        const cycle = Math.floor(cur / items.length);
+        const candidates = [
+          (cycle - 1) * items.length + realIdx,
+          cycle * items.length + realIdx,
+          (cycle + 1) * items.length + realIdx,
+        ];
+        const nearest = candidates.reduce((best, c) =>
+          Math.abs(c - cur) < Math.abs(best - cur) ? c : best
+        );
+        const clamped = Math.max(0, Math.min(displayItems.length - 1, nearest));
+        tiledIdxRef.current = clamped;
+        lastEmitted.current = realIdx;
+        listRef.current?.scrollToOffset({ offset: clamped * ITEM_HEIGHT, animated: true });
+      },
+    }));
 
-  // lastEmitted stores the *real* index (0..items.length-1), not the tiled one
-  const lastEmitted = useRef(initialIndex);
-  const handleScrollEnd = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const raw = e.nativeEvent.contentOffset.y / ITEM_HEIGHT;
-      const tiledIdx = Math.max(0, Math.min(displayItems.length - 1, Math.round(raw)));
-      const realIdx = loop ? tiledIdx % items.length : tiledIdx;
-      if (realIdx === lastEmitted.current) return;
-      lastEmitted.current = realIdx;
-      onIndexChange(realIdx);
-    },
-    [displayItems.length, items.length, loop, onIndexChange]
-  );
+    const renderItem = useCallback(
+      ({ item, index }: { item: string; index: number }) => (
+        <View style={col.item}>
+          <Animated.Text style={[col.text, { opacity: opacities[index] }]}>
+            {item}
+          </Animated.Text>
+        </View>
+      ),
+      [opacities]
+    );
 
-  // renderItem is stable — opacities array doesn't change
-  const renderItem = useCallback(
-    ({ item, index }: { item: string; index: number }) => (
-      <View style={col.item}>
-        <Animated.Text style={[col.text, { opacity: opacities[index] }]}>
-          {item}
-        </Animated.Text>
+    return (
+      <View style={[col.wrap, { flex }]}>
+        <Animated.FlatList
+          ref={listRef}
+          data={displayItems}
+          keyExtractor={(_, i) => String(i)}
+          renderItem={renderItem}
+          showsVerticalScrollIndicator={false}
+          snapToInterval={ITEM_HEIGHT}
+          decelerationRate="fast"
+          contentContainerStyle={col.listPad}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+          onMomentumScrollEnd={handleScrollEnd}
+          onScrollEndDrag={handleScrollEnd}
+          getItemLayout={(_, index) => ({
+            length: ITEM_HEIGHT,
+            offset: ITEM_HEIGHT * index,
+            index,
+          })}
+        />
       </View>
-    ),
-    [opacities]
-  );
-
-  return (
-    <View style={[col.wrap, { flex }]}>
-      <Animated.FlatList
-        ref={listRef}
-        data={displayItems}
-        keyExtractor={(_, i) => String(i)}
-        renderItem={renderItem}
-        showsVerticalScrollIndicator={false}
-        snapToInterval={ITEM_HEIGHT}
-        decelerationRate="fast"
-        contentContainerStyle={col.listPad}
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
-        onMomentumScrollEnd={handleScrollEnd}
-        onScrollEndDrag={handleScrollEnd}
-        getItemLayout={(_, index) => ({
-          length: ITEM_HEIGHT,
-          offset: ITEM_HEIGHT * index,
-          index,
-        })}
-      />
-    </View>
-  );
-}
+    );
+  }
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public API
+
+export interface DrumRollPickerHandle {
+  /** Instantly scroll all wheels to reflect a new date (no remount needed). */
+  setTime: (date: Date) => void;
+}
 
 export interface DrumRollPickerProps {
   date: Date;
   onChange: (date: Date) => void;
   minuteInterval?: number;
+  drumRef?: Ref<DrumRollPickerHandle>;
 }
 
-export function DrumRollPicker({ date, onChange, minuteInterval = 5 }: DrumRollPickerProps) {
-  // Date column — today + 90 days (linear, no looping)
+export function DrumRollPicker({ date, onChange, minuteInterval = 5, drumRef }: DrumRollPickerProps) {
   const dates = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -216,11 +241,9 @@ export function DrumRollPicker({ date, onChange, minuteInterval = 5 }: DrumRollP
     return Math.max(0, Math.min(dates.length - 1, diff));
   }, [date, dates.length]);
 
-  // Hour column — 00–23 (looping)
   const hourLabels = useMemo(() => Array.from({ length: 24 }, (_, i) => pad2(i)), []);
   const initialHourIndex = date.getHours();
 
-  // Minute column (looping)
   const minuteSteps = Math.floor(60 / minuteInterval);
   const minuteLabels = useMemo(
     () => Array.from({ length: minuteSteps }, (_, i) => pad2(i * minuteInterval)),
@@ -231,12 +254,36 @@ export function DrumRollPicker({ date, onChange, minuteInterval = 5 }: DrumRollP
     [date, minuteInterval, minuteSteps]
   );
 
-  // Stable ref for current column selections (real indices, 0-based)
   const state = useRef({
     dateIndex: initialDateIndex,
     hour: initialHourIndex,
     minuteIndex: initialMinuteIndex,
   });
+
+  const dateColRef = useRef<DrumColumnHandle>(null);
+  const hourColRef = useRef<DrumColumnHandle>(null);
+  const minColRef  = useRef<DrumColumnHandle>(null);
+
+  useImperativeHandle(drumRef, () => ({
+    setTime: (d: Date) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dayDiff = Math.round(
+        (new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() - today.getTime()) / 86_400_000
+      );
+      const newDateIdx = Math.max(0, Math.min(dates.length - 1, dayDiff));
+      const newHour = d.getHours();
+      const newMinIdx = Math.max(0, Math.min(minuteSteps - 1, Math.round(d.getMinutes() / minuteInterval)));
+
+      state.current.dateIndex = newDateIdx;
+      state.current.hour = newHour;
+      state.current.minuteIndex = newMinIdx;
+
+      dateColRef.current?.scrollToRealIndex(newDateIdx);
+      hourColRef.current?.scrollToRealIndex(newHour);
+      minColRef.current?.scrollToRealIndex(newMinIdx);
+    },
+  }));
 
   const emit = useCallback(
     (dateIdx: number, hour: number, minIdx: number) => {
@@ -263,11 +310,11 @@ export function DrumRollPicker({ date, onChange, minuteInterval = 5 }: DrumRollP
 
   return (
     <View style={drum.container}>
-      <DrumColumn items={dateLabels} initialIndex={initialDateIndex} onIndexChange={handleDate} flex={2} />
+      <DrumColumn ref={dateColRef} items={dateLabels} initialIndex={initialDateIndex} onIndexChange={handleDate} flex={2} />
       <View style={drum.divider} />
-      <DrumColumn items={hourLabels} initialIndex={initialHourIndex} onIndexChange={handleHour} flex={1} loop />
+      <DrumColumn ref={hourColRef} items={hourLabels} initialIndex={initialHourIndex} onIndexChange={handleHour} flex={1} loop />
       <View style={drum.divider} />
-      <DrumColumn items={minuteLabels} initialIndex={initialMinuteIndex} onIndexChange={handleMinute} flex={1} loop />
+      <DrumColumn ref={minColRef}  items={minuteLabels} initialIndex={initialMinuteIndex} onIndexChange={handleMinute} flex={1} loop />
       <View style={drum.band} pointerEvents="none" />
     </View>
   );

@@ -95,6 +95,8 @@ export type ListingSummary = {
   image_urls?: string[] | null;
   imageUrls?: string[] | null;
   capacity?: number | null;
+  vehicle_size_suitability?: string | null;
+  vehicleSizeSuitability?: string | null;
 };
 
 export type ListingDetail = ListingSummary & {
@@ -108,8 +110,6 @@ export type ListingDetail = ListingSummary & {
   permission_declared?: boolean | null;
   permissionDeclared?: boolean | null;
   description?: string | null;
-  vehicle_size_suitability?: string | null;
-  vehicleSizeSuitability?: string | null;
   access_directions?: string | null;
   accessDirections?: string | null;
   availabilitySchedule?: {

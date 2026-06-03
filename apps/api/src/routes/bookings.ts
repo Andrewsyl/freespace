@@ -601,7 +601,7 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
 
     const capacityRow = capacityCheck.rows[0];
     if (capacityRow && Number(capacityRow.booked_count) >= Number(capacityRow.capacity)) {
-      return res.status(409).json({ error: "No spaces available for the selected time" });
+      return res.status(409).json({ message: "Time slot already booked" });
     }
 
     const driver = await findUserById(driverId);
@@ -782,7 +782,7 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
 
     const capacityRow = capacityCheck.rows[0];
     if (capacityRow && Number(capacityRow.booked_count) >= Number(capacityRow.capacity)) {
-      return res.status(409).json({ error: "No spaces available for the selected time" });
+      return res.status(409).json({ message: "Time slot already booked" });
     }
 
     const user = await findUserById(driverId);
@@ -927,7 +927,7 @@ router.post("/portal", enforceBlockedList, portalBookingLimiter, async (req, res
     );
     const portalCapacityRow = portalCapacityCheck.rows[0];
     if (portalCapacityRow && Number(portalCapacityRow.booked_count) >= Number(portalCapacityRow.capacity)) {
-      return res.status(409).json({ error: "No spaces available for the selected time" });
+      return res.status(409).json({ message: "Time slot already booked" });
     }
 
     const listingWithHost = await getListingWithHostAccount(payload.listingId);

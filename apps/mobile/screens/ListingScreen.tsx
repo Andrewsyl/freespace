@@ -21,7 +21,6 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import LottieView from "lottie-react-native";
 import { trackEvent } from "../analytics";
 import { DrumRollPicker } from "../components/DrumRollPicker";
 import { colors, radius, spacing } from "../styles/theme";
@@ -34,6 +33,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { formatDateLabel, formatDateTimeLabel, formatReviewDate, formatTimeLabel } from "../utils/dateFormat";
 import { calculateListingTotal, getListingRateType } from "../utils/pricing";
 import { ArrowDownUp, Cctv, EvCharger, Home, Fence, IdCard, KeyRound } from "lucide-react-native";
+import { SkeletonBlock, usePulse } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Listing">;
 
@@ -95,6 +95,7 @@ export function ListingScreen({ navigation, route }: Props) {
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const skeletonPulse = usePulse();
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const [showFullAbout, setShowFullAbout] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
@@ -102,7 +103,6 @@ export function ListingScreen({ navigation, route }: Props) {
   const [showMapViewer, setShowMapViewer] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authOverlayVisible, setAuthOverlayVisible] = useState(false);
-  const [showFavAnim, setShowFavAnim] = useState(false);
   const [reviews, setReviews] = useState<ListingReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [navigatingToBooking, setNavigatingToBooking] = useState(false);
@@ -265,7 +265,7 @@ export function ListingScreen({ navigation, route }: Props) {
     [amenities]
   );
 
-  const aboutText = listing?.description ?? listing?.availability_text ?? null;
+  const aboutText = listing?.description?.trim() || null;
 
   const availabilityFallbackText = useMemo(() => {
     const raw = (listing?.availability_text ?? "").trim();
@@ -274,7 +274,7 @@ export function ListingScreen({ navigation, route }: Props) {
       return "24/7";
     if (/closed|by appointment|weekdays|weekends|mon|tue|wed|thu|fri|sat|sun|\d{1,2}:\d{2}/i.test(raw) && raw.length <= 60)
       return raw;
-    return raw;
+    return null;
   }, [listing?.availability_text]);
 
   const availabilityEntries = (listing as { availabilitySchedule?: { startsAt: string; endsAt: string; repeatWeekdays: number[] }[] })?.availabilitySchedule ?? [];
@@ -303,6 +303,7 @@ export function ListingScreen({ navigation, route }: Props) {
     }
     return { day: label, hours: availabilityFallbackText, isToday: dow === todayDow };
   });
+  const shouldShowAvailability = hasWeeklyAvailability || Boolean(availabilityFallbackText);
 
   const hasReviews = (listing?.rating_count ?? 0) > 0 && typeof listing?.rating === "number";
   const isAvailable = listing?.is_available !== false;
@@ -375,7 +376,6 @@ export function ListingScreen({ navigation, route }: Props) {
     if (!user) { navigation.navigate("Welcome", { returnTo: { screen: "Listing" as const, params: { id, from: startAt.toISOString(), to: endAt.toISOString() } } }); return; }
     const wasFavorite = isFavorite(id);
     await toggle(listing);
-    if (!wasFavorite) setShowFavAnim(true);
   };
 
   const handleShare = async () => {
@@ -411,8 +411,38 @@ export function ListingScreen({ navigation, route }: Props) {
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         {loading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator color="#0fa968" size="large" />
+          <View style={styles.skeletonWrap}>
+            {/* Hero image placeholder */}
+            <SkeletonBlock height={heroHeight + insets.top} borderRadius={0} pulse={skeletonPulse} style={{ width }} />
+            {/* Back button ghost */}
+            <View style={[styles.skeletonBackRow, { top: insets.top + 12 }]}>
+              <SkeletonBlock width={36} height={36} borderRadius={18} pulse={skeletonPulse} />
+            </View>
+            {/* Content area */}
+            <View style={styles.skeletonContent}>
+              <SkeletonBlock width="72%" height={22} borderRadius={8} pulse={skeletonPulse} />
+              <SkeletonBlock width="50%" height={14} borderRadius={6} pulse={skeletonPulse} style={{ marginTop: 10 }} />
+              {/* Stats strip */}
+              <View style={styles.skeletonStatsRow}>
+                {[0, 1, 2].map((i) => (
+                  <View key={i} style={styles.skeletonStatsCell}>
+                    <SkeletonBlock width={28} height={28} borderRadius={14} pulse={skeletonPulse} />
+                    <SkeletonBlock width={44} height={10} borderRadius={5} pulse={skeletonPulse} style={{ marginTop: 6 }} />
+                  </View>
+                ))}
+              </View>
+              {/* Time picker row */}
+              <View style={styles.skeletonPickerRow}>
+                <SkeletonBlock height={54} borderRadius={14} pulse={skeletonPulse} style={{ flex: 1 }} />
+                <SkeletonBlock width={28} height={28} borderRadius={8} pulse={skeletonPulse} />
+                <SkeletonBlock height={54} borderRadius={14} pulse={skeletonPulse} style={{ flex: 1 }} />
+              </View>
+              {/* Section lines */}
+              <SkeletonBlock width={120} height={18} borderRadius={8} pulse={skeletonPulse} style={{ marginTop: 28 }} />
+              <SkeletonBlock width="90%" height={13} borderRadius={6} pulse={skeletonPulse} style={{ marginTop: 12 }} />
+              <SkeletonBlock width="75%" height={13} borderRadius={6} pulse={skeletonPulse} style={{ marginTop: 8 }} />
+              <SkeletonBlock width="55%" height={13} borderRadius={6} pulse={skeletonPulse} style={{ marginTop: 8 }} />
+            </View>
           </View>
         ) : error ? (
           <View style={styles.centered}>
@@ -467,15 +497,6 @@ export function ListingScreen({ navigation, route }: Props) {
                       size={18}
                       color={isFavorite(id) ? "#FF6B6B" : "#fff"}
                     />
-                    {showFavAnim && (
-                      <LottieView
-                        source={require("../assets/Heart fav.json")}
-                        autoPlay
-                        loop={false}
-                        onAnimationFinish={() => setShowFavAnim(false)}
-                        style={styles.favAnim}
-                      />
-                    )}
                   </Pressable>
                 </View>
             </View>
@@ -536,7 +557,6 @@ export function ListingScreen({ navigation, route }: Props) {
                 </View>
 
                 {/* ── Booking time boxes ───────────────────── */}
-                <View style={styles.sectionDivider} />
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Choose your time</Text>
                   <View style={styles.timePickerRow}>
@@ -562,13 +582,13 @@ export function ListingScreen({ navigation, route }: Props) {
                       onPress={() => setEndAt(new Date(extendOffer.endOfDay))}
                     >
                       <View style={styles.offerIconWrap}>
-                        <Ionicons name="flash" size={15} color="#0fa968" />
+                        <Ionicons name="flash" size={15} color="#0a8050" />
                       </View>
                       <Text style={styles.offerText}>
                         Extend to end of day for only{" "}
                         <Text style={styles.offerTextBold}>€{extendOffer.extra}</Text>
                       </Text>
-                      <Ionicons name="chevron-forward" size={15} color="#0fa968" />
+                      <Ionicons name="chevron-forward" size={15} color="#0a8050" />
                     </Pressable>
                   ) : null}
                   <View style={styles.trustNotes}>
@@ -669,46 +689,50 @@ export function ListingScreen({ navigation, route }: Props) {
                 </View>
 
                 {/* ── Availability ─────────────────────────── */}
-                <View style={styles.sectionDivider} />
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Availability</Text>
-                  <View style={styles.availabilityList}>
-                    {openingHours.map((entry, index) => {
-                      const isClosed = entry.hours === "Closed";
-                      const isLast = index === openingHours.length - 1;
-                      return (
-                        <View
-                          key={entry.day}
-                          style={[
-                            styles.availabilityRow,
-                            !isLast && !entry.isToday && styles.availabilityRowDivider,
-                            entry.isToday && styles.availabilityRowToday,
-                          ]}
-                        >
-                          <View style={styles.availabilityDayCol}>
-                            {entry.isToday
-                              ? <View style={styles.availabilityDot} />
-                              : <View style={styles.availabilityDotPlaceholder} />}
-                            <Text style={[
-                              styles.availabilityDay,
-                              entry.isToday && styles.availabilityDayToday,
-                              isClosed && styles.availabilityDayClosed,
-                            ]}>
-                              {entry.day}
-                            </Text>
-                          </View>
-                          <Text style={[
-                            styles.availabilityHours,
-                            entry.isToday && styles.availabilityHoursToday,
-                            isClosed && styles.availabilityHoursClosed,
-                          ]}>
-                            {entry.hours}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </View>
+                {shouldShowAvailability ? (
+                  <>
+                    <View style={styles.sectionDivider} />
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>Availability</Text>
+                      <View style={styles.availabilityList}>
+                        {openingHours.map((entry, index) => {
+                          const isClosed = entry.hours === "Closed";
+                          const isLast = index === openingHours.length - 1;
+                          return (
+                            <View
+                              key={entry.day}
+                              style={[
+                                styles.availabilityRow,
+                                !isLast && !entry.isToday && styles.availabilityRowDivider,
+                                entry.isToday && styles.availabilityRowToday,
+                              ]}
+                            >
+                              <View style={styles.availabilityDayCol}>
+                                {entry.isToday
+                                  ? <View style={styles.availabilityDot} />
+                                  : <View style={styles.availabilityDotPlaceholder} />}
+                                <Text style={[
+                                  styles.availabilityDay,
+                                  entry.isToday && styles.availabilityDayToday,
+                                  isClosed && styles.availabilityDayClosed,
+                                ]}>
+                                  {entry.day}
+                                </Text>
+                              </View>
+                              <Text style={[
+                                styles.availabilityHours,
+                                entry.isToday && styles.availabilityHoursToday,
+                                isClosed && styles.availabilityHoursClosed,
+                              ]}>
+                                {entry.hours}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  </>
+                ) : null}
 
                 {/* ── Reviews ──────────────────────────────── */}
                 <View style={styles.sectionDivider} />
@@ -733,7 +757,7 @@ export function ListingScreen({ navigation, route }: Props) {
                     ) : null}
                   </View>
                   {reviewsLoading ? (
-                    <ActivityIndicator color="#0fa968" style={{ marginTop: 12, alignSelf: "flex-start" }} />
+                    <ActivityIndicator color="#0a8050" style={{ marginTop: 12, alignSelf: "flex-start" }} />
                   ) : reviews.length ? (
                     <View style={{ marginTop: 4 }}>
                       {reviews.slice(0, 4).map((review, index) => {
@@ -773,7 +797,15 @@ export function ListingScreen({ navigation, route }: Props) {
                       })}
                     </View>
                   ) : (
-                    <Text style={[styles.sectionBody, { marginTop: 8, color: FG_SUBTLE }]}>No reviews yet.</Text>
+                    <View style={styles.emptyReviewCard}>
+                      <View style={styles.emptyReviewIconWrap}>
+                        <Ionicons name="information-circle-outline" size={18} color={GREEN} />
+                      </View>
+                      <View style={styles.emptyReviewCopy}>
+                        <Text style={styles.emptyReviewTitle}>No reviews yet</Text>
+                        <Text style={styles.emptyReviewBody}>Be the first driver to book this space and share how it went.</Text>
+                      </View>
+                    </View>
                   )}
                 </View>
 
@@ -965,14 +997,14 @@ export function ListingScreen({ navigation, route }: Props) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design tokens (spec)
-const GREEN      = "#0fa968";
+const GREEN      = "#0a8050";
 const GREEN_SOFT = "#edf7f2";
 const FG         = "#111827";
 const FG_2       = "#374151";
 const FG_MUTED   = "#6b7280";
 const FG_SUBTLE  = "#9ca3af";
-const LINE       = "#E6E6E4";
-const LINE_2     = "#E6E6E4";
+const LINE       = "#C4CCD5";
+const LINE_2     = "#C4CCD5";
 const BG_2       = "#F7F7F6";
 
 const styles = StyleSheet.create({
@@ -984,6 +1016,32 @@ const styles = StyleSheet.create({
   errorText: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: colors.danger,
     textAlign: "center", paddingHorizontal: 24,
+  },
+
+  // Skeleton
+  skeletonWrap: { flex: 1, backgroundColor: "#ffffff" },
+  skeletonBackRow: { position: "absolute", left: 16 },
+  skeletonContent: { paddingHorizontal: spacing.screenX, paddingTop: 20 },
+  skeletonStatsRow: {
+    flexDirection: "row",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E8EDF2",
+    overflow: "hidden",
+    marginTop: 18,
+    marginBottom: 4,
+  },
+  skeletonStatsCell: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  skeletonPickerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 18,
   },
 
   // Hero
@@ -1046,7 +1104,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.32)",
     alignItems: "center", justifyContent: "center", position: "relative",
   },
-  favAnim: { position: "absolute", width: 62, height: 62 },
   heroTapZone: { position: "absolute", left: 0, right: 0, zIndex: 1 },
 
   scroll: { flex: 1 },
@@ -1096,8 +1153,17 @@ const styles = StyleSheet.create({
   statsStrip: {
     flexDirection: "row",
     backgroundColor: "#ffffff",
-    borderRadius: 10, borderWidth: 1, borderColor: LINE_2,
-    overflow: "hidden", marginBottom: 10, marginTop: 2,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E8EDF2",
+    overflow: "hidden",
+    marginBottom: 4,
+    marginTop: 4,
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 4,
   },
   statsCell: { flex: 1, paddingVertical: 10, paddingHorizontal: 8, alignItems: "center", gap: 2 },
   statsCellLabel: {
@@ -1122,16 +1188,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#ffffff",
-    borderRadius: 10,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E8EDF2",
     paddingHorizontal: 14,
     paddingVertical: 12,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 4,
   },
   timePickerBtnLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -1162,14 +1228,14 @@ const styles = StyleSheet.create({
   offerTextBold: { fontFamily: "PlusJakartaSans-SemiBold", color: GREEN },
 
   // Sections
-  sectionDivider: { height: 1, backgroundColor: LINE, marginHorizontal: -spacing.screenX },
+  sectionDivider: { height: 1, backgroundColor: LINE, marginHorizontal: -spacing.screenX, opacity: 1 },
   availabilityList: { marginTop: 0 },
   availabilityRow: {
     flexDirection: "row", alignItems: "center",
     paddingVertical: 6,
   },
   availabilityRowDivider: {
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    borderBottomWidth: 1, borderBottomColor: LINE,
   },
   availabilityRowToday: {
     backgroundColor: GREEN_SOFT, borderRadius: 8,
@@ -1195,7 +1261,7 @@ const styles = StyleSheet.create({
     color: FG_2, flex: 1, textAlign: "right",
   },
   availabilityHoursClosed: { color: FG_SUBTLE },
-  section: { paddingVertical: 18 },
+  section: { paddingTop: 20, paddingBottom: 18 },
   sectionTitle: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 18, lineHeight: 22, color: FG, letterSpacing: -0.5, marginBottom: 10,
@@ -1208,7 +1274,7 @@ const styles = StyleSheet.create({
   readMore: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG, marginTop: 10 },
 
   // Local area map
-  localAreaCard: { backgroundColor: "transparent", padding: 0, gap: 12 },
+  localAreaCard: { backgroundColor: "transparent", padding: 0, gap: 14 },
   localAreaHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   localAreaHeaderTextWrap: { flex: 1 },
   localAreaAddress: {
@@ -1220,14 +1286,21 @@ const styles = StyleSheet.create({
     fontSize: 13, lineHeight: 18, color: FG_MUTED,
   },
   localAreaMap: {
-    width: "100%", height: 180,
-    borderRadius: 8, borderWidth: 1, borderColor: LINE,
+    width: "100%",
+    height: 168,
     backgroundColor: BG_2,
   },
-  localAreaMapWrap: { position: "relative" },
+  localAreaMapWrap: {
+    position: "relative",
+    overflow: "hidden",
+    borderRadius: 16,
+    backgroundColor: BG_2,
+    marginTop: 2,
+    marginHorizontal: 2,
+  },
   mapExpandButton: {
     position: "absolute", top: 10, right: 10,
-    width: 34, height: 34, borderRadius: 6,
+    width: 34, height: 34, borderRadius: 10,
     backgroundColor: "rgba(255,255,255,0.96)",
     borderWidth: 1, borderColor: LINE,
     alignItems: "center", justifyContent: "center",
@@ -1306,6 +1379,38 @@ const styles = StyleSheet.create({
   },
   reviewStarPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
   reviewComment: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, lineHeight: 21, color: "#475569", marginBottom: 6 },
+  emptyReviewCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    marginTop: 10,
+    backgroundColor: BG_2,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  emptyReviewIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: GREEN_SOFT,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  emptyReviewCopy: { flex: 1 },
+  emptyReviewTitle: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: FG,
+    marginBottom: 3,
+  },
+  emptyReviewBody: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 19,
+    color: FG_MUTED,
+  },
 
   // Auth modal — bottom sheet
   authModalRoot: { flex: 1, justifyContent: "flex-end" },

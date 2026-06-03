@@ -149,6 +149,7 @@ const fixtureHostDraft: ListingDraft = {
   pricePerHour: "2.50",
   pricePerMonth: "110.00",
   photos: [fixtureImage],
+  capacity: 1,
 };
 
 const driverSession: AuthSession = {

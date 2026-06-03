@@ -32,7 +32,7 @@ import { getNotificationImageAttachment } from "../notifications";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
-import { Button } from "../components/ui";
+import { Button, SkeletonBlock, usePulse } from "../components/ui";
 import { isMobileE2EActive } from "../e2e/testMode";
 import { trackEvent } from "../analytics";
 import type { ListingDetail, RootStackParamList } from "../types";
@@ -48,6 +48,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [loadingListing, setLoadingListing] = useState(true);
+  const skeletonPulse = usePulse();
   const [error, setError] = useState<string | null>(null);
   const [bookingBusy, setBookingBusy] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
@@ -492,9 +493,35 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
       >
         {loadingListing ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="small" color="#0fa968" />
-          </View>
+          <ScrollView style={styles.flex} contentContainerStyle={styles.skeletonScroll} scrollEnabled={false}>
+            {/* Listing summary card skeleton */}
+            <View style={styles.skeletonCard}>
+              <SkeletonBlock width={56} height={56} borderRadius={12} pulse={skeletonPulse} />
+              <View style={{ flex: 1, gap: 8 }}>
+                <SkeletonBlock width="80%" height={16} pulse={skeletonPulse} />
+                <SkeletonBlock width="55%" height={12} pulse={skeletonPulse} />
+              </View>
+            </View>
+            {/* Date section skeleton */}
+            <View style={styles.skeletonSection}>
+              <SkeletonBlock width={100} height={14} borderRadius={6} pulse={skeletonPulse} />
+              <View style={styles.skeletonPickerRow}>
+                <SkeletonBlock height={56} borderRadius={14} pulse={skeletonPulse} style={{ flex: 1 }} />
+                <SkeletonBlock width={24} height={24} borderRadius={6} pulse={skeletonPulse} />
+                <SkeletonBlock height={56} borderRadius={14} pulse={skeletonPulse} style={{ flex: 1 }} />
+              </View>
+            </View>
+            {/* Price section skeleton */}
+            <View style={styles.skeletonSection}>
+              <SkeletonBlock width={80} height={14} borderRadius={6} pulse={skeletonPulse} />
+              <SkeletonBlock height={80} borderRadius={14} pulse={skeletonPulse} style={{ marginTop: 10 }} />
+            </View>
+            {/* Vehicle section skeleton */}
+            <View style={styles.skeletonSection}>
+              <SkeletonBlock width={90} height={14} borderRadius={6} pulse={skeletonPulse} />
+              <SkeletonBlock height={56} borderRadius={14} pulse={skeletonPulse} style={{ marginTop: 10 }} />
+            </View>
+          </ScrollView>
         ) : !user ? (
           <View style={styles.centered}>
             <Text style={styles.centeredTitle}>Sign in to continue</Text>
@@ -522,11 +549,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             <View style={styles.section}>
               <View style={styles.sectionTitleRow}>
                 <Text style={styles.sectionTitle}>Your session</Text>
-                {priceSummary?.durationLabel ? (
-                  <View style={styles.durationPill}>
-                    <Text style={styles.durationPillText}>{priceSummary.durationLabel}</Text>
-                  </View>
-                ) : null}
               </View>
               <View style={styles.pickerRow}>
                 <TouchableOpacity style={styles.pickerField} activeOpacity={0.7} onPress={() => openPicker("start")}>
@@ -729,7 +751,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   );
 }
 
-const GREEN = "#0fa968";
+const GREEN = "#0a8050";
 const LINE  = "#E6E6E4";
 const FG    = "#111827";
 const MUTED = "#6b7280";
@@ -738,6 +760,33 @@ const SUBTLE = "#9ca3af";
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#ffffff" },
   flex: { flex: 1 },
+
+  // ── Skeleton ─────────────────────────────────────────────────
+  skeletonScroll: { padding: 20, gap: 0 },
+  skeletonCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E8EDF2",
+    marginBottom: 14,
+  },
+  skeletonSection: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E8EDF2",
+    padding: 16,
+    gap: 0,
+    marginBottom: 14,
+  },
+  skeletonPickerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 12,
+  },
 
   // ── Nav header ──────────────────────────────────────────────
   header: {
@@ -800,13 +849,6 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Bold", fontSize: 13, color: FG,
   },
 
-  // ── Duration pill ────────────────────────────────────────────
-  durationPill: {
-    backgroundColor: "#EDF7F2", borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 5,
-  },
-  durationPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: GREEN },
-
   // ── Session summary box ──────────────────────────────────────
   summaryBox: {
     borderRadius: 14, borderWidth: 1, borderColor: LINE, overflow: "hidden",
@@ -834,17 +876,34 @@ const styles = StyleSheet.create({
   // ── Irish number plate ───────────────────────────────────────
   plate: {
     flexDirection: "row",
-    borderRadius: 8, borderWidth: 2, borderColor: "#111827",
-    overflow: "hidden", backgroundColor: "#FAFAF8", alignItems: "center",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10, shadowRadius: 4, elevation: 3,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: "#3D6FB6",
+    overflow: "hidden",
+    backgroundColor: "#FAFAF8",
+    alignItems: "center",
   },
   plateMt: { marginTop: 14 },
-  plateEuBadge: { width: 38, alignSelf: "stretch", backgroundColor: "#003399" },
-  plateBody: { flex: 1, paddingHorizontal: 16, paddingVertical: 14 },
+  plateEuBadge: {
+    width: 34,
+    alignSelf: "stretch",
+    backgroundColor: "#3D6FB6",
+  },
+  plateBody: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   plateNumber: {
-    fontFamily: "UKNumberPlate", fontSize: 28, color: "#111827",
-    letterSpacing: 2, textTransform: "uppercase", includeFontPadding: false,
+    fontFamily: "UKNumberPlate",
+    fontSize: 24,
+    color: "#111827",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    includeFontPadding: false,
+    textAlign: "center",
   },
   platePlaceholder: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: SUBTLE, letterSpacing: 0, textTransform: "none" },
   regHint: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: "#F59E0B", marginTop: 10, lineHeight: 18 },

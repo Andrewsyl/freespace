@@ -442,7 +442,7 @@ function MainTabs() {
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,
-        tabBarActiveTintColor: "#0fa968",
+        tabBarActiveTintColor: "#0a8050",
         tabBarInactiveTintColor: "#98a4ab",
         tabBarStyle: baseTabBarStyle,
         tabBarBackground: () => <View style={styles.tabBarChrome} />,
@@ -651,8 +651,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   navIconShellActive: {
-    backgroundColor: "#0fa968",
-    shadowColor: "#0fa968",
+    backgroundColor: "#0a8050",
+    shadowColor: "#0a8050",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 6,

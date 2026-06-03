@@ -30,7 +30,6 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
   const [apiBaseOverride] = useState<string | undefined>(route.params?.apiBase);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);

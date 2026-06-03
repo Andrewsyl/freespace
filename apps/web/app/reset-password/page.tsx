@@ -23,7 +23,6 @@ function ResetPasswordPageContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +33,6 @@ function ResetPasswordPageContent() {
     setError(null);
     try {
       const result = await requestPasswordReset(email.trim());
-      setPreviewUrl(result.previewUrl ?? null);
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send reset link.");

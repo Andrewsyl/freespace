@@ -9,7 +9,25 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Cctv } from "lucide-react-native";
 import { colors, textStyles } from "../styles/theme";
+
+const FEATURE_ICON_URL: Record<string, string> = {
+  cctv:     "https://img.icons8.com/ios/96/security-camera.png",
+  ev:       "https://img.icons8.com/ios/96/lightning-bolt.png",
+  sheltered:"https://img.icons8.com/ios/96/garage.png",
+  gated:    "https://img.icons8.com/ios/96/road-closure.png",
+  motorbike:"https://img.icons8.com/ios/96/scooter.png",
+  car:      "https://img.icons8.com/ios/96/car--v1.png",
+  suv:      "https://img.icons8.com/ios/96/suv.png",
+  van:      "https://img.icons8.com/ios/96/van.png",
+};
+
+const MapCardFeatureIcon = ({ type }: { type: string }) => {
+  if (type === "cctv") return <Cctv size={12} color="#6b7280" strokeWidth={1.75} />;
+  const url = FEATURE_ICON_URL[type] ?? FEATURE_ICON_URL.sheltered;
+  return <Image source={{ uri: url }} style={{ width: 12, height: 12 }} resizeMode="contain" />;
+};
 
 type MapBottomCardProps = {
   title: string;
@@ -21,6 +39,7 @@ type MapBottomCardProps = {
   metaLine?: string;
   badgeLabel?: string | null;
   amenities?: string[] | null;
+  vehicleSizeLabel?: string | null;
   isAvailable?: boolean;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
@@ -37,6 +56,8 @@ export function MapBottomCard({
   reviewCount,
   price,
   metaLine,
+  amenities,
+  vehicleSizeLabel,
   isAvailable = true,
   isFavorite,
   onToggleFavorite,
@@ -90,6 +111,44 @@ export function MapBottomCard({
       ]).start();
     }
   }, [translateAnim, opacityAnim, title, dismissing]);
+
+  const featureItems = useMemo(() => {
+    const items: { key: string; iconType: string; label: string }[] = [];
+    const seen = new Set<string>();
+    const values = amenities ?? [];
+    for (const amenity of values) {
+      const raw = amenity.toLowerCase();
+      if ((raw.includes("cctv") || raw.includes("camera")) && !seen.has("cctv")) {
+        items.push({ key: "cctv", iconType: "cctv", label: "CCTV" });
+        seen.add("cctv");
+      } else if ((raw.includes("gated") || raw.includes("barrier") || raw.includes("gate")) && !seen.has("gated")) {
+        items.push({ key: "gated", iconType: "gated", label: "Gated" });
+        seen.add("gated");
+      } else if ((raw.includes("covered") || raw.includes("shelter")) && !seen.has("covered")) {
+        items.push({ key: "covered", iconType: "sheltered", label: "Covered" });
+        seen.add("covered");
+      } else if ((raw.includes("ev") || raw.includes("charger") || raw.includes("charging")) && !seen.has("ev")) {
+        items.push({ key: "ev", iconType: "ev", label: "EV" });
+        seen.add("ev");
+      }
+      if (items.length >= 2) break;
+    }
+    if (vehicleSizeLabel?.trim()) {
+      const lower = vehicleSizeLabel.trim().toLowerCase();
+      const { label, iconType } =
+        lower === "motorcycle"
+          ? { label: "Fits motorcycle", iconType: "motorbike" }
+          : lower === "car"
+            ? { label: "Fits car", iconType: "car" }
+            : lower === "van"
+              ? { label: "Fits van", iconType: "van" }
+              : lower.includes("suv")
+                ? { label: "Fits SUV", iconType: "suv" }
+                : { label: `Fits ${vehicleSizeLabel.trim()}`, iconType: "car" };
+      items.push({ key: "vehicle", iconType, label });
+    }
+    return items.slice(0, 3);
+  }, [amenities, vehicleSizeLabel]);
 
   return (
     <Animated.View
@@ -145,6 +204,20 @@ export function MapBottomCard({
             <Text style={styles.metaLine} numberOfLines={1}>
               {metaLine}
             </Text>
+          ) : null}
+          {featureItems.length ? (
+            <View style={styles.featuresRow}>
+              {featureItems.map((item) => (
+                <View key={item.key} style={styles.featureItem}>
+                  <View style={styles.featureIconWrap}>
+                    <MapCardFeatureIcon type={item.iconType} />
+                  </View>
+                  <Text style={styles.featureText} numberOfLines={1}>
+                    {item.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
           ) : null}
 
           <View style={styles.dashedDivider} />
@@ -270,6 +343,33 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#e4e9ed",
     marginVertical: 5,
+  },
+  featuresRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 6,
+  },
+  featureItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    maxWidth: "48%",
+  },
+  featureIconWrap: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#edf7f2",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  featureText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    lineHeight: 14,
+    color: "#415162",
   },
   priceRow: {
     flexDirection: "row",

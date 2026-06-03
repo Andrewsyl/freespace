@@ -194,7 +194,7 @@ export default function CheckoutPage() {
                   </Link>
                 </div>
                 <div className="mt-3 rounded-lg bg-slate-50 px-3.5 py-2.5 text-[12.5px] text-slate-500">
-                  You'll receive booking confirmation and updates by email.
+                  You&apos;ll receive booking confirmation and updates by email.
                 </div>
               </Card>
 
@@ -241,7 +241,7 @@ export default function CheckoutPage() {
                 ) : (
                   <div className="mt-3">
                     <p className="mb-3 text-[13px] text-slate-500">
-                      Add it now or later — we'll remind you before you park.
+                      Add it now or later — we&apos;ll remind you before you park.
                     </p>
                     <Link
                       href={`/dashboard/vehicle?next=${encodeURIComponent(nextPath)}` as any}

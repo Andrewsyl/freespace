@@ -13,7 +13,7 @@ import type { RootStackParamList } from "../types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Profile">;
 
-const GREEN  = "#0fa968";
+const GREEN  = "#0a8050";
 const LINE   = "#E6E6E4";
 const FG     = "#111827";
 const MUTED  = "#6b7280";
@@ -242,13 +242,13 @@ export function ProfileScreen({ navigation }: Props) {
             label="My vehicle"
             sub={
               user.vehicleMake && user.vehicleType
-                ? `${user.vehicleMake} · ${user.vehicleType}${user.vehiclePlate ? ` · ${user.vehiclePlate}` : ""}`
+                ? `${user.vehicleMake} · ${user.vehicleType}`
                 : "Add your car brand, model and plate"
             }
             onPress={() => navigation.navigate("VehicleType")}
             right={
               <View style={styles.rowRight}>
-                {user.vehicleMake ? <VehicleBrandLogo make={user.vehicleMake} size={20} /> : null}
+                {user.vehicleMake ? <VehicleBrandLogo make={user.vehicleMake} size={60} /> : null}
                 <ChevronRight size={15} color={SUBTLE} />
               </View>
             }

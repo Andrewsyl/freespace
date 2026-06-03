@@ -1,28 +1,37 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SkeletonBlock, usePulse } from "../components/ui";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
 import { colors, radius, spacing } from "../styles/theme";
 import type { RootStackParamList } from "../types";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, Heart, ShieldCheck } from "lucide-react-native";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Favorites">;
 
 export function FavoritesScreen({ navigation }: Props) {
   const { user } = useAuth();
   const { favorites, loading, error } = useFavorites();
+  const skeletonPulse = usePulse();
 
   if (!user) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <View style={styles.contentWrapper}>
-          <View style={styles.emptyState}>
+          <View style={styles.gatedCard}>
+            <View style={styles.gatedIconWrap}>
+              <Heart size={24} color="#0a8050" strokeWidth={2.2} />
+            </View>
             <Text style={styles.title}>Favourites</Text>
-            <Text style={styles.subtitle}>Sign in to view your saved spaces.</Text>
+            <Text style={styles.subtitle}>Save spaces you trust and come back to them in one tap.</Text>
             <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
               <Text style={styles.primaryButtonText}>Sign in</Text>
             </Pressable>
+            <View style={styles.gatedHintRow}>
+              <ShieldCheck size={14} color={colors.textSoft} strokeWidth={2.1} />
+              <Text style={styles.gatedHintText}>Your saved spaces stay attached to your account.</Text>
+            </View>
           </View>
         </View>
       </SafeAreaView>
@@ -41,8 +50,20 @@ export function FavoritesScreen({ navigation }: Props) {
       <View style={styles.contentWrapper}>
         <ScrollView contentContainerStyle={styles.content}>
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          {loading ? <Text style={styles.muted}>Loading favourites…</Text> : null}
-          {favorites.length === 0 ? (
+          {loading ? (
+            <View style={styles.skeletonList}>
+              {[0, 1, 2, 3].map((i) => (
+                <View key={i} style={styles.skeletonRow}>
+                  <SkeletonBlock width={44} height={44} borderRadius={10} pulse={skeletonPulse} />
+                  <View style={styles.skeletonCopy}>
+                    <SkeletonBlock width="62%" height={14} pulse={skeletonPulse} />
+                    <SkeletonBlock width="45%" height={11} pulse={skeletonPulse} style={{ marginTop: 7 }} />
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+          {!loading && favorites.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.subtitle}>No favourites yet.</Text>
               <Text style={styles.helper}>Tap the heart on a listing to save it.</Text>
@@ -140,6 +161,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 32,
   },
+  gatedCard: {
+    alignItems: "center",
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginHorizontal: spacing.screenX,
+    marginTop: spacing.screenX,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+  },
+  gatedIconWrap: {
+    alignItems: "center",
+    backgroundColor: "#edf7f2",
+    borderRadius: 24,
+    height: 48,
+    justifyContent: "center",
+    marginBottom: 14,
+    width: 48,
+  },
   subtitle: {
     color: colors.textMuted,
     fontSize: 13,
@@ -169,6 +210,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: "center",
   },
+  skeletonList: { gap: 2 },
+  skeletonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  skeletonCopy: { flex: 1 },
   primaryButton: {
     backgroundColor: colors.accent,
     borderRadius: 12,
@@ -181,5 +233,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
+  },
+  gatedHintRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 14,
+  },
+  gatedHintText: {
+    color: colors.textSoft,
+    fontSize: 12,
+    lineHeight: 16,
+    textAlign: "center",
   },
 });

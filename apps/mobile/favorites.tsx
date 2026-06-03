@@ -30,8 +30,13 @@ const normalizeListing = (listing: ListingSummary | ListingDetail): ListingSumma
   image_urls: listing.image_urls ?? listing.imageUrls ?? null,
 });
 
+function isAuthError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message.toLowerCase() : "";
+  return msg.includes("token") || msg.includes("unauthorized") || msg.includes("401");
+}
+
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
-  const { token } = useAuth();
+  const { token, logout } = useAuth();
   const [favorites, setFavorites] = useState<ListingSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,11 +53,16 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       const next = await listFavorites(token);
       setFavorites(next);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load favourites");
+      if (isAuthError(err)) {
+        setFavorites([]);
+        void logout();
+      } else {
+        setError(err instanceof Error ? err.message : "Could not load favourites");
+      }
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, logout]);
 
   useEffect(() => {
     void refresh();

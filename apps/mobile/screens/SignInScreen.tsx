@@ -12,19 +12,24 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { useAuth } from "../auth";
 import { requestEmailVerification } from "../api";
 import type { AuthReturnTo, RootStackParamList } from "../types";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 import { colors, spacing, textStyles } from "../styles/theme";
+import { trackEvent } from "../analytics";
+import { logInfo, logWarn } from "../logger";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
-const AUTH_GREEN = "#0fa968";
+const AUTH_GREEN = "#0a8050";
 
 export function SignInScreen({ navigation, route }: Props) {
-  const { login } = useAuth();
+  const { login, loginWithOAuth } = useAuth();
   const returnTo = route.params?.returnTo;
+  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
+  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
 
   const navigateAfterAuth = (dest?: AuthReturnTo) => {
     if (dest) {
@@ -49,12 +54,18 @@ export function SignInScreen({ navigation, route }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [acceptLegalChecked, setAcceptLegalChecked] = useState(false);
   const needsLegalAcceptance = (candidate: { termsVersion?: string | null; privacyVersion?: string | null }) =>
     !candidate.termsVersion || !candidate.privacyVersion;
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: Platform.OS === "android" ? googleWebClientId || undefined : undefined,
+      iosClientId: Platform.OS === "ios" ? googleIosClientId || undefined : undefined,
+    });
+  }, [googleWebClientId, googleIosClientId]);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -67,6 +78,37 @@ export function SignInScreen({ navigation, route }: Props) {
       if (successTimerRef.current) clearTimeout(successTimerRef.current);
     };
   }, []);
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setSubmitting(true);
+    try {
+      logInfo("Google sign-in starting", { screen: "SignIn" });
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const signInResult = await GoogleSignin.signIn();
+      if (signInResult.type !== "success") return;
+      let idToken: string | null = signInResult.data.idToken ?? null;
+      if (!idToken) {
+        try {
+          const tokens = await GoogleSignin.getTokens();
+          idToken = tokens.idToken ?? null;
+        } catch {
+          idToken = null;
+        }
+      }
+      if (!idToken) return;
+      await loginWithOAuth("google", idToken);
+      void trackEvent("mobile_login_succeeded", { method: "google" });
+    } catch (err) {
+      const errorCode = err && typeof err === "object" && "code" in err ? String(err.code) : "";
+      if (errorCode === statusCodes.SIGN_IN_CANCELLED) return;
+      const message = err instanceof Error ? err.message : "Google sign-in failed";
+      logWarn("Google sign-in failed", { screen: "SignIn", code: errorCode || null, message });
+      setError(errorCode ? `${message} (${errorCode})` : message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleLogin = async () => {
     const trimmed = email.trim();
@@ -109,12 +151,9 @@ export function SignInScreen({ navigation, route }: Props) {
     setError(null);
     setNotice(null);
     try {
-      const url = await requestEmailVerification(trimmed);
-      setPreviewUrl(url);
+      await requestEmailVerification(trimmed);
       setNotice(
-        url
-          ? "Verification link ready. Open it to confirm your email."
-          : "Verification email sent (if the account exists)."
+        "Verification email sent. Check your inbox and tap the link."
       );
       setResendCooldown(30);
     } catch (err) {
@@ -148,6 +187,22 @@ export function SignInScreen({ navigation, route }: Props) {
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Log in</Text>
+
+            {/* Google */}
+            <Pressable
+              style={({ pressed }) => [styles.googleButton, pressed && { opacity: 0.85 }, submitting && { opacity: 0.6 }]}
+              onPress={handleGoogleSignIn}
+              disabled={submitting}
+            >
+              <Ionicons name="logo-google" size={18} color="#fff" />
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            </Pressable>
+
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
             <View
               style={styles.inputGroup}
@@ -269,6 +324,42 @@ const styles = StyleSheet.create({
   cardTitle: {
     ...textStyles.sectionTitle,
     marginBottom: spacing.md,
+  },
+  googleButton: {
+    backgroundColor: AUTH_GREEN,
+    borderRadius: 28,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 15,
+    marginBottom: 18,
+    shadowColor: AUTH_GREEN,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  googleButtonText: {
+    color: "#fff",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15,
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 18,
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    color: colors.textSoft,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
   },
   inputGroup: {
     marginBottom: spacing.sm,

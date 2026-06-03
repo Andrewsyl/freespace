@@ -165,7 +165,7 @@ export function SlimNav() {
                       Favourites
                     </DrawerLink>
                   )}
-                  <DrawerLink href="/help" onClick={close} icon={<HelpIcon />}>
+                  <DrawerLink href="/support" onClick={close} icon={<HelpIcon />}>
                     Help
                   </DrawerLink>
                   {user?.role === "admin" && (

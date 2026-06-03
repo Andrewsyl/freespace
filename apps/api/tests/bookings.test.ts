@@ -220,7 +220,7 @@ describe("bookings routes", () => {
       pricePerDay: 12,
       pricePerHour: null,
     });
-    db.poolQuery.mockResolvedValue({ rowCount: 1, rows: [{ exists: true }] });
+    db.poolQuery.mockResolvedValue({ rowCount: 1, rows: [{ booked_count: "1", capacity: "1" }] });
 
     const { createApp } = await import("../src/app.js");
     const { signToken } = await import("../src/lib/auth.js");

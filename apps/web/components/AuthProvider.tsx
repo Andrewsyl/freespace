@@ -10,9 +10,9 @@ type User = AuthResponse["user"];
 type AuthContextValue = {
   user: User | null;
   token: string | null;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<User>;
   signUp: (email: string, password: string, phone?: string, firstName?: string, lastName?: string) => Promise<void>;
-  signInWithGoogle: (idToken: string) => Promise<void>;
+  signInWithGoogle: (idToken: string) => Promise<User>;
   signOut: () => void;
   error: string | null;
   loading: boolean;

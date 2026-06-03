@@ -9,7 +9,7 @@ export default function SecurityPage() {
 
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const [confirmPw, setConfirm] = useState("");
   const [pwSaving, setPwSaving] = useState(false);
   const [pwSuccess, setPwSuccess] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
@@ -22,7 +22,7 @@ export default function SecurityPage() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (next !== confirm) { setPwError("Passwords do not match."); return; }
+    if (next !== confirmPw) { setPwError("Passwords do not match."); return; }
     if (next.length < 8)  { setPwError("Password must be at least 8 characters."); return; }
     if (!token) return;
     setPwSaving(true); setPwError(null); setPwSuccess(false);
@@ -48,7 +48,7 @@ export default function SecurityPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Delete your account permanently? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete your account permanently? This cannot be undone.`)) return;
     if (!token) return;
     setDeleting(true); setDeleteError(null);
     try {
@@ -75,7 +75,7 @@ export default function SecurityPage() {
           {[
             { label: "Current password", value: current, setter: setCurrent },
             { label: "New password",     value: next,    setter: setNext },
-            { label: "Confirm password", value: confirm, setter: setConfirm },
+            { label: "Confirm password", value: confirmPw, setter: setConfirm },
           ].map(({ label, value, setter }) => (
             <div key={label}>
               <label className="mb-1 block text-[12px] font-semibold text-slate-500">{label}</label>

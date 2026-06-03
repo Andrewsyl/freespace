@@ -20,6 +20,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import type MapView from "react-native-maps";
 import DatePicker from "../components/AdaptiveDatePicker";
+import { DrumRollPicker, type DrumRollPickerHandle } from "../components/DrumRollPicker";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../auth";
@@ -45,6 +46,14 @@ import type {
 import { Ionicons } from "@expo/vector-icons";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Search">;
+
+function formatAddressDisplay(address: string): string {
+  return address
+    .replace(/,?\s*[A-Z]\d{2}\s[A-Z0-9]{4}\b/g, "")  // strip Eircode e.g. D02 VX67
+    .replace(/,?\s*Ireland\s*$/i, "")                    // strip trailing ", Ireland"
+    .replace(/,\s*$/, "")                                // strip trailing comma
+    .trim();
+}
 
 function getListingDisplayTitle(listing: { title: string; address?: string | null; spaceType?: string | null; space_type?: string | null }): string {
   const rawType = listing.space_type ?? listing.spaceType ?? null;
@@ -188,6 +197,20 @@ export function SearchScreen({ navigation }: Props) {
   const [pickerField, setPickerField] = useState<"start" | "end">("start");
   const [pickerVisible, setPickerVisible] = useState(false);
   const [draftDate, setDraftDate] = useState<Date | null>(null);
+  const pickerSheetAnim = useRef(new Animated.Value(400)).current;
+
+  useEffect(() => {
+    if (pickerVisible) {
+      Animated.spring(pickerSheetAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 68,
+        friction: 12,
+      }).start();
+    } else {
+      pickerSheetAnim.setValue(400);
+    }
+  }, [pickerVisible, pickerSheetAnim]);
   const timeSearchPendingRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -443,11 +466,7 @@ export function SearchScreen({ navigation }: Props) {
       const requestId = searchRequestIdRef.current + 1;
       searchRequestIdRef.current = requestId;
       searchStartedAtRef.current = Date.now();
-      const shouldShowGlobal = (options?.showGlobal ?? true) && isFocused;
       const preserveSelection = options?.preserveSelection ?? false;
-      if (shouldShowGlobal) {
-        showGlobalLoading("Searching...");
-      }
       setLoading(true);
       setIsRefreshingPins(true);
       setError(null);
@@ -513,9 +532,6 @@ export function SearchScreen({ navigation }: Props) {
         const elapsed = Date.now() - searchStartedAtRef.current;
         const remaining = Math.max(0, 1000 - elapsed);
         setTimeout(() => {
-            if (shouldShowGlobal) {
-              hideGlobalLoading();
-            }
           if (searchRequestIdRef.current !== requestId) return;
           setLoading(false);
           if (nextResultsSnapshot) {
@@ -526,7 +542,7 @@ export function SearchScreen({ navigation }: Props) {
         }, remaining);
       }
     },
-    [buildSearchParams, hideGlobalLoading, showGlobalLoading, pendingResults]
+    [buildSearchParams, pendingResults]
   );
 
   const scheduleMapReady = useCallback(() => {
@@ -593,11 +609,13 @@ export function SearchScreen({ navigation }: Props) {
     setPickerVisible(true);
   };
 
+  const drumPickerRef = useRef<DrumRollPickerHandle>(null);
+
   const applyQuickDuration = (hours: number) => {
     const nextEnd = new Date(startAt);
     nextEnd.setHours(nextEnd.getHours() + hours);
-    setEndAt(nextEnd);
     setDraftDate(nextEnd);
+    drumPickerRef.current?.setTime(nextEnd);
   };
 
 
@@ -623,7 +641,7 @@ export function SearchScreen({ navigation }: Props) {
   };
 
   const handleSelectSuggestion = async (suggestion: PlaceSuggestion) => {
-    setAddressQuery(suggestion.description);
+    setAddressQuery(formatAddressDisplay(suggestion.description));
     setAddressSuggestions([]);
     skipAutocompleteRef.current = 2;
     if (!mapsKey) return;
@@ -638,13 +656,13 @@ export function SearchScreen({ navigation }: Props) {
       );
       const payload = (await response.json()) as PlaceDetailsResponse;
       if (payload.result?.formatted_address) {
-        setAddressQuery(payload.result.formatted_address);
+        setAddressQuery(formatAddressDisplay(payload.result.formatted_address));
       }
       const location = payload.result?.geometry?.location;
       if (location) {
         const nextLat = location.lat.toFixed(6);
         const nextLng = location.lng.toFixed(6);
-        const label = payload.result?.formatted_address ?? suggestion.description;
+        const label = formatAddressDisplay(payload.result?.formatted_address ?? suggestion.description);
         addToHistory({
           label,
           lat: nextLat,
@@ -1186,10 +1204,32 @@ export function SearchScreen({ navigation }: Props) {
             priceForListing={priceForListing}
             priceKey={priceKey}
           />
-        ) : (
-          <View style={styles.mapPlaceholder} />
-        )}
-        {launchComplete && !mapReady ? null : null}
+        ) : null}
+        {(!mapReady || (loading && results.length === 0)) ? (
+          <View style={styles.mapLoadingOverlay}>
+            <View style={styles.mapLoadingBubble}>
+              <Animated.View
+                style={{
+                  transform: [{
+                    rotate: mapSpinnerAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ["0deg", "360deg"],
+                    }),
+                  }],
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  borderWidth: 2.5,
+                  borderColor: "#e5e7eb",
+                  borderTopColor: "#0a8050",
+                }}
+              />
+              <Text style={styles.mapLoadingText}>
+                {mapReady ? "Searching for spaces…" : "Loading map…"}
+              </Text>
+            </View>
+          </View>
+        ) : null}
         <View style={[styles.overlay, { top: insets.top + 18 }]}>
           <View style={styles.overlayHeader} />
           <View style={styles.searchGroup}>
@@ -1199,15 +1239,12 @@ export function SearchScreen({ navigation }: Props) {
               testID="search-bar"
             >
               <Ionicons name="search-outline" size={18} color={colors.textSoft} />
-              <TextInput
-                style={styles.searchInput}
-                value={addressQuery}
-                editable={false}
-                placeholder="Where to?"
-                placeholderTextColor="#98a2b3"
-                pointerEvents="none"
+              <Text
+                style={[styles.searchInput, !addressQuery && styles.searchInputPlaceholder]}
                 numberOfLines={1}
-              />
+              >
+                {addressQuery || "Where to?"}
+              </Text>
               {addressQuery ? (
                 <Pressable
                   style={styles.clearButton}
@@ -1313,9 +1350,13 @@ export function SearchScreen({ navigation }: Props) {
             reviewCount={visibleSelectedListing.rating_count ?? 0}
             price={`€${formatPriceValue(priceForListing(visibleSelectedListing))} total`}
             subtitle={visibleSelectedListing.availability_text?.trim() || "Parking space"}
-            metaLine={formatMapCardMetaLine(from, to, visibleSelectedListing.distance_m)}
             badgeLabel={selectedCardAmenities?.[0] ?? visibleSelectedListing.amenities?.[0] ?? null}
             amenities={selectedCardAmenities ?? visibleSelectedListing.amenities ?? []}
+            vehicleSizeLabel={
+              visibleSelectedListing.vehicle_size_suitability ??
+              visibleSelectedListing.vehicleSizeSuitability ??
+              null
+            }
             isAvailable={visibleSelectedListing.is_available !== false}
             isFavorite={isFavorite(visibleSelectedListing.id)}
             onToggleFavorite={() => toggle(visibleSelectedListing)}
@@ -1465,195 +1506,167 @@ export function SearchScreen({ navigation }: Props) {
                 { transform: [{ translateY: searchAnim }], opacity: searchOverlayOpacity },
               ]}
             >
-              <View style={[styles.searchHeader, { paddingTop: insets.top + 12 }]}>
-                <Pressable
-                  style={styles.headerIconButton}
-                  onPress={() => setSearchSheetOpen(false)}
-                >
-                  <Ionicons name="arrow-back" size={24} color="#ffffff" />
+              {/* ── Search bar (back + input in one row) ── */}
+              <View style={[styles.searchTopBar, { paddingTop: insets.top + 10 }]}>
+                <Pressable onPress={() => setSearchSheetOpen(false)} hitSlop={10} style={styles.searchBackBtn}>
+                  <Ionicons name="arrow-back" size={22} color="#111827" />
                 </Pressable>
-                <Text style={styles.searchHeaderTitle}>Search</Text>
-                <Pressable style={styles.headerIconButton} onPress={() => setShowFilters(true)}>
-                  <Text style={styles.headerIconText}>Filter</Text>
-                </Pressable>
-              </View>
-              <View style={styles.searchHeaderInput}>
-                <View style={styles.searchOverlayInputShell}>
+                <View style={styles.searchInputShell}>
+                  <Ionicons name="search-outline" size={16} color="#9aa1aa" style={{ marginRight: 8 }} />
                   <TextInput
-                    style={styles.searchOverlayInput}
+                    style={styles.searchInputField}
                     value={addressQuery}
                     onChangeText={(value) => {
                       setAddressQuery(value);
-                      if (!value.trim()) {
-                        setAddressSuggestions([]);
-                      }
+                      if (!value.trim()) setAddressSuggestions([]);
                     }}
-                    placeholder="Enter destination or location ID"
+                    placeholder="Area, address or landmark"
                     placeholderTextColor="#9aa1aa"
                     returnKeyType="search"
+                    autoFocus
                   />
                   {addressQuery ? (
                     <Pressable
-                      style={styles.overlayClearButton}
-                      onPress={() => {
-                        setAddressQuery("");
-                        setAddressSuggestions([]);
-                      }}
+                      onPress={() => { setAddressQuery(""); setAddressSuggestions([]); }}
+                      hitSlop={8}
                     >
-                      <Text style={styles.overlayClearButtonText}>×</Text>
+                      <Ionicons name="close-circle" size={18} color="#c0c8d2" />
                     </Pressable>
                   ) : null}
                 </View>
               </View>
-              <View style={styles.searchContent}>
-                <View style={styles.tabRow}>
-                  <Pressable
-                    style={[
-                      styles.tabButton,
-                      activeSearchTab === "recents" && styles.tabButtonActive,
-                    ]}
-                    onPress={() => setActiveSearchTab("recents")}
-                  >
-                    <Text
-                      style={[
-                        styles.tabText,
-                        activeSearchTab === "recents" && styles.tabTextActive,
-                      ]}
-                    >
-                      Recents
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[
-                      styles.tabButton,
-                      activeSearchTab === "favourites" && styles.tabButtonActive,
-                    ]}
-                    onPress={() => setActiveSearchTab("favourites")}
-                  >
-                    <Text
-                      style={[
-                        styles.tabText,
-                        activeSearchTab === "favourites" && styles.tabTextActive,
-                      ]}
-                    >
-                      Favourites
-                    </Text>
-                  </Pressable>
-                </View>
-                <View style={styles.searchResults}>
+
+              {/* ── Body ─────────────────────────────── */}
+              <ScrollView
+                style={styles.searchBody}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.searchList}>
                   {addressQuery.trim() ? (
+                    /* ── Autocomplete results ── */
                     addressLoading ? (
-                      <Text style={styles.emptyText}>Searching...</Text>
+                      <View style={styles.searchEmptyRow}>
+                        <Text style={styles.searchEmptyText}>Searching…</Text>
+                      </View>
                     ) : addressSuggestions.length > 0 ? (
-                      addressSuggestions.slice(0, 6).map((suggestion) => {
+                      addressSuggestions.slice(0, 6).map((suggestion, index) => {
                         const commaIdx = suggestion.description.indexOf(",");
                         const mainText = commaIdx > -1 ? suggestion.description.slice(0, commaIdx) : suggestion.description;
                         const secondaryText = commaIdx > -1 ? suggestion.description.slice(commaIdx + 1).trim() : "";
                         return (
                           <Pressable
                             key={suggestion.place_id}
-                            style={styles.resultRow}
-                            onPress={() => {
-                              setSearchSheetOpen(false);
-                              void handleSelectSuggestion(suggestion);
-                            }}
+                            style={({ pressed }) => [styles.searchRow, pressed && styles.searchRowPressed]}
+                            onPress={() => { setSearchSheetOpen(false); void handleSelectSuggestion(suggestion); }}
                           >
-                            <View style={styles.resultIcon}>
-                              <MapPinIcon size={17} color="#0fa968" strokeWidth={2.3} />
+                            <View style={styles.searchRowIcon}>
+                              <MapPinIcon size={16} color="#0a8050" strokeWidth={2.2} />
                             </View>
-                            <View style={styles.resultCopy}>
-                              <Text style={styles.resultTitle}>{mainText}</Text>
-                              {secondaryText ? (
-                                <Text style={styles.resultSubtitle}>{secondaryText}</Text>
-                              ) : null}
+                            <View style={styles.searchRowCopy}>
+                              <Text style={styles.searchRowTitle} numberOfLines={1}>{mainText}</Text>
+                              {secondaryText ? <Text style={styles.searchRowSub} numberOfLines={1}>{secondaryText}</Text> : null}
                             </View>
                           </Pressable>
                         );
                       })
                     ) : (
-                      <Text style={styles.emptyText}>No results found.</Text>
+                      <View style={styles.searchEmptyRow}>
+                        <Text style={styles.searchEmptyText}>No results found.</Text>
+                      </View>
                     )
                   ) : (
                     <>
+                      {/* ── Use current location ── */}
                       <Pressable
-                        style={[styles.resultRow, styles.currentLocationRow]}
+                        style={({ pressed }) => [styles.searchRow, styles.searchRowLocation, pressed && styles.searchRowPressed]}
                         onPress={handleUseCurrentLocation}
                         disabled={locating}
                       >
-                        <View style={styles.resultIcon}>
-                          <View style={styles.resultIconDot} />
+                        <View style={[styles.searchRowIcon, styles.searchRowIconLocate]}>
+                          <Ionicons name="locate" size={17} color="#0a8050" />
                         </View>
-                        <View style={styles.resultCopy}>
-                          <Text style={styles.resultTitle}>
-                            {locating ? "Finding your location..." : "Use current location"}
+                        <View style={styles.searchRowCopy}>
+                          <Text style={styles.searchLocationTitle}>
+                            {locating ? "Finding your location…" : "Use current location"}
                           </Text>
-                          {locationError ? (
-                            <Text style={styles.resultSubtitle}>{locationError}</Text>
-                          ) : (
-                            <Text style={styles.resultSubtitle}>Use GPS to center the map</Text>
-                          )}
+                          {locationError
+                            ? <Text style={styles.searchRowSub}>{locationError}</Text>
+                            : <Text style={styles.searchRowSub}>Use GPS to find spaces near you</Text>
+                          }
                         </View>
+                        {!locating && <Ionicons name="chevron-forward" size={16} color="#c0c8d2" />}
                       </Pressable>
+
+                      {/* ── Section header with inline tab toggle ── */}
+                      <View style={styles.searchSectionHeader}>
+                        <Text style={styles.searchSectionLabel}>
+                          {activeSearchTab === "recents" ? "Recent searches" : "Favourites"}
+                        </Text>
+                        <View style={styles.searchToggle}>
+                          {(["recents", "favourites"] as const).map((tab) => (
+                            <Pressable
+                              key={tab}
+                              style={[styles.searchToggleBtn, activeSearchTab === tab && styles.searchToggleBtnActive]}
+                              onPress={() => setActiveSearchTab(tab)}
+                            >
+                              <Text style={[styles.searchToggleText, activeSearchTab === tab && styles.searchToggleTextActive]}>
+                                {tab === "recents" ? "Recent" : "Saved"}
+                              </Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      </View>
+
+                      {/* ── List items ── */}
                       {activeSearchTab === "recents" ? (
-                        <View style={styles.resultsGroup}>
-                          <Text style={styles.sectionLabel}>RECENT SEARCHES</Text>
-                          {searchHistory.length ? (
-                            searchHistory.map((item) => (
-                              <View key={`${item.label}-${item.lat}-${item.lng}`} style={styles.resultRow}>
-                                <Pressable
-                                  style={styles.resultRowPress}
-                                  onPress={() => handleSelectHistoryItem(item)}
-                                >
-                                  <View style={styles.resultIcon}>
-                                    <View style={styles.resultIconDot} />
-                                  </View>
-                                  <View style={styles.resultCopy}>
-                                    <Text style={styles.resultTitle}>{item.label}</Text>
-                                    <Text style={styles.resultSubtitle}>Recent search</Text>
-                                  </View>
-                                </Pressable>
-                                <Pressable
-                                  style={styles.resultRemove}
-                                  onPress={() => removeFromHistory(item)}
-                                >
-                                  <Text style={styles.resultRemoveText}>×</Text>
-                                </Pressable>
-                              </View>
-                            ))
-                          ) : (
-                            <Text style={styles.emptyText}>No recent searches yet.</Text>
-                          )}
-                        </View>
-                      ) : (
-                        <View style={styles.resultsGroup}>
-                          <Text style={styles.sectionLabel}>FAVOURITES</Text>
-                          {favorites.length ? (
-                            favorites.map((item) => (
-                              <Pressable
-                                key={`fav-${item.id}`}
-                                style={styles.resultRow}
-                                onPress={() =>
-                                  navigation.navigate("Listing", { id: item.id, from, to })
-                                }
-                              >
-                                <View style={styles.resultIcon}>
-                                  <View style={styles.resultIconDot} />
+                        searchHistory.length > 0 ? (
+                          searchHistory.map((item) => (
+                            <View key={`${item.label}-${item.lat}-${item.lng}`} style={styles.searchRow}>
+                              <Pressable style={styles.searchRowPress} onPress={() => handleSelectHistoryItem(item)}>
+                                <View style={styles.searchRowIcon}>
+                                  <Ionicons name="time-outline" size={16} color="#9ca3af" />
                                 </View>
-                                <View style={styles.resultCopy}>
-                                  <Text style={styles.resultTitle}>{getListingDisplayTitle(item)}</Text>
-                                  <Text style={styles.resultSubtitle}>{item.address}</Text>
-                                </View>
+                                <Text style={styles.searchRowTitle} numberOfLines={1}>{item.label}</Text>
                               </Pressable>
-                            ))
-                          ) : (
-                            <Text style={styles.emptyText}>No favourites yet.</Text>
-                          )}
-                        </View>
+                              <Pressable style={styles.searchRemoveBtn} onPress={() => removeFromHistory(item)} hitSlop={6}>
+                                <Ionicons name="close" size={13} color="#c0c8d2" />
+                              </Pressable>
+                            </View>
+                          ))
+                        ) : (
+                          <View style={styles.searchEmptyState}>
+                            <Text style={styles.searchEmptyStateText}>No recent searches yet</Text>
+                          </View>
+                        )
+                      ) : (
+                        favorites.length > 0 ? (
+                          favorites.map((item) => (
+                            <Pressable
+                              key={`fav-${item.id}`}
+                              style={({ pressed }) => [styles.searchRow, pressed && styles.searchRowPressed]}
+                              onPress={() => navigation.navigate("Listing", { id: item.id, from, to })}
+                            >
+                              <View style={[styles.searchRowIcon, styles.searchRowIconHeart]}>
+                                <Ionicons name="heart" size={14} color="#0a8050" />
+                              </View>
+                              <View style={styles.searchRowCopy}>
+                                <Text style={styles.searchRowTitle} numberOfLines={1}>{getListingDisplayTitle(item)}</Text>
+                                <Text style={styles.searchRowSub} numberOfLines={1}>{item.address}</Text>
+                              </View>
+                              <Ionicons name="chevron-forward" size={15} color="#d1d5db" />
+                            </Pressable>
+                          ))
+                        ) : (
+                          <View style={styles.searchEmptyState}>
+                            <Text style={styles.searchEmptyStateText}>No favourites saved yet</Text>
+                          </View>
+                        )
                       )}
                     </>
                   )}
                 </View>
-              </View>
+              </ScrollView>
             </Animated.View>
           </KeyboardAvoidingView>
         ) : null}
@@ -1661,53 +1674,58 @@ export function SearchScreen({ navigation }: Props) {
           Platform.OS === "android" && pickerVisible ? (
             <Modal transparent animationType="fade" visible>
               <View style={styles.pickerBackdrop}>
-                <View style={styles.pickerSheet}>
+                <Pressable style={StyleSheet.absoluteFillObject} onPress={() => { setPickerVisible(false); setDraftDate(null); }} />
+                <Animated.View style={[styles.pickerSheet, { paddingBottom: Math.max(28, insets.bottom + 16), transform: [{ translateY: pickerSheetAnim }] }]}>
+                  <View style={styles.pickerHandle} />
                   <View style={styles.pickerHeader}>
-                    <Text style={styles.pickerTitle}>When do you want to leave?</Text>
-                    <Text style={styles.pickerSubtitle}>
-                      Starting {formatDateTimeLabel(startAt)}
+                    <Text style={styles.pickerTitle}>
+                      {pickerField === "start" ? "Arrival time" : "Departure time"}
                     </Text>
+                    {pickerField === "end" ? (
+                      <Text style={styles.pickerSubtitle}>Arriving {formatTimeLabel(startAt)}, {formatDateLabel(startAt)}</Text>
+                    ) : null}
                   </View>
-                  {pickerField === "end" ? (
-                    <>
-                      <Text style={styles.pickerQuickTitle}>Quick select a duration</Text>
+                  {pickerField === "end" ? (() => {
+                    const activeHours = draftDate
+                      ? Math.round((draftDate.getTime() - startAt.getTime()) / 3_600_000)
+                      : null;
+                    return (
                       <View style={styles.pickerQuickRow}>
-                        {[2, 4, 6].map((hours) => (
-                          <Pressable
-                            key={hours}
-                            style={styles.pickerQuickPill}
-                            onPress={() => applyQuickDuration(hours)}
-                          >
-                            <Text style={styles.pickerQuickText}>{hours} hr</Text>
-                          </Pressable>
-                        ))}
-                        <Pressable
-                          style={styles.pickerQuickPill}
-                          onPress={() => applyQuickDuration(24 * 30)}
-                        >
-                          <Text style={styles.pickerQuickText}>Monthly</Text>
-                        </Pressable>
+                        {([1, 2, 4, 8] as const).map((hours) => {
+                          const active = activeHours === hours;
+                          return (
+                            <Pressable
+                              key={hours}
+                              style={[styles.pickerQuickPill, active && styles.pickerQuickPillActive]}
+                              onPress={() => applyQuickDuration(hours)}
+                            >
+                              <Text style={[styles.pickerQuickText, active && styles.pickerQuickTextActive]}>{hours}h</Text>
+                            </Pressable>
+                          );
+                        })}
+                        {(() => {
+                          const active = activeHours === 24 * 30;
+                          return (
+                            <Pressable
+                              style={[styles.pickerQuickPill, active && styles.pickerQuickPillActive]}
+                              onPress={() => applyQuickDuration(24 * 30)}
+                            >
+                              <Text style={[styles.pickerQuickText, active && styles.pickerQuickTextActive]}>Monthly</Text>
+                            </Pressable>
+                          );
+                        })()}
                       </View>
-                    </>
-                  ) : null}
-                  <DatePicker
+                    );
+                  })() : null}
+                  <DrumRollPicker
                     date={draftDate ?? (pickerField === "start" ? startAt : endAt)}
-                    mode="datetime"
-                        minuteInterval={30}
-                    onDateChange={(date) => setDraftDate(date)}
+                    minuteInterval={15}
+                    onChange={(date) => setDraftDate(date)}
+                    drumRef={drumPickerRef}
                   />
                   <View style={styles.pickerFooter}>
                     <Pressable
-                      style={styles.pickerFooterGhost}
-                      onPress={() => {
-                        setPickerVisible(false);
-                        setDraftDate(null);
-                      }}
-                    >
-                      <Text style={styles.pickerFooterGhostText}>Back</Text>
-                    </Pressable>
-                    <Pressable
-                      style={styles.pickerFooterPrimary}
+                      style={({ pressed }) => [styles.pickerFooterPrimary, pressed && { opacity: 0.88 }]}
                       onPress={() => {
                         const next = draftDate ?? (pickerField === "start" ? startAt : endAt);
                         if (pickerField === "start") {
@@ -1725,11 +1743,17 @@ export function SearchScreen({ navigation }: Props) {
                       }}
                     >
                       <Text style={styles.pickerFooterPrimaryText}>
-                        {pickerField === "start" ? "Next" : "Search"}
+                        {pickerField === "start" ? "Confirm arrival time" : "Search parking"}
                       </Text>
                     </Pressable>
+                    <Pressable
+                      style={styles.pickerFooterCancel}
+                      onPress={() => { setPickerVisible(false); setDraftDate(null); }}
+                    >
+                      <Text style={styles.pickerFooterCancelText}>Cancel</Text>
+                    </Pressable>
                   </View>
-                </View>
+                </Animated.View>
               </View>
             </Modal>
           ) : (
@@ -1738,7 +1762,7 @@ export function SearchScreen({ navigation }: Props) {
               open={pickerVisible}
               date={draftDate ?? (pickerField === "start" ? startAt : endAt)}
               mode="datetime"
-              minuteInterval={30}
+              minuteInterval={15}
               onConfirm={(date) => {
                 setDraftDate(date);
                 if (pickerField === "start") {
@@ -1815,36 +1839,21 @@ const styles = StyleSheet.create({
   map: {
     ...StyleSheet.absoluteFillObject,
   },
-  mapPlaceholder: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.appBg,
-  },
   mapLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.16)",
+    backgroundColor: colors.appBg,
   },
   mapLoadingBubble: {
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.88)",
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-  },
-  mapLoadingIcon: {
-    height: 120,
-    width: 120,
+    gap: 10,
   },
   mapLoadingText: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: -8,
+    color: colors.textSoft,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    letterSpacing: 0.1,
   },
   overlay: {
     left: spacing.screenX,
@@ -1884,6 +1893,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 18,
     flex: 1,
+    color: colors.text,
+  },
+  searchInputPlaceholder: {
+    color: "#98a2b3",
   },
   clearButton: {
     alignItems: "center",
@@ -2145,181 +2158,208 @@ const styles = StyleSheet.create({
     marginTop: 8,
     overflow: "hidden",
   },
+  // ── Search sheet ──────────────────────────────────────────────
   searchOverlay: {
-    backgroundColor: colors.cardBg,
     bottom: 0,
     left: 0,
     position: "absolute",
     right: 0,
     top: 0,
     zIndex: 40,
+    backgroundColor: "#ffffff",
   },
   searchPanel: {
     flex: 1,
+    backgroundColor: "#ffffff",
   },
-  searchHeader: {
+
+  // Top bar — back arrow + input in one row
+  searchTopBar: {
     alignItems: "center",
-    backgroundColor: colors.accent,
+    backgroundColor: "#ffffff",
+    borderBottomColor: "#F0F2F5",
+    borderBottomWidth: 1,
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.screenX,
+    gap: 8,
+    paddingHorizontal: 12,
     paddingBottom: 12,
   },
-  searchHeaderTitle: {
-    ...textStyles.titleSmall,
-    color: "#ffffff",
-  },
-  headerIconButton: {
+  searchBackBtn: {
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 44,
-    paddingVertical: 6,
+    width: 36,
+    height: 44,
+    flexShrink: 0,
   },
-  headerIconText: {
-    ...textStyles.bodyStrong,
-    color: "#ffffff",
-  },
-  searchHeaderInput: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.screenX,
-    paddingBottom: 16,
-  },
-  searchOverlayInputShell: {
+  searchInputShell: {
     alignItems: "center",
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: radius.card,
+    backgroundColor: "#F7F8FA",
+    borderColor: "#E8EDF2",
+    borderRadius: 14,
     borderWidth: 1,
+    flex: 1,
     flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
   },
-  searchOverlayInput: {
-    ...textStyles.bodyMedium,
+  searchInputField: {
+    flex: 1,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 15,
+    color: "#111827",
+  },
+
+  // Body — unified list, no separate cards
+  searchBody: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+  },
+  searchList: {
+    backgroundColor: "#ffffff",
+    borderTopWidth: 0,
+  },
+
+  // Location row
+  searchRowLocation: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F2F5",
+  },
+  searchRowIconLocate: {
+    backgroundColor: "#edf7f2",
+  },
+  searchLocationTitle: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: "#111827",
+  },
+
+  // Section header row with inline toggle
+  searchSectionHeader: {
+    alignItems: "center",
+    backgroundColor: "#F7F8FA",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F2F5",
+    borderTopWidth: 1,
+    borderTopColor: "#F0F2F5",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  searchSectionLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: "#9ca3af",
+    letterSpacing: 0.2,
+  },
+  searchToggle: {
+    backgroundColor: "#EAECF0",
+    borderRadius: 8,
+    flexDirection: "row",
+    gap: 2,
+    padding: 2,
+  },
+  searchToggleBtn: {
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  searchToggleBtnActive: {
+    backgroundColor: "#ffffff",
+  },
+  searchToggleText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: "#9ca3af",
+  },
+  searchToggleTextActive: {
+    color: "#111827",
+  },
+
+  // Rows
+  searchRow: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderBottomColor: "#F0F2F5",
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+  },
+  searchRowPressed: {
+    backgroundColor: "#F7F8FA",
+  },
+  searchRowPress: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: 12,
+  },
+  searchRowIcon: {
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    borderRadius: 20,
+    flexShrink: 0,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  searchRowIconHeart: {
+    backgroundColor: "#edf7f2",
+  },
+  searchRowCopy: {
     flex: 1,
   },
-  overlayClearButton: {
+  searchRowTitle: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: "#111827",
+  },
+  searchRowSub: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: "#6b7280",
+    marginTop: 2,
+  },
+  searchRemoveBtn: {
     alignItems: "center",
-    backgroundColor: "#f1f5f9",
-    borderRadius: 999,
     height: 26,
     justifyContent: "center",
     width: 26,
+    flexShrink: 0,
   },
-  overlayClearButtonText: {
-    color: "#475467",
-    fontSize: 18,
-    fontWeight: "600",
-    lineHeight: 20,
-  },
-  searchContent: {
-    backgroundColor: colors.cardBg,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    flex: 1,
+
+  // Empty
+  searchEmptyRow: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingVertical: 16,
   },
-  tabRow: {
-    flexDirection: "row",
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: "hidden",
+  searchEmptyText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    color: "#9ca3af",
   },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 10,
+  searchEmptyState: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    paddingVertical: 28,
   },
-  tabButtonActive: {
-    backgroundColor: "#0f172a",
+  searchEmptyStateText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    color: "#9ca3af",
+    marginTop: 0,
   },
-  tabText: {
-    ...textStyles.bodyStrong,
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  tabTextActive: {
-    color: "#ffffff",
-  },
-  searchResults: {
-    marginTop: 16,
-  },
-  resultsGroup: {
-    marginTop: 12,
-  },
-  resultRow: {
-    backgroundColor: "#ffffff",
-    borderBottomColor: "#e5e7eb",
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-    width: "100%",
-  },
-  currentLocationRow: {
-    backgroundColor: "#f8fafc",
-    borderColor: "#e5e7eb",
-  },
-  resultRowPress: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    gap: 12,
-  },
-  resultIcon: {
-    alignItems: "center",
-    backgroundColor: "#e6f9f5",
-    borderRadius: 20,
-    height: 40,
-    justifyContent: "center",
-    width: 40,
-  },
-  resultIconDot: {
-    backgroundColor: "#0fa968",
-    borderRadius: 6,
-    height: 12,
-    width: 12,
-  },
-  resultCopy: {
-    flex: 1,
-  },
-  resultTitle: {
-    ...textStyles.bodyStrong,
-    fontSize: 15,
-    color: colors.text,
-  },
-  resultSubtitle: {
-    ...textStyles.bodyMedium,
-    marginTop: 2,
-  },
-  resultRemove: {
-    alignItems: "center",
-    backgroundColor: "#f1f5f9",
-    borderRadius: 14,
-    height: 28,
-    justifyContent: "center",
-    width: 28,
-  },
-  resultRemoveText: {
+
+  emptyText: {
     color: "#6b7280",
-    fontSize: 16,
-    fontWeight: "600",
-    lineHeight: 18,
+    fontSize: 13,
   },
   sectionLabel: {
     ...textStyles.meta,
     color: colors.text,
     letterSpacing: 0.4,
     marginBottom: 10,
-  },
-  emptyText: {
-    color: "#6b7280",
-    fontSize: 13,
   },
   dateRow: {
     flexDirection: "row",
@@ -2395,87 +2435,96 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   pickerBackdrop: {
-    backgroundColor: "rgba(15, 23, 42, 0.4)",
-    bottom: 0,
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "flex-end",
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
   },
   pickerSheet: {
     backgroundColor: "#ffffff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    marginBottom: 24,
-    paddingBottom: 24,
+    paddingBottom: 28,
     paddingHorizontal: 16,
-    paddingTop: 12,
-    marginHorizontal: 0,
+    paddingTop: 6,
+  },
+  pickerHandle: {
+    alignSelf: "center",
+    backgroundColor: "#E0E4EA",
+    borderRadius: 3,
+    height: 4,
+    marginBottom: 10,
+    width: 36,
   },
   pickerHeader: {
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 8,
   },
   pickerTitle: {
-    ...textStyles.sectionTitle,
-    textAlign: "center",
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 16,
+    color: "#111827",
+    letterSpacing: -0.2,
   },
   pickerSubtitle: {
-    ...textStyles.meta,
-    color: colors.textSoft,
-    marginTop: 4,
-    textAlign: "center",
-  },
-  pickerQuickTitle: {
-    color: "#98a2b3",
-    fontSize: 11,
-    fontWeight: "600",
-    textAlign: "center",
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: "#9ca3af",
+    marginTop: 2,
   },
   pickerQuickRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 10,
-    marginTop: 8,
-    marginBottom: 8,
-    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 10,
   },
   pickerQuickPill: {
     backgroundColor: "#F3F4F6",
     borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  pickerQuickText: {
-    ...textStyles.meta,
-  },
-  pickerFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 16,
-  },
-  pickerFooterGhost: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  pickerFooterGhostText: {
-    ...textStyles.bodyStrong,
-    fontSize: 13,
-    color: "#0a8050",
-  },
-  pickerFooterPrimary: {
-    backgroundColor: "#0a8050",
-    borderRadius: 8,
     paddingHorizontal: 18,
     paddingVertical: 10,
-    minWidth: 90,
+  },
+  pickerQuickPillActive: {
+    backgroundColor: "#0a8050",
+  },
+  pickerQuickText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: "#374151",
+  },
+  pickerQuickTextActive: {
+    color: "#ffffff",
+  },
+  pickerFooter: {
     alignItems: "center",
+    marginTop: 14,
+    gap: 4,
+  },
+  pickerFooterPrimary: {
+    alignItems: "center",
+    alignSelf: "stretch",
+    backgroundColor: "#0a8050",
+    borderRadius: 999,
+    paddingVertical: 16,
+    shadowColor: "#0a8050",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    elevation: 5,
   },
   pickerFooterPrimaryText: {
-    ...textStyles.button,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 16,
+    color: "#ffffff",
+    letterSpacing: -0.2,
+  },
+  pickerFooterCancel: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  pickerFooterCancelText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
+    color: "#9ca3af",
   },
   suggestionItem: {
     borderBottomColor: "#f2f4f7",

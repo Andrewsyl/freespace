@@ -220,9 +220,9 @@ export default function DashboardPage() {
         {/* Tabs */}
         {driverBookings.length > 0 && (() => {
           const now = new Date();
-          const upcoming = driverBookings.filter((b) => new Date(b.startTime) > now && b.status !== "canceled");
-          const active   = driverBookings.filter((b) => new Date(b.startTime) <= now && new Date(b.endTime) >= now && b.status !== "canceled");
-          const past     = driverBookings.filter((b) => b.status === "canceled" || new Date(b.endTime) < now);
+          const upcoming = driverBookings.filter((b) => new Date(b.startTime!) > now && b.status !== "canceled");
+          const active   = driverBookings.filter((b) => new Date(b.startTime!) <= now && new Date(b.endTime!) >= now && b.status !== "canceled");
+          const past     = driverBookings.filter((b) => b.status === "canceled" || new Date(b.endTime!) < now);
           const counts: Record<string, number> = { upcoming: upcoming.length, active: active.length, past: past.length };
           const visible  = tripsTab === "upcoming" ? upcoming : tripsTab === "active" ? active : past;
           const emptyMsg: Record<string, string> = {
