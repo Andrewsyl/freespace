@@ -164,8 +164,8 @@ export function ProfileScreen({ navigation }: Props) {
 
           <Text style={styles.groupLabel}>Support</Text>
           <View style={styles.group}>
-            <Row first icon="chatbubble-outline" label="Contact support" sub="Send a message to our team" onPress={() => navigation.navigate("Welcome")} />
-            <Row icon="document-text-outline" label="Terms & privacy" sub="Legal and policies" onPress={() => navigation.navigate("Welcome")} />
+            <Row first icon="chatbubble-outline" label="Contact support" sub="Send a message to our team" onPress={() => navigation.navigate("Support")} />
+            <Row icon="document-text-outline" label="Terms & privacy" sub="Legal and policies" onPress={() => navigation.navigate("Legal")} />
           </View>
         </ScrollView>
       </SafeAreaView>

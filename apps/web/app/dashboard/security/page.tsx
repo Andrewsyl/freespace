@@ -42,7 +42,9 @@ export default function SecurityPage() {
       await logoutAllSessions(token);
       setLogoutSuccess(true);
       setTimeout(() => signOut(), 1500);
-    } catch { /* silent */ } finally { setLogoutBusy(false); }
+    } catch (e) {
+      setPwError(e instanceof Error ? e.message : "Could not sign out of all devices. Please try again.");
+    } finally { setLogoutBusy(false); }
   };
 
   const handleDelete = async () => {

@@ -15,6 +15,7 @@ export default function CheckoutPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const [listing, setListing] = useState<ListingDetail | null>(null);
+  const [listingLoading, setListingLoading] = useState(true);
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "success">("idle");
   const [error, setError] = useState<string | null>(null);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
@@ -80,7 +81,10 @@ export default function CheckoutPage() {
   useEffect(() => {
     const id = params?.id;
     if (!id) return;
-    getListing(id).then(setListing).catch(() => setError("Listing not found"));
+    getListing(id)
+      .then(setListing)
+      .catch(() => setError("This listing could not be found. It may have been removed."))
+      .finally(() => setListingLoading(false));
   }, [params?.id]);
 
   useEffect(() => {
@@ -111,10 +115,25 @@ export default function CheckoutPage() {
 
   // ── Loading / auth gates ──────────────────────────────────────────────────────
 
-  if (loading || !listing) {
+  if (loading || listingLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!listing) {
+    return (
+      <div className="min-h-screen bg-white">
+        <CheckoutNav />
+        <div className="mx-auto max-w-md px-6 py-16 text-center">
+          <p className="text-[17px] font-bold text-slate-900">Listing unavailable</p>
+          <p className="mt-2 text-[14px] text-slate-500">{error ?? "This listing could not be found."}</p>
+          <Link href="/search" className="mt-6 inline-block rounded-xl bg-brand-500 px-6 py-3 text-[14px] font-bold text-white hover:bg-brand-600">
+            Back to search
+          </Link>
+        </div>
       </div>
     );
   }
@@ -271,7 +290,7 @@ export default function CheckoutPage() {
                   Terms & Conditions
                 </Link>{" "}
                 and{" "}
-                <Link href="/legal/privacy" className="font-semibold text-slate-500 underline underline-offset-2">
+                <Link href="/legal/privacy-policy" className="font-semibold text-slate-500 underline underline-offset-2">
                   Privacy Policy
                 </Link>
                 .

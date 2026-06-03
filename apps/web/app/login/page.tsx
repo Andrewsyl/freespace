@@ -41,8 +41,8 @@ function LoginPageContent() {
     event.preventDefault();
     setNotice(null);
     try {
-      await signIn(email, password);
-      redirect(user?.name);
+      const signedInUser = await signIn(email, password);
+      redirect(signedInUser?.name);
     } catch {
       // error shown via AuthProvider
     }
@@ -51,8 +51,8 @@ function LoginPageContent() {
   const handleGoogle = async (credential: string) => {
     setNotice(null);
     try {
-      await signInWithGoogle(credential);
-      redirect(user?.name);
+      const signedInUser = await signInWithGoogle(credential);
+      redirect(signedInUser?.name);
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Google sign-in failed. Try again.");
     }

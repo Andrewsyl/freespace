@@ -78,6 +78,10 @@ export function SignInScreen({ navigation, route }: Props) {
       setError("Password must be at least 6 characters.");
       return;
     }
+    if (!acceptLegalChecked) {
+      setError("Please agree to the Terms & Privacy Policy to continue.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     setNotice(null);
@@ -215,11 +219,6 @@ export function SignInScreen({ navigation, route }: Props) {
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
             {notice ? <Text style={styles.noticeText}>{notice}</Text> : null}
-            {previewUrl ? (
-              <Pressable style={styles.linkButton} onPress={() => Linking.openURL(previewUrl)}>
-                <Text style={styles.linkButtonText}>Open verification link</Text>
-              </Pressable>
-            ) : null}
             <Pressable
               style={styles.linkButton}
               onPress={handleResend}

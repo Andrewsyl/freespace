@@ -99,7 +99,7 @@ export async function searchListings(params: SearchParams) {
   if (params.instantBook) query.set("instantBook", "true");
   const response = await fetchWithTimeout(`${baseUrl}/api/listings/search?${query.toString()}`);
   if (!response.ok) {
-    throw new Error(`Search failed (${response.status})`);
+    throw new Error(await readErrorMessage(response, `Search failed (${response.status})`));
   }
   const payload = (await response.json()) as { spaces?: ListingSummary[] };
   const spaces = payload.spaces ?? [];
@@ -147,7 +147,7 @@ export async function getListing(
     : `${baseUrl}/api/listings/${id}`;
   const response = await fetchWithTimeout(url);
   if (!response.ok) {
-    throw new Error(`Listing failed (${response.status})`);
+    throw new Error(await readErrorMessage(response, `Listing failed (${response.status})`));
   }
   const payload = (await response.json()) as { listing: ListingDetail };
   const listing: any = payload.listing ?? {};
@@ -181,7 +181,7 @@ export async function listFavorites(token: string) {
     },
   });
   if (!response.ok) {
-    throw new Error(`Favorites failed (${response.status})`);
+    throw new Error(await readErrorMessage(response, `Favorites failed (${response.status})`));
   }
   const payload = (await response.json()) as { favorites?: ListingSummary[] };
   return payload.favorites ?? [];
@@ -197,7 +197,7 @@ export async function addFavorite(token: string, listingId: string) {
     body: JSON.stringify({ listingId }),
   });
   if (!response.ok) {
-    throw new Error(`Favorite failed (${response.status})`);
+    throw new Error(await readErrorMessage(response, `Favorite failed (${response.status})`));
   }
   return (await response.json()) as { listingId: string };
 }
@@ -210,7 +210,7 @@ export async function removeFavorite(token: string, listingId: string) {
     },
   });
   if (!response.ok && response.status !== 204) {
-    throw new Error(`Remove favorite failed (${response.status})`);
+    throw new Error(await readErrorMessage(response, `Remove favorite failed (${response.status})`));
   }
 }
 
@@ -256,7 +256,7 @@ export async function getHostListings(token: string) {
   const response = await fetch(`${baseUrl}/api/listings`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) throw new Error(`Host listings failed (${response.status})`);
+  if (!response.ok) throw new Error(await readErrorMessage(response, `Host listings failed (${response.status})`));
   return (await response.json()) as { listings: { id: string }[] };
 }
 
@@ -267,7 +267,7 @@ export async function getHostEarningsSummary(token: string) {
     },
   });
   if (!response.ok) {
-    throw new Error(`Earnings failed (${response.status})`);
+    throw new Error(await readErrorMessage(response, `Earnings failed (${response.status})`));
   }
   const payload = (await response.json()) as {
     summary: { totalCents: number; feeCents: number; netCents: number; currency: string };
@@ -290,7 +290,7 @@ export async function getHostPayoutStatus(token: string) {
     },
   });
   if (!response.ok) {
-    throw new Error(`Payout status failed (${response.status})`);
+    throw new Error(await readErrorMessage(response, `Payout status failed (${response.status})`));
   }
   return (await response.json()) as HostPayoutStatus;
 }
@@ -314,7 +314,7 @@ export async function createHostPayoutLink(payload: {
     }),
   });
   if (!response.ok) {
-    throw new Error(`Payout setup failed (${response.status})`);
+    throw new Error(await readErrorMessage(response, `Payout setup failed (${response.status})`));
   }
   return (await response.json()) as { accountId: string; onboardingUrl: string | null; mock?: boolean };
 }
@@ -327,7 +327,7 @@ export async function runHostPayouts(token: string) {
     },
   });
   if (!response.ok) {
-    throw new Error(`Payout run failed (${response.status})`);
+    throw new Error(await readErrorMessage(response, `Payout run failed (${response.status})`));
   }
   return (await response.json()) as { processed: number };
 }
@@ -706,7 +706,7 @@ export async function createBooking(payload: {
     }),
   });
   if (!response.ok) {
-    throw new Error(`Booking failed (${response.status})`);
+    throw new Error(await readErrorMessage(response, `Booking failed (${response.status})`));
   }
   const data = (await response.json()) as { checkoutUrl: string };
   return data.checkoutUrl;

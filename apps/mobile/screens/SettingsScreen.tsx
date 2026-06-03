@@ -20,18 +20,36 @@ export function SettingsScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Settings</Text>
-          <Text style={styles.subtitle}>Preferences and defaults</Text>
+          <Text style={styles.subtitle}>App preferences and information</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Preferences</Text>
+          <Text style={styles.cardTitle}>Notifications</Text>
           <Text style={styles.cardBody}>
-            Configure notifications, privacy, and payment preferences here.
+            Push notification preferences are managed in your device's system settings. Booking confirmations and updates are always sent by email.
           </Text>
+          <Pressable style={styles.cardLink} onPress={() => {
+            const { Linking } = require("react-native");
+            Linking.openSettings();
+          }}>
+            <Text style={styles.cardLinkText}>Open system settings →</Text>
+          </Pressable>
         </View>
+
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Support</Text>
-          <Text style={styles.cardBody}>Need help? Contact support@freespace.ie.</Text>
+          <Text style={styles.cardBody}>For booking issues, refunds, or account questions, contact our team.</Text>
+          <Pressable style={styles.cardLink} onPress={() => navigation.navigate("Support")}>
+            <Text style={styles.cardLinkText}>Contact support →</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Legal</Text>
+          <Text style={styles.cardBody}>View our Terms of Service and Privacy Policy.</Text>
+          <Pressable style={styles.cardLink} onPress={() => navigation.navigate("Legal")}>
+            <Text style={styles.cardLinkText}>Terms &amp; Privacy →</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -91,6 +109,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     lineHeight: 20,
+  },
+  cardLink: { marginTop: 10 },
+  cardLinkText: {
+    color: "#0a8050",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
   },
   cardBody: {
     color: colors.textMuted,

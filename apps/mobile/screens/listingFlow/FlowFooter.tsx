@@ -15,7 +15,7 @@ type Props = {
 export function FlowFooter({ onBack, primaryLabel, onPrimary, primaryDisabled = false, skipLabel, onSkip }: Props) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+    <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom + 8, 20) }]}>
       {skipLabel && onSkip ? (
         <Pressable style={styles.skipButton} onPress={onSkip}>
           <Text style={styles.skipButtonText}>{skipLabel}</Text>

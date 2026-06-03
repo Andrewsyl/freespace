@@ -38,7 +38,7 @@ import { ArrowDownUp, Cctv, EvCharger, Home, Fence, IdCard, KeyRound } from "luc
 type Props = NativeStackScreenProps<RootStackParamList, "Listing">;
 
 const FEATURE_ICON_URL: Record<string, string> = {
-  cctv:     "https://img.icons8.com/ios/96/camera-identification.png",
+  cctv:     "https://img.icons8.com/ios/96/security-camera.png",
   ev:       "https://img.icons8.com/ios/96/lightning-bolt.png",
   sheltered:"https://img.icons8.com/ios/96/garage.png",
   lit:      "https://img.icons8.com/ios/96/light-on.png",
@@ -77,6 +77,7 @@ const getAddressWithoutHouseNumber = (address: string) => {
 };
 
 const FeatureIcon = ({ type, size = 22 }: { type: string; size?: number }) => {
+  if (type === "cctv") return <Cctv size={size} color="#6b7280" strokeWidth={1.75} />;
   const url = FEATURE_ICON_URL[type] ?? FEATURE_ICON_URL.sheltered;
   return <Image source={{ uri: url }} style={{ width: size, height: size }} resizeMode="contain" />;
 };
@@ -255,34 +256,26 @@ export function ListingScreen({ navigation, route }: Props) {
   }, [listing?.image_urls, mapsKey, streetViewLocation]);
 
   const amenities = listing?.amenities ?? [];
-  const featureRows = amenities.length ? amenities : ["CCTV", "EV charging", "Gated", "Permit required"];
   const featureLabels = useMemo(
-    () => featureRows.map((v) => (v ? v.charAt(0).toUpperCase() + v.slice(1) : v)),
-    [featureRows]
+    () => amenities.map((v) => {
+      if (!v) return v;
+      if (v.toLowerCase() === "cctv") return "CCTV";
+      return v.charAt(0).toUpperCase() + v.slice(1);
+    }),
+    [amenities]
   );
 
-  const aboutText =
-    listing?.description ??
-    listing?.availability_text ??
-    "Secure off-street parking space in a quiet residential area. The space is well-lit and monitored, with easy access from the main road. Ideal for commuters or longer stays, with clear signage and hassle-free entry.";
-
-  const isOpen24 =
-    /24\s*\/\s*7|24\s*hours|open\s*24|always available|available every day|every day|monday\s*-\s*sunday/i.test(
-      aboutText + " " + (listing?.availability_text ?? "")
-    );
+  const aboutText = listing?.description ?? listing?.availability_text ?? null;
 
   const availabilityFallbackText = useMemo(() => {
     const raw = (listing?.availability_text ?? "").trim();
-    if (!raw) {
-      if (isOpen24 || listing?.is_available === true) return "All day";
-      return "Check availability";
-    }
+    if (!raw) return null;
     if (/24\s*\/\s*7|24\s*hours|open\s*24|always available|available every day|every day|monday\s*-\s*sunday/i.test(raw))
-      return "All day";
+      return "24/7";
     if (/closed|by appointment|weekdays|weekends|mon|tue|wed|thu|fri|sat|sun|\d{1,2}:\d{2}/i.test(raw) && raw.length <= 60)
       return raw;
-    return "All day";
-  }, [isOpen24, listing?.availability_text, listing?.is_available]);
+    return raw;
+  }, [listing?.availability_text]);
 
   const availabilityEntries = (listing as { availabilitySchedule?: { startsAt: string; endsAt: string; repeatWeekdays: number[] }[] })?.availabilitySchedule ?? [];
   const hasWeeklyAvailability = availabilityEntries.some(
@@ -594,22 +587,29 @@ export function ListingScreen({ navigation, route }: Props) {
                 </View>
 
                 {/* ── About ────────────────────────────────── */}
-                <View style={styles.sectionDivider} />
-                <Pressable
-                  style={styles.section}
-                  onPress={() => { if (aboutText.length > 140) setShowFullAbout((p) => !p); }}
-                >
-                  <Text style={styles.sectionTitle}>About this space</Text>
-                  <Text style={styles.sectionBody} numberOfLines={showFullAbout ? undefined : 3}>
-                    {aboutText}
-                  </Text>
-                  {aboutText.length > 140 && (
-                    <Text style={styles.readMore}>{showFullAbout ? "View less" : "View full description"}</Text>
-                  )}
-                </Pressable>
+                {aboutText ? (
+                  <>
+                    <View style={styles.sectionDivider} />
+                    <Pressable
+                      style={styles.section}
+                      onPress={() => { if (aboutText.length > 140) setShowFullAbout((p) => !p); }}
+                    >
+                      <Text style={styles.sectionTitle}>About this space</Text>
+                      <Text style={styles.sectionBody} numberOfLines={showFullAbout ? undefined : 3}>
+                        {aboutText}
+                      </Text>
+                      {aboutText.length > 140 && (
+                        <Text style={styles.readMore}>{showFullAbout ? "View less" : "View full description"}</Text>
+                      )}
+                    </Pressable>
+                  </>
+                ) : null}
 
                 {/* ── Features (horizontal scroll chips) ───── */}
+                {featureLabels.length > 0 && (
                 <View style={styles.sectionDivider} />
+                )}
+                {featureLabels.length > 0 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Features</Text>
                   <View style={styles.chipsGrid}>
@@ -625,6 +625,7 @@ export function ListingScreen({ navigation, route }: Props) {
                     ))}
                   </View>
                 </View>
+                )}
 
                 <View style={styles.sectionDivider} />
                 <View style={styles.section}>

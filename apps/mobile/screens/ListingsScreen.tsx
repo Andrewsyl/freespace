@@ -225,6 +225,10 @@ export function ListingsScreen({ navigation }: Props) {
                       {payoutBusy ? "Opening…" : "Complete payout setup"}
                     </Text>
                   </Pressable>
+                ) : payoutIsMock && !payoutStatus.payoutsEnabled ? (
+                  <Text style={styles.payoutHint}>
+                    Running in test mode. Connect a real Stripe account to enable live payouts.
+                  </Text>
                 ) : null}
               </View>
             ) : null}

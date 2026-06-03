@@ -170,6 +170,9 @@ export function PaymentsScreen() {
         <View style={styles.emptyState}>
           <Text style={styles.title}>Payments</Text>
           <Text style={styles.subtitle}>Sign in to manage cards and view charges.</Text>
+          <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("SignIn")}>
+            <Text style={styles.primaryButtonText}>Sign in</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -519,5 +522,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
+  },
+  primaryButton: {
+    alignItems: "center",
+    backgroundColor: "#0a8050",
+    borderRadius: 12,
+    marginTop: 20,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+  },
+  primaryButtonText: {
+    color: "#fff",
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 15,
   },
 });

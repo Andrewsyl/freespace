@@ -84,14 +84,6 @@ function ResetPasswordPageContent() {
             <p className="mt-2 text-[14px] leading-6 text-slate-500">
               If an account exists for <strong className="font-semibold text-slate-800">{email}</strong>, we sent a reset link.
             </p>
-            {previewUrl && (
-              <div className="mt-4 w-full rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left text-[13px] text-amber-800">
-                <p className="font-semibold">Dev — mailer not configured</p>
-                <a href={previewUrl} className="mt-2 inline-block rounded-xl bg-amber-600 px-4 py-2 text-[13px] font-semibold text-white">
-                  Open reset link
-                </a>
-              </div>
-            )}
             <Link href="/login" className="mt-6 text-[15px] font-semibold text-brand-600">Back to login</Link>
           </div>
         ) : step === "request" ? (

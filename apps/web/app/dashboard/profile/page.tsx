@@ -6,7 +6,7 @@ import { useAuth } from "../../../components/AuthProvider";
 import { requestEmailVerification } from "../../../lib/api";
 
 export default function ProfilePage() {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -20,17 +20,6 @@ export default function ProfilePage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send verification email");
     } finally { setSending(false); }
-  };
-
-  const handleDelete = async () => {
-    if (!confirm("Delete your account permanently? This cannot be undone.")) return;
-    setDeleting(true); setError(null);
-    try {
-      await deleteAccount(token ?? undefined);
-      signOut();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete account");
-    } finally { setDeleting(false); }
   };
 
   return (

@@ -82,7 +82,7 @@ export default function SupportPage() {
                 placeholder="Describe your issue in detail…"
                 className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 resize-none"
               />
-              <p className="mt-1 text-right text-[11px] text-slate-400">{message.length} / 10 min</p>
+              <p className="mt-1 text-right text-[11px] text-slate-400">{message.length} characters (10 minimum)</p>
             </div>
             <button
               type="submit"

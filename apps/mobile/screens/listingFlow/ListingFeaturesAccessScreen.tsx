@@ -2,7 +2,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image, KeyboardAvoidingView, LayoutChangeEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRef, useState } from "react";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { CircleCheck } from "lucide-react-native";
+import { CircleCheck, Cctv } from "lucide-react-native";
 import { TextInput as AppTextInput } from "../../components/ui";
 import { spacing, textStyles } from "../../styles/theme";
 import { StepProgress } from "./StepProgress";
@@ -54,7 +54,7 @@ const gatedAccessChoices = [
 const transparentColor = "transparent";
 
 const FEATURE_ICON_URL: Record<string, string> = {
-  "CCTV":              "https://img.icons8.com/ios/96/camera-identification.png",
+  "CCTV":              "https://img.icons8.com/ios/96/security-camera.png",
   "EV charging":       "https://img.icons8.com/ios/96/lightning-bolt.png",
   "Sheltered":         "https://img.icons8.com/ios/96/garage.png",
   "Covered":           "https://img.icons8.com/ios/96/garage.png",
@@ -69,7 +69,8 @@ const FEATURE_ICON_URL: Record<string, string> = {
   "Wide bay":          "https://img.icons8.com/ios/96/expand.png",
 };
 
-function FeatureIcon({ option }: { option: string; active: boolean }) {
+function FeatureIcon({ option, active }: { option: string; active: boolean }) {
+  if (option === "CCTV") return <Cctv size={18} color={active ? hostFlowColors.accent : "#6b7280"} strokeWidth={1.75} />;
   const url = FEATURE_ICON_URL[option] ?? "https://img.icons8.com/ios/96/garage.png";
   return <Image source={{ uri: url }} style={{ width: 18, height: 18 }} resizeMode="contain" />;
 }

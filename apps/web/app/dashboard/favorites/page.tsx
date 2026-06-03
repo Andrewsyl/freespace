@@ -34,7 +34,9 @@ export default function FavouritesPage() {
     try {
       await removeFavourite(id, token);
       setFavourites((prev) => prev.filter((f) => f.id !== id));
-    } catch { } finally {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not remove favourite.");
+    } finally {
       setRemoving((prev) => { const next = new Set(prev); next.delete(id); return next; });
     }
   };

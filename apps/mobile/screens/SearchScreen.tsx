@@ -1420,7 +1420,7 @@ export function SearchScreen({ navigation }: Props) {
                       <Text
                         style={[styles.chipText, securityLevel === level && styles.chipTextActive]}
                       >
-                        {level}
+                        {level === "cctv" ? "CCTV" : level.charAt(0).toUpperCase() + level.slice(1)}
                       </Text>
                     </Pressable>
                   ))}

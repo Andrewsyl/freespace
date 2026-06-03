@@ -131,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "password",
         userId: res.user.id,
       });
+      return res.user;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Login failed";
       setError(msg);
@@ -194,6 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "google",
         userId: res.user.id,
       });
+      return res.user;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Google sign-in failed";
       setError(msg);

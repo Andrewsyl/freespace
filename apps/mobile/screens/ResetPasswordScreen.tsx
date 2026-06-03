@@ -57,7 +57,6 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
     setNotice(null);
     try {
       const result = await requestPasswordReset(trimmed);
-      setPreviewUrl(result.previewUrl ?? null);
       setNotice("If an account exists, we sent a reset link. Check your inbox and tap the link.");
       setStep("reset");
     } catch (err) {
@@ -146,16 +145,6 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
               </>
             ) : (
               <>
-                {previewUrl && !launchedFromEmailLink ? (
-                  <View style={styles.previewRow}>
-                    <Button
-                      title="Open reset link"
-                      size="medium"
-                      style={styles.linkButton}
-                      onPress={() => Linking.openURL(previewUrl)}
-                    />
-                  </View>
-                ) : null}
                 <View
                   style={styles.field}
                   onLayout={(event) => { passwordFieldY.current = event.nativeEvent.layout.y; }}

@@ -61,6 +61,8 @@ export default function HostDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [payoutBusy, setPayoutBusy] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
 
   const loadAll = async () => {
@@ -91,13 +93,14 @@ export default function HostDashboardPage() {
 
   const handleDelete = async (id: string) => {
     if (!token) return;
-    if (!confirm("Delete this listing?")) return;
     setDeletingId(id);
+    setDeleteError(null);
     try {
       await deleteListing(id, token);
       setListings((prev) => prev.filter((l) => l.id !== id));
+      setConfirmDeleteId(null);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Could not delete listing");
+      setDeleteError(err instanceof Error ? err.message : "Could not delete listing");
     } finally {
       setDeletingId(null);
     }
@@ -299,13 +302,31 @@ export default function HostDashboardPage() {
                             </a>
                           </>
                         )}
-                        <button
-                          onClick={() => handleDelete(listing.id)}
-                          disabled={deletingId === listing.id}
-                          className="ml-auto rounded-full border border-rose-200 px-3 py-1 text-[11px] font-semibold text-rose-600 active:bg-rose-50 disabled:opacity-50"
-                        >
-                          {deletingId === listing.id ? "Deleting…" : "Delete"}
-                        </button>
+                        {confirmDeleteId === listing.id ? (
+                          <div className="ml-auto flex items-center gap-2">
+                            {deleteError && <span className="text-[11px] text-rose-600">{deleteError}</span>}
+                            <button
+                              onClick={() => handleDelete(listing.id)}
+                              disabled={deletingId === listing.id}
+                              className="rounded-full bg-rose-600 px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
+                            >
+                              {deletingId === listing.id ? "Deleting…" : "Confirm delete"}
+                            </button>
+                            <button
+                              onClick={() => { setConfirmDeleteId(null); setDeleteError(null); }}
+                              className="rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-600"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteId(listing.id)}
+                            className="ml-auto rounded-full border border-rose-200 px-3 py-1 text-[11px] font-semibold text-rose-600 hover:bg-rose-50"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

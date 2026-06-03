@@ -320,6 +320,7 @@ export function MobileSearchLanding({
         </div>
       </div>
 
+
       {/* ── App download ───────────────────────────────────────────────────── */}
       <div className="mt-6 px-5">
         <h2 className="text-[20px] font-bold tracking-[-0.02em] text-[#111]">
@@ -329,11 +330,7 @@ export function MobileSearchLanding({
           The easiest way to find and book parking near you. Anytime, anywhere.
         </p>
         <div className="mt-4 flex gap-2.5">
-          <a
-            href="#"
-            aria-label="Download on the App Store"
-            className="flex items-center gap-2.5 rounded-[11px] bg-[#111] px-4 py-2.5 transition hover:bg-[#2a2a2a]"
-          >
+          <span aria-label="Download on the App Store" className="flex cursor-not-allowed items-center gap-2.5 rounded-[11px] bg-[#111] px-4 py-2.5 opacity-60">
             <svg width="18" height="22" viewBox="0 0 20 24" fill="white" aria-hidden="true">
               <path d="M16.462 12.748c-.022-2.637 2.153-3.906 2.252-3.969-1.228-1.794-3.136-2.04-3.812-2.063-1.617-.165-3.173.959-3.993.959-.836 0-2.11-.94-3.475-.913-1.78.027-3.434 1.047-4.347 2.642-1.863 3.228-.475 7.993 1.328 10.609.893 1.282 1.946 2.715 3.32 2.663 1.34-.055 1.843-.858 3.462-.858 1.603 0 2.072.858 3.473.827 1.44-.024 2.35-1.297 3.226-2.588.027-.019.053-.037.078-.058-1.395-.636-2.49-1.991-2.512-4.251zM13.98 4.371c.74-.896 1.24-2.136 1.103-3.371-1.068.044-2.361.711-3.127 1.607-.686.793-1.288 2.07-1.127 3.283 1.194.09 2.413-.605 3.151-1.519z"/>
             </svg>
@@ -341,12 +338,8 @@ export function MobileSearchLanding({
               <p className="text-[9px] leading-none text-white/70">Download on the</p>
               <p className="text-[14px] font-semibold leading-tight text-white">App Store</p>
             </div>
-          </a>
-          <a
-            href="#"
-            aria-label="Get it on Google Play"
-            className="flex items-center gap-2.5 rounded-[11px] bg-[#111] px-4 py-2.5 transition hover:bg-[#2a2a2a]"
-          >
+          </span>
+          <span aria-label="Get it on Google Play" className="flex cursor-not-allowed items-center gap-2.5 rounded-[11px] bg-[#111] px-4 py-2.5 opacity-60">
             <svg width="18" height="20" viewBox="0 0 20 22" fill="none" aria-hidden="true">
               <path d="M.5 1.2C.19 1.54.01 2.06.01 2.73v16.54c0 .67.18 1.19.49 1.53l.08.07 9.27-9.27v-.22L.58 1.13.5 1.2z" fill="url(#gp-a)"/>
               <path d="M12.94 14.73l-3.09-3.09v-.22l3.09-3.09.07.04 3.66 2.08c1.05.59 1.05 1.57 0 2.17l-3.66 2.08-.07.03z" fill="url(#gp-b)"/>
@@ -371,7 +364,7 @@ export function MobileSearchLanding({
               <p className="text-[9px] leading-none text-white/70">Get it on</p>
               <p className="text-[14px] font-semibold leading-tight text-white">Google Play</p>
             </div>
-          </a>
+          </span>
         </div>
       </div>
 
