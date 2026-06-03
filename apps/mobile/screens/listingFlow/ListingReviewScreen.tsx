@@ -273,7 +273,7 @@ export function ListingReviewScreen({ navigation }: Props) {
         <Text style={styles.kicker}>
           {listingId ? "Review & update" : "Review & publish"}
         </Text>
-        <StepProgress current={7} total={7} />
+        <StepProgress current={8} total={8} />
         <Text style={styles.title}>Double‑check your details</Text>
         <Text style={styles.subtitle}>
           {listingId ? "Confirm everything looks right." : "You can edit anything after publishing."}
@@ -465,16 +465,15 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   title: {
-    color: colors.text,
+    color: hostFlowColors.text,
     fontSize: 26,
     lineHeight: 34,
     fontFamily: "PlusJakartaSans-Bold",
-    fontWeight: "600",
-    marginTop: 12,
+    marginTop: 10,
     letterSpacing: -0.8,
   },
   subtitle: {
-    color: "#667085",
+    color: hostFlowColors.textMuted,
     fontSize: 14,
     fontFamily: "PlusJakartaSans-Regular",
     marginTop: 8,

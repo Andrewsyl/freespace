@@ -36,6 +36,7 @@ export function SlimNav() {
         <nav className="hidden items-center gap-2 sm:flex">
           <NavLink href="/">Find parking</NavLink>
           <NavLink href="/host">List a space</NavLink>
+          {user && <NavLink href="/bookings">My Bookings</NavLink>}
           <div className="ml-2 h-4 w-px bg-slate-200" />
 
           {user ? (

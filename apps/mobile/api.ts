@@ -252,6 +252,14 @@ export async function unregisterPushToken(token: string, expoToken: string) {
   }
 }
 
+export async function getHostListings(token: string) {
+  const response = await fetch(`${baseUrl}/api/listings`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error(`Host listings failed (${response.status})`);
+  return (await response.json()) as { listings: { id: string }[] };
+}
+
 export async function getHostEarningsSummary(token: string) {
   const response = await fetch(`${baseUrl}/api/host/earnings`, {
     headers: {

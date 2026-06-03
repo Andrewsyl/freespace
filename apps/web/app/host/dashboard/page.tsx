@@ -138,7 +138,7 @@ export default function HostDashboardPage() {
     return (
       <div className="min-h-screen bg-white">
         <SlimNav />
-        <div className="px-5 py-10">
+        <div className="mx-auto max-w-3xl px-5 py-10">
           <p className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Sign in to continue</p>
           <p className="mt-1 text-[14px] text-slate-500">You need an account to manage your listings.</p>
           <div className="mt-5 flex flex-col gap-3">
@@ -159,24 +159,25 @@ export default function HostDashboardPage() {
   return (
     <div className="min-h-screen bg-white">
       <SlimNav />
+      <div className="mx-auto max-w-3xl">
 
       {/* ── Page header ── */}
-      <div className="border-b border-slate-200 px-5 py-5">
+      <div className="border-b border-slate-200 px-6 py-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Host</p>
         <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Your listings</h1>
       </div>
 
       {created && (
-        <div className="mx-5 mt-4 rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] font-medium text-brand-700">
+        <div className="mt-4 rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] font-medium text-brand-700">
           Listing published successfully.
         </div>
       )}
       {error && (
-        <div className="mx-5 mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>
+        <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>
       )}
 
       {/* ── Earnings ── */}
-      <section className="border-b border-slate-200 px-5 py-6">
+      <section className="border-b border-slate-200 px-6 py-6">
         <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Earnings</h2>
         {earnings ? (
           <div className="mt-4 divide-y divide-slate-100">
@@ -201,7 +202,7 @@ export default function HostDashboardPage() {
       </section>
 
       {/* ── Payouts ── */}
-      <section className="border-b border-slate-200 px-5 py-6">
+      <section className="border-b border-slate-200 px-6 py-6">
         <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Payouts</h2>
         {payout ? (
           <div className="mt-3 space-y-3">
@@ -231,7 +232,7 @@ export default function HostDashboardPage() {
       </section>
 
       {/* ── Listings ── */}
-      <section className="px-5 py-6">
+      <section className="px-6 py-6">
         <div className="flex items-center justify-between">
           <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Spaces</h2>
           <Link
@@ -326,6 +327,7 @@ export default function HostDashboardPage() {
           </div>
         )}
       </section>
+      </div>
     </div>
   );
 }

@@ -96,6 +96,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "427792130041-a9tceqev38ttd4itkr75gr1o3df2ein0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "ie.freespace.app",
+            "certificate_hash": "50e6cdaf9ab26f1670100a9c8756f543276d3878"
+          }
+        },
+        {
           "client_id": "427792130041-fqb06k1ari8k38ch051fp7279chrqspl.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

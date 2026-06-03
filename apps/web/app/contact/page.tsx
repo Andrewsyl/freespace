@@ -6,8 +6,9 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-white">
       <SlimNav />
+      <div className="mx-auto max-w-3xl">
 
-      <div className="border-b border-slate-200 px-5 py-5">
+      <div className="border-b border-slate-200 px-6 py-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Support</p>
         <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Contact FreeSpace</h1>
         <p className="mt-1 text-[14px] text-slate-500">
@@ -15,7 +16,7 @@ export default function ContactPage() {
         </p>
       </div>
 
-      <section className="border-b border-slate-200 px-5 py-6">
+      <section className="border-b border-slate-200 px-6 py-6">
         <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Email support</h2>
         <p className="mt-3 text-[14px] leading-6 text-slate-600">
           For urgent issues, email support with your booking reference, listing title, and a description of what happened.
@@ -26,7 +27,7 @@ export default function ContactPage() {
         </a>
       </section>
 
-      <section className="px-5 py-6">
+      <section className="px-6 py-6">
         <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Common requests</h2>
         <div className="mt-4 divide-y divide-slate-100">
           {[
@@ -46,6 +47,7 @@ export default function ContactPage() {
           </Link>.
         </p>
       </section>
+      </div>
     </div>
   );
 }

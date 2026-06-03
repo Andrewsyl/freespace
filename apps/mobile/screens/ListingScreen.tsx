@@ -37,16 +37,35 @@ import { ArrowDownUp, Cctv, EvCharger, Home, Fence, IdCard, KeyRound } from "luc
 
 type Props = NativeStackScreenProps<RootStackParamList, "Listing">;
 
+const FEATURE_ICON_URL: Record<string, string> = {
+  cctv:     "https://img.icons8.com/ios/96/camera-identification.png",
+  ev:       "https://img.icons8.com/ios/96/lightning-bolt.png",
+  sheltered:"https://img.icons8.com/ios/96/garage.png",
+  lit:      "https://img.icons8.com/ios/96/light-on.png",
+  gated:    "https://img.icons8.com/ios/96/road-closure.png",
+  low:      "https://img.icons8.com/ios/96/height.png",
+  permit:   "https://img.icons8.com/ios/96/key.png",
+  code:     "https://img.icons8.com/ios/96/lock.png",
+  disabled: "https://img.icons8.com/ios/96/wheelchair.png",
+  allday:   "https://img.icons8.com/ios/96/time.png",
+  motorbike:"https://img.icons8.com/ios/96/scooter.png",
+  wide:     "https://img.icons8.com/ios/96/expand.png",
+};
+
 const getFeatureIconType = (label: string) => {
   const n = label.toLowerCase();
-  if (n.includes("low") || n.includes("clearance")) return "low";
+  if (n.includes("low") || n.includes("clearance") || n.includes("height")) return "low";
   if (n.includes("permit")) return "permit";
   if (n.includes("ev") || n.includes("charger") || n.includes("charging")) return "ev";
   if (n.includes("cctv") || n.includes("camera")) return "cctv";
-  if (n.includes("light")) return "cctv";
+  if (n.includes("light") || n.includes("lit")) return "lit";
   if (n.includes("shelter") || n.includes("covered") || n.includes("roof")) return "sheltered";
   if (n.includes("gate") || n.includes("gated") || n.includes("barrier")) return "gated";
   if (n.includes("code") || n.includes("keypad") || n.includes("entry")) return "code";
+  if (n.includes("disabled") || n.includes("access") && n.includes("wheel")) return "disabled";
+  if (n.includes("24") || n.includes("always") || n.includes("round")) return "allday";
+  if (n.includes("motorbike") || n.includes("motorcycle") || n.includes("scooter") || n.includes("bike")) return "motorbike";
+  if (n.includes("wide")) return "wide";
   return "sheltered";
 };
 
@@ -57,18 +76,9 @@ const getAddressWithoutHouseNumber = (address: string) => {
   return [firstPart || parts[0], ...parts.slice(1)].join(", ");
 };
 
-const FeatureIcon = ({ type, size = 18 }: { type: string; size?: number }) => {
-  const col = colors.text;
-  const sw = 1.7;
-  switch (type) {
-    case "low": return <ArrowDownUp size={size} color={col} strokeWidth={sw} />;
-    case "cctv": return <Cctv size={size} color={col} strokeWidth={sw} />;
-    case "permit": return <IdCard size={size} color={col} strokeWidth={sw} />;
-    case "ev": return <EvCharger size={size} color={col} strokeWidth={sw} />;
-    case "gated": return <Fence size={size} color={col} strokeWidth={sw} />;
-    case "code": return <KeyRound size={size} color={col} strokeWidth={sw} />;
-    default: return <Home size={size} color={col} strokeWidth={sw} />;
-  }
+const FeatureIcon = ({ type, size = 22 }: { type: string; size?: number }) => {
+  const url = FEATURE_ICON_URL[type] ?? FEATURE_ICON_URL.sheltered;
+  return <Image source={{ uri: url }} style={{ width: size, height: size }} resizeMode="contain" />;
 };
 
 const AVATAR_BG = ["#CCE9E6", "#FFE4C8", "#D8E4FF", "#FFD6D6", "#D6F5E3"];
@@ -606,7 +616,7 @@ export function ListingScreen({ navigation, route }: Props) {
                     {featureLabels.map((feature) => (
                       <View key={feature} style={styles.featureChip}>
                         <View style={styles.featureChipIconWrap}>
-                          <FeatureIcon type={getFeatureIconType(feature)} size={16} />
+                          <FeatureIcon type={getFeatureIconType(feature)} size={22} />
                         </View>
                         <View>
                           <Text style={styles.featureChipLabel}>{feature}</Text>

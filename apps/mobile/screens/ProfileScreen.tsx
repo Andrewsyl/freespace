@@ -5,7 +5,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { ChevronRight } from "lucide-react-native";
 import * as Notifications from "expo-notifications";
-import { requestEmailVerification } from "../api";
+import { requestEmailVerification, getHostListings } from "../api";
 import { useAuth } from "../auth";
 import { useGlobalToast } from "../components/GlobalToast";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
@@ -58,11 +58,12 @@ function Row({ icon, label, sub, onPress, right, danger, first }: RowProps) {
 
 export function ProfileScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const { showError, showSuccess } = useGlobalToast();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [sending, setSending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [hasListings, setHasListings] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -76,6 +77,13 @@ export function ProfileScreen({ navigation }: Props) {
   };
 
   useEffect(() => { void syncNotifications(); }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    getHostListings(token)
+      .then((res) => setHasListings((res?.listings?.length ?? 0) > 0))
+      .catch(() => setHasListings(false));
+  }, [token]);
 
   const handleToggleNotifications = async () => {
     if (notificationsEnabled) {
@@ -202,20 +210,22 @@ export function ProfileScreen({ navigation }: Props) {
           )}
         </Pressable>
 
-        {/* ── Hosting CTA ── */}
-        <Pressable
-          style={({ pressed }) => [styles.hostingCta, pressed && { opacity: 0.88 }]}
-          onPress={() => navigation.navigate("CreateListingFlow")}
-        >
-          <View style={styles.hostingCtaIcon}>
-            <Ionicons name="home" size={22} color={GREEN} />
-          </View>
-          <View style={styles.rowBody}>
-            <Text style={styles.hostingCtaTitle}>Got a parking space?</Text>
-            <Text style={styles.hostingCtaSub}>List it on FreeSpace and start earning</Text>
-          </View>
-          <ChevronRight size={15} color={GREEN} />
-        </Pressable>
+        {/* ── Hosting CTA — only when user has no listings ── */}
+        {hasListings === false && (
+          <Pressable
+            style={({ pressed }) => [styles.hostingCta, pressed && { opacity: 0.88 }]}
+            onPress={() => navigation.navigate("CreateListingFlow")}
+          >
+            <View style={styles.hostingCtaIcon}>
+              <Ionicons name="home" size={22} color={GREEN} />
+            </View>
+            <View style={styles.rowBody}>
+              <Text style={styles.hostingCtaTitle}>Got a parking space?</Text>
+              <Text style={styles.hostingCtaSub}>List it on FreeSpace and start earning</Text>
+            </View>
+            <ChevronRight size={15} color={GREEN} />
+          </Pressable>
+        )}
 
         {/* ── Account ── */}
         <Text style={styles.groupLabel}>Account</Text>
@@ -274,23 +284,27 @@ export function ProfileScreen({ navigation }: Props) {
           />
         </View>
 
-        {/* ── Hosting ── */}
-        <Text style={styles.groupLabel}>Hosting</Text>
-        <View style={styles.group}>
-          <Row
-            first
-            icon="home-outline"
-            label="List your space"
-            sub="Earn from your driveway or garage"
-            onPress={() => navigation.navigate("CreateListingFlow")}
-          />
-          <Row
-            icon="list-outline"
-            label="Manage spaces"
-            sub="Edit listings and availability"
-            onPress={() => navigation.navigate("Listings")}
-          />
-        </View>
+        {/* ── Hosting — only when user has listings ── */}
+        {hasListings === true && (
+          <>
+            <Text style={styles.groupLabel}>Hosting</Text>
+            <View style={styles.group}>
+              <Row
+                first
+                icon="home-outline"
+                label="List your space"
+                sub="Earn from your driveway or garage"
+                onPress={() => navigation.navigate("CreateListingFlow")}
+              />
+              <Row
+                icon="list-outline"
+                label="Manage spaces"
+                sub="Edit listings and availability"
+                onPress={() => navigation.navigate("Listings")}
+              />
+            </View>
+          </>
+        )}
 
         {/* ── Support ── */}
         <Text style={styles.groupLabel}>Support</Text>
@@ -326,13 +340,6 @@ export function ProfileScreen({ navigation }: Props) {
             icon="log-out-outline"
             label="Sign out"
             onPress={() => logout()}
-          />
-          <Row
-            icon="trash-outline"
-            label="Delete account"
-            sub="Permanently remove your profile and data"
-            danger
-            onPress={() => navigation.navigate("LoginSecurity")}
           />
         </View>
       </ScrollView>

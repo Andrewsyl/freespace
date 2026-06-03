@@ -39,6 +39,7 @@ export function FlowFooter({ onBack, primaryLabel, onPrimary, primaryDisabled = 
 
 const styles = StyleSheet.create({
   footer: {
+    backgroundColor: hostFlowColors.cardBg,
     borderTopWidth: 1,
     borderTopColor: hostFlowColors.border,
     paddingHorizontal: spacing.screenX,

@@ -218,15 +218,10 @@ export function LoginSecurityScreen({ navigation }: Props) {
               </View>
               <MaterialIcons name="chevron-right" size={20} color={colors.textSoft} />
             </Pressable>
-            <Pressable style={styles.row} onPress={handleDeleteAccount}>
-              <MaterialIcons name="delete-outline" size={22} color={colors.danger} />
-              <View style={styles.textWrap}>
-                <Text style={[styles.rowTitle, styles.rowDanger]}>Delete account</Text>
-                <Text style={styles.rowSubtitle}>Remove your data and listings permanently</Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={20} color={colors.textSoft} />
-            </Pressable>
           </View>
+          <Pressable style={styles.deleteLink} onPress={handleDeleteAccount}>
+            <Text style={styles.deleteLinkText}>Delete account</Text>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -365,6 +360,19 @@ const styles = StyleSheet.create({
   },
   rowDanger: {
     color: colors.danger,
+  },
+  deleteLink: {
+    alignSelf: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  deleteLinkText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: colors.textSoft,
+    textDecorationLine: "underline",
   },
   rowSubtitle: {
     ...textStyles.meta,

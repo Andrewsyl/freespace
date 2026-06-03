@@ -141,7 +141,7 @@ export function ListingPhotosScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.kicker}>Add photos (optional)</Text>
-        <StepProgress current={6} total={7} />
+        <StepProgress current={7} total={8} />
         <Text style={styles.title}>Show off your space</Text>
         <Text style={styles.subtitle}>
           Add multiple photos in one go. Better photos improve trust and booking conversion.
@@ -214,19 +214,18 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   title: {
-    color: colors.text,
+    color: hostFlowColors.text,
     fontSize: 26,
     lineHeight: 34,
     fontFamily: "PlusJakartaSans-Bold",
-    fontWeight: "600",
-    marginTop: 12,
+    marginTop: 10,
     letterSpacing: -0.8,
   },
   subtitle: {
-    color: "#667085",
+    color: hostFlowColors.textMuted,
     fontSize: 14,
     fontFamily: "PlusJakartaSans-Regular",
-    marginTop: 10,
+    marginTop: 8,
     lineHeight: 22,
   },
   uploadButton: {

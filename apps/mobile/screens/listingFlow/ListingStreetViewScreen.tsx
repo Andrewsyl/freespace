@@ -64,7 +64,7 @@ export function ListingStreetViewScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.kicker}>Street view</Text>
-        <StepProgress current={2} total={7} />
+        <StepProgress current={2} total={8} />
         <Text style={styles.title}>Choose your cover image</Text>
         <Text style={styles.hint}>
           Can't see your space from here? You can add your own photos at a later step.
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.screenX,
-    paddingTop: 0,
+    paddingBottom: 8,
   },
   kicker: {
     color: hostFlowColors.accent,

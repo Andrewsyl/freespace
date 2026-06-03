@@ -102,7 +102,7 @@ export default function PaymentsPage() {
 
   if (!user) {
     return (
-      <div className="px-5 py-10">
+      <div className="px-8 py-10">
         <p className="text-[14px] text-slate-600">Sign in to manage payments.</p>
         <div className="mt-4 flex flex-col gap-3">
           <Link href="/login" className="flex h-12 items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white">Sign in</Link>
@@ -120,14 +120,14 @@ export default function PaymentsPage() {
 
   const pageContent = (
     <div>
-      <div className="border-b border-slate-200 px-5 py-5">
+      <div className="border-b border-slate-200 px-6 py-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Dashboard</p>
         <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Payments</h1>
       </div>
 
-      {error && <div className="mx-5 mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">{error}</div>}
+      {error && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">{error}</div>}
 
-      <section className="border-b border-slate-200 px-5 py-6">
+      <section className="border-b border-slate-200 px-6 py-6">
         <div className="flex items-center justify-between">
           <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Saved cards</h2>
           <div className="flex flex-col items-end gap-1">
@@ -174,7 +174,7 @@ export default function PaymentsPage() {
         )}
       </section>
 
-      <section className="px-5 py-6">
+      <section className="px-6 py-6">
         <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Payment history</h2>
         {historyStatus === "loading" ? (
           <div className="mt-4 flex items-center justify-center py-8"><div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /></div>
@@ -221,11 +221,11 @@ export default function PaymentsPage() {
             <AddCardModalStripe onClose={() => setShowAdd(false)} onAdded={loadMethods} setError={setError} token={token ?? undefined} />
           ) : (
             <div className="w-full max-w-md overflow-hidden rounded-t-2xl bg-white sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="border-b border-slate-200 px-5 py-4 flex items-center justify-between">
+              <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
                 <p className="text-[15px] font-bold text-slate-900">Add card</p>
                 <button onClick={() => setShowAdd(false)} className="rounded-full border border-slate-200 px-3 py-1 text-[12px] font-semibold text-slate-600">Close</button>
               </div>
-              <div className="px-5 py-5 text-[14px] text-slate-500">Stripe is not configured for web payments.</div>
+              <div className="px-6 py-5 text-[14px] text-slate-500">Stripe is not configured for web payments.</div>
             </div>
           )}
         </div>
@@ -318,11 +318,11 @@ function AddCardModalStripe({
 
   return (
     <div className="w-full max-w-md overflow-hidden rounded-t-2xl bg-white sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
-      <div className="border-b border-slate-200 px-5 py-4 flex items-center justify-between">
+      <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
         <p className="text-[15px] font-bold text-slate-900">Add card</p>
         <button onClick={onClose} className="rounded-full border border-slate-200 px-3 py-1 text-[12px] font-semibold text-slate-600 active:bg-slate-50">Close</button>
       </div>
-      <div className="px-5 py-5 space-y-4">
+      <div className="px-6 py-5 space-y-4">
         <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
           <CardElement options={{ hidePostalCode: true, style: { base: { fontSize: "15px", color: "#0f172a", "::placeholder": { color: "#94a3b8" } } } }} />
         </div>

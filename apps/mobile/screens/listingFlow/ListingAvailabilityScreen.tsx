@@ -311,7 +311,7 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.kicker}>Availability</Text>
-        <StepProgress current={4} total={7} />
+        <StepProgress current={5} total={8} />
         <Text style={styles.title}>Set the availability for your space</Text>
         <Text style={styles.subtitle}>You can change this at any time</Text>
 
@@ -494,26 +494,25 @@ const styles = StyleSheet.create({
   },
   kicker: {
     color: hostFlowColors.accent,
-    fontFamily: "PlusJakartaSans-Bold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
     letterSpacing: 2,
     textTransform: "uppercase",
   },
   title: {
-    color: colors.text,
-    fontSize: 28,
-    lineHeight: 35,
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontWeight: "800",
-    marginTop: 14,
-    letterSpacing: -1.0,
+    color: hostFlowColors.text,
+    fontSize: 26,
+    lineHeight: 34,
+    fontFamily: "PlusJakartaSans-Bold",
+    marginTop: 10,
+    letterSpacing: -0.8,
   },
   subtitle: {
-    color: colors.textMuted,
-    fontSize: 15,
+    color: hostFlowColors.textMuted,
+    fontSize: 14,
     fontFamily: "PlusJakartaSans-Regular",
-    marginTop: 6,
-    lineHeight: 23,
+    marginTop: 8,
+    lineHeight: 22,
   },
   optionCard: {
     backgroundColor: colors.cardBg,

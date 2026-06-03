@@ -199,7 +199,7 @@ export function ListingLocationScreen({ navigation }: Props) {
                     onPress={() => void handleSelectSuggestion(suggestion)}
                   >
                     <View style={styles.suggestionIconCircle}>
-                      <MapPinned size={15} color="#0fa968" strokeWidth={2.2} />
+                      <MapPinned size={15} color={hostFlowColors.accent} strokeWidth={2.2} />
                     </View>
                     <View style={styles.suggestionCopy}>
                       <Text style={styles.suggestionText}>{mainText}</Text>
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.screenX,
-    paddingBottom: 10,
+    paddingBottom: 8,
   },
   kicker: {
     color: hostFlowColors.accent,
@@ -244,8 +244,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     lineHeight: 34,
     fontFamily: "PlusJakartaSans-Bold",
-    fontWeight: "600",
-    marginTop: 12,
+    marginTop: 10,
     letterSpacing: -0.8,
   },
 

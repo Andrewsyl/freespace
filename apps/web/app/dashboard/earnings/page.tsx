@@ -122,7 +122,7 @@ export default function EarningsPage() {
 
   if (!user) {
     return (
-      <div className="px-5 py-10">
+      <div className="px-8 py-10">
         <p className="text-[14px] text-slate-600">Sign in to view earnings.</p>
         <div className="mt-4 flex flex-col gap-3">
           <Link href="/login" className="flex h-12 items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white">Sign in</Link>
@@ -136,12 +136,12 @@ export default function EarningsPage() {
 
   return (
     <div>
-      <div className="border-b border-slate-200 px-5 py-5">
+      <div className="border-b border-slate-200 px-6 py-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Dashboard</p>
         <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Earnings</h1>
       </div>
 
-      {error && <div className="mx-5 mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}
+      {error && <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}
 
       <div className="grid grid-cols-3 divide-x divide-slate-200 border-b border-slate-200">
         <div className="flex flex-col justify-center px-4 py-4 text-center">
@@ -158,7 +158,7 @@ export default function EarningsPage() {
         </div>
       </div>
 
-      <section className="border-b border-slate-200 px-5 py-6">
+      <section className="border-b border-slate-200 px-6 py-6">
         <div className="flex items-center justify-between">
           <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Stripe payouts</h2>
           <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
@@ -179,7 +179,7 @@ export default function EarningsPage() {
         )}
       </section>
 
-      <section className="px-5 py-6">
+      <section className="px-6 py-6">
         <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">How payouts work</h2>
         <p className="mt-3 text-[14px] leading-6 text-slate-600">
           Payouts are created automatically once a confirmed booking clears the payout window. Complete Stripe onboarding first so transfers can be sent to your bank account.

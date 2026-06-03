@@ -1,9 +1,8 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { KeyboardAvoidingView, LayoutChangeEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, KeyboardAvoidingView, LayoutChangeEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRef, useState } from "react";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
-import { Accessibility, ArrowDownUp, Bike, CircleCheck, Clock, Cctv, Fence, IdCard, Lightbulb, Maximize2, Warehouse, Zap } from "lucide-react-native";
+import { CircleCheck } from "lucide-react-native";
 import { TextInput as AppTextInput } from "../../components/ui";
 import { spacing, textStyles } from "../../styles/theme";
 import { StepProgress } from "./StepProgress";
@@ -54,54 +53,25 @@ const gatedAccessChoices = [
 ] as const;
 const transparentColor = "transparent";
 
-function FeatureIcon({ option, active }: { option: string; active: boolean }) {
-  const color = active ? hostFlowColors.accent : hostFlowColors.textMuted;
-  const size = 16;
-  const strokeWidth = 2.1;
-  switch (option) {
-    case "Gated":
-    case "Gated access":
-      return <Fence size={size} color={color} strokeWidth={strokeWidth} />;
-    case "Permit required":
-      return <IdCard size={size} color={color} strokeWidth={strokeWidth} />;
-    case "EV charging":
-      return <Zap size={size} color={color} strokeWidth={strokeWidth} />;
-    case "CCTV":
-      return <Cctv size={size} color={color} strokeWidth={strokeWidth} />;
-    case "Sheltered":
-      return <Warehouse size={size} color={color} strokeWidth={strokeWidth} />;
-    case "Well lit":
-      return <Lightbulb size={size} color={color} strokeWidth={strokeWidth} />;
-    case "Height-friendly":
-      return <ArrowDownUp size={size} color={color} strokeWidth={strokeWidth} />;
-    case "Disabled access":
-      return <Accessibility size={size} color={color} strokeWidth={strokeWidth} />;
-    case "24/7 access":
-      return <Clock size={size} color={color} strokeWidth={strokeWidth} />;
-    case "Motorbike friendly":
-      return <Bike size={size} color={color} strokeWidth={strokeWidth} />;
-    case "Wide bay":
-      return <Maximize2 size={size} color={color} strokeWidth={strokeWidth} />;
-    case "Covered":
-      return (
-        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M3 11l9-7 9 7v9a1 1 0 01-1 1H4a1 1 0 01-1-1v-9z"
-            stroke={color}
-            strokeWidth={strokeWidth}
-            strokeLinejoin="round"
-          />
-          <Path
-            d="M9 14h6v7H9z"
-            stroke={color}
-            strokeWidth={strokeWidth}
-            strokeLinejoin="round"
-          />
-        </Svg>
-      );
-    default:
-      return <Cctv size={size} color={color} strokeWidth={strokeWidth} />;
-  }
+const FEATURE_ICON_URL: Record<string, string> = {
+  "CCTV":              "https://img.icons8.com/ios/96/camera-identification.png",
+  "EV charging":       "https://img.icons8.com/ios/96/lightning-bolt.png",
+  "Sheltered":         "https://img.icons8.com/ios/96/garage.png",
+  "Covered":           "https://img.icons8.com/ios/96/garage.png",
+  "Well lit":          "https://img.icons8.com/ios/96/light-on.png",
+  "Gated access":      "https://img.icons8.com/ios/96/road-closure.png",
+  "Gated":             "https://img.icons8.com/ios/96/road-closure.png",
+  "Height-friendly":   "https://img.icons8.com/ios/96/height.png",
+  "Permit required":   "https://img.icons8.com/ios/96/key.png",
+  "Disabled access":   "https://img.icons8.com/ios/96/wheelchair.png",
+  "24/7 access":       "https://img.icons8.com/ios/96/time.png",
+  "Motorbike friendly":"https://img.icons8.com/ios/96/scooter.png",
+  "Wide bay":          "https://img.icons8.com/ios/96/expand.png",
+};
+
+function FeatureIcon({ option }: { option: string; active: boolean }) {
+  const url = FEATURE_ICON_URL[option] ?? "https://img.icons8.com/ios/96/garage.png";
+  return <Image source={{ uri: url }} style={{ width: 18, height: 18 }} resizeMode="contain" />;
 }
 
 function SectionHeader({
@@ -218,17 +188,12 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.headerBlock}>
-          <View style={styles.progressShell}>
-            <StepProgress current={4} total={8} />
-          </View>
-          <View style={styles.heroCard}>
-            <Text style={styles.title}>What else should drivers know?</Text>
-            <Text style={styles.subtitle}>
-              Add the practical details that help drivers trust the space and use it without confusion.
-            </Text>
-          </View>
-        </View>
+        <Text style={styles.kicker}>Features & access</Text>
+        <StepProgress current={4} total={8} />
+        <Text style={styles.title}>What else should drivers know?</Text>
+        <Text style={styles.subtitle}>
+          Add the practical details that help drivers trust the space and use it without confusion.
+        </Text>
 
         <View style={styles.surfaceCard}>
           <SectionHeader label="FEATURES" title="What else does your space offer?" />
@@ -258,6 +223,7 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
             <Text style={styles.showMoreText}>
               {showAllFeatures ? "Show less" : `More features +${extraAccessOptions.length}`}
             </Text>
+            <Text style={styles.showMoreChevron}>{showAllFeatures ? "↑" : "↓"}</Text>
           </Pressable>
         </View>
 
@@ -477,15 +443,26 @@ const styles = StyleSheet.create({
     color: hostFlowColors.text,
   },
   showMoreBtn: {
-    alignSelf: "flex-start",
-    marginTop: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: hostFlowColors.border,
+    backgroundColor: hostFlowColors.cardBg,
   },
   showMoreText: {
     fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: hostFlowColors.text,
+  },
+  showMoreChevron: {
     fontSize: 13,
-    color: hostFlowColors.accent,
+    color: hostFlowColors.textMuted,
   },
   featureIconWrap: {
     alignItems: "center",
@@ -592,6 +569,13 @@ const styles = StyleSheet.create({
   sectionHeader: {
     marginTop: 0,
   },
+  kicker: {
+    color: hostFlowColors.accent,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+  },
   sectionLabel: {
     color: hostFlowColors.accent,
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -619,7 +603,6 @@ const styles = StyleSheet.create({
     color: hostFlowColors.textMuted,
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
-    fontWeight: "400",
     lineHeight: 22,
     marginTop: 8,
   },
@@ -635,9 +618,9 @@ const styles = StyleSheet.create({
     color: hostFlowColors.text,
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 26,
-    fontWeight: "600",
     letterSpacing: -0.8,
     lineHeight: 34,
+    marginTop: 10,
   },
   toggleGroup: {
     flexDirection: "row",

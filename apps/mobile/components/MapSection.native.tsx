@@ -87,6 +87,9 @@ export default function MapSection({
   const lastRegionRef = useRef<MapRegion>(region ?? initialRegion);
   const lastMarkerPressRef = useRef<number>(0);
   const [pinImages, setPinImages] = useState<Record<string, string>>({});
+  const [pinsReady, setPinsReady] = useState(false);
+  const [pinsVisible, setPinsVisible] = useState(false);
+  const hasEverShownPins = useRef(false);
   const pinLabelById = useMemo(
     () =>
       nextResults.reduce<Record<string, string>>((acc, listing) => {
@@ -138,7 +141,14 @@ export default function MapSection({
     // Only evict stale images once every key in the new label set has been captured.
     // This keeps old pin images alive during the capture gap so pins never flash away.
     const newSetReady = labelKeys.every((key) => Boolean(pinImages[key]));
-    if (!newSetReady) return;
+    if (!newSetReady) {
+      setPinsReady(false);
+      // Only hide on first load — once pins have been shown keep them visible
+      // so existing markers stay up while new captures run
+      if (!hasEverShownPins.current) setPinsVisible(false);
+      return;
+    }
+    setPinsReady(true);
     setPinImages((prev) => {
       const next: Record<string, string> = {};
       let changed = false;
@@ -152,6 +162,15 @@ export default function MapSection({
       return changed ? next : prev;
     });
   }, [labelKeys, pinImages]);
+
+  useEffect(() => {
+    if (!pinsReady) return;
+    const timer = setTimeout(() => {
+      hasEverShownPins.current = true;
+      setPinsVisible(true);
+    }, 32);
+    return () => clearTimeout(timer);
+  }, [pinsReady]);
 
   useEffect(() => {
     labelKeys.forEach((key) => {
@@ -207,7 +226,7 @@ export default function MapSection({
         moveOnMarkerPress={false}
         mapType="standard"
       >
-        {(freezeMarkers ? renderedResultsRef.current : nextResults).map((listing) => {
+        {pinsVisible && (freezeMarkers ? renderedResultsRef.current : nextResults).map((listing) => {
           const isSelected = selectedId === listing.id;
           const price = priceForListing ? priceForListing(listing) : Number(listing.price_per_day);
           const label =

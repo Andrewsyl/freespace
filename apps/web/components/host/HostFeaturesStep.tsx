@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import type { HostStepProps } from "./types";
-import { Camera, Zap, Home, Lightbulb, Lock, ArrowUpDown, CheckCircle, Accessibility, Clock, Bike, Maximize2 } from "lucide-react";
+import { Cctv, Zap, Home, Lightbulb, Lock, ArrowUpDown, CheckCircle, Accessibility, Clock, Bike, Maximize2 } from "lucide-react";
 
 // ── Feature chips ─────────────────────────────────────────────────────────────
 
 const COMMON_FEATURES = [
-  { label: "CCTV",           icon: <Camera size={16} strokeWidth={2.1} /> },
+  { label: "CCTV",           icon: <Cctv size={16} strokeWidth={2.1} /> },
   { label: "EV charging",    icon: <Zap size={16} strokeWidth={2.1} /> },
   { label: "Sheltered",      icon: <Home size={16} strokeWidth={2.1} /> },
   { label: "Well lit",       icon: <Lightbulb size={16} strokeWidth={2.1} /> },
@@ -100,9 +100,9 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
           <button
             type="button"
             onClick={() => setShowAllFeatures((v) => !v)}
-            className="mt-1 text-left text-[13px] font-semibold text-brand-500 hover:text-brand-600"
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-3 text-[14px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
           >
-            {showAllFeatures ? "Show less" : `More features +${EXTRA_FEATURES.length}`}
+            {showAllFeatures ? "Show less ↑" : `More features +${EXTRA_FEATURES.length} ↓`}
           </button>
         </div>
       </div>

@@ -25,7 +25,7 @@ type FlowStackParamList = {
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingPrice">;
 
-const GREEN  = "#0fa968";
+const GREEN  = hostFlowColors.accent;
 const LINE   = "#E6E6E4";
 const FG     = "#111827";
 const MUTED  = "#6b7280";
@@ -200,15 +200,12 @@ export function ListingPriceScreen({ navigation }: Props) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header — matches all other flow screens */}
-          <View style={styles.pageHeader}>
-            <Text style={styles.pageLabel}>Space pricing</Text>
-            <StepProgress current={5} total={7} />
-            <Text style={styles.pageTitle}>Set your rates</Text>
-            <Text style={styles.pageSubtitle}>
-              Choose whether this space is for short stays, monthly parking, or both.
-            </Text>
-          </View>
+          <Text style={styles.kicker}>Space pricing</Text>
+          <StepProgress current={6} total={8} />
+          <Text style={styles.title}>Set your rates</Text>
+          <Text style={styles.subtitle}>
+            Choose whether this space is for short stays, monthly parking, or both.
+          </Text>
 
           {/* Mode tabs */}
           <View style={styles.modeTabs}>
@@ -292,34 +289,30 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
 
   // ── Header ───────────────────────────────────────────────────
-  pageHeader: {
-    paddingBottom: 8,
-  },
-  pageLabel: {
+  kicker: {
+    color: hostFlowColors.accent,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
-    color: hostFlowColors.accent,
     letterSpacing: 2,
     textTransform: "uppercase",
-    marginBottom: 4,
   },
-  pageTitle: {
+  title: {
+    color: hostFlowColors.text,
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 26,
-    color: hostFlowColors.text,
     letterSpacing: -0.8,
     lineHeight: 34,
     marginTop: 10,
-    marginBottom: 4,
   },
-  pageSubtitle: {
+  subtitle: {
+    color: hostFlowColors.textMuted,
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
-    color: hostFlowColors.textMuted,
     lineHeight: 22,
+    marginTop: 8,
   },
 
-  scroll: { paddingHorizontal: spacing.screenX },
+  scroll: { paddingHorizontal: spacing.screenX, paddingTop: 0 },
 
   // ── Mode tabs ────────────────────────────────────────────────
   modeTabs: {

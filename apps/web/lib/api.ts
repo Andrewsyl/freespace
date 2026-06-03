@@ -727,7 +727,7 @@ export type AuthResponse = {
   user: { id: string; email: string; name?: string | null; role?: string; emailVerified?: boolean; phone?: string | null; phoneVerified?: boolean; vehiclePlate?: string | null; vehicleMake?: string | null; vehicleType?: string | null; vehicleColor?: string | null };
 };
 
-export async function updateMe(token: string, payload: { vehiclePlate?: string | null; vehicleMake?: string | null; vehicleType?: string | null; vehicleColor?: string | null }) {
+export async function updateMe(token: string, payload: { name?: string | null; phone?: string | null; vehiclePlate?: string | null; vehicleMake?: string | null; vehicleType?: string | null; vehicleColor?: string | null }) {
   const res = await fetch(`${API_BASE}/api/auth/me`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
@@ -736,6 +736,35 @@ export async function updateMe(token: string, payload: { vehiclePlate?: string |
   const { data, error } = await handleResponse<{ user: AuthResponse["user"] }>(res);
   if (error) throw new Error(error);
   return data!;
+}
+
+export async function changePassword(token: string, currentPassword: string, newPassword: string) {
+  const res = await fetch(`${API_BASE}/api/auth/change-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  const { error } = await handleResponse<{ ok: boolean }>(res);
+  if (error) throw new Error(error);
+}
+
+export async function logoutAllSessions(token: string) {
+  const res = await fetch(`${API_BASE}/api/auth/logout-all`, {
+    method: "POST",
+    headers: { ...authHeaders(token) },
+  });
+  const { error } = await handleResponse<{ ok: boolean }>(res);
+  if (error) throw new Error(error);
+}
+
+export async function sendSupportMessage(token: string, payload: { subject: string; message: string }) {
+  const res = await fetch(`${API_BASE}/api/support`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(payload),
+  });
+  const { error } = await handleResponse<{ ok: boolean }>(res);
+  if (error) throw new Error(error);
 }
 
 const LEGAL_VERSION = "2026-01-10";

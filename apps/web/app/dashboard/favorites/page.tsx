@@ -52,15 +52,15 @@ export default function FavouritesPage() {
   );
 
   return (
-    <>
-      <div className="border-b border-slate-200 px-5 py-5">
+    <div className="space-y-4 px-8">
+      <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Saved spaces</p>
         <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Favourites</h1>
       </div>
 
-      {error && <div className="mx-5 mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}
+      {error && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}
 
-      <div className="px-5 py-6">
+      <div>
         {status === "loading" && favourites.length === 0 && (
           <div className="flex items-center justify-center py-10">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
@@ -86,7 +86,7 @@ export default function FavouritesPage() {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
 

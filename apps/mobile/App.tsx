@@ -63,6 +63,7 @@ import { mobileEnv } from "./env";
 import { installGlobalErrorLogging } from "./logger";
 import { colors } from "./theme/colors";
 import { radius, spacing as appSpacing } from "./styles/theme";
+import { AnimatedSplash } from "./components/AnimatedSplash";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -108,6 +109,7 @@ function getSentry():
 
 export default function App() {
   const [launchComplete, setLaunchComplete] = useState(true);
+  const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
   const [fontsLoaded] = useFonts({
     "PlusJakartaSans-Regular": require("./assets/fonts/PlusJakartaSans_400Regular.ttf"),
     "PlusJakartaSans-Medium": require("./assets/fonts/PlusJakartaSans_500Medium.ttf"),
@@ -158,6 +160,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <View style={styles.app}>
+        {showAnimatedSplash && (
+          <AnimatedSplash onFinish={() => setShowAnimatedSplash(false)} />
+        )}
         <StripeProvider publishableKey={stripeKey}>
           <AuthProvider>
             <FavoritesProvider>
@@ -194,14 +199,6 @@ function AppShell() {
     (__DEV__ ? "local" : "production");
   const normalizedAppEnv = runtimeAppEnv.trim().toLowerCase();
   const showEnvBadge = normalizedAppEnv !== "production";
-
-  useEffect(() => {
-    if (!shouldShowLegalGate || !navigationRef.isReady()) return;
-    const current = navigationRef.getCurrentRoute()?.name;
-    if (current !== "SignIn") {
-      navigationRef.navigate("SignIn");
-    }
-  }, [shouldShowLegalGate]);
 
   return (
     <>

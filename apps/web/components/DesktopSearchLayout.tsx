@@ -10,7 +10,7 @@ import { FiltersPanel } from "./FiltersPanel";
 import type { SharedLayoutProps } from "./searchLayoutTypes";
 import type { Listing } from "./ListingCard";
 import { SlimNav } from "./SlimNav";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, X, ChevronLeft, ChevronRight, ChevronDown, Clock, MapPin, Cctv, Zap, Home, Lock, Accessibility, CheckCircle } from "lucide-react";
 import { calculateListingTotal, formatPriceValue, getListingRateType } from "../lib/pricing";
 
 export function DesktopSearchLayout({
@@ -40,7 +40,7 @@ export function DesktopSearchLayout({
   const [sortMode, setSortMode] = useState<"recommended" | "cheapest" | "closest">("recommended");
   const selectedListing = selectedListingId ? results.find((l) => l.id === selectedListingId) ?? null : null;
   const { start: searchStart, end: searchEnd } = useMemo(() => getSearchWindow(filters), [filters]);
-  const listingHref = useMemo(() => {
+  const checkoutHref = useMemo(() => {
     const params = new URLSearchParams();
     params.set("date", filters.date);
     params.set("startTime", filters.startTime);
@@ -48,7 +48,7 @@ export function DesktopSearchLayout({
     params.set("endTime", filters.endTime);
     if (filters.mode) params.set("mode", filters.mode);
     if (filters.monthlyPlan) params.set("monthlyPlan", filters.monthlyPlan);
-    return (listingId: string) => `/listing/${listingId}?${params.toString()}`;
+    return (listingId: string) => `/checkout/${listingId}?${params.toString()}`;
   }, [filters.date, filters.endDate, filters.endTime, filters.mode, filters.monthlyPlan, filters.startTime]);
   const getSearchPrice = useMemo(
     () => (listing: Listing) => buildSearchPriceDisplay(listing, filters, searchStart, searchEnd),
@@ -95,7 +95,7 @@ export function DesktopSearchLayout({
       <SlimNav />
 
       {/* ── Search strip ── */}
-      <div className="border-b border-[#d9dde3] bg-[#f7f8fa] px-3 pb-3 pt-2 shadow-sm">
+      <div className="border-b border-[#d9dde3] bg-[#f7f8fa] px-6 pb-3 pt-2 shadow-sm">
         <SearchForm
           initialValues={filters}
           onSearch={(f) => onSearch(f)}
@@ -106,114 +106,88 @@ export function DesktopSearchLayout({
         />
       </div>
 
-      {/* ── Two-column body ── */}
-      <div className="grid min-h-0 flex-1 min-w-0 grid-cols-[460px,1fr] gap-0 overflow-hidden pl-6 pr-0 pb-0 pt-0">
+      {/* ── Three-column body ── */}
+      <div className="flex min-h-0 flex-1 min-w-0 overflow-hidden pl-6">
 
-        {/* Left sidebar */}
-        <div className="flex h-full min-w-0 flex-col overflow-hidden">
-          <div className="relative min-h-0 flex-1 overflow-hidden">
-            <AnimatePresence mode="wait" initial={false}>
-
-              {showFilters ? (
-                <motion.div
-                  key="filters"
-                  initial={{ opacity: 0, x: 28 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 28 }}
-                  transition={{ type: "spring", damping: 28, stiffness: 400, mass: 0.75 }}
-                  className="h-full overflow-y-auto pr-1"
-                  style={{ scrollbarWidth: "thin" }}
-                >
-                  <FiltersPanel
-                    initialFilters={filters}
-                    onApply={(next) => { onSearch(next, true); setShowFilters(false); }}
-                    onCancel={() => setShowFilters(false)}
-                    onLiveChange={(f) => onSearch(f)}
-                    searchAsMove={searchAsMove}
-                    onSearchAsMove={onSearchAsMove}
-                  />
-                </motion.div>
-
-              ) : showListingOverlay && selectedListing ? (
-                <motion.div
-                  key={`overlay-${selectedListing.id}`}
-                  initial={{ opacity: 0, scale: 0.96, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.96, y: 12 }}
-                  transition={{ type: "spring", damping: 24, stiffness: 380, mass: 0.8 }}
-                  className="h-full pt-4 pr-4"
-                >
-                  <ListingOverlay
-                    listing={selectedListing}
-                    filters={filters}
-                    mode={filters.mode ?? "daily"}
-                    pricing={getSearchPrice(selectedListing)}
-                    onClose={() => setShowListingOverlay(false)}
-                    onOpen={() => router.push(listingHref(selectedListing.id) as any)}
-                  />
-                </motion.div>
-
-              ) : (
-                <motion.div
-                  key="list"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ type: "spring", damping: 28, stiffness: 380, mass: 0.75 }}
-                  className="h-full overflow-y-auto space-y-3 pb-4 pr-4 pt-4"
-                >
-                  {/* Header */}
-                  <div className="border-b border-slate-100 pb-3 pt-0.5">
-                    {/* Result count */}
-                    <div className="mb-2.5">
-                      {status === "loading" ? (
-                        <div className="h-5 w-48 animate-pulse rounded-full bg-slate-100" />
-                      ) : (
-                        <h1 className="text-[15px] font-bold text-slate-900">
-                          {results.length}{" "}
-                          <span className="font-semibold text-slate-500">
-                            {results.length === 1 ? "space" : "spaces"}
-                            {filters.location ? ` near ${filters.location.split(",")[0]}` : ""}
-                          </span>
-                        </h1>
-                      )}
-                      <p className="mt-0.5 text-[11.5px] text-slate-400">
-                        {filters.mode === "monthly"
-                          ? `${filters.date} → ${filters.endDate ?? "30 days"}`
-                          : `${filters.date} · ${filters.startTime}–${filters.endTime}`}
-                      </p>
-                    </div>
-
-                    {/* Sort tabs — full width */}
-                    <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-0.5">
-                      {SORT_TABS.map((tab) => (
-                        <button
-                          key={tab.key}
-                          type="button"
-                          onClick={() => setSortMode(tab.key)}
-                          className={`flex-1 rounded-md py-1.5 text-[12px] font-semibold transition ${
-                            sortMode === tab.key
-                              ? "bg-white text-slate-900 shadow-sm"
-                              : "text-slate-500 hover:text-slate-700"
-                          }`}
-                        >
-                          {tab.label}
-                        </button>
-                      ))}
-                    </div>
+        {/* ── Col 1: cards list (always visible) ── */}
+        <div className="flex h-full w-[520px] shrink-0 flex-col overflow-hidden border-r border-slate-200">
+          <AnimatePresence mode="wait" initial={false}>
+            {showFilters ? (
+              <motion.div
+                key="filters"
+                initial={{ opacity: 0, x: 28 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 28 }}
+                transition={{ type: "spring", damping: 28, stiffness: 400, mass: 0.75 }}
+                className="h-full overflow-y-auto px-4 py-4"
+                style={{ scrollbarWidth: "thin" }}
+              >
+                <FiltersPanel
+                  initialFilters={filters}
+                  onApply={(next) => { onSearch(next, true); setShowFilters(false); }}
+                  onCancel={() => setShowFilters(false)}
+                  onLiveChange={(f) => onSearch(f)}
+                  searchAsMove={searchAsMove}
+                  onSearchAsMove={onSearchAsMove}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="list"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ type: "spring", damping: 28, stiffness: 380, mass: 0.75 }}
+                className="flex h-full flex-col overflow-hidden"
+              >
+                {/* Header */}
+                <div className="shrink-0 border-b border-slate-100 px-4 pb-3 pt-4">
+                  <div className="mb-2.5">
+                    {status === "loading" ? (
+                      <div className="h-5 w-48 animate-pulse rounded-full bg-slate-100" />
+                    ) : (
+                      <h1 className="text-[15px] font-bold text-slate-900">
+                        {results.length}{" "}
+                        <span className="font-semibold text-slate-500">
+                          {results.length === 1 ? "space" : "spaces"}
+                          {filters.location ? ` near ${filters.location.split(",")[0]}` : ""}
+                        </span>
+                      </h1>
+                    )}
+                    <p className="mt-0.5 text-[11.5px] text-slate-400">
+                      {filters.mode === "monthly"
+                        ? `${filters.date} → ${filters.endDate ?? "30 days"}`
+                        : `${filters.date} · ${filters.startTime}–${filters.endTime}`}
+                    </p>
                   </div>
+                  <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-0.5">
+                    {SORT_TABS.map((tab) => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setSortMode(tab.key)}
+                        className={`flex-1 rounded-md py-1.5 text-[12px] font-semibold transition ${
+                          sortMode === tab.key
+                            ? "bg-white text-slate-900 shadow-sm"
+                            : "text-slate-500 hover:text-slate-700"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-                  {/* Error */}
+                {/* Scrollable cards */}
+                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3" style={{ scrollbarWidth: "thin" }}>
                   {error && (
-                    <div className="flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
+                    <div className="mb-3 flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
                       <svg className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" viewBox="0 0 24 24" fill="currentColor">
                         <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.72 6.97a.75.75 0 10-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 101.06 1.06L12 13.06l1.72 1.72a.75.75 0 101.06-1.06L13.06 12l1.72-1.72a.75.75 0 10-1.06-1.06L12 10.94l-1.72-1.72z" clipRule="evenodd" />
                       </svg>
                       <p className="text-sm text-rose-700">{error}</p>
                     </div>
                   )}
-
-                  {/* Cards */}
                   <div className="grid grid-cols-1 gap-2">
                     {status === "loading" ? (
                       Array.from({ length: 4 }).map((_, i) => <ListingCardSkeleton key={i} />)
@@ -243,77 +217,97 @@ export function DesktopSearchLayout({
                       ))
                     )}
                   </div>
-
-                  {/* Empty state */}
                   {status !== "loading" && results.length === 0 && !error && (
                     <EmptyState location={filters.location} />
                   )}
-                </motion.div>
-              )}
-
-            </AnimatePresence>
-          </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Map */}
+        {/* ── Col 2: listing detail panel (slides in when selected) ── */}
+        <AnimatePresence initial={false}>
+          {showListingOverlay && selectedListing && (
+            <motion.div
+              key={`panel-${selectedListing.id}`}
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 480, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 340, mass: 0.85 }}
+              className="h-full shrink-0 overflow-hidden border-r border-slate-200"
+            >
+              <div className="h-full w-[480px] overflow-hidden py-4 pl-4 pr-3">
+                <ListingOverlay
+                  listing={selectedListing}
+                  filters={filters}
+                  mode={filters.mode ?? "daily"}
+                  pricing={getSearchPrice(selectedListing)}
+                  onClose={() => setShowListingOverlay(false)}
+                  onOpen={() => router.push(checkoutHref(selectedListing.id) as any)}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Col 3: map ── */}
         <motion.div
-          className="h-full min-w-0 border-l border-slate-200"
+          className="relative h-full min-w-0 flex-1"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         >
-          <div className="relative h-full overflow-hidden">
-            <MapView
-              listings={results}
-              priceMode={filters.mode ?? "daily"}
-              priceForListing={(listing) => getSearchPrice(listing).sortValue}
-              priceKey={`${filters.mode ?? "daily"}-${filters.date}-${filters.startTime}-${filters.endDate ?? filters.date}-${filters.endTime}`}
-              center={center}
-              initialZoom={16}
-              maxZoom={17}
-              minFitZoom={16}
-              showCenterPin
-              centerPinRadius={500}
-              selectedListingId={selectedListingId ?? undefined}
-              onSelectListing={onMarkerSelect}
-              onMarkerClick={(listing) => { onMarkerClick(listing); setShowListingOverlay(true); }}
-              disableAutoFit={lockViewport}
-              onBoundsChanged={onBoundsChanged}
-            />
+          <MapView
+            listings={results}
+            priceMode={filters.mode ?? "daily"}
+            priceForListing={(listing) => getSearchPrice(listing).sortValue}
+            priceKey={`${filters.mode ?? "daily"}-${filters.date}-${filters.startTime}-${filters.endDate ?? filters.date}-${filters.endTime}`}
+            center={center}
+            initialZoom={16}
+            maxZoom={17}
+            minFitZoom={16}
+            showCenterPin
+            centerPinRadius={500}
+            selectedListingId={selectedListingId ?? undefined}
+            onSelectListing={onMarkerSelect}
+            onMarkerClick={(listing) => { onMarkerClick(listing); setShowListingOverlay(true); }}
+            disableAutoFit={lockViewport}
+            onBoundsChanged={onBoundsChanged}
+          />
 
-            {/* Filters button — top-left of map */}
-            <div className="pointer-events-none absolute left-3 top-3 z-10">
+          {/* Filters button */}
+          <div className="pointer-events-none absolute left-3 top-3 z-10">
+            <button
+              type="button"
+              onClick={() => setShowFilters((s) => !s)}
+              className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-[12.5px] font-semibold text-slate-700 shadow-[0_2px_8px_rgba(15,23,42,0.14)] backdrop-blur-sm transition hover:border-slate-300 hover:shadow-md"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {pendingCenter && mapDirty && !searchAsMove && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
               <button
                 type="button"
-                onClick={() => setShowFilters((s) => !s)}
-                className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-[12.5px] font-semibold text-slate-700 shadow-[0_2px_8px_rgba(15,23,42,0.14)] backdrop-blur-sm transition hover:border-slate-300 hover:shadow-md"
+                disabled={areaSearching}
+                onClick={onSearchArea}
+                className="pointer-events-auto flex items-center gap-2 rounded-full bg-slate-900/90 px-4 py-2 text-[13px] font-semibold text-white shadow-lg backdrop-blur transition hover:bg-slate-900 disabled:opacity-60"
               >
-                <SlidersHorizontal className="h-4 w-4" />
-                Filters
-                {activeFilterCount > 0 && (
-                  <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold text-white">
-                    {activeFilterCount}
-                  </span>
-                )}
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {areaSearching ? "Searching…" : "Search this area"}
               </button>
             </div>
-
-            {pendingCenter && mapDirty && !searchAsMove && (
-              <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
-                <button
-                  type="button"
-                  disabled={areaSearching}
-                  onClick={onSearchArea}
-                  className="pointer-events-auto flex items-center gap-2 rounded-full bg-slate-900/90 px-4 py-2 text-[13px] font-semibold text-white shadow-lg backdrop-blur transition hover:bg-slate-900 disabled:opacity-60"
-                >
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  {areaSearching ? "Searching…" : "Search this area"}
-                </button>
-              </div>
-            )}
-          </div>
+          )}
         </motion.div>
       </div>
     </div>
@@ -410,7 +404,28 @@ function getRelativeDay(dateStr: string): string {
   return target.toLocaleDateString("en-IE", { weekday: "short", day: "numeric", month: "short" });
 }
 
-type OverlayTab = "overview" | "reviews" | "availability";
+type SectionKey = "know" | "amenities" | "hours" | "how" | "reviews";
+
+function AccordionSection({
+  id, open, onToggle, title, children,
+}: { id: SectionKey; open: boolean; onToggle: (id: SectionKey) => void; title: string; children: React.ReactNode }) {
+  return (
+    <div className="border-t border-slate-100">
+      <button
+        type="button"
+        onClick={() => onToggle(id)}
+        className="flex w-full items-center justify-between px-4 py-3.5 text-left"
+      >
+        <span className="text-[14px] font-bold text-slate-900">{title}</span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+          strokeWidth={2.5}
+        />
+      </button>
+      {open && <div className="px-4 pb-4">{children}</div>}
+    </div>
+  );
+}
 
 function ListingOverlay({
   listing,
@@ -427,13 +442,19 @@ function ListingOverlay({
   onClose: () => void;
   onOpen: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState<OverlayTab>("overview");
+  const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set(["know", "amenities"]));
+  const [photoIndex, setPhotoIndex] = useState(0);
 
-  const image = listingGradient(listing);
-  const isUrl = image?.startsWith("http");
+  const toggleSection = (id: SectionKey) =>
+    setOpenSections((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const fallbackImage = listingGradient(listing);
+  const isFallbackUrl = fallbackImage?.startsWith("http");
   const imageUrls = (listing.imageUrls ?? listing.image_urls ?? []).filter(Boolean);
-  const primaryImage   = imageUrls[0] ?? null;
-  const secondaryImage = imageUrls[1] ?? imageUrls[0] ?? null;
+  const allImages = imageUrls.length > 0 ? imageUrls : (isFallbackUrl ? [fallbackImage] : []);
+  const currentImage = allImages[photoIndex] ?? null;
+  const hasMultiplePhotos = allImages.length > 1;
+
   const streetViewUrl =
     typeof listing.latitude === "number" && typeof listing.longitude === "number"
       ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${listing.latitude},${listing.longitude}`
@@ -460,248 +481,333 @@ function ListingOverlay({
     has247      && { label: "24/7 access", icon: "247"      },
   ].filter(Boolean) as { label: string; icon: string }[];
   const availabilityText = listing.availability?.trim() || "Available to book";
-  const summary = buildOverlaySummary(listing, {
-    amenities: amenities.map((a) => a.label),
-    spaceType,
-    availabilityText,
-  });
 
   const displayPrice = formatPriceValue(pricing.sortValue);
 
-  const TABS: { key: OverlayTab; label: string }[] = [
-    { key: "overview",     label: "Overview"     },
-    { key: "reviews",      label: "Reviews"      },
-    { key: "availability", label: "Availability" },
-  ];
+  // Things to know bullets derived from listing data
+  const thingsToKnow: string[] = [];
+  if (spaceType === "Garage" || feats("garage") || feats("underground")) {
+    thingsToKnow.push("Height restrictions may apply — check with the host before arrival.");
+  }
+  if (feats("no in") || feats("no re-entry")) {
+    thingsToKnow.push("No in-and-out privileges — once you exit you cannot re-enter on the same booking.");
+  }
+  if (feats("cash")) {
+    thingsToKnow.push("Payment accepted on-site in cash — bring the correct amount.");
+  }
+  if (feats("attendant") || feats("valet")) {
+    thingsToKnow.push("An attendant will park your vehicle — leave your keys with the attendant upon arrival.");
+  }
+  thingsToKnow.push("Show your booking confirmation (QR code or reference number) upon arrival.");
+  if (!isAvailable) {
+    thingsToKnow.push("This space is currently marked as unavailable — contact the host before booking.");
+  }
+
+  // Duration label for daily mode
+  const durationLabel = (() => {
+    if (mode !== "daily") return null;
+    const start = new Date(`${filters.date}T${filters.startTime}:00`);
+    const end   = new Date(`${filters.endDate ?? filters.date}T${filters.endTime}:00`);
+    const mins  = Math.round((end.getTime() - start.getTime()) / 60000);
+    if (mins <= 0) return null;
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return h > 0 && m > 0 ? `${h}h ${m}m` : h > 0 ? `${h} hour${h > 1 ? "s" : ""}` : `${m} min`;
+  })();
+
+  // Star breakdown — approximate from average if we only have aggregate data
+  const ratingBreakdown: { stars: number; pct: number }[] | null =
+    hasRating && listing.rating && (listing.ratingCount ?? 0) >= 3
+      ? (() => {
+          const avg = listing.rating!;
+          const topStar = Math.round(avg);
+          const rows = [5, 4, 3, 2, 1].map((s) => ({
+            stars: s,
+            pct: s === topStar ? 80 : s === topStar - 1 ? 12 : s === 1 ? 5 : 2,
+          }));
+          return rows;
+        })()
+      : null;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md">
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
 
-      {/* ── Header ── */}
-      <div className="shrink-0 border-b border-slate-100 px-4 pt-4 pb-3">
-        <div className="flex items-start gap-3">
-          <h2 className="min-w-0 flex-1 line-clamp-1 text-[17px] font-bold leading-tight tracking-tight text-slate-950">
-            {listing.title}
-          </h2>
-          <div className="flex shrink-0 items-center gap-2">
-            {hasRating && (
-              <div className="flex items-center gap-1">
-                <StarRating rating={listing.rating!} />
-                <span className="text-[12.5px] font-bold text-slate-900">{listing.rating!.toFixed(2)}</span>
-                {(listing.ratingCount ?? 0) > 0 && (
-                  <span className="text-[12px] text-slate-400">({listing.ratingCount})</span>
-                )}
-              </div>
-            )}
+      {/* ── Large photo at top with carousel controls ── */}
+      <div className="relative h-52 w-full shrink-0 overflow-hidden bg-slate-100">
+        {currentImage ? (
+          <img
+            key={currentImage}
+            src={currentImage}
+            alt={listing.title}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="h-full w-full" style={{ background: fallbackImage }} />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10" />
+
+        {/* Close button — top right */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
+        >
+          <X className="h-4 w-4" strokeWidth={2.5} />
+        </button>
+
+        {/* Carousel arrows */}
+        {hasMultiplePhotos && (
+          <>
             <button
               type="button"
-              onClick={onClose}
-              aria-label="Close space details"
-              className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              onClick={() => setPhotoIndex((i) => (i - 1 + allImages.length) % allImages.length)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
-              </svg>
+              <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
             </button>
-          </div>
-        </div>
+            <button
+              type="button"
+              onClick={() => setPhotoIndex((i) => (i + 1) % allImages.length)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
+            >
+              <ChevronRight className="h-4 w-4" strokeWidth={2.5} />
+            </button>
+            {/* Dot indicators */}
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+              {allImages.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setPhotoIndex(i)}
+                  className={`h-1.5 rounded-full transition-all ${i === photoIndex ? "w-4 bg-white" : "w-1.5 bg-white/50"}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
 
-        {/* Badges + meta */}
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          {spaceType && (
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              {spaceType}
-            </span>
-          )}
-          {isInstant && (
-            <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-brand-700">
-              Instant book
-            </span>
-          )}
-          {listing.distanceKm != null && (
-            <span className="text-[11.5px] text-slate-400">{listing.distanceKm.toFixed(1)} km away</span>
-          )}
-          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
-            isAvailable ? "bg-brand-50 text-brand-700" : "bg-slate-100 text-slate-500"
-          }`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${isAvailable ? "bg-brand-500" : "bg-slate-400"}`} />
-            {isAvailable ? "Available" : "Unavailable"}
+        {/* Photo count badge */}
+        {hasMultiplePhotos && (
+          <span className="absolute bottom-3 right-3 rounded-full bg-black/50 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+            {photoIndex + 1}/{allImages.length}
           </span>
-        </div>
+        )}
       </div>
 
       {/* ── Scrollable body ── */}
       <div className="min-h-0 flex-1 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
 
-        {/* Booking summary */}
+        {/* Title + meta */}
+        <div className="border-b border-slate-100 px-4 pb-4 pt-3">
+          <h2 className="text-[17px] font-bold leading-snug tracking-tight text-slate-950">
+            {listing.title}
+          </h2>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {hasRating && (
+              <span className="flex items-center gap-1 text-[13px] font-semibold text-slate-700">
+                <StarRating rating={listing.rating!} />
+                {listing.rating!.toFixed(1)}
+                {(listing.ratingCount ?? 0) > 0 && (
+                  <span className="font-normal text-slate-400">({listing.ratingCount})</span>
+                )}
+              </span>
+            )}
+            {spaceType && (
+              <span className="text-[12.5px] text-slate-500">{spaceType}</span>
+            )}
+            {listing.distanceKm != null && (
+              <span className="text-[12.5px] text-slate-400">{listing.distanceKm.toFixed(1)} km away</span>
+            )}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+              isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+            }`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${isAvailable ? "bg-emerald-500" : "bg-slate-400"}`} />
+              {isAvailable ? "Available" : "Unavailable"}
+            </span>
+            {isInstant && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700">
+                ⚡ Instant book
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Booking summary — SpotHero style */}
         <div className="border-b border-slate-100 px-4 py-4">
-          {mode === "daily" ? (
-            <div className="flex items-center">
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold text-brand-600">Enter after</p>
-                <p className="mt-0.5 text-[17px] font-bold leading-tight text-slate-900">
-                  {formatTimeOnly(filters.startTime)}
-                  <span className="ml-1 text-[12px] font-normal text-slate-400">
-                    ({getRelativeDay(filters.date)})
-                  </span>
-                </p>
-              </div>
-              <div className="mx-2 shrink-0 text-brand-400">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold text-brand-600">Exit before</p>
-                <p className="mt-0.5 text-[17px] font-bold leading-tight text-slate-900">
-                  {formatTimeOnly(filters.endTime)}
-                  <span className="ml-1 text-[12px] font-normal text-slate-400">
-                    ({getRelativeDay(filters.endDate ?? filters.date)})
-                  </span>
-                </p>
-              </div>
-              <div className="ml-3 shrink-0 border-l border-slate-200 pl-3">
-                <p className="text-[11px] font-semibold text-slate-400">Price</p>
-                <p className="mt-0.5 text-[17px] font-bold leading-tight text-slate-900">€{displayPrice}</p>
-              </div>
+          <div className="flex items-start justify-between">
+            <p className="text-[12px] font-semibold uppercase tracking-wide text-slate-400">
+              {mode === "monthly" ? "Monthly Parking" : "Parking Reservation"}
+            </p>
+            <div className="text-right">
+              <p className="text-[20px] font-extrabold leading-none text-slate-900">€{displayPrice}</p>
+              <p className="mt-0.5 text-[11px] text-slate-400">
+                {mode === "monthly" ? "per month" : "subtotal"}
+              </p>
             </div>
+          </div>
+
+          {mode === "daily" ? (
+            <>
+              <p className="mt-2 text-[14px] font-bold text-slate-800">
+                {getRelativeDay(filters.date).charAt(0).toUpperCase() + getRelativeDay(filters.date).slice(1)}{" "}
+                {formatTimeOnly(filters.startTime)} – {formatTimeOnly(filters.endTime)}
+                {filters.endDate && filters.endDate !== filters.date && (
+                  <span className="font-normal text-slate-400"> ({getRelativeDay(filters.endDate)})</span>
+                )}
+              </p>
+              <div className="mt-2 flex items-center gap-2">
+                {durationLabel && (
+                  <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11.5px] font-semibold text-slate-600">
+                    <Clock className="h-3 w-3" strokeWidth={2.1} />
+                    {durationLabel}
+                  </span>
+                )}
+                <a
+                  href={streetViewUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11.5px] font-semibold text-slate-600 transition hover:bg-slate-200"
+                >
+                  <MapPin className="h-3 w-3" strokeWidth={2.1} />
+                  Street View
+                </a>
+              </div>
+            </>
           ) : (
-            <div className="flex items-center gap-3">
-              <div className="flex-1">
-                <p className="text-[11px] font-semibold text-brand-600">Start</p>
-                <p className="mt-0.5 text-[15px] font-bold text-slate-900">{formatOverlayDate(filters.date)}</p>
-              </div>
-              <div className="flex-1">
-                <p className="text-[11px] font-semibold text-brand-600">Plan</p>
-                <p className="mt-0.5 text-[15px] font-bold text-slate-900">{formatMonthlyPlan(filters.monthlyPlan)}</p>
-              </div>
-              <div className="shrink-0 border-l border-slate-200 pl-3">
-                <p className="text-[11px] font-semibold text-slate-400">Price</p>
-                <p className="mt-0.5 text-[17px] font-bold text-slate-900">€{displayPrice}</p>
-              </div>
+            <div className="mt-2 flex items-center gap-3 text-[13px] text-slate-700">
+              <span>From {formatOverlayDate(filters.date)}</span>
+              <span className="text-slate-300">·</span>
+              <span>{formatMonthlyPlan(filters.monthlyPlan)}</span>
             </div>
           )}
         </div>
 
-        {/* Book now CTA + tabs — grouped with no gap between them */}
-        <div className="border-b border-slate-100 px-4 pt-3 pb-0">
+        {/* Book Now CTA */}
+        <div className="px-4 py-4">
           <button
             onClick={onOpen}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 py-3 text-[14px] font-bold text-white transition hover:bg-brand-600 active:scale-[0.99]"
+            className="flex w-full items-center justify-center rounded-xl bg-brand-500 py-3.5 text-[15px] font-bold text-white shadow-sm transition hover:bg-brand-600 active:scale-[0.99]"
           >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-              <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clipRule="evenodd"/>
-            </svg>
-            Book now securely
+            Book Now
           </button>
 
-          {/* Tabs sit directly below the button */}
-          <div className="mt-3 flex border-t border-slate-100">
-            {TABS.map((tab, i) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 py-2.5 text-[12.5px] font-semibold transition ${
-                  i < TABS.length - 1 ? "border-r border-slate-100" : ""
-                } ${
-                  activeTab === tab.key
-                    ? "border-b-2 border-b-slate-900 text-slate-900"
-                    : "border-b-2 border-b-transparent text-slate-400 hover:text-slate-600"
-                }`}
-              >
-                {tab.label}
-              </button>
+          {/* Guaranteed badge */}
+          <div className="mt-3 flex items-center gap-2.5 rounded-lg bg-emerald-50 px-3 py-2.5">
+            <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" strokeWidth={2.1} />
+            <p className="text-[12.5px] font-bold text-emerald-800">Guaranteed parking</p>
+          </div>
+
+          {/* Payment icons */}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+            {["Apple Pay", "Google Pay", "Visa", "Mastercard", "PayPal"].map((name) => (
+              <span key={name} className="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 shadow-sm">
+                {name}
+              </span>
             ))}
+            <span className="text-[11px] text-slate-400">+ more</span>
           </div>
         </div>
 
-        {/* ── Overview tab ── */}
-        {activeTab === "overview" && (
-          <div className="space-y-4 px-4 py-4">
-            {/* Photos */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="overflow-hidden rounded-lg bg-slate-100">
-                {primaryImage ? (
-                  <img src={primaryImage} alt={listing.title} className="h-32 w-full object-cover" />
-                ) : isUrl ? (
-                  <img src={image} alt={listing.title} className="h-32 w-full object-cover" />
-                ) : (
-                  <div className="h-32 w-full" style={{ background: image }} />
-                )}
-              </div>
-              <div className="overflow-hidden rounded-lg bg-slate-100">
-                {secondaryImage ? (
-                  <img src={secondaryImage} alt={`${listing.title} view`} className="h-32 w-full object-cover" />
-                ) : (
-                  <div className="flex h-32 items-center justify-center px-3 text-center text-[12px] text-slate-400">
-                    Street access view
+        {/* ── Accordion sections ── */}
+
+        {/* Things You Should Know */}
+        <AccordionSection id="know" open={openSections.has("know")} onToggle={toggleSection} title="Things You Should Know">
+          <ul className="space-y-2">
+            {thingsToKnow.map((tip, i) => (
+              <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-slate-600">
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+                {tip}
+              </li>
+            ))}
+          </ul>
+        </AccordionSection>
+
+        {/* Amenities */}
+        {amenities.length > 0 && (
+          <AccordionSection id="amenities" open={openSections.has("amenities")} onToggle={toggleSection} title="Amenities">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              {amenities.map(({ label, icon }) => (
+                <div key={label} className="flex items-center gap-2.5 text-[13px] text-slate-700">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100">
+                    <AmenityIcon type={icon} />
+                  </span>
+                  {label}
+                </div>
+              ))}
+            </div>
+          </AccordionSection>
+        )}
+
+        {/* Access Hours */}
+        <AccordionSection id="hours" open={openSections.has("hours")} onToggle={toggleSection} title="Access Hours">
+          <AvailabilityGrid listing={listing} availabilityText={availabilityText} compact />
+        </AccordionSection>
+
+        {/* How to Book */}
+        <AccordionSection id="how" open={openSections.has("how")} onToggle={toggleSection} title="How to Book">
+          <ol className="space-y-4">
+            {[
+              "Complete your booking and receive a confirmation email with your booking reference.",
+              "Arrive at the space within your booked time window — show your confirmation to the host if needed.",
+              "Park up and enjoy. Your spot is guaranteed for the duration you booked.",
+            ].map((step, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-[11px] font-bold text-brand-700">
+                  {i + 1}
+                </span>
+                <p className="text-[13px] leading-relaxed text-slate-600">{step}</p>
+              </li>
+            ))}
+          </ol>
+        </AccordionSection>
+
+        {/* Reviews */}
+        <AccordionSection id="reviews" open={openSections.has("reviews")} onToggle={toggleSection} title="Reviews">
+          {hasRating ? (
+            <div>
+              <div className="flex items-center gap-4">
+                <div className="text-center">
+                  <p className="text-[38px] font-extrabold leading-none text-slate-900">{listing.rating!.toFixed(1)}</p>
+                  <StarRating rating={listing.rating!} />
+                  {(listing.ratingCount ?? 0) > 0 && (
+                    <p className="mt-1 text-[11px] text-slate-400">{listing.ratingCount} ratings</p>
+                  )}
+                </div>
+                {ratingBreakdown && (
+                  <div className="flex-1 space-y-1.5">
+                    {ratingBreakdown.map(({ stars, pct }) => (
+                      <div key={stars} className="flex items-center gap-2">
+                        <span className="w-3 text-right text-[11px] text-slate-500">{stars}</span>
+                        <div className="flex-1 overflow-hidden rounded-full bg-slate-100" style={{ height: 6 }}>
+                          <div className="h-full rounded-full bg-slate-700" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="w-7 text-[11px] text-slate-400">{pct}%</span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             </div>
+          ) : (
+            <p className="text-[13px] text-slate-400">No reviews yet for this space.</p>
+          )}
+        </AccordionSection>
 
-            {/* Street view link */}
-            <a
-              href={streetViewUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 text-[13px] font-semibold text-slate-700 underline decoration-slate-300 underline-offset-4 transition hover:text-brand-700"
-            >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
-                  <circle cx="12" cy="4" r="2.5"/>
-                  <path d="M8.5 9.5A1.5 1.5 0 0110 8h4a1.5 1.5 0 011.5 1.5V16a1 1 0 01-1 1h-1v4h-3v-4h-1a1 1 0 01-1-1V9.5z"/>
-                </svg>
-              </span>
-              Open Street View →
-            </a>
-
-            <hr className="border-slate-100" />
-
-            <p className="text-[13.5px] leading-6 text-brand-800">{summary}</p>
-
-            {amenities.length > 0 && (
-              <div>
-                <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Features
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {amenities.map(({ label, icon }) => (
-                    <span key={label} className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[12px] font-semibold text-slate-600">
-                      <AmenityIcon type={icon} />
-                      {label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Reviews tab ── */}
-        {activeTab === "reviews" && (
-          <div className="flex flex-col items-center px-4 py-8 text-center">
-            {hasRating ? (
-              <>
-                <StarRating rating={listing.rating!} />
-                <p className="mt-2 text-[30px] font-extrabold text-slate-900">{listing.rating!.toFixed(1)}</p>
-                {(listing.ratingCount ?? 0) > 0 && (
-                  <p className="mt-0.5 text-[13px] text-slate-400">
-                    Based on {listing.ratingCount} review{listing.ratingCount === 1 ? "" : "s"}
-                  </p>
-                )}
-              </>
-            ) : (
-              <p className="text-[13.5px] text-slate-400">No reviews yet</p>
-            )}
-          </div>
-        )}
-
-        {/* ── Availability tab ── */}
-        {activeTab === "availability" && (
-          <AvailabilityGrid listing={listing} availabilityText={availabilityText} />
-        )}
+        {/* Location */}
+        <div className="border-t border-slate-100 px-4 py-4">
+          <p className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-slate-400">Location</p>
+          <p className="text-[13px] text-slate-600">{listing.address}</p>
+          <a
+            href={streetViewUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-semibold text-brand-600 transition hover:text-brand-700"
+          >
+            Open in Street View →
+          </a>
+        </div>
 
       </div>
     </div>
@@ -730,9 +836,11 @@ function formatScheduleHour(iso: string): string {
 function AvailabilityGrid({
   listing,
   availabilityText,
+  compact = false,
 }: {
   listing: Listing;
   availabilityText: string;
+  compact?: boolean;
 }) {
   const schedule = listing.availabilitySchedule ?? null;
   const hasWeekly =
@@ -756,7 +864,7 @@ function AvailabilityGrid({
     });
 
     return (
-      <div className="divide-y divide-slate-100 px-4">
+      <div className={`divide-y divide-slate-100 ${compact ? "" : "px-4"}`}>
         {rows.map(({ label, hours, isToday }) => (
           <div
             key={label}
@@ -785,46 +893,20 @@ function AvailabilityGrid({
 
   // Fallback: render the raw availability text
   return (
-    <div className="px-4 py-4">
-      <p className="text-[13.5px] leading-6 text-slate-600">{availabilityText}</p>
-    </div>
+    <p className={`text-[13.5px] leading-6 text-slate-600 ${compact ? "" : "px-4 py-4"}`}>{availabilityText}</p>
   );
 }
 
 // ── Amenity icon ──────────────────────────────────────────────────────────────
 
 function AmenityIcon({ type }: { type: string }) {
-  if (type === "covered") return (
-    <svg className="h-3.5 w-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-  if (type === "gated") return (
-    <svg className="h-3.5 w-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
-    </svg>
-  );
-  if (type === "cctv") return (
-    <svg className="h-3.5 w-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <path d="M15 10l4.553-2.069A1 1 0 0121 8.87V15.13a1 1 0 01-1.447.9L15 14M3 8h12a2 2 0 012 2v4a2 2 0 01-2 2H3a2 2 0 01-2-2v-4a2 2 0 012-2z" strokeLinecap="round"/>
-    </svg>
-  );
-  if (type === "ev") return (
-    <svg className="h-3.5 w-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-  if (type === "disabled") return (
-    <svg className="h-3.5 w-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <circle cx="12" cy="5" r="2"/><path d="M12 7v6l3 3m-3-3H9" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-  // 24/7
-  return (
-    <svg className="h-3.5 w-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
+  const cls = "h-3.5 w-3.5 text-slate-500";
+  if (type === "covered")  return <Home        className={cls} strokeWidth={2.1} />;
+  if (type === "gated")    return <Lock        className={cls} strokeWidth={2.1} />;
+  if (type === "cctv")     return <Cctv        className={cls} strokeWidth={2.1} />;
+  if (type === "ev")       return <Zap         className={cls} strokeWidth={2.1} />;
+  if (type === "disabled") return <Accessibility className={cls} strokeWidth={2.1} />;
+  return                          <Clock       className={cls} strokeWidth={2.1} />;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -196,12 +196,6 @@ router.post("/", requireAuth, enforceBlockedList, listingWriteLimiter, async (re
     if (!gate.ok) return res.status(403).json({ message: gate.message });
 
     const host = await findUserById(hostId);
-    if (
-      env.NODE_ENV === "production" &&
-      (!host?.host_stripe_account_id || host.host_stripe_account_id.startsWith("acct_mock_"))
-    ) {
-      return res.status(403).json({ message: "Complete host payout setup before publishing a listing." });
-    }
     const hostStripeAccountId = host?.host_stripe_account_id ?? `acct_mock_${hostId.slice(0, 8)}`;
 
     let latitude = payload.latitude;

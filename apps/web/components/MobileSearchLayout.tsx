@@ -15,7 +15,7 @@ import { SlimNav } from "./SlimNav";
 import type { SharedLayoutProps } from "./searchLayoutTypes";
 import type { Listing } from "./ListingCard";
 import { calculateListingTotal, formatPriceValue } from "../lib/pricing";
-import { Search, SlidersHorizontal, X, RefreshCw, List, MapPin, Star, ChevronLeft, ChevronRight, Check, Camera, Zap, Lock, Home } from "lucide-react";
+import { Search, SlidersHorizontal, X, RefreshCw, List, MapPin, Star, ChevronLeft, ChevronRight, Check, Cctv, Zap, Lock, Home } from "lucide-react";
 
 // ── Date/time helpers ────────────────────────────────────────────────────────
 
@@ -873,7 +873,7 @@ function TimeSelect({
 // ── MapBottomCard ─────────────────────────────────────────────────────────────
 
 const AMENITY_ICONS: Record<string, React.ReactElement> = {
-  CCTV:        <Camera className="h-3.5 w-3.5" strokeWidth={2} />,
+  CCTV:        <Cctv className="h-3.5 w-3.5" strokeWidth={2} />,
   "EV charging": <Zap className="h-3.5 w-3.5" strokeWidth={2} />,
   Gated:       <Lock className="h-3.5 w-3.5" strokeWidth={2} />,
   Covered:     <Home className="h-3.5 w-3.5" strokeWidth={2} />,

@@ -352,19 +352,34 @@ const VEHICLE_COLOR_MARKERS: Record<string, string> = {
 };
 
 function formatIrishPlateInput(raw: string) {
-  const compact = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
-  if (!compact) return "";
+  const upper = raw.toUpperCase();
+  const endsWithSep = /[\s-]$/.test(raw);
+  const segments = upper.split(/[\s-]+/).filter(Boolean);
 
-  const firstLetterIndex = compact.search(/[A-Z]/);
-  if (firstLetterIndex === -1) return compact.slice(0, 11);
+  if (segments.length === 0) return "";
 
-  const yearDigits = compact.slice(0, firstLetterIndex).replace(/\D/g, "");
-  const year = yearDigits.slice(0, 3);
-  const afterYear = compact.slice(firstLetterIndex);
-  const county = (afterYear.match(/[A-Z]/g) ?? []).join("").slice(0, 2);
-  const serial = afterYear.replace(/[A-Z]/g, "").replace(/\D/g, "").slice(0, 6);
+  // User has typed a separator — split into explicit segments
+  if (segments.length >= 2 || endsWithSep) {
+    const year   = (segments[0] ?? "").replace(/[^0-9]/g, "").slice(0, 3);
+    const county = (segments[1] ?? "").replace(/[^A-Z]/g, "").slice(0, 2);
+    const serial = (segments[2] ?? "").replace(/[^0-9]/g, "").slice(0, 6);
+    if (!year) return "";
+    if (endsWithSep && segments.length === 1) return `${year}-`;
+    if (!county) return year;
+    if (endsWithSep && segments.length === 2) return `${year}-${county}-`;
+    if (!serial) return `${year}-${county}`;
+    return `${year}-${county}-${serial}`;
+  }
 
-  if (!year) return compact.slice(0, 11);
+  // Single unbroken segment — auto-detect from character types
+  const compact = segments[0].replace(/[^A-Z0-9]/g, "");
+  const firstLetter = compact.search(/[A-Z]/);
+  if (firstLetter === -1) return compact.slice(0, 3);
+  const year   = compact.slice(0, firstLetter).slice(0, 3);
+  const after  = compact.slice(firstLetter);
+  const county = (after.match(/[A-Z]/g) ?? []).join("").slice(0, 2);
+  const serial = after.replace(/[A-Z]/g, "").slice(0, 6);
+  if (!year)   return compact.slice(0, 11);
   if (!county) return year;
   if (!serial) return `${year}-${county}`;
   return `${year}-${county}-${serial}`;

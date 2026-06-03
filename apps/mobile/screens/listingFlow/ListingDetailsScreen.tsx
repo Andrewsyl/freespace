@@ -53,8 +53,6 @@ function SpaceTypeIcon({ type, active }: { type: string; active: boolean }) {
   }
 }
 
-const MIN_CAPACITY = 1;
-const MAX_CAPACITY = 20;
 
 export function ListingDetailsScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
@@ -63,17 +61,7 @@ export function ListingDetailsScreen({ navigation }: Props) {
   const [spaceCountInput, setSpaceCountInput] = useState<number>(
     () => parseSpaceCount(draft.spaceCount) ?? MIN_SPACE_COUNT
   );
-  const [capacityInput, setCapacityInput] = useState<number>(
-    () => Math.min(MAX_CAPACITY, Math.max(MIN_CAPACITY, draft.capacity ?? 1))
-  );
-
-  const adjustCapacity = (delta: number) => {
-    const next = Math.min(MAX_CAPACITY, Math.max(MIN_CAPACITY, capacityInput + delta));
-    setCapacityInput(next);
-    setDraft((current) => ({ ...current, capacity: next }));
-  };
-
-  const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boolean(draft.vehicleSize);
+const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boolean(draft.vehicleSize);
   const confirmedSpaceCount = parseSpaceCount(draft.spaceCount);
   const hasConfirmedCount = confirmedSpaceCount !== null && confirmedSpaceCount > 0;
 
@@ -94,7 +82,7 @@ export function ListingDetailsScreen({ navigation }: Props) {
   const adjustSpaceCount = (delta: number) => {
     const next = Math.min(MAX_SPACE_COUNT, Math.max(MIN_SPACE_COUNT, spaceCountInput + delta));
     setSpaceCountInput(next);
-    setDraft((current) => ({ ...current, spaceCount: next > 0 ? String(next) : "" }));
+    setDraft((current) => ({ ...current, spaceCount: next > 0 ? String(next) : "", capacity: next > 0 ? next : 1 }));
     setOpenStep(next > 0 ? "vehicle" : "count");
   };
 
@@ -239,37 +227,6 @@ export function ListingDetailsScreen({ navigation }: Props) {
           </>
         )}
 
-        {/* ── Capacity ── */}
-        {showVehicleSection && (
-          <>
-            <View style={styles.divider} />
-            <View style={styles.section}>
-              <Text style={styles.sectionHeading}>Number of spaces</Text>
-              <Text style={styles.sectionPrompt}>
-                How many drivers can book this listing at the same time?
-              </Text>
-              <View style={styles.counterRow}>
-                <Pressable
-                  style={[styles.counterButton, capacityInput <= MIN_CAPACITY && styles.counterButtonDisabled]}
-                  onPress={() => adjustCapacity(-1)}
-                  disabled={capacityInput <= MIN_CAPACITY}
-                >
-                  <Text style={styles.counterButtonText}>−</Text>
-                </Pressable>
-                <View style={styles.counterValueBox}>
-                  <Text style={styles.counterValueText}>{capacityInput}</Text>
-                </View>
-                <Pressable
-                  style={[styles.counterButton, capacityInput >= MAX_CAPACITY && styles.counterButtonDisabled]}
-                  onPress={() => adjustCapacity(1)}
-                  disabled={capacityInput >= MAX_CAPACITY}
-                >
-                  <Text style={styles.counterButtonText}>+</Text>
-                </Pressable>
-              </View>
-            </View>
-          </>
-        )}
       </ScrollView>
 
       <FlowFooter
@@ -294,7 +251,7 @@ const styles = StyleSheet.create({
   // Header — matches other flow screens
   header: {
     paddingHorizontal: spacing.screenX,
-    paddingBottom: 4,
+    paddingBottom: 8,
   },
   kicker: {
     color: hostFlowColors.accent,
@@ -307,7 +264,7 @@ const styles = StyleSheet.create({
     color: hostFlowColors.text,
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 26,
-    letterSpacing: -0.6,
+    letterSpacing: -0.8,
     lineHeight: 34,
     marginTop: 10,
   },
