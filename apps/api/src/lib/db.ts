@@ -2396,6 +2396,7 @@ export async function listUserBookings(userId: string) {
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
     WHERE b.driver_id = $1
+      AND b.status <> 'pending'
     ORDER BY b.start_time DESC
     LIMIT 50;
     `,

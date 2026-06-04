@@ -1256,6 +1256,19 @@ export function SearchScreen({ navigation }: Props) {
             resizeMode="cover"
           />
         ) : null}
+        {(!mapReady || (loading && results.length === 0)) ? (
+          <View style={styles.mapLoadingOverlay}>
+            <LottieView
+              source={require("../assets/Insider-loading.json")}
+              autoPlay
+              loop
+              style={styles.mapLoadingLottie}
+            />
+            <Text style={styles.mapLoadingText}>
+              {mapReady ? "Searching for spaces…" : "Loading map…"}
+            </Text>
+          </View>
+        ) : null}
         <View style={[styles.overlay, { top: insets.top + 12 }]}>
 
           {/* ── Location card ───────────────────────── */}
@@ -1813,6 +1826,23 @@ const styles = StyleSheet.create({
   mapShell: {
     flex: 1,
     position: "relative",
+  },
+  mapLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.appBg,
+    zIndex: 10,
+  },
+  mapLoadingLottie: {
+    width: 120,
+    height: 120,
+  },
+  mapLoadingText: {
+    color: colors.textSoft,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    marginTop: 4,
   },
   map: {
     ...StyleSheet.absoluteFillObject,

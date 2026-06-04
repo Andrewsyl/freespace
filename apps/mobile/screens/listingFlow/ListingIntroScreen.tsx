@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.screenX,
-    paddingTop: 20,
+    paddingTop: 28,
     paddingBottom: 24,
   },
   heroBlock: {
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 34,
     letterSpacing: -1,
-    lineHeight: 40,
+    lineHeight: 46,
     marginBottom: 10,
   },
   subline: {

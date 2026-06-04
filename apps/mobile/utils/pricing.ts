@@ -68,12 +68,19 @@ export function calculateListingTotal(listing: ListingWithPricing, start: Date, 
     (dailyPrice != null ? roundMoney(dailyPrice / DEFAULT_DAILY_HOURS) : null);
   let total = 0;
 
+  let dailyCapApplied = false;
+  let dailyCapSaving = 0;
+
   if (dailyPrice != null && hourlyPrice != null) {
     const fullDays = Math.floor(durationHours / 24);
     const remainingHours = durationHours % 24;
-    const remainingTotal =
-      remainingHours > 0 ? Math.min(roundMoney(hourlyPrice * remainingHours), dailyPrice) : 0;
-    total = fullDays * dailyPrice + remainingTotal;
+    const rawRemaining = remainingHours > 0 ? roundMoney(hourlyPrice * remainingHours) : 0;
+    const cappedRemaining = remainingHours > 0 ? Math.min(rawRemaining, dailyPrice) : 0;
+    if (rawRemaining > dailyPrice) {
+      dailyCapApplied = true;
+      dailyCapSaving = roundMoney(rawRemaining - dailyPrice);
+    }
+    total = fullDays * dailyPrice + cappedRemaining;
   } else if (hourlyPrice != null) {
     total = roundMoney(hourlyPrice * durationHours);
   } else if (dailyPrice != null) {
@@ -86,6 +93,8 @@ export function calculateListingTotal(listing: ListingWithPricing, start: Date, 
     totalCents: Math.round(Math.max(0, roundMoney(total)) * 100),
     durationHours,
     durationLabel,
+    dailyCapApplied,
+    dailyCapSaving,
   };
 }
 

@@ -290,12 +290,6 @@ export function PersonalInfoScreen({ navigation }: Props) {
             </View>
           </View>
 
-          {previewUrl ? (
-            <Pressable style={styles.previewLink} onPress={() => Linking.openURL(previewUrl)}>
-              <Text style={styles.previewLinkText}>Open verification link</Text>
-            </Pressable>
-          ) : null}
-
           <Button
             style={styles.saveButton}
             title="Save"

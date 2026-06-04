@@ -503,6 +503,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 2,
     textTransform: "uppercase",
+    marginTop: 28,
   },
   title: {
     color: hostFlowColors.text,

@@ -11,7 +11,10 @@ describe("calculateListingTotal", () => {
     const start = new Date("2026-06-04T08:00:00.000Z");
     const end = new Date("2026-06-04T19:00:00.000Z");
 
-    expect(calculateListingTotal(listing, start, end).total).toBe(18);
+    const result = calculateListingTotal(listing, start, end);
+    expect(result.total).toBe(18);
+    expect(result.dailyCapApplied).toBe(true);
+    expect(result.dailyCapSaving).toBe(4); // 11hrs × €2 = €22, saved €4
   });
 
   it("charges a full day plus remaining hours when a booking runs beyond 24 hours", () => {

@@ -6,6 +6,8 @@ import {
   CircleCheck,
   CircleParking,
   House,
+  Minus,
+  Plus,
   Signpost,
   Warehouse,
 } from "lucide-react-native";
@@ -171,7 +173,7 @@ const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boo
                   onPress={() => adjustSpaceCount(-1)}
                   disabled={spaceCountInput <= MIN_SPACE_COUNT}
                 >
-                  <Text style={styles.counterButtonText}>−</Text>
+                  <Minus size={20} color={hostFlowColors.text} strokeWidth={2.5} />
                 </Pressable>
                 <View style={styles.counterValueBox}>
                   <Text style={styles.counterValueText}>{spaceCountInput}</Text>
@@ -181,7 +183,7 @@ const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boo
                   onPress={() => adjustSpaceCount(1)}
                   disabled={spaceCountInput >= MAX_SPACE_COUNT}
                 >
-                  <Text style={styles.counterButtonText}>+</Text>
+                  <Plus size={20} color={hostFlowColors.text} strokeWidth={2.5} />
                 </Pressable>
               </View>
             </View>
@@ -256,6 +258,7 @@ const styles = StyleSheet.create({
   // Header — matches other flow screens
   header: {
     paddingHorizontal: spacing.screenX,
+    paddingTop: 28,
     paddingBottom: 8,
   },
   kicker: {
@@ -394,13 +397,6 @@ const styles = StyleSheet.create({
   },
   counterButtonDisabled: {
     opacity: 0.35,
-  },
-  counterButtonText: {
-    color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 24,
-    lineHeight: 26,
-    textAlign: "center",
   },
   counterValueBox: {
     alignItems: "center",

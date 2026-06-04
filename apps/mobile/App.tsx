@@ -15,6 +15,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Constants from "expo-constants";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import { AnimatedSplash } from "./components/AnimatedSplash";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { enableScreens } from "react-native-screens";
@@ -71,6 +72,7 @@ const navigationRef = createNavigationContainerRef<RootStackParamList>();
 type BookingNotificationData = {
   type?: string;
   historyTab?: "upcoming" | "active" | "past";
+  bookingId?: string;
 };
 
 enableScreens(false);
@@ -227,11 +229,15 @@ function AppShell() {
     (__DEV__ ? "local" : "production");
   const normalizedAppEnv = runtimeAppEnv.trim().toLowerCase();
   const showEnvBadge = normalizedAppEnv !== "production";
+  const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
 
   return (
     <>
       <SplashController />
       <AppNavigator />
+      {showAnimatedSplash && (
+        <AnimatedSplash onFinish={() => setShowAnimatedSplash(false)} />
+      )}
       <AuthToastBridge />
       {showEnvBadge ? <EnvironmentBadge env={normalizedAppEnv} /> : null}
       {shouldShowLegalGate ? <LegalGate /> : null}
@@ -285,7 +291,21 @@ function AppNavigator() {
     });
 
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      openNotificationTarget(response.notification.request.content.data as BookingNotificationData);
+      const data = response.notification.request.content.data as BookingNotificationData;
+      // "Extend +" action button on ending-soon notification
+      if (response.actionIdentifier === "extend_booking") {
+        navigationRef.dispatch(
+          CommonActions.navigate({
+            name: "Tabs",
+            params: {
+              screen: "History",
+              params: { initialTab: "active", refreshToken: Date.now() },
+            } as RootStackParamList["Tabs"],
+          })
+        );
+        return;
+      }
+      openNotificationTarget(data);
     });
 
     return () => subscription.remove();

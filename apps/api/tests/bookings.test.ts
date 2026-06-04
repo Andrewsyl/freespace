@@ -168,7 +168,7 @@ describe("bookings routes", () => {
         listingId: "11111111-1111-4111-8111-111111111111",
         from: "2026-03-20T10:00:00.000Z",
         to: "2026-03-20T12:00:00.000Z",
-        amountCents: 300,
+        amountCents: 324,
         currency: "eur",
         platformFeePercent: 0.1,
       });
@@ -177,10 +177,8 @@ describe("bookings routes", () => {
     expect(response.body.paymentIntentId).toBe("pi_123");
     expect(response.body.paymentIntentClientSecret).toBe("pi_123_secret");
     expect(stripeMocks.paymentIntentsCreate).toHaveBeenCalledWith(
-      expect.any(Object),
       expect.objectContaining({
-        idempotencyKey:
-          "payment-intent:user-1:11111111-1111-4111-8111-111111111111:2026-03-20T10:00:00.000Z:2026-03-20T12:00:00.000Z:300:eur",
+        amount: 324,
       })
     );
   });
@@ -227,15 +225,14 @@ describe("bookings routes", () => {
         listingId: "11111111-1111-4111-8111-111111111111",
         from: "2026-03-20T10:00:00.000Z",
         to: "2026-03-20T21:00:00.000Z",
-        amountCents: 1800,
+        amountCents: 1944,
         currency: "eur",
         platformFeePercent: 0.1,
       });
 
     expect(response.status).toBe(200);
     expect(stripeMocks.paymentIntentsCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 1800 }),
-      expect.any(Object)
+      expect.objectContaining({ amount: 1944 })
     );
   });
 
@@ -288,7 +285,7 @@ describe("bookings routes", () => {
         listingId: "11111111-1111-4111-8111-111111111111",
         from: "2026-03-20T10:00:00.000Z",
         to: "2026-03-20T12:00:00.000Z",
-        amountCents: 300,
+        amountCents: 324,
         currency: "eur",
         platformFeePercent: 0.1,
       });
@@ -337,7 +334,7 @@ describe("bookings routes", () => {
         listingId: "11111111-1111-4111-8111-111111111111",
         from: "2026-03-20T10:00:00.000Z",
         to: "2026-03-20T12:00:00.000Z",
-        amountCents: 300,
+        amountCents: 324,
         currency: "eur",
         platformFeePercent: 0.1,
       });
@@ -346,7 +343,7 @@ describe("bookings routes", () => {
     expect(stripeMocks.createCheckoutSession).toHaveBeenCalledWith(
       expect.objectContaining({
         idempotencyKey:
-          "checkout:user-1:11111111-1111-4111-8111-111111111111:2026-03-20T10:00:00.000Z:2026-03-20T12:00:00.000Z:300:eur",
+          "checkout:user-1:11111111-1111-4111-8111-111111111111:2026-03-20T10:00:00.000Z:2026-03-20T12:00:00.000Z:324:eur",
       })
     );
   });

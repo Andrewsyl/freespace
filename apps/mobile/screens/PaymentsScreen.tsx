@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, CreditCard, Lock, Plus, ShieldCheck, X } from "lucide-react-native";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { CardField, useStripe } from "@stripe/stripe-react-native";
 import { colors, radius, spacing, textStyles } from "../styles/theme";
@@ -169,11 +169,18 @@ export function PaymentsScreen() {
           <View style={styles.navSpacer} />
         </View>
         <View style={styles.emptyState}>
+          <View style={styles.gatedIconWrap}>
+            <CreditCard size={24} color="#0a8050" strokeWidth={2.2} />
+          </View>
           <Text style={styles.title}>Payments</Text>
-          <Text style={styles.subtitle}>Sign in to manage cards and view charges.</Text>
+          <Text style={styles.subtitle}>Sign in to manage your payment methods and view booking charges.</Text>
           <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("SignIn")}>
             <Text style={styles.primaryButtonText}>Sign in</Text>
           </Pressable>
+          <View style={styles.gatedHintRow}>
+            <ShieldCheck size={14} color="#9ca3af" strokeWidth={2.1} />
+            <Text style={styles.gatedHintText}>Your payment details are encrypted and secure.</Text>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -204,73 +211,89 @@ export function PaymentsScreen() {
         ) : null}
 
         <View style={styles.section}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Payment methods</Text>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Payment methods</Text>
+          </View>
+
+          {/* Saved cards */}
+          {methods.map((method) => (
+            <View key={method.id} style={styles.row}>
+              <View style={styles.cardIconWrap}>
+                <CreditCard size={18} color="#374151" strokeWidth={1.8} />
+              </View>
+              <View style={styles.rowText}>
+                <Text style={styles.rowTitle}>
+                  {method.brand ? method.brand.charAt(0).toUpperCase() + method.brand.slice(1) : "Card"} ···· {method.last4}
+                </Text>
+                <Text style={styles.rowSubtitle}>
+                  Expires {method.exp_month}/{String(method.exp_year).slice(-2)}
+                </Text>
+              </View>
+              <View style={styles.rowActions}>
+                {method.is_default ? (
+                  <View style={styles.defaultBadge}>
+                    <Text style={styles.defaultBadgeText}>Default</Text>
+                  </View>
+                ) : (
+                  <Pressable style={styles.rowActionButton} onPress={() => handleSetDefault(method.id)}>
+                    <Text style={styles.rowActionText}>Set default</Text>
+                  </Pressable>
+                )}
+                <Pressable style={[styles.rowActionButton, styles.rowDelete]} onPress={() => handleDelete(method.id)}>
+                  <Text style={styles.rowDeleteText}>Remove</Text>
+                </Pressable>
+              </View>
+            </View>
+          ))}
+
+          {/* Add card trigger row */}
+          {!showAdd && (
+            <Pressable style={styles.addCardRow} onPress={handleAddCard}>
+              <View style={styles.addCardRowIcon}>
+                <Plus size={16} color="#0a8050" strokeWidth={2.5} />
+              </View>
+              <Text style={styles.addCardRowText}>Add a card</Text>
+            </Pressable>
+          )}
+
+          {/* Add card form */}
+          {showAdd && (
+            <View style={styles.addCardPanel}>
+              <View style={styles.addCardPanelHeader}>
+                <Lock size={14} color="#0a8050" strokeWidth={2} />
+                <Text style={styles.addCardPanelTitle}>New card</Text>
+                <Pressable onPress={handleAddCard} hitSlop={8} style={styles.addCardClose}>
+                  <X size={16} color="#6b7280" strokeWidth={2} />
+                </Pressable>
+              </View>
+
+              <CardField
+                postalCodeEnabled={false}
+                cardStyle={{ ...styles.cardField, placeholderColor: "#9ca3af", textColor: "#111827" }}
+                style={styles.cardFieldContainer}
+                onCardChange={(details) => setCardComplete(!!details.complete)}
+              />
+
+              <View style={styles.securityNote}>
+                <ShieldCheck size={12} color="#9ca3af" strokeWidth={2} />
+                <Text style={styles.securityNoteText}>Encrypted by Stripe · Your card number is never stored on our servers</Text>
+              </View>
+
               <Button
-                title={showAdd ? "Close" : "Add card"}
-                onPress={handleAddCard}
-                size="small"
-                style={styles.addButton}
+                title={adding ? "Saving…" : "Save card"}
+                onPress={handleSaveCard}
+                disabled={!cardComplete || adding}
+                loading={adding}
+                style={styles.saveCardBtn}
               />
             </View>
-            {showAdd ? (
-              <View style={styles.addCardPanel}>
-                <Text style={styles.addCardLabel}>Card details</Text>
-                <CardField
-                  postalCodeEnabled={false}
-                  placeholders={{
-                    number: "4242 4242 4242 4242",
-                  }}
-                  cardStyle={styles.cardField}
-                  style={styles.cardFieldContainer}
-                  onCardChange={(details) => setCardComplete(!!details.complete)}
-                />
-                <Button
-                  title={adding ? "Saving..." : "Save card"}
-                  onPress={handleSaveCard}
-                  disabled={!cardComplete || adding}
-                  style={styles.saveButton}
-                />
-              </View>
-            ) : null}
-            {methods.length === 0 && !loading ? (
-              <View style={styles.emptyRow}>
-                <Text style={styles.emptyText}>No cards saved yet.</Text>
-              </View>
-            ) : (
-              methods.map((method) => (
-                <View key={method.id} style={styles.row}>
-                  <MaterialIcons name="credit-card" size={24} color="#111827" />
-                  <View style={styles.rowText}>
-                    <Text style={styles.rowTitle}>
-                      {method.brand?.toUpperCase() || "CARD"} •••• {method.last4}
-                    </Text>
-                    <Text style={styles.rowSubtitle}>
-                      Expires {method.exp_month}/{String(method.exp_year).slice(-2)}
-                      {method.is_default ? " • Default" : ""}
-                    </Text>
-                  </View>
-                  <View style={styles.rowActions}>
-                    {!method.is_default ? (
-                      <Pressable
-                        style={styles.rowActionButton}
-                        onPress={() => handleSetDefault(method.id)}
-                      >
-                        <Text style={styles.rowActionText}>Default</Text>
-                      </Pressable>
-                    ) : (
-                      <Text style={styles.rowStatus}>Default</Text>
-                    )}
-                    <Pressable
-                      style={[styles.rowActionButton, styles.rowDelete]}
-                      onPress={() => handleDelete(method.id)}
-                    >
-                      <Text style={styles.rowDeleteText}>Remove</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              ))
-            )}
+          )}
+
+          {methods.length === 0 && !showAdd && !loading && (
+            <View style={styles.emptyRow}>
+              <Text style={styles.emptyText}>No cards saved yet.</Text>
+            </View>
+          )}
         </View>
 
         <Text style={styles.poweredBy}>Powered by Stripe</Text>
@@ -413,35 +436,99 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: "uppercase",
   },
-  addButton: {
-    minHeight: 38,
+  cardIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "#f3f4f6",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
-  addCardPanel: {
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
+  defaultBadge: {
+    backgroundColor: "#f0faf5",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#a7f3d0",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  defaultBadgeText: {
+    color: "#0a8050",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+  },
+  addCardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  addCardLabel: {
-    color: colors.text,
-    fontSize: 13,
+  addCardRowIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "#f0faf5",
+    borderWidth: 1,
+    borderColor: "#a7f3d0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addCardRowText: {
+    color: "#0a8050",
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
+    fontSize: 15,
+  },
+  addCardPanel: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 20,
+    gap: 14,
+  },
+  addCardPanelHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  addCardPanelTitle: {
+    flex: 1,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15,
+  },
+  addCardClose: {
+    padding: 4,
   },
   cardFieldContainer: {
-    height: 48,
+    height: 56,
   },
   cardField: {
-    backgroundColor: colors.cardBg,
+    backgroundColor: "#f9fafb",
     borderColor: colors.border,
     borderRadius: 12,
     borderWidth: 1,
-    color: colors.text,
-    fontSize: 15,
+    fontSize: 16,
   },
-  saveButton: {
-    minHeight: 44,
+  securityNote: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+    marginTop: -4,
+  },
+  securityNoteText: {
+    flex: 1,
+    color: "#9ca3af",
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  saveCardBtn: {
+    minHeight: 50,
   },
   row: {
     alignItems: "center",
@@ -522,7 +609,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
+  },
+  gatedIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#f0faf5",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  gatedHintRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 16,
+    paddingHorizontal: 8,
+  },
+  gatedHintText: {
+    color: "#9ca3af",
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    flexShrink: 1,
   },
   primaryButton: {
     alignItems: "center",

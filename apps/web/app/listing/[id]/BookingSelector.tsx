@@ -329,6 +329,8 @@ export function BookingSelector({
     total: number;
     durationLabel: string;
     billingLabel: string;
+    dailyCapApplied: boolean;
+    dailyCapSaving: number;
   }) => void;
   initialValues?: {
     startDate?: string;
@@ -379,6 +381,8 @@ export function BookingSelector({
       total: summary.total + 1.5,
       durationLabel: summary.durationLabel,
       billingLabel: `€${formatPriceValue(summary.total)} for ${summary.durationLabel}`,
+      dailyCapApplied: summary.dailyCapApplied,
+      dailyCapSaving: summary.dailyCapSaving,
     };
   }, [bookingWindow.end, bookingWindow.start, pricePerDay, pricePerHour, rateType]);
 
@@ -391,11 +395,18 @@ export function BookingSelector({
 
       {/* Price */}
       {!hidePrice && (
-        <div className={`text-[32px] font-semibold leading-none tracking-[-0.05em] ${dark ? "text-white" : "text-slate-950"}`}>
-          €{formatPriceValue(pricing.subtotal)}
-          <span className={`ml-1.5 text-[15px] ${dark ? "text-white/70" : "text-slate-600"}`}>
-            for {pricing.durationLabel}
-          </span>
+        <div>
+          <div className={`text-[32px] font-semibold leading-none tracking-[-0.05em] ${dark ? "text-white" : "text-slate-950"}`}>
+            €{formatPriceValue(pricing.subtotal)}
+            <span className={`ml-1.5 text-[15px] ${dark ? "text-white/70" : "text-slate-600"}`}>
+              for {pricing.durationLabel}
+            </span>
+          </div>
+          {pricing.dailyCapApplied && (
+            <p className={`mt-1.5 text-[12px] font-semibold ${dark ? "text-emerald-400" : "text-emerald-600"}`}>
+              Daily rate applied — saves €{formatPriceValue(pricing.dailyCapSaving)} vs. hourly
+            </p>
+          )}
         </div>
       )}
 

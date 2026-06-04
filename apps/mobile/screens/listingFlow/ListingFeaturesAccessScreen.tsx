@@ -1,8 +1,8 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { KeyboardAvoidingView, LayoutChangeEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useRef, useState } from "react";
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Cctv, CircleCheck, FileText, Hash, Key, Zap, Warehouse, Sun, ShieldCheck, ArrowUpDown, Accessibility, Clock, Bike, AlignHorizontalDistributeCenter } from "lucide-react-native";
+import { Cctv, CircleCheck, FileText, Hash, Key, Lock, Unlock, Zap, Warehouse, Sun, ShieldCheck, ArrowUpDown, Accessibility, Clock, Bike, AlignHorizontalDistributeCenter } from "lucide-react-native";
 import { TextInput as AppTextInput } from "../../components/ui";
 import { spacing } from "../../styles/theme";
 import { FlowHeader } from "./FlowHeader";
@@ -71,8 +71,14 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
   const insets = useSafeAreaInsets();
   const [showAllFeatures, setShowAllFeatures] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-  const accessInputYRef = useRef(0);
+
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   const selectedAccessChoice = ACCESS_CHOICES.find(
     (c) => draft.accessOptions.includes(c.optionValue)
@@ -93,14 +99,6 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
     ? [...PRIMARY_FEATURES, ...EXTRA_FEATURES]
     : PRIMARY_FEATURES;
 
-  const scrollInputIntoView = (targetY: number) => {
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        scrollRef.current?.scrollTo({ y: Math.max(0, targetY - 140), animated: true });
-      }, 180);
-    });
-  };
-
   const toggleFeature = (option: string) => {
     setDraft((prev) => {
       const exists = prev.accessOptions.includes(option);
@@ -116,7 +114,6 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
   const selectAccessChoice = (optionValue: AccessChoiceValue) => {
     setDraft((prev) => {
       const current = ACCESS_CHOICES.find((c) => prev.accessOptions.includes(c.optionValue));
-      // Deselect if tapping the already-selected choice
       if (current?.optionValue === optionValue) {
         return {
           ...prev,
@@ -153,7 +150,7 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
       <FlowHeader current={4} total={8} onClose={exitFlow} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior="padding"
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         <ScrollView
@@ -205,9 +202,9 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
           <Text style={styles.sectionLabel}>ACCESS</Text>
           <Text style={styles.sectionTitle}>Does getting in require a key, code, or instructions?</Text>
 
-          <View style={styles.yesNoRow}>
+          <View style={styles.accessTypeStack}>
             <Pressable
-              style={[styles.yesNoBtn, draft.requiresAccessCode === false && styles.yesNoBtnActive]}
+              style={[styles.accessTypeCard, draft.requiresAccessCode === false && styles.accessTypeCardActive]}
               onPress={() =>
                 setDraft((prev) => ({
                   ...prev,
@@ -221,12 +218,20 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
                 }))
               }
             >
-              <Text style={[styles.yesNoText, draft.requiresAccessCode === false && styles.yesNoTextActive]}>
-                No — open access
-              </Text>
+              <View style={[styles.accessTypeIconWrap, draft.requiresAccessCode === false && styles.accessTypeIconWrapActive]}>
+                <Unlock size={20} color={draft.requiresAccessCode === false ? hostFlowColors.accent : "#6b7280"} strokeWidth={1.8} />
+              </View>
+              <View style={styles.accessTypeText}>
+                <Text style={[styles.accessTypeLabel, draft.requiresAccessCode === false && styles.accessTypeLabelActive]}>Open access</Text>
+                <Text style={styles.accessTypeDesc}>No key, code or instructions needed</Text>
+              </View>
+              {draft.requiresAccessCode === false ? (
+                <CircleCheck size={20} color={hostFlowColors.accent} strokeWidth={2.2} />
+              ) : null}
             </Pressable>
+
             <Pressable
-              style={[styles.yesNoBtn, draft.requiresAccessCode === true && styles.yesNoBtnActive]}
+              style={[styles.accessTypeCard, draft.requiresAccessCode === true && styles.accessTypeCardActive]}
               onPress={() =>
                 setDraft((prev) => ({
                   ...prev,
@@ -235,90 +240,96 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
                 }))
               }
             >
-              <Text style={[styles.yesNoText, draft.requiresAccessCode === true && styles.yesNoTextActive]}>
-                Yes — access needed
-              </Text>
+              <View style={[styles.accessTypeIconWrap, draft.requiresAccessCode === true && styles.accessTypeIconWrapActive]}>
+                <Lock size={20} color={draft.requiresAccessCode === true ? hostFlowColors.accent : "#6b7280"} strokeWidth={1.8} />
+              </View>
+              <View style={styles.accessTypeText}>
+                <Text style={[styles.accessTypeLabel, draft.requiresAccessCode === true && styles.accessTypeLabelActive]}>Restricted access</Text>
+                <Text style={styles.accessTypeDesc}>Drivers need a key, code or instructions</Text>
+              </View>
+              {draft.requiresAccessCode === true ? (
+                <CircleCheck size={20} color={hostFlowColors.accent} strokeWidth={2.2} />
+              ) : null}
             </Pressable>
           </View>
 
-          {/* Access type radio cards */}
+          {/* Access type radio cards with inline detail input */}
           {draft.requiresAccessCode ? (
             <View style={styles.accessChoiceStack}>
               {ACCESS_CHOICES.map((choice) => {
                 const active = selectedAccessChoice?.id === choice.id;
+                const isSpec = choice.id === "special_instructions";
                 return (
-                  <Pressable
-                    key={choice.id}
-                    style={[styles.accessCard, active && styles.accessCardActive]}
-                    onPress={() => selectAccessChoice(choice.optionValue)}
-                  >
-                    <View style={[styles.accessCardIcon, active && styles.accessCardIconActive]}>
-                      {choice.icon}
-                    </View>
-                    <View style={styles.accessCardText}>
-                      <Text style={[styles.accessCardLabel, active && styles.accessCardLabelActive]}>
-                        {choice.label}
-                      </Text>
-                      <Text style={styles.accessCardDesc}>{choice.description}</Text>
-                    </View>
+                  <View key={choice.id}>
+                    <Pressable
+                      style={[styles.accessCard, active && styles.accessCardActive]}
+                      onPress={() => selectAccessChoice(choice.optionValue)}
+                    >
+                      <View style={[styles.accessCardIcon, active && styles.accessCardIconActive]}>
+                        {choice.icon}
+                      </View>
+                      <View style={styles.accessCardText}>
+                        <Text style={[styles.accessCardLabel, active && styles.accessCardLabelActive]}>
+                          {choice.label}
+                        </Text>
+                        <Text style={styles.accessCardDesc}>{choice.description}</Text>
+                      </View>
+                      {active ? (
+                        <CircleCheck size={20} color={hostFlowColors.accent} strokeWidth={2.2} />
+                      ) : null}
+                    </Pressable>
+
                     {active ? (
-                      <CircleCheck size={20} color={hostFlowColors.accent} strokeWidth={2.2} />
+                      <View style={styles.inlineDetailBox}>
+                        <Text style={styles.detailLabel}>
+                          {isSpec
+                            ? "What should drivers do when they arrive?"
+                            : choice.id === "pin_code"
+                            ? "What is the pin code, or how will drivers receive it?"
+                            : "How do drivers collect the key or fob?"}
+                        </Text>
+                        <AppTextInput
+                          containerStyle={{ marginBottom: 0 }}
+                          style={styles.detailInput}
+                          placeholder={
+                            isSpec
+                              ? "E.g. Ring unit 4, wait for the shutter, then use bay 2 on the right."
+                              : choice.id === "pin_code"
+                              ? "E.g. The code will be sent after booking confirmation."
+                              : "E.g. Collect from the property owner on arrival."
+                          }
+                          value={isSpec ? draft.arrivalInstructions : draft.accessCode}
+                          onChangeText={(value) =>
+                            setDraft((prev) => ({
+                              ...prev,
+                              ...(isSpec
+                                ? { arrivalInstructions: value }
+                                : { accessCode: value }),
+                            }))
+                          }
+                          multiline
+                          numberOfLines={isSpec ? 4 : 2}
+                          textAlignVertical="top"
+                          maxLength={240}
+                        />
+                      </View>
                     ) : null}
-                  </Pressable>
+                  </View>
                 );
               })}
             </View>
           ) : null}
-
-          {/* Detail input */}
-          {draft.requiresAccessCode && needsAccessDetail ? (
-            <View
-              onLayout={(e: LayoutChangeEvent) => { accessInputYRef.current = e.nativeEvent.layout.y; }}
-              style={styles.detailBox}
-            >
-              <Text style={styles.detailLabel}>
-                {isSpecialInstructions
-                  ? "What should drivers do when they arrive?"
-                  : selectedAccessChoice?.id === "pin_code"
-                  ? "What is the pin code, or how will drivers receive it?"
-                  : "How do drivers collect the key or fob?"}
-              </Text>
-              <AppTextInput
-                containerStyle={{ marginBottom: 0 }}
-                style={styles.detailInput}
-                placeholder={
-                  isSpecialInstructions
-                    ? "E.g. Ring unit 4, wait for the shutter, then use bay 2 on the right."
-                    : selectedAccessChoice?.id === "pin_code"
-                    ? "E.g. The code will be sent after booking confirmation."
-                    : "E.g. Collect from the property owner on arrival."
-                }
-                value={isSpecialInstructions ? draft.arrivalInstructions : draft.accessCode}
-                onChangeText={(value) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    ...(isSpecialInstructions
-                      ? { arrivalInstructions: value }
-                      : { accessCode: value }),
-                  }))
-                }
-                multiline
-                numberOfLines={isSpecialInstructions ? 4 : 2}
-                textAlignVertical="top"
-                maxLength={240}
-                onFocus={() => scrollInputIntoView(accessInputYRef.current)}
-              />
-            </View>
-          ) : null}
         </ScrollView>
+      </KeyboardAvoidingView>
 
+      {!keyboardVisible && (
         <FlowFooter
           onBack={() => navigation.goBack()}
           primaryLabel="Continue"
           onPrimary={() => navigation.navigate("ListingAvailability")}
           primaryDisabled={!canContinue}
         />
-      </KeyboardAvoidingView>
+      )}
     </SafeAreaView>
   );
 }
@@ -337,7 +348,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 2,
     textTransform: "uppercase",
-    marginTop: 20,
+    marginTop: 28,
   },
   title: {
     color: hostFlowColors.text,
@@ -450,34 +461,57 @@ const styles = StyleSheet.create({
     color: hostFlowColors.textSoft,
   },
 
-  // ── Yes / No toggle ─────────────────────────────────────────
-  yesNoRow: {
-    flexDirection: "row",
+  // ── Access type (open / restricted) ────────────────────────
+  accessTypeStack: {
     gap: 10,
     marginBottom: 16,
   },
-  yesNoBtn: {
-    flex: 1,
+  accessTypeCard: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 12,
+    gap: 12,
     borderWidth: 1,
     borderColor: hostFlowColors.border,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     backgroundColor: hostFlowColors.cardBg,
   },
-  yesNoBtnActive: {
+  accessTypeCardActive: {
     borderColor: hostFlowColors.accent,
     backgroundColor: hostFlowColors.accentSoft,
   },
-  yesNoText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
-    color: hostFlowColors.textMuted,
-    textAlign: "center",
+  accessTypeIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f1f5f4",
+    flexShrink: 0,
   },
-  yesNoTextActive: {
+  accessTypeIconWrapActive: {
+    backgroundColor: hostFlowColors.accentSoftBorder,
+  },
+  accessTypeText: {
+    flex: 1,
+  },
+  accessTypeLabel: {
+    color: hostFlowColors.text,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15,
+    letterSpacing: -0.2,
+    lineHeight: 20,
+  },
+  accessTypeLabelActive: {
     color: hostFlowColors.accent,
+  },
+  accessTypeDesc: {
+    color: hostFlowColors.textSoft,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 2,
   },
 
   // ── Access type radio cards ─────────────────────────────────
@@ -534,13 +568,13 @@ const styles = StyleSheet.create({
   },
 
   // ── Detail input ────────────────────────────────────────────
-  detailBox: {
+  inlineDetailBox: {
     backgroundColor: hostFlowColors.cardBg,
-    borderRadius: 14,
     borderWidth: 1,
     borderColor: hostFlowColors.border,
+    borderRadius: 14,
     padding: 14,
-    marginBottom: 8,
+    marginTop: 8,
   },
   detailLabel: {
     color: hostFlowColors.text,

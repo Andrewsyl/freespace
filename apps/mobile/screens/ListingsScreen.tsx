@@ -80,7 +80,7 @@ export function ListingsScreen({ navigation }: Props) {
   const payoutStatusMessage = (() => {
     if (!payoutStatus) return null;
     if (payoutStatus.payoutsEnabled) return "Payouts active — transfers arrive automatically.";
-    if (payoutIsMock) return "Mock payout account. Start setup to create a real Stripe account.";
+    if (payoutIsMock) return "Connect Stripe to start receiving host payouts.";
     if (payoutStatus.requirementsDue.length > 0) return "Stripe needs a few more details before payouts can go live.";
     if (payoutStatus.detailsSubmitted) return "Details submitted — Stripe is reviewing your payout account.";
     if (payoutStatus.accountId) return "Finish payout setup to receive earnings.";

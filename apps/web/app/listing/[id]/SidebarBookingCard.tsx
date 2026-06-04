@@ -52,6 +52,8 @@ export function SidebarBookingCard({
       total: summary.total + 1.5,
       durationLabel: summary.durationLabel,
       billingLabel: summary.durationLabel,
+      dailyCapApplied: summary.dailyCapApplied,
+      dailyCapSaving: summary.dailyCapSaving,
     };
   }, [initialBooking?.endDate, initialBooking?.endTime, initialBooking?.startDate, initialBooking?.startTime, pricePerDay, pricePerHour, rateType, unitPrice]);
   const [pricing, setPricing] = useState(defaultPricing);
@@ -113,6 +115,14 @@ export function SidebarBookingCard({
               <span>{pricing.billingLabel}</span>
               <span className="font-mono">€{formatPriceValue(pricing.subtotal)}</span>
             </div>
+            {pricing.dailyCapApplied && (
+              <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1.5 text-[12px] font-semibold text-emerald-700">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+                Daily rate applied — saves €{formatPriceValue(pricing.dailyCapSaving)} vs. hourly
+              </div>
+            )}
             <div className="flex items-center justify-between text-[13px] text-slate-600">
               <span>Service fee</span>
               <span className="font-mono">€1.50</span>

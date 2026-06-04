@@ -146,6 +146,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.screenX,
+    paddingTop: 28,
     paddingBottom: 8,
   },
   kicker: {

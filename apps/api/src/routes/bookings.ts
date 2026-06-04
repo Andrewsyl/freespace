@@ -579,13 +579,14 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
     if (!listingWithHost) {
       return res.status(404).json({ message: "Listing not found" });
     }
-    const expectedAmountCents = calculateListingChargeCents({
+    const expectedParkingCents = calculateListingChargeCents({
       rateType: listingWithHost.rateType,
       pricePerDay: listingWithHost.pricePerDay,
       pricePerHour: listingWithHost.pricePerHour,
       startTime: new Date(payload.from),
       endTime: new Date(payload.to),
     });
+    const expectedAmountCents = Math.round(expectedParkingCents * 1.08);
     if (payload.amountCents !== expectedAmountCents) {
       return res.status(400).json({ message: "Booking price is out of date. Please refresh and try again." });
     }
@@ -647,21 +648,6 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
         currency: payload.currency,
       }),
     });
-
-    try {
-      if (driver?.email && listingWithHost) {
-        await sendBookingStatusEmail({
-          to: driver.email,
-          status: "confirmed",
-          bookingId: payload.listingId,
-          listingTitle: listingWithHost.title ?? "Parking space",
-          listingAddress: listingWithHost.address ?? "",
-          windowText: formatBookingWindow(new Date(payload.from), new Date(payload.to)),
-        });
-      }
-    } catch (emailError) {
-      console.warn("Booking email failed", emailError);
-    }
 
     // Persist reservation as pending; confirm via Stripe webhook in production.
     try {
@@ -760,13 +746,14 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
     if (!listingWithHost) {
       return res.status(404).json({ message: "Listing not found" });
     }
-    const expectedAmountCents = calculateListingChargeCents({
+    const expectedParkingCents = calculateListingChargeCents({
       rateType: listingWithHost.rateType,
       pricePerDay: listingWithHost.pricePerDay,
       pricePerHour: listingWithHost.pricePerHour,
       startTime: new Date(payload.from),
       endTime: new Date(payload.to),
     });
+    const expectedAmountCents = Math.round(expectedParkingCents * 1.08);
     if (payload.amountCents !== expectedAmountCents) {
       return res.status(400).json({ message: "Booking price is out of date. Please refresh and try again." });
     }
@@ -830,17 +817,7 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
       },
     };
 
-    const intent = await stripe.paymentIntents.create(intentParams, {
-      idempotencyKey: buildBookingIntentKey({
-        source: "payment-intent",
-        driverId,
-        listingId: payload.listingId,
-        from: payload.from,
-        to: payload.to,
-        amountCents: expectedAmountCents,
-        currency: payload.currency,
-      }),
-    });
+    const intent = await stripe.paymentIntents.create(intentParams);
 
     try {
       await createBooking({

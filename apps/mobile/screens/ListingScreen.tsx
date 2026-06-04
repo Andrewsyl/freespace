@@ -31,7 +31,7 @@ import { LIGHT_MAP_STYLE } from "../components/mapStyles";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
 import { formatDateLabel, formatDateTimeLabel, formatReviewDate, formatTimeLabel } from "../utils/dateFormat";
-import { calculateListingTotal, getListingRateType } from "../utils/pricing";
+import { calculateListingTotal, formatPriceValue, getListingRateType } from "../utils/pricing";
 import { ArrowDownUp, Cctv, EvCharger, Home, Fence, IdCard, KeyRound } from "lucide-react-native";
 import { SkeletonBlock, usePulse } from "../components/ui";
 
@@ -102,6 +102,7 @@ export function ListingScreen({ navigation, route }: Props) {
   const [viewerIndex, setViewerIndex] = useState(0);
   const [showMapViewer, setShowMapViewer] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const [authOverlayVisible, setAuthOverlayVisible] = useState(false);
   const [reviews, setReviews] = useState<ListingReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -568,6 +569,9 @@ export function ListingScreen({ navigation, route }: Props) {
                       €{priceSummary?.total ?? "—"}
                       {priceSummary ? <Text style={styles.statsCellSub}> · {priceSummary.durationLabel}</Text> : null}
                     </Text>
+                    {priceSummary?.dailyCapApplied ? (
+                      <Text style={styles.dailyCapBadge}>Day rate applied</Text>
+                    ) : null}
                   </View>
                   <View style={styles.statsVDivider} />
                   <View style={styles.statsCell}>
@@ -689,8 +693,6 @@ export function ListingScreen({ navigation, route }: Props) {
                           style={styles.localAreaMap}
                           provider={PROVIDER_GOOGLE}
                           cacheEnabled={Platform.OS !== "android"}
-                          loadingEnabled
-                          loadingBackgroundColor="#F9FAFB"
                           scrollEnabled={false}
                           rotateEnabled={false}
                           pitchEnabled={false}
@@ -706,12 +708,21 @@ export function ListingScreen({ navigation, route }: Props) {
                           }}
                           mapType="standard"
                           customMapStyle={LIGHT_MAP_STYLE}
+                          onMapReady={() => setMapReady(true)}
                         >
                           <Marker
                             coordinate={{ latitude, longitude }}
                             tracksViewChanges={false}
                           />
                         </MapView>
+                        {!mapReady && (
+                          <SkeletonBlock
+                            height={168}
+                            style={StyleSheet.absoluteFillObject}
+                            borderRadius={0}
+                            pulse={skeletonPulse}
+                          />
+                        )}
                         <Pressable style={styles.mapExpandButton} onPress={() => setShowMapViewer(true)}>
                           <Ionicons name="expand-outline" size={18} color="#151b1b" />
                         </Pressable>
@@ -851,6 +862,9 @@ export function ListingScreen({ navigation, route }: Props) {
                   <Text style={styles.bottomLabel}>TOTAL</Text>
                   <Text style={styles.bottomPrice}>€{priceSummary.total}</Text>
                   <Text style={styles.bottomDuration}>{priceSummary.durationLabel}</Text>
+                  {priceSummary.dailyCapApplied ? (
+                    <Text style={styles.dailyCapBadge}>Day rate — saves €{formatPriceValue(priceSummary.dailyCapSaving)}</Text>
+                  ) : null}
                 </View>
                 {listing.is_available === false || showBookingMode ? (
                   <View style={[styles.reserveBtn, styles.reserveBtnDisabled]}>
@@ -1516,6 +1530,7 @@ const styles = StyleSheet.create({
     fontSize: 24, color: FG, letterSpacing: -0.5, lineHeight: 29,
   },
   bottomDuration: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, marginTop: 1 },
+  dailyCapBadge: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: GREEN, marginTop: 2 },
   reserveBtn: {
     backgroundColor: GREEN,
     borderRadius: 12,

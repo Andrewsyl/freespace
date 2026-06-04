@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SkeletonBlock, usePulse } from "../components/ui";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -6,7 +6,7 @@ import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
 import { colors, radius, spacing } from "../styles/theme";
 import type { RootStackParamList } from "../types";
-import { ArrowLeft, Heart, ShieldCheck } from "lucide-react-native";
+import { ArrowLeft, Heart, MapPin, ShieldCheck } from "lucide-react-native";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Favorites">;
 
@@ -81,7 +81,13 @@ export function FavoritesScreen({ navigation }: Props) {
                   })
                 }
               >
-                <View style={styles.icon} />
+                {item.image_urls?.[0] ? (
+                  <Image source={{ uri: item.image_urls[0] }} style={styles.icon} />
+                ) : (
+                  <View style={styles.iconPlaceholder}>
+                    <MapPin size={16} color={colors.textSoft} strokeWidth={1.8} />
+                  </View>
+                )}
                 <View style={styles.rowCopy}>
                   <Text style={styles.rowTitle}>{item.title}</Text>
                   <Text style={styles.rowSubtitle}>{item.address}</Text>
@@ -134,12 +140,20 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   icon: {
+    borderRadius: 10,
+    height: 52,
+    width: 52,
     backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 12,
+  },
+  iconPlaceholder: {
+    borderRadius: 10,
+    height: 52,
+    width: 52,
+    backgroundColor: colors.cardBg,
     borderWidth: 1,
-    height: 36,
-    width: 36,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
   rowCopy: {
     flex: 1,

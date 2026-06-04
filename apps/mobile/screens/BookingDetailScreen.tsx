@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
@@ -21,7 +21,6 @@ import { useAuth } from "../auth";
 import { getNotificationImageAttachment } from "../notifications";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { formatTimeLabel } from "../utils/dateFormat";
 import { formatBookingReference } from "../utils/bookingFormat";
@@ -56,6 +55,44 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   const [reviewed, setReviewed] = useState(false);
   const [reviewedRating, setReviewedRating] = useState<number | null>(null);
   const [pendingRating, setPendingRating] = useState<number | null>(null);
+
+  // Schedule "ending soon" notification with an Extend action button
+  useEffect(() => {
+    if (isCanceled || (!isUpcoming && !isInProgress)) return;
+    const endReminder = new Date(end.getTime() - 30 * 60 * 1000);
+    if (endReminder.getTime() <= Date.now()) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        await Notifications.setNotificationCategoryAsync("booking_ending", [
+          {
+            identifier: "extend_booking",
+            buttonTitle: "Extend +",
+            options: { opensAppToForeground: true },
+          },
+        ]);
+        if (cancelled) return;
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: "Your parking ends in 30 minutes",
+            body: `${booking.title} — need more time?`,
+            categoryIdentifier: "booking_ending",
+            data: {
+              type: "booking_extend_prompt",
+              bookingId: booking.id,
+              historyTab: "active" as const,
+            },
+          },
+          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: endReminder },
+        });
+      } catch {
+        // Notification scheduling is best-effort
+      }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [booking.id, booking.title, end]);
 
   useFocusEffect(
     useCallback(() => {
@@ -107,6 +144,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     !checkedInAt &&
     Date.now() >= start.getTime() - 15 * 60 * 1000 &&
     Date.now() <= end.getTime();
+  const isCompleted = !isUpcoming && !isInProgress && !isCanceled;
   const canBookAgain = isCanceled || (!isUpcoming && !isInProgress);
   const statusConfig = (() => {
     if (isCanceled) return {
@@ -152,12 +190,6 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   const durationLabel = durH > 0
     ? (durM > 0 ? `${durH}h ${durM}m` : `${durH}h`)
     : `${durM}m`;
-  const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-  const heroUrl: string | null =
-    booking.imageUrls?.[0] ??
-    (mapsKey && booking.latitude != null && booking.longitude != null
-      ? `https://maps.googleapis.com/maps/api/streetview?size=800x400&location=${booking.latitude},${booking.longitude}&fov=90&key=${mapsKey}`
-      : null);
 
   const performCancel = async () => {
     if (!token || canceling || localStatus === "canceled") return;
@@ -282,10 +314,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   };
 
   const handleOpenMaps = () => {
-    Alert.alert("Open Google Maps", "Open directions to this space?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Open", onPress: () => Linking.openURL(mapsUrl) },
-    ]);
+    Linking.openURL(mapsUrl);
   };
 
   const handleStarPress = (star: number) => {
@@ -305,273 +334,210 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     });
   };
 
+  const SERVICE_FEE_CENTS = 150;
+  const progressPct = isInProgress
+    ? Math.min(1, Math.max(0, (now - start.getTime()) / (end.getTime() - start.getTime())))
+    : 0;
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <StatusBar style="dark" translucent={false} backgroundColor={SCREEN_BG} />
+      <StatusBar style="dark" translucent={false} backgroundColor="#fff" />
 
-      {/* ── Navigation header ── */}
+      {/* ── Nav header — mirrors BookingSummaryScreen ── */}
       <View style={styles.header}>
-        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={20} color={FG} />
         </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>{booking.title}</Text>
-        <View style={{ width: 40 }} />
+        <Text style={styles.headerTitle}>Booking details</Text>
+        <View style={{ width: 32 }} />
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} ref={scrollRef}>
+      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
 
-        {/* ── Review CTA — sits above the ticket when a review is due ── */}
-        {canReview ? (
-          reviewed ? (
-            <View style={styles.reviewCta}>
-              <Text style={styles.reviewCtaQuestion}>Thanks for your review!</Text>
-              <View style={styles.reviewCtaStars}>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Ionicons
-                    key={`star-top-${i}`}
-                    name="star"
-                    size={30}
-                    color={reviewedRating != null && i < Math.round(reviewedRating) ? "#fff" : "rgba(255,255,255,0.3)"}
-                  />
-                ))}
-              </View>
-            </View>
-          ) : (
-            <View style={styles.reviewCta}>
-              <Text style={styles.reviewCtaQuestion}>How was your parking experience?</Text>
-              <View style={styles.reviewCtaStars}>
-                {Array.from({ length: 5 }).map((_, i) => {
-                  const star = i + 1;
-                  const filled = pendingRating !== null && star <= pendingRating;
-                  return (
-                    <Pressable
-                      key={`star-top-${i}`}
-                      onPress={() => handleStarPress(star)}
-                      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-                      hitSlop={8}
-                    >
-                      <Ionicons
-                        name={filled ? "star" : "star-outline"}
-                        size={34}
-                        color="#fff"
-                      />
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          )
-        ) : null}
-
-        {/* ═══════════════════════════════════════
-            E-TICKET CARD
-        ═══════════════════════════════════════ */}
-        <View style={styles.ticketCard}>
-
-          {/* ── Dark top section ── */}
-          <LinearGradient
-            colors={statusConfig.cardGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={styles.ticketTop}
-          >
-
-            {/* Status chip + price */}
-            <View style={styles.ticketHeaderRow}>
-              <View style={styles.statusChip}>
-                <Ionicons name={statusConfig.icon} size={12} color="#fff" />
-                <Text style={styles.statusChipText}>{statusConfig.label}</Text>
-              </View>
-              <Text style={styles.ticketPrice}>
-                €{(localAmountCents / 100).toFixed(2)}
-              </Text>
-            </View>
-
-            {/* Listing name + address */}
-            <Text style={styles.ticketTitle} numberOfLines={2}>{booking.title}</Text>
-            <Text style={styles.ticketAddress} numberOfLines={1}>{booking.address}</Text>
-
-            {/* Time row */}
-            <View style={styles.timeRow}>
-              <View style={styles.timeCol}>
-                <Text style={styles.timeEyebrow}>ARRIVAL</Text>
-                <Text style={styles.timeBig}>{formatTimeLabel(start)}</Text>
-                <Text style={styles.timeSub}>{startDateLabel}</Text>
-              </View>
-
-              <View style={styles.timeMid}>
-                <View style={styles.timeLine} />
-                <View style={styles.durationPill}>
-                  <Text style={styles.durationText}>{durationLabel}</Text>
-                </View>
-                <View style={styles.timeLine} />
-              </View>
-
-              <View style={[styles.timeCol, styles.timeColRight]}>
-                <Text style={styles.timeEyebrow}>DEPARTURE</Text>
-                <Text style={styles.timeBig}>{formatTimeLabel(end)}</Text>
-                <Text style={styles.timeSub}>{endDateLabel}</Text>
-              </View>
-            </View>
-
-            {/* Extend end time */}
-            {(isUpcoming || isInProgress) && !isCanceled ? (
-              <Pressable
-                style={({ pressed }) => [styles.extendBtn, pressed && { opacity: 0.7 }]}
-                onPress={() => setExtendOpen(true)}
-                disabled={extendBusy}
-              >
-                <Ionicons name="time-outline" size={14} color="rgba(255,255,255,0.85)" />
-                <Text style={styles.extendBtnText}>
-                  {extendBusy ? "Extending…" : "Extend end time"}
-                </Text>
-                <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.5)" />
-              </Pressable>
-            ) : null}
-
-          </LinearGradient>
-
-          {/* ── White bottom section ── */}
-          <View style={styles.ticketBottom}>
-            <View style={styles.refRow}>
-              <View>
-                <Text style={styles.refEyebrow}>Booking reference</Text>
-                <Text style={styles.refCode}>{formatBookingReference(booking.id)}</Text>
-              </View>
-              {booking.vehiclePlate ? (
-                <View style={styles.plateChip}>
-                  <Ionicons name="car-outline" size={12} color={FG_MUTED} />
-                  <Text style={styles.plateChipText}>{booking.vehiclePlate}</Text>
-                </View>
-              ) : null}
+        {/* ── Review CTA ── */}
+        {canReview && !reviewed ? (
+          <View style={styles.reviewSection}>
+            <Text style={styles.reviewTitle}>How was your parking?</Text>
+            <View style={styles.reviewStars}>
+              {Array.from({ length: 5 }).map((_, i) => {
+                const star = i + 1;
+                const filled = pendingRating !== null && star <= pendingRating;
+                return (
+                  <Pressable key={i} onPress={() => handleStarPress(star)}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })} hitSlop={12}>
+                    <Ionicons name={filled ? "star" : "star-outline"} size={36}
+                      color={filled ? "#F59E0B" : "rgba(255,255,255,0.45)"} />
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
+        ) : canReview && reviewed ? (
+          <View style={[styles.reviewSection, styles.reviewSectionDone]}>
+            <Text style={styles.reviewTitleDone}>Thanks for your review</Text>
+            <View style={styles.reviewStars}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Ionicons key={i} name="star" size={22}
+                  color={reviewedRating != null && i < Math.round(reviewedRating) ? "#F59E0B" : "#E5E7EB"} />
+              ))}
+            </View>
+          </View>
+        ) : null}
 
+        {/* ── Directions banner ── */}
+        {(isUpcoming || isInProgress) && !isCanceled && !canCheckIn ? (
+          <TouchableOpacity style={styles.directionsBanner} onPress={handleOpenMaps} activeOpacity={0.8}>
+            <View style={styles.directionsIconWrap}>
+              <Ionicons name="navigate" size={20} color="#fff" />
+            </View>
+            <View style={styles.directionsText}>
+              <Text style={styles.directionsLabel}>Get directions</Text>
+              <Text style={styles.directionsAddress} numberOfLines={1}>{booking.address}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
+          </TouchableOpacity>
+        ) : null}
+
+        {/* ── Page header ── */}
+        <View style={styles.pageHeader}>
+          <View style={[styles.statusPill, isCanceled && styles.statusPillCanceled, (isInProgress || isCompleted) && styles.statusPillActive]}>
+            <Ionicons name={statusConfig.icon} size={11}
+              color={isCanceled ? "#DC2626" : (isInProgress || isCompleted) ? GREEN : "#374151"} />
+            <Text style={[styles.statusPillText, isCanceled && styles.statusPillTextCanceled, (isInProgress || isCompleted) && styles.statusPillTextActive]}>
+              {statusConfig.label}
+            </Text>
+          </View>
+          <Text style={styles.pageTitle} numberOfLines={2}>{booking.title}</Text>
+          <Text style={styles.pageAddress}>{booking.address}</Text>
         </View>
 
-        {/* ═══════════════════════════════════════
-            ACTIONS
-        ═══════════════════════════════════════ */}
-        <View style={styles.actionBlock}>
-          {(isUpcoming || isInProgress) && !isCanceled ? (
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleOpenMaps}>
-              <Ionicons name="navigate-outline" size={16} color="#fff" />
-              <Text style={styles.primaryBtnText}>Get directions</Text>
-            </TouchableOpacity>
+        {/* ── Time section ── */}
+        <View style={styles.section}>
+          <View style={styles.timeRow}>
+            <View style={styles.timeCol}>
+              <Text style={styles.timeLabel}>ARRIVING</Text>
+              <Text style={styles.timeValue}>{formatTimeLabel(start)}</Text>
+              <Text style={styles.timeDate}>{startDateLabel}</Text>
+            </View>
+            <View style={styles.timeMid}>
+              <View style={styles.timeLine} />
+              <Text style={styles.timeDuration}>{durationLabel}</Text>
+              <View style={styles.timeLine} />
+            </View>
+            <View style={[styles.timeCol, { alignItems: "flex-end" }]}>
+              <Text style={styles.timeLabel}>LEAVING</Text>
+              <Text style={styles.timeValue}>{formatTimeLabel(end)}</Text>
+              <Text style={styles.timeDate}>{endDateLabel}</Text>
+            </View>
+          </View>
+          {isInProgress ? (
+            <View style={styles.progressWrap}>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${Math.round(progressPct * 100)}%` as `${number}%` }]} />
+              </View>
+            </View>
           ) : null}
+          {(isUpcoming || isInProgress) && !isCanceled ? (
+            <Pressable
+              style={({ pressed }) => [styles.extendRow, pressed && { opacity: 0.6 }]}
+              onPress={() => setExtendOpen(true)}
+              disabled={extendBusy}
+            >
+              <Ionicons name="time-outline" size={14} color={GREEN} />
+              <Text style={styles.extendText}>{extendBusy ? "Extending…" : "Extend end time"}</Text>
+              <Ionicons name="chevron-forward" size={13} color={GREEN} />
+            </Pressable>
+          ) : null}
+        </View>
 
+        {/* ── Details section ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Details</Text>
+          <View style={styles.summaryBox}>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Total paid</Text>
+              <Text style={styles.summaryValue}>€{(localAmountCents / 100).toFixed(2)}</Text>
+            </View>
+            <View style={[styles.summaryRow, styles.summaryRowBorder]}>
+              <Text style={styles.summaryLabel}>Reference</Text>
+              <Text style={[styles.summaryValue, styles.summaryRef]} selectable>{formatBookingReference(booking.id)}</Text>
+            </View>
+            {booking.vehiclePlate ? (
+              <View style={[styles.summaryRow, styles.summaryRowBorder]}>
+                <Text style={styles.summaryLabel}>Vehicle</Text>
+                <Text style={styles.summaryValue}>{booking.vehiclePlate}</Text>
+              </View>
+            ) : null}
+            {checkedInAt ? (
+              <View style={[styles.summaryRow, styles.summaryRowBorder]}>
+                <Text style={styles.summaryLabel}>Checked in</Text>
+                <Text style={[styles.summaryValue, { color: GREEN }]}>{formatTimeLabel(checkedInAt)}</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+
+        {/* ── Getting in ── */}
+        {showArrivalInfo ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Getting in</Text>
+            {booking.arrivalInstructions?.trim() ? (
+              <Text style={styles.sectionBody}>{booking.arrivalInstructions.trim()}</Text>
+            ) : null}
+            {booking.accessCode?.trim() ? (
+              <View style={styles.codeBox}>
+                <Text style={styles.codeLabel}>Entry code</Text>
+                <Text style={styles.codeValue} selectable>{booking.accessCode.trim()}</Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {/* ── Cancellation ── */}
+        {isCanceled ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionBody}>
+              {isRefunded ? "Refund submitted to your original payment method."
+                : cancellationSource === "host" ? "Canceled by the host."
+                : "Booking canceled."}
+              {!isRefunded ? <Text style={styles.sectionLink} onPress={handleContactSupport}> Contact support →</Text> : null}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* ── Actions ── */}
+        <View style={styles.actionsSection}>
           {canCheckIn ? (
             <TouchableOpacity style={styles.primaryBtn} onPress={handleCheckIn}>
-              <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
+              <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
               <Text style={styles.primaryBtnText}>Check in</Text>
             </TouchableOpacity>
           ) : null}
 
-          {receiptUrl ? (
-            <TouchableOpacity style={styles.outlineBtn} onPress={() => Linking.openURL(receiptUrl)}>
-              <Ionicons name="receipt-outline" size={16} color={GREEN} />
-              <Text style={styles.outlineBtnText}>View receipt</Text>
-            </TouchableOpacity>
-          ) : null}
-
           {canBookAgain ? (
-            <TouchableOpacity style={styles.outlineBtn} onPress={handleBookAgain}>
+            <TouchableOpacity style={styles.secondaryBtn} onPress={handleBookAgain}>
               <Ionicons name="refresh-outline" size={16} color={FG} />
-              <Text style={styles.outlineBtnText}>Book again</Text>
-            </TouchableOpacity>
-          ) : null}
-
-          {isUpcoming && !isCanceled ? (
-            <TouchableOpacity
-              style={[styles.dangerBtn, canceling && styles.btnDisabled]}
-              onPress={handleCancel}
-              disabled={canceling}
-            >
-              <Text style={styles.dangerBtnText}>
-                {canceling ? "Canceling…" : "Cancel booking"}
-              </Text>
+              <Text style={styles.secondaryBtnText}>Book again</Text>
             </TouchableOpacity>
           ) : null}
 
           {extendError ? <Text style={styles.errorText}>{extendError}</Text> : null}
-        </View>
 
-        {/* ── Arrival details ── */}
-        {showArrivalInfo ? (
-          <View style={styles.infoCard}>
-            <Text style={styles.infoCardTitle}>Arrival details</Text>
-            {booking.arrivalInstructions?.trim() ? (
-              <Text style={styles.infoCardBody}>{booking.arrivalInstructions.trim()}</Text>
+          <View style={styles.linkRow}>
+            {receiptUrl ? (
+              <Pressable onPress={() => Linking.openURL(receiptUrl)}>
+                <Text style={styles.linkText}>View receipt</Text>
+              </Pressable>
             ) : null}
-            {booking.accessCode?.trim() ? (
-              <View style={styles.accessCodeWrap}>
-                <Text style={styles.infoCardLabel}>Entry code</Text>
-                <Text style={styles.accessCodeValue}>{booking.accessCode.trim()}</Text>
-              </View>
+            {isUpcoming && !isCanceled ? (
+              <Pressable onPress={handleCancel} disabled={canceling}>
+                <Text style={styles.linkTextDanger}>{canceling ? "Canceling…" : "Cancel booking"}</Text>
+              </Pressable>
             ) : null}
+            <Pressable onPress={handleContactSupport}>
+              <Text style={styles.linkText}>Help</Text>
+            </Pressable>
           </View>
-        ) : null}
-
-        {/* ── Cancellation status ── */}
-        {isCanceled ? (
-          <View style={styles.cancelCard}>
-            <Text style={styles.cancelEyebrow}>Cancellation status</Text>
-
-            <Text style={styles.cancelNote}>
-              {cancellationSource === "host"
-                ? isRefunded
-                  ? "The host canceled this booking. Your refund has been submitted to the original payment method."
-                  : "The host canceled this booking. If no refund has appeared yet, contact support and we will trace it."
-                : isRefunded
-                  ? "This booking was canceled. Your refund has been submitted to the original payment method."
-                  : "This booking was canceled. If you expected a refund and have not received one, contact support with your reference."}
-            </Text>
-
-            {isRefunded ? (
-              <View style={styles.cancelTimeline}>
-                <View style={styles.timelineItem}>
-                  <View style={styles.timelineIndicator}>
-                    <View style={styles.timelineDot}>
-                      <Ionicons name="checkmark" size={12} color="#fff" />
-                    </View>
-                  </View>
-                  <View style={styles.timelineBody}>
-                    <Text style={styles.timelineTitle}>Refund processed</Text>
-                    {localRefundedAt ? (
-                      <Text style={styles.timelineSub}>
-                        {new Date(localRefundedAt).toLocaleDateString("en-IE", {
-                          day: "2-digit", month: "long", year: "numeric", timeZone: "Europe/Dublin",
-                        })}
-                      </Text>
-                    ) : null}
-                  </View>
-                </View>
-              </View>
-            ) : null}
-
-            <TouchableOpacity style={styles.secondaryLinkBtn} onPress={handleContactSupport}>
-              <Text style={styles.secondaryLinkBtnText}>
-                {cancellationSource === "host"
-                  ? "Need help with host cancellation?"
-                  : isRefunded ? "Need refund help?" : "Request refund support"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
-
-
-        {/* ── Help ── */}
-        <View style={styles.helpCard}>
-          <TouchableOpacity style={styles.helpRow} onPress={handleContactSupport} activeOpacity={0.7}>
-            <View style={styles.helpIconWrap}>
-              <Ionicons name="chatbubble-ellipses-outline" size={18} color={GREEN} />
-            </View>
-            <View style={styles.helpRowBody}>
-              <Text style={styles.helpRowTitle}>Need help?</Text>
-              <Text style={styles.helpRowSub}>Contact support about this booking</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={15} color="#9A9A9A" />
-          </TouchableOpacity>
         </View>
 
       </ScrollView>
@@ -590,456 +556,126 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   );
 }
 
-// ── Design tokens ──────────────────────────────────────────────────────────
-const SCREEN_BG  = "#EFEEEC";
+// ── Design tokens (match BookingSummaryScreen) ─────────────────────────────
 const GREEN      = "#0fa968";
-const GREEN_SOFT = "#E6F2EC";
-const FG         = "#111111";
-const FG_MUTED   = "#374151";
+const FG         = "#111827";
+const MUTED      = "#6B7280";
 const LINE       = "#EBEBEA";
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: SCREEN_BG },
+  container: { flex: 1, backgroundColor: "#fff" },
 
-  // ── Header ──────────────────────────────────────────────────────────────
+  // Nav header — identical pattern to BookingSummaryScreen
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 10,
-    backgroundColor: SCREEN_BG,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.07)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    color: FG,
-    letterSpacing: -0.1,
-    paddingHorizontal: 8,
-  },
-
-  // ── Scroll ──────────────────────────────────────────────────────────────
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 52,
-    gap: 12,
-  },
-
-  // ── E-ticket card ───────────────────────────────────────────────────────
-  ticketCard: {
-    borderRadius: 20,
-    overflow: "hidden",
+    alignItems: "center", justifyContent: "center",
+    paddingHorizontal: 20, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: LINE,
     backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 8,
   },
+  backButton: { padding: 6, position: "absolute", left: 14 },
+  headerTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG, textAlign: "center" },
 
-  // Dark top section (no own shadow — card handles it)
-  ticketTop: {
-    paddingTop: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+  // Review — green section at top when due
+  reviewSection: {
+    backgroundColor: GREEN,
+    paddingVertical: 28, paddingHorizontal: 20,
+    alignItems: "center", gap: 14,
+    borderBottomWidth: 1, borderBottomColor: LINE,
   },
-  ticketHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 18,
-  },
-  statusChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  statusChipText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
-    color: "#fff",
-  },
-  ticketPrice: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 28,
-    color: "#fff",
-    letterSpacing: -0.8,
-  },
-  ticketTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 20,
-    color: "#fff",
-    letterSpacing: -0.4,
-    lineHeight: 26,
-    marginBottom: 4,
-  },
-  ticketAddress: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    color: "rgba(255,255,255,0.58)",
-    marginBottom: 24,
-  },
+  reviewSectionDone: { backgroundColor: "#fff" },
+  reviewTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 18, color: "#fff", letterSpacing: -0.3 },
+  reviewTitleDone: { fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: FG },
+  reviewStars: { flexDirection: "row", gap: 8 },
 
-  // Time row
-  timeRow: {
-    flexDirection: "row",
-    alignItems: "center",
+  // Page header — mirrors BookingSummaryScreen pageHeader
+  pageHeader: {
+    borderBottomWidth: 1, borderBottomColor: LINE,
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
+    alignItems: "center", gap: 6,
   },
+  statusPill: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#F3F4F6", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  statusPillCanceled: { backgroundColor: "#FEF2F2" },
+  statusPillActive: { backgroundColor: "#ECFDF5" },
+  statusPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: "#374151" },
+  statusPillTextCanceled: { color: "#DC2626" },
+  statusPillTextActive: { color: GREEN },
+  pageTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 22, color: FG, letterSpacing: -0.5, lineHeight: 28, textAlign: "center" },
+  pageAddress: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, textAlign: "center" },
+
+  // Sections — identical to BookingSummaryScreen
+  section: { borderBottomWidth: 1, borderBottomColor: LINE, paddingHorizontal: 20, paddingVertical: 18 },
+  sectionTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG, letterSpacing: -0.3, marginBottom: 12 },
+  sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, lineHeight: 22 },
+  sectionLink: { fontFamily: "PlusJakartaSans-SemiBold", color: GREEN },
+
+  // Time row — mirrors BookingSummaryScreen timeRow
+  timeRow: { flexDirection: "row", alignItems: "center" },
   timeCol: { flex: 1 },
-  timeColRight: { alignItems: "flex-end" },
-  timeEyebrow: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 9,
-    color: "rgba(255,255,255,0.55)",
-    letterSpacing: 0.9,
-    marginBottom: 4,
-  },
-  timeBig: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 26,
-    color: "#fff",
-    letterSpacing: -0.5,
-  },
-  timeSub: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
-    color: "rgba(255,255,255,0.55)",
-    marginTop: 2,
-  },
-  timeMid: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 0.85,
-    justifyContent: "center",
-  },
-  timeLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "rgba(255,255,255,0.22)",
-  },
-  durationPill: {
-    backgroundColor: "rgba(255,255,255,0.13)",
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginHorizontal: 6,
-  },
-  durationText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    color: "rgba(255,255,255,0.8)",
-  },
+  timeLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: GREEN, letterSpacing: 0.6, textTransform: "uppercase" as const, marginBottom: 4 },
+  timeValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 28, color: FG, letterSpacing: -0.8 },
+  timeDate: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 3 },
+  timeMid: { flexDirection: "row", alignItems: "center", flex: 0.8, justifyContent: "center" },
+  timeLine: { flex: 1, height: 1, backgroundColor: LINE },
+  timeDuration: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: MUTED, paddingHorizontal: 6 },
 
-  // Extend button
-  extendBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.13)",
-    paddingTop: 14,
-    marginTop: 18,
-  },
-  extendBtnText: {
-    flex: 1,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13,
-    color: "rgba(255,255,255,0.88)",
-  },
+  progressWrap: { marginTop: 14 },
+  progressTrack: { height: 4, borderRadius: 999, backgroundColor: "#E5E7EB", overflow: "hidden" },
+  progressFill: { height: "100%", borderRadius: 999, backgroundColor: GREEN },
 
-  // White bottom section
-  ticketBottom: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 20,
-  },
-  refRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-  },
-  refEyebrow: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 9,
-    color: GREEN,
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  refCode: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 22,
-    color: FG,
-    letterSpacing: 2.5,
-    fontVariant: ["tabular-nums"] as const,
-  },
-  plateChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: "#F5F5F4",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  plateChipText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
-    color: FG_MUTED,
-  },
-
-  // ── Action buttons ───────────────────────────────────────────────────────
-  actionBlock: { gap: 10 },
-  primaryBtn: {
-    backgroundColor: GREEN,
-    paddingVertical: 16,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.28,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  primaryBtnText: {
-    color: "#fff",
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-  },
-  outlineBtn: {
-    backgroundColor: "#fff",
-    paddingVertical: 15,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderColor: LINE,
-  },
-  outlineBtnText: {
-    color: FG,
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-  },
-  dangerBtn: {
-    borderWidth: 1,
-    borderColor: "#f6caca",
-    backgroundColor: "#fff7f7",
-    paddingVertical: 15,
-    borderRadius: 14,
-    alignItems: "center",
-  },
-  dangerBtnText: {
-    color: "#DC2626",
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-  },
-  btnDisabled: { opacity: 0.6 },
-  errorText: {
-    color: "#DC2626",
-    fontSize: 14,
-    textAlign: "center",
-    fontFamily: "PlusJakartaSans-Regular",
-  },
-
-  // ── Info cards ───────────────────────────────────────────────────────────
-  infoCard: {
-    borderRadius: 16,
-    padding: 18,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: LINE,
-  },
-  infoCardTitle: {
-    color: FG,
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    marginBottom: 8,
-  },
-  infoCardBody: {
-    color: FG_MUTED,
-    fontSize: 14,
-    lineHeight: 22,
-    fontFamily: "PlusJakartaSans-Regular",
-  },
-  accessCodeWrap: {
-    marginTop: 14,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: LINE,
-  },
-  infoCardLabel: {
-    color: "#9A9A9A",
-    fontSize: 10,
-    textTransform: "uppercase",
-    letterSpacing: 0.7,
-    marginBottom: 6,
-    fontFamily: "PlusJakartaSans-SemiBold",
-  },
-  accessCodeValue: {
-    color: FG,
-    fontSize: 20,
-    letterSpacing: 2.5,
-    fontFamily: "PlusJakartaSans-Bold",
-  },
-  secondaryLinkBtn: {
-    marginTop: 12,
-    alignSelf: "flex-start",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: GREEN_SOFT,
-  },
-  secondaryLinkBtnText: {
-    color: GREEN,
-    fontSize: 13,
-    fontFamily: "PlusJakartaSans-SemiBold",
-  },
-
-  // ── Cancellation timeline card ───────────────────────────────────────────
-  cancelCard: {
-    borderRadius: 16,
-    padding: 18,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: LINE,
-  },
-  cancelEyebrow: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 10,
-    color: FG_MUTED,
-    letterSpacing: 0.9,
-    textTransform: "uppercase",
-    marginBottom: 10,
-  },
-  cancelNote: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    color: FG_MUTED,
-    lineHeight: 22,
-    marginBottom: 20,
-  },
-  cancelTimeline: {
-    marginBottom: 16,
-  },
-  timelineItem: {
-    flexDirection: "row",
-    gap: 14,
-  },
-  timelineIndicator: {
-    alignItems: "center",
-    width: 24,
-  },
-  timelineDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: GREEN,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  timelineLine: {
-    width: 2,
-    flex: 1,
-    minHeight: 16,
-    backgroundColor: GREEN,
-    marginVertical: 3,
-  },
-  timelineBody: {
-    flex: 1,
-    paddingBottom: 18,
-  },
-  timelineTitle: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
-    color: FG,
-  },
-  timelineSub: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    color: FG_MUTED,
-    marginTop: 2,
-  },
-
-  // ── Review CTA ───────────────────────────────────────────────────────────
-  reviewCta: {
-    borderRadius: 16,
-    backgroundColor: "#0fa968",
-    paddingVertical: 22,
-    paddingHorizontal: 20,
-    alignItems: "center",
-    gap: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  reviewCtaQuestion: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 17,
-    color: "#fff",
-    textAlign: "center",
-    lineHeight: 24,
-  },
-  reviewCtaStars: {
-    flexDirection: "row",
-    gap: 10,
-  },
-
-  // ── Help card ────────────────────────────────────────────────────────────
-  helpCard: {
-    borderRadius: 14,
-    backgroundColor: "#fff",
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: LINE,
-  },
-  helpRow: {
+  directionsBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    backgroundColor: GREEN,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.06)",
   },
-  helpIconWrap: {
+  directionsIconWrap: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: GREEN_SOFT,
+    backgroundColor: "rgba(255,255,255,0.2)",
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
-  helpRowBody: { flex: 1 },
-  helpRowTitle: {
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    color: FG,
+  directionsText: { flex: 1 },
+  directionsLabel: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#fff" },
+  directionsAddress: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 1 },
+  extendRow: { flexDirection: "row", alignItems: "center", gap: 6, justifyContent: "center", marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: LINE },
+  extendText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: GREEN },
+
+  // Summary box — mirrors BookingSummaryScreen summaryBox
+  summaryBox: { borderRadius: 14, borderWidth: 1, borderColor: LINE, overflow: "hidden" },
+  summaryRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 14, paddingVertical: 12 },
+  summaryRowBorder: { borderTopWidth: 1, borderTopColor: LINE },
+  summaryLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },
+  summaryValue: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
+  summaryRef: { fontFamily: "PlusJakartaSans-Bold", letterSpacing: 1.2, fontVariant: ["tabular-nums"] as const },
+
+  // Getting in — access code stands out naturally at this size
+  codeBox: { marginTop: 12, padding: 14, backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1, borderColor: LINE },
+  codeLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: MUTED, letterSpacing: 0.6, textTransform: "uppercase" as const, marginBottom: 6 },
+  codeValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 32, color: FG, letterSpacing: 5, fontVariant: ["tabular-nums"] as const },
+
+  // Actions section
+  actionsSection: { paddingHorizontal: 20, paddingTop: 20, gap: 10 },
+  primaryBtn: {
+    backgroundColor: GREEN, paddingVertical: 16, borderRadius: 14,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    shadowColor: GREEN, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 3,
   },
-  helpRowSub: {
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans-Regular",
-    color: FG_MUTED,
-    marginTop: 2,
+  primaryBtnText: { color: "#fff", fontSize: 16, fontFamily: "PlusJakartaSans-Bold" },
+  secondaryBtn: {
+    backgroundColor: "#fff", paddingVertical: 14, borderRadius: 14,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7,
+    borderWidth: 1, borderColor: LINE,
   },
+  secondaryBtnText: { color: FG, fontSize: 15, fontFamily: "PlusJakartaSans-SemiBold" },
+  errorText: { color: "#DC2626", fontSize: 13, textAlign: "center", fontFamily: "PlusJakartaSans-Regular" },
+  linkRow: { flexDirection: "row", justifyContent: "center", gap: 24, paddingVertical: 4 },
+  linkText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: MUTED },
+  linkTextDanger: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: "#DC2626" },
 });

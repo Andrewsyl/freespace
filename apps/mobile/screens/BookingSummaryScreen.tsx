@@ -58,8 +58,25 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleColor, setVehicleColor] = useState("");
   const [vehiclePlate, setVehiclePlate] = useState("");
-  const [startAt, setStartAt] = useState(() => new Date(from));
-  const [endAt, setEndAt] = useState(() => new Date(to));
+  const [startAt, setStartAt] = useState(() => {
+    const rawStart = new Date(from);
+    const now = Date.now();
+    if (rawStart.getTime() < now) {
+      return new Date(Math.ceil(now / (5 * 60 * 1000)) * (5 * 60 * 1000));
+    }
+    return rawStart;
+  });
+  const [endAt, setEndAt] = useState(() => {
+    const rawStart = new Date(from);
+    const rawEnd = new Date(to);
+    const durationMs = rawEnd.getTime() - rawStart.getTime();
+    const now = Date.now();
+    if (rawStart.getTime() < now) {
+      const rounded = new Date(Math.ceil(now / (5 * 60 * 1000)) * (5 * 60 * 1000));
+      return new Date(rounded.getTime() + durationMs);
+    }
+    return rawEnd;
+  });
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerOverlayVisible, setPickerOverlayVisible] = useState(false);
   const pickerBackdropOpacity = useRef(new Animated.Value(0)).current;
@@ -116,8 +133,19 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   );
 
   useEffect(() => {
-    setStartAt(new Date(from));
-    setEndAt(new Date(to));
+    const rawStart = new Date(from);
+    const rawEnd = new Date(to);
+    const durationMs = rawEnd.getTime() - rawStart.getTime();
+    const now = Date.now();
+    if (rawStart.getTime() < now) {
+      // Round up to next 5-minute boundary
+      const rounded = new Date(Math.ceil(now / (5 * 60 * 1000)) * (5 * 60 * 1000));
+      setStartAt(rounded);
+      setEndAt(new Date(rounded.getTime() + durationMs));
+    } else {
+      setStartAt(rawStart);
+      setEndAt(rawEnd);
+    }
   }, [from, to]);
 
   useEffect(() => {
@@ -234,8 +262,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       const attachments = await getNotificationImageAttachment();
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: "Booking ending soon",
-          body: `${listing.title} ends in 30 minutes.`,
+          title: "Your parking ends in 30 minutes",
+          body: `${listing.title} — need more time?`,
           data: {
             type: "booking_reminder",
             historyTab: "active",
@@ -338,7 +366,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           code: presentResult.error.code,
           message: presentResult.error.message,
         });
-        const isAmbiguousResult = isAmbiguousPaymentSheetResultError(presentResult.error.message);
+        let isAmbiguousResult = isAmbiguousPaymentSheetResultError(presentResult.error.message);
         if (isAmbiguousResult && paymentIntentId) {
           logWarn("Payment sheet result was ambiguous; attempting booking confirmation recovery", {
             paymentIntentId,
@@ -387,11 +415,16 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             );
             return;
           } catch (recoveryError) {
+            const recoveryMsg = recoveryError instanceof Error ? recoveryError.message : "";
             logWarn("Payment sheet recovery confirmation failed", {
               paymentIntentId,
-              message: recoveryError instanceof Error ? recoveryError.message : String(recoveryError),
+              message: recoveryMsg,
             });
             setConfirmingBooking(false);
+            // If Stripe confirmed the payment was never made, it’s not actually ambiguous.
+            if (/requires_payment_method|requires_action/i.test(recoveryMsg)) {
+              isAmbiguousResult = false;
+            }
           }
         }
         if (paymentIntentId) {
@@ -408,7 +441,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         setPaymentFailureMessage(
           isAmbiguousResult
             ? "We couldn’t confirm payment. Check your bookings before trying again."
-            : presentResult.error.message ?? "Payment failed. Try again."
+            : "Payment failed. Try again."
         );
         return;
       }
@@ -802,13 +835,13 @@ const styles = StyleSheet.create({
 
   // ── Nav header ──────────────────────────────────────────────
   header: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    alignItems: "center", justifyContent: "center",
     paddingHorizontal: 20, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: LINE,
     backgroundColor: "#ffffff",
   },
-  backButton: { padding: 6, marginLeft: -6 },
-  headerTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG },
+  backButton: { padding: 6, position: "absolute", left: 14 },
+  headerTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG, textAlign: "center" },
   headerSpacer: { width: 34 },
 
   // ── Page header ─────────────────────────────────────────────
@@ -836,16 +869,19 @@ const styles = StyleSheet.create({
   pageHeader: {
     borderBottomWidth: 1, borderBottomColor: LINE,
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
+    alignItems: "center",
   },
   pageLabel: {
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
     color: GREEN, letterSpacing: 1.4, textTransform: "uppercase", marginBottom: 4,
+    textAlign: "center",
   },
   pageTitle: {
     fontFamily: "PlusJakartaSans-Bold", fontSize: 22,
     color: FG, letterSpacing: -0.5, lineHeight: 28, marginBottom: 2,
+    textAlign: "center",
   },
-  pageAddress: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },
+  pageAddress: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, textAlign: "center" },
 
   // ── Sections ────────────────────────────────────────────────
   section: {

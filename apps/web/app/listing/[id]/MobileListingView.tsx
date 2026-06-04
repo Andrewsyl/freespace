@@ -229,7 +229,7 @@ export function MobileListingView({
         {/* ── Space overview ── */}
         {listing.availability && (
           <section className="border-b border-slate-200 bg-white px-5 py-6">
-            <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">About this space</h2>
+            <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Parking notes</h2>
             <p className="mt-3 text-[14px] leading-6 text-slate-600">{listing.availability}</p>
           </section>
         )}
@@ -319,6 +319,11 @@ export function MobileListingView({
             <p className="text-[20px] font-extrabold tracking-tight text-slate-900">
               €{formatPriceValue(bookingTotal.total)}
             </p>
+            {bookingTotal.dailyCapApplied && (
+              <p className="text-[10px] font-semibold text-emerald-600">
+                Daily rate — saves €{formatPriceValue(bookingTotal.dailyCapSaving)}
+              </p>
+            )}
           </div>
           <Link
             href={href as any}
