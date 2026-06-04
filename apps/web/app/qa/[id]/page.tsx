@@ -134,7 +134,7 @@ export default function QaPortalPage() {
   return (
     <div className="min-h-[100dvh] bg-slate-50">
       <div className="flex items-center justify-between bg-slate-900 px-4 py-3 text-white">
-        <img src="/freespace-logo.png" alt="FreeSpace" className="h-8 w-auto" />
+        <img src="/freespace-logo-grid-black.png" alt="FreeSpace" className="h-8 w-auto" />
         <div className="text-right">
           <p className="text-[10px] uppercase tracking-[0.25em] text-slate-300">Location ID</p>
           <p className="text-lg font-semibold">{listing.id.slice(0, 6).toUpperCase()}</p>

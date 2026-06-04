@@ -47,6 +47,7 @@ type MapBottomCardProps = {
   bottomOffset?: number;
   horizontalInset?: number;
   dismissing?: boolean;
+  onHeightChange?: (height: number) => void;
 };
 
 export function MapBottomCard({
@@ -65,6 +66,7 @@ export function MapBottomCard({
   bottomOffset = 0,
   horizontalInset = 0,
   dismissing = false,
+  onHeightChange,
 }: MapBottomCardProps) {
   const translateAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -131,7 +133,6 @@ export function MapBottomCard({
         items.push({ key: "ev", iconType: "ev", label: "EV" });
         seen.add("ev");
       }
-      if (items.length >= 2) break;
     }
     if (vehicleSizeLabel?.trim()) {
       const lower = vehicleSizeLabel.trim().toLowerCase();
@@ -147,11 +148,15 @@ export function MapBottomCard({
                 : { label: `Fits ${vehicleSizeLabel.trim()}`, iconType: "car" };
       items.push({ key: "vehicle", iconType, label });
     }
-    return items.slice(0, 3);
+    return items;
   }, [amenities, vehicleSizeLabel]);
+
+  const visibleFeatureItems = featureItems.slice(0, 3);
+  const hiddenFeatureCount = Math.max(0, featureItems.length - visibleFeatureItems.length);
 
   return (
     <Animated.View
+      onLayout={(e) => onHeightChange?.(e.nativeEvent.layout.height)}
       style={[
         styles.card,
         {
@@ -205,9 +210,9 @@ export function MapBottomCard({
               {metaLine}
             </Text>
           ) : null}
-          {featureItems.length ? (
+          {visibleFeatureItems.length ? (
             <View style={styles.featuresRow}>
-              {featureItems.map((item) => (
+              {visibleFeatureItems.map((item) => (
                 <View key={item.key} style={styles.featureItem}>
                   <View style={styles.featureIconWrap}>
                     <MapCardFeatureIcon type={item.iconType} />
@@ -217,6 +222,11 @@ export function MapBottomCard({
                   </Text>
                 </View>
               ))}
+              {hiddenFeatureCount > 0 ? (
+                <View style={styles.moreFeaturesBadge}>
+                  <Text style={styles.moreFeaturesText}>+ {hiddenFeatureCount}</Text>
+                </View>
+              ) : null}
             </View>
           ) : null}
 
@@ -370,6 +380,24 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 14,
     color: "#415162",
+  },
+  moreFeaturesBadge: {
+    minWidth: 28,
+    height: 20,
+    paddingHorizontal: 7,
+    borderRadius: 10,
+    backgroundColor: "#f3f5f7",
+    borderWidth: 1,
+    borderColor: "#e1e6ea",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  moreFeaturesText: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 10,
+    lineHeight: 12,
+    color: "#5b6774",
+    letterSpacing: -0.1,
   },
   priceRow: {
     flexDirection: "row",

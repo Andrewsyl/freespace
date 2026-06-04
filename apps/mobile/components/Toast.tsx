@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
+import { cardShadow, colors, radius, spacing } from "../styles/theme";
 
 type ToastProps = {
   message: string;
@@ -13,9 +13,9 @@ type ToastProps = {
 };
 
 const variantStyles = {
-  success: { accent: "#0fa968", icon: "checkmark-circle" as const, label: "Success" },
-  info: { accent: "#2563eb", icon: "information-circle" as const, label: "Notice" },
-  danger: { accent: "#b42318", icon: "alert-circle" as const, label: "Error" },
+  success: { accent: "#0fa968", icon: "checkmark-circle" as const },
+  info: { accent: "#2563eb", icon: "information-circle" as const },
+  danger: { accent: "#b42318", icon: "alert-circle" as const },
 } as const;
 
 export function Toast({
@@ -60,23 +60,13 @@ export function Toast({
       pointerEvents="box-none"
     >
       <View
-        style={[
-          styles.container,
-          {
-            borderColor: tone.accent,
-          },
-        ]}
+        style={[styles.container, { borderLeftColor: tone.accent }]}
       >
-        <View style={[styles.iconWrap, { backgroundColor: `${tone.accent}14` }]}>
-          <Ionicons name={tone.icon} size={18} color={tone.accent} />
-        </View>
-        <View style={styles.content}>
-          <Text style={styles.label}>{tone.label}</Text>
-          <Text style={styles.text}>{message}</Text>
-        </View>
+        <Ionicons name={tone.icon} size={16} color={tone.accent} style={styles.icon} />
+        <Text style={styles.text} numberOfLines={2}>{message}</Text>
         {onDismiss ? (
           <Pressable style={styles.dismissButton} onPress={onDismiss} accessibilityRole="button">
-            <Ionicons name="close" size={18} color={colors.textSoft} />
+            <Ionicons name="close" size={16} color={colors.textSoft} />
           </Pressable>
         ) : null}
       </View>
@@ -95,42 +85,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.cardBg,
     borderRadius: radius.card,
-    borderWidth: 1,
+    borderLeftWidth: 3,
     flexDirection: "row",
     marginHorizontal: spacing.screenX,
     paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingVertical: 11,
     ...cardShadow,
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
+    shadowOpacity: 0.10,
+    shadowRadius: 16,
     elevation: 6,
   },
-  iconWrap: {
-    alignItems: "center",
-    borderRadius: 14,
-    height: 34,
-    justifyContent: "center",
-    marginRight: 12,
-    width: 34,
-  },
-  content: {
-    flex: 1,
-    gap: 2,
-  },
-  label: {
-    ...textStyles.label,
-    color: colors.textSoft,
+  icon: {
+    marginRight: 10,
+    flexShrink: 0,
   },
   text: {
-    ...textStyles.bodyStrong,
+    fontFamily: "PlusJakartaSans-SemiBold",
     color: colors.text,
-    paddingRight: 4,
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
   },
   dismissButton: {
     alignItems: "center",
-    height: 28,
+    height: 26,
     justifyContent: "center",
     marginLeft: 8,
-    width: 28,
+    width: 26,
+    flexShrink: 0,
   },
 });

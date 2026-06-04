@@ -67,7 +67,7 @@ function LoginPageContent() {
         {/* Logo + heading */}
         <div className="mb-8 text-center">
           <img
-            src="/freespace-logo.png"
+            src="/freespace-logo-grid-black.png"
             alt="FreeSpace"
             className="mx-auto mb-6 h-10 w-auto mix-blend-multiply"
           />

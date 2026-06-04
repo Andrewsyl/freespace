@@ -189,6 +189,35 @@ function GlobalLoadingOverlay() {
   return <LoadingOverlay visible={visible} message={message} />;
 }
 
+function AuthToastBridge() {
+  const { user, loading } = useAuth();
+  const { show } = useGlobalToast();
+  const initialLoadDoneRef = useRef(false);
+  const prevUserRef = useRef<typeof user>(undefined);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!initialLoadDoneRef.current) {
+      initialLoadDoneRef.current = true;
+      prevUserRef.current = user;
+      return;
+    }
+    const prev = prevUserRef.current;
+    prevUserRef.current = user;
+    if (!prev && user) {
+      const firstName = user.name?.trim().split(" ")[0];
+      show(firstName ? `Welcome back, ${firstName}!` : "Welcome back!", {
+        variant: "success",
+        durationMs: 3500,
+      });
+    } else if (prev && !user) {
+      show("You've been signed out", { variant: "info", durationMs: 3000 });
+    }
+  }, [user, loading, show]);
+
+  return null;
+}
+
 function AppShell() {
   const { user, legalPromptRequired } = useAuth();
   const requiresLegal = !!user && (!user.termsVersion || !user.privacyVersion);
@@ -203,6 +232,7 @@ function AppShell() {
   return (
     <>
       <AppNavigator />
+      <AuthToastBridge />
       {showEnvBadge ? <EnvironmentBadge env={normalizedAppEnv} /> : null}
       {shouldShowLegalGate ? <LegalGate /> : null}
       <GlobalLoadingOverlay />

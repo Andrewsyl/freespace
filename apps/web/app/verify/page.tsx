@@ -38,7 +38,7 @@ function VerifyPageContent() {
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-white px-5 pb-10">
       <div className="w-full max-w-sm text-center">
-        <img src="/freespace-logo.png" alt="FreeSpace" className="mx-auto mb-8 h-10 w-auto mix-blend-multiply" />
+        <img src="/freespace-logo-grid-black.png" alt="FreeSpace" className="mx-auto mb-8 h-10 w-auto" />
 
         {status === "loading" && (
           <>

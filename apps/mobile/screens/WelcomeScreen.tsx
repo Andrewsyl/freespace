@@ -7,7 +7,7 @@ import { CommonActions } from "@react-navigation/native";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { useAuth } from "../auth";
 import type { AuthReturnTo, RootStackParamList } from "../types";
-import freeSpaceLogo from "../assets/logo-freespace-black-hd.png";
+import freeSpaceLogo from "../assets/freespace-logo-grid-black.png";
 import { trackEvent } from "../analytics";
 import { logInfo, logWarn } from "../logger";
 
@@ -163,16 +163,15 @@ const styles = StyleSheet.create({
   },
   logoWrap: {
     width: "100%",
-    height: 170,
+    height: 110,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 10,
+    marginBottom: 6,
     overflow: "visible",
   },
   logo: {
-    width: 430,
-    height: 190,
-    transform: [{ scale: 2.1 }],
+    width: 250,
+    height: 142,
   },
   illustration: {
     width: 408,

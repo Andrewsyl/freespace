@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Easing,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -266,6 +267,11 @@ export function SearchScreen({ navigation }: Props) {
   const mapRegionSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialRegionHandledRef = useRef(false);
+  const cardHeightRef = useRef(0);
+  const [mapFrozenUri, setMapFrozenUri] = useState<string | null>(null);
+  const mapFreezeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressRegionSearchRef = useRef(false);
+  const suppressRegionSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 
@@ -586,6 +592,38 @@ export function SearchScreen({ navigation }: Props) {
     void runSearch({ lat, lng, radiusKm });
   }, [endAt, lat, lng, radiusKm, runSearch]);
 
+  useEffect(() => {
+    const unsubscribeBlur = navigation.addListener("blur", async () => {
+      if (!mapRef.current) return;
+      try {
+        const uri = await (mapRef.current as any).takeSnapshot({ format: "jpg", quality: 0.85, result: "file" });
+        if (uri) setMapFrozenUri(uri);
+      } catch {
+        // snapshot failed — map will redraw normally
+      }
+    });
+    const unsubscribeFocus = navigation.addListener("focus", () => {
+      if (mapFreezeTimerRef.current) clearTimeout(mapFreezeTimerRef.current);
+      mapFreezeTimerRef.current = setTimeout(() => {
+        setMapFrozenUri(null);
+        mapFreezeTimerRef.current = null;
+      }, 600);
+      // Suppress region-change searches while the map settles after returning
+      suppressRegionSearchRef.current = true;
+      if (suppressRegionSearchTimerRef.current) clearTimeout(suppressRegionSearchTimerRef.current);
+      suppressRegionSearchTimerRef.current = setTimeout(() => {
+        suppressRegionSearchRef.current = false;
+        suppressRegionSearchTimerRef.current = null;
+      }, 1200);
+    });
+    return () => {
+      unsubscribeBlur();
+      unsubscribeFocus();
+      if (mapFreezeTimerRef.current) clearTimeout(mapFreezeTimerRef.current);
+      if (suppressRegionSearchTimerRef.current) clearTimeout(suppressRegionSearchTimerRef.current);
+    };
+  }, [navigation]);
+
   const applyPickedDate = (next: Date) => {
     if (pickerField === "start") {
       if (next > endAt) {
@@ -869,21 +907,26 @@ export function SearchScreen({ navigation }: Props) {
     const centerLat = region?.latitude ?? listing.latitude;
     const centerLng = region?.longitude ?? listing.longitude;
 
-    // Convert lat/lng to screen pixel position
-    const latPerPixel = latDelta / windowHeight;
+    // mapPadding shifts the visual centre and shrinks the visible height — account for both.
+    const mapPaddingTop = insets.top + 120;
+    const mapPaddingBottom = 180 + insets.bottom + 16;
+    const visibleHeight = windowHeight - mapPaddingTop - mapPaddingBottom;
+    const mapVisualCenterY = mapPaddingTop + visibleHeight / 2;
+
+    const latPerPixel = latDelta / visibleHeight;
     const lngPerPixel = lngDelta / windowWidth;
-    const pinY = windowHeight / 2 + (centerLat - listing.latitude) / latPerPixel;
+    const pinY = mapVisualCenterY + (centerLat - listing.latitude) / latPerPixel;
     const pinX = windowWidth / 2 + (listing.longitude - centerLng) / lngPerPixel;
 
     const offScreen = pinX < 0 || pinX > windowWidth || pinY < 0 || pinY > windowHeight;
 
-    // Only pan if the pin is in the bottom quarter of the screen
-    const cardTop = windowHeight * 0.80;
+    const bottomOffset = 82 + insets.bottom;
+    const cardHeight = cardHeightRef.current || 220;
+    const cardTop = windowHeight - bottomOffset - cardHeight;
 
     if (offScreen || pinY > cardTop) {
-      // Place the pin at 62% from the top — lower than center, above the card
-      const targetY = windowHeight * 0.70;
-      const newCenterLat = listing.latitude + (targetY - windowHeight / 2) * latPerPixel;
+      const targetY = cardTop - 4;
+      const newCenterLat = listing.latitude + (targetY - mapVisualCenterY) * latPerPixel;
       ignoreNextRegionChangeRef.current = true;
       isProgrammaticMoveRef.current = true;
       mapRef.current.animateToRegion(
@@ -1135,6 +1178,9 @@ export function SearchScreen({ navigation }: Props) {
       return;
     }
 
+    // Suppress region-change searches briefly after returning to the screen.
+    if (suppressRegionSearchRef.current) return;
+
     // Debounce: wait for the map to fully settle, then auto-search the new area.
     if (showAreaTimerRef.current) {
       clearTimeout(showAreaTimerRef.current);
@@ -1205,6 +1251,14 @@ export function SearchScreen({ navigation }: Props) {
             priceKey={priceKey}
           />
         ) : null}
+        {mapFrozenUri ? (
+          <Image
+            source={{ uri: mapFrozenUri }}
+            style={StyleSheet.absoluteFillObject}
+            resizeMode="cover"
+            pointerEvents="none"
+          />
+        ) : null}
         {(!mapReady || (loading && results.length === 0)) ? (
           <View style={styles.mapLoadingOverlay}>
             <View style={styles.mapLoadingBubble}>
@@ -1230,116 +1284,59 @@ export function SearchScreen({ navigation }: Props) {
             </View>
           </View>
         ) : null}
-        <View style={[styles.overlay, { top: insets.top + 18 }]}>
-          <View style={styles.overlayHeader} />
-          <View style={styles.searchGroup}>
-            <Pressable
-              style={styles.searchBar}
-              onPress={() => setSearchSheetOpen(true)}
-              testID="search-bar"
-            >
-              <Ionicons name="search-outline" size={18} color={colors.textSoft} />
-              <Text
-                style={[styles.searchInput, !addressQuery && styles.searchInputPlaceholder]}
-                numberOfLines={1}
-              >
+        <View style={[styles.overlay, { top: insets.top + 12 }]}>
+
+          {/* ── Location card ───────────────────────── */}
+          <View style={styles.searchCard}>
+            <Pressable style={styles.searchCardLocation} onPress={() => setSearchSheetOpen(true)} testID="search-bar">
+              <Ionicons name="location-outline" size={17} color="#0a8050" />
+              <Text style={[styles.searchCardLocationText, !addressQuery && styles.searchCardPlaceholder]} numberOfLines={1}>
                 {addressQuery || "Where to?"}
               </Text>
               {addressQuery ? (
-                <Pressable
-                  style={styles.clearButton}
-                  onPress={() => {
-                    setAddressQuery("");
-                    setAddressSuggestions([]);
-                  }}
-                >
-                  <Text style={styles.clearButtonText}>×</Text>
+                <Pressable onPress={() => { setAddressQuery(""); setAddressSuggestions([]); }} hitSlop={8}>
+                  <Ionicons name="close-circle" size={16} color="#c0c8d2" />
                 </Pressable>
               ) : null}
             </Pressable>
-            <View style={styles.searchActions}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.actionButton,
-                  showFilters && styles.actionButtonActive,
-                  pressed && styles.actionButtonPressed,
-                ]}
-                onPress={() => setShowFilters((prev) => !prev)}
-                accessibilityLabel="Filters"
-                android_ripple={null}
-              >
-                <Ionicons
-                  name="options-outline"
-                  size={18}
-                  color={showFilters ? colors.accent : colors.text}
-                />
-                {(priceMin || priceMax || securityLevel || vehicleSize || coveredParking || evCharging || instantBook) ? (
-                  <View style={styles.filterDot} />
-                ) : null}
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
-                onPress={handleUseCurrentLocation}
-                accessibilityLabel="Center on current location"
-                android_ripple={null}
-              >
-                <Ionicons name="locate-outline" size={18} color={colors.text} />
-              </Pressable>
-            </View>
           </View>
-          <View style={styles.dateRowCard}>
-            <View style={styles.dateRow}>
-              <Pressable
-                style={styles.dateTimeColumn}
-                onPress={() => openPicker("start")}
-                android_ripple={null}
-              >
-                <Text style={styles.dateTimeLabel}>From</Text>
-                <Text
-                  style={styles.dateTimeValue}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.9}
-                >
-                  {formatDateTimeLabel(startAt)}
-                </Text>
-              </Pressable>
-              <Ionicons name="arrow-forward" size={18} color="#9CA3AF" style={styles.dateArrowIcon} />
-              <Pressable
-                style={styles.dateTimeColumn}
-                onPress={() => openPicker("end")}
-                android_ripple={null}
-              >
-                <Text style={styles.dateTimeLabel}>Until</Text>
-                <Text
-                  style={styles.dateTimeValue}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.9}
-                >
-                  {formatDateTimeLabel(endAt)}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-          {loading ? (
-            <View style={styles.searchLoadingBubble}>
-              <LottieView
-                source={require("../assets/Insider-loading.json")}
-                autoPlay
-                loop
-                style={styles.searchLoadingLottie}
-              />
-              <Text style={styles.searchLoadingText}>Searching for spaces…</Text>
-            </View>
-          ) : null}
-          {(priceMin || priceMax || securityLevel || vehicleSize || spaceType || coveredParking || evCharging || instantBook) ? (
-            <Pressable style={styles.clearFilters} onPress={clearFilters}>
-              <Text style={styles.clearFiltersText}>Clear filters</Text>
+
+          {/* ── Time strip ──────────────────────────── */}
+          <View style={styles.timeStrip}>
+            <Pressable style={styles.timeStripBtn} onPress={() => openPicker("start")} android_ripple={null}>
+              <Text style={styles.timeStripTime}>{formatTimeLabel(startAt)}</Text>
+              <Text style={styles.timeStripSep}> · </Text>
+              <Text style={styles.timeStripDate}>{formatDateLabel(startAt)}</Text>
             </Pressable>
-          ) : null}
+            <Ionicons name="arrow-forward" size={12} color="#c0c8d2" style={{ marginHorizontal: 8 }} />
+            <Pressable style={styles.timeStripBtn} onPress={() => openPicker("end")} android_ripple={null}>
+              <Text style={styles.timeStripTime}>{formatTimeLabel(endAt)}</Text>
+              <Text style={styles.timeStripSep}> · </Text>
+              <Text style={styles.timeStripDate}>{formatDateLabel(endAt)}</Text>
+            </Pressable>
+          </View>
+
+          {/* ── Filter + clear row ──────────────────── */}
+          <View style={styles.searchCardRow}>
+            <Pressable
+              style={[styles.filterChip, (priceMin || priceMax || securityLevel || vehicleSize || spaceType || coveredParking || evCharging || instantBook) && styles.filterChipActive]}
+              onPress={() => setShowFilters((prev) => !prev)}
+            >
+              <Ionicons name="options-outline" size={13} color={(priceMin || priceMax || securityLevel || vehicleSize || spaceType || coveredParking || evCharging || instantBook) ? "#ffffff" : "#374151"} />
+              <Text style={[(priceMin || priceMax || securityLevel || vehicleSize || spaceType || coveredParking || evCharging || instantBook) ? styles.filterChipTextActive : styles.filterChipText]}>Filters</Text>
+            </Pressable>
+            {(priceMin || priceMax || securityLevel || vehicleSize || spaceType || coveredParking || evCharging || instantBook) ? (
+              <Pressable style={styles.clearChip} onPress={clearFilters}>
+                <Text style={styles.clearChipText}>Clear</Text>
+              </Pressable>
+            ) : null}
+            {loading ? (
+              <View style={styles.searchLoadingChip}>
+                <Text style={styles.searchLoadingText}>Searching…</Text>
+              </View>
+            ) : null}
+          </View>
+
           {error ? <Text style={styles.error}>{error}</Text> : null}
         </View>
         {visibleSelectedListing ? (
@@ -1368,6 +1365,7 @@ export function SearchScreen({ navigation }: Props) {
             bottomOffset={82 + insets.bottom}
             horizontalInset={16}
             dismissing={dismissingCard}
+            onHeightChange={(h) => { cardHeightRef.current = h; }}
           />
         ) : null}
         {filtersVisible ? (
@@ -1675,16 +1673,20 @@ export function SearchScreen({ navigation }: Props) {
             <Modal transparent animationType="fade" visible>
               <View style={styles.pickerBackdrop}>
                 <Pressable style={StyleSheet.absoluteFillObject} onPress={() => { setPickerVisible(false); setDraftDate(null); }} />
-                <Animated.View style={[styles.pickerSheet, { paddingBottom: Math.max(28, insets.bottom + 16), transform: [{ translateY: pickerSheetAnim }] }]}>
+                <Animated.View style={[styles.pickerSheet, { paddingBottom: Math.max(24, insets.bottom + 12), transform: [{ translateY: pickerSheetAnim }] }]}>
+
                   <View style={styles.pickerHandle} />
+
                   <View style={styles.pickerHeader}>
                     <Text style={styles.pickerTitle}>
                       {pickerField === "start" ? "Arrival time" : "Departure time"}
                     </Text>
                     {pickerField === "end" ? (
-                      <Text style={styles.pickerSubtitle}>Arriving {formatTimeLabel(startAt)}, {formatDateLabel(startAt)}</Text>
+                      <Text style={styles.pickerSubtitle}>arriving {formatTimeLabel(startAt)}</Text>
                     ) : null}
                   </View>
+
+                  {/* Quick duration pills — end picker only */}
                   {pickerField === "end" ? (() => {
                     const activeHours = draftDate
                       ? Math.round((draftDate.getTime() - startAt.getTime()) / 3_600_000)
@@ -1703,27 +1705,36 @@ export function SearchScreen({ navigation }: Props) {
                             </Pressable>
                           );
                         })}
-                        {(() => {
-                          const active = activeHours === 24 * 30;
-                          return (
-                            <Pressable
-                              style={[styles.pickerQuickPill, active && styles.pickerQuickPillActive]}
-                              onPress={() => applyQuickDuration(24 * 30)}
-                            >
-                              <Text style={[styles.pickerQuickText, active && styles.pickerQuickTextActive]}>Monthly</Text>
-                            </Pressable>
-                          );
-                        })()}
                       </View>
                     );
                   })() : null}
+
+                  {/* Drum wheel */}
                   <DrumRollPicker
                     date={draftDate ?? (pickerField === "start" ? startAt : endAt)}
                     minuteInterval={15}
                     onChange={(date) => setDraftDate(date)}
                     drumRef={drumPickerRef}
                   />
+
+                  {/* Button row */}
                   <View style={styles.pickerFooter}>
+                    <Pressable
+                      style={styles.pickerBackBtn}
+                      onPress={() => {
+                        if (pickerField === "end") {
+                          setPickerField("start");
+                          setDraftDate(startAt);
+                        } else {
+                          setPickerVisible(false);
+                          setDraftDate(null);
+                        }
+                      }}
+                    >
+                      <Text style={styles.pickerBackBtnText}>
+                        {pickerField === "end" ? "Back" : "Cancel"}
+                      </Text>
+                    </Pressable>
                     <Pressable
                       style={({ pressed }) => [styles.pickerFooterPrimary, pressed && { opacity: 0.88 }]}
                       onPress={() => {
@@ -1743,16 +1754,11 @@ export function SearchScreen({ navigation }: Props) {
                       }}
                     >
                       <Text style={styles.pickerFooterPrimaryText}>
-                        {pickerField === "start" ? "Confirm arrival time" : "Search parking"}
+                        {pickerField === "start" ? "Next" : "Done"}
                       </Text>
                     </Pressable>
-                    <Pressable
-                      style={styles.pickerFooterCancel}
-                      onPress={() => { setPickerVisible(false); setDraftDate(null); }}
-                    >
-                      <Text style={styles.pickerFooterCancelText}>Cancel</Text>
-                    </Pressable>
                   </View>
+
                 </Animated.View>
               </View>
             </Modal>
@@ -1861,33 +1867,134 @@ const styles = StyleSheet.create({
     right: spacing.screenX,
     top: 10,
   },
-  overlayHeader: {
-    marginBottom: 6,
+
+  // ── Unified search card
+  searchCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    overflow: "hidden",
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  searchGroup: {
+  searchCardLocation: {
+    alignItems: "center",
     flexDirection: "row",
-    alignItems: "center",
     gap: 10,
-    position: "relative",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  searchBar: {
-    alignItems: "center",
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 24,
-    borderWidth: 1,
+  searchCardLocationText: {
     flex: 1,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: "#111827",
+    letterSpacing: -0.1,
+  },
+  searchCardPlaceholder: {
+    color: "#9ca3af",
+    fontFamily: "PlusJakartaSans-Regular",
+  },
+  // ── Time strip
+  timeStrip: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
     flexDirection: "row",
-    gap: 10,
-    height: 44,
+    justifyContent: "space-between",
+    marginTop: 8,
     paddingHorizontal: 14,
-    paddingRight: 34,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
+    paddingVertical: 11,
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
     shadowRadius: 12,
     elevation: 6,
   },
+  timeStripBtn: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 4,
+  },
+  timeStripTime: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 13,
+    color: "#111827",
+    letterSpacing: -0.2,
+  },
+  timeStripSep: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: "#d1d5db",
+  },
+  timeStripDate: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: "#9ca3af",
+  },
+
+  // ── Filter / clear / loading row below card
+  searchCardRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+  filterChip: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.92)",
+    borderRadius: 999,
+    flexDirection: "row",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  filterChipActive: {
+    backgroundColor: "#0a8050",
+  },
+  filterChipText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: "#374151",
+  },
+  filterChipTextActive: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: "#ffffff",
+  },
+  clearChip: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.92)",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  clearChipText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: "#374151",
+  },
+  searchLoadingChip: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.92)",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+
+  // keep these for compat
   searchInput: {
     ...textStyles.bodyMedium,
     fontSize: 14,
@@ -1912,42 +2019,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     lineHeight: 18,
   },
-  searchActions: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-  },
-  actionButton: {
-    alignItems: "center",
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    height: 40,
-    justifyContent: "center",
-    width: 40,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  actionButtonActive: {
-    borderColor: colors.accent,
-    borderWidth: 1,
-    backgroundColor: "#ecfdf7",
-  },
   actionButtonPressed: {
     opacity: 0.9,
-  },
-  filterDot: {
-    backgroundColor: colors.accent,
-    borderRadius: 4,
-    height: 8,
-    position: "absolute",
-    right: 8,
-    top: 8,
-    width: 8,
   },
   dateRowCard: {
     backgroundColor: colors.cardBg,
@@ -2441,29 +2514,33 @@ const styles = StyleSheet.create({
   },
   pickerSheet: {
     backgroundColor: "#ffffff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 28,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     paddingHorizontal: 16,
-    paddingTop: 6,
+    paddingTop: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 12,
   },
   pickerHandle: {
     alignSelf: "center",
-    backgroundColor: "#E0E4EA",
-    borderRadius: 3,
+    backgroundColor: "#D1D5DB",
+    borderRadius: 99,
     height: 4,
-    marginBottom: 10,
-    width: 36,
+    marginBottom: 12,
+    width: 40,
   },
   pickerHeader: {
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   pickerTitle: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 16,
     color: "#111827",
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
   pickerSubtitle: {
     fontFamily: "PlusJakartaSans-Regular",
@@ -2471,60 +2548,77 @@ const styles = StyleSheet.create({
     color: "#9ca3af",
     marginTop: 2,
   },
+
+  // Quick duration pills
   pickerQuickRow: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
-    marginBottom: 10,
+    gap: 7,
+    marginBottom: 12,
   },
   pickerQuickPill: {
-    backgroundColor: "#F3F4F6",
-    borderRadius: 999,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    flex: 1,
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
+    borderWidth: 1.5,
+    paddingVertical: 9,
   },
   pickerQuickPillActive: {
     backgroundColor: "#0a8050",
+    borderColor: "#0a8050",
+    shadowColor: "#0a8050",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
   },
   pickerQuickText: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
+    fontSize: 13,
     color: "#374151",
   },
   pickerQuickTextActive: {
     color: "#ffffff",
   },
+
   pickerFooter: {
-    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
     marginTop: 14,
-    gap: 4,
+  },
+  pickerBackBtn: {
+    alignItems: "center",
+    borderColor: "#E5E7EB",
+    borderRadius: 14,
+    borderWidth: 1.5,
+    flex: 1,
+    justifyContent: "center",
+    paddingVertical: 14,
+  },
+  pickerBackBtnText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15,
+    color: "#374151",
   },
   pickerFooterPrimary: {
     alignItems: "center",
-    alignSelf: "stretch",
     backgroundColor: "#0a8050",
-    borderRadius: 999,
-    paddingVertical: 16,
+    borderRadius: 14,
+    flex: 2,
+    justifyContent: "center",
+    paddingVertical: 14,
     shadowColor: "#0a8050",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.28,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
     elevation: 5,
   },
   pickerFooterPrimaryText: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 16,
+    fontSize: 15,
     color: "#ffffff",
     letterSpacing: -0.2,
-  },
-  pickerFooterCancel: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  pickerFooterCancelText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
-    color: "#9ca3af",
   },
   suggestionItem: {
     borderBottomColor: "#f2f4f7",

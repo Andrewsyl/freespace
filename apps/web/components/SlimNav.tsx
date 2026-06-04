@@ -29,7 +29,7 @@ export function SlimNav() {
       <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[#E6E6E4] bg-[#F7F7F6] px-5">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-          <img src="/freespace-logo.png" alt="FreeSpace" className="h-10 w-auto" />
+          <img src="/freespace-logo-grid-black.png" alt="FreeSpace" className="h-10 w-auto" />
         </Link>
 
         {/* Desktop nav */}

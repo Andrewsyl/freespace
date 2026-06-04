@@ -61,7 +61,7 @@ function ResetPasswordPageContent() {
     <div className="flex min-h-[100dvh] flex-col bg-white px-5 pb-10 pt-12">
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-8 text-center">
-          <img src="/freespace-logo.png" alt="FreeSpace" className="mx-auto mb-6 h-10 w-auto mix-blend-multiply" />
+          <img src="/freespace-logo-grid-black.png" alt="FreeSpace" className="mx-auto mb-6 h-10 w-auto" />
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">
             {step === "reset" ? "Account security" : "Account recovery"}
           </p>

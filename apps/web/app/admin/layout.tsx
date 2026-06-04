@@ -26,7 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-              <img src="/freespace-logo.png" alt="FreeSpace" className="h-7 w-auto" />
+              <img src="/freespace-logo-grid-black.png" alt="FreeSpace" className="h-7 w-auto" />
               <span>Admin</span>
             </Link>
             <nav className="hidden items-center gap-4 text-sm font-semibold text-slate-600 md:flex">

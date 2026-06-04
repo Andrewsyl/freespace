@@ -11,9 +11,9 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 
-const ITEM_HEIGHT = 42;
-const VISIBLE = 5; // rows visible (2 above centre + selected + 2 below)
-const PAD = 2;
+const ITEM_HEIGHT = 46;
+const VISIBLE = 7; // rows visible (3 above centre + selected + 3 below)
+const PAD = 3;
 const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE;
 
 const LOOP_REPEAT = 100;
@@ -326,13 +326,14 @@ export function DrumRollPicker({ date, onChange, minuteInterval = 5, drumRef }: 
 const col = StyleSheet.create({
   wrap: { height: PICKER_HEIGHT, overflow: "hidden" },
   listPad: { paddingVertical: ITEM_HEIGHT * PAD },
-  item: { height: ITEM_HEIGHT, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
+  item: { height: ITEM_HEIGHT, alignItems: "center", justifyContent: "center" },
   text: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 17,
-    color: "#111111",
+    fontSize: 16,
+    color: "#111827",
     textAlign: "center",
     includeFontPadding: false,
+    letterSpacing: -0.1,
   },
 });
 
@@ -343,11 +344,11 @@ const drum = StyleSheet.create({
     alignItems: "stretch",
     width: "100%",
     overflow: "hidden",
+    backgroundColor: "#ffffff",
   },
   divider: {
     width: StyleSheet.hairlineWidth,
-    backgroundColor: "#D0D0D0",
-    marginVertical: 8,
+    backgroundColor: "#E5E7EB",
     alignSelf: "stretch",
   },
   band: {
@@ -356,9 +357,9 @@ const drum = StyleSheet.create({
     left: 0,
     right: 0,
     height: ITEM_HEIGHT,
-    backgroundColor: "rgba(46, 204, 143, 0.12)",
+    backgroundColor: "rgba(10, 128, 80, 0.10)",
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: "rgba(46, 204, 143, 0.38)",
+    borderColor: "rgba(10, 128, 80, 0.22)",
   },
 });

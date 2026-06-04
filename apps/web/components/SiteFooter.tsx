@@ -103,7 +103,7 @@ export function SiteFooter() {
         <div className="mx-auto max-w-6xl border-b border-white/[0.06] px-6 py-8">
           <div className="flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-8">
-              <img src="/freespace-logo.png" alt={LEGAL_CONTACT.brandName} className="h-8 w-auto brightness-0 invert" />
+              <img src="/freespace-logo-grid-white.png" alt={LEGAL_CONTACT.brandName} className="h-14 w-auto" />
               <div className="flex items-center gap-4">
                 {socials.map((s) => (
                   <a
