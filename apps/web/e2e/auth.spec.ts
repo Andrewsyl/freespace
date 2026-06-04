@@ -28,7 +28,7 @@ test("reset password request flow shows success notice", async ({ page }) => {
   await page.getByRole("button", { name: "Send reset link" }).click();
 
   await expect(page.getByText("Check your inbox")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open reset link" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Back to login" })).toBeVisible();
 });
 
 test("reset password form submits a new password", async ({ page }) => {
