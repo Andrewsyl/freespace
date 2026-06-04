@@ -622,7 +622,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 <View>
                   {vehicleMake ? (
                     <View style={styles.vehicleHeaderRow}>
-                      <VehicleBrandLogo make={vehicleMake} size={20} />
+                      <VehicleBrandLogo make={vehicleMake} size={40} />
                       <Text style={styles.vehicleHeaderText}>
                         {[vehicleMake, vehicleColor, user?.vehicleType].filter(Boolean).join(" · ")}
                       </Text>
@@ -1101,10 +1101,11 @@ const styles = StyleSheet.create({
 
   // ── Vehicle header ───────────────────────────────────────────
   vehicleHeaderRow: {
-    flexDirection: "row", alignItems: "center", gap: 6,
+    flexDirection: "row", alignItems: "center", gap: 10, minHeight: 50,
   },
   vehicleHeaderText: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG,
+    flexShrink: 1,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, lineHeight: 18, color: FG,
   },
 
   // ── Reassurance block ────────────────────────────────────────

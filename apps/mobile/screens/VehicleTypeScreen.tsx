@@ -495,7 +495,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
             </View>
             {selectedMake ? (
               <View style={styles.headerBrandLogo}>
-                <VehicleBrandLogo make={selectedMake} size={30} />
+                <VehicleBrandLogo make={selectedMake} size={40} />
               </View>
             ) : null}
           </View>

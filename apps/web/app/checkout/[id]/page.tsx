@@ -365,7 +365,7 @@ export default function CheckoutPage() {
                         className="flex-1 rounded-lg border border-slate-200 bg-white py-2 text-center text-[12px] font-semibold text-slate-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 transition"
                       >
                         +{hrs}hr{" "}
-                        <span className="text-slate-400">€{extra.toFixed(2)}</span>
+                        <span className="text-slate-600">€{extra.toFixed(2)}</span>
                       </button>
                     ))}
                   </div>
@@ -382,21 +382,21 @@ export default function CheckoutPage() {
                   <p className="mb-3 text-[13px] font-bold text-slate-900">Price Breakdown</p>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-[13px]">
-                      <span className="text-slate-500">Rate</span>
+                      <span className="text-slate-600">Rate</span>
                       <span className="font-semibold text-slate-800">{formatListingPriceLine(listing)}</span>
                     </div>
                     <div className="flex items-center justify-between text-[13px]">
-                      <span className="text-slate-500">Duration</span>
+                      <span className="text-slate-600">Duration</span>
                       <span className="font-semibold text-slate-800">
                         {pricing?.billingCount ?? 0} {pricing?.billingUnit ?? "day"}{pricing?.billingCount === 1 ? "" : "s"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-[13px]">
-                      <span className="text-slate-500">Subtotal</span>
+                      <span className="text-slate-600">Subtotal</span>
                       <span className="font-semibold text-slate-800">€{totalPrice.toFixed(2)}</span>
                     </div>
                     <div className="flex items-center justify-between text-[13px]">
-                      <span className="text-slate-500">Platform fee</span>
+                      <span className="text-slate-600">Platform fee</span>
                       <span className="font-semibold text-slate-800">Included</span>
                     </div>
                     <div className="mt-1 border-t border-slate-100 pt-3">

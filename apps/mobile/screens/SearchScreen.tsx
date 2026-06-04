@@ -262,8 +262,6 @@ export function SearchScreen({ navigation }: Props) {
   const mapReadyFailSafeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialSearchTriggeredRef = useRef(false);
   const currentRegionRef = useRef<typeof mapRegion | null>(null);
-  const mapSpinnerAnim = useRef(new Animated.Value(0)).current;
-  const mapSpinnerLoopRef = useRef<Animated.CompositeAnimation | null>(null);
   const mapRegionSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialRegionHandledRef = useRef(false);
@@ -978,37 +976,23 @@ export function SearchScreen({ navigation }: Props) {
 
   useEffect(() => {
     if (launchComplete && !mapReady) {
-      if (mapReadyFailSafeRef.current) {
-        clearTimeout(mapReadyFailSafeRef.current);
-      }
+      if (mapReadyFailSafeRef.current) clearTimeout(mapReadyFailSafeRef.current);
       mapReadyFailSafeRef.current = setTimeout(() => {
         setMapReady(true);
-      }, 2000);
-      mapSpinnerAnim.setValue(0);
-      mapSpinnerLoopRef.current = Animated.loop(
-        Animated.timing(mapSpinnerAnim, {
-          toValue: 1,
-          duration: 1400,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        })
-      );
-      mapSpinnerLoopRef.current.start();
+      }, 1200);
     } else {
-      mapSpinnerLoopRef.current?.stop();
       if (mapReadyFailSafeRef.current) {
         clearTimeout(mapReadyFailSafeRef.current);
         mapReadyFailSafeRef.current = null;
       }
     }
     return () => {
-      mapSpinnerLoopRef.current?.stop();
       if (mapReadyFailSafeRef.current) {
         clearTimeout(mapReadyFailSafeRef.current);
         mapReadyFailSafeRef.current = null;
       }
     };
-  }, [launchComplete, mapReady, mapSpinnerAnim]);
+  }, [launchComplete, mapReady]);
 
   useEffect(() => {
     if (!launchComplete || !mapReady || loading || results.length > 0) return;
@@ -1260,31 +1244,6 @@ export function SearchScreen({ navigation }: Props) {
             style={StyleSheet.absoluteFillObject}
             resizeMode="cover"
           />
-        ) : null}
-        {(!mapReady || (loading && results.length === 0)) ? (
-          <View style={styles.mapLoadingOverlay}>
-            <View style={styles.mapLoadingBubble}>
-              <Animated.View
-                style={{
-                  transform: [{
-                    rotate: mapSpinnerAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ["0deg", "360deg"],
-                    }),
-                  }],
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
-                  borderWidth: 2.5,
-                  borderColor: "#e5e7eb",
-                  borderTopColor: "#0a8050",
-                }}
-              />
-              <Text style={styles.mapLoadingText}>
-                {mapReady ? "Searching for spaces…" : "Loading map…"}
-              </Text>
-            </View>
-          </View>
         ) : null}
         <View style={[styles.overlay, { top: insets.top + 12 }]}>
 
@@ -1846,22 +1805,6 @@ const styles = StyleSheet.create({
   },
   map: {
     ...StyleSheet.absoluteFillObject,
-  },
-  mapLoadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.appBg,
-  },
-  mapLoadingBubble: {
-    alignItems: "center",
-    gap: 10,
-  },
-  mapLoadingText: {
-    color: colors.textSoft,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13,
-    letterSpacing: 0.1,
   },
   overlay: {
     left: spacing.screenX,

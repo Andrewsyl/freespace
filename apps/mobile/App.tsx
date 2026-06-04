@@ -160,9 +160,6 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <View style={styles.app}>
-        {showAnimatedSplash && (
-          <AnimatedSplash onFinish={() => setShowAnimatedSplash(false)} />
-        )}
         <StripeProvider publishableKey={stripeKey}>
           <AuthProvider>
             <FavoritesProvider>
@@ -176,6 +173,9 @@ export default function App() {
             </FavoritesProvider>
           </AuthProvider>
         </StripeProvider>
+        {showAnimatedSplash && (
+          <AnimatedSplash onFinish={() => setShowAnimatedSplash(false)} />
+        )}
       </View>
     </SafeAreaProvider>
   );

@@ -248,7 +248,7 @@ export function ProfileScreen({ navigation }: Props) {
             onPress={() => navigation.navigate("VehicleType")}
             right={
               <View style={styles.rowRight}>
-                {user.vehicleMake ? <VehicleBrandLogo make={user.vehicleMake} size={60} /> : null}
+                {user.vehicleMake ? <VehicleBrandLogo make={user.vehicleMake} size={40} /> : null}
                 <ChevronRight size={15} color={SUBTLE} />
               </View>
             }

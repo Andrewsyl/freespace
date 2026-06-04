@@ -89,7 +89,7 @@ function LoginPageContent() {
         {/* Divider */}
         <div className="mb-4 flex items-center gap-3">
           <span className="h-px flex-1 bg-slate-100" />
-          <span className="text-[13px] font-medium text-slate-400">or</span>
+          <span className="text-[13px] font-medium text-slate-500">or</span>
           <span className="h-px flex-1 bg-slate-100" />
         </div>
 
