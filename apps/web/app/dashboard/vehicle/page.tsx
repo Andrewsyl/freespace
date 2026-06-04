@@ -135,7 +135,7 @@ function VehiclePageContent() {
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Account</p>
         <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">My Vehicle</h1>
-        <p className="mt-1 text-[13.5px] text-slate-500">Your vehicle details are shared with hosts when you make a booking.</p>
+        <p className="mt-1 text-[13.5px] text-slate-600">Your vehicle details are shared with hosts when you make a booking.</p>
       </div>
 
       {success && <div className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] text-brand-700">Vehicle saved.</div>}
@@ -164,7 +164,7 @@ function VehiclePageContent() {
         <h2 className="mb-4 text-[15px] font-bold text-slate-900">Vehicle Details</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-[12px] font-semibold text-slate-500">Make</label>
+            <label className="mb-1 block text-[12px] font-semibold text-slate-600">Make</label>
             <select
               value={make}
               onChange={(e) => { setMake(e.target.value); setModel(""); }}
@@ -175,7 +175,7 @@ function VehiclePageContent() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-[12px] font-semibold text-slate-500">Model</label>
+            <label className="mb-1 block text-[12px] font-semibold text-slate-600">Model</label>
             <select
               value={model}
               onChange={(e) => setModel(e.target.value)}

@@ -129,7 +129,7 @@ export default function CheckoutPage() {
         <CheckoutNav />
         <div className="mx-auto max-w-md px-6 py-16 text-center">
           <p className="text-[17px] font-bold text-slate-900">Listing unavailable</p>
-          <p className="mt-2 text-[14px] text-slate-500">{error ?? "This listing could not be found."}</p>
+          <p className="mt-2 text-[14px] text-slate-600">{error ?? "This listing could not be found."}</p>
           <Link href="/search" className="mt-6 inline-block rounded-xl bg-brand-500 px-6 py-3 text-[14px] font-bold text-white hover:bg-brand-600">
             Back to search
           </Link>
@@ -146,7 +146,7 @@ export default function CheckoutPage() {
         <div className="mx-auto max-w-md px-6 py-16 text-center">
           <Lock className="mx-auto mb-4 h-10 w-10 text-slate-300" />
           <h1 className="text-[22px] font-bold text-slate-900">Sign in to continue</h1>
-          <p className="mt-2 text-[14px] text-slate-500">You need an account to complete this booking.</p>
+          <p className="mt-2 text-[14px] text-slate-600">You need an account to complete this booking.</p>
           <div className="mt-6 flex flex-col gap-3">
             <Link href={`/login?next=${encodeURIComponent(currentPath)}` as any} className="flex items-center justify-center rounded-xl bg-brand-500 py-3.5 text-[15px] font-bold text-white hover:bg-brand-600">
               Sign in
@@ -179,11 +179,11 @@ export default function CheckoutPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h2 className="text-[16px] font-bold text-slate-900">Contact Info</h2>
-                    <p className="mt-0.5 text-[13px] text-slate-500">
+                    <p className="mt-0.5 text-[13px] text-slate-600">
                       {user.name ?? user.email}
                     </p>
                     {user.name && (
-                      <p className="text-[13px] text-slate-400">{user.email}</p>
+                      <p className="text-[13px] text-slate-600">{user.email}</p>
                     )}
                   </div>
                   <Link
@@ -193,7 +193,7 @@ export default function CheckoutPage() {
                     Change
                   </Link>
                 </div>
-                <div className="mt-3 rounded-lg bg-slate-50 px-3.5 py-2.5 text-[12.5px] text-slate-500">
+                <div className="mt-3 rounded-lg bg-slate-50 px-3.5 py-2.5 text-[12.5px] text-slate-600">
                   You&apos;ll receive booking confirmation and updates by email.
                 </div>
               </Card>
@@ -209,11 +209,11 @@ export default function CheckoutPage() {
                   </div>
                   <div>
                     <p className="text-[13.5px] font-semibold text-slate-800">Credit or Debit Card</p>
-                    <p className="text-[12px] text-slate-400">Secured by Stripe</p>
+                    <p className="text-[12px] text-slate-600">Secured by Stripe</p>
                   </div>
                   <Lock className="ml-auto h-4 w-4 text-slate-300" />
                 </div>
-                <p className="mt-2 text-[11.5px] text-slate-400">
+                <p className="mt-2 text-[11.5px] text-slate-600">
                   Visa, Mastercard, Amex and more accepted.
                 </p>
               </Card>
@@ -240,7 +240,7 @@ export default function CheckoutPage() {
                   </div>
                 ) : (
                   <div className="mt-3">
-                    <p className="mb-3 text-[13px] text-slate-500">
+                    <p className="mb-3 text-[13px] text-slate-600">
                       Add it now or later — we&apos;ll remind you before you park.
                     </p>
                     <Link
@@ -284,13 +284,13 @@ export default function CheckoutPage() {
                 {status === "loading" ? "Processing…" : `Pay €${totalPrice.toFixed(2)} & Reserve`}
               </button>
 
-              <p className="text-center text-[12px] text-slate-400">
+              <p className="text-center text-[12px] text-slate-600">
                 By purchasing, you agree to our{" "}
-                <Link href="/legal/parking-terms-liability" className="font-semibold text-slate-500 underline underline-offset-2">
+                <Link href="/legal/parking-terms-liability" className="font-semibold text-slate-600 underline underline-offset-2">
                   Terms & Conditions
                 </Link>{" "}
                 and{" "}
-                <Link href="/legal/privacy-policy" className="font-semibold text-slate-500 underline underline-offset-2">
+                <Link href="/legal/privacy-policy" className="font-semibold text-slate-600 underline underline-offset-2">
                   Privacy Policy
                 </Link>
                 .
@@ -318,7 +318,7 @@ export default function CheckoutPage() {
                 {/* Reservation period */}
                 <div className="border-b border-slate-100 px-6 py-5">
                   <div className="flex items-center justify-between">
-                    <p className="text-[12px] font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="text-[12px] font-semibold uppercase tracking-wide text-slate-600">
                       Reservation Period
                     </p>
                     <button
@@ -331,7 +331,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-[15px] font-bold text-slate-900">
                     <span>{formatDateShort(startAt)}, {formatTime(startAt)}</span>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" />
+                    <ArrowRight className="h-4 w-4 shrink-0 text-slate-600" />
                     <span>{formatTime(endAt)}</span>
                   </div>
 
@@ -408,7 +408,7 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                   </div>
-                  <p className="mt-3 text-[11px] text-slate-400">No hidden fees will be added at checkout.</p>
+                  <p className="mt-3 text-[11px] text-slate-600">No hidden fees will be added at checkout.</p>
                 </div>
               </div>
             </div>
@@ -426,7 +426,7 @@ function CheckoutNav() {
   return (
     <div className="relative border-b border-slate-200 bg-white">
       <SlimNav />
-      <div className="pointer-events-none absolute inset-y-0 right-6 flex items-center gap-1.5 text-[13px] font-semibold text-slate-500">
+      <div className="pointer-events-none absolute inset-y-0 right-6 flex items-center gap-1.5 text-[13px] font-semibold text-slate-600">
         <Lock className="h-3.5 w-3.5" />
         Secure Checkout
       </div>

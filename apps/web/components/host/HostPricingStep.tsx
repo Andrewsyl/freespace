@@ -91,7 +91,7 @@ export function HostPricingStep({ data, onUpdate }: HostStepProps) {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-slate-600">
         Choose whether this space is for short stays, monthly commuter parking, or both.
       </p>
 

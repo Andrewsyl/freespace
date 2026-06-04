@@ -139,7 +139,7 @@ export default async function ListingDetailPage({
         <div className="mx-auto max-w-6xl px-6 pb-4 pt-5">
 
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-1.5 text-[12px] text-slate-400">
+          <nav className="flex items-center gap-1.5 text-[12px] text-slate-600">
             <Link href="/" className="transition hover:text-brand-500">Find parking</Link>
             <span>›</span>
             <Link href="/" className="transition hover:text-brand-500">
@@ -156,17 +156,17 @@ export default async function ListingDetailPage({
                 <span className="text-brand-500">Parking at </span>
                 {listing.title}
               </h1>
-              <p className="mt-1 text-[14px] text-slate-500">{listing.address}</p>
+              <p className="mt-1 text-[14px] text-slate-600">{listing.address}</p>
               {ratingCount > 0 && rating != null ? (
                 <div className="mt-2 flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <StarFill key={n} filled={n <= Math.round(rating)} />
                   ))}
                   <span className="text-[13px] font-semibold text-slate-800">{rating.toFixed(1)}</span>
-                  <span className="text-[13px] text-slate-400">· {ratingCount} reviews</span>
+                  <span className="text-[13px] text-slate-600">· {ratingCount} reviews</span>
                 </div>
               ) : (
-                <p className="mt-1.5 text-[13px] text-slate-500">New listing</p>
+                <p className="mt-1.5 text-[13px] text-slate-600">New listing</p>
               )}
             </div>
 
@@ -176,7 +176,7 @@ export default async function ListingDetailPage({
                 <ShieldCheck className="h-4 w-4 text-brand-500" />
                 <span className="text-[13px] font-semibold text-slate-950">Secure booking</span>
               </div>
-              <p className="mt-1 text-[11px] text-slate-400">Payments encrypted &amp; protected</p>
+              <p className="mt-1 text-[11px] text-slate-600">Payments encrypted &amp; protected</p>
             </div>
           </div>
         </div>
@@ -409,7 +409,7 @@ export default async function ListingDetailPage({
                     Reviews about this space
                   </h2>
                   {reviews.length === 0 ? (
-                    <p className="mt-4 text-[14px] text-slate-400">No reviews yet.</p>
+                    <p className="mt-4 text-[14px] text-slate-600">No reviews yet.</p>
                   ) : (
                     <div className="mt-5 space-y-0">
                       {reviews.slice(0, 6).map((review: any) => (
@@ -423,7 +423,7 @@ export default async function ListingDetailPage({
                                 {Number(review.rating).toFixed(1)}
                               </span>
                             </div>
-                            <span className="text-[12px] text-slate-400">
+                            <span className="text-[12px] text-slate-600">
                               {formatReviewDate(review.createdAt ?? review.created_at)}
                             </span>
                           </div>

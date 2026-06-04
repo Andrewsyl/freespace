@@ -26,9 +26,9 @@ export const designTokens = {
     text: {
       primary: "#0f172a",
       strong: "#111827",
-      secondary: "#6b7280",
-      muted: "#64748b",
-      soft: "#94a3b8",
+      secondary: "#374151",
+      muted: "#4b5563",
+      soft: "#6b7280",
       tertiary: "#9ca3af",
       inverse: "#ffffff",
       disabled: "#d1d5db",

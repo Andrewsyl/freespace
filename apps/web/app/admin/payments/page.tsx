@@ -142,7 +142,7 @@ export default function AdminPaymentsPage() {
                     {row.status ?? "—"}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-500">{formatDate(row.created_at)}</td>
+                <td className="px-4 py-3 text-slate-600">{formatDate(row.created_at)}</td>
               </tr>
             ))}
           </tbody>

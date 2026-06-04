@@ -506,7 +506,7 @@ function DateTimePicker({
   // ── Shared calendar body ────────────────────────────────────────────────
   const calendarBody = (
     <>
-      <div className="grid grid-cols-7 gap-1 pb-2 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+      <div className="grid grid-cols-7 gap-1 pb-2 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-600">
         {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
           <div key={d}>{d}</div>
         ))}
@@ -538,11 +538,11 @@ function DateTimePicker({
         })}
       </div>
       <div className="mt-3 border-t border-slate-100 pt-3">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
           {timeLabel}
         </p>
         {dateOnly ? (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-3 text-[14px] font-semibold text-slate-500">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-3 text-[14px] font-semibold text-slate-600">
             Monthly search uses all-day availability.
           </div>
         ) : (
@@ -593,7 +593,7 @@ function DateTimePicker({
     <div className={`absolute ${alignClass} mt-2 z-50 w-[400px] max-w-[95vw] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.16)] ring-1 ring-slate-100/80`}>
       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label} time</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">{label} time</p>
           <p className="mt-0.5 text-[13px] font-bold text-slate-900">{formatTrigger(value, dateOnly)}</p>
         </div>
         {monthNav}
@@ -628,7 +628,7 @@ function DateTimePicker({
             >
               <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label} time</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">{label} time</p>
                   <p className="mt-0.5 text-[13px] font-bold text-slate-900">{formatTrigger(value, dateOnly)}</p>
                 </div>
                 {monthNav}

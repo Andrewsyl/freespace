@@ -138,12 +138,12 @@ export function SlimNav() {
               {/* Account card */}
               {user && (
                 <div className="mx-5 mt-5 flex items-center gap-3.5 rounded-2xl bg-slate-50 px-4 py-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600">
                     <User className="h-5 w-5" strokeWidth={1.75} />
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-[14px] font-semibold text-slate-900">My account</p>
-                    <p className="truncate text-[12px] text-slate-500">{user.email}</p>
+                    <p className="truncate text-[12px] text-slate-600">{user.email}</p>
                   </div>
                 </div>
               )}

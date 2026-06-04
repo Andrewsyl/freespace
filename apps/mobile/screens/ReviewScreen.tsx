@@ -233,8 +233,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#BEBEBE",
+    borderBottomWidth: 1,
+    borderBottomColor: "#d1d5db",
   },
   backButton: {
     padding: 6,
@@ -280,8 +280,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: "#BEBEBE",
+    height: 1,
+    backgroundColor: "#d1d5db",
     marginVertical: spacing.lg,
   },
   section: {
@@ -318,12 +318,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     fontSize: 15,
     color: colors.text.primary,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BEBEBE",
+    borderWidth: 1,
+    borderColor: "#d1d5db",
   },
   charCount: {
     fontSize: 12,
-    color: colors.text.tertiary,
+    color: colors.text.muted,
     marginTop: 4,
   },
   ctaWrap: {

@@ -148,13 +148,13 @@ export function DesktopSearchLayout({
                     ) : (
                       <h1 className="text-[15px] font-bold text-slate-900">
                         {results.length}{" "}
-                        <span className="font-semibold text-slate-500">
+                        <span className="font-semibold text-slate-600">
                           {results.length === 1 ? "space" : "spaces"}
                           {filters.location ? ` near ${filters.location.split(",")[0]}` : ""}
                         </span>
                       </h1>
                     )}
-                    <p className="mt-0.5 text-[11.5px] text-slate-400">
+                    <p className="mt-0.5 text-[11.5px] text-slate-600">
                       {filters.mode === "monthly"
                         ? `${filters.date} → ${filters.endDate ?? "30 days"}`
                         : `${filters.date} · ${filters.startTime}–${filters.endTime}`}
@@ -326,7 +326,7 @@ function EmptyState({ location }: { location?: string }) {
         </svg>
       </div>
       <h3 className="text-[15px] font-semibold text-slate-800">No spaces found</h3>
-      <p className="mt-1.5 max-w-[220px] text-[13px] leading-relaxed text-slate-500">
+      <p className="mt-1.5 max-w-[220px] text-[13px] leading-relaxed text-slate-600">
         {location
           ? `We couldn't find any spaces near ${location}.`
           : "No spaces match your search."}
@@ -608,15 +608,15 @@ function ListingOverlay({
                 <StarRating rating={listing.rating!} />
                 {listing.rating!.toFixed(1)}
                 {(listing.ratingCount ?? 0) > 0 && (
-                  <span className="font-normal text-slate-400">({listing.ratingCount})</span>
+                  <span className="font-normal text-slate-600">({listing.ratingCount})</span>
                 )}
               </span>
             )}
             {spaceType && (
-              <span className="text-[12.5px] text-slate-500">{spaceType}</span>
+              <span className="text-[12.5px] text-slate-600">{spaceType}</span>
             )}
             {listing.distanceKm != null && (
-              <span className="text-[12.5px] text-slate-400">{listing.distanceKm.toFixed(1)} km away</span>
+              <span className="text-[12.5px] text-slate-600">{listing.distanceKm.toFixed(1)} km away</span>
             )}
           </div>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -637,12 +637,12 @@ function ListingOverlay({
         {/* Booking summary — SpotHero style */}
         <div className="border-b border-slate-100 px-4 py-4">
           <div className="flex items-start justify-between">
-            <p className="text-[12px] font-semibold uppercase tracking-wide text-slate-400">
+            <p className="text-[12px] font-semibold uppercase tracking-wide text-slate-600">
               {mode === "monthly" ? "Monthly Parking" : "Parking Reservation"}
             </p>
             <div className="text-right">
               <p className="text-[20px] font-extrabold leading-none text-slate-900">€{displayPrice}</p>
-              <p className="mt-0.5 text-[11px] text-slate-400">
+              <p className="mt-0.5 text-[11px] text-slate-600">
                 {mode === "monthly" ? "per month" : "subtotal"}
               </p>
             </div>
@@ -654,7 +654,7 @@ function ListingOverlay({
                 {getRelativeDay(filters.date).charAt(0).toUpperCase() + getRelativeDay(filters.date).slice(1)}{" "}
                 {formatTimeOnly(filters.startTime)} – {formatTimeOnly(filters.endTime)}
                 {filters.endDate && filters.endDate !== filters.date && (
-                  <span className="font-normal text-slate-400"> ({getRelativeDay(filters.endDate)})</span>
+                  <span className="font-normal text-slate-600"> ({getRelativeDay(filters.endDate)})</span>
                 )}
               </p>
               <div className="mt-2 flex items-center gap-2">
@@ -702,11 +702,11 @@ function ListingOverlay({
           {/* Payment icons */}
           <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
             {["Apple Pay", "Google Pay", "Visa", "Mastercard", "PayPal"].map((name) => (
-              <span key={name} className="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 shadow-sm">
+              <span key={name} className="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm">
                 {name}
               </span>
             ))}
-            <span className="text-[11px] text-slate-400">+ more</span>
+            <span className="text-[11px] text-slate-600">+ more</span>
           </div>
         </div>
 
@@ -772,18 +772,18 @@ function ListingOverlay({
                   <p className="text-[38px] font-extrabold leading-none text-slate-900">{listing.rating!.toFixed(1)}</p>
                   <StarRating rating={listing.rating!} />
                   {(listing.ratingCount ?? 0) > 0 && (
-                    <p className="mt-1 text-[11px] text-slate-400">{listing.ratingCount} ratings</p>
+                    <p className="mt-1 text-[11px] text-slate-600">{listing.ratingCount} ratings</p>
                   )}
                 </div>
                 {ratingBreakdown && (
                   <div className="flex-1 space-y-1.5">
                     {ratingBreakdown.map(({ stars, pct }) => (
                       <div key={stars} className="flex items-center gap-2">
-                        <span className="w-3 text-right text-[11px] text-slate-500">{stars}</span>
+                        <span className="w-3 text-right text-[11px] text-slate-600">{stars}</span>
                         <div className="flex-1 overflow-hidden rounded-full bg-slate-100" style={{ height: 6 }}>
                           <div className="h-full rounded-full bg-slate-700" style={{ width: `${pct}%` }} />
                         </div>
-                        <span className="w-7 text-[11px] text-slate-400">{pct}%</span>
+                        <span className="w-7 text-[11px] text-slate-600">{pct}%</span>
                       </div>
                     ))}
                   </div>
@@ -791,13 +791,13 @@ function ListingOverlay({
               </div>
             </div>
           ) : (
-            <p className="text-[13px] text-slate-400">No reviews yet for this space.</p>
+            <p className="text-[13px] text-slate-600">No reviews yet for this space.</p>
           )}
         </AccordionSection>
 
         {/* Location */}
         <div className="border-t border-slate-100 px-4 py-4">
-          <p className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-slate-400">Location</p>
+          <p className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-slate-600">Location</p>
           <p className="text-[13px] text-slate-600">{listing.address}</p>
           <a
             href={streetViewUrl}
@@ -870,7 +870,7 @@ function AvailabilityGrid({
             key={label}
             className={`flex items-center justify-between py-2.5 ${isToday ? "font-semibold" : ""}`}
           >
-            <span className={`text-[13px] ${isToday ? "text-slate-900" : "text-slate-500"}`}>
+            <span className={`text-[13px] ${isToday ? "text-slate-900" : "text-slate-600"}`}>
               {label}
               {isToday && (
                 <span className="ml-1.5 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-bold text-brand-700">

@@ -39,7 +39,7 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
           }}
           name="address"
         />
-        <p className="text-xs text-slate-500">Drag the satellite map to fine-tune the pin to your exact spot.</p>
+        <p className="text-xs text-slate-600">Drag the satellite map to fine-tune the pin to your exact spot.</p>
       </div>
 
       {/* ── Satellite map ── */}
@@ -104,7 +104,7 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900">No location selected</p>
-              <p className="mt-1 text-xs text-slate-500">Search for an address above to preview your parking spot on the satellite map</p>
+              <p className="mt-1 text-xs text-slate-600">Search for an address above to preview your parking spot on the satellite map</p>
             </div>
           </div>
         )}

@@ -143,7 +143,7 @@ export default function PaymentsPage() {
         ) : methods.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center">
             <p className="text-[14px] font-semibold text-slate-700">No cards saved yet</p>
-            <p className="mt-1 text-[13px] text-slate-400">Add a card for faster checkout.</p>
+            <p className="mt-1 text-[13px] text-slate-600">Add a card for faster checkout.</p>
           </div>
         ) : (
           <div className="mt-4 divide-y divide-slate-100">
@@ -154,7 +154,7 @@ export default function PaymentsPage() {
                     {pm.brand} •••• {pm.last4}
                     {pm.is_default && <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700">Default</span>}
                   </p>
-                  <p className="text-[12px] text-slate-400">Expires {pm.exp_month}/{pm.exp_year}</p>
+                  <p className="text-[12px] text-slate-600">Expires {pm.exp_month}/{pm.exp_year}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {!pm.is_default && (
@@ -181,7 +181,7 @@ export default function PaymentsPage() {
         ) : history.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center">
             <p className="text-[14px] font-semibold text-slate-700">No payments yet</p>
-            <p className="mt-1 text-[13px] text-slate-400">Charges from your bookings will appear here.</p>
+            <p className="mt-1 text-[13px] text-slate-600">Charges from your bookings will appear here.</p>
           </div>
         ) : (
           <div className="mt-4 divide-y divide-slate-100">
@@ -194,7 +194,7 @@ export default function PaymentsPage() {
                     <StatusChip status={p.status} />
                   </div>
                 </div>
-                <p className="mt-0.5 text-[12px] text-slate-400">{new Date(p.created_at).toLocaleString()}</p>
+                <p className="mt-0.5 text-[12px] text-slate-600">{new Date(p.created_at).toLocaleString()}</p>
                 <div className="mt-2 flex gap-2">
                   {p.receipt_url && (
                     <a href={p.receipt_url} target="_blank" rel="noreferrer"
@@ -225,7 +225,7 @@ export default function PaymentsPage() {
                 <p className="text-[15px] font-bold text-slate-900">Add card</p>
                 <button onClick={() => setShowAdd(false)} className="rounded-full border border-slate-200 px-3 py-1 text-[12px] font-semibold text-slate-600">Close</button>
               </div>
-              <div className="px-6 py-5 text-[14px] text-slate-500">Stripe is not configured for web payments.</div>
+              <div className="px-6 py-5 text-[14px] text-slate-600">Stripe is not configured for web payments.</div>
             </div>
           )}
         </div>

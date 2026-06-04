@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#E0E0E0", alignSelf: "center", marginBottom: 16 },
   sheetTitle: { fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 20, color: colors.text, letterSpacing: -0.4, paddingHorizontal: 20, marginBottom: 8 },
   sheetRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 20, paddingVertical: 14 },
-  sheetRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#E6E6E4" },
+  sheetRowBorder: { borderTopWidth: 1, borderTopColor: "#d1d5db" },
   sheetSwatch: { width: 22, height: 22, borderRadius: 11 },
   sheetRowText: { flex: 1, fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: colors.text },
   regRow: {

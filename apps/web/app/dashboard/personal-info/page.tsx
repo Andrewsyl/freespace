@@ -88,7 +88,7 @@ export default function PersonalInfoPage() {
       {/* Email (read-only) */}
       <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
         <h2 className="mb-1 text-[15px] font-bold text-slate-900">Email</h2>
-        <p className="mb-3 text-[12.5px] text-slate-400">Email cannot be changed. Contact support if you need help.</p>
+        <p className="mb-3 text-[12.5px] text-slate-600">Email cannot be changed. Contact support if you need help.</p>
         <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
           <span className="text-[14px] text-slate-700">{user?.email}</span>
           <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${user?.emailVerified ? "bg-brand-50 text-brand-700" : "bg-amber-50 text-amber-700"}`}>

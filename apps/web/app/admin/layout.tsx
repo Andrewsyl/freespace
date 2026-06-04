@@ -38,7 +38,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden text-xs text-slate-500 md:inline">{user.email}</span>
+            <span className="hidden text-xs text-slate-600 md:inline">{user.email}</span>
             <button
               type="button"
               onClick={() => {
@@ -56,7 +56,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="mx-auto grid w-full max-w-[1400px] gap-6 px-6 py-6 lg:grid-cols-[240px,1fr]">
         <aside className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div>
-            <p className="text-xs font-semibold tracking-wide text-slate-500">Admin</p>
+            <p className="text-xs font-semibold tracking-wide text-slate-600">Admin</p>
             <p className="text-sm font-semibold text-slate-900">Platform controls</p>
           </div>
           <nav className="space-y-2 text-sm font-semibold text-slate-700">

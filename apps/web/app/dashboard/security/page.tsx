@@ -78,7 +78,7 @@ export default function SecurityPage() {
             { label: "Confirm password", value: confirmPw, setter: setConfirm },
           ].map(({ label, value, setter }) => (
             <div key={label}>
-              <label className="mb-1 block text-[12px] font-semibold text-slate-500">{label}</label>
+              <label className="mb-1 block text-[12px] font-semibold text-slate-600">{label}</label>
               <input
                 type="password"
                 value={value}
@@ -101,7 +101,7 @@ export default function SecurityPage() {
       {/* Sessions */}
       <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
         <h2 className="text-[15px] font-bold text-slate-900">Active Sessions</h2>
-        <p className="mt-1 text-[13px] text-slate-500">Sign out of all devices including this one.</p>
+        <p className="mt-1 text-[13px] text-slate-600">Sign out of all devices including this one.</p>
         {logoutSuccess && <p className="mt-2 text-[13px] font-semibold text-brand-600">Signed out everywhere. Redirecting…</p>}
         <button
           onClick={handleLogoutAll}
@@ -115,7 +115,7 @@ export default function SecurityPage() {
       {/* Danger zone */}
       <div className="rounded-xl border border-rose-200 bg-white px-6 py-5 shadow-sm">
         <h2 className="text-[15px] font-bold text-rose-600">Danger Zone</h2>
-        <p className="mt-1 text-[13px] text-slate-500">Permanently removes your account, listings, and bookings.</p>
+        <p className="mt-1 text-[13px] text-slate-600">Permanently removes your account, listings, and bookings.</p>
         {deleteError && <p className="mt-2 text-[13px] text-rose-600">{deleteError}</p>}
         <button
           onClick={handleDelete}

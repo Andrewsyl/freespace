@@ -159,27 +159,27 @@ export function MobileListingView({
         {/* ── Quick stats bar ── */}
         <div className={`grid divide-x divide-slate-200 border-b border-slate-200 bg-white ${distanceKm != null ? "grid-cols-3" : "grid-cols-2"}`}>
           <div className="flex flex-col justify-center px-3 py-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Price</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Price</p>
             <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
               €{formatPriceValue(bookingTotal.total)}{" "}
-              <span className="text-[10px] font-medium text-slate-400">{bookingTotal.durationLabel}</span>
+              <span className="text-[10px] font-medium text-slate-600">{bookingTotal.durationLabel}</span>
             </p>
           </div>
           <div className="flex flex-col justify-center px-3 py-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Rating</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Rating</p>
             <p className="mt-1 flex items-baseline gap-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
               <Star className="h-4 w-4 translate-y-[1px] text-amber-400" />
               {reviews.length > 0 ? listing.rating?.toFixed(1) : "0.0"}
               {reviews.length === 0 && (
-                <span className="text-[10px] font-medium text-slate-400">New</span>
+                <span className="text-[10px] font-medium text-slate-600">New</span>
               )}
             </p>
           </div>
           {distanceKm != null && (
             <div className="flex flex-col justify-center px-3 py-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Distance</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Distance</p>
               <p className="mt-1 text-[17px] font-bold tracking-[-0.03em] text-slate-950">
-                {distanceKm.toFixed(1)}<span className="text-[11px] font-medium text-slate-400"> km</span>
+                {distanceKm.toFixed(1)}<span className="text-[11px] font-medium text-slate-600"> km</span>
               </p>
             </div>
           )}
@@ -214,7 +214,7 @@ export function MobileListingView({
               "Exact location confirmed after booking",
               "Arrival instructions included with your confirmation",
             ].map((note) => (
-              <div key={note} className="flex items-center gap-2.5 text-[13px] text-slate-500">
+              <div key={note} className="flex items-center gap-2.5 text-[13px] text-slate-600">
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
                   <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -276,11 +276,11 @@ export function MobileListingView({
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Reviews</h2>
             {reviews.length > 0 && (
-              <span className="text-[12px] font-medium text-slate-400">{reviews.length} total</span>
+              <span className="text-[12px] font-medium text-slate-600">{reviews.length} total</span>
             )}
           </div>
           {reviews.length === 0 ? (
-            <p className="mt-3 text-[13px] text-slate-400">No reviews yet.</p>
+            <p className="mt-3 text-[13px] text-slate-600">No reviews yet.</p>
           ) : (
             <div className="mt-4">
               {reviews.slice(0, 4).map((review) => (
@@ -294,7 +294,7 @@ export function MobileListingView({
                         />
                       ))}
                     </div>
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-slate-600">
                       {formatReviewDate(review.createdAt ?? review.created_at)}
                     </span>
                   </div>
@@ -315,7 +315,7 @@ export function MobileListingView({
       >
         <div className="flex items-center gap-3">
           <div className="shrink-0">
-            <p className="text-[11px] font-semibold text-slate-400">{bookingTotal.durationLabel}</p>
+            <p className="text-[11px] font-semibold text-slate-600">{bookingTotal.durationLabel}</p>
             <p className="text-[20px] font-extrabold tracking-tight text-slate-900">
               €{formatPriceValue(bookingTotal.total)}
             </p>

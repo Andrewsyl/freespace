@@ -120,9 +120,9 @@ export default function BookingsPage() {
                   <div key={i} className="h-32 animate-pulse rounded-xl border border-slate-200 bg-white" />
                 ))
               ) : tabBookings.length === 0 ? (
-                <div className="flex flex-col items-center py-16 text-center text-slate-400">
+                <div className="flex flex-col items-center py-16 text-center text-slate-600">
                   <Car className="mb-3 h-10 w-10 text-slate-200" />
-                  <p className="text-[15px] font-semibold text-slate-500">No {tab} bookings</p>
+                  <p className="text-[15px] font-semibold text-slate-600">No {tab} bookings</p>
                   {tab === "upcoming" && (
                     <Link
                       href="/search"
@@ -156,11 +156,11 @@ function BookingCard({ booking: b }: { booking: BookingSummary }) {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="truncate text-[15px] font-bold text-slate-900">{b.title}</p>
-            <p className="mt-0.5 flex items-center gap-1 text-[12px] text-slate-400">
+            <p className="mt-0.5 flex items-center gap-1 text-[12px] text-slate-600">
               <MapPin className="h-3 w-3 shrink-0" />
               <span className="truncate">{b.address}</span>
             </p>
-            <p className="mt-0.5 text-[11.5px] text-slate-400">Ref: {b.id.slice(0, 8).toUpperCase()}</p>
+            <p className="mt-0.5 text-[11.5px] text-slate-600">Ref: {b.id.slice(0, 8).toUpperCase()}</p>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1.5">
             <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${badge}`}>
@@ -179,7 +179,7 @@ function BookingCard({ booking: b }: { booking: BookingSummary }) {
             <div key={l} className="flex items-center gap-3">
               <div className="flex w-10 items-center gap-1.5">
                 <div className="h-2 w-2 rounded-full border-2 border-slate-300 bg-white" />
-                <span className="text-[12px] text-slate-400">{l}</span>
+                <span className="text-[12px] text-slate-600">{l}</span>
               </div>
               <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[12.5px] font-semibold text-slate-700">
                 {formatBookingDate(time)}

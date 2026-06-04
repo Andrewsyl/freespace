@@ -3,6 +3,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   BackHandler,
   Platform,
   KeyboardAvoidingView,
@@ -60,6 +61,9 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const [startAt, setStartAt] = useState(() => new Date(from));
   const [endAt, setEndAt] = useState(() => new Date(to));
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerOverlayVisible, setPickerOverlayVisible] = useState(false);
+  const pickerBackdropOpacity = useRef(new Animated.Value(0)).current;
+  const pickerSheetTranslateY = useRef(new Animated.Value(320)).current;
   const [pickerField, setPickerField] = useState<"start" | "end">("start");
   const [draftDate, setDraftDate] = useState<Date | null>(null);
   const { reset: resetGlobalLoading } = useGlobalLoading();
@@ -121,6 +125,27 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     setVehicleColor(user?.vehicleColor ?? "");
     setVehiclePlate(user?.vehiclePlate ?? "");
   }, [user?.vehicleColor, user?.vehicleMake, user?.vehiclePlate]);
+
+  useEffect(() => {
+    if (pickerVisible) {
+      pickerBackdropOpacity.setValue(0);
+      pickerSheetTranslateY.setValue(320);
+      setPickerOverlayVisible(true);
+    } else {
+      Animated.parallel([
+        Animated.timing(pickerBackdropOpacity, { toValue: 0, duration: 120, useNativeDriver: true }),
+        Animated.timing(pickerSheetTranslateY, { toValue: 320, duration: 120, useNativeDriver: true }),
+      ]).start(({ finished }) => { if (finished) setPickerOverlayVisible(false); });
+    }
+  }, [pickerVisible, pickerBackdropOpacity, pickerSheetTranslateY]);
+
+  useEffect(() => {
+    if (!pickerOverlayVisible) return;
+    Animated.parallel([
+      Animated.timing(pickerBackdropOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.spring(pickerSheetTranslateY, { toValue: 0, tension: 65, friction: 11, useNativeDriver: true }),
+    ]).start();
+  }, [pickerOverlayVisible, pickerBackdropOpacity, pickerSheetTranslateY]);
 
   const start = useMemo(() => startAt, [startAt]);
   const end = useMemo(() => endAt, [endAt]);
@@ -716,46 +741,46 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         </View>
       ) : null}
 
-      {pickerVisible ? (
-        <Modal transparent animationType="slide" visible>
-          <View style={styles.pickerBackdrop}>
+      <Modal transparent animationType="none" visible={pickerOverlayVisible} onRequestClose={() => { setPickerVisible(false); setDraftDate(null); }}>
+        <View style={{ flex: 1 }}>
+          <Animated.View style={[StyleSheet.absoluteFill, styles.pickerBackdropLayer, { opacity: pickerBackdropOpacity }]}>
             <Pressable style={StyleSheet.absoluteFill} onPress={() => { setPickerVisible(false); setDraftDate(null); }} />
-            <View style={[styles.pickerSheet, { paddingBottom: Math.max(24, insets.bottom + 12) }]}>
-              <View style={styles.pickerHandle} />
-              <Text style={styles.pickerTitle}>
-                {pickerField === "start" ? "Select arrival time" : "Select departure time"}
-              </Text>
-              <DrumRollPicker
-                date={draftDate ?? (pickerField === "start" ? start : end)}
-                minuteInterval={5}
-                onChange={(d) => {
-                  setDraftDate(d);
-                  applyPickedDate(d);
-                }}
-              />
-              <Pressable
-                style={styles.pickerDoneBtn}
-                onPress={() => {
-                  setPickerVisible(false);
-                  setDraftDate(null);
-                }}
-              >
-                <Text style={styles.pickerDoneBtnText}>Done</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Modal>
-      ) : null}
+          </Animated.View>
+          <Animated.View style={[styles.pickerSheet, { paddingBottom: Math.max(24, insets.bottom + 12), transform: [{ translateY: pickerSheetTranslateY }] }]}>
+            <View style={styles.pickerHandle} />
+            <Text style={styles.pickerTitle}>
+              {pickerField === "start" ? "Select arrival time" : "Select departure time"}
+            </Text>
+            <DrumRollPicker
+              date={draftDate ?? (pickerField === "start" ? start : end)}
+              minuteInterval={5}
+              onChange={(d) => {
+                setDraftDate(d);
+                applyPickedDate(d);
+              }}
+            />
+            <Pressable
+              style={styles.pickerDoneBtn}
+              onPress={() => {
+                setPickerVisible(false);
+                setDraftDate(null);
+              }}
+            >
+              <Text style={styles.pickerDoneBtnText}>Done</Text>
+            </Pressable>
+          </Animated.View>
+        </View>
+      </Modal>
       {bookingConfirmed ? <View style={styles.successOverlay} pointerEvents="none" /> : null}
     </SafeAreaView>
   );
 }
 
 const GREEN = "#0a8050";
-const LINE  = "#E6E6E4";
+const LINE  = "#d1d5db";
 const FG    = "#111827";
-const MUTED = "#6b7280";
-const SUBTLE = "#9ca3af";
+const MUTED = "#374151";
+const SUBTLE = "#6b7280";
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#ffffff" },
@@ -792,7 +817,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    borderBottomWidth: 1, borderBottomColor: LINE,
     backgroundColor: "#ffffff",
   },
   backButton: { padding: 6, marginLeft: -6 },
@@ -801,7 +826,7 @@ const styles = StyleSheet.create({
 
   // ── Page header ─────────────────────────────────────────────
   pageHeader: {
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    borderBottomWidth: 1, borderBottomColor: LINE,
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
   },
   pageLabel: {
@@ -816,7 +841,7 @@ const styles = StyleSheet.create({
 
   // ── Sections ────────────────────────────────────────────────
   section: {
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    borderBottomWidth: 1, borderBottomColor: LINE,
     paddingHorizontal: 20, paddingVertical: 18,
   },
   sectionTitleRow: {
@@ -857,7 +882,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     paddingHorizontal: 14, paddingVertical: 11,
   },
-  summaryRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  summaryRowBorder: { borderTopWidth: 1, borderTopColor: LINE },
   summaryRowLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },
   summaryRowValue: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
 
@@ -913,7 +938,7 @@ const styles = StyleSheet.create({
   priceRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 11,
   },
-  priceRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  priceRowBorder: { borderTopWidth: 1, borderTopColor: LINE },
   priceRowLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },
   priceRowValue: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
   priceRowMuted: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: SUBTLE },
@@ -929,7 +954,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   paymentOptionText: { flex: 1, marginLeft: 12 },
-  paymentOptionBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  paymentOptionBorder: { borderTopWidth: 1, borderTopColor: LINE },
   paymentOptionLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG },
   paymentOptionSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: SUBTLE },
 
@@ -965,9 +990,11 @@ const styles = StyleSheet.create({
 
   // ── Date picker modal ───────────────────────────────────────
   pickerBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  pickerBackdropLayer: { backgroundColor: "rgba(0,0,0,0.45)" },
   pickerSheet: {
     backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20,
     paddingBottom: 36, alignItems: "center", paddingTop: 12,
+    position: "absolute", bottom: 0, left: 0, right: 0,
   },
   pickerHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#E0E0E0", marginBottom: 12 },
   pickerTitle: { fontSize: 18, fontFamily: "PlusJakartaSans-Bold", color: FG, marginBottom: 4, textAlign: "center" },

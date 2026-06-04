@@ -43,7 +43,7 @@ function VerifyEmailContent() {
               <CheckCircle className="h-8 w-8 text-brand-500" strokeWidth={1.75} />
             </div>
             <h1 className="text-[22px] font-bold tracking-[-0.03em] text-slate-900">Email confirmed</h1>
-            <p className="mt-2 text-[14px] leading-6 text-slate-500">
+            <p className="mt-2 text-[14px] leading-6 text-slate-600">
               Your FreeSpace account is now active.
             </p>
             <div className="mt-6 flex flex-col gap-3">
@@ -63,7 +63,7 @@ function VerifyEmailContent() {
               <AlertTriangle className="h-8 w-8 text-rose-400" strokeWidth={1.75} />
             </div>
             <h1 className="text-[22px] font-bold tracking-[-0.03em] text-slate-900">Link expired</h1>
-            <p className="mt-2 text-[14px] leading-6 text-slate-500">{error}</p>
+            <p className="mt-2 text-[14px] leading-6 text-slate-600">{error}</p>
             <Link href="/login" className="mt-6 inline-block text-[15px] font-semibold text-brand-600">Back to login</Link>
           </>
         ) : (
@@ -72,7 +72,7 @@ function VerifyEmailContent() {
               <Mail className="h-8 w-8 text-brand-500" strokeWidth={1.75} />
             </div>
             <h1 className="text-[22px] font-bold tracking-[-0.03em] text-slate-900">Verify your email</h1>
-            <p className="mt-2 text-[14px] leading-6 text-slate-500">
+            <p className="mt-2 text-[14px] leading-6 text-slate-600">
               Confirm your email address to activate your account.
             </p>
             <button type="button" onClick={handleVerify} disabled={status === "loading"}

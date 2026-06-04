@@ -83,6 +83,7 @@ export default function MapSection({
   const renderedResultsRef = useRef(nextResults);
   const captureRefs = useRef(new Map<string, ViewShotRef>());
   const pendingCaptures = useRef(new Set<string>());
+  const stableImagesRef = useRef<Record<string, string>>({});
   const localMapRef = useRef<MapView | null>(null);
   const lastRegionRef = useRef<MapRegion>(region ?? initialRegion);
   const lastMarkerPressRef = useRef<number>(0);
@@ -165,12 +166,20 @@ export default function MapSection({
 
   useEffect(() => {
     if (!pinsReady) return;
+    // Commit stable fallback images (keyed without priceKey) so pins stay
+    // visible during the next recapture cycle (e.g. when time changes).
+    const stable: Record<string, string> = {};
+    Object.entries(pinImages).forEach(([key, uri]) => {
+      const stableKey = key.split("|").slice(0, 3).join("|");
+      stable[stableKey] = uri;
+    });
+    stableImagesRef.current = stable;
     const timer = setTimeout(() => {
       hasEverShownPins.current = true;
       setPinsVisible(true);
     }, 32);
     return () => clearTimeout(timer);
-  }, [pinsReady]);
+  }, [pinsReady, pinImages]);
 
   useEffect(() => {
     labelKeys.forEach((key) => {
@@ -233,7 +242,8 @@ export default function MapSection({
             pinLabelById[listing.id] ??
             `€${formatPinPrice(price)}`;
           const pinKey = getPinKey(label, isSelected);
-          const pinImage = pinImages[pinKey];
+          const stableKey = `${label}|${isSelected ? "selected" : "default"}|${PIN_STYLE_VERSION}`;
+          const pinImage = pinImages[pinKey] ?? stableImagesRef.current[stableKey];
           if (!pinImage) return null;
           return (
             <Marker

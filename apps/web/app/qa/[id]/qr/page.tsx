@@ -67,7 +67,7 @@ export default function QaPortalQrPage() {
             className="h-64 w-64 rounded-lg border border-slate-200 bg-white p-2"
           />
           <p className="text-sm font-semibold text-slate-700">Scan to pay for parking</p>
-          <p className="break-all text-xs text-slate-500">{qrUrl}</p>
+          <p className="break-all text-xs text-slate-600">{qrUrl}</p>
         </div>
       </div>
 

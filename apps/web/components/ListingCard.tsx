@@ -97,7 +97,7 @@ function FeatureIcon({ type }: { type: "cctv" | "ev" | "gated" | "covered" | "in
   const Icon = type === "cctv" ? Cctv : type === "ev" ? Zap : type === "gated" ? Lock : Home;
   const label = type === "cctv" ? "CCTV" : type === "ev" ? "EV charging" : type === "gated" ? "Gated" : "Covered";
   return (
-    <span title={label} className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500">
+    <span title={label} className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600">
       <Icon className={cls} strokeWidth={2.1} />
     </span>
   );
@@ -216,8 +216,8 @@ export function ListingCard({
           >
             {listing.title}
           </Link>
-          <p className="mt-0.5 flex items-center gap-1 text-[11.5px] text-slate-500">
-            <MapPin className="h-3 w-3 shrink-0 text-slate-400" />
+          <p className="mt-0.5 flex items-center gap-1 text-[11.5px] text-slate-600">
+            <MapPin className="h-3 w-3 shrink-0 text-slate-600" />
             <span className="line-clamp-1">{listing.address}</span>
           </p>
         </div>
@@ -235,12 +235,12 @@ export function ListingCard({
                 <svg className="h-3 w-3 fill-amber-400" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                 {listing.rating!.toFixed(1)}
                 {(listing.ratingCount ?? 0) > 0 && (
-                  <span className="font-normal text-slate-400">({listing.ratingCount})</span>
+                  <span className="font-normal text-slate-600">({listing.ratingCount})</span>
                 )}
               </span>
             )}
             {dist !== undefined && (
-              <span className="text-[11px] font-medium text-slate-400">{dist.toFixed(1)} km</span>
+              <span className="text-[11px] font-medium text-slate-600">{dist.toFixed(1)} km</span>
             )}
           </div>
         </div>
@@ -249,11 +249,11 @@ export function ListingCard({
       {/* ── Right: price + CTA ── */}
       <div className="flex w-[108px] shrink-0 flex-col items-stretch justify-between border-l border-slate-100 px-3 py-3">
         <div className="text-right">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{finalPriceDisplay.eyebrow}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">{finalPriceDisplay.eyebrow}</p>
           <p className="text-[22px] font-extrabold leading-none tracking-tight text-slate-900">
             €{formatPriceValue(finalPriceDisplay.value)}
           </p>
-          <p className="mt-0.5 text-[11px] font-medium text-slate-400">{finalPriceDisplay.suffix}</p>
+          <p className="mt-0.5 text-[11px] font-medium text-slate-600">{finalPriceDisplay.suffix}</p>
         </div>
         <Link
           href={`/checkout/${listing.id}`}

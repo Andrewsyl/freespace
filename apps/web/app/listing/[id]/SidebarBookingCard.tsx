@@ -85,7 +85,7 @@ export function SidebarBookingCard({
       </div>
 
       {tab === "monthly" ? (
-        <p className="py-6 text-center text-[14px] text-slate-400">
+        <p className="py-6 text-center text-[14px] text-slate-600">
           Monthly pricing available on request.
         </p>
       ) : (
@@ -95,9 +95,9 @@ export function SidebarBookingCard({
             <span className="font-mono text-[36px] font-bold leading-none tracking-[-0.015em] text-slate-950">
               <span className="text-brand-500">€</span>{formatPriceValue(pricing.subtotal)}
             </span>
-            <span className="text-[15px] text-slate-400">for {pricing.durationLabel}</span>
+            <span className="text-[15px] text-slate-600">for {pricing.durationLabel}</span>
           </div>
-          <p className="mb-5 text-[13px] text-slate-400">You won&apos;t be charged yet</p>
+          <p className="mb-5 text-[13px] text-slate-600">You won&apos;t be charged yet</p>
 
           {/* Booking selector (picker + modal + CTA) */}
           <BookingSelector
@@ -112,11 +112,11 @@ export function SidebarBookingCard({
 
           {/* Price breakdown */}
           <div className="mt-5 space-y-2 border-t border-slate-100 pt-4">
-            <div className="flex items-center justify-between text-[13px] text-slate-500">
+            <div className="flex items-center justify-between text-[13px] text-slate-600">
               <span>{pricing.billingLabel}</span>
               <span className="font-mono">€{formatPriceValue(pricing.subtotal)}</span>
             </div>
-            <div className="flex items-center justify-between text-[13px] text-slate-500">
+            <div className="flex items-center justify-between text-[13px] text-slate-600">
               <span>Service fee</span>
               <span className="font-mono">€1.50</span>
             </div>

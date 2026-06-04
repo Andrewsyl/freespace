@@ -44,7 +44,7 @@ export default function SupportPage() {
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Help</p>
         <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Support</h1>
-        <p className="mt-1 text-[13.5px] text-slate-500">For booking issues, refunds, and account questions.</p>
+        <p className="mt-1 text-[13.5px] text-slate-600">For booking issues, refunds, and account questions.</p>
       </div>
 
       {status === "success" ? (
@@ -63,7 +63,7 @@ export default function SupportPage() {
           {error && <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="mb-1 block text-[12px] font-semibold text-slate-500">Subject</label>
+              <label className="mb-1 block text-[12px] font-semibold text-slate-600">Subject</label>
               <select
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
@@ -74,7 +74,7 @@ export default function SupportPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-[12px] font-semibold text-slate-500">Message</label>
+              <label className="mb-1 block text-[12px] font-semibold text-slate-600">Message</label>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -82,7 +82,7 @@ export default function SupportPage() {
                 placeholder="Describe your issue in detail…"
                 className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 resize-none"
               />
-              <p className="mt-1 text-right text-[11px] text-slate-400">{message.length} characters (10 minimum)</p>
+              <p className="mt-1 text-right text-[11px] text-slate-600">{message.length} characters (10 minimum)</p>
             </div>
             <button
               type="submit"

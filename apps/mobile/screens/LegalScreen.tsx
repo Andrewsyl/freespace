@@ -133,9 +133,9 @@ export function LegalScreen({ navigation }: Props) {
 }
 
 const GREEN  = "#0fa968";
-const LINE   = "#E6E6E4";
+const LINE   = "#d1d5db";
 const FG     = "#111827";
-const MUTED  = "#6b7280";
+const MUTED  = "#374151";
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#ffffff" },
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   navBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    borderBottomWidth: 1, borderBottomColor: LINE,
   },
   backBtn: { padding: 6, marginLeft: -6 },
   navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG },
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
 
   // ── Page header ──────────────────────────────────────────────
   pageHeader: {
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    borderBottomWidth: 1, borderBottomColor: LINE,
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
   },
   pageLabel: {
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
 
   // ── Sections ─────────────────────────────────────────────────
   section: {
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    borderBottomWidth: 1, borderBottomColor: LINE,
     paddingHorizontal: 20, paddingVertical: 20,
   },
   sectionTitle: {
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 12,
     paddingHorizontal: 16, paddingVertical: 14, backgroundColor: "#ffffff",
   },
-  listRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  listRowBorder: { borderTopWidth: 1, borderTopColor: LINE },
   listRowContent: { flex: 1 },
   listRowTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG },
   listRowTitleDanger: { color: "#b42318" },

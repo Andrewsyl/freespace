@@ -68,7 +68,7 @@ function ResetPasswordPageContent() {
           <h1 className="mt-2 text-[28px] font-bold tracking-[-0.03em] text-slate-900">
             {step === "reset" ? "Set new password" : "Reset password"}
           </h1>
-          <p className="mt-1.5 text-[15px] text-slate-500">
+          <p className="mt-1.5 text-[15px] text-slate-600">
             {step === "reset" ? "Choose a new password for your account." : "Enter your email and we'll send a reset link."}
           </p>
         </div>
@@ -79,7 +79,7 @@ function ResetPasswordPageContent() {
               <Mail className="h-8 w-8 text-brand-500" strokeWidth={1.75} />
             </div>
             <p className="text-[17px] font-bold text-slate-900">Check your inbox</p>
-            <p className="mt-2 text-[14px] leading-6 text-slate-500">
+            <p className="mt-2 text-[14px] leading-6 text-slate-600">
               If an account exists for <strong className="font-semibold text-slate-800">{email}</strong>, we sent a reset link.
             </p>
             <Link href="/login" className="mt-6 text-[15px] font-semibold text-brand-600">Back to login</Link>
@@ -98,7 +98,7 @@ function ResetPasswordPageContent() {
               className="flex h-12 w-full items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white transition active:bg-brand-600 disabled:opacity-50">
               {submitting ? "Sending…" : "Send reset link"}
             </button>
-            <p className="text-center text-[14px] text-slate-500">
+            <p className="text-center text-[14px] text-slate-600">
               <Link href="/login" className="font-semibold text-brand-600">Back to login</Link>
             </p>
           </form>
@@ -120,7 +120,7 @@ function ResetPasswordPageContent() {
               className="flex h-12 w-full items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white transition active:bg-brand-600 disabled:opacity-50">
               {submitting ? "Updating…" : "Set new password"}
             </button>
-            <p className="text-center text-[14px] text-slate-500">
+            <p className="text-center text-[14px] text-slate-600">
               <Link href="/login" className="font-semibold text-brand-600">Back to login</Link>
             </p>
           </form>

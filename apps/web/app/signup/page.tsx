@@ -88,7 +88,7 @@ function SignupPageContent() {
             className="mx-auto mb-6 h-10 w-auto mix-blend-multiply"
           />
           <h1 className="text-[28px] font-bold tracking-tight text-slate-900">Create account</h1>
-          <p className="mt-1.5 text-[15px] text-slate-500">Book spaces or earn from your driveway</p>
+          <p className="mt-1.5 text-[15px] text-slate-600">Book spaces or earn from your driveway</p>
         </div>
 
         {phoneStep === "verify" ? (
@@ -127,7 +127,7 @@ function SignupPageContent() {
             </button>
             <button
               type="button"
-              className="w-full py-2 text-[14px] font-semibold text-slate-500 underline underline-offset-2"
+              className="w-full py-2 text-[14px] font-semibold text-slate-600 underline underline-offset-2"
               onClick={async () => {
                 try {
                   setSmsLoading(true);
@@ -238,7 +238,7 @@ function SignupPageContent() {
         )}
 
         {/* Footer */}
-        <p className="mt-8 text-center text-[14px] text-slate-500">
+        <p className="mt-8 text-center text-[14px] text-slate-600">
           Already have an account?{" "}
           <Link href="/login" className="font-semibold text-brand-700">
             Sign in

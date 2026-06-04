@@ -43,7 +43,7 @@ function VerifyPageContent() {
         {status === "loading" && (
           <>
             <div className="mx-auto mb-5 h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
-            <p className="text-[15px] text-slate-500">{message}</p>
+            <p className="text-[15px] text-slate-600">{message}</p>
           </>
         )}
 
@@ -53,7 +53,7 @@ function VerifyPageContent() {
               <CheckCircle className="h-8 w-8 text-brand-500" strokeWidth={1.75} />
             </div>
             <h1 className="text-[22px] font-bold tracking-[-0.03em] text-slate-900">All set</h1>
-            <p className="mt-2 text-[14px] text-slate-500">{message} Redirecting…</p>
+            <p className="mt-2 text-[14px] text-slate-600">{message} Redirecting…</p>
           </>
         )}
 
@@ -63,7 +63,7 @@ function VerifyPageContent() {
               <AlertTriangle className="h-8 w-8 text-rose-400" strokeWidth={1.75} />
             </div>
             <h1 className="text-[22px] font-bold tracking-[-0.03em] text-slate-900">Verification failed</h1>
-            <p className="mt-2 text-[14px] text-slate-500">{message}</p>
+            <p className="mt-2 text-[14px] text-slate-600">{message}</p>
             <div className="mt-6 flex flex-col gap-3">
               <Link href="/login"
                 className="flex h-12 items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white">

@@ -95,7 +95,7 @@ export function HostStreetViewStep({ data, onUpdate, onSkip }: HostStepProps & {
       <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 py-10 text-center">
         <MapPin className="h-8 w-8 text-slate-300" strokeWidth={1.4} />
         <p className="text-sm font-semibold text-slate-700">No location set</p>
-        <p className="text-xs text-slate-500">Go back and confirm your address first</p>
+        <p className="text-xs text-slate-600">Go back and confirm your address first</p>
       </div>
     );
   }
@@ -103,7 +103,7 @@ export function HostStreetViewStep({ data, onUpdate, onSkip }: HostStepProps & {
   return (
     <div className="space-y-3">
       <div>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-600">
           Can&apos;t see your space from here? You can add your own photos at a later step.
         </p>
         <button

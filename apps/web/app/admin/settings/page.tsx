@@ -228,7 +228,7 @@ export default function AdminSettingsPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold text-slate-900">Fraud controls</h2>
-            <p className="text-xs text-slate-500">Changes apply in ~60 seconds.</p>
+            <p className="text-xs text-slate-600">Changes apply in ~60 seconds.</p>
           </div>
           <button
             onClick={load}
@@ -242,7 +242,7 @@ export default function AdminSettingsPage() {
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="text-sm font-semibold text-slate-900">Fraud mode</p>
-                <p className="text-xs text-slate-500">Choose how strict fraud rules should be.</p>
+                <p className="text-xs text-slate-600">Choose how strict fraud rules should be.</p>
               </div>
               <button
                 onClick={saveFraudMode}
@@ -268,7 +268,7 @@ export default function AdminSettingsPage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">{field.label}</p>
-                  <p className="text-xs text-slate-500">{field.helper}</p>
+                  <p className="text-xs text-slate-600">{field.helper}</p>
                 </div>
                 <button
                   onClick={() => saveFraudSetting(field)}
@@ -339,7 +339,7 @@ export default function AdminSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-900">{row.key}</p>
-                <p className="text-xs text-slate-500">Updated {formatDate(row.updated_at)}</p>
+                <p className="text-xs text-slate-600">Updated {formatDate(row.updated_at)}</p>
               </div>
               <button
                 onClick={() => saveSetting(row.key, JSON.stringify(row.value ?? null))}

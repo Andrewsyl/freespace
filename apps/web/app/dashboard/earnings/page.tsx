@@ -145,15 +145,15 @@ export default function EarningsPage() {
 
       <div className="grid grid-cols-3 divide-x divide-slate-200 border-b border-slate-200">
         <div className="flex flex-col justify-center px-4 py-4 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Gross</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Gross</p>
           <p className="mt-1 text-[18px] font-bold tracking-[-0.03em] text-slate-900">{formatMoney(summary?.totalCents ?? 0, currency)}</p>
         </div>
         <div className="flex flex-col justify-center px-4 py-4 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Fees</p>
-          <p className="mt-1 text-[18px] font-bold tracking-[-0.03em] text-slate-400">{formatMoney(summary?.feeCents ?? 0, currency)}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Fees</p>
+          <p className="mt-1 text-[18px] font-bold tracking-[-0.03em] text-slate-600">{formatMoney(summary?.feeCents ?? 0, currency)}</p>
         </div>
         <div className="flex flex-col justify-center px-4 py-4 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Net</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Net</p>
           <p className="mt-1 text-[18px] font-bold tracking-[-0.03em] text-brand-600">{formatMoney(summary?.netCents ?? 0, currency)}</p>
         </div>
       </div>

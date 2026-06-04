@@ -69,7 +69,7 @@ export function TextAreaField({
         {canClear ? (
           <button
             aria-label="Clear input"
-            className="absolute right-2 top-3 flex h-7 w-7 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            className="absolute right-2 top-3 flex h-7 w-7 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 hover:text-slate-700"
             onClick={clearField}
             onMouseDown={(event) => event.preventDefault()}
             type="button"
@@ -78,7 +78,7 @@ export function TextAreaField({
           </button>
         ) : null}
       </span>
-      {error ? <span className="text-xs text-rose-700">{error}</span> : hint ? <span className="text-xs text-slate-500">{hint}</span> : null}
+      {error ? <span className="text-xs text-rose-700">{error}</span> : hint ? <span className="text-xs text-slate-600">{hint}</span> : null}
     </label>
   );
 }

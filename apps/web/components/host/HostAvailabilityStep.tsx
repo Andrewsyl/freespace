@@ -97,7 +97,7 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
           Always available
           <span className="ml-2 text-xs font-semibold text-brand-500">Recommended</span>
         </p>
-        <p className="mt-1 text-sm text-slate-500">Monday – Sunday (24 hours)</p>
+        <p className="mt-1 text-sm text-slate-600">Monday – Sunday (24 hours)</p>
       </button>
 
       {/* Working week */}
@@ -109,7 +109,7 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
         }`}
       >
         <p className="text-base font-semibold text-slate-900">Working week</p>
-        <p className="mt-1 text-sm text-slate-500">Monday – Friday (06:00 – 19:00)</p>
+        <p className="mt-1 text-sm text-slate-600">Monday – Friday (06:00 – 19:00)</p>
       </button>
 
       {/* Custom */}
@@ -122,15 +122,15 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
       >
         <div>
           <p className="text-base font-semibold text-slate-900">Custom</p>
-          <p className="mt-1 text-sm text-slate-500">Personalised settings</p>
+          <p className="mt-1 text-sm text-slate-600">Personalised settings</p>
         </div>
-        <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={2.5} />
+        <ChevronRight className="h-4 w-4 shrink-0 text-slate-600" strokeWidth={2.5} />
       </button>
 
       {/* Custom summary */}
       {preset === "custom" && customSummary && (
         <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Selected schedule</p>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Selected schedule</p>
           <p className="mt-1 text-sm font-semibold text-slate-800">{customSummary}</p>
         </div>
       )}
@@ -148,7 +148,7 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
                 <X className="h-5 w-5" strokeWidth={2.5} />
               </button>
             </div>
-            <p className="mb-4 text-sm text-slate-500">Choose the days and times you want to make your space available.</p>
+            <p className="mb-4 text-sm text-slate-600">Choose the days and times you want to make your space available.</p>
 
             <div className="max-h-[50vh] space-y-2 overflow-y-auto">
               {ALL_DAYS.map(day => {
@@ -168,7 +168,7 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
                     {enabled && (
                       <div className="mt-3 flex gap-3">
                         <div className="flex-1">
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Start</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-600">Start</p>
                           <select
                             value={ranges[day].start}
                             onChange={e => setRanges(r => ({ ...r, [day]: { ...r[day], start: e.target.value } }))}
@@ -178,7 +178,7 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
                           </select>
                         </div>
                         <div className="flex-1">
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">End</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-600">End</p>
                           <select
                             value={ranges[day].end}
                             onChange={e => setRanges(r => ({ ...r, [day]: { ...r[day], end: e.target.value } }))}

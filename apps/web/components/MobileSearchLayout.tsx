@@ -244,11 +244,11 @@ export function MobileSearchLayout({
                   <p className="truncate text-[13.5px] font-semibold leading-tight text-slate-900">
                     {filters.location || "Where are you parking?"}
                   </p>
-                  <p className="text-[11px] leading-tight text-slate-400">
+                  <p className="text-[11px] leading-tight text-slate-600">
                     {formatDate(startAt)} · {formatTime(startAt)} → {formatTime(endAt)}
                   </p>
                 </div>
-                <ChevronLeft className="h-3.5 w-3.5 shrink-0 -rotate-90 text-slate-400" strokeWidth={2.5} />
+                <ChevronLeft className="h-3.5 w-3.5 shrink-0 -rotate-90 text-slate-600" strokeWidth={2.5} />
               </button>
             </div>
           </div>
@@ -336,7 +336,7 @@ export function MobileSearchLayout({
                   <p className="truncate text-[13px] font-semibold leading-tight text-slate-900">
                     {filters.location || "Where are you parking?"}
                   </p>
-                  <p className="text-[10.5px] leading-tight text-slate-400">
+                  <p className="text-[10.5px] leading-tight text-slate-600">
                     {formatDate(startAt)} · {formatTime(startAt)} → {formatTime(endAt)}
                   </p>
                 </div>
@@ -355,7 +355,7 @@ export function MobileSearchLayout({
 
             {/* Count row */}
             <div className="flex items-center justify-between pb-1">
-              <p className="text-[13px] font-semibold text-slate-500">
+              <p className="text-[13px] font-semibold text-slate-600">
                 {status === "loading"
                   ? "Searching…"
                   : results.length === 0
@@ -375,7 +375,7 @@ export function MobileSearchLayout({
                     className={`pb-2.5 pr-5 pt-2 text-[12.5px] font-semibold transition ${
                       sortMode === tab.key
                         ? "border-b-[2.5px] border-brand-500 text-brand-600"
-                        : "border-b-[2.5px] border-transparent text-slate-400"
+                        : "border-b-[2.5px] border-transparent text-slate-600"
                     }`}
                   >
                     {tab.label}
@@ -391,7 +391,7 @@ export function MobileSearchLayout({
               <div className="flex items-center justify-center py-14">
                 <div className="flex flex-col items-center gap-3">
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
-                  <span className="text-[13px] text-slate-400">Finding spaces…</span>
+                  <span className="text-[13px] text-slate-600">Finding spaces…</span>
                 </div>
               </div>
             )}
@@ -402,7 +402,7 @@ export function MobileSearchLayout({
                 <p className="text-[15px] font-semibold text-slate-700">
                   {filters.location ? "No spaces found" : "Start your search"}
                 </p>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-slate-400">
+                <p className="mt-1.5 text-[13px] leading-relaxed text-slate-600">
                   {filters.location
                     ? "Try a different area or clear your filters"
                     : "Search for a location above to see available spaces"}
@@ -629,20 +629,20 @@ function ResultCard({
             </p>
             <p className="shrink-0 text-[16px] font-extrabold tracking-tight text-brand-600">
               €{formatPriceValue(priceDisplay.value)}
-              <span className="text-[10px] font-semibold text-slate-400">{priceDisplay.suffix}</span>
+              <span className="text-[10px] font-semibold text-slate-600">{priceDisplay.suffix}</span>
             </p>
           </div>
           <div className="mt-0.5 flex items-center gap-1.5">
-            <p className="line-clamp-1 text-[11.5px] text-slate-400">{listing.address}</p>
+            <p className="line-clamp-1 text-[11.5px] text-slate-600">{listing.address}</p>
             {typeof listing.distanceKm === "number" && (
-              <span className="shrink-0 text-[11px] font-medium text-slate-400">· {listing.distanceKm.toFixed(1)} km</span>
+              <span className="shrink-0 text-[11px] font-medium text-slate-600">· {listing.distanceKm.toFixed(1)} km</span>
             )}
           </div>
         </div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-[12px] text-slate-500">
+            <span className="text-[12px] text-slate-600">
               <span className="text-amber-500">★</span>{" "}
               {(listing.rating ?? 0).toFixed(1)}
               {typeof listing.ratingCount === "number" && listing.ratingCount > 0
@@ -654,7 +654,7 @@ function ResultCard({
                 {amenities.slice(0, 2).map((a) => (
                   <span
                     key={a}
-                    className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500"
+                    className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600"
                   >
                     {a.length > 10 ? a.slice(0, 9) + "…" : a}
                   </span>
@@ -931,10 +931,10 @@ function MapBottomCard({
       {/* Content */}
       <div className="px-3 pb-3 pt-2.5">
         <p className="line-clamp-1 text-[14px] font-bold text-slate-900">{listing.title}</p>
-        <p className="mt-0.5 line-clamp-1 text-[11.5px] text-slate-400">{listing.address}</p>
+        <p className="mt-0.5 line-clamp-1 text-[11.5px] text-slate-600">{listing.address}</p>
 
         <div className="mt-2 mb-2 flex items-center justify-between">
-          <span className="text-[11.5px] text-slate-500">
+          <span className="text-[11.5px] text-slate-600">
             <span className="text-amber-500">★</span> {(listing.rating ?? 0).toFixed(1)}
             {typeof listing.ratingCount === "number" && listing.ratingCount > 0
               ? ` · ${listing.ratingCount} reviews`
@@ -957,11 +957,11 @@ function MapBottomCard({
 
         <div className="flex items-center justify-between gap-3 border-t border-dashed border-slate-100 pt-2.5">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{priceDisplay.label}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">{priceDisplay.label}</p>
             <p className="text-[18px] font-extrabold tracking-tight text-brand-600">
               €{formatPriceValue(priceDisplay.value)}
             </p>
-            <p className="text-[10px] font-medium text-slate-400">{priceDisplay.suffix}</p>
+            <p className="text-[10px] font-medium text-slate-600">{priceDisplay.suffix}</p>
           </div>
           <button
             onClick={onOpen}
@@ -977,7 +977,7 @@ function MapBottomCard({
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
-function SearchIcon() { return <Search className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={2.5} />; }
+function SearchIcon() { return <Search className="h-4 w-4 shrink-0 text-slate-600" strokeWidth={2.5} />; }
 function FiltersIcon() { return <SlidersHorizontal className="h-3.5 w-3.5 text-slate-600" strokeWidth={2} />; }
 function CloseIcon() { return <X className="h-3 w-3" strokeWidth={2.5} />; }
 function RefreshIcon() { return <RefreshCw className="h-3.5 w-3.5" strokeWidth={2.5} />; }

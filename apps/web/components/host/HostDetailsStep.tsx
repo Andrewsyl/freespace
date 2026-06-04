@@ -76,7 +76,7 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
   if (!hasType) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-slate-500">Pick the shape that best matches your space</p>
+        <p className="text-sm text-slate-600">Pick the shape that best matches your space</p>
         <div className="grid grid-cols-2 gap-3">
           {SPACE_TYPES.map((type) => (
             <button
@@ -85,7 +85,7 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
               onClick={() => onUpdate({ spaceType: type })}
               className="flex min-h-[110px] flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
                 <SpaceTypeIcon type={type} />
               </div>
               <p className="text-base font-bold tracking-tight text-slate-900">{type}</p>
@@ -117,7 +117,7 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
 
       {/* Space count ────────────────────────────────── */}
       <div className="space-y-3">
-        <p className="text-sm text-slate-500">How many spaces are available to rent out?</p>
+        <p className="text-sm text-slate-600">How many spaces are available to rent out?</p>
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -145,8 +145,8 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
       {hasCount && (
         <div className="space-y-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Vehicle fit</p>
-            <p className="mt-1 text-[14px] text-slate-500">What size vehicles fit your space?</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">Vehicle fit</p>
+            <p className="mt-1 text-[14px] text-slate-600">What size vehicles fit your space?</p>
           </div>
           <div className="space-y-2">
             {VEHICLE_SIZES.map((opt) => {
@@ -163,7 +163,7 @@ export function HostDetailsStep({ data, onUpdate }: HostStepProps) {
                   <img src={opt.imageUrl} alt={opt.label} className="h-10 w-10 shrink-0 object-contain" />
                   <div className="min-w-0 flex-1">
                     <p className="text-base font-bold tracking-tight text-slate-900">{opt.label}</p>
-                    <p className="text-sm text-slate-500">{opt.example}</p>
+                    <p className="text-sm text-slate-600">{opt.example}</p>
                   </div>
                   {active && (
                     <svg className="h-5 w-5 shrink-0 text-brand-500" viewBox="0 0 24 24" fill="currentColor">

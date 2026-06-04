@@ -164,7 +164,7 @@ export default function AdminListingsPage() {
                       {listing.title}
                     </a>
                   </div>
-                  <div className="text-xs text-slate-500">{listing.address}</div>
+                  <div className="text-xs text-slate-600">{listing.address}</div>
                 </td>
                 <td className="px-4 py-3">
                   <select
@@ -199,7 +199,7 @@ export default function AdminListingsPage() {
                     className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1 text-sm"
                   />
                 </td>
-                <td className="px-4 py-3 text-slate-500">{formatDate(listing.created_at)}</td>
+                <td className="px-4 py-3 text-slate-600">{formatDate(listing.created_at)}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="inline-flex gap-2">
                     <button

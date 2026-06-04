@@ -52,11 +52,11 @@ export default function ProfilePage() {
         </div>
         <div className="divide-y divide-slate-100 px-6">
           <div className="flex items-center justify-between py-3.5">
-            <span className="text-[13px] text-slate-500">Email</span>
+            <span className="text-[13px] text-slate-600">Email</span>
             <span className="text-[13px] font-semibold text-slate-900">{user?.email}</span>
           </div>
           <div className="flex items-center justify-between py-3.5">
-            <span className="text-[13px] text-slate-500">Role</span>
+            <span className="text-[13px] text-slate-600">Role</span>
             <span className="text-[13px] font-semibold text-slate-900">{user?.role ?? "driver"}</span>
           </div>
         </div>
@@ -83,7 +83,7 @@ export default function ProfilePage() {
             <a key={href} href={href} className="flex items-center justify-between py-3 transition hover:text-brand-600">
               <div>
                 <p className="text-[13.5px] font-semibold text-slate-800">{label}</p>
-                <p className="text-[12px] text-slate-400">{desc}</p>
+                <p className="text-[12px] text-slate-600">{desc}</p>
               </div>
               <svg className="h-4 w-4 shrink-0 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />

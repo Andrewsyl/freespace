@@ -44,21 +44,21 @@ const route = { key: "Search", name: "Search", params: undefined };
 
 describe("SearchScreen", () => {
   it("renders the search bar", () => {
-    const { getByTestId, getByPlaceholderText } = render(
+    const { getByTestId, getByText } = render(
       <GlobalLoadingProvider><SearchScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider>
     );
 
     expect(getByTestId("search-bar")).toBeTruthy();
-    expect(getByPlaceholderText(/where to\?/i)).toBeTruthy();
+    expect(getByText(/where to\?/i)).toBeTruthy();
   });
 
   it("opens the search sheet when tapping the search bar", async () => {
-    const { getByTestId, getByText } = render(
+    const { getByTestId, getByPlaceholderText } = render(
       <GlobalLoadingProvider><SearchScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider>
     );
     const user = userEvent.setup();
 
     await user.press(getByTestId("search-bar"));
-    expect(getByText("Search")).toBeTruthy();
+    expect(getByPlaceholderText("Area, address or landmark")).toBeTruthy();
   });
 });

@@ -109,6 +109,9 @@ export function ListingScreen({ navigation, route }: Props) {
   const [startAt, setStartAt] = useState(() => new Date(from));
   const [endAt, setEndAt] = useState(() => new Date(to));
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerOverlayVisible, setPickerOverlayVisible] = useState(false);
+  const pickerBackdropOpacity = useRef(new Animated.Value(0)).current;
+  const pickerSheetTranslateY = useRef(new Animated.Value(320)).current;
   const [heroTapEnabled, setHeroTapEnabled] = useState(true);
   const heroTapEnabledRef = useRef(true);
   const authBackdropOpacity = useRef(new Animated.Value(0)).current;
@@ -138,24 +141,32 @@ export function ListingScreen({ navigation, route }: Props) {
     endAt.toISOString() === booking.endTime;
   const showBookingMode = booking && isBookingTimes;
 
+  const prevIdRef = useRef<string | null>(null);
   useEffect(() => {
+    const isIdChange = prevIdRef.current !== id;
+    prevIdRef.current = id;
+    let active = true;
     const load = async () => {
-      setLoading(true);
-      setError(null);
+      if (isIdChange) {
+        setLoading(true);
+        setError(null);
+      }
       try {
         const data = await getListing(id, { from: startAt.toISOString(), to: endAt.toISOString() });
+        if (!active) return;
         setListing(data);
-        void trackEvent("mobile_listing_viewed", {
-          listingId: id,
-          title: data.title,
-        });
+        if (isIdChange) {
+          void trackEvent("mobile_listing_viewed", { listingId: id, title: data.title });
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load listing");
+        if (!active) return;
+        if (isIdChange) setError(err instanceof Error ? err.message : "Failed to load listing");
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
     void load();
+    return () => { active = false; };
   }, [id, startAt, endAt]);
 
   useEffect(() => {
@@ -198,6 +209,27 @@ export function ListingScreen({ navigation, route }: Props) {
       if (finished) setAuthOverlayVisible(false);
     });
   }, [authBackdropOpacity, authOverlayVisible, authSheetTranslateY, showAuthModal]);
+
+  useEffect(() => {
+    if (pickerVisible) {
+      pickerBackdropOpacity.setValue(0);
+      pickerSheetTranslateY.setValue(320);
+      setPickerOverlayVisible(true);
+    } else {
+      Animated.parallel([
+        Animated.timing(pickerBackdropOpacity, { toValue: 0, duration: 120, useNativeDriver: true }),
+        Animated.timing(pickerSheetTranslateY, { toValue: 320, duration: 120, useNativeDriver: true }),
+      ]).start(({ finished }) => { if (finished) setPickerOverlayVisible(false); });
+    }
+  }, [pickerVisible, pickerBackdropOpacity, pickerSheetTranslateY]);
+
+  useEffect(() => {
+    if (!pickerOverlayVisible) return;
+    Animated.parallel([
+      Animated.timing(pickerBackdropOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.spring(pickerSheetTranslateY, { toValue: 0, tension: 65, friction: 11, useNativeDriver: true }),
+    ]).start();
+  }, [pickerOverlayVisible, pickerBackdropOpacity, pickerSheetTranslateY]);
 
   useEffect(() => {
     let active = true;
@@ -854,36 +886,36 @@ export function ListingScreen({ navigation, route }: Props) {
       </SafeAreaView>
 
       {/* Date picker modal */}
-      {pickerVisible ? (
-        <Modal transparent animationType="slide" visible>
-          <View style={styles.pickerBackdrop}>
+      <Modal transparent animationType="none" visible={pickerOverlayVisible} onRequestClose={() => { setPickerVisible(false); setDraftDate(null); }}>
+        <View style={{ flex: 1 }}>
+          <Animated.View style={[StyleSheet.absoluteFill, styles.pickerBackdropLayer, { opacity: pickerBackdropOpacity }]}>
             <Pressable style={StyleSheet.absoluteFill} onPress={() => { setPickerVisible(false); setDraftDate(null); }} />
-            <View style={[styles.pickerSheet, { paddingBottom: Math.max(24, insets.bottom + 12) }]}>
-              <View style={styles.pickerHandle} />
-              <Text style={styles.pickerTitle}>
-                {pickerField === "start" ? "Select arrival time" : "Select departure time"}
-              </Text>
-              <DrumRollPicker
-                key={pickerField}
-                date={draftDate ?? (pickerField === "start" ? startAt : endAt)}
-                minuteInterval={5}
-                onChange={(d) => setDraftDate(d)}
-              />
-              <Pressable
-                style={styles.pickerDoneBtn}
-                onPress={() => {
-                  const picked = draftDate ?? (pickerField === "start" ? startAt : endAt);
-                  applyPickedDate(picked);
-                  setPickerVisible(false);
-                  setDraftDate(null);
-                }}
-              >
-                <Text style={styles.pickerDoneBtnText}>Done</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Modal>
-      ) : null}
+          </Animated.View>
+          <Animated.View style={[styles.pickerSheet, { paddingBottom: Math.max(24, insets.bottom + 12), transform: [{ translateY: pickerSheetTranslateY }] }]}>
+            <View style={styles.pickerHandle} />
+            <Text style={styles.pickerTitle}>
+              {pickerField === "start" ? "Select arrival time" : "Select departure time"}
+            </Text>
+            <DrumRollPicker
+              key={pickerField}
+              date={draftDate ?? (pickerField === "start" ? startAt : endAt)}
+              minuteInterval={5}
+              onChange={(d) => setDraftDate(d)}
+            />
+            <Pressable
+              style={styles.pickerDoneBtn}
+              onPress={() => {
+                const picked = draftDate ?? (pickerField === "start" ? startAt : endAt);
+                applyPickedDate(picked);
+                setPickerVisible(false);
+                setDraftDate(null);
+              }}
+            >
+              <Text style={styles.pickerDoneBtnText}>Done</Text>
+            </Pressable>
+          </Animated.View>
+        </View>
+      </Modal>
 
       <Modal transparent animationType="none" visible={authOverlayVisible} onRequestClose={closeAuthOverlay}>
         <View style={styles.authModalRoot} pointerEvents="box-none">
@@ -1001,8 +1033,8 @@ const GREEN      = "#0a8050";
 const GREEN_SOFT = "#edf7f2";
 const FG         = "#111827";
 const FG_2       = "#374151";
-const FG_MUTED   = "#6b7280";
-const FG_SUBTLE  = "#9ca3af";
+const FG_MUTED   = "#374151";
+const FG_SUBTLE  = "#6b7280";
 const LINE       = "#C4CCD5";
 const LINE_2     = "#C4CCD5";
 const BG_2       = "#F7F7F6";
@@ -1501,6 +1533,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "flex-end",
   },
+  pickerBackdropLayer: {
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
   pickerSheet: {
     backgroundColor: "#ffffff",
     borderTopLeftRadius: 20,
@@ -1508,6 +1543,10 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 36,
     alignItems: "center",
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   pickerHandle: {
     width: 36,

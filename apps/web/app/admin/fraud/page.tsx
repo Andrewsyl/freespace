@@ -91,7 +91,7 @@ export default function FraudEventsPage() {
       {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
 
       <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="grid grid-cols-[1.1fr_1fr_1.3fr_1.2fr_1.4fr] gap-2 border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div className="grid grid-cols-[1.1fr_1fr_1.3fr_1.2fr_1.4fr] gap-2 border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-600">
           <span>Time</span>
           <span>Reason</span>
           <span>User / Email</span>
@@ -100,10 +100,10 @@ export default function FraudEventsPage() {
         </div>
         <div className="divide-y divide-slate-100">
           {loading && (
-            <div className="px-4 py-4 text-sm text-slate-500">Loading…</div>
+            <div className="px-4 py-4 text-sm text-slate-600">Loading…</div>
           )}
           {!loading && events.length === 0 && (
-            <div className="px-4 py-4 text-sm text-slate-500">No events yet.</div>
+            <div className="px-4 py-4 text-sm text-slate-600">No events yet.</div>
           )}
           {events.map((event) => (
             <div key={event.id} className="grid grid-cols-[1.1fr_1fr_1.3fr_1.2fr_1.4fr] gap-2 px-4 py-3 text-sm text-slate-700">

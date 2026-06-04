@@ -595,7 +595,7 @@ const SCREEN_BG  = "#EFEEEC";
 const GREEN      = "#0fa968";
 const GREEN_SOFT = "#E6F2EC";
 const FG         = "#111111";
-const FG_MUTED   = "#6B6B6B";
+const FG_MUTED   = "#374151";
 const LINE       = "#EBEBEA";
 
 const styles = StyleSheet.create({

@@ -14,10 +14,10 @@ import type { RootStackParamList } from "../types";
 type Props = NativeStackScreenProps<RootStackParamList, "Profile">;
 
 const GREEN  = "#0a8050";
-const LINE   = "#E6E6E4";
+const LINE   = "#d1d5db";
 const FG     = "#111827";
-const MUTED  = "#6b7280";
-const SUBTLE = "#9ca3af";
+const MUTED  = "#374151";
+const SUBTLE = "#6b7280";
 
 type RowProps = {
   icon: string;
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 11,
     backgroundColor: "#ffffff", minHeight: 48,
   },
-  rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE },
+  rowBorder: { borderTopWidth: 1, borderTopColor: LINE },
   rowPressed: { backgroundColor: "#f5f5f3" },
   iconWrap: { width: 22, alignItems: "center", flexShrink: 0 },
   rowBody: { flex: 1 },

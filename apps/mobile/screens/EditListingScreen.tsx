@@ -85,7 +85,7 @@ export function EditListingScreen({ navigation, route }: Props) {
         imageUrls: imageUrl.trim() ? [imageUrl.trim()] : [],
       });
       setToast("Listing updated.");
-      setTimeout(() => navigation.goBack(), 1600);
+      navigation.goBack();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save listing");
     } finally {
@@ -108,7 +108,7 @@ export function EditListingScreen({ navigation, route }: Props) {
             await deleteListing({ token, listingId: id });
             await AsyncStorage.setItem("searchRefreshToken", Date.now().toString());
             setToast("Listing deleted.");
-            setTimeout(() => navigation.goBack(), 1600);
+            navigation.goBack();
           } catch (err) {
             setError(err instanceof Error ? err.message : "Could not delete listing");
           }

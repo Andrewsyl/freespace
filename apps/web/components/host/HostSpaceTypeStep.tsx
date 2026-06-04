@@ -53,7 +53,7 @@ const OPTIONS = [
 export function HostSpaceTypeStep({ data, onUpdate }: HostStepProps) {
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-500">Pick the shape that best matches your space</p>
+      <p className="text-sm text-slate-600">Pick the shape that best matches your space</p>
       <div className="grid gap-2.5 sm:grid-cols-2">
         {OPTIONS.map((option) => {
           const selected = data.spaceType === option.id;
@@ -71,7 +71,7 @@ export function HostSpaceTypeStep({ data, onUpdate }: HostStepProps) {
               <div className="flex items-start justify-between">
                 <div
                   className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                    selected ? "bg-brand-100 text-brand-700" : "bg-slate-100 text-slate-500"
+                    selected ? "bg-brand-100 text-brand-700" : "bg-slate-100 text-slate-600"
                   }`}
                 >
                   {option.icon}
@@ -86,7 +86,7 @@ export function HostSpaceTypeStep({ data, onUpdate }: HostStepProps) {
                 <p className={`text-base font-bold tracking-tight ${selected ? "text-brand-800" : "text-slate-900"}`}>
                   {option.label}
                 </p>
-                <p className="mt-0.5 text-sm text-slate-500">{option.detail}</p>
+                <p className="mt-0.5 text-sm text-slate-600">{option.detail}</p>
               </div>
             </button>
           );

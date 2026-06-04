@@ -593,6 +593,9 @@ export function SearchScreen({ navigation }: Props) {
   }, [endAt, lat, lng, radiusKm, runSearch]);
 
   useEffect(() => {
+    if (typeof navigation.addListener !== "function") {
+      return;
+    }
     const unsubscribeBlur = navigation.addListener("blur", async () => {
       if (!mapRef.current) return;
       try {
@@ -1256,7 +1259,6 @@ export function SearchScreen({ navigation }: Props) {
             source={{ uri: mapFrozenUri }}
             style={StyleSheet.absoluteFillObject}
             resizeMode="cover"
-            pointerEvents="none"
           />
         ) : null}
         {(!mapReady || (loading && results.length === 0)) ? (
@@ -1932,7 +1934,7 @@ const styles = StyleSheet.create({
   timeStripDate: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
-    color: "#9ca3af",
+    color: "#6b7280",
   },
 
   // ── Filter / clear / loading row below card
@@ -2322,7 +2324,7 @@ const styles = StyleSheet.create({
   searchSectionLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
-    color: "#9ca3af",
+    color: "#6b7280",
     letterSpacing: 0.2,
   },
   searchToggle: {
@@ -2343,7 +2345,7 @@ const styles = StyleSheet.create({
   searchToggleText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
-    color: "#9ca3af",
+    color: "#6b7280",
   },
   searchToggleTextActive: {
     color: "#111827",
@@ -2392,7 +2394,7 @@ const styles = StyleSheet.create({
   searchRowSub: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
-    color: "#6b7280",
+    color: "#374151",
     marginTop: 2,
   },
   searchRemoveBtn: {
@@ -2411,7 +2413,7 @@ const styles = StyleSheet.create({
   searchEmptyText: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
-    color: "#9ca3af",
+    color: "#6b7280",
   },
   searchEmptyState: {
     alignItems: "center",
@@ -2420,12 +2422,12 @@ const styles = StyleSheet.create({
   searchEmptyStateText: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
-    color: "#9ca3af",
+    color: "#6b7280",
     marginTop: 0,
   },
 
   emptyText: {
-    color: "#6b7280",
+    color: "#374151",
     fontSize: 13,
   },
   sectionLabel: {
@@ -2545,7 +2547,7 @@ const styles = StyleSheet.create({
   pickerSubtitle: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
-    color: "#9ca3af",
+    color: "#6b7280",
     marginTop: 2,
   },
 

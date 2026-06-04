@@ -171,18 +171,18 @@ function CalendarDropdown({
           type="button"
           onClick={prevMonth}
           disabled={!canGoPrev}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 disabled:opacity-20"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 disabled:opacity-20"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
         <div className="text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600">{label}</p>
           <p className="text-[15px] font-bold text-slate-950">{MONTH_NAMES[viewMonth]} {viewYear}</p>
         </div>
         <button
           type="button"
           onClick={nextMonth}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         </button>
@@ -191,7 +191,7 @@ function CalendarDropdown({
       {/* Day headers */}
       <div className="grid grid-cols-7 border-t border-slate-100 px-3 pt-2">
         {DAY_LABELS.map((l, i) => (
-          <div key={i} className="text-center text-[11px] font-bold uppercase tracking-wide text-slate-400 pb-1">
+          <div key={i} className="text-center text-[11px] font-bold uppercase tracking-wide text-slate-600 pb-1">
             {l}
           </div>
         ))}
@@ -294,7 +294,7 @@ function TriggerField({
         <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
       </svg>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">{label}</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-600">{label}</p>
         <p className="truncate text-[13px] font-semibold text-slate-900">{formatTrigger(date, time)}</p>
       </div>
       <svg className={`shrink-0 text-brand-500 transition-transform ${open ? "rotate-180" : ""}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
@@ -396,7 +396,7 @@ export function BookingSelector({
       {!hidePrice && (
         <div className={`text-[32px] font-semibold leading-none tracking-[-0.05em] ${dark ? "text-white" : "text-slate-950"}`}>
           €{formatPriceValue(pricing.subtotal)}
-          <span className={`ml-1.5 text-[15px] ${dark ? "text-white/70" : "text-slate-400"}`}>
+          <span className={`ml-1.5 text-[15px] ${dark ? "text-white/70" : "text-slate-600"}`}>
             for {pricing.durationLabel}
           </span>
         </div>

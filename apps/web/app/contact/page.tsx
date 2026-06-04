@@ -11,7 +11,7 @@ export default function ContactPage() {
       <div className="border-b border-slate-200 px-6 py-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Support</p>
         <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Contact FreeSpace</h1>
-        <p className="mt-1 text-[14px] text-slate-500">
+        <p className="mt-1 text-[14px] text-slate-600">
           For booking issues, refunds, and account questions.
         </p>
       </div>
@@ -40,7 +40,7 @@ export default function ContactPage() {
             <p key={item} className="py-3 text-[14px] text-slate-600">{item}</p>
           ))}
         </div>
-        <p className="mt-4 text-[12px] text-slate-400">
+        <p className="mt-4 text-[12px] text-slate-600">
           You can also review our{" "}
           <Link href="/legal/refund-cancellation-policy" className="font-semibold text-brand-600 underline underline-offset-2">
             refund and cancellation policy

@@ -206,7 +206,7 @@ export default function HomePage() {
               <span className="block text-[30px] font-medium leading-[1.06] text-slate-800 sm:text-[40px] lg:text-[58px]">Find your space,</span>
               <span className="block text-[30px] font-extrabold leading-[1.06] text-brand-500 sm:text-[40px] lg:text-[58px]">stress free.</span>
             </h1>
-            <p className="mt-5 max-w-[380px] text-[15px] leading-relaxed text-slate-500">
+            <p className="mt-5 max-w-[380px] text-[15px] leading-relaxed text-slate-600">
               Search thousands of trusted spaces. Compare great prices and book instantly — no stress, no surprises.
             </p>
 
@@ -236,7 +236,7 @@ export default function HomePage() {
                       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" /><circle cx="12" cy="9" r="2.5" />
                     </svg>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-500">Where</p>
+                      <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-600">Where</p>
                       <AddressAutocomplete
                         defaultValue={location}
                         placeholder="City, address or postcode"
@@ -276,9 +276,9 @@ export default function HomePage() {
                             <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
                           </svg>
                           <div className="min-w-0">
-                            <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-500">{mode === "monthly" ? "Starting" : "From"}</p>
+                            <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-600">{mode === "monthly" ? "Starting" : "From"}</p>
                             <p className="mt-0.5 text-[13.5px] font-semibold leading-tight text-slate-900">{formatDateShort(startDateTime)}</p>
-                            {mode !== "monthly" && <p className="text-[12px] text-slate-500">{formatTimeAMPM(startDateTime)}</p>}
+                            {mode !== "monthly" && <p className="text-[12px] text-slate-600">{formatTimeAMPM(startDateTime)}</p>}
                           </div>
                         </button>
                       )}
@@ -292,7 +292,7 @@ export default function HomePage() {
                             <path d="M3 6h18M7 12h5m5 0h-1M7 18h5" />
                           </svg>
                           <div className="min-w-0 flex-1">
-                            <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-500">Schedule</p>
+                            <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-600">Schedule</p>
                             <div className="relative mt-0.5">
                               <select
                                 value={monthlyPlan}
@@ -328,9 +328,9 @@ export default function HomePage() {
                                 <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
                               </svg>
                               <div className="min-w-0">
-                                <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-500">Until</p>
+                                <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-slate-600">Until</p>
                                 <p className="mt-0.5 text-[13.5px] font-semibold leading-tight text-slate-900">{formatDateShort(endDateTime)}</p>
-                                <p className="text-[12px] text-slate-500">{formatTimeAMPM(endDateTime)}</p>
+                                <p className="text-[12px] text-slate-600">{formatTimeAMPM(endDateTime)}</p>
                               </div>
                             </button>
                           )}
@@ -455,7 +455,7 @@ export default function HomePage() {
               ].map((item, i) => (
                 <div key={item.stat} className={`text-center ${i === 0 ? "pr-4" : i === 1 ? "px-4" : "pl-4"}`}>
                   <p className="font-display text-sm font-extrabold text-slate-900">{item.stat}</p>
-                  <p className="mt-0.5 text-[11px] text-slate-500">{item.label}</p>
+                  <p className="mt-0.5 text-[11px] text-slate-600">{item.label}</p>
                 </div>
               ))}
             </div>

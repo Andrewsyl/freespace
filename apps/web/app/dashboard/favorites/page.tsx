@@ -73,7 +73,7 @@ export default function FavouritesPage() {
           <div className="flex flex-col items-center rounded-2xl border border-slate-200 bg-slate-50 px-5 py-12 text-center">
             <Heart className="mb-3 h-8 w-8 text-slate-300" strokeWidth={1.5} />
             <p className="text-[15px] font-semibold text-slate-700">No favourites yet</p>
-            <p className="mt-1 text-[13px] text-slate-400">Tap the heart on any listing to save it here.</p>
+            <p className="mt-1 text-[13px] text-slate-600">Tap the heart on any listing to save it here.</p>
             <Link href="/" className="mt-5 inline-flex items-center justify-center rounded-full bg-brand-500 px-5 py-2.5 text-[13px] font-semibold text-white">
               Browse spaces
             </Link>
@@ -111,7 +111,7 @@ function FavouriteCard({ listing, removing, onRemove }: { listing: FavouriteList
       </div>
       <div className="p-4">
         <p className="line-clamp-1 text-[14px] font-bold text-slate-900">{listing.title}</p>
-        <p className="mt-0.5 flex items-center gap-1 text-[12px] text-slate-400">
+        <p className="mt-0.5 flex items-center gap-1 text-[12px] text-slate-600">
           <MapPin className="h-3 w-3 text-brand-500" strokeWidth={2} />
           <span className="line-clamp-1">{listing.address}</span>
         </p>

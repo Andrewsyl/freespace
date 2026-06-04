@@ -39,7 +39,7 @@ export function HostStepperLayout({
       {/* ── Header ── */}
       <div className="border-b border-slate-200 px-5 pb-5 pt-6">
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
             Step {step} of {totalSteps}
           </span>
           <span className="text-[11px] font-semibold text-brand-500">{progress}%</span>
@@ -52,7 +52,7 @@ export function HostStepperLayout({
         </div>
         <h1 className="mt-5 text-[22px] font-bold tracking-[-0.03em] text-slate-900">{title}</h1>
         {description && (
-          <p className="mt-1 text-[14px] leading-relaxed text-slate-500">{description}</p>
+          <p className="mt-1 text-[14px] leading-relaxed text-slate-600">{description}</p>
         )}
       </div>
 

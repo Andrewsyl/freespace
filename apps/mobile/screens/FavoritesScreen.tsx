@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   navBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E6E6E4",
+    borderBottomWidth: 1, borderBottomColor: "#d1d5db",
     backgroundColor: "#ffffff",
   },
   backBtn: { padding: 6, marginLeft: -6 },
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingVertical: 12,
     paddingHorizontal: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   skeletonCopy: { flex: 1 },

@@ -23,10 +23,10 @@ import { formatListingPriceLine } from "../utils/pricing";
 type Props = NativeStackScreenProps<RootStackParamList, "Listings">;
 
 const GREEN  = "#0a8050";
-const LINE   = "#E6E6E4";
+const LINE   = "#d1d5db";
 const FG     = "#111827";
-const MUTED  = "#6b7280";
-const SUBTLE = "#9ca3af";
+const MUTED  = "#374151";
+const SUBTLE = "#6b7280";
 
 export function ListingsScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   navBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    borderBottomWidth: 1, borderBottomColor: LINE,
     backgroundColor: "#ffffff",
   },
   backBtn: { padding: 6, marginLeft: -6 },
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
 
   // ── Page header ──────────────────────────────────────────────
   pageHeader: {
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    borderBottomWidth: 1, borderBottomColor: LINE,
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
   },
   pageLabel: {
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
 
   // ── Sections ─────────────────────────────────────────────────
   section: {
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE,
+    borderBottomWidth: 1, borderBottomColor: LINE,
     paddingHorizontal: 20, paddingVertical: 20,
   },
   sectionTitleRow: {
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   statCell: {
     flex: 1, alignItems: "center", paddingVertical: 14, paddingHorizontal: 8,
   },
-  statDivider: { width: StyleSheet.hairlineWidth, backgroundColor: LINE },
+  statDivider: { width: 1, backgroundColor: LINE },
   statLabel: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: MUTED,
     textAlign: "center", marginBottom: 4,
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   listingFooter: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     marginTop: 12, paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: LINE,
+    borderTopWidth: 1, borderTopColor: LINE,
   },
   listingPrice: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG },
   deleteBtn: {

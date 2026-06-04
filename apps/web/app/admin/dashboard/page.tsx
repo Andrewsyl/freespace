@@ -94,26 +94,26 @@ export default function AdminDashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Users</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Users</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{metrics?.userCount ?? "—"}</p>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Listings</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Listings</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{metrics?.listingCount ?? "—"}</p>
-          <p className="text-xs text-slate-500">Active: {metrics?.activeListingCount ?? "—"}</p>
+          <p className="text-xs text-slate-600">Active: {metrics?.activeListingCount ?? "—"}</p>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Bookings (30d)</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Bookings (30d)</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{metrics?.bookings30d ?? "—"}</p>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">GMV (30d)</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">GMV (30d)</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">
             {metrics ? formatCurrency(metrics.gmv30dCents) : "—"}
           </p>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Payout backlog</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Payout backlog</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{metrics?.payoutBacklog ?? "—"}</p>
         </div>
       </div>
@@ -122,19 +122,19 @@ export default function AdminDashboardPage() {
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Discovery funnel (30d)</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Discovery funnel (30d)</p>
               <p className="text-sm text-slate-600">Search demand and listing engagement across web and mobile</p>
             </div>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Searches completed</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Searches completed</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.discoveryFunnel.searchCompleted ?? "—"}</p>
             </div>
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Listing views</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Listing views</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.discoveryFunnel.listingViewed ?? "—"}</p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-slate-600">
                 View rate: {metrics ? formatPercent(metrics.discoveryFunnel.listingViewRate) : "—"}
               </p>
             </div>
@@ -144,7 +144,7 @@ export default function AdminDashboardPage() {
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Bookings (30d)</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Bookings (30d)</p>
               <p className="text-sm text-slate-600">Daily booking volume</p>
             </div>
           </div>
@@ -165,7 +165,7 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">GMV (30d)</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">GMV (30d)</p>
           <p className="text-sm text-slate-600">Daily gross booking value</p>
           <div className="mt-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -186,7 +186,7 @@ export default function AdminDashboardPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Listings by status</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Listings by status</p>
           <div className="mt-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={metrics?.listingStatus ?? []} layout="vertical" margin={{ left: 24, right: 16 }}>
@@ -201,7 +201,7 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Fraud + risk events (30d)</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Fraud + risk events (30d)</p>
           <div className="mt-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={metrics?.fraudByType ?? []} layout="vertical" margin={{ left: 24, right: 16 }}>
@@ -223,19 +223,19 @@ export default function AdminDashboardPage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Average booking value</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Average booking value</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(avgBookingValueCents)}</p>
-          <p className="text-xs text-slate-500">30-day average</p>
+          <p className="text-xs text-slate-600">30-day average</p>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Avg daily bookings</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Avg daily bookings</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{avgDailyBookings || "—"}</p>
-          <p className="text-xs text-slate-500">Last 30 days</p>
+          <p className="text-xs text-slate-600">Last 30 days</p>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Avg daily GMV</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Avg daily GMV</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(avgDailyGmvCents)}</p>
-          <p className="text-xs text-slate-500">Last 30 days</p>
+          <p className="text-xs text-slate-600">Last 30 days</p>
         </div>
       </div>
 
@@ -243,26 +243,26 @@ export default function AdminDashboardPage() {
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Signup funnel (30d)</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Signup funnel (30d)</p>
               <p className="text-sm text-slate-600">Registration to verified account activity</p>
             </div>
           </div>
           <div className="mt-4 space-y-3">
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Signed up</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Signed up</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.signupFunnel.signedUp ?? "—"}</p>
             </div>
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Verified email</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Verified email</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.signupFunnel.verifiedEmail ?? "—"}</p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-slate-600">
                 Verify rate: {metrics ? formatPercent(metrics.signupFunnel.verifyRate) : "—"}
               </p>
             </div>
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Logged in</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Logged in</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.signupFunnel.loggedIn ?? "—"}</p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-slate-600">
                 Login rate: {metrics ? formatPercent(metrics.signupFunnel.loginRate) : "—"}
               </p>
             </div>
@@ -272,23 +272,23 @@ export default function AdminDashboardPage() {
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Booking funnel (30d)</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Booking funnel (30d)</p>
               <p className="text-sm text-slate-600">Client intent plus backend payment completion</p>
             </div>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Listings published</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Listings published</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.bookingFunnel.listingPublished ?? "—"}</p>
             </div>
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Checkout started</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Checkout started</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.bookingFunnel.checkoutStarted ?? "—"}</p>
             </div>
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Payment intent created</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Payment intent created</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{metrics?.bookingFunnel.paymentIntentCreated ?? "—"}</p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-slate-600">
                 Checkout to intent: {metrics ? formatPercent(metrics.bookingFunnel.checkoutToIntentRate) : "—"}
               </p>
             </div>
@@ -301,7 +301,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Publish to checkout</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Publish to checkout</p>
             <p className="mt-1 text-lg font-semibold text-slate-900">
               {metrics ? formatPercent(metrics.bookingFunnel.publishToCheckoutRate) : "—"}
             </p>
@@ -313,7 +313,7 @@ export default function AdminDashboardPage() {
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Operational alerts</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Operational alerts</p>
               <p className="text-sm text-slate-600">Recent booking, payment, webhook, and delivery failures.</p>
             </div>
           </div>
@@ -324,10 +324,10 @@ export default function AdminDashboardPage() {
                   <p className="text-sm font-semibold text-slate-900">
                     {eventLabel[event.eventType] ?? event.eventType}
                   </p>
-                  <p className="text-xs text-slate-500">{formatDateTime(event.createdAt)}</p>
+                  <p className="text-xs text-slate-600">{formatDateTime(event.createdAt)}</p>
                 </div>
                 {event.payload?.bookingId || event.payload?.listingId || event.payload?.paymentIntentId ? (
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-slate-600">
                     {[event.payload?.bookingId ? `Booking ${String(event.payload.bookingId).slice(0, 8)}` : null,
                       event.payload?.listingId ? `Listing ${String(event.payload.listingId).slice(0, 8)}` : null,
                       event.payload?.paymentIntentId ? `Payment ${String(event.payload.paymentIntentId).slice(0, 12)}` : null]
@@ -338,7 +338,7 @@ export default function AdminDashboardPage() {
               </div>
             ))}
             {!metrics?.recentOperationalEvents?.length ? (
-              <div className="rounded-lg border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">
+              <div className="rounded-lg border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-600">
                 No recent operational alerts.
               </div>
             ) : null}
@@ -348,7 +348,7 @@ export default function AdminDashboardPage() {
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Product failures</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Product failures</p>
               <p className="text-sm text-slate-600">Recent search, booking, publish, and client-side failures.</p>
             </div>
           </div>
@@ -359,7 +359,7 @@ export default function AdminDashboardPage() {
                   <p className="text-sm font-semibold text-slate-900">
                     {eventLabel[event.eventType] ?? event.eventType}
                   </p>
-                  <p className="text-xs text-slate-500">{formatDateTime(event.createdAt)}</p>
+                  <p className="text-xs text-slate-600">{formatDateTime(event.createdAt)}</p>
                 </div>
                 {event.payload?.message ? (
                   <p className="mt-1 text-xs text-slate-600">{String(event.payload.message)}</p>
@@ -367,7 +367,7 @@ export default function AdminDashboardPage() {
               </div>
             ))}
             {!metrics?.recentProductFailures?.length ? (
-              <div className="rounded-lg border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">
+              <div className="rounded-lg border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-600">
                 No recent product failures.
               </div>
             ) : null}

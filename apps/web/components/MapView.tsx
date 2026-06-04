@@ -411,11 +411,11 @@ export function MapView({
               {tokenMissing ? "Mapbox token missing" : "Map unavailable"}
             </p>
             {tokenMissing ? (
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-slate-600">
                 Set <code className="rounded bg-slate-100 px-1 py-0.5">NEXT_PUBLIC_MAPBOX_TOKEN</code> to enable the map.
               </p>
             ) : (
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-slate-600">
                 This browser could not start the interactive map. Search results are still available below.
               </p>
             )}

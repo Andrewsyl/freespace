@@ -11,7 +11,7 @@ export function HostPhotosStep({ data, onUpdate }: HostStepProps) {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-slate-600">
         Better photos improve trust and booking conversion. You can add more later from your dashboard.
       </p>
 
@@ -43,11 +43,11 @@ export function HostPhotosStep({ data, onUpdate }: HostStepProps) {
         /* Empty state */
         <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 py-14 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white ring-1 ring-slate-200">
-            <ImageIcon className="h-8 w-8 text-slate-400" strokeWidth={1.4} />
+            <ImageIcon className="h-8 w-8 text-slate-600" strokeWidth={1.4} />
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-700">No photos yet</p>
-            <p className="mt-0.5 text-xs text-slate-400">Listings with photos get significantly more bookings</p>
+            <p className="mt-0.5 text-xs text-slate-600">Listings with photos get significantly more bookings</p>
           </div>
         </div>
       )}

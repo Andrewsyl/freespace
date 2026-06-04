@@ -32,7 +32,7 @@ export default function LegalIndexPage() {
           </div>
 
           <div className="mt-10 rounded-lg border border-slate-200 bg-slate-50 p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-600">
               Company details
             </h2>
             <div className="mt-4 grid gap-4 text-sm text-slate-600 sm:grid-cols-3">
@@ -52,7 +52,7 @@ export default function LegalIndexPage() {
                 <p>{LEGAL_CONTACT.registeredAddress}</p>
               </div>
             </div>
-            <p className="mt-4 text-xs leading-6 text-slate-500">
+            <p className="mt-4 text-xs leading-6 text-slate-600">
               Replace the registered business name and address above with the exact legal entity and registered office details before public launch.
             </p>
           </div>

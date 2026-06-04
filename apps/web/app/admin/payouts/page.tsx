@@ -160,7 +160,7 @@ export default function AdminPayoutsPage() {
                 <tr key={row.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3">
                     <div className="font-semibold text-slate-900">{row.listing_title ?? "—"}</div>
-                    <div className="text-xs text-slate-500">Booking: {row.id}</div>
+                    <div className="text-xs text-slate-600">Booking: {row.id}</div>
                   </td>
                   <td className="px-4 py-3 text-slate-700">{row.host_email ?? "—"}</td>
                   <td className="px-4 py-3 text-slate-700">{formatMoney(net, row.currency)}</td>

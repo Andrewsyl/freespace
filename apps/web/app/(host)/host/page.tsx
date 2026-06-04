@@ -218,7 +218,7 @@ export default function HostWizardPage() {
       <div className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center bg-white px-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">List your space</p>
         <h1 className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Sign in to get started</h1>
-        <p className="mt-1 text-[14px] text-slate-500">You need an account to list your parking space.</p>
+        <p className="mt-1 text-[14px] text-slate-600">You need an account to list your parking space.</p>
         <div className="mt-6 flex flex-col gap-3">
           <Link href="/login" className="flex items-center justify-center rounded-2xl bg-brand-500 py-3.5 text-[15px] font-bold text-white active:bg-brand-600">
             Sign in

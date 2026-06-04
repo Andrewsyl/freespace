@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   navBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E6E6E4",
+    borderBottomWidth: 1, borderBottomColor: "#d1d5db",
     backgroundColor: "#ffffff",
   },
   backBtn: { padding: 6, marginLeft: -6 },

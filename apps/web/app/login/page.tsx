@@ -72,7 +72,7 @@ function LoginPageContent() {
             className="mx-auto mb-6 h-10 w-auto mix-blend-multiply"
           />
           <h1 className="text-[28px] font-bold tracking-tight text-slate-900">Welcome back</h1>
-          <p className="mt-1.5 text-[15px] text-slate-500">Sign in to your account</p>
+          <p className="mt-1.5 text-[15px] text-slate-600">Sign in to your account</p>
         </div>
 
         {/* Google sign-in */}
@@ -146,7 +146,7 @@ function LoginPageContent() {
         )}
 
         {/* Footer links */}
-        <div className="mt-8 space-y-3 text-center text-[14px] text-slate-500">
+        <div className="mt-8 space-y-3 text-center text-[14px] text-slate-600">
           <p>
             No account?{" "}
             <Link href="/signup" className="font-semibold text-brand-700">
@@ -155,7 +155,7 @@ function LoginPageContent() {
           </p>
           <button
             type="button"
-            className="text-slate-400 underline underline-offset-2"
+            className="text-slate-600 underline underline-offset-2"
             onClick={async () => {
               setNotice(null);
               try {

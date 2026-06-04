@@ -198,15 +198,15 @@ export default function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 divide-x divide-slate-200 border-b border-slate-200">
         <div className="flex flex-col justify-center px-4 py-4 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Trips</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Trips</p>
           <p className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">{stats.driverCount}</p>
         </div>
         <div className="flex flex-col justify-center px-4 py-4 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Earnings</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Earnings</p>
           <p className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-brand-600">€{stats.hostEarnings.toFixed(0)}</p>
         </div>
         <div className="flex flex-col justify-center px-4 py-4 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Payouts</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Payouts</p>
           <p className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">{stats.hostCount}</p>
         </div>
       </div>
@@ -251,7 +251,7 @@ export default function DashboardPage() {
                 ))}
               </div>
               {visible.length === 0 ? (
-                <p className="mt-4 text-[13px] text-slate-400">{emptyMsg[tripsTab]}</p>
+                <p className="mt-4 text-[13px] text-slate-600">{emptyMsg[tripsTab]}</p>
               ) : (
                 <div className="mt-3 space-y-2.5">
                   {visible.map((booking) => (
@@ -273,7 +273,7 @@ export default function DashboardPage() {
         {status !== "loading" && driverBookings.length === 0 && (
           <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-6 text-center">
             <p className="text-[14px] font-semibold text-slate-700">No bookings yet</p>
-            <p className="mt-1 text-[13px] text-slate-400">Search for a space to make your first booking.</p>
+            <p className="mt-1 text-[13px] text-slate-600">Search for a space to make your first booking.</p>
             <Link href="/" className="mt-3 inline-flex items-center justify-center rounded-full bg-brand-500 px-5 py-2.5 text-[13px] font-semibold text-white">Find a space</Link>
           </div>
         )}
@@ -284,13 +284,13 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Host payouts</h2>
           {hostBookings.length > 0 && (
-            <span className="text-[12px] font-medium text-slate-400">{hostBookings.length} total</span>
+            <span className="text-[12px] font-medium text-slate-600">{hostBookings.length} total</span>
           )}
         </div>
         {hostBookings.length === 0 && status === "idle" ? (
           <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center">
             <p className="text-[14px] font-semibold text-slate-700">No host bookings yet</p>
-            <p className="mt-1 text-[13px] text-slate-400">List a space to start earning.</p>
+            <p className="mt-1 text-[13px] text-slate-600">List a space to start earning.</p>
             <Link href="/host" className="mt-4 inline-flex items-center justify-center rounded-full bg-brand-500 px-5 py-2.5 text-[13px] font-semibold text-white">List a space</Link>
           </div>
         ) : (
@@ -311,7 +311,7 @@ export default function DashboardPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-[15px] font-bold text-slate-900">{selected.title ?? selected.address}</p>
-                  <p className="mt-0.5 text-[13px] text-slate-500">{selected.date} · {selected.timeRange}</p>
+                  <p className="mt-0.5 text-[13px] text-slate-600">{selected.date} · {selected.timeRange}</p>
                 </div>
                 <button onClick={() => setSelected(null)} className="shrink-0 rounded-full border border-slate-200 px-3 py-1 text-[12px] font-semibold text-slate-600 active:bg-slate-50">
                   Close

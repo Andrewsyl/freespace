@@ -48,7 +48,7 @@ export function WalkTime({ origin }: { origin: { lat: number; lng: number } }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-slate-500">Walking distance</p>
+      <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-slate-600">Walking distance</p>
       <form onSubmit={handleCheck} className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex-1">
           <AddressAutocomplete
@@ -79,7 +79,7 @@ export function WalkTime({ origin }: { origin: { lat: number; lng: number } }) {
             </div>
             <div>
               <p className="text-[18px] font-semibold text-slate-950">{result.durationText} walk</p>
-              <p className="mt-0.5 flex items-center gap-1.5 text-[14px] text-slate-500">
+              <p className="mt-0.5 flex items-center gap-1.5 text-[14px] text-slate-600">
                 <MapPin className="h-4 w-4 text-brand-500" />
                 {result.destinationAddress}
                 <span className="text-slate-400">({result.distanceText})</span>
@@ -90,7 +90,7 @@ export function WalkTime({ origin }: { origin: { lat: number; lng: number } }) {
       )}
 
       {!result && !error && (
-        <p className="text-[13px] text-slate-400">
+        <p className="text-[13px] text-slate-600">
           Enter a destination to see the walking time from this space.
         </p>
       )}

@@ -86,7 +86,7 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
                 }`}
               >
                 <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                  active ? "bg-brand-50 text-brand-500" : "bg-slate-100 text-slate-500"
+                  active ? "bg-brand-50 text-brand-500" : "bg-slate-100 text-slate-600"
                 }`}>
                   {icon}
                 </div>
@@ -134,7 +134,7 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
                 className={`flex h-12 flex-1 items-center justify-center rounded-lg border text-sm font-semibold transition ${
                   active
                     ? "border-brand-500 text-slate-900"
-                    : "border-slate-200 text-slate-500 hover:border-slate-300"
+                    : "border-slate-200 text-slate-600 hover:border-slate-300"
                 }`}
               >
                 {option}
@@ -146,7 +146,7 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
         {/* Access type choices — shown if Yes */}
         {data.requiresAccessCode === true && (
           <div className="space-y-2 pt-1">
-            <p className="text-sm text-slate-500">How do drivers get into your space?</p>
+            <p className="text-sm text-slate-600">How do drivers get into your space?</p>
             {ACCESS_CHOICES.map((choice) => {
               const active = data.accessType === choice.id;
               return (

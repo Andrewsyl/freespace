@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   navBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E6E6E4",
+    borderBottomWidth: 1, borderBottomColor: "#d1d5db",
     backgroundColor: "#ffffff",
   },
   backBtn: { padding: 6, marginLeft: -6 },
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   statusMuted: {
-    color: "#6B7280",
+    color: "#374151",
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     lineHeight: 18,
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   verifyHelp: {
-    color: "#6B7280",
+    color: "#374151",
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     lineHeight: 19,

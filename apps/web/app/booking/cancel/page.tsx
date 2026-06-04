@@ -26,13 +26,13 @@ function BookingCancelContent() {
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-amber-50">
             <AlertTriangle className="h-8 w-8 text-amber-500" strokeWidth={1.75} />
           </div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Booking cancelled</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">Booking cancelled</p>
           <h1 className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Payment not completed</h1>
-          <p className="mt-2 text-[14px] leading-6 text-slate-500">
+          <p className="mt-2 text-[14px] leading-6 text-slate-600">
             Your booking was not confirmed. You can try again or choose a different time.
           </p>
           {sessionId && (
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[12px] text-slate-500">
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[12px] text-slate-600">
               Session: <span className="font-semibold text-slate-700">{sessionId}</span>
             </div>
           )}

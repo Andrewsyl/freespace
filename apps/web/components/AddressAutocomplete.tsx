@@ -192,7 +192,7 @@ export function AddressAutocomplete({
           title={locating ? "Finding your location…" : "Use my current location"}
           onClick={handleUseLocation}
           disabled={locating}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-brand-50 hover:text-brand-600 disabled:opacity-60"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-brand-50 hover:text-brand-600 disabled:opacity-60"
         >
           {locating ? (
             <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
@@ -218,7 +218,7 @@ export function AddressAutocomplete({
         >
           {!query.trim() && recents.length > 0 ? (
             <>
-              <p className="px-4 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Recent</p>
+              <p className="px-4 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-600">Recent</p>
               {recents.map((r) => (
                 <div key={r.address} className="flex items-center">
                   <button
@@ -259,7 +259,7 @@ export function AddressAutocomplete({
                 </svg>
                 <div className="min-w-0">
                   <p className="truncate text-[14px] font-semibold text-slate-900">{main}</p>
-                  {secondary && <p className="truncate text-[12px] text-slate-500">{secondary}</p>}
+                  {secondary && <p className="truncate text-[12px] text-slate-600">{secondary}</p>}
                 </div>
               </button>
             );

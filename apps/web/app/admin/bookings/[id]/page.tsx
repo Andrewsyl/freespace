@@ -92,39 +92,39 @@ export default function AdminBookingDetailPage() {
           <h2 className="text-sm font-semibold text-slate-900">Details</h2>
           <dl className="mt-3 space-y-2 text-sm text-slate-700">
             <div className="flex justify-between">
-              <dt className="text-slate-500">Listing</dt>
+              <dt className="text-slate-600">Listing</dt>
               <dd className="font-semibold">{booking.listing_title}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-500">Driver</dt>
+              <dt className="text-slate-600">Driver</dt>
               <dd>{booking.driver_email ?? "—"}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-500">Host</dt>
+              <dt className="text-slate-600">Host</dt>
               <dd>{booking.host_email ?? "—"}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-500">Start</dt>
+              <dt className="text-slate-600">Start</dt>
               <dd>{formatDateTime(booking.start_time)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-500">End</dt>
+              <dt className="text-slate-600">End</dt>
               <dd>{formatDateTime(booking.end_time)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-500">Refund status</dt>
+              <dt className="text-slate-600">Refund status</dt>
               <dd>{booking.refund_status ?? "—"}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-500">Refund ID</dt>
+              <dt className="text-slate-600">Refund ID</dt>
               <dd className="max-w-[14rem] truncate">{booking.refund_id ?? "—"}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-500">Refunded at</dt>
+              <dt className="text-slate-600">Refunded at</dt>
               <dd>{booking.refunded_at ? formatDateTime(booking.refunded_at) : "—"}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-500">No-show marked</dt>
+              <dt className="text-slate-600">No-show marked</dt>
               <dd>{booking.no_show_at ? formatDateTime(booking.no_show_at) : "—"}</dd>
             </div>
           </dl>

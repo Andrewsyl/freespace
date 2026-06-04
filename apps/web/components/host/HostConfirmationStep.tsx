@@ -21,7 +21,7 @@ function Row({ label, value, missing }: { label: string; value?: string | null; 
   return (
     <div className="flex items-start gap-3 border-b border-slate-100 py-2.5 last:border-0">
       <dt className="w-28 shrink-0 text-xs font-semibold uppercase tracking-wide text-brand-300">{label}</dt>
-      <dd className={`flex-1 text-sm ${missing ? "italic text-slate-400" : "font-medium text-slate-900"}`}>
+      <dd className={`flex-1 text-sm ${missing ? "italic text-slate-600" : "font-medium text-slate-900"}`}>
         {value || (missing ? "Not set" : "—")}
       </dd>
     </div>
@@ -90,8 +90,8 @@ export function HostConfirmationStep({ data }: HostStepProps) {
       {/* No photos nudge */}
       {data.imageUrls.length === 0 && (
         <div className="flex items-start gap-3 rounded-lg border border-dashed border-slate-200 px-4 py-3">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" strokeWidth={1.8} />
-          <p className="text-xs text-slate-500">No photos added — go back to add some for better conversion.</p>
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-600" strokeWidth={1.8} />
+          <p className="text-xs text-slate-600">No photos added — go back to add some for better conversion.</p>
         </div>
       )}
 

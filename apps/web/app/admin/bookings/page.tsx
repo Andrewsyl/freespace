@@ -207,13 +207,13 @@ export default function AdminBookingsPage() {
               <tr key={row.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3">
                   <div className="font-semibold text-slate-900">{row.listing_title}</div>
-                  <div className="text-xs text-slate-500">{row.listing_address}</div>
+                  <div className="text-xs text-slate-600">{row.listing_address}</div>
                 </td>
                 <td className="px-4 py-3 text-slate-700">{row.driver_email ?? "—"}</td>
                 <td className="px-4 py-3 text-slate-700">{row.host_email ?? "—"}</td>
                 <td className="px-4 py-3 text-slate-600">
                   <div>{formatDateTime(row.start_time)}</div>
-                  <div className="text-xs text-slate-400">→ {formatDateTime(row.end_time)}</div>
+                  <div className="text-xs text-slate-600">→ {formatDateTime(row.end_time)}</div>
                 </td>
                 <td className="px-4 py-3">
                   <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">

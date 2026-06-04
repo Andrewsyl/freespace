@@ -149,7 +149,7 @@ export default function AdminSupportPage() {
             <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-900">{ticket.subject}</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-600">
                   {ticket.user_email ?? "Unknown user"} • {formatDate(ticket.created_at)}
                 </p>
               </div>
@@ -185,7 +185,7 @@ export default function AdminSupportPage() {
               placeholder="Internal note"
               onBlur={(e) => updateTicket(ticket.id, { adminNote: e.target.value })}
             />
-            <p className="mt-2 text-xs text-slate-500">Updated {formatDate(ticket.updated_at)}</p>
+            <p className="mt-2 text-xs text-slate-600">Updated {formatDate(ticket.updated_at)}</p>
           </div>
         ))}
         {loading && <div className="text-sm text-slate-600">Loading…</div>}

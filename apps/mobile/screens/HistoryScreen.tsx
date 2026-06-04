@@ -200,36 +200,31 @@ export function HistoryScreen({ navigation, route }: Props) {
       setTimeout(() => {
         if (cancelled) return;
         setShowSuccess(true);
-        const overlayMs = 900;
         setTimeout(() => {
           if (cancelled) return;
           setShowSuccess(false);
           setRevealBookings(true);
+          setBookingTransitioning(false);
           const idToAnimate = pendingNewBookingId.current;
           if (idToAnimate) {
             setNewBookingId(idToAnimate);
-            setTimeout(() => {
-              requestAnimationFrame(() => {
-                Animated.parallel([
-                  Animated.spring(newBookingSlideAnim, {
-                    toValue: 0,
-                    useNativeDriver: true,
-                    tension: 50,
-                    friction: 8,
-                  }),
-                  Animated.timing(newBookingOpacityAnim, {
-                    toValue: 1,
-                    duration: 400,
-                    useNativeDriver: true,
-                  }),
-                ]).start(() => {
-                  setTimeout(() => setNewBookingId(null), 100);
-                });
-              });
-            }, 120);
+            requestAnimationFrame(() => {
+              Animated.parallel([
+                Animated.spring(newBookingSlideAnim, {
+                  toValue: 0,
+                  useNativeDriver: true,
+                  tension: 50,
+                  friction: 8,
+                }),
+                Animated.timing(newBookingOpacityAnim, {
+                  toValue: 1,
+                  duration: 350,
+                  useNativeDriver: true,
+                }),
+              ]).start(() => setNewBookingId(null));
+            });
           }
-          setTimeout(() => setBookingTransitioning(false), 200);
-        }, overlayMs);
+        }, 500);
       }, delay);
     });
 

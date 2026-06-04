@@ -26,10 +26,10 @@ type FlowStackParamList = {
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingPrice">;
 
 const GREEN  = hostFlowColors.accent;
-const LINE   = "#E6E6E4";
+const LINE   = "#d1d5db";
 const FG     = "#111827";
-const MUTED  = "#6b7280";
-const SUBTLE = "#9ca3af";
+const MUTED  = "#374151";
+const SUBTLE = "#6b7280";
 
 const DEFAULT_HOURLY  = 1;
 const DEFAULT_DAILY   = 12;
@@ -97,7 +97,7 @@ function PriceField({
 
 const fieldStyles = StyleSheet.create({
   wrap: {
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 1,
     borderTopColor: LINE,
     paddingHorizontal: 20,
     paddingVertical: 16,
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
 
   // ── Footer ───────────────────────────────────────────────────
   footer: {
-    backgroundColor: "#ffffff", borderTopWidth: StyleSheet.hairlineWidth,
+    backgroundColor: "#ffffff", borderTopWidth: 1,
     borderTopColor: LINE, paddingHorizontal: 20, paddingTop: 12,
   },
   footerRow: { flexDirection: "row", alignItems: "center", gap: 12 },

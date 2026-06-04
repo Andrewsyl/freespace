@@ -149,7 +149,7 @@ export default function QaPortalPage() {
         </div>
 
         <form onSubmit={handlePay} className="space-y-4 rounded-lg bg-white px-4 py-5 shadow-sm">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
             <span className={step === 1 ? "text-emerald-700" : ""}>1. Vehicle</span>
             <span className={step === 2 ? "text-emerald-700" : ""}>2. Time</span>
             <span className={step === 3 ? "text-emerald-700" : ""}>3. Pay</span>

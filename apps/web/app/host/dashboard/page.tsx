@@ -143,7 +143,7 @@ export default function HostDashboardPage() {
         <SlimNav />
         <div className="mx-auto max-w-3xl px-5 py-10">
           <p className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Sign in to continue</p>
-          <p className="mt-1 text-[14px] text-slate-500">You need an account to manage your listings.</p>
+          <p className="mt-1 text-[14px] text-slate-600">You need an account to manage your listings.</p>
           <div className="mt-5 flex flex-col gap-3">
             <Link href="/login" className="flex items-center justify-center rounded-2xl bg-brand-500 py-3.5 text-[15px] font-bold text-white">Sign in</Link>
             <Link href="/signup" className="flex items-center justify-center rounded-2xl border border-slate-200 py-3.5 text-[15px] font-semibold text-slate-700">Create account</Link>
@@ -185,11 +185,11 @@ export default function HostDashboardPage() {
         {earnings ? (
           <div className="mt-4 divide-y divide-slate-100">
             <div className="flex items-center justify-between py-3">
-              <span className="text-[13px] text-slate-500">Total earned</span>
+              <span className="text-[13px] text-slate-600">Total earned</span>
               <span className="text-[13px] font-semibold text-slate-900">{formatAmount(earnings.totalCents)}</span>
             </div>
             <div className="flex items-center justify-between py-3">
-              <span className="text-[13px] text-slate-500">Platform fee ({PLATFORM_FEE_PCT}%)</span>
+              <span className="text-[13px] text-slate-600">Platform fee ({PLATFORM_FEE_PCT}%)</span>
               <span className="text-[13px] font-semibold text-slate-900">{formatAmount(earnings.feeCents)}</span>
             </div>
             <div className="flex items-center justify-between py-3">
@@ -198,9 +198,9 @@ export default function HostDashboardPage() {
             </div>
           </div>
         ) : status === "loading" ? (
-          <p className="mt-3 text-[13px] text-slate-400">Loading…</p>
+          <p className="mt-3 text-[13px] text-slate-600">Loading…</p>
         ) : (
-          <p className="mt-3 text-[13px] text-slate-400">No earnings yet.</p>
+          <p className="mt-3 text-[13px] text-slate-600">No earnings yet.</p>
         )}
       </section>
 
@@ -211,7 +211,7 @@ export default function HostDashboardPage() {
           <div className="mt-3 space-y-3">
             <p className="text-[14px] leading-6 text-slate-600">{payoutStatusMessage(payout)}</p>
             {payout.requirementsDue.length > 0 && (
-              <p className="text-[12px] text-slate-400">
+              <p className="text-[12px] text-slate-600">
                 Missing: {payout.requirementsDue.slice(0, 3).join(", ")}{payout.requirementsDue.length > 3 ? "…" : ""}
               </p>
             )}
@@ -230,7 +230,7 @@ export default function HostDashboardPage() {
             )}
           </div>
         ) : status === "loading" ? (
-          <p className="mt-3 text-[13px] text-slate-400">Loading…</p>
+          <p className="mt-3 text-[13px] text-slate-600">Loading…</p>
         ) : null}
       </section>
 
@@ -250,11 +250,11 @@ export default function HostDashboardPage() {
         </div>
 
         {status === "loading" && listings.length === 0 ? (
-          <p className="mt-4 text-[13px] text-slate-400">Loading…</p>
+          <p className="mt-4 text-[13px] text-slate-600">Loading…</p>
         ) : listings.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center">
             <p className="text-[15px] font-semibold text-slate-700">No spaces yet</p>
-            <p className="mt-1 text-[13px] text-slate-400">Add your first space to start taking bookings.</p>
+            <p className="mt-1 text-[13px] text-slate-600">Add your first space to start taking bookings.</p>
             <Link
               href="/host"
               className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-5 py-2.5 text-[13px] font-semibold text-white"
@@ -286,7 +286,7 @@ export default function HostDashboardPage() {
                     <div className="flex flex-1 flex-col gap-2.5 p-3.5">
                       <div>
                         <p className="line-clamp-1 text-[14px] font-bold text-slate-900">{listing.title}</p>
-                        <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-400">{listing.address ? getAreaLabel(listing.address) : ""}</p>
+                        <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-600">{listing.address ? getAreaLabel(listing.address) : ""}</p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <a href={`/listing/${listing.id}`} className="rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-700 active:bg-slate-50">
@@ -339,7 +339,7 @@ export default function HostDashboardPage() {
                         alt={`QR for ${listing.title}`}
                         className="h-12 w-12 rounded-xl border border-slate-200 bg-white p-0.5"
                       />
-                      <p className="break-all text-[11px] text-slate-400">{origin}/qa/{listing.id}</p>
+                      <p className="break-all text-[11px] text-slate-600">{origin}/qa/{listing.id}</p>
                     </div>
                   )}
                 </div>

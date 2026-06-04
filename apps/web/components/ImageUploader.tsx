@@ -67,7 +67,7 @@ export function ImageUploader({ onUpload }: { onUpload: (url: string) => void })
     <div className="flex flex-col gap-1 text-sm font-medium text-slate-700">
       Images
       <div
-        className={`flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed px-3 py-6 text-slate-500 transition-colors ${
+        className={`flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed px-3 py-6 text-slate-600 transition-colors ${
           isDragActive ? "border-brand-500 bg-brand-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"
         }`}
         onClick={() => fileInputRef.current?.click()}
