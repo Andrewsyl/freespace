@@ -312,6 +312,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         customerEphemeralKeySecret: payment.ephemeralKeySecret,
         paymentIntentClientSecret: payment.paymentIntentClientSecret,
         allowsDelayedPaymentMethods: false,
+        applePay: { merchantCountryCode: "IE" },
+        googlePay: { merchantCountryCode: "IE", testEnv: __DEV__ },
       });
       if (initResult.error) {
         logWarn("Payment sheet init failed", {
@@ -570,79 +572,25 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               <Text style={styles.pageAddress}>{listing.address || ""}</Text>
             </View>
 
-            {/* ── Your session ── */}
+            {/* ── Time ── */}
             <View style={styles.section}>
-              <View style={styles.sectionTitleRow}>
-                <Text style={styles.sectionTitle}>Your session</Text>
-              </View>
-              <View style={styles.pickerRow}>
-                <TouchableOpacity style={styles.pickerField} activeOpacity={0.7} onPress={() => openPicker("start")}>
-                  <View style={styles.pickerFieldInner}>
-                    <Text style={styles.pickerFieldLabel}>From</Text>
-                    <Text style={styles.pickerFieldValue}>{formatDateTimeLabel(start)}</Text>
-                  </View>
-                  <Ionicons name="chevron-down" size={14} color="#9ca3af" />
+              <View style={styles.timeRow}>
+                <TouchableOpacity style={styles.timeSlot} activeOpacity={0.7} onPress={() => openPicker("start")}>
+                  <Text style={styles.timeSlotLabel}>ARRIVING</Text>
+                  <Text style={styles.timeSlotTime}>{formatTimeLabel(start)}</Text>
+                  <Text style={styles.timeSlotDate}>{formatDateLabel(start)}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.pickerField} activeOpacity={0.7} onPress={() => openPicker("end")}>
-                  <View style={styles.pickerFieldInner}>
-                    <Text style={styles.pickerFieldLabel}>Until</Text>
-                    <Text style={styles.pickerFieldValue}>{formatDateTimeLabel(end)}</Text>
-                  </View>
-                  <Ionicons name="chevron-down" size={14} color="#9ca3af" />
+                <View style={styles.timeArrow}>
+                  <View style={styles.timeArrowLine} />
+                  <Text style={styles.timeArrowDuration}>{priceSummary?.durationLabel ?? ""}</Text>
+                  <View style={styles.timeArrowLine} />
+                </View>
+                <TouchableOpacity style={styles.timeSlot} activeOpacity={0.7} onPress={() => openPicker("end")}>
+                  <Text style={styles.timeSlotLabel}>LEAVING</Text>
+                  <Text style={styles.timeSlotTime}>{formatTimeLabel(end)}</Text>
+                  <Text style={styles.timeSlotDate}>{formatDateLabel(end)}</Text>
                 </TouchableOpacity>
               </View>
-              <View style={styles.summaryBox}>
-                {[
-                  { label: "Arrives",  value: formatDateTimeLabel(start) },
-                  { label: "Departs",  value: formatDateTimeLabel(end) },
-                  { label: "Duration", value: priceSummary?.durationLabel ?? "" },
-                ].map((row, i) => (
-                  <View key={row.label} style={[styles.summaryRow, i > 0 && styles.summaryRowBorder]}>
-                    <Text style={styles.summaryRowLabel}>{row.label}</Text>
-                    <Text style={styles.summaryRowValue}>{row.value}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            {/* ── Vehicle ── */}
-            <View style={styles.section}>
-              <View style={styles.sectionTitleRow}>
-                <Text style={styles.sectionTitle}>Vehicle</Text>
-                <Pressable style={styles.editBtn} onPress={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary" })}>
-                  <Text style={styles.editBtnText}>{vehicleMake ? "Edit" : "Add"}</Text>
-                </Pressable>
-              </View>
-
-              {vehicleMake ? (
-                <View style={styles.vehicleInfoRow}>
-                  <VehicleBrandLogo make={vehicleMake} size={36} />
-                  <View style={styles.vehicleDetails}>
-                    <Text style={styles.vehicleMakeText}>{vehicleMake}</Text>
-                    {(vehicleColor || user?.vehicleType) ? (
-                      <Text style={styles.vehicleSubText}>
-                        {[vehicleColor, user?.vehicleType].filter(Boolean).join(" · ")}
-                      </Text>
-                    ) : null}
-                  </View>
-                </View>
-              ) : null}
-
-              <Pressable
-                style={[styles.plate, vehicleMake && styles.plateMt]}
-                onPress={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary", focusField: "plate" })}
-              >
-                <View style={styles.plateEuBadge} />
-                <View style={styles.plateBody}>
-                  <Text style={[styles.plateNumber, !hasVehiclePlate && styles.platePlaceholder]}>
-                    {hasVehiclePlate ? vehiclePlate : "Enter reg plate"}
-                  </Text>
-                </View>
-              </Pressable>
-
-              {requiresVehicleDetails ? (
-                <Text style={styles.regHint}>Add your vehicle details to continue.</Text>
-              ) : null}
             </View>
 
             {/* ── Price breakdown ── */}
@@ -654,61 +602,104 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                   <Text style={styles.priceRowValue}>{formatListingPriceLine(listing)}</Text>
                 </View>
                 <View style={[styles.priceRow, styles.priceRowBorder]}>
-                  <Text style={styles.priceRowLabel}>Billing period</Text>
+                  <Text style={styles.priceRowLabel}>Duration</Text>
                   <Text style={styles.priceRowValue}>{priceSummary?.durationLabel ?? ""}</Text>
                 </View>
                 <View style={[styles.priceRow, styles.priceRowBorder]}>
                   <Text style={styles.priceRowLabel}>Platform fee</Text>
                   <Text style={styles.priceRowMuted}>Included</Text>
                 </View>
-                <View style={[styles.priceRow, styles.priceRowBorder]}>
+                <View style={[styles.priceRow, styles.priceRowBorder, styles.priceTotalRow]}>
                   <Text style={styles.priceTotalLabel}>Total</Text>
                   <Text style={styles.priceTotalValue}>€{pricing.finalPrice.toFixed(2)}</Text>
                 </View>
               </View>
-              <Text style={styles.noHiddenFees}>No hidden fees will be added at checkout.</Text>
             </View>
 
-            {/* ── Payment method ── */}
+            {/* ── Vehicle ── */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Payment method</Text>
-              <View style={styles.paymentOptions}>
-                <View style={styles.paymentOption}>
-                  <Ionicons
-                    name={Platform.OS === "ios" ? "logo-apple" : "logo-google"}
-                    size={18}
-                    color={FG}
-                  />
-                  <View style={styles.paymentOptionText}>
-                    <Text style={styles.paymentOptionLabel}>
-                      {Platform.OS === "ios" ? "Apple Pay" : "Google Pay"}
-                    </Text>
-                    <Text style={styles.paymentOptionSub}>Fast checkout</Text>
+              <View style={styles.sectionTitleRow}>
+                <View>
+                  {vehicleMake ? (
+                    <View style={styles.vehicleHeaderRow}>
+                      <VehicleBrandLogo make={vehicleMake} size={20} />
+                      <Text style={styles.vehicleHeaderText}>
+                        {[vehicleMake, vehicleColor, user?.vehicleType].filter(Boolean).join(" · ")}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.sectionTitle}>Vehicle</Text>
+                  )}
+                </View>
+                <Pressable style={styles.editBtn} onPress={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary" })}>
+                  <Text style={styles.editBtnText}>{vehicleMake ? "Edit" : "Add"}</Text>
+                </Pressable>
+              </View>
+              <Pressable
+                style={styles.plate}
+                onPress={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary", focusField: "plate" })}
+              >
+                <View style={styles.plateEuBadge} />
+                <View style={styles.plateBody}>
+                  <Text style={[styles.plateNumber, !hasVehiclePlate && styles.platePlaceholder]}>
+                    {hasVehiclePlate ? vehiclePlate : "Enter reg plate"}
+                  </Text>
+                </View>
+              </Pressable>
+              {requiresVehicleDetails ? (
+                <Text style={styles.regHint}>Add your vehicle details to continue.</Text>
+              ) : null}
+            </View>
+
+            {/* ── Payment ── */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Payment</Text>
+              <View style={styles.trustCard}>
+                <View style={styles.trustCardTop}>
+                  <View style={styles.trustShieldWrap}>
+                    <Ionicons name="shield-checkmark" size={22} color={GREEN} />
+                  </View>
+                  <View style={styles.trustCardCopy}>
+                    <Text style={styles.trustCardTitle}>Secure checkout</Text>
+                    <Text style={styles.trustCardSub}>256-bit encryption · PCI DSS compliant</Text>
                   </View>
                 </View>
-                <View style={[styles.paymentOption, styles.paymentOptionBorder]}>
-                  <Ionicons name="card-outline" size={18} color={FG} />
-                  <View style={styles.paymentOptionText}>
-                    <Text style={styles.paymentOptionLabel}>Card</Text>
-                    <Text style={styles.paymentOptionSub}>Stripe</Text>
+                <View style={styles.trustDivider} />
+                <View style={styles.methodsRow}>
+                  {/* Apple Pay / Google Pay */}
+                  <View style={styles.methodPill}>
+                    <Ionicons name={Platform.OS === "ios" ? "logo-apple" : "logo-google"} size={13} color={FG} />
+                    <Text style={styles.methodPillText}>{Platform.OS === "ios" ? "Pay" : "Pay"}</Text>
                   </View>
+
+                  {/* Visa logo */}
+                  <View style={[styles.methodPill, styles.visaPill]}>
+                    <Text style={styles.visaText}>VISA</Text>
+                  </View>
+
+                  {/* Mastercard logo */}
+                  <View style={[styles.methodPill, styles.mastercardPill]}>
+                    <View style={styles.mcCircleWrap}>
+                      <View style={[styles.mcCircle, { backgroundColor: "#EB001B" }]} />
+                      <View style={[styles.mcCircle, { backgroundColor: "#F79E1B", marginLeft: -8 }]} />
+                    </View>
+                    <Text style={styles.mastercardText}>Mastercard</Text>
+                  </View>
+                </View>
+                <View style={styles.stripeRow}>
+                  <Ionicons name="lock-closed" size={10} color={SUBTLE} />
+                  <Text style={styles.stripeText}>Powered by Stripe · trusted by millions of businesses</Text>
                 </View>
               </View>
             </View>
 
-            {/* ── Cancellation policy ── */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Cancellation policy</Text>
-              <Text style={styles.sectionBody}>
-                Cancel up to 2 hours before the start time for a full refund. Late cancellations may incur a fee.
-              </Text>
-            </View>
-
-            {/* ── Legal ── */}
-            <View style={styles.legalBlock}>
-              <Text style={styles.legalText}>
-                By booking you agree to the FreeSpace parking terms and liability policy.
-              </Text>
+            {/* ── Reassurance ── */}
+            <View style={styles.reassuranceBlock}>
+              <View style={styles.reassuranceRow}>
+                <Ionicons name="refresh-outline" size={13} color={SUBTLE} />
+                <Text style={styles.reassuranceText}>Free cancellation up to 2 hours before arrival</Text>
+              </View>
+              <Text style={styles.legalText}>By booking you agree to the FreeSpace terms and liability policy.</Text>
             </View>
 
           </ScrollView>
@@ -721,10 +712,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
       {listing && user ? (
         <View style={[styles.footerBar, { paddingBottom: 14 + insets.bottom }]}>
-          <View style={styles.footerPriceBlock}>
-            <Text style={styles.footerPriceMeta}>{priceSummary?.durationLabel ?? ""}</Text>
-            <Text style={styles.footerPriceValue}>€{pricing.finalPrice.toFixed(2)}</Text>
-          </View>
           <Pressable
             style={[styles.footerBtn, (bookingBusy || bookingConfirmed || requiresVehicleDetails) && styles.footerBtnDisabled]}
             onPress={handlePayment}
@@ -734,7 +721,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               <ActivityIndicator color="#FFFFFF" />
             ) : (
               <Text style={styles.footerBtnText}>
-                {confirmingBooking ? "Confirming…" : "Pay & reserve"}
+                {confirmingBooking ? "Confirming…" : `Pay €${pricing.finalPrice.toFixed(2)}`}
               </Text>
             )}
           </Pressable>
@@ -825,6 +812,27 @@ const styles = StyleSheet.create({
   headerSpacer: { width: 34 },
 
   // ── Page header ─────────────────────────────────────────────
+  // ── Listing card ─────────────────────────────────────────────
+  listingCard: {
+    flexDirection: "row", alignItems: "center", gap: 14,
+    paddingHorizontal: 20, paddingVertical: 16,
+    borderBottomWidth: 1, borderBottomColor: LINE,
+  },
+  listingThumb: {
+    width: 60, height: 60, borderRadius: 12,
+    backgroundColor: "#f0f0ee", flexShrink: 0,
+  },
+  listingThumbPlaceholder: { alignItems: "center", justifyContent: "center" },
+  listingCardText: { flex: 1 },
+  listingCardTitle: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 15,
+    color: FG, letterSpacing: -0.2, lineHeight: 20, marginBottom: 3,
+  },
+  listingCardAddress: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
+    color: MUTED, lineHeight: 17,
+  },
+
   pageHeader: {
     borderBottomWidth: 1, borderBottomColor: LINE,
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
@@ -939,34 +947,181 @@ const styles = StyleSheet.create({
     flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 11,
   },
   priceRowBorder: { borderTopWidth: 1, borderTopColor: LINE },
-  priceRowLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },
-  priceRowValue: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
-  priceRowMuted: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: SUBTLE },
-  priceTotalLabel: { fontFamily: "PlusJakartaSans-Bold", fontSize: 14, color: FG },
-  priceTotalValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 20, color: GREEN, letterSpacing: -0.4 },
+  priceTotalRow: { paddingTop: 13, marginTop: 2 },
+  priceRowLabel: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, color: MUTED },
+  priceRowValue: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG },
+  priceRowMuted: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: SUBTLE },
+  priceTotalLabel: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG },
+  priceTotalValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 22, color: GREEN, letterSpacing: -0.4 },
   noHiddenFees: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: SUBTLE, marginTop: 8 },
 
-  // ── Payment method ──────────────────────────────────────────
-  paymentOptions: { marginTop: 12, borderRadius: 16, borderWidth: 1, borderColor: LINE, overflow: "hidden" },
-  paymentOption: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingVertical: 14,
-    backgroundColor: "#ffffff",
+  // ── Duration line ────────────────────────────────────────────
+  durationLine: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: SUBTLE,
+    marginTop: 10, lineHeight: 18,
   },
-  paymentOptionText: { flex: 1, marginLeft: 12 },
-  paymentOptionBorder: { borderTopWidth: 1, borderTopColor: LINE },
-  paymentOptionLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG },
-  paymentOptionSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: SUBTLE },
+
+  // ── Payment row ──────────────────────────────────────────────
+  paymentRow: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    marginTop: 10, backgroundColor: "#f0fdf8",
+    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
+  },
+  paymentRowText: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED,
+    flex: 1, lineHeight: 18,
+  },
+
+  // ── Footer notes ─────────────────────────────────────────────
+  footerNotes: { paddingHorizontal: 20, paddingVertical: 18, gap: 10 },
+  footerNoteRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  footerNoteIcon: { marginTop: 2 },
+  footerNoteText: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED,
+    flex: 1, lineHeight: 19,
+  },
 
   // ── Legal ────────────────────────────────────────────────────
   legalBlock: { paddingHorizontal: 20, paddingVertical: 16 },
   legalText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: SUBTLE, lineHeight: 18 },
 
+  // ── Trust card ────────────────────────────────────────────────
+  trustCard: {
+    marginTop: 12,
+    borderRadius: 14, borderWidth: 1, borderColor: LINE,
+    backgroundColor: "#fafafa", overflow: "hidden",
+    paddingHorizontal: 14, paddingVertical: 14, gap: 12,
+  },
+  trustCardTop: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+  },
+  trustShieldWrap: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: "#edf7f2",
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  trustCardCopy: { flex: 1 },
+  trustCardTitle: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 14, color: FG, letterSpacing: -0.2,
+  },
+  trustCardSub: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: MUTED, marginTop: 2,
+  },
+  trustDivider: {
+    height: 1, backgroundColor: LINE,
+  },
+  methodsRow: {
+    flexDirection: "row", flexWrap: "wrap", gap: 7,
+  },
+  methodPill: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    borderWidth: 1, borderColor: LINE, borderRadius: 6,
+    paddingHorizontal: 9, paddingVertical: 6,
+    backgroundColor: "#ffffff",
+  },
+  methodPillText: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG,
+  },
+
+  // Visa
+  visaPill: { paddingHorizontal: 10, paddingVertical: 7 },
+  visaText: {
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 13, color: "#1A1F71",
+    fontStyle: "italic", letterSpacing: 0.5,
+  },
+
+  // Mastercard
+  mastercardPill: { paddingHorizontal: 9, paddingVertical: 6 },
+  mcCircleWrap: { flexDirection: "row", alignItems: "center" },
+  mcCircle: { width: 16, height: 16, borderRadius: 8 },
+  mastercardText: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: "#252525", marginLeft: 5,
+  },
+  stripeRow: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+  },
+  stripeText: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: SUBTLE,
+  },
+
+  // ── Legacy payment styles (unused) ───────────────────────────
+  paymentOptions: { marginTop: 12, borderRadius: 14, borderWidth: 1, borderColor: LINE, overflow: "hidden" },
+  paymentOption: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, backgroundColor: "#ffffff" },
+  paymentIconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: "#f5f5f4", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  paymentOptionText: { flex: 1, marginLeft: 12 },
+  paymentOptionBorder: { borderTopWidth: 1, borderTopColor: LINE },
+  paymentOptionLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG },
+  paymentOptionSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: MUTED, marginTop: 1 },
+  paymentBadge: { backgroundColor: "#f0fdf4", borderRadius: 6, borderWidth: 1, borderColor: "#bbf7d0", paddingHorizontal: 7, paddingVertical: 3 },
+  paymentBadgeText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 10, color: GREEN, letterSpacing: 0.2 },
+
+  // ── Time slot ────────────────────────────────────────────────
+  timeRow: {
+    flexDirection: "row", alignItems: "center", gap: 0,
+  },
+  timeSlot: {
+    flex: 1, alignItems: "center", paddingVertical: 6,
+  },
+  timeSlotLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 10,
+    color: GREEN, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 4,
+  },
+  timeSlotTime: {
+    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 26,
+    color: FG, letterSpacing: -0.8, lineHeight: 30,
+  },
+  timeSlotDate: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 12,
+    color: MUTED, marginTop: 2,
+  },
+  timeArrow: {
+    alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 8,
+  },
+  timeArrowLine: {
+    width: 18, height: 1, backgroundColor: LINE,
+  },
+  timeArrowDuration: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
+    color: SUBTLE, letterSpacing: 0.2,
+  },
+
+  // ── Price total ──────────────────────────────────────────────
+  priceTotalBlock: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+  },
+  priceTotalBig: {
+    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 36,
+    color: FG, letterSpacing: -1.2, lineHeight: 40,
+  },
+  priceTotalSub: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
+    color: MUTED, marginTop: 4, lineHeight: 18,
+  },
+
+  // ── Vehicle header ───────────────────────────────────────────
+  vehicleHeaderRow: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+  },
+  vehicleHeaderText: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG,
+  },
+
+  // ── Reassurance block ────────────────────────────────────────
+  reassuranceBlock: {
+    paddingHorizontal: 20, paddingVertical: 16, gap: 8,
+  },
+  reassuranceRow: {
+    flexDirection: "row", alignItems: "center", gap: 7,
+  },
+  reassuranceText: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, flex: 1, lineHeight: 18,
+  },
+
   // ── Sticky footer ───────────────────────────────────────────
   footerBar: {
     position: "absolute", bottom: 0, left: 0, right: 0,
     backgroundColor: "#ffffff", paddingHorizontal: 20, paddingTop: 12,
-    flexDirection: "row", alignItems: "center", gap: 14,
     shadowColor: "#111111", shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.07, shadowRadius: 10, elevation: 12,
   },
@@ -974,11 +1129,11 @@ const styles = StyleSheet.create({
   footerPriceMeta: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: SUBTLE },
   footerPriceValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 22, color: FG, letterSpacing: -0.5 },
   footerBtn: {
-    height: 48, minWidth: 148, borderRadius: 14,
-    backgroundColor: GREEN, alignItems: "center", justifyContent: "center", paddingHorizontal: 24,
+    height: 54, width: "100%", borderRadius: 14,
+    backgroundColor: GREEN, alignItems: "center", justifyContent: "center",
   },
   footerBtnDisabled: { opacity: 0.45 },
-  footerBtnText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#ffffff", letterSpacing: -0.2 },
+  footerBtnText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#ffffff", letterSpacing: -0.3 },
 
   // ── Empty / auth states ─────────────────────────────────────
   centered: { alignItems: "center", flex: 1, justifyContent: "center", paddingHorizontal: 20 },
