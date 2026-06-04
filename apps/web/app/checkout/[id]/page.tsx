@@ -309,7 +309,7 @@ export default function CheckoutPage() {
                       <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                       <span className="font-semibold">{listing.rating!.toFixed(1)}</span>
                       {(listing.ratingCount ?? 0) > 0 && (
-                        <span className="text-slate-400">({listing.ratingCount})</span>
+                        <span className="text-slate-600">({listing.ratingCount})</span>
                       )}
                     </div>
                   )}

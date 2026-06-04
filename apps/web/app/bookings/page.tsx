@@ -38,8 +38,8 @@ function statusStyle(status: string) {
   if (s === "cancelled") return { border: "border-l-rose-400", badge: "text-rose-600 bg-rose-50", label: "Cancelled" };
   if (s === "confirmed" || s === "active") return { border: "border-l-emerald-400", badge: "text-emerald-700 bg-emerald-50", label: "Confirmed" };
   if (s === "pending") return { border: "border-l-amber-400", badge: "text-amber-700 bg-amber-50", label: "Pending" };
-  if (s === "completed") return { border: "border-l-slate-300", badge: "text-slate-500 bg-slate-100", label: "Completed" };
-  return { border: "border-l-slate-300", badge: "text-slate-500 bg-slate-100", label: status };
+  if (s === "completed") return { border: "border-l-slate-300", badge: "text-slate-600 bg-slate-100", label: "Completed" };
+  return { border: "border-l-slate-300", badge: "text-slate-600 bg-slate-100", label: status };
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
