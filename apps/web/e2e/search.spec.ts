@@ -51,13 +51,13 @@ test("search results render and a listing overlay can open and close", async ({ 
 
   await page.getByText("Mountjoy Square Parking").click();
 
-  await expect(page.getByRole("button", { name: "Close" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Close", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Mountjoy Square Parking" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Book Now" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Close" }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
 
-  await expect(page.getByRole("button", { name: "Close" })).not.toBeVisible();
+  await expect(page.getByRole("button", { name: "Close", exact: true })).not.toBeVisible();
   await expect(page.getByText("Docklands Secure Space")).toBeVisible();
 });
 
