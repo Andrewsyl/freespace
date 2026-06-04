@@ -8,7 +8,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 const { width: screenWidth } = Dimensions.get("window");
-const LOTTIE_WIDTH = screenWidth * 0.9;
+const LOTTIE_WIDTH = screenWidth * 1.4;
 const LOTTIE_HEIGHT = LOTTIE_WIDTH * (360 / 640);
 
 type Props = {
@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 999,
+    zIndex: 10000,
   },
   lottie: {
     width: LOTTIE_WIDTH,
