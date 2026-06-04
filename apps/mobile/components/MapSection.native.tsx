@@ -39,6 +39,7 @@ export default function MapSection({
   onSelect,
   onRegionChangeComplete,
   onRegionChange,
+  onPanDrag,
   selectedId,
   provider,
   mapPadding,
@@ -51,6 +52,7 @@ export default function MapSection({
   onOverlappingPins,
   priceForListing,
   priceKey,
+  resumeNonce,
 }: {
   region?: MapRegion;
   initialRegion: MapRegion;
@@ -59,6 +61,7 @@ export default function MapSection({
   onSelect?: (id: string) => void;
   onRegionChangeComplete?: (nextRegion: MapRegion) => void;
   onRegionChange?: (nextRegion: MapRegion) => void;
+  onPanDrag?: () => void;
   selectedId?: string | null;
   provider?: "google" | "default";
   mapPadding?: EdgePadding;
@@ -71,6 +74,7 @@ export default function MapSection({
   onOverlappingPins?: (pins: ListingResult[]) => void;
   priceForListing?: (listing: ListingResult) => number;
   priceKey?: string;
+  resumeNonce?: number;
 }) {
   const nextResults = useMemo(
     () =>
@@ -216,6 +220,7 @@ export default function MapSection({
           lastRegionRef.current = nextRegion;
           onRegionChange?.(nextRegion);
         }}
+        onPanDrag={onPanDrag}
         onRegionChangeComplete={(nextRegion) => {
           lastRegionRef.current = nextRegion;
           onRegionChangeComplete?.(nextRegion);
@@ -247,7 +252,7 @@ export default function MapSection({
           if (!pinImage) return null;
           return (
             <Marker
-              key={`marker-${listing.id}-${isSelected ? "sel" : "def"}-${PIN_STYLE_VERSION}`}
+              key={`marker-${listing.id}-${isSelected ? "sel" : "def"}-${PIN_STYLE_VERSION}-${resumeNonce ?? 0}`}
               coordinate={{
                 latitude: listing.latitude as number,
                 longitude: listing.longitude as number,

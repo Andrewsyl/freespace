@@ -11,213 +11,207 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { CalendarDays, Clock3, CalendarRange } from "lucide-react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useListingFlow } from "./context";
-import { StepProgress } from "./StepProgress";
+import { FlowHeader } from "./FlowHeader";
+import { FlowFooter } from "./FlowFooter";
 import { hostFlowColors } from "./hostFlowTheme";
 import { spacing } from "../../styles/theme";
 
 type FlowStackParamList = {
   ListingPrice: undefined;
-  ListingPhotos: undefined;
+  ListingReview: undefined;
 };
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingPrice">;
 
-const GREEN  = hostFlowColors.accent;
-const LINE   = "#d1d5db";
-const FG     = "#111827";
-const MUTED  = "#374151";
-const SUBTLE = "#6b7280";
+const SERVICE_FEE = 0.08;
 
-const DEFAULT_HOURLY  = 1;
+const DEFAULT_HOURLY  = 2;
 const DEFAULT_DAILY   = 12;
 const DEFAULT_MONTHLY = 100;
 
 const PRICING_MODES = [
   { key: "hourly_daily", label: "Hourly / Daily" },
   { key: "monthly",      label: "Monthly" },
-  { key: "both",         label: "Both" },
+  { key: "both",         label: "All rates" },
 ] as const;
 
-function roundMoney(v: number) { return Math.round(v * 100) / 100; }
-function formatMoney(v: number) { return roundMoney(v).toFixed(2); }
-function parseMoney(v: string) {
+function round2(v: number) { return Math.round(v * 100) / 100; }
+function fmt(v: number) { return round2(v).toFixed(2); }
+function parse(v: string) {
   const n = Number.parseFloat(v);
-  return Number.isFinite(n) && n > 0 ? roundMoney(n) : null;
+  return Number.isFinite(n) && n > 0 ? round2(n) : null;
 }
 function sanitize(v: string) {
   const s = v.replace(",", ".").replace(/[^\d.]/g, "");
-  const [whole, ...rest] = s.split(".");
-  return rest.length > 0 ? `${whole}.${rest.join("").slice(0, 2)}` : whole;
+  const [w, ...rest] = s.split(".");
+  return rest.length > 0 ? `${w}.${rest.join("").slice(0, 2)}` : w;
 }
 
-function PriceField({
-  icon,
-  label,
-  hint,
-  value,
-  editable = true,
-  onChange,
-}: {
-  icon: React.ReactNode;
+type FieldRowProps = {
   label: string;
-  hint?: string;
   value: string;
-  editable?: boolean;
-  onChange?: (v: string) => void;
-}) {
+  onChange: (v: string) => void;
+  helper?: string | null;
+  warning?: boolean;
+  isLast?: boolean;
+};
+
+function FieldRow({ label, value, onChange, helper, warning, isLast }: FieldRowProps) {
   return (
-    <View style={fieldStyles.wrap}>
-      <View style={fieldStyles.labelRow}>
-        {icon}
-        <Text style={fieldStyles.label}>{label}</Text>
-      </View>
-      <View style={[fieldStyles.inputRow, !editable && fieldStyles.inputRowReadonly]}>
-        <Text style={fieldStyles.euro}>€</Text>
-        {editable ? (
+    <View style={[row.wrap, !isLast && row.border]}>
+      <View style={row.inputGroup}>
+        <Text style={row.label}>{label}</Text>
+        <View style={row.inputRow}>
+          <Text style={row.euro}>€</Text>
           <TextInput
-            style={fieldStyles.input}
+            style={row.input}
             value={value}
-            onChangeText={onChange}
+            onChangeText={(v) => onChange(sanitize(v))}
+            onBlur={() => {
+              const v = parse(value);
+              if (v) onChange(fmt(v));
+            }}
             keyboardType={Platform.OS === "ios" ? "decimal-pad" : "numeric"}
             placeholder="0.00"
-            placeholderTextColor={SUBTLE}
+            placeholderTextColor="#c8cdd6"
             selectTextOnFocus
           />
-        ) : (
-          <Text style={fieldStyles.inputReadonly}>{value}</Text>
-        )}
+        </View>
       </View>
-      {hint ? <Text style={fieldStyles.hint}>{hint}</Text> : null}
+      {helper ? (
+        <Text style={[row.helper, warning && row.helperWarn]}>{helper}</Text>
+      ) : null}
     </View>
   );
 }
 
-const fieldStyles = StyleSheet.create({
+const row = StyleSheet.create({
   wrap: {
-    borderTopWidth: 1,
-    borderTopColor: LINE,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  labelRow: {
+  border: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0ee",
+  },
+  inputGroup: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
+    justifyContent: "space-between",
   },
   label: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 11,
-    color: "#888888",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15,
+    color: hostFlowColors.text,
+    flex: 1,
   },
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F7F7F6",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: LINE,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    gap: 4,
-  },
-  inputRowReadonly: {
-    backgroundColor: "#F0F0EF",
+    gap: 3,
   },
   euro: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    color: MUTED,
+    fontSize: 16,
+    color: "#6b7280",
   },
   input: {
-    flex: 1,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 17,
-    color: FG,
+    fontSize: 18,
+    color: hostFlowColors.text,
+    textAlign: "right",
+    minWidth: 72,
     padding: 0,
     includeFontPadding: false,
   },
-  inputReadonly: {
-    flex: 1,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 17,
-    color: MUTED,
-  },
-  hint: {
+  helper: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
-    color: SUBTLE,
-    marginTop: 6,
+    color: "#9ca3af",
+    marginTop: 4,
+  },
+  helperWarn: {
+    color: "#d97706",
   },
 });
 
 export function ListingPriceScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
-  const insets = useSafeAreaInsets();
+  const pricingMode = draft.pricingMode ?? "both";
 
-  const initialHourly  = parseMoney(draft.pricePerHour)  ?? DEFAULT_HOURLY;
-  const initialDaily   = parseMoney(draft.pricePerDay)   ?? DEFAULT_DAILY;
-  const initialMonthly = parseMoney(draft.pricePerMonth) ?? DEFAULT_MONTHLY;
-  const pricingMode    = draft.pricingMode ?? "both";
+  const [hourly,  setHourly]  = useState(fmt(parse(draft.pricePerHour)  ?? DEFAULT_HOURLY));
+  const [daily,   setDaily]   = useState(fmt(parse(draft.pricePerDay)   ?? DEFAULT_DAILY));
+  const [monthly, setMonthly] = useState(fmt(parse(draft.pricePerMonth) ?? DEFAULT_MONTHLY));
 
-  const [hourly,  setHourly]  = useState(formatMoney(initialHourly));
-  const [daily,   setDaily]   = useState(formatMoney(initialDaily));
-  const [monthly, setMonthly] = useState(formatMoney(initialMonthly));
+  const hourlyVal = parse(hourly) ?? 0;
+  const dailyVal  = parse(daily)  ?? 0;
 
-  const hourlyVal  = parseMoney(hourly)  ?? 0;
-  const dailyVal   = parseMoney(daily)   ?? 0;
-  const dailyCap   = useMemo(() => hourlyVal > 0 ? roundMoney(hourlyVal * 24) : 0, [hourlyVal]);
-  const warning    = useMemo(() => {
+  const dailyRatio = useMemo(() => {
     if (hourlyVal <= 0 || dailyVal <= 0) return null;
-    if (dailyVal > dailyCap) {
-      return `Daily rate €${formatMoney(dailyVal)} exceeds 24× your hourly (€${formatMoney(dailyCap)}). Drivers would be better off booking hourly — lower your daily rate.`;
-    }
-    return null;
-  }, [dailyCap, dailyVal, hourlyVal]);
+    return round2(dailyVal / hourlyVal);
+  }, [dailyVal, hourlyVal]);
+
+  const dailyHelper = useMemo(() => {
+    if (!dailyRatio) return null;
+    if (dailyRatio > 24) return `${dailyRatio}× hourly — drivers would pay less booking by the hour`;
+    return `≈ ${dailyRatio}× your hourly rate`;
+  }, [dailyRatio]);
+
+  const showHourlyDaily = pricingMode === "hourly_daily" || pricingMode === "both";
+  const showMonthly     = pricingMode === "monthly"      || pricingMode === "both";
 
   useEffect(() => {
     setDraft((p) => ({ ...p, pricePerHour: hourly, pricePerDay: daily, pricePerMonth: monthly }));
   }, [daily, hourly, monthly, setDraft]);
 
-  const showHourlyDaily = pricingMode === "hourly_daily" || pricingMode === "both";
-  const showMonthly     = pricingMode === "monthly"      || pricingMode === "both";
+  const exitFlow = () => {
+    const parent = navigation.getParent();
+    if (parent?.canGoBack()) parent.goBack();
+  };
+
+  // Determine which field is last for border logic
+  const lastField = showMonthly ? "monthly" : showHourlyDaily ? "daily" : "hourly";
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <StatusBar barStyle="dark-content" />
+      <FlowHeader current={7} total={8} onClose={exitFlow} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         <ScrollView
-          contentContainerStyle={[styles.scroll, { paddingBottom: 32 + insets.bottom }]}
+          contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.kicker}>Space pricing</Text>
-          <StepProgress current={6} total={8} />
+          <Text style={styles.kicker}>Pricing</Text>
           <Text style={styles.title}>Set your rates</Text>
-          <Text style={styles.subtitle}>
-            Choose whether this space is for short stays, monthly parking, or both.
-          </Text>
+
+          {/* Market anchor */}
+          <View style={styles.anchor}>
+            <Text style={styles.anchorText}>
+              Nearby spaces charge{" "}
+              <Text style={styles.anchorBold}>€1–3/hr</Text>
+              {" "}·{" "}
+              <Text style={styles.anchorBold}>€8–15/day</Text>
+            </Text>
+          </View>
 
           {/* Mode tabs */}
-          <View style={styles.modeTabs}>
+          <View style={styles.tabs}>
             {PRICING_MODES.map((mode) => {
               const active = pricingMode === mode.key;
               return (
                 <Pressable
                   key={mode.key}
-                  style={[styles.modeTab, active && styles.modeTabActive]}
+                  style={[styles.tab, active && styles.tabActive]}
                   onPress={() => setDraft((p) => ({ ...p, pricingMode: mode.key }))}
                 >
-                  <Text style={[styles.modeTabText, active && styles.modeTabTextActive]}>
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>
                     {mode.label}
                   </Text>
                 </Pressable>
@@ -225,76 +219,67 @@ export function ListingPriceScreen({ navigation }: Props) {
             })}
           </View>
 
-          {/* Pricing fields */}
-          <View style={styles.card}>
+          {/* Fields */}
+          <View style={styles.fieldCard}>
             {showHourlyDaily ? (
               <>
-                <PriceField
-                  icon={<Clock3 size={16} color="#888888" strokeWidth={2.2} />}
+                <FieldRow
                   label="Hourly"
                   value={hourly}
-                  onChange={(v) => setHourly(sanitize(v))}
+                  onChange={setHourly}
+                  isLast={!showHourlyDaily || lastField === "hourly"}
                 />
-                <PriceField
-                  icon={<CalendarDays size={16} color="#888888" strokeWidth={2.2} />}
+                <FieldRow
                   label="Daily"
                   value={daily}
-                  onChange={(v) => setDaily(sanitize(v))}
+                  onChange={setDaily}
+                  helper={dailyHelper}
+                  warning={!!dailyRatio && dailyRatio > 24}
+                  isLast={lastField === "daily"}
                 />
               </>
             ) : null}
-
-            {warning && showHourlyDaily ? (
-              <View style={styles.warningWrap}>
-                <View style={styles.warningCard}>
-                  <Text style={styles.warningTitle}>Pricing conflict</Text>
-                  <Text style={styles.warningBody}>{warning}</Text>
-                </View>
-              </View>
-            ) : null}
-
             {showMonthly ? (
-              <PriceField
-                icon={<CalendarRange size={16} color="#888888" strokeWidth={2.2} />}
+              <FieldRow
                 label="Monthly"
                 value={monthly}
-                onChange={(v) => setMonthly(sanitize(v))}
+                onChange={setMonthly}
+                isLast
               />
             ) : null}
           </View>
 
           <Text style={styles.footnote}>
-            Rates are shown to drivers. FreeSpace applies a {10}% platform fee per booking.
+            Drivers pay an 8% service fee on top. You keep 100%.
           </Text>
         </ScrollView>
-
-        {/* Footer */}
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-          <View style={styles.footerRow}>
-            <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
-              <Text style={styles.backBtnText}>← Back</Text>
-            </Pressable>
-            <Pressable style={styles.continueBtn} onPress={() => navigation.navigate("ListingPhotos")}>
-              <Text style={styles.continueBtnText}>Continue</Text>
-            </Pressable>
-          </View>
-        </View>
       </KeyboardAvoidingView>
+
+      <FlowFooter
+        onBack={() => navigation.goBack()}
+        primaryLabel="Continue"
+        onPrimary={() => navigation.navigate("ListingReview")}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#ffffff" },
+  container: { flex: 1, backgroundColor: "#f7f7f6" },
   flex: { flex: 1 },
+  scroll: {
+    paddingHorizontal: spacing.screenX,
+    paddingTop: 0,
+    paddingBottom: 40,
+  },
 
-  // ── Header ───────────────────────────────────────────────────
   kicker: {
     color: hostFlowColors.accent,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
     letterSpacing: 2,
     textTransform: "uppercase",
+    marginTop: 20,
   },
   title: {
     color: hostFlowColors.text,
@@ -302,82 +287,76 @@ const styles = StyleSheet.create({
     fontSize: 26,
     letterSpacing: -0.8,
     lineHeight: 34,
-    marginTop: 10,
-  },
-  subtitle: {
-    color: hostFlowColors.textMuted,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    lineHeight: 22,
     marginTop: 8,
+    marginBottom: 14,
   },
 
-  scroll: { paddingHorizontal: spacing.screenX, paddingTop: 0 },
+  anchor: {
+    backgroundColor: hostFlowColors.accentSoft,
+    borderWidth: 1,
+    borderColor: hostFlowColors.accentSoftBorder,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 14,
+  },
+  anchorText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    color: hostFlowColors.textMuted,
+  },
+  anchorBold: {
+    fontFamily: "PlusJakartaSans-Bold",
+    color: hostFlowColors.accent,
+  },
 
-  // ── Mode tabs ────────────────────────────────────────────────
-  modeTabs: {
-    flexDirection: "row", gap: 6,
-    backgroundColor: "#EEEEEC", borderRadius: 14,
-    padding: 5, marginTop: 14,
+  tabs: {
+    flexDirection: "row",
+    gap: 6,
+    backgroundColor: "#e8e8e6",
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 14,
   },
-  modeTab: {
-    flex: 1, alignItems: "center", justifyContent: "center",
-    borderRadius: 10, minHeight: 40, paddingHorizontal: 8,
+  tab: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    paddingVertical: 9,
   },
-  modeTabActive: {
+  tabActive: {
     backgroundColor: "#ffffff",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08, shadowRadius: 4, elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.07,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  modeTabText: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13,
-    color: MUTED, textAlign: "center",
+  tabText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    color: "#6b7280",
+    textAlign: "center",
   },
-  modeTabTextActive: { color: FG },
-
-  // ── Card ─────────────────────────────────────────────────────
-  card: {
-    borderRadius: 14, borderWidth: 1, borderColor: LINE,
-    overflow: "hidden", marginTop: 14,
-  },
-
-  // ── Warning ──────────────────────────────────────────────────
-  warningWrap: { paddingHorizontal: 16, paddingBottom: 14 },
-  warningCard: {
-    backgroundColor: "#FFF7ED", borderRadius: 12,
-    borderWidth: 1, borderColor: "#F6AD55",
-    paddingHorizontal: 14, paddingVertical: 12,
-  },
-  warningTitle: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: "#9A3412", marginBottom: 3,
-  },
-  warningBody: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: "#9A3412", lineHeight: 19,
+  tabTextActive: {
+    color: hostFlowColors.text,
   },
 
-  // ── Footnote ─────────────────────────────────────────────────
+  fieldCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    overflow: "hidden",
+  },
+
   footnote: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: SUBTLE,
-    lineHeight: 18, marginTop: 14, textAlign: "center",
-  },
-
-  // ── Footer ───────────────────────────────────────────────────
-  footer: {
-    backgroundColor: "#ffffff", borderTopWidth: 1,
-    borderTopColor: LINE, paddingHorizontal: 20, paddingTop: 12,
-  },
-  footerRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  backBtn: {
-    alignItems: "center", justifyContent: "center",
-    borderRadius: 14, borderWidth: 1, borderColor: LINE,
-    height: 52, paddingHorizontal: 20,
-  },
-  backBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: MUTED },
-  continueBtn: {
-    flex: 1, alignItems: "center", justifyContent: "center",
-    backgroundColor: GREEN, borderRadius: 14, height: 52,
-  },
-  continueBtnText: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#ffffff", letterSpacing: -0.2,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: "#9ca3af",
+    lineHeight: 18,
+    marginTop: 12,
+    textAlign: "center",
   },
 });

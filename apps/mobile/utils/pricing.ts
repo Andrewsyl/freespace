@@ -8,19 +8,33 @@ function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
 }
 
+function getExplicitHourlyPrice(listing: ListingWithPricing) {
+  return typeof listing.price_per_hour === "number" && Number(listing.price_per_hour) > 0
+    ? Number(listing.price_per_hour)
+    : null;
+}
+
+function getExplicitDailyPrice(listing: ListingWithPricing) {
+  return typeof listing.price_per_day === "number" && Number(listing.price_per_day) > 0
+    ? Number(listing.price_per_day)
+    : null;
+}
+
 export function getListingRateType(listing: ListingWithPricing): "hourly" | "daily" {
-  if (typeof listing.price_per_hour === "number" && Number(listing.price_per_hour) > 0) {
+  if (getExplicitHourlyPrice(listing) != null) {
     return "hourly";
   }
   return listing.rate_type === "hourly" ? "hourly" : "daily";
 }
 
 export function getListingUnitPrice(listing: ListingWithPricing) {
-  if (typeof listing.price_per_hour === "number" && Number(listing.price_per_hour) > 0) {
-    return Number(listing.price_per_hour);
+  const hourlyPrice = getExplicitHourlyPrice(listing);
+  if (hourlyPrice != null) {
+    return hourlyPrice;
   }
-  if (typeof listing.price_per_day === "number" && Number(listing.price_per_day) > 0) {
-    return roundMoney(Number(listing.price_per_day) / DEFAULT_DAILY_HOURS);
+  const dailyPrice = getExplicitDailyPrice(listing);
+  if (dailyPrice != null) {
+    return roundMoney(dailyPrice / DEFAULT_DAILY_HOURS);
   }
   return 0;
 }
@@ -48,27 +62,28 @@ export function calculateListingTotal(listing: ListingWithPricing, start: Date, 
   const ms = Math.max(0, end.getTime() - start.getTime());
   const durationHours = Math.max(1, Math.ceil(ms / (1000 * 60 * 60)));
   const durationLabel = formatElapsedDurationLabel(durationHours);
-  const rateType = getListingRateType(listing);
+  const dailyPrice = getExplicitDailyPrice(listing);
+  const hourlyPrice =
+    getExplicitHourlyPrice(listing) ??
+    (dailyPrice != null ? roundMoney(dailyPrice / DEFAULT_DAILY_HOURS) : null);
+  let total = 0;
 
-  if (durationHours < 24 || rateType === "hourly") {
-    const total = Math.max(0, roundMoney(getListingUnitPrice(listing) * durationHours));
-    return {
-      total,
-      totalCents: Math.round(total * 100),
-      durationHours,
-      durationLabel,
-    };
+  if (dailyPrice != null && hourlyPrice != null) {
+    const fullDays = Math.floor(durationHours / 24);
+    const remainingHours = durationHours % 24;
+    const remainingTotal =
+      remainingHours > 0 ? Math.min(roundMoney(hourlyPrice * remainingHours), dailyPrice) : 0;
+    total = fullDays * dailyPrice + remainingTotal;
+  } else if (hourlyPrice != null) {
+    total = roundMoney(hourlyPrice * durationHours);
+  } else if (dailyPrice != null) {
+    const billingDays = Math.max(1, Math.ceil(durationHours / 24));
+    total = roundMoney(dailyPrice * billingDays);
   }
 
-  const billingDays = Math.max(1, Math.ceil(durationHours / 24));
-  const dailyPrice =
-    typeof listing.price_per_day === "number" && Number(listing.price_per_day) > 0
-      ? Number(listing.price_per_day)
-      : getListingUnitPrice(listing) * DEFAULT_DAILY_HOURS;
-  const total = Math.max(0, roundMoney(dailyPrice * billingDays));
   return {
-    total,
-    totalCents: Math.round(total * 100),
+    total: Math.max(0, roundMoney(total)),
+    totalCents: Math.round(Math.max(0, roundMoney(total)) * 100),
     durationHours,
     durationLabel,
   };

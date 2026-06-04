@@ -36,7 +36,7 @@ type EarningsSummary = {
   netCents: number;
 };
 
-const PLATFORM_FEE_PCT = 10;
+const PLATFORM_FEE_PCT = 0;
 
 function formatAmount(cents: number) {
   return `€${(cents / 100).toFixed(2)}`;
@@ -189,12 +189,12 @@ export default function HostDashboardPage() {
               <span className="text-[13px] font-semibold text-slate-900">{formatAmount(earnings.totalCents)}</span>
             </div>
             <div className="flex items-center justify-between py-3">
-              <span className="text-[13px] text-slate-600">Platform fee ({PLATFORM_FEE_PCT}%)</span>
-              <span className="text-[13px] font-semibold text-slate-900">{formatAmount(earnings.feeCents)}</span>
+              <span className="text-[13px] text-slate-600">Host fee</span>
+              <span className="text-[13px] font-semibold text-emerald-600">0% — free</span>
             </div>
             <div className="flex items-center justify-between py-3">
               <span className="text-[14px] font-bold text-slate-900">Net payout</span>
-              <span className="text-[18px] font-extrabold tracking-tight text-brand-600">{formatAmount(earnings.netCents)}</span>
+              <span className="text-[18px] font-extrabold tracking-tight text-brand-600">{formatAmount(earnings.totalCents)}</span>
             </div>
           </div>
         ) : status === "loading" ? (

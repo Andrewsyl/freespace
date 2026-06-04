@@ -63,7 +63,6 @@ import { mobileEnv } from "./env";
 import { installGlobalErrorLogging } from "./logger";
 import { colors } from "./theme/colors";
 import { radius, spacing as appSpacing } from "./styles/theme";
-import { AnimatedSplash } from "./components/AnimatedSplash";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -109,7 +108,6 @@ function getSentry():
 
 export default function App() {
   const [launchComplete, setLaunchComplete] = useState(true);
-  const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
   const [fontsLoaded] = useFonts({
     "PlusJakartaSans-Regular": require("./assets/fonts/PlusJakartaSans_400Regular.ttf"),
     "PlusJakartaSans-Medium": require("./assets/fonts/PlusJakartaSans_500Medium.ttf"),
@@ -119,10 +117,6 @@ export default function App() {
     "UKNumberPlate": require("./assets/fonts/UKNumberPlate.ttf"),
   });
 
-  useEffect(() => {
-    if (!fontsLoaded) return;
-    void SplashScreen.hideAsync();
-  }, [fontsLoaded]);
 
   useEffect(() => {
     Notifications.setNotificationHandler({
@@ -154,7 +148,7 @@ export default function App() {
   const stripeKey = mobileEnv.stripePublishableKey;
 
   if (!fontsLoaded) {
-    return <View style={styles.app} />;
+    return <View style={[styles.app, { backgroundColor: "#ffffff" }]} />;
   }
 
   return (
@@ -173,9 +167,6 @@ export default function App() {
             </FavoritesProvider>
           </AuthProvider>
         </StripeProvider>
-        {showAnimatedSplash && (
-          <AnimatedSplash onFinish={() => setShowAnimatedSplash(false)} />
-        )}
       </View>
     </SafeAreaProvider>
   );
@@ -218,6 +209,14 @@ function AuthToastBridge() {
   return null;
 }
 
+function SplashController() {
+  const { loading } = useAuth();
+  useEffect(() => {
+    if (!loading) void SplashScreen.hideAsync();
+  }, [loading]);
+  return null;
+}
+
 function AppShell() {
   const { user, legalPromptRequired } = useAuth();
   const requiresLegal = !!user && (!user.termsVersion || !user.privacyVersion);
@@ -231,6 +230,7 @@ function AppShell() {
 
   return (
     <>
+      <SplashController />
       <AppNavigator />
       <AuthToastBridge />
       {showEnvBadge ? <EnvironmentBadge env={normalizedAppEnv} /> : null}

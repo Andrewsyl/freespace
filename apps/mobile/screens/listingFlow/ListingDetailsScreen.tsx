@@ -10,7 +10,7 @@ import {
   Warehouse,
 } from "lucide-react-native";
 import { useListingFlow } from "./context";
-import { StepProgress } from "./StepProgress";
+import { FlowHeader } from "./FlowHeader";
 import { hostFlowColors } from "./hostFlowTheme";
 import { spacing } from "../../styles/theme";
 import { FlowFooter } from "./FlowFooter";
@@ -91,8 +91,14 @@ const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boo
   const showCountSection = Boolean(draft.spaceType);
   const showVehicleSection = draft.spaceType && hasConfirmedCount;
 
+  const exitFlow = () => {
+    const parent = navigation.getParent();
+    if (parent?.canGoBack()) parent.goBack();
+  };
+
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={[]}>
+      <FlowHeader current={3} total={8} onClose={exitFlow} />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: 104 + Math.max(insets.bottom, 0) }]}
         showsVerticalScrollIndicator={false}
@@ -100,7 +106,6 @@ const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boo
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.kicker}>Space details</Text>
-          <StepProgress current={3} total={8} />
           <Text style={styles.title}>What type of space is it?</Text>
         </View>
 

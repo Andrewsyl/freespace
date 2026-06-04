@@ -185,6 +185,60 @@ describe("bookings routes", () => {
     );
   });
 
+  it("caps sub-day pricing at the daily rate when it is cheaper than hourly", async () => {
+    db.getFraudSettings.mockResolvedValue({
+      minAccountAgeMinutes: 0,
+      maxBookingsPerDay: 10,
+      maxAmountPerDayCents: 100000,
+    });
+    db.getUserRiskProfile.mockResolvedValue({
+      status: "active",
+      email_verified: true,
+      created_at: "2026-03-01T00:00:00.000Z",
+    });
+    db.getRecentBookingStats.mockResolvedValue({ count: 0, total_cents: 0 });
+    db.poolQuery.mockResolvedValue({ rowCount: 0, rows: [] });
+    db.createBooking.mockResolvedValue({ id: "booking-1" });
+    db.findUserById.mockResolvedValue({ id: "user-1", email: "driver@example.com" });
+    db.getListingWithHostAccount.mockResolvedValue({
+      hostStripeAccountId: null,
+      rateType: "hourly",
+      pricePerDay: 18,
+      pricePerHour: 2,
+    });
+
+    stripeMocks.customersList.mockResolvedValue({ data: [] });
+    stripeMocks.customersCreate.mockResolvedValue({ id: "cus_123" });
+    stripeMocks.ephemeralKeysCreate.mockResolvedValue({ secret: "ephkey_123" });
+    stripeMocks.paymentIntentsCreate.mockResolvedValue({
+      id: "pi_123",
+      client_secret: "pi_123_secret",
+    });
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    const token = signToken({ userId: "user-1", email: "driver@example.com", role: "driver" });
+
+    const response = await request(app)
+      .post("/api/bookings/payment-intent")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        listingId: "11111111-1111-4111-8111-111111111111",
+        from: "2026-03-20T10:00:00.000Z",
+        to: "2026-03-20T21:00:00.000Z",
+        amountCents: 1800,
+        currency: "eur",
+        platformFeePercent: 0.1,
+      });
+
+    expect(response.status).toBe(200);
+    expect(stripeMocks.paymentIntentsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 1800 }),
+      expect.any(Object)
+    );
+  });
+
   it("returns bookings for the authenticated user", async () => {
     db.listUserBookings.mockResolvedValue([{ id: "booking-1" }]);
 

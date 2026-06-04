@@ -63,6 +63,8 @@ export default function CheckoutPage() {
   }, [listing, startAt, endAt, pricing]);
 
   const totalPrice = pricing?.total ?? 0;
+  const serviceFee = Math.round(totalPrice * 0.08 * 100) / 100;
+  const grossTotal = totalPrice + serviceFee;
   const pad2 = (n: number) => String(n).padStart(2, "0");
   const toDateStr = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
   const toTimeStr = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
@@ -99,9 +101,9 @@ export default function CheckoutPage() {
     try {
       const from = `${toDateStr(startAt)}T${toTimeStr(startAt)}:00Z`;
       const to = `${toDateStr(endAt)}T${toTimeStr(endAt)}:00Z`;
-      const amountCents = Math.max(1, Math.round(totalPrice * 100));
+      const amountCents = Math.max(1, Math.round(grossTotal * 100));
       const res = await createBooking(
-        { listingId: listing.id, from, to, amountCents, currency: "eur", platformFeePercent: 0.1, vehiclePlate: vehiclePlate.trim() || undefined },
+        { listingId: listing.id, from, to, amountCents, currency: "eur", platformFeePercent: 8 / 108, vehiclePlate: vehiclePlate.trim() || undefined },
         token
       );
       setCheckoutUrl(res.checkoutUrl);
@@ -281,7 +283,7 @@ export default function CheckoutPage() {
                 disabled={status === "loading"}
                 className="flex w-full items-center justify-center rounded-xl bg-brand-500 py-4 text-[15px] font-bold text-white shadow-sm transition hover:bg-brand-600 active:scale-[0.99] disabled:opacity-50"
               >
-                {status === "loading" ? "Processing…" : `Pay €${totalPrice.toFixed(2)} & Reserve`}
+                {status === "loading" ? "Processing…" : `Pay €${grossTotal.toFixed(2)} & Reserve`}
               </button>
 
               <p className="text-center text-[12px] text-slate-600">
@@ -388,7 +390,7 @@ export default function CheckoutPage() {
                     <div className="flex items-center justify-between text-[13px]">
                       <span className="text-slate-600">Duration</span>
                       <span className="font-semibold text-slate-800">
-                        {pricing?.billingCount ?? 0} {pricing?.billingUnit ?? "day"}{pricing?.billingCount === 1 ? "" : "s"}
+                        {pricing?.durationLabel ?? "—"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-[13px]">
@@ -396,19 +398,19 @@ export default function CheckoutPage() {
                       <span className="font-semibold text-slate-800">€{totalPrice.toFixed(2)}</span>
                     </div>
                     <div className="flex items-center justify-between text-[13px]">
-                      <span className="text-slate-600">Platform fee</span>
-                      <span className="font-semibold text-slate-800">Included</span>
+                      <span className="text-slate-600">Service fee (8%)</span>
+                      <span className="font-semibold text-slate-800">€{serviceFee.toFixed(2)}</span>
                     </div>
                     <div className="mt-1 border-t border-slate-100 pt-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[14px] font-bold text-slate-900">Total</span>
                         <span className="text-[18px] font-extrabold tracking-tight text-slate-900">
-                          €{totalPrice.toFixed(2)}
+                          €{grossTotal.toFixed(2)}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <p className="mt-3 text-[11px] text-slate-600">No hidden fees will be added at checkout.</p>
+                  <p className="mt-3 text-[11px] text-slate-600">Hosts keep 100% — the 8% service fee covers platform costs.</p>
                 </div>
               </div>
             </div>

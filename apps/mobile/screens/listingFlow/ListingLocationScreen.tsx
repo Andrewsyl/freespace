@@ -7,7 +7,7 @@ import { MapPinned, Search, X } from "lucide-react-native";
 import { MapPin } from "../../components/MapPin";
 import { LIGHT_MAP_STYLE } from "../../components/mapStyles";
 import { useListingFlow } from "./context";
-import { StepProgress } from "./StepProgress";
+import { FlowHeader } from "./FlowHeader";
 import { hostFlowColors } from "./hostFlowTheme";
 import { TextInput as AppTextInput } from "../../components/ui";
 import { colors, radius, spacing, textStyles } from "../../styles/theme";
@@ -109,12 +109,17 @@ export function ListingLocationScreen({ navigation }: Props) {
     setDraft((prev) => ({ ...prev, location: { ...prev.location, latitude: next.latitude, longitude: next.longitude } }));
   };
 
+  const exitFlow = () => {
+    const parent = navigation.getParent();
+    if (parent?.canGoBack()) parent.goBack();
+  };
+
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={[]}>
+      <FlowHeader current={1} total={8} onClose={exitFlow} />
       {/* Compact header */}
       <View style={styles.header}>
         <Text style={styles.kicker}>Find your space</Text>
-        <StepProgress current={1} total={8} />
         <Text style={styles.title}>Confirm location</Text>
       </View>
 

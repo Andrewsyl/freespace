@@ -15,14 +15,14 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { Briefcase, Check, ChevronRight, Clock, SlidersHorizontal, X } from "lucide-react-native";
 import { Button } from "../../components/ui";
 import { useListingFlow } from "./context";
-import { StepProgress } from "./StepProgress";
+import { FlowHeader } from "./FlowHeader";
 import { hostFlowColors } from "./hostFlowTheme";
 import { FlowFooter } from "./FlowFooter";
 import { cardShadow, colors, radius, spacing, textStyles } from "../../styles/theme";
 
 type FlowStackParamList = {
   ListingAvailability: undefined;
-  ListingPrice: undefined;
+  ListingPhotos: undefined;
 };
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingAvailability">;
@@ -307,11 +307,16 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
     setCustomVisible(true);
   };
 
+  const exitFlow = () => {
+    const parent = navigation.getParent();
+    if (parent?.canGoBack()) parent.goBack();
+  };
+
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={[]}>
+      <FlowHeader current={5} total={8} onClose={exitFlow} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.kicker}>Availability</Text>
-        <StepProgress current={5} total={8} />
         <Text style={styles.title}>Set the availability for your space</Text>
         <Text style={styles.subtitle}>You can change this at any time</Text>
 
@@ -377,7 +382,7 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
       <FlowFooter
         onBack={() => navigation.goBack()}
         primaryLabel="Continue"
-        onPrimary={() => navigation.navigate("ListingPrice")}
+        onPrimary={() => navigation.navigate("ListingPhotos")}
         primaryDisabled={!canSave}
       />
       {customVisible ? (

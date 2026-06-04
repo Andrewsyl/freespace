@@ -1,364 +1,103 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  TextInput,
   View,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { updateMe } from "../api";
 import { useAuth } from "../auth";
-import { Button, TextInput as AppTextInput } from "../components/ui";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import type { RootStackParamList } from "../types";
-import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
+import { colors, spacing } from "../styles/theme";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = NativeStackScreenProps<RootStackParamList, "VehicleType">;
 
 const VEHICLE_MAKES = [
-  "Alfa Romeo",
-  "Audi",
-  "BMW",
-  "BYD",
-  "Chevrolet",
-  "Chrysler",
-  "Citroen",
-  "Cupra",
-  "Dacia",
-  "DS",
-  "Fiat",
-  "Ford",
-  "Genesis",
-  "Honda",
-  "Hyundai",
-  "Isuzu",
-  "Jaguar",
-  "Jeep",
-  "Kia",
-  "Land Rover",
-  "Lexus",
-  "Maserati",
-  "Mazda",
-  "Mercedes-Benz",
-  "MG",
-  "Mini",
-  "Mitsubishi",
-  "Nissan",
-  "Opel",
-  "Peugeot",
-  "Polestar",
-  "Porsche",
-  "Renault",
-  "Saab",
-  "SEAT",
-  "Seat",
-  "Skoda",
-  "Smart",
-  "Subaru",
-  "Suzuki",
-  "Tesla",
-  "Toyota",
-  "Vauxhall",
-  "Volkswagen",
-  "Volvo",
-  "Other",
+  "Alfa Romeo", "Audi", "BMW", "BYD", "Chevrolet", "Chrysler", "Citroen",
+  "Cupra", "Dacia", "DS", "Fiat", "Ford", "Genesis", "Honda", "Hyundai",
+  "Isuzu", "Jaguar", "Jeep", "Kia", "Land Rover", "Lexus", "Maserati",
+  "Mazda", "Mercedes-Benz", "MG", "Mini", "Mitsubishi", "Nissan", "Opel",
+  "Peugeot", "Polestar", "Porsche", "Renault", "Saab", "SEAT", "Skoda",
+  "Smart", "Subaru", "Suzuki", "Tesla", "Toyota", "Vauxhall", "Volkswagen",
+  "Volvo", "Other",
 ];
 
 const VEHICLE_MODELS_BY_MAKE: Record<string, string[]> = {
   "Alfa Romeo": ["Giulia", "Giulietta", "MiTo", "Tonale", "Stelvio", "Junior", "159", "Brera", "Spider", "Other"],
-  Audi: [
-    "A1",
-    "A2",
-    "A3",
-    "A4",
-    "A5",
-    "A6",
-    "A7",
-    "A8",
-    "Q2",
-    "Q3",
-    "Q4 e-tron",
-    "Q5",
-    "Q7",
-    "Q8",
-    "Q8 e-tron",
-    "RS3",
-    "RS4",
-    "RS5",
-    "RS6",
-    "RS7",
-    "S1",
-    "S3",
-    "S4",
-    "S5",
-    "S6",
-    "S7",
-    "S8",
-    "SQ5",
-    "SQ7",
-    "SQ8",
-    "TT",
-    "R8",
-    "e-tron",
-    "Other",
-  ],
-  BMW: [
-    "1 Series",
-    "1 Series M",
-    "114d",
-    "116d",
-    "116i",
-    "118d",
-    "118i",
-    "120i",
-    "120d",
-    "2 Series",
-    "2 Series Active Tourer",
-    "2 Series Gran Coupe",
-    "2 Series Gran Tourer",
-    "3 Series",
-    "3 Series Touring",
-    "4 Series",
-    "4 Series Convertible",
-    "4 Series Gran Coupe",
-    "5 Series",
-    "5 Series Touring",
-    "6 Series",
-    "6 Series Gran Turismo",
-    "7 Series",
-    "8 Series",
-    "8 Series Gran Coupe",
-    "M2",
-    "M3",
-    "M4",
-    "M5",
-    "M8",
-    "XM",
-    "X1",
-    "X2",
-    "X3",
-    "X4",
-    "X5",
-    "X6",
-    "X7",
-    "Z4",
-    "i3",
-    "iX1",
-    "iX2",
-    "i4",
-    "i5",
-    "iX3",
-    "i7",
-    "iX",
-    "Other",
-  ],
-  BYD: ["ATTO 3", "DOLPHIN", "SEAL", "SEAL U", "SEALION 7", "HAN", "TANG", "Other"],
-  Chevrolet: ["Aveo", "Camaro", "Captiva", "Corvette", "Cruze", "Lacetti", "Matiz", "Orlando", "Spark", "Trax", "Volt", "Other"],
-  Chrysler: ["300C", "Crossfire", "Grand Voyager", "PT Cruiser", "Voyager", "Ypsilon", "Other"],
-  Citroen: ["C1", "C2", "C3", "C3 Aircross", "C4", "C4 X", "C5", "C5 Aircross", "Berlingo", "Dispatch", "Relay", "Other"],
-  Cupra: ["Born", "Formentor", "Leon", "Leon Sportstourer", "Ateca", "Tavascan", "Terramar", "Other"],
-  Dacia: ["Sandero", "Sandero Stepway", "Duster", "Jogger", "Spring", "Logan", "Other"],
-  DS: ["DS 3", "DS 3 Crossback", "DS 4", "DS 5", "DS 7", "DS 9", "Other"],
-  Fiat: ["500", "500e", "500X", "600", "Panda", "Punto", "Tipo", "Doblo", "Ducato", "Other"],
-  Ford: [
-    "Fiesta",
-    "Focus",
-    "Focus ST",
-    "Mondeo",
-    "Ka",
-    "Ka+",
-    "EcoSport",
-    "Puma",
-    "Kuga",
-    "Edge",
-    "Mustang",
-    "Mustang Mach-E",
-    "Explorer",
-    "S-Max",
-    "Galaxy",
-    "Capri",
-    "Transit Courier",
-    "Transit Connect",
-    "Transit Custom",
-    "Transit",
-    "Ranger",
-    "Other",
-  ],
-  Genesis: ["G70", "G80", "G90", "GV60", "GV70", "GV80", "Other"],
-  Honda: ["Civic", "Jazz", "Accord", "CR-V", "HR-V", "ZR-V", "Insight", "Prelude", "e", "e:Ny1", "Other"],
-  Hyundai: [
-    "i10",
-    "i20",
-    "i30",
-    "i40",
-    "ix20",
-    "ix35",
-    "Bayon",
-    "Inster",
-    "Kona",
-    "Tucson",
-    "Santa Fe",
-    "IONIQ Hybrid",
-    "IONIQ",
-    "IONIQ 5",
-    "IONIQ 6",
-    "IONIQ 9",
-    "Other",
-  ],
-  Isuzu: ["D-Max", "MU-X", "Trooper", "Other"],
-  Jaguar: ["E-PACE", "F-PACE", "I-PACE", "XE", "XF", "XJ", "F-TYPE", "Other"],
-  Jeep: ["Avenger", "Renegade", "Compass", "Cherokee", "Grand Cherokee", "Wrangler", "Other"],
-  Kia: ["Picanto", "Rio", "Ceed", "ProCeed", "XCeed", "Stonic", "Niro", "Sportage", "Sorento", "EV3", "EV5", "EV6", "EV9", "Other"],
-  "Land Rover": [
-    "Defender",
-    "Discovery",
-    "Discovery Sport",
-    "Freelander",
-    "Range Rover",
-    "Range Rover Evoque",
-    "Range Rover Velar",
-    "Range Rover Sport",
-    "Other",
-  ],
-  Lexus: ["CT", "IS", "ES", "LC", "LS", "LBX", "UX", "NX", "RX", "RZ", "GX", "LX", "Other"],
-  Maserati: ["Ghibli", "GranCabrio", "GranTurismo", "Grecale", "Levante", "MC20", "Quattroporte", "Other"],
-  Mazda: ["Mazda2", "Mazda3", "Mazda6", "CX-3", "CX-30", "CX-5", "CX-60", "CX-80", "CX-90", "MX-5", "MX-30", "Other"],
-  "Mercedes-Benz": [
-    "A-Class",
-    "B-Class",
-    "C-Class",
-    "CLA",
-    "CLS",
-    "E-Class",
-    "EQA SUV",
-    "S-Class",
-    "SL",
-    "GLC Coupe",
-    "GLE Coupe",
-    "GLA",
-    "GLB",
-    "GLC",
-    "GLE",
-    "GLS",
-    "EQA",
-    "EQB",
-    "EQC",
-    "EQE",
-    "EQS",
-    "Vito",
-    "V-Class",
-    "Sprinter",
-    "Other",
-  ],
-  MG: ["MG3", "MG4", "MG5", "MG Cyberster", "MG ZS", "HS", "Marvel R", "Other"],
-  Mini: ["Hatch", "Convertible", "Clubman", "Countryman", "Aceman", "Paceman", "Other"],
-  Mitsubishi: ["ASX", "Colt", "Eclipse Cross", "L200", "Mirage", "Outlander", "Pajero", "Other"],
-  Nissan: ["Micra", "Note", "Leaf", "Juke", "Qashqai", "X-Trail", "Ariya", "350Z", "370Z", "Navara", "Primastar", "Townstar", "Interstar", "Other"],
-  Opel: ["Adam", "Corsa", "Astra", "Insignia", "Crossland", "Grandland", "Mokka", "Combo", "Vivaro", "Movano", "Other"],
-  Peugeot: ["108", "208", "2008", "308", "3008", "408", "508", "5008", "Partner", "Rifter", "Expert", "Boxer", "Other"],
-  Polestar: ["Polestar 2", "Polestar 3", "Polestar 4", "Other"],
-  Porsche: ["718 Boxster", "718 Cayman", "911", "Cayenne", "Macan", "Panamera", "Taycan", "Other"],
-  Renault: ["Clio", "Megane", "Captur", "Kadjar", "Austral", "Arkana", "Scenic", "Espace", "Rafale", "Symbioz", "Twingo", "Zoe", "Kangoo", "Trafic", "Master", "Other"],
-  Saab: ["9-3", "9-5", "900", "9000", "9-4X", "9-7X", "Other"],
-  SEAT: ["Mii", "Ibiza", "Leon", "Arona", "Ateca", "Tarraco", "Alhambra", "Other"],
-  Seat: ["Mii", "Ibiza", "Leon", "Arona", "Ateca", "Tarraco", "Alhambra", "Other"],
-  Skoda: ["Citigo", "Fabia", "Rapid", "Scala", "Octavia", "Superb", "Kamiq", "Karoq", "Kodiaq", "Elroq", "Enyaq", "Other"],
-  Smart: ["fortwo", "forfour", "#1", "#3", "Roadster", "Other"],
-  Subaru: ["BRZ", "Forester", "Impreza", "Legacy", "Levorg", "Outback", "Solterra", "XV", "Other"],
-  Suzuki: ["Across", "Alto", "Baleno", "Ignis", "Jimny", "S-Cross", "Swift", "Swace", "Vitara", "Other"],
-  Tesla: ["Model 3", "Model S", "Model X", "Model Y", "Cybertruck", "Other"],
-  Toyota: ["Aygo", "Aygo X", "Yaris", "Yaris Cross", "Corolla", "Corolla Cross", "Auris", "Avensis", "Camry", "Prius", "GR86", "bZ4X", "C-HR", "RAV4", "Land Cruiser", "Hilux", "Proace", "Proace City", "Other"],
-  Vauxhall: ["Adam", "Agila", "Astra", "Combo", "Corsa", "Crossland", "Frontera", "Grandland", "Insignia", "Meriva", "Mokka", "Viva", "Vivaro", "Movano", "Zafira", "Other"],
-  Volkswagen: [
-    "up!",
-    "Polo",
-    "Golf",
-    "Golf GTI",
-    "Golf R",
-    "Passat",
-    "Arteon",
-    "ID. Buzz",
-    "T-Cross",
-    "Taigo",
-    "T-Roc",
-    "Tiguan",
-    "Touareg",
-    "ID.3",
-    "ID.4",
-    "ID.5",
-    "ID.7",
-    "Touran",
-    "Sharan",
-    "Caddy",
-    "Transporter",
-    "Crafter",
-    "Other",
-  ],
-  Volvo: ["V40", "V60", "V90", "S60", "S90", "XC40", "XC60", "XC90", "C40", "EC40", "EX30", "EX40", "EX90", "Other"],
+  Audi: ["A1","A2","A3","A4","A5","A6","A7","A8","Q2","Q3","Q4 e-tron","Q5","Q7","Q8","Q8 e-tron","RS3","RS4","RS5","RS6","RS7","S3","S4","S5","S6","S7","S8","TT","R8","e-tron","Other"],
+  BMW: ["1 Series","2 Series","3 Series","4 Series","5 Series","6 Series","7 Series","8 Series","M2","M3","M4","M5","M8","X1","X2","X3","X4","X5","X6","X7","Z4","i3","i4","i5","i7","iX","iX1","iX2","iX3","Other"],
+  BYD: ["ATTO 3","DOLPHIN","SEAL","SEAL U","SEALION 7","HAN","TANG","Other"],
+  Chevrolet: ["Aveo","Camaro","Captiva","Corvette","Cruze","Lacetti","Matiz","Orlando","Spark","Trax","Volt","Other"],
+  Chrysler: ["300C","Crossfire","Grand Voyager","PT Cruiser","Voyager","Ypsilon","Other"],
+  Citroen: ["C1","C2","C3","C3 Aircross","C4","C4 X","C5","C5 Aircross","Berlingo","Dispatch","Relay","Other"],
+  Cupra: ["Born","Formentor","Leon","Leon Sportstourer","Ateca","Tavascan","Terramar","Other"],
+  Dacia: ["Sandero","Sandero Stepway","Duster","Jogger","Spring","Logan","Other"],
+  DS: ["DS 3","DS 3 Crossback","DS 4","DS 5","DS 7","DS 9","Other"],
+  Fiat: ["500","500e","500X","600","Panda","Punto","Tipo","Doblo","Ducato","Other"],
+  Ford: ["Fiesta","Focus","Focus ST","Mondeo","Ka","Ka+","EcoSport","Puma","Kuga","Edge","Mustang","Mustang Mach-E","Explorer","S-Max","Galaxy","Capri","Transit","Ranger","Other"],
+  Genesis: ["G70","G80","G90","GV60","GV70","GV80","Other"],
+  Honda: ["Civic","Jazz","Accord","CR-V","HR-V","ZR-V","Insight","Prelude","e","e:Ny1","Other"],
+  Hyundai: ["i10","i20","i30","i40","ix20","ix35","Bayon","Inster","Kona","Tucson","Santa Fe","IONIQ","IONIQ 5","IONIQ 6","IONIQ 9","Other"],
+  Isuzu: ["D-Max","MU-X","Trooper","Other"],
+  Jaguar: ["E-PACE","F-PACE","I-PACE","XE","XF","XJ","F-TYPE","Other"],
+  Jeep: ["Avenger","Renegade","Compass","Cherokee","Grand Cherokee","Wrangler","Other"],
+  Kia: ["Picanto","Rio","Ceed","ProCeed","XCeed","Stonic","Niro","Sportage","Sorento","EV3","EV5","EV6","EV9","Other"],
+  "Land Rover": ["Defender","Discovery","Discovery Sport","Freelander","Range Rover","Range Rover Evoque","Range Rover Velar","Range Rover Sport","Other"],
+  Lexus: ["CT","IS","ES","LC","LS","LBX","UX","NX","RX","RZ","GX","LX","Other"],
+  Maserati: ["Ghibli","GranCabrio","GranTurismo","Grecale","Levante","MC20","Quattroporte","Other"],
+  Mazda: ["Mazda2","Mazda3","Mazda6","CX-3","CX-30","CX-5","CX-60","CX-80","CX-90","MX-5","MX-30","Other"],
+  "Mercedes-Benz": ["A-Class","B-Class","C-Class","CLA","CLS","E-Class","S-Class","SL","GLA","GLB","GLC","GLE","GLS","EQA","EQB","EQC","EQE","EQS","Vito","V-Class","Sprinter","Other"],
+  MG: ["MG3","MG4","MG5","MG Cyberster","MG ZS","HS","Marvel R","Other"],
+  Mini: ["Hatch","Convertible","Clubman","Countryman","Aceman","Paceman","Other"],
+  Mitsubishi: ["ASX","Colt","Eclipse Cross","L200","Mirage","Outlander","Pajero","Other"],
+  Nissan: ["Micra","Note","Leaf","Juke","Qashqai","X-Trail","Ariya","350Z","370Z","Navara","Townstar","Other"],
+  Opel: ["Adam","Corsa","Astra","Insignia","Crossland","Grandland","Mokka","Combo","Vivaro","Movano","Other"],
+  Peugeot: ["108","208","2008","308","3008","408","508","5008","Partner","Rifter","Expert","Boxer","Other"],
+  Polestar: ["Polestar 2","Polestar 3","Polestar 4","Other"],
+  Porsche: ["718 Boxster","718 Cayman","911","Cayenne","Macan","Panamera","Taycan","Other"],
+  Renault: ["Clio","Megane","Captur","Kadjar","Austral","Arkana","Scenic","Espace","Rafale","Twingo","Zoe","Kangoo","Trafic","Master","Other"],
+  Saab: ["9-3","9-5","900","9000","Other"],
+  SEAT: ["Mii","Ibiza","Leon","Arona","Ateca","Tarraco","Alhambra","Other"],
+  Skoda: ["Citigo","Fabia","Rapid","Scala","Octavia","Superb","Kamiq","Karoq","Kodiaq","Elroq","Enyaq","Other"],
+  Smart: ["fortwo","forfour","#1","#3","Roadster","Other"],
+  Subaru: ["BRZ","Forester","Impreza","Legacy","Levorg","Outback","Solterra","XV","Other"],
+  Suzuki: ["Across","Alto","Baleno","Ignis","Jimny","S-Cross","Swift","Swace","Vitara","Other"],
+  Tesla: ["Model 3","Model S","Model X","Model Y","Cybertruck","Other"],
+  Toyota: ["Aygo","Aygo X","Yaris","Yaris Cross","Corolla","Corolla Cross","Auris","Avensis","Camry","Prius","GR86","bZ4X","C-HR","RAV4","Land Cruiser","Hilux","Proace","Proace City","Other"],
+  Vauxhall: ["Adam","Agila","Astra","Combo","Corsa","Crossland","Frontera","Grandland","Insignia","Meriva","Mokka","Viva","Vivaro","Movano","Zafira","Other"],
+  Volkswagen: ["up!","Polo","Golf","Golf GTI","Golf R","Passat","Arteon","ID. Buzz","T-Cross","Taigo","T-Roc","Tiguan","Touareg","ID.3","ID.4","ID.5","ID.7","Touran","Sharan","Caddy","Transporter","Crafter","Other"],
+  Volvo: ["V40","V60","V90","S60","S90","XC40","XC60","XC90","C40","EC40","EX30","EX40","EX90","Other"],
   Other: ["Other"],
 };
 
-const VEHICLE_COLORS = [
-  "Black",
-  "White",
-  "Silver",
-  "Grey",
-  "Blue",
-  "Red",
-  "Green",
-  "Yellow",
-  "Orange",
-  "Brown",
-  "Gold",
-  "Other",
+const COLOURS = [
+  { name: "Black",    hex: "#1F2937" },
+  { name: "White",    hex: "#FFFFFF" },
+  { name: "Silver",   hex: "#C0C7D1" },
+  { name: "Grey",     hex: "#8B95A7" },
+  { name: "Blue",     hex: "#2563EB" },
+  { name: "Red",      hex: "#DC2626" },
+  { name: "Green",    hex: "#16A34A" },
+  { name: "Orange",   hex: "#EA580C" },
+  { name: "Yellow",   hex: "#CA8A04" },
+  { name: "Brown",    hex: "#78350F" },
+  { name: "Beige",    hex: "#D4B896" },
+  { name: "Other",    hex: "#CBD5E1" },
 ];
 
-const VEHICLE_COLOR_SWATCHES: Record<string, string> = {
-  Black: "#1F2937",
-  White: "#FFFFFF",
-  Silver: "#C0C7D1",
-  Grey: "#8B95A7",
-  Blue: "#2563EB",
-  Red: "#DC2626",
-  Green: "#16A34A",
-  Yellow: "#EAB308",
-  Orange: "#F97316",
-  Brown: "#8B5E3C",
-  Gold: "#D4A017",
-  Other: "#CBD5E1",
-};
-
-const VEHICLE_COLOR_MARKERS: Record<string, string> = {
-  Black: "⬛",
-  White: "⬜",
-  Silver: "◻️",
-  Grey: "◼️",
-  Blue: "🟦",
-  Red: "🟥",
-  Green: "🟩",
-  Yellow: "🟨",
-  Orange: "🟧",
-  Brown: "🟫",
-  Gold: "🟨",
-  Other: "▪️",
-};
-
-function formatIrishPlateInput(raw: string) {
+function formatIrishPlate(raw: string) {
   const upper = raw.toUpperCase();
   const endsWithSep = /[\s-]$/.test(raw);
   const segments = upper.split(/[\s-]+/).filter(Boolean);
-
   if (segments.length === 0) return "";
-
-  // User has typed a separator — split into explicit segments
   if (segments.length >= 2 || endsWithSep) {
     const year   = (segments[0] ?? "").replace(/[^0-9]/g, "").slice(0, 3);
     const county = (segments[1] ?? "").replace(/[^A-Z]/g, "").slice(0, 2);
@@ -370,8 +109,6 @@ function formatIrishPlateInput(raw: string) {
     if (!serial) return `${year}-${county}`;
     return `${year}-${county}-${serial}`;
   }
-
-  // Single unbroken segment — auto-detect from character types
   const compact = segments[0].replace(/[^A-Z0-9]/g, "");
   const firstLetter = compact.search(/[A-Z]/);
   if (firstLetter === -1) return compact.slice(0, 3);
@@ -389,66 +126,62 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { token, user, setAuthUser } = useAuth();
   const scrollRef = useRef<ScrollView | null>(null);
-  const brandFieldY = useRef(0);
-  const modelFieldY = useRef(0);
-  const colorFieldY = useRef(0);
+  const plateInputRef = useRef<TextInput | null>(null);
   const plateFieldY = useRef(0);
-  const [selectedMake, setSelectedMake] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState("");
-  const [brandQuery, setBrandQuery] = useState("");
-  const [modelQuery, setModelQuery] = useState("");
-  const [selectedColor, setSelectedColor] = useState("");
+  const makeFieldY = useRef(0);
+
   const [plate, setPlate] = useState("");
+  const [selectedMake, setSelectedMake] = useState("");
+  const [brandQuery, setBrandQuery] = useState("");
+  const [brandFocused, setBrandFocused] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("");
+  const [modelQuery, setModelQuery] = useState("");
+  const [modelFocused, setModelFocused] = useState(false);
+  const [selectedColour, setSelectedColour] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [brandFocused, setBrandFocused] = useState(false);
-  const [modelFocused, setModelFocused] = useState(false);
-  const [plateFocused, setPlateFocused] = useState(false);
-  const [colorSheetVisible, setColorSheetVisible] = useState(false);
 
   useEffect(() => {
-    setSelectedMake(user?.vehicleMake ?? "");
-    setSelectedModel(user?.vehicleType ?? "");
-    setBrandQuery(user?.vehicleMake ?? "");
-    setModelQuery(user?.vehicleType ?? "");
-    setSelectedColor(user?.vehicleColor ?? "");
     setPlate(user?.vehiclePlate ?? "");
+    setSelectedMake(user?.vehicleMake ?? "");
+    setBrandQuery(user?.vehicleMake ?? "");
+    setSelectedModel(user?.vehicleType ?? "");
+    setModelQuery(user?.vehicleType ?? "");
+    setSelectedColour(user?.vehicleColor ?? "");
   }, [user?.vehicleColor, user?.vehicleMake, user?.vehiclePlate, user?.vehicleType]);
+
+  const filteredMakes = useMemo(() => {
+    const q = brandQuery.trim().toLowerCase();
+    if (!q) return VEHICLE_MAKES;
+    return VEHICLE_MAKES.filter((m) => m.toLowerCase().includes(q));
+  }, [brandQuery]);
 
   const availableModels = useMemo(
     () => (selectedMake ? VEHICLE_MODELS_BY_MAKE[selectedMake] ?? ["Other"] : []),
     [selectedMake]
   );
-  const filteredMakes = useMemo(() => {
-    const query = brandQuery.trim().toLowerCase();
-    if (!query) return VEHICLE_MAKES;
-    return VEHICLE_MAKES.filter((make) => make.toLowerCase().includes(query));
-  }, [brandQuery]);
+
   const filteredModels = useMemo(() => {
-    const query = modelQuery.trim().toLowerCase();
-    if (!query) return availableModels;
-    return availableModels.filter((model) => model.toLowerCase().includes(query));
+    const q = modelQuery.trim().toLowerCase();
+    if (!q) return availableModels;
+    return availableModels.filter((m) => m.toLowerCase().includes(q));
   }, [availableModels, modelQuery]);
 
-  const canSave = !!token && !!selectedMake && !!selectedModel && !saving;
+  const canSave = !!token && !saving && !!plate.trim();
 
   const handleSave = async () => {
-    if (!token || !selectedMake || !selectedModel) return;
+    if (!canSave) return;
     setSaving(true);
     setError(null);
     try {
-      const response = await updateMe(token, {
-        vehicleMake: selectedMake,
-        vehicleType: selectedModel,
-        vehicleColor: selectedColor || null,
-        vehiclePlate: plate.trim() ? plate.trim().toUpperCase() : null,
+      const response = await updateMe(token!, {
+        vehicleMake: selectedMake || null,
+        vehicleType: selectedModel || null,
+        vehicleColor: selectedColour || null,
+        vehiclePlate: plate.trim().toUpperCase(),
       });
       await setAuthUser(response.user);
-      if (route.params?.returnTo === "BookingSummary") {
-        navigation.goBack();
-      } else {
-        navigation.navigate("Tabs", { screen: "Profile" });
-      }
+      navigation.goBack();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save vehicle");
     } finally {
@@ -456,137 +189,171 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
     }
   };
 
-  const scrollToField = (y: number) => {
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({ y: Math.max(0, y - 120), animated: true });
-    });
-  };
-
   useEffect(() => {
     if (route.params?.focusField !== "plate") return;
     const timer = setTimeout(() => {
-      scrollToField(plateFieldY.current);
-    }, 180);
+      plateInputRef.current?.focus();
+      scrollRef.current?.scrollTo({ y: Math.max(0, plateFieldY.current - 120), animated: true });
+    }, 200);
     return () => clearTimeout(timer);
   }, [route.params?.focusField]);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView
-        style={styles.container}
+        style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
-        <View style={styles.stickyHeader}>
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={20} color={colors.text} />
-            <Text style={styles.backText}>Back</Text>
+        {/* Nav */}
+        <View style={styles.nav}>
+          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={10}>
+            <Ionicons name="arrow-back" size={22} color={colors.text} />
           </Pressable>
+          <Text style={styles.navTitle}>My vehicle</Text>
+          <View style={{ width: 38 }} />
         </View>
+
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
+          contentContainerStyle={[styles.content, { paddingBottom: 32 + Math.max(insets.bottom, 16) }]}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <View style={styles.headerTextWrap}>
-              <Text style={styles.title}>My vehicle</Text>
-              <Text style={styles.subtitle}>Your vehicle details</Text>
-            </View>
+          {/* Brand logo hero */}
+          <View style={styles.logoHero}>
             {selectedMake ? (
-              <View style={styles.headerBrandLogo}>
-                <VehicleBrandLogo make={selectedMake} size={40} />
+              <VehicleBrandLogo make={selectedMake} size={64} />
+            ) : (
+              <View style={styles.logoPlaceholder}>
+                <Ionicons name="car-outline" size={32} color="#9ca3af" />
+              </View>
+            )}
+            {selectedMake ? (
+              <Text style={styles.logoMakeName}>{selectedMake}</Text>
+            ) : (
+              <Text style={styles.logoMakeName} />
+            )}
+            {selectedColour ? (
+              <View style={[styles.colourDot, { backgroundColor: COLOURS.find(c => c.name === selectedColour)?.hex ?? "#ccc" }, selectedColour === "White" && styles.colourDotBorder]} />
+            ) : null}
+          </View>
+
+          {/* Plate hero */}
+          <View
+            style={styles.plateSection}
+            onLayout={(e) => { plateFieldY.current = e.nativeEvent.layout.y; }}
+          >
+            <Text style={styles.fieldLabel}>Registration plate</Text>
+            <Pressable
+              style={styles.plateWrap}
+              onPress={() => plateInputRef.current?.focus()}
+            >
+              <View style={styles.plateEuStripe}>
+                <Text style={styles.plateEuText}>IRL</Text>
+              </View>
+              <View style={styles.plateBody}>
+                <TextInput
+                  ref={plateInputRef}
+                  style={styles.plateInput}
+                  value={plate}
+                  onChangeText={(v) => setPlate(formatIrishPlate(v))}
+                  placeholder="191-D-12345"
+                  placeholderTextColor="#b0b8c8"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  textAlign="center"
+                  returnKeyType="done"
+                  onFocus={() => scrollRef.current?.scrollTo({ y: Math.max(0, plateFieldY.current - 100), animated: true })}
+                />
+              </View>
+            </Pressable>
+            <Text style={styles.plateHint}>Required for entry to the parking space</Text>
+          </View>
+
+          {/* Make */}
+          <View
+            style={styles.fieldSection}
+            onLayout={(e) => { makeFieldY.current = e.nativeEvent.layout.y; }}
+          >
+            <Text style={styles.fieldLabel}>Car make</Text>
+            <View style={styles.makeInputWrap}>
+              <Ionicons name="search-outline" size={16} color="#9ca3af" style={styles.makeSearchIcon} />
+              <TextInput
+                style={styles.makeInput}
+                value={brandQuery}
+                onChangeText={(v) => {
+                  setBrandQuery(v);
+                  if (v !== selectedMake) setSelectedMake("");
+                }}
+                onFocus={() => {
+                  setBrandFocused(true);
+                  scrollRef.current?.scrollTo({ y: Math.max(0, makeFieldY.current - 100), animated: true });
+                }}
+                onBlur={() => setTimeout(() => setBrandFocused(false), 120)}
+                placeholder="Search car brand"
+                placeholderTextColor="#9ca3af"
+                autoCapitalize="words"
+                autoCorrect={false}
+                returnKeyType="done"
+              />
+              {selectedMake ? (
+                <Ionicons name="checkmark-circle" size={18} color="#0a8050" style={{ marginRight: 12 }} />
+              ) : null}
+            </View>
+            {brandFocused && filteredMakes.length > 0 ? (
+              <View style={styles.suggestions}>
+                {filteredMakes.slice(0, 7).map((make, i) => (
+                  <Pressable
+                    key={make}
+                    style={[styles.suggestionRow, i > 0 && styles.suggestionBorder]}
+                    onPress={() => {
+                      setSelectedMake(make);
+                      setBrandQuery(make);
+                      setSelectedModel("");
+                      setModelQuery("");
+                      setBrandFocused(false);
+                    }}
+                  >
+                    <VehicleBrandLogo make={make} size={20} />
+                    <Text style={styles.suggestionText}>{make}</Text>
+                  </Pressable>
+                ))}
               </View>
             ) : null}
           </View>
 
-          <View style={styles.sheet}>
-            <View
-              style={styles.section}
-              onLayout={(event) => {
-                brandFieldY.current = event.nativeEvent.layout.y;
-              }}
-            >
-              <Text style={styles.sectionLabel}>Car brand</Text>
-              <View style={styles.brandInputWrap}>
-                <AppTextInput
-                  containerStyle={styles.autoInputContainer}
-                  value={brandQuery}
-                  onChangeText={(value) => {
-                    setBrandQuery(value);
-                    if (value !== selectedMake) {
-                      setSelectedMake("");
-                      setSelectedModel("");
-                      setModelQuery("");
-                    }
-                  }}
-                  onFocus={() => {
-                    setBrandFocused(true);
-                    scrollToField(brandFieldY.current);
-                  }}
-                  onBlur={() => setTimeout(() => setBrandFocused(false), 120)}
-                  placeholder="Search car brand"
-                  style={styles.autoInput}
-                  autoCapitalize="words"
-                  autoCorrect={false}
-                />
-              </View>
-              {brandFocused ? (
-                <View style={styles.suggestionList}>
-                  {filteredMakes.slice(0, 8).map((make) => (
-                    <Pressable
-                      key={make}
-                      style={styles.suggestionRow}
-                      onPress={() => {
-                        setSelectedMake(make);
-                        setBrandQuery(make);
-                        setSelectedModel("");
-                        setModelQuery("");
-                        setBrandFocused(false);
-                      }}
-                    >
-                      <Text style={styles.suggestionText}>{make}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              ) : null}
-            </View>
-
-            <View
-              style={styles.section}
-              onLayout={(event) => {
-                modelFieldY.current = event.nativeEvent.layout.y;
-              }}
-            >
-              <Text style={styles.sectionLabel}>Model</Text>
-              <View style={styles.brandInputWrap}>
-                <AppTextInput
-                  containerStyle={styles.autoInputContainer}
+          {/* Model */}
+          {selectedMake ? (
+            <View style={styles.fieldSection}>
+              <Text style={styles.fieldLabel}>Model</Text>
+              <View style={styles.makeInputWrap}>
+                <Ionicons name="search-outline" size={16} color="#9ca3af" style={styles.makeSearchIcon} />
+                <TextInput
+                  style={styles.makeInput}
                   value={modelQuery}
-                  onChangeText={(value) => {
-                    setModelQuery(value);
-                    if (value !== selectedModel) setSelectedModel("");
+                  onChangeText={(v) => {
+                    setModelQuery(v);
+                    if (v !== selectedModel) setSelectedModel("");
                   }}
-                  onFocus={() => {
-                    if (selectedMake) {
-                      setModelFocused(true);
-                      scrollToField(modelFieldY.current);
-                    }
-                  }}
+                  onFocus={() => setModelFocused(true)}
                   onBlur={() => setTimeout(() => setModelFocused(false), 120)}
-                  placeholder={selectedMake ? "Search model" : "Select brand first"}
-                  style={[styles.autoInput, !selectedMake && styles.autoInputDisabled]}
+                  placeholder="Search model"
+                  placeholderTextColor="#9ca3af"
                   autoCapitalize="words"
                   autoCorrect={false}
-                  editable={!!selectedMake}
+                  returnKeyType="done"
                 />
+                {selectedModel ? (
+                  <Ionicons name="checkmark-circle" size={18} color="#0a8050" style={{ marginRight: 12 }} />
+                ) : null}
               </View>
-              {modelFocused && selectedMake ? (
-                <View style={styles.suggestionList}>
-                  {filteredModels.slice(0, 8).map((model) => (
+              {modelFocused && filteredModels.length > 0 ? (
+                <View style={styles.suggestions}>
+                  {filteredModels.slice(0, 7).map((model, i) => (
                     <Pressable
                       key={model}
-                      style={styles.suggestionRow}
+                      style={[styles.suggestionRow, i > 0 && styles.suggestionBorder]}
                       onPress={() => {
                         setSelectedModel(model);
                         setModelQuery(model);
@@ -599,287 +366,193 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
                 </View>
               ) : null}
             </View>
+          ) : null}
 
-            <View
-              style={styles.section}
-              onLayout={(event) => {
-                colorFieldY.current = event.nativeEvent.layout.y;
-              }}
-            >
-              <Text style={styles.sectionLabel}>Color</Text>
-              <Pressable style={styles.colorSelect} onPress={() => setColorSheetVisible(true)}>
-                {selectedColor ? (
-                  <View style={[styles.colorSelectSwatch, { backgroundColor: VEHICLE_COLOR_SWATCHES[selectedColor] ?? "#ccc" }, selectedColor === "White" && styles.colorSelectSwatchBorder]} />
-                ) : null}
-                <Text style={[styles.colorSelectText, !selectedColor && styles.colorSelectPlaceholder]}>
-                  {selectedColor || "Select colour"}
-                </Text>
-                <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
-              </Pressable>
+          {/* Colour grid */}
+          <View style={styles.fieldSection}>
+            <Text style={styles.fieldLabel}>Colour</Text>
+            <View style={styles.colourGrid}>
+              {COLOURS.map((c) => {
+                const active = selectedColour === c.name;
+                return (
+                  <Pressable
+                    key={c.name}
+                    style={styles.colourCell}
+                    onPress={() => setSelectedColour(active ? "" : c.name)}
+                    hitSlop={4}
+                  >
+                    <View style={[
+                      styles.colourCircle,
+                      { backgroundColor: c.hex },
+                      c.name === "White" && styles.colourCircleBorder,
+                      active && styles.colourCircleActive,
+                    ]}>
+                      {active ? <Ionicons name="checkmark" size={16} color={c.name === "White" || c.name === "Beige" || c.name === "Silver" || c.name === "Yellow" ? "#0a8050" : "#ffffff"} /> : null}
+                    </View>
+                    <Text style={[styles.colourLabel, active && styles.colourLabelActive]} numberOfLines={1}>{c.name}</Text>
+                  </Pressable>
+                );
+              })}
             </View>
-
-            <View
-              style={styles.section}
-              onLayout={(event) => {
-                plateFieldY.current = event.nativeEvent.layout.y;
-              }}
-            >
-              <Text style={styles.sectionLabel}>Registration plate</Text>
-              <View style={styles.regRow}>
-                <View style={styles.plateCountry} />
-                <View style={styles.regDetails}>
-                  <AppTextInput
-                    containerStyle={styles.regInputContainer}
-                    variant="embedded"
-                    value={plate}
-                    onChangeText={(value) => setPlate(formatIrishPlateInput(value))}
-                    placeholder="Enter reg plate"
-                    autoCapitalize="characters"
-                    autoCorrect={false}
-                    autoFocus={route.params?.focusField === "plate"}
-                    textAlign="center"
-                    style={[styles.regInput, styles.regInputText]}
-                    onFocus={() => {
-                      setPlateFocused(true);
-                      scrollToField(plateFieldY.current);
-                    }}
-                    onBlur={() => setPlateFocused(false)}
-                  />
-                </View>
-              </View>
-            </View>
-
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-
           </View>
 
-          <Button
-            style={styles.saveButton}
-            title="Save"
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          {/* Save */}
+          <Pressable
+            style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
             onPress={handleSave}
             disabled={!canSave}
-            loading={saving}
-          />
+          >
+            <Text style={styles.saveBtnText}>{saving ? "Saving…" : "Save vehicle"}</Text>
+          </Pressable>
+
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <Modal transparent animationType="slide" visible={colorSheetVisible}>
-        <View style={styles.sheetBackdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setColorSheetVisible(false)} />
-          <View style={[styles.sheetContainer, { paddingBottom: Math.max(24, insets.bottom + 12) }]}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Colour</Text>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {VEHICLE_COLORS.map((color, i) => (
-                <TouchableOpacity
-                  key={color}
-                  style={[styles.sheetRow, i > 0 && styles.sheetRowBorder]}
-                  activeOpacity={0.6}
-                  onPress={() => {
-                    setSelectedColor(color);
-                    setColorSheetVisible(false);
-                  }}
-                >
-                  <View style={[styles.sheetSwatch, { backgroundColor: VEHICLE_COLOR_SWATCHES[color] ?? "#ccc" }, color === "White" && styles.colorSelectSwatchBorder]} />
-                  <Text style={styles.sheetRowText}>{color}</Text>
-                  {selectedColor === color ? (
-                    <Ionicons name="checkmark" size={18} color="#0fa968" />
-                  ) : null}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
 
+const GREEN = "#0a8050";
+const FG    = "#111827";
+const LINE  = "#D1D5DB";
+const MUTED = "#374151";
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.appBg,
+  container: { flex: 1, backgroundColor: "#ffffff" },
+  flex: { flex: 1 },
+
+  nav: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8,
+    borderBottomWidth: 1, borderBottomColor: LINE,
   },
-  stickyHeader: {
-    backgroundColor: colors.appBg,
-    paddingTop: spacing.screenY,
-    paddingBottom: spacing.xs,
-    zIndex: 5,
+  backBtn: {
+    width: 38, height: 38, alignItems: "center", justifyContent: "center",
   },
-  backButton: {
-    alignItems: "center",
-    alignSelf: "flex-start",
+  navTitle: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG, letterSpacing: -0.3,
+  },
+
+  content: { paddingHorizontal: 20, paddingTop: 24 },
+
+  // Logo hero
+  logoHero: {
+    alignItems: "center", marginBottom: 28, gap: 8,
+  },
+  logoPlaceholder: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: "#f3f4f6",
+    alignItems: "center", justifyContent: "center",
+  },
+  logoMakeName: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 18, color: FG,
+    letterSpacing: -0.3, minHeight: 22,
+  },
+  colourDot: {
+    width: 12, height: 12, borderRadius: 6,
+  },
+  colourDotBorder: { borderWidth: 1, borderColor: LINE },
+
+  // Plate
+  plateSection: { marginBottom: 24 },
+  fieldLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
+    color: MUTED, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 10,
+  },
+  plateWrap: {
     flexDirection: "row",
-    gap: 4,
-    marginLeft: spacing.screenX,
-    marginTop: spacing.screenY,
+    borderRadius: 10, borderWidth: 2, borderColor: "#3D6FB6",
+    overflow: "hidden", backgroundColor: "#ffffff",
+    shadowColor: "#3D6FB6", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12, shadowRadius: 8, elevation: 3,
   },
-  backText: {
-    ...textStyles.body,
-    color: colors.text,
+  plateEuStripe: {
+    width: 38, backgroundColor: "#3D6FB6",
+    alignItems: "center", justifyContent: "center",
   },
-  header: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.screenX,
-    paddingTop: spacing.xs,
-    paddingBottom: spacing.lg,
+  plateEuText: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 9,
+    color: "#ffffff", letterSpacing: 1.2, textTransform: "uppercase",
   },
-  headerTextWrap: {
-    flex: 1,
-    paddingRight: spacing.sm,
+  plateBody: {
+    flex: 1, paddingHorizontal: 16, paddingVertical: 14,
+    alignItems: "center", justifyContent: "center",
   },
-  headerBrandLogo: {
-    alignItems: "center",
-    height: 64,
-    justifyContent: "center",
-    minWidth: 88,
+  plateInput: {
+    fontFamily: "UKNumberPlate", fontSize: 28,
+    color: FG, letterSpacing: 2, textTransform: "uppercase",
+    width: "100%", textAlign: "center",
+    includeFontPadding: false, padding: 0,
   },
-  content: {
-    paddingBottom: spacing.xl,
+  plateHint: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 12,
+    color: "#6b7280", marginTop: 8, textAlign: "center",
   },
-  sheet: {
-    backgroundColor: "transparent",
-    flex: 1,
-    paddingHorizontal: spacing.screenX,
+
+  // Make
+  fieldSection: { marginBottom: 24 },
+  makeInputWrap: {
+    flexDirection: "row", alignItems: "center",
+    borderWidth: 1, borderColor: LINE, borderRadius: 12,
+    backgroundColor: "#f9fafb",
   },
-  title: {
-    color: colors.text,
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 27,
-    letterSpacing: -0.8,
-    lineHeight: 32,
-    marginBottom: 4,
-    marginTop: spacing.xs,
+  makeSearchIcon: { marginLeft: 14 },
+  makeInput: {
+    flex: 1, fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG,
+    paddingHorizontal: 10, paddingVertical: 14,
   },
-  subtitle: {
-    color: "#6B6B6B",
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  section: {
-    marginBottom: 14,
-  },
-  sectionLabel: {
-    color: "#888888",
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 11,
-    letterSpacing: 0.8,
-    lineHeight: 16,
-    textTransform: "uppercase",
-    marginBottom: 10,
-  },
-  brandInputWrap: {
-    justifyContent: "center",
-    position: "relative",
-  },
-  autoInputContainer: {
-    marginBottom: 0,
-  },
-  autoInput: {
-    ...textStyles.body,
-    color: colors.text,
-    paddingHorizontal: 0,
-    paddingVertical: 12,
-  },
-  autoInputDisabled: {
-    opacity: 0.55,
-  },
-  suggestionList: {
-    backgroundColor: colors.cardBg,
-    borderColor: "#E2E8F0",
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 10,
-    overflow: "hidden",
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    elevation: 6,
+  suggestions: {
+    marginTop: 6, borderRadius: 12, borderWidth: 1, borderColor: LINE,
+    backgroundColor: "#ffffff", overflow: "hidden",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06, shadowRadius: 10, elevation: 4,
   },
   suggestionRow: {
-    backgroundColor: colors.cardBg,
-    borderBottomColor: "#EEF2F6",
-    borderBottomWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    flexDirection: "row", alignItems: "center", gap: 12,
+    paddingHorizontal: 14, paddingVertical: 12,
+    backgroundColor: "#ffffff",
   },
+  suggestionBorder: { borderTopWidth: 1, borderTopColor: LINE },
   suggestionText: {
-    ...textStyles.bodyStrong,
-    color: colors.text,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG, flex: 1,
   },
-  colorSelect: {
-    flexDirection: "row", alignItems: "center", gap: 10,
-    backgroundColor: "#FCFEFD", borderColor: "#D7DEE7",
-    borderRadius: 16, borderWidth: 1,
-    paddingHorizontal: 14, paddingVertical: 14,
-  },
-  colorSelectSwatch: { width: 18, height: 18, borderRadius: 9 },
-  colorSelectSwatchBorder: { borderWidth: 1, borderColor: "#D7DEE7" },
-  colorSelectText: { flex: 1, fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: colors.text },
-  colorSelectPlaceholder: { color: colors.textMuted, fontFamily: "PlusJakartaSans-Regular" },
 
-  sheetBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
-  sheetContainer: {
-    backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    paddingTop: 12, maxHeight: "70%",
+  // Colour grid
+  colourGrid: {
+    flexDirection: "row", flexWrap: "wrap",
+    marginHorizontal: -4,
   },
-  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#E0E0E0", alignSelf: "center", marginBottom: 16 },
-  sheetTitle: { fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 20, color: colors.text, letterSpacing: -0.4, paddingHorizontal: 20, marginBottom: 8 },
-  sheetRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 20, paddingVertical: 14 },
-  sheetRowBorder: { borderTopWidth: 1, borderTopColor: "#d1d5db" },
-  sheetSwatch: { width: 22, height: 22, borderRadius: 11 },
-  sheetRowText: { flex: 1, fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: colors.text },
-  regRow: {
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#3D6FB6",
-    borderRadius: 6,
-    borderWidth: 1.5,
-    flexDirection: "row",
-    overflow: "hidden",
+  colourCell: {
+    width: "20%", alignItems: "center", paddingVertical: 10, paddingHorizontal: 4,
   },
-  regDetails: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+  colourCircle: {
+    width: 44, height: 44, borderRadius: 22,
+    alignItems: "center", justifyContent: "center",
+    marginBottom: 6,
   },
-  plateCountry: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    backgroundColor: "#3D6FB6",
-    justifyContent: "center",
-    width: 34,
+  colourCircleBorder: { borderWidth: 1.5, borderColor: LINE },
+  colourCircleActive: {
+    borderWidth: 3, borderColor: GREEN,
   },
-  regInputContainer: {
-    marginBottom: 0,
-    flex: 1,
+  colourLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
+    color: MUTED, textAlign: "center",
   },
-  regInput: {
-    backgroundColor: "transparent",
-    includeFontPadding: false,
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-  },
-  regInputText: {
-    color: colors.text,
-    fontFamily: "UKNumberPlate",
-    fontSize: 24,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-  },
+  colourLabelActive: { color: GREEN },
+
   error: {
-    ...textStyles.meta,
-    color: colors.danger,
-    marginBottom: 12,
-    textAlign: "center",
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
+    color: colors.danger, textAlign: "center", marginBottom: 12,
   },
-  saveButton: {
-    marginHorizontal: spacing.screenX,
-    marginTop: spacing.lg,
+
+  // Save
+  saveBtn: {
+    marginTop: 8, height: 54, borderRadius: 14,
+    backgroundColor: GREEN, alignItems: "center", justifyContent: "center",
+  },
+  saveBtnDisabled: { opacity: 0.4 },
+  saveBtnText: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: "#ffffff", letterSpacing: -0.2,
   },
 });

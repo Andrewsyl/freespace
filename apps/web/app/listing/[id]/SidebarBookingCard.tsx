@@ -51,10 +51,7 @@ export function SidebarBookingCard({
       subtotal: summary.total,
       total: summary.total + 1.5,
       durationLabel: summary.durationLabel,
-      billingLabel:
-        summary.billingUnit === "hour"
-          ? `${summary.durationLabel}`
-          : `${summary.billingCount} ${summary.billingUnit}${summary.billingCount === 1 ? "" : "s"}`,
+      billingLabel: summary.durationLabel,
     };
   }, [initialBooking?.endDate, initialBooking?.endTime, initialBooking?.startDate, initialBooking?.startTime, pricePerDay, pricePerHour, rateType, unitPrice]);
   const [pricing, setPricing] = useState(defaultPricing);

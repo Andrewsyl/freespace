@@ -156,12 +156,12 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
   const pricing = useMemo(() => {
     const parkingFee = priceSummary?.total ?? 0;
-    const transactionFee = 0;
-    const finalPrice = parkingFee;
-    const finalCents = Math.round(parkingFee * 100);
+    const serviceFee = Math.round(parkingFee * 0.08 * 100) / 100;
+    const finalPrice = parkingFee + serviceFee;
+    const finalCents = Math.round(finalPrice * 100);
     return {
       parkingFee,
-      transactionFee,
+      serviceFee,
       finalPrice,
       finalCents,
     };
@@ -606,8 +606,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                   <Text style={styles.priceRowValue}>{priceSummary?.durationLabel ?? ""}</Text>
                 </View>
                 <View style={[styles.priceRow, styles.priceRowBorder]}>
-                  <Text style={styles.priceRowLabel}>Platform fee</Text>
-                  <Text style={styles.priceRowMuted}>Included</Text>
+                  <Text style={styles.priceRowLabel}>Service fee (8%)</Text>
+                  <Text style={styles.priceRowValue}>€{pricing.serviceFee.toFixed(2)}</Text>
                 </View>
                 <View style={[styles.priceRow, styles.priceRowBorder, styles.priceTotalRow]}>
                   <Text style={styles.priceTotalLabel}>Total</Text>

@@ -66,17 +66,32 @@ function calculateListingChargeCents(input: {
     Math.ceil((input.endTime.getTime() - input.startTime.getTime()) / (1000 * 60 * 60))
   );
 
+  const explicitDaily =
+    Number.isFinite(Number(input.pricePerDay)) && Number(input.pricePerDay) > 0
+      ? Number(input.pricePerDay)
+      : null;
   const derivedHourly =
     input.pricePerHour != null && Number(input.pricePerHour) > 0
       ? Number(input.pricePerHour)
-      : Number(input.pricePerDay) / DEFAULT_DAILY_HOURS;
+      : explicitDaily != null
+        ? explicitDaily / DEFAULT_DAILY_HOURS
+        : 0;
 
-  if (durationHours < 24 && derivedHourly > 0) {
+  if (explicitDaily != null && derivedHourly > 0) {
+    const fullDays = Math.floor(durationHours / 24);
+    const remainingHours = durationHours % 24;
+    const remainingCents =
+      remainingHours > 0
+        ? Math.round(Math.min(derivedHourly * remainingHours, explicitDaily) * 100)
+        : 0;
+    return Math.max(1, Math.round(explicitDaily * fullDays * 100) + remainingCents);
+  }
+
+  if (derivedHourly > 0) {
     return Math.max(1, Math.round(derivedHourly * durationHours * 100));
   }
 
-  const billingDays = Math.max(1, Math.ceil(durationHours / 24));
-  return Math.max(1, Math.round(Number(input.pricePerDay) * billingDays * 100));
+  return 0;
 }
 const bookingLimiter = createRateLimiter({
   windowMs: 5 * 60 * 1000,
@@ -248,7 +263,7 @@ const bookingSchemaBase = z.object({
   to: z.string().datetime(),
   amountCents: z.number().int().positive().max(10000000),
   currency: z.string().trim().length(3).transform((value) => value.toLowerCase()).default("eur"),
-  platformFeePercent: z.number().min(0).max(0.3).default(0.1),
+  platformFeePercent: z.number().min(0).max(0.3).default(8 / 108),
   vehiclePlate: z
     .string()
     .trim()
@@ -942,7 +957,7 @@ router.post("/portal", enforceBlockedList, portalBookingLimiter, async (req, res
       startTime: startAt,
       endTime: endAt,
     });
-    const platformFeePercent = 0.1;
+    const platformFeePercent = 8 / 108;
     const platformFeeCents = Math.round(amountCents * platformFeePercent);
     const payoutAvailableAt = new Date(startAt.getTime() + 24 * 60 * 60 * 1000);
 

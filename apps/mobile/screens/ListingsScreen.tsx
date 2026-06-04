@@ -19,6 +19,7 @@ import { useToastOnMessage } from "../components/GlobalToast";
 import type { ListingSummary, RootStackParamList } from "../types";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { formatListingPriceLine } from "../utils/pricing";
+import { clearHostListingDraft, loadHostListingDraft, type SavedHostListingDraft } from "./listingFlow/draftStorage";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Listings">;
 
@@ -31,8 +32,9 @@ const SUBTLE = "#6b7280";
 export function ListingsScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { token, user } = useAuth();
-  const platformFeePercent = 10;
+  const platformFeePercent = 0;
   const [listings, setListings] = useState<ListingSummary[]>([]);
+  const [savedDraft, setSavedDraft] = useState<SavedHostListingDraft | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const skeletonPulse = usePulse();
@@ -56,7 +58,9 @@ export function ListingsScreen({ navigation }: Props) {
         getHostEarningsSummary(token),
         getHostPayoutStatus(token),
       ]);
+      const localDraft = await loadHostListingDraft();
       setListings(data);
+      setSavedDraft(localDraft);
       setEarnings(summary);
       setPayoutStatus(payout);
     } catch (err) {
@@ -68,6 +72,10 @@ export function ListingsScreen({ navigation }: Props) {
   }, [hideGlobalLoading, showGlobalLoading, token]);
 
   const fmt = (cents?: number) => `€${((cents ?? 0) / 100).toFixed(2)}`;
+  const draftTitle = savedDraft?.draft.spaceType
+    ? `${savedDraft.draft.spaceType} parking`
+    : "Unfinished listing";
+  const draftAddress = savedDraft?.draft.location.address?.trim() || "Finish setting up your location";
 
   const payoutStatusMessage = (() => {
     if (!payoutStatus) return null;
@@ -194,7 +202,7 @@ export function ListingsScreen({ navigation }: Props) {
                   </View>
                   <View style={styles.statDivider} />
                   <View style={styles.statCell}>
-                    <Text style={styles.statLabel}>Platform fee ({platformFeePercent}%)</Text>
+                    <Text style={styles.statLabel}>Host fee ({platformFeePercent}%)</Text>
                     <Text style={styles.statValue}>{fmt(earnings.feeCents)}</Text>
                   </View>
                   <View style={styles.statDivider} />
@@ -264,7 +272,7 @@ export function ListingsScreen({ navigation }: Props) {
                     </View>
                   ))}
                 </View>
-              ) : listings.length === 0 ? (
+              ) : listings.length === 0 && !savedDraft ? (
                 <View style={styles.emptyBox}>
                   <Text style={styles.emptyTitle}>No listings yet</Text>
                   <Text style={styles.emptyBody}>Create a listing to start earning from your parking space.</Text>
@@ -274,6 +282,37 @@ export function ListingsScreen({ navigation }: Props) {
                 </View>
               ) : (
                 <View style={styles.listingGrid}>
+                  {savedDraft ? (
+                    <Pressable
+                      style={({ pressed }) => [styles.listingCard, pressed && { opacity: 0.92 }]}
+                      onPress={() => navigation.navigate("CreateListingFlow")}
+                    >
+                      <View style={styles.listingImagePlaceholder}>
+                        <Text style={styles.listingImagePlaceholderText}>Draft</Text>
+                      </View>
+                      <View style={styles.listingBody}>
+                        <View style={styles.listingTitleRow}>
+                          <Text style={styles.listingTitle} numberOfLines={1}>{draftTitle}</Text>
+                          <View style={styles.draftPill}>
+                            <Text style={styles.draftPillText}>Saved</Text>
+                          </View>
+                        </View>
+                        <Text style={styles.listingAddress} numberOfLines={1}>{draftAddress}</Text>
+                        <View style={styles.listingFooter}>
+                          <Text style={styles.listingPrice}>Continue setup</Text>
+                          <Pressable
+                            style={styles.deleteBtn}
+                            onPress={async () => {
+                              await clearHostListingDraft();
+                              setSavedDraft(null);
+                            }}
+                          >
+                            <Trash2 size={14} color="#b42318" />
+                          </Pressable>
+                        </View>
+                      </View>
+                    </Pressable>
+                  ) : null}
                   {listings.map((listing) => (
                     <Pressable
                       key={listing.id}
@@ -480,6 +519,19 @@ const styles = StyleSheet.create({
   listingTitle: {
     fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: FG,
     letterSpacing: -0.3, flex: 1,
+  },
+  draftPill: {
+    backgroundColor: "#ecfdf3",
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#b7ebcd",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  draftPillText: {
+    color: GREEN,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
   },
   listingAddress: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 3,

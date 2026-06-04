@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ArrowLeft } from "lucide-react-native";
 import { hostFlowColors } from "./hostFlowTheme";
 import { spacing } from "../../styles/theme";
 
@@ -22,8 +23,8 @@ export function FlowFooter({ onBack, primaryLabel, onPrimary, primaryDisabled = 
         </Pressable>
       ) : null}
       <View style={styles.row}>
-        <Pressable style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>← Back</Text>
+        <Pressable style={styles.backButton} onPress={onBack} hitSlop={4}>
+          <ArrowLeft size={18} color={hostFlowColors.textMuted} strokeWidth={2.2} />
         </Pressable>
         <Pressable
           style={[styles.primaryButton, primaryDisabled && styles.primaryButtonDisabled]}
@@ -51,18 +52,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backButton: {
+    width: 50,
     height: 50,
-    paddingHorizontal: 20,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: hostFlowColors.border,
-  },
-  backButtonText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    color: hostFlowColors.textMuted,
+    flexShrink: 0,
   },
   primaryButton: {
     flex: 1,

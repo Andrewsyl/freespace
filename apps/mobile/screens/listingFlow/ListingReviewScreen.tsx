@@ -16,9 +16,10 @@ import { trackEvent } from "../../analytics";
 import { useAuth } from "../../auth";
 import type { RootStackParamList } from "../../types";
 import { useListingFlow } from "./context";
-import { StepProgress } from "./StepProgress";
+import { FlowHeader } from "./FlowHeader";
 import { colors, radius, spacing, textStyles } from "../../styles/theme";
 import { hostFlowColors } from "./hostFlowTheme";
+import { clearHostListingDraft } from "./draftStorage";
 
 type FlowStackParamList = {
   ListingReview: undefined;
@@ -239,6 +240,7 @@ export function ListingReviewScreen({ navigation }: Props) {
         });
         await syncAvailability(newListingId);
       }
+      await clearHostListingDraft();
       setPublished(true);
       setShowSuccess(true);
       void trackEvent("mobile_host_publish_succeeded", {
@@ -267,13 +269,18 @@ export function ListingReviewScreen({ navigation }: Props) {
     }
   };
 
+  const exitFlow = () => {
+    const parent = navigation.getParent();
+    if (parent?.canGoBack()) parent.goBack();
+  };
+
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={[]}>
+      <FlowHeader current={8} total={8} onClose={exitFlow} />
       <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="never">
         <Text style={styles.kicker}>
           {listingId ? "Review & update" : "Review & publish"}
         </Text>
-        <StepProgress current={8} total={8} />
         <Text style={styles.title}>Double‑check your details</Text>
         <Text style={styles.subtitle}>
           {listingId ? "Confirm everything looks right." : "You can edit anything after publishing."}

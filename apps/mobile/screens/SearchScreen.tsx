@@ -215,6 +215,7 @@ export function SearchScreen({ navigation }: Props) {
   const timeSearchPendingRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [mapResumeNonce, setMapResumeNonce] = useState(0);
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [securityLevel, setSecurityLevel] = useState<SecurityLevel | "">("");
@@ -270,6 +271,7 @@ export function SearchScreen({ navigation }: Props) {
   const mapFreezeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suppressRegionSearchRef = useRef(false);
   const suppressRegionSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requireUserPanForRegionSearchRef = useRef(false);
 
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 
@@ -604,6 +606,7 @@ export function SearchScreen({ navigation }: Props) {
       }
     });
     const unsubscribeFocus = navigation.addListener("focus", () => {
+      setMapResumeNonce((prev) => prev + 1);
       if (mapFreezeTimerRef.current) clearTimeout(mapFreezeTimerRef.current);
       mapFreezeTimerRef.current = setTimeout(() => {
         setMapFrozenUri(null);
@@ -611,6 +614,7 @@ export function SearchScreen({ navigation }: Props) {
       }, 600);
       // Suppress region-change searches while the map settles after returning
       suppressRegionSearchRef.current = true;
+      requireUserPanForRegionSearchRef.current = true;
       if (suppressRegionSearchTimerRef.current) clearTimeout(suppressRegionSearchTimerRef.current);
       suppressRegionSearchTimerRef.current = setTimeout(() => {
         suppressRegionSearchRef.current = false;
@@ -1106,6 +1110,10 @@ export function SearchScreen({ navigation }: Props) {
     }
   }, [selectedId, showSelectedCard]);
 
+  const handleMapPanDrag = useCallback(() => {
+    requireUserPanForRegionSearchRef.current = false;
+  }, []);
+
   const handleRegionChange = (nextRegion: typeof mapRegion) => {
     currentRegionRef.current = nextRegion;
     if (ignoreNextRegionChangeRef.current) {
@@ -1167,6 +1175,7 @@ export function SearchScreen({ navigation }: Props) {
 
     // Suppress region-change searches briefly after returning to the screen.
     if (suppressRegionSearchRef.current) return;
+    if (requireUserPanForRegionSearchRef.current) return;
 
     // Debounce: wait for the map to fully settle, then auto-search the new area.
     if (showAreaTimerRef.current) {
@@ -1228,6 +1237,7 @@ export function SearchScreen({ navigation }: Props) {
             onSelect={handleSelectListing}
             onRegionChange={handleRegionChanging}
             onRegionChangeComplete={handleRegionChange}
+            onPanDrag={handleMapPanDrag}
             selectedId={selectedId}
             mapRef={mapRef}
             freezeMarkers={loading || isRefreshingPins}
@@ -1236,6 +1246,7 @@ export function SearchScreen({ navigation }: Props) {
             onOverlappingPins={setOverlappingPins}
             priceForListing={priceForListing}
             priceKey={priceKey}
+            resumeNonce={mapResumeNonce}
           />
         ) : null}
         {mapFrozenUri ? (

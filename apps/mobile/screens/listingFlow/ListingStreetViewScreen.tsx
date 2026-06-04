@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
-import { StepProgress } from "./StepProgress";
+import { FlowHeader } from "./FlowHeader";
 import { useListingFlow } from "./context";
 import { hostFlowColors } from "./hostFlowTheme";
 import { colors, spacing } from "../../styles/theme";
@@ -60,11 +60,16 @@ export function ListingStreetViewScreen({ navigation }: Props) {
     </html>
   `;
 
+  const exitFlow = () => {
+    const parent = navigation.getParent();
+    if (parent?.canGoBack()) parent.goBack();
+  };
+
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={[]}>
+      <FlowHeader current={2} total={8} onClose={exitFlow} />
       <View style={styles.header}>
         <Text style={styles.kicker}>Street view</Text>
-        <StepProgress current={2} total={8} />
         <Text style={styles.title}>Choose your cover image</Text>
         <Text style={styles.hint}>
           Can't see your space from here? You can add your own photos at a later step.

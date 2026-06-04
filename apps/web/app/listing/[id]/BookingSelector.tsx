@@ -378,10 +378,7 @@ export function BookingSelector({
       subtotal: summary.total,
       total: summary.total + 1.5,
       durationLabel: summary.durationLabel,
-      billingLabel:
-        summary.billingUnit === "hour"
-          ? `€${formatPriceValue(summary.total)} for ${summary.durationLabel}`
-          : `€${formatPriceValue(summary.total)} for ${summary.billingCount} ${summary.billingUnit}${summary.billingCount === 1 ? "" : "s"}`,
+      billingLabel: `€${formatPriceValue(summary.total)} for ${summary.durationLabel}`,
     };
   }, [bookingWindow.end, bookingWindow.start, pricePerDay, pricePerHour, rateType]);
 
