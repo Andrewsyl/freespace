@@ -306,12 +306,14 @@ export function HistoryScreen({ navigation, route }: Props) {
   }, [displayTab, pastVisibleCount]);
   // items are built per-pane for the sliding layout
 
-  const renderBookingCard = useCallback(({ item: booking }: { item: BookingSummary }) => {
+  const renderBookingCard = useCallback((
+    { item: booking, paneTab }: { item: BookingSummary; paneTab: "upcoming" | "active" | "past" }
+  ) => {
     const start = new Date(booking.startTime);
     const end = new Date(booking.endTime);
     const isRefunded = booking.refundStatus === "succeeded";
-    const isCompleted = displayTab === "past" && booking.status === "confirmed";
-    const isActive = displayTab === "active" && booking.status === "confirmed";
+    const isCompleted = paneTab === "past" && booking.status === "confirmed";
+    const isActive = paneTab === "active" && booking.status === "confirmed";
     const statusLabel = isRefunded
       ? "Refunded"
       : isActive
@@ -365,7 +367,7 @@ export function HistoryScreen({ navigation, route }: Props) {
     }
 
     return cardContent;
-  }, [navigation, displayTab, newBookingId, newBookingOpacityAnim, newBookingSlideAnim]);
+  }, [navigation, newBookingId, newBookingOpacityAnim, newBookingSlideAnim]);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -514,7 +516,7 @@ export function HistoryScreen({ navigation, route }: Props) {
                   if (item.type === "header") {
                     return <Text style={styles.monthLabel}>{item.label}</Text>;
                   }
-                  return renderBookingCard({ item: item.booking });
+                  return renderBookingCard({ item: item.booking, paneTab });
                 }}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={[

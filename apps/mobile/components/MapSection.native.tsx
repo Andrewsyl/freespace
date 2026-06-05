@@ -53,6 +53,7 @@ export default function MapSection({
   priceForListing,
   priceKey,
   resumeNonce,
+  searchPinCoordinate,
 }: {
   region?: MapRegion;
   initialRegion: MapRegion;
@@ -75,6 +76,7 @@ export default function MapSection({
   priceForListing?: (listing: ListingResult) => number;
   priceKey?: string;
   resumeNonce?: number;
+  searchPinCoordinate?: { latitude: number; longitude: number } | null;
 }) {
   const nextResults = useMemo(
     () =>
@@ -240,6 +242,14 @@ export default function MapSection({
         moveOnMarkerPress={false}
         mapType="standard"
       >
+        {searchPinCoordinate ? (
+          <Marker
+            key={`search-pin-${searchPinCoordinate.latitude.toFixed(6)}-${searchPinCoordinate.longitude.toFixed(6)}`}
+            coordinate={searchPinCoordinate}
+            tracksViewChanges={false}
+            zIndex={1}
+          />
+        ) : null}
         {pinsVisible && (freezeMarkers ? renderedResultsRef.current : nextResults).map((listing) => {
           const isSelected = selectedId === listing.id;
           const price = priceForListing ? priceForListing(listing) : Number(listing.price_per_day);

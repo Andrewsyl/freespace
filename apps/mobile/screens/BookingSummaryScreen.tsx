@@ -55,6 +55,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [confirmingBooking, setConfirmingBooking] = useState(false);
   const [paymentFailureMessage, setPaymentFailureMessage] = useState<string | null>(null);
+  const [showServiceFeeInfo, setShowServiceFeeInfo] = useState(false);
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleColor, setVehicleColor] = useState("");
   const [vehiclePlate, setVehiclePlate] = useState("");
@@ -638,14 +639,30 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                   <Text style={styles.priceRowLabel}>Duration</Text>
                   <Text style={styles.priceRowValue}>{priceSummary?.durationLabel ?? ""}</Text>
                 </View>
-                <View style={[styles.priceRow, styles.priceRowBorder]}>
-                  <Text style={styles.priceRowLabel}>Service fee (8%)</Text>
-                  <Text style={styles.priceRowValue}>€{pricing.serviceFee.toFixed(2)}</Text>
-                </View>
                 <View style={[styles.priceRow, styles.priceRowBorder, styles.priceTotalRow]}>
                   <Text style={styles.priceTotalLabel}>Total</Text>
                   <Text style={styles.priceTotalValue}>€{pricing.finalPrice.toFixed(2)}</Text>
                 </View>
+                <View style={styles.priceMetaRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Show service fee details"
+                    hitSlop={8}
+                    onPress={() => setShowServiceFeeInfo((current) => !current)}
+                    style={styles.serviceFeeToggle}
+                  >
+                    <Ionicons name="information-circle-outline" size={16} color={SUBTLE} />
+                    <Text style={styles.serviceFeeToggleText}>Includes service fee</Text>
+                  </Pressable>
+                </View>
+                {showServiceFeeInfo ? (
+                  <View style={styles.serviceFeeInfoCard}>
+                    <Text style={styles.serviceFeeInfoText}>
+                      Service fee included in total: €{pricing.serviceFee.toFixed(2)}. This helps
+                      cover secure payments, support, and platform operations.
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             </View>
 
@@ -989,6 +1006,34 @@ const styles = StyleSheet.create({
   priceRowMuted: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: SUBTLE },
   priceTotalLabel: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG },
   priceTotalValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 22, color: GREEN, letterSpacing: -0.4 },
+  priceMetaRow: { marginTop: 2 },
+  serviceFeeToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    paddingVertical: 4,
+  },
+  serviceFeeToggleText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: SUBTLE,
+  },
+  serviceFeeInfoCard: {
+    marginTop: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  serviceFeeInfoText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    lineHeight: 18,
+    color: MUTED,
+  },
   noHiddenFees: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: SUBTLE, marginTop: 8 },
 
   // ── Duration line ────────────────────────────────────────────

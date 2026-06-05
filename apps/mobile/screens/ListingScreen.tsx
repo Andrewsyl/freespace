@@ -85,15 +85,6 @@ const FeatureIcon = ({ type, size = 22 }: { type: string; size?: number }) => {
 const AVATAR_BG = ["#CCE9E6", "#FFE4C8", "#D8E4FF", "#FFD6D6", "#D6F5E3"];
 const avatarBg = (name: string) => AVATAR_BG[(name.charCodeAt(0) || 0) % AVATAR_BG.length];
 
-const ListingMapMarker = () => (
-  <View style={styles.mapMarkerWrap}>
-    <View style={styles.mapMarkerRadius} />
-    <View style={styles.mapMarkerPin}>
-      <Ionicons name="location-sharp" size={18} color="#ffffff" />
-    </View>
-  </View>
-);
-
 export function ListingScreen({ navigation, route }: Props) {
   const { id, from, to, booking } = route.params;
   const { user } = useAuth();
@@ -609,18 +600,14 @@ export function ListingScreen({ navigation, route }: Props) {
                     ) : null}
                   </View>
 
+                  <View style={styles.statsVDivider} />
+
                   {/* Rating */}
                   <View style={styles.statsColMid}>
-                    <View style={styles.ratingHeroRow}>
-                      <View style={[styles.ratingIconWrap, !hasReviews && styles.ratingIconWrapMuted]}>
-                        <Ionicons
-                          name={hasReviews ? "star" : "sparkles"}
-                          size={14}
-                          color={hasReviews ? "#FFFFFF" : FG_SUBTLE}
-                        />
-                      </View>
+                    <View style={styles.ratingValRow}>
+                      <Ionicons name="star" size={18} color={hasReviews ? FG : "#e2e8f0"} />
                       <Text style={styles.statsNumCenter}>
-                        {hasReviews ? listing.rating?.toFixed(1) : "New"}
+                        {hasReviews ? listing.rating?.toFixed(1) : "—"}
                       </Text>
                     </View>
                     <Text style={styles.statsLblCenter}>
@@ -630,7 +617,9 @@ export function ListingScreen({ navigation, route }: Props) {
                     </Text>
                   </View>
 
-                  {/* Distance */}
+                  <View style={styles.statsVDivider} />
+
+                  {/* Distance / availability */}
                   <View style={styles.statsColRight}>
                     {distanceLabel ? (
                       <>
@@ -639,12 +628,10 @@ export function ListingScreen({ navigation, route }: Props) {
                       </>
                     ) : (
                       <>
-                        <View style={[styles.starsRow, { justifyContent: "flex-end" }]}>
-                          <View style={[styles.statsAvailDot, !listing.is_available && styles.statsAvailDotOff]} />
-                        </View>
-                        <Text style={styles.statsLblRight}>
-                          {listing.is_available ? "Available" : "Unavailable"}
+                        <Text style={[styles.statsNumRight, listing.is_available === false ? styles.statsNumUnavail : styles.statsNumAvail]}>
+                          {listing.is_available === false ? "Full" : "Open"}
                         </Text>
+                        <Text style={styles.statsLblRight}>right now</Text>
                       </>
                     )}
                   </View>
@@ -728,20 +715,16 @@ export function ListingScreen({ navigation, route }: Props) {
                     <View style={styles.sectionDivider} />
                     <View style={styles.section}>
                       <Text style={styles.sectionTitle}>What's included</Text>
-                      {featureLabels.map((feature, index) => (
-                        <View
-                          key={feature}
-                          style={[
-                            styles.featureListItem,
-                            index === featureLabels.length - 1 && styles.featureListItemLast,
-                          ]}
-                        >
-                          <View style={styles.featureListIconWrap}>
-                            <FeatureIcon type={getFeatureIconType(feature)} size={24} />
+                      <View style={styles.chipsGrid}>
+                        {featureLabels.map((feature) => (
+                          <View key={feature} style={styles.featureChip}>
+                            <View style={styles.featureChipIconWrap}>
+                              <FeatureIcon type={getFeatureIconType(feature)} size={18} />
+                            </View>
+                            <Text style={styles.featureChipLabel}>{feature}</Text>
                           </View>
-                          <Text style={styles.featureListLabel}>{feature}</Text>
-                        </View>
-                      ))}
+                        ))}
+                      </View>
                     </View>
                   </>
                 ) : null}
@@ -773,9 +756,7 @@ export function ListingScreen({ navigation, route }: Props) {
                         customMapStyle={LIGHT_MAP_STYLE}
                         onMapReady={() => setMapReady(true)}
                       >
-                        <Marker coordinate={{ latitude, longitude }} tracksViewChanges={false} anchor={{ x: 0.5, y: 0.72 }}>
-                          <ListingMapMarker />
-                        </Marker>
+                        <Marker coordinate={{ latitude, longitude }} tracksViewChanges={false} />
                       </MapView>
                       {!mapReady && (
                         <SkeletonBlock
@@ -795,7 +776,6 @@ export function ListingScreen({ navigation, route }: Props) {
                 {/* ── Opening hours ────────────────────────── */}
                 {shouldShowAvailability ? (
                   <>
-                    <View style={styles.sectionDivider} />
                     <View style={styles.section}>
                       <Text style={styles.sectionTitle}>Opening hours</Text>
                       <View style={styles.availabilityList}>
@@ -839,7 +819,6 @@ export function ListingScreen({ navigation, route }: Props) {
                 ) : null}
 
                 {/* ── Reviews ──────────────────────────────── */}
-                <View style={styles.sectionDivider} />
                 <View style={styles.section}>
                   <View style={styles.reviewsHeader}>
                     <Text style={styles.sectionTitle}>Reviews</Text>
@@ -1080,9 +1059,7 @@ export function ListingScreen({ navigation, route }: Props) {
             customMapStyle={LIGHT_MAP_STYLE}
           >
             {hasCoordinates ? (
-              <Marker coordinate={{ latitude: latitude!, longitude: longitude! }} tracksViewChanges={false} anchor={{ x: 0.5, y: 0.72 }}>
-                <ListingMapMarker />
-              </Marker>
+              <Marker coordinate={{ latitude: latitude!, longitude: longitude! }} tracksViewChanges={false} />
             ) : null}
           </MapView>
           <Pressable
@@ -1278,20 +1255,9 @@ const styles = StyleSheet.create({
   statsLblCenter: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, textAlign: "center", lineHeight: 17 },
   statsLblRight: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, textAlign: "right", lineHeight: 17 },
   starsRow: { flexDirection: "row", alignItems: "center", gap: 2 },
-  ratingHeroRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  ratingIconWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: FG,
-  },
-  ratingIconWrapMuted: {
-    backgroundColor: "#EFF3F6",
-  },
-  statsAvailDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: GREEN },
-  statsAvailDotOff: { backgroundColor: colors.danger },
+  ratingValRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  statsNumAvail: { color: GREEN },
+  statsNumUnavail: { color: colors.danger },
 
   // ── Airbnb-style time pickers ──────────────────────────────────────────────
   timeRow: { flexDirection: "row", alignItems: "stretch", gap: 10, marginBottom: 16 },
@@ -1492,35 +1458,6 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: LINE,
     alignItems: "center", justifyContent: "center",
   },
-  mapMarkerWrap: {
-    width: 68,
-    height: 68,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  mapMarkerRadius: {
-    position: "absolute",
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 2,
-    borderStyle: "dashed",
-    borderColor: "rgba(10,128,80,0.42)",
-    backgroundColor: "rgba(10,128,80,0.06)",
-  },
-  mapMarkerPin: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: GREEN,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 4,
-  },
   localAreaButtons: { flexDirection: "row", gap: 10 },
   localAreaButtonSecondary: {
     flex: 1, minHeight: 40, borderRadius: 8,
@@ -1543,7 +1480,7 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   featureChipLabel: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: "#1e293b",
+    fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: "#1e293b",
   },
 
   // Guarantee strip

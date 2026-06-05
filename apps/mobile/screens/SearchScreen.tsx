@@ -1226,6 +1226,10 @@ export function SearchScreen({ navigation }: Props) {
             initialRegion={mapInitialRegion ?? mapRegion}
             results={results}
             style={styles.map}
+            searchPinCoordinate={{
+              latitude: mapRegion.latitude,
+              longitude: mapRegion.longitude,
+            }}
             mapPadding={{
               top: insets.top + 120,
               bottom: 180 + insets.bottom + 16,

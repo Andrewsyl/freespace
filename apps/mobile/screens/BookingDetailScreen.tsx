@@ -414,20 +414,20 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         {/* ── Time section ── */}
         <View style={styles.section}>
           <View style={styles.timeRow}>
-            <View style={styles.timeCol}>
-              <Text style={styles.timeLabel}>ARRIVING</Text>
-              <Text style={styles.timeValue}>{formatTimeLabel(start)}</Text>
-              <Text style={styles.timeDate}>{startDateLabel}</Text>
+            <View style={styles.timeSlot}>
+              <Text style={styles.timeSlotLabel}>ARRIVING</Text>
+              <Text style={styles.timeSlotTime}>{formatTimeLabel(start)}</Text>
+              <Text style={styles.timeSlotDate}>{startDateLabel}</Text>
             </View>
-            <View style={styles.timeMid}>
-              <View style={styles.timeLine} />
-              <Text style={styles.timeDuration}>{durationLabel}</Text>
-              <View style={styles.timeLine} />
+            <View style={styles.timeArrow}>
+              <View style={styles.timeArrowLine} />
+              <Text style={styles.timeArrowDuration}>{durationLabel}</Text>
+              <View style={styles.timeArrowLine} />
             </View>
-            <View style={[styles.timeCol, { alignItems: "flex-end" }]}>
-              <Text style={styles.timeLabel}>LEAVING</Text>
-              <Text style={styles.timeValue}>{formatTimeLabel(end)}</Text>
-              <Text style={styles.timeDate}>{endDateLabel}</Text>
+            <View style={styles.timeSlot}>
+              <Text style={styles.timeSlotLabel}>LEAVING</Text>
+              <Text style={styles.timeSlotTime}>{formatTimeLabel(end)}</Text>
+              <Text style={styles.timeSlotDate}>{endDateLabel}</Text>
             </View>
           </View>
           {isInProgress ? (
@@ -559,8 +559,8 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 // ── Design tokens (match BookingSummaryScreen) ─────────────────────────────
 const GREEN      = "#0fa968";
 const FG         = "#111827";
-const MUTED      = "#6B7280";
-const LINE       = "#EBEBEA";
+const MUTED      = "#374151";
+const LINE       = "#D1D5DB";
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
@@ -608,15 +608,38 @@ const styles = StyleSheet.create({
   sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, lineHeight: 22 },
   sectionLink: { fontFamily: "PlusJakartaSans-SemiBold", color: GREEN },
 
-  // Time row — mirrors BookingSummaryScreen timeRow
-  timeRow: { flexDirection: "row", alignItems: "center" },
-  timeCol: { flex: 1 },
-  timeLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: GREEN, letterSpacing: 0.6, textTransform: "uppercase" as const, marginBottom: 4 },
-  timeValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 28, color: FG, letterSpacing: -0.8 },
-  timeDate: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 3 },
-  timeMid: { flexDirection: "row", alignItems: "center", flex: 0.8, justifyContent: "center" },
-  timeLine: { flex: 1, height: 1, backgroundColor: LINE },
-  timeDuration: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: MUTED, paddingHorizontal: 6 },
+  // Time row — matches BookingSummaryScreen
+  timeRow: { flexDirection: "row", alignItems: "center", gap: 0 },
+  timeSlot: { flex: 1, alignItems: "center", paddingVertical: 6 },
+  timeSlotLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 10,
+    color: GREEN,
+    letterSpacing: 1.2,
+    textTransform: "uppercase" as const,
+    marginBottom: 4,
+  },
+  timeSlotTime: {
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 26,
+    color: FG,
+    letterSpacing: -0.8,
+    lineHeight: 30,
+  },
+  timeSlotDate: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: MUTED,
+    marginTop: 2,
+  },
+  timeArrow: { alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 8 },
+  timeArrowLine: { width: 18, height: 1, backgroundColor: LINE },
+  timeArrowDuration: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    color: MUTED,
+    letterSpacing: 0.2,
+  },
 
   progressWrap: { marginTop: 14 },
   progressTrack: { height: 4, borderRadius: 999, backgroundColor: "#E5E7EB", overflow: "hidden" },

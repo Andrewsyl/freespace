@@ -2,6 +2,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -138,6 +139,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
   const [modelQuery, setModelQuery] = useState("");
   const [modelFocused, setModelFocused] = useState(false);
   const [selectedColour, setSelectedColour] = useState("");
+  const [colourOpen, setColourOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -291,7 +293,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
                   scrollRef.current?.scrollTo({ y: Math.max(0, makeFieldY.current - 100), animated: true });
                 }}
                 onBlur={() => setTimeout(() => setBrandFocused(false), 120)}
-                placeholder="Search car brand"
+                placeholder="Type car brand"
                 placeholderTextColor="#9ca3af"
                 autoCapitalize="words"
                 autoCorrect={false}
@@ -328,7 +330,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
             <View style={styles.fieldSection}>
               <Text style={styles.fieldLabel}>Model</Text>
               <View style={styles.makeInputWrap}>
-                <Ionicons name="search-outline" size={16} color="#9ca3af" style={styles.makeSearchIcon} />
+              <Ionicons name="search-outline" size={16} color="#9ca3af" style={styles.makeSearchIcon} />
                 <TextInput
                   style={styles.makeInput}
                   value={modelQuery}
@@ -338,7 +340,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
                   }}
                   onFocus={() => setModelFocused(true)}
                   onBlur={() => setTimeout(() => setModelFocused(false), 120)}
-                  placeholder="Search model"
+                  placeholder="Type car model"
                   placeholderTextColor="#9ca3af"
                   autoCapitalize="words"
                   autoCorrect={false}
@@ -368,32 +370,28 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
             </View>
           ) : null}
 
-          {/* Colour grid */}
+          {/* Colour */}
           <View style={styles.fieldSection}>
             <Text style={styles.fieldLabel}>Colour</Text>
-            <View style={styles.colourGrid}>
-              {COLOURS.map((c) => {
-                const active = selectedColour === c.name;
-                return (
-                  <Pressable
-                    key={c.name}
-                    style={styles.colourCell}
-                    onPress={() => setSelectedColour(active ? "" : c.name)}
-                    hitSlop={4}
-                  >
-                    <View style={[
-                      styles.colourCircle,
-                      { backgroundColor: c.hex },
-                      c.name === "White" && styles.colourCircleBorder,
-                      active && styles.colourCircleActive,
-                    ]}>
-                      {active ? <Ionicons name="checkmark" size={16} color={c.name === "White" || c.name === "Beige" || c.name === "Silver" || c.name === "Yellow" ? "#0a8050" : "#ffffff"} /> : null}
-                    </View>
-                    <Text style={[styles.colourLabel, active && styles.colourLabelActive]} numberOfLines={1}>{c.name}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <Pressable style={styles.colourSelect} onPress={() => setColourOpen(true)}>
+              <View style={styles.colourSelectValue}>
+                {selectedColour ? (
+                  <>
+                    <View
+                      style={[
+                        styles.colourSwatch,
+                        { backgroundColor: COLOURS.find((c) => c.name === selectedColour)?.hex ?? "#CBD5E1" },
+                        selectedColour === "White" && styles.colourSwatchBorder,
+                      ]}
+                    />
+                    <Text style={styles.colourSelectText}>{selectedColour}</Text>
+                  </>
+                ) : (
+                  <Text style={styles.colourSelectPlaceholder}>Select colour…</Text>
+                )}
+              </View>
+              <Ionicons name="chevron-down" size={18} color="#6b7280" />
+            </Pressable>
           </View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -408,6 +406,52 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
           </Pressable>
 
         </ScrollView>
+
+        <Modal transparent visible={colourOpen} animationType="fade" onRequestClose={() => setColourOpen(false)}>
+          <View style={styles.colourModalRoot}>
+            <Pressable style={styles.colourModalBackdrop} onPress={() => setColourOpen(false)} />
+            <View style={[styles.colourSheet, { paddingBottom: Math.max(18, insets.bottom + 6) }]}>
+              <View style={styles.colourSheetHandle} />
+              <Text style={styles.colourSheetEyebrow}>Vehicle colour</Text>
+              <Text style={styles.colourSheetTitle}>Choose your car colour</Text>
+              <Text style={styles.colourSheetBody}>This helps hosts recognise your car when you arrive.</Text>
+
+              <ScrollView
+                style={styles.colourSheetList}
+                contentContainerStyle={styles.colourSheetListContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {COLOURS.map((colour) => {
+                  const active = selectedColour === colour.name;
+                  return (
+                    <Pressable
+                      key={colour.name}
+                      style={[styles.colourOption, active && styles.colourOptionActive]}
+                      onPress={() => {
+                        setSelectedColour(colour.name);
+                        setColourOpen(false);
+                      }}
+                    >
+                      <View style={styles.colourOptionLeft}>
+                        <View
+                          style={[
+                            styles.colourOptionSwatch,
+                            { backgroundColor: colour.hex },
+                            colour.name === "White" && styles.colourSwatchBorder,
+                          ]}
+                        />
+                        <Text style={[styles.colourOptionText, active && styles.colourOptionTextActive]}>
+                          {colour.name}
+                        </Text>
+                      </View>
+                      {active ? <Ionicons name="checkmark-circle" size={20} color={GREEN} /> : null}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -518,28 +562,126 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG, flex: 1,
   },
 
-  // Colour grid
-  colourGrid: {
-    flexDirection: "row", flexWrap: "wrap",
-    marginHorizontal: -4,
+  colourSelect: {
+    borderWidth: 1,
+    borderColor: LINE,
+    borderRadius: 12,
+    backgroundColor: "#f9fafb",
+    minHeight: 54,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  colourCell: {
-    width: "20%", alignItems: "center", paddingVertical: 10, paddingHorizontal: 4,
+  colourSelectValue: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
   },
-  colourCircle: {
-    width: 44, height: 44, borderRadius: 22,
-    alignItems: "center", justifyContent: "center",
+  colourSelectText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15,
+    color: FG,
+  },
+  colourSelectPlaceholder: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 15,
+    color: "#9ca3af",
+  },
+  colourSwatch: {
+    width: 18,
+    height: 18,
+    borderRadius: 999,
+  },
+  colourSwatchBorder: { borderWidth: 1.5, borderColor: LINE },
+  colourModalRoot: { flex: 1, justifyContent: "flex-end" },
+  colourModalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(17,24,39,0.28)",
+  },
+  colourSheet: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    elevation: 12,
+    maxHeight: "72%",
+  },
+  colourSheetHandle: {
+    alignSelf: "center",
+    width: 44,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: "#d1d5db",
+    marginBottom: 16,
+  },
+  colourSheetEyebrow: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 11,
+    color: GREEN,
+    letterSpacing: 1,
+    textTransform: "uppercase",
     marginBottom: 6,
   },
-  colourCircleBorder: { borderWidth: 1.5, borderColor: LINE },
-  colourCircleActive: {
-    borderWidth: 3, borderColor: GREEN,
+  colourSheetTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 22,
+    color: FG,
+    letterSpacing: -0.4,
   },
-  colourLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
-    color: MUTED, textAlign: "center",
+  colourSheetBody: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    color: "#6b7280",
+    lineHeight: 20,
+    marginTop: 6,
   },
-  colourLabelActive: { color: GREEN },
+  colourSheetList: {
+    marginTop: 18,
+  },
+  colourSheetListContent: {
+    paddingBottom: 6,
+    gap: 10,
+  },
+  colourOption: {
+    minHeight: 58,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  colourOptionActive: {
+    borderColor: "#B8E0CF",
+    backgroundColor: "#F3FBF7",
+  },
+  colourOptionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  colourOptionSwatch: {
+    width: 22,
+    height: 22,
+    borderRadius: 999,
+  },
+  colourOptionText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15,
+    color: FG,
+  },
+  colourOptionTextActive: {
+    color: GREEN,
+  },
 
   error: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 13,

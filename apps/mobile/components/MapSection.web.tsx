@@ -42,6 +42,7 @@ export default function MapSection({
   googleMapId?: string;
   customMapStyle?: Array<Record<string, unknown>>;
   searchCircle?: { lat: number; lng: number; radiusM: number } | null;
+  searchPinCoordinate?: { latitude: number; longitude: number } | null;
 }) {
   return (
     <View style={[styles.fallback, style]}>
