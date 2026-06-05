@@ -85,6 +85,15 @@ const FeatureIcon = ({ type, size = 22 }: { type: string; size?: number }) => {
 const AVATAR_BG = ["#CCE9E6", "#FFE4C8", "#D8E4FF", "#FFD6D6", "#D6F5E3"];
 const avatarBg = (name: string) => AVATAR_BG[(name.charCodeAt(0) || 0) % AVATAR_BG.length];
 
+const ListingMapMarker = () => (
+  <View style={styles.mapMarkerWrap}>
+    <View style={styles.mapMarkerRadius} />
+    <View style={styles.mapMarkerPin}>
+      <Ionicons name="location-sharp" size={18} color="#ffffff" />
+    </View>
+  </View>
+);
+
 export function ListingScreen({ navigation, route }: Props) {
   const { id, from, to, booking } = route.params;
   const { user } = useAuth();
@@ -113,6 +122,7 @@ export function ListingScreen({ navigation, route }: Props) {
   const [pickerOverlayVisible, setPickerOverlayVisible] = useState(false);
   const pickerBackdropOpacity = useRef(new Animated.Value(0)).current;
   const pickerSheetTranslateY = useRef(new Animated.Value(320)).current;
+  const pickerClosingRef = useRef(false);
   const [heroTapEnabled, setHeroTapEnabled] = useState(true);
   const heroTapEnabledRef = useRef(true);
   const authBackdropOpacity = useRef(new Animated.Value(0)).current;
@@ -211,24 +221,45 @@ export function ListingScreen({ navigation, route }: Props) {
     });
   }, [authBackdropOpacity, authOverlayVisible, authSheetTranslateY, showAuthModal]);
 
-  useEffect(() => {
-    if (pickerVisible) {
-      pickerBackdropOpacity.setValue(0);
-      pickerSheetTranslateY.setValue(320);
-      setPickerOverlayVisible(true);
-    } else {
-      Animated.parallel([
-        Animated.timing(pickerBackdropOpacity, { toValue: 0, duration: 120, useNativeDriver: true }),
-        Animated.timing(pickerSheetTranslateY, { toValue: 320, duration: 120, useNativeDriver: true }),
-      ]).start(({ finished }) => { if (finished) setPickerOverlayVisible(false); });
+  const closePicker = () => {
+    if (!pickerOverlayVisible || pickerClosingRef.current) {
+      setPickerVisible(false);
+      setDraftDate(null);
+      return;
     }
+    pickerClosingRef.current = true;
+    setPickerVisible(false);
+    Animated.parallel([
+      Animated.timing(pickerBackdropOpacity, {
+        toValue: 0,
+        duration: 90,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pickerSheetTranslateY, {
+        toValue: 320,
+        duration: 105,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      pickerClosingRef.current = false;
+      setPickerOverlayVisible(false);
+      setDraftDate(null);
+    });
+  };
+
+  useEffect(() => {
+    if (!pickerVisible) return;
+    pickerClosingRef.current = false;
+    pickerBackdropOpacity.setValue(0);
+    pickerSheetTranslateY.setValue(320);
+    setPickerOverlayVisible(true);
   }, [pickerVisible, pickerBackdropOpacity, pickerSheetTranslateY]);
 
   useEffect(() => {
     if (!pickerOverlayVisible) return;
     Animated.parallel([
-      Animated.timing(pickerBackdropOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.spring(pickerSheetTranslateY, { toValue: 0, tension: 65, friction: 11, useNativeDriver: true }),
+      Animated.timing(pickerBackdropOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
+      Animated.spring(pickerSheetTranslateY, { toValue: 0, tension: 72, friction: 10, useNativeDriver: true }),
     ]).start();
   }, [pickerOverlayVisible, pickerBackdropOpacity, pickerSheetTranslateY]);
 
@@ -562,69 +593,100 @@ export function ListingScreen({ navigation, route }: Props) {
               <View style={styles.sheet}>
                 <View style={styles.sheetHandle} />
 
-                <View style={styles.statsStrip}>
-                  <View style={styles.statsCell}>
-                    <Text style={styles.statsCellLabel}>PRICE</Text>
-                    <Text style={styles.statsCellValue}>
-                      €{priceSummary?.total ?? "—"}
-                      {priceSummary ? <Text style={styles.statsCellSub}> · {priceSummary.durationLabel}</Text> : null}
+
+                {/* ── Stats row ────────────────────────────── */}
+                <View style={styles.statsHeader}>
+                  {/* Price */}
+                  <View style={styles.statsCol}>
+                    <Text style={styles.statsNum}>
+                      €{priceSummary?.total ?? (listing.price_per_hour != null ? Number(listing.price_per_hour).toFixed(2) : "—")}
+                    </Text>
+                    <Text style={styles.statsLbl}>
+                      {priceSummary?.durationLabel ?? "/ hour"}
                     </Text>
                     {priceSummary?.dailyCapApplied ? (
-                      <Text style={styles.dailyCapBadge}>Day rate applied</Text>
+                      <Text style={styles.dailyCapBadge}>Day rate</Text>
                     ) : null}
                   </View>
-                  <View style={styles.statsVDivider} />
-                  <View style={styles.statsCell}>
-                    <Text style={styles.statsCellLabel}>RATING</Text>
-                    {hasReviews ? (
-                      <Text style={styles.statsCellValue}>★ {listing.rating?.toFixed(1)}</Text>
+
+                  {/* Rating */}
+                  <View style={styles.statsColMid}>
+                    <View style={styles.ratingHeroRow}>
+                      <View style={[styles.ratingIconWrap, !hasReviews && styles.ratingIconWrapMuted]}>
+                        <Ionicons
+                          name={hasReviews ? "star" : "sparkles"}
+                          size={14}
+                          color={hasReviews ? "#FFFFFF" : FG_SUBTLE}
+                        />
+                      </View>
+                      <Text style={styles.statsNumCenter}>
+                        {hasReviews ? listing.rating?.toFixed(1) : "New"}
+                      </Text>
+                    </View>
+                    <Text style={styles.statsLblCenter}>
+                      {hasReviews
+                        ? `${listing.rating_count ?? reviews.length} reviews`
+                        : "No reviews yet"}
+                    </Text>
+                  </View>
+
+                  {/* Distance */}
+                  <View style={styles.statsColRight}>
+                    {distanceLabel ? (
+                      <>
+                        <Text style={styles.statsNumRight}>{distanceLabel}</Text>
+                        <Text style={styles.statsLblRight}>away</Text>
+                      </>
                     ) : (
                       <>
-                        <Text style={styles.statsCellValue}>★ 0.0</Text>
-                        <Text style={styles.statsCellSub}>New</Text>
+                        <View style={[styles.starsRow, { justifyContent: "flex-end" }]}>
+                          <View style={[styles.statsAvailDot, !listing.is_available && styles.statsAvailDotOff]} />
+                        </View>
+                        <Text style={styles.statsLblRight}>
+                          {listing.is_available ? "Available" : "Unavailable"}
+                        </Text>
                       </>
                     )}
                   </View>
-                  <View style={styles.statsVDivider} />
-                  <View style={styles.statsCell}>
-                    <Text style={styles.statsCellLabel}>DISTANCE</Text>
-                    <Text style={styles.statsCellValue}>{distanceLabel}</Text>
-                  </View>
                 </View>
 
-                {/* ── Booking time boxes ───────────────────── */}
+                {/* ── Booking ──────────────────────────────── */}
+                <View style={styles.sectionDivider} />
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Choose your time</Text>
-                  <View style={styles.timePickerRow}>
-                    <Pressable style={styles.timePickerBtn} onPress={() => openPicker("start")}>
-                      <View>
-                        <Text style={styles.timePickerBtnLabel}>From</Text>
-                        <Text style={styles.timePickerBtnValue}>{formatDateTimeLabel(startAt)}</Text>
+                  <View style={styles.timeRow}>
+                    <Pressable style={styles.timeField} onPress={() => openPicker("start")}>
+                      <View style={styles.timeFieldHeader}>
+                        <Text style={styles.timeFieldLabel}>Arriving</Text>
+                        <Ionicons name="chevron-down" size={14} color="#9ca3af" />
                       </View>
-                      <Ionicons name="chevron-down" size={16} color="#9ca3af" />
+                      <Text style={styles.timeFieldTime}>{formatTimeLabel(startAt)}</Text>
+                      <Text style={styles.timeFieldDate}>{formatDateLabel(startAt)}</Text>
                     </Pressable>
-                    <Pressable style={styles.timePickerBtn} onPress={() => openPicker("end")}>
-                      <View>
-                        <Text style={styles.timePickerBtnLabel}>Until</Text>
-                        <Text style={styles.timePickerBtnValue}>{formatDateTimeLabel(endAt)}</Text>
+                    <View style={styles.timeArrow}>
+                      <Ionicons name="arrow-forward" size={14} color="#9ca3af" />
+                    </View>
+                    <Pressable style={styles.timeField} onPress={() => openPicker("end")}>
+                      <View style={styles.timeFieldHeader}>
+                        <Text style={styles.timeFieldLabel}>Leaving</Text>
+                        <Ionicons name="chevron-down" size={14} color="#9ca3af" />
                       </View>
-                      <Ionicons name="chevron-down" size={16} color="#9ca3af" />
+                      <Text style={styles.timeFieldTime}>{formatTimeLabel(endAt)}</Text>
+                      <Text style={styles.timeFieldDate}>{formatDateLabel(endAt)}</Text>
                     </Pressable>
                   </View>
-
                   {extendOffer ? (
                     <Pressable
                       style={styles.offerRow}
                       onPress={() => setEndAt(new Date(extendOffer.endOfDay))}
                     >
                       <View style={styles.offerIconWrap}>
-                        <Ionicons name="flash" size={15} color="#0a8050" />
+                        <Ionicons name="flash" size={14} color={GREEN} />
                       </View>
                       <Text style={styles.offerText}>
                         Extend to end of day for only{" "}
                         <Text style={styles.offerTextBold}>€{extendOffer.extra}</Text>
                       </Text>
-                      <Ionicons name="chevron-forward" size={15} color="#0a8050" />
+                      <Ionicons name="chevron-forward" size={13} color={GREEN} />
                     </Pressable>
                   ) : null}
                   <View style={styles.trustNotes}>
@@ -633,9 +695,7 @@ export function ListingScreen({ navigation, route }: Props) {
                       "Arrival instructions included with your confirmation",
                     ].map((note) => (
                       <View key={note} style={styles.trustNoteRow}>
-                        <View style={styles.trustNoteCheck}>
-                          <Ionicons name="checkmark" size={10} color={GREEN} />
-                        </View>
+                        <Ionicons name="checkmark-circle" size={17} color={GREEN} />
                         <Text style={styles.trustNoteText}>{note}</Text>
                       </View>
                     ))}
@@ -646,97 +706,98 @@ export function ListingScreen({ navigation, route }: Props) {
                 {aboutText ? (
                   <>
                     <View style={styles.sectionDivider} />
-                    <Pressable
-                      style={styles.section}
-                      onPress={() => { if (aboutText.length > 140) setShowFullAbout((p) => !p); }}
-                    >
+                    <View style={styles.section}>
                       <Text style={styles.sectionTitle}>About this space</Text>
                       <Text style={styles.sectionBody} numberOfLines={showFullAbout ? undefined : 3}>
                         {aboutText}
                       </Text>
-                      {aboutText.length > 140 && (
-                        <Text style={styles.readMore}>{showFullAbout ? "View less" : "View full description"}</Text>
-                      )}
-                    </Pressable>
+                      {aboutText.length > 140 ? (
+                        <Pressable onPress={() => setShowFullAbout((p) => !p)}>
+                          <Text style={styles.showMoreLink}>
+                            {showFullAbout ? "Show less" : "Show more"}
+                          </Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
                   </>
                 ) : null}
 
-                {/* ── Features (horizontal scroll chips) ───── */}
-                {featureLabels.length > 0 && (
-                <View style={styles.sectionDivider} />
-                )}
-                {featureLabels.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Features</Text>
-                  <View style={styles.chipsGrid}>
-                    {featureLabels.map((feature) => (
-                      <View key={feature} style={styles.featureChip}>
-                        <View style={styles.featureChipIconWrap}>
-                          <FeatureIcon type={getFeatureIconType(feature)} size={22} />
+                {/* ── What's included ──────────────────────── */}
+                {featureLabels.length > 0 ? (
+                  <>
+                    <View style={styles.sectionDivider} />
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>What's included</Text>
+                      {featureLabels.map((feature, index) => (
+                        <View
+                          key={feature}
+                          style={[
+                            styles.featureListItem,
+                            index === featureLabels.length - 1 && styles.featureListItemLast,
+                          ]}
+                        >
+                          <View style={styles.featureListIconWrap}>
+                            <FeatureIcon type={getFeatureIconType(feature)} size={24} />
+                          </View>
+                          <Text style={styles.featureListLabel}>{feature}</Text>
                         </View>
-                        <View>
-                          <Text style={styles.featureChipLabel}>{feature}</Text>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-                )}
+                      ))}
+                    </View>
+                  </>
+                ) : null}
 
+                {/* ── Location ─────────────────────────────── */}
                 <View style={styles.sectionDivider} />
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Location</Text>
-                  <View style={styles.localAreaCard}>
-                    {hasCoordinates ? (
-                      <View style={styles.localAreaMapWrap}>
-                        <MapView
-                          style={styles.localAreaMap}
-                          provider={PROVIDER_GOOGLE}
-                          cacheEnabled={Platform.OS !== "android"}
-                          scrollEnabled={false}
-                          rotateEnabled={false}
-                          pitchEnabled={false}
-                          zoomEnabled={false}
-                          toolbarEnabled={false}
-                          zoomTapEnabled={false}
-                          moveOnMarkerPress={false}
-                          region={{
-                            latitude,
-                            longitude,
-                            latitudeDelta: 0.0035,
-                            longitudeDelta: 0.0035,
-                          }}
-                          mapType="standard"
-                          customMapStyle={LIGHT_MAP_STYLE}
-                          onMapReady={() => setMapReady(true)}
-                        >
-                          <Marker
-                            coordinate={{ latitude, longitude }}
-                            tracksViewChanges={false}
-                          />
-                        </MapView>
-                        {!mapReady && (
-                          <SkeletonBlock
-                            height={168}
-                            style={StyleSheet.absoluteFillObject}
-                            borderRadius={0}
-                            pulse={skeletonPulse}
-                          />
-                        )}
-                        <Pressable style={styles.mapExpandButton} onPress={() => setShowMapViewer(true)}>
-                          <Ionicons name="expand-outline" size={18} color="#151b1b" />
-                        </Pressable>
-                      </View>
-                    ) : null}
-                  </View>
+                  {hasCoordinates ? (
+                    <View style={styles.localAreaMapWrap}>
+                      <MapView
+                        style={styles.localAreaMap}
+                        provider={PROVIDER_GOOGLE}
+                        cacheEnabled={Platform.OS !== "android"}
+                        scrollEnabled={false}
+                        rotateEnabled={false}
+                        pitchEnabled={false}
+                        zoomEnabled={false}
+                        toolbarEnabled={false}
+                        zoomTapEnabled={false}
+                        moveOnMarkerPress={false}
+                        region={{
+                          latitude,
+                          longitude,
+                          latitudeDelta: 0.0035,
+                          longitudeDelta: 0.0035,
+                        }}
+                        mapType="standard"
+                        customMapStyle={LIGHT_MAP_STYLE}
+                        onMapReady={() => setMapReady(true)}
+                      >
+                        <Marker coordinate={{ latitude, longitude }} tracksViewChanges={false} anchor={{ x: 0.5, y: 0.72 }}>
+                          <ListingMapMarker />
+                        </Marker>
+                      </MapView>
+                      {!mapReady && (
+                        <SkeletonBlock
+                          height={168}
+                          style={StyleSheet.absoluteFillObject}
+                          borderRadius={0}
+                          pulse={skeletonPulse}
+                        />
+                      )}
+                      <Pressable style={styles.mapExpandButton} onPress={() => setShowMapViewer(true)}>
+                        <Ionicons name="expand-outline" size={17} color="#151b1b" />
+                      </Pressable>
+                    </View>
+                  ) : null}
                 </View>
 
-                {/* ── Availability ─────────────────────────── */}
+                {/* ── Opening hours ────────────────────────── */}
                 {shouldShowAvailability ? (
                   <>
                     <View style={styles.sectionDivider} />
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>Availability</Text>
+                      <Text style={styles.sectionTitle}>Opening hours</Text>
                       <View style={styles.availabilityList}>
                         {openingHours.map((entry, index) => {
                           const isClosed = entry.hours === "Closed";
@@ -794,16 +855,16 @@ export function ListingScreen({ navigation, route }: Props) {
                         }
                       >
                         <Text style={styles.reviewsLinkText}>
-                          All ({listing.rating_count ?? reviews.length})
+                          See all ({listing.rating_count ?? reviews.length})
                         </Text>
                       </Pressable>
                     ) : null}
                   </View>
                   {reviewsLoading ? (
-                    <ActivityIndicator color="#0a8050" style={{ marginTop: 12, alignSelf: "flex-start" }} />
+                    <ActivityIndicator color={GREEN} style={{ marginTop: 12, alignSelf: "flex-start" }} />
                   ) : reviews.length ? (
                     <View style={{ marginTop: 4 }}>
-                      {reviews.slice(0, 4).map((review, index) => {
+                      {reviews.slice(0, 3).map((review, index) => {
                         const authorName =
                           (review as { author_name?: string }).author_name ??
                           review.authorName ?? "Guest";
@@ -815,7 +876,7 @@ export function ListingScreen({ navigation, route }: Props) {
                             key={review.id}
                             style={[
                               styles.reviewListItem,
-                              index === Math.min(reviews.length, 4) - 1 && styles.reviewListItemLast,
+                              index === Math.min(reviews.length, 3) - 1 && styles.reviewListItemLast,
                             ]}
                           >
                             <View style={styles.reviewListTop}>
@@ -824,7 +885,7 @@ export function ListingScreen({ navigation, route }: Props) {
                                   <Ionicons
                                     key={i}
                                     name={i < Math.round(review.rating) ? "star" : "star-outline"}
-                                    size={12}
+                                    size={11}
                                     color={i < Math.round(review.rating) ? "#F4B942" : "#e2e8f0"}
                                   />
                                 ))}
@@ -840,15 +901,7 @@ export function ListingScreen({ navigation, route }: Props) {
                       })}
                     </View>
                   ) : (
-                    <View style={styles.emptyReviewCard}>
-                      <View style={styles.emptyReviewIconWrap}>
-                        <Ionicons name="information-circle-outline" size={18} color={GREEN} />
-                      </View>
-                      <View style={styles.emptyReviewCopy}>
-                        <Text style={styles.emptyReviewTitle}>No reviews yet</Text>
-                        <Text style={styles.emptyReviewBody}>Be the first driver to book this space and share how it went.</Text>
-                      </View>
-                    </View>
+                    <Text style={styles.reviewEmpty}>No reviews yet.</Text>
                   )}
                 </View>
 
@@ -900,10 +953,10 @@ export function ListingScreen({ navigation, route }: Props) {
       </SafeAreaView>
 
       {/* Date picker modal */}
-      <Modal transparent animationType="none" visible={pickerOverlayVisible} onRequestClose={() => { setPickerVisible(false); setDraftDate(null); }}>
+      <Modal transparent animationType="none" visible={pickerOverlayVisible} onRequestClose={closePicker}>
         <View style={{ flex: 1 }}>
           <Animated.View style={[StyleSheet.absoluteFill, styles.pickerBackdropLayer, { opacity: pickerBackdropOpacity }]}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={() => { setPickerVisible(false); setDraftDate(null); }} />
+            <Pressable style={StyleSheet.absoluteFill} onPress={closePicker} />
           </Animated.View>
           <Animated.View style={[styles.pickerSheet, { paddingBottom: Math.max(24, insets.bottom + 12), transform: [{ translateY: pickerSheetTranslateY }] }]}>
             <View style={styles.pickerHandle} />
@@ -918,11 +971,12 @@ export function ListingScreen({ navigation, route }: Props) {
             />
             <Pressable
               style={styles.pickerDoneBtn}
+              hitSlop={6}
+              pressRetentionOffset={10}
               onPress={() => {
                 const picked = draftDate ?? (pickerField === "start" ? startAt : endAt);
                 applyPickedDate(picked);
-                setPickerVisible(false);
-                setDraftDate(null);
+                closePicker();
               }}
             >
               <Text style={styles.pickerDoneBtnText}>Done</Text>
@@ -1026,7 +1080,9 @@ export function ListingScreen({ navigation, route }: Props) {
             customMapStyle={LIGHT_MAP_STYLE}
           >
             {hasCoordinates ? (
-              <Marker coordinate={{ latitude: latitude!, longitude: longitude! }} tracksViewChanges={false} />
+              <Marker coordinate={{ latitude: latitude!, longitude: longitude! }} tracksViewChanges={false} anchor={{ x: 0.5, y: 0.72 }}>
+                <ListingMapMarker />
+              </Marker>
             ) : null}
           </MapView>
           <Pressable
@@ -1169,9 +1225,9 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   sheetHandle: {
-    width: 40, height: 4, borderRadius: 999,
-    backgroundColor: LINE,
-    alignSelf: "center", marginBottom: 12,
+    width: 36, height: 4, borderRadius: 999,
+    backgroundColor: "#D9DCE0",
+    alignSelf: "center", marginBottom: 10,
   },
 
   // Title block
@@ -1194,6 +1250,91 @@ const styles = StyleSheet.create({
   addressText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, flex: 1, flexShrink: 1 },
   addressSep: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: LINE_2, flexShrink: 0 },
   distanceText: { fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: FG_MUTED, flexShrink: 0 },
+
+
+  // ── 3-column stats header ──────────────────────────────────────────────────
+  statsHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingTop: 12,
+    paddingBottom: 20,
+  },
+  statsCol: { flex: 1, gap: 5 },
+  statsColMid: { flex: 1, alignItems: "center", gap: 5 },
+  statsColRight: { flex: 1, alignItems: "flex-end", gap: 5 },
+  statsNum: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 24, color: FG, letterSpacing: -0.7, lineHeight: 28,
+  },
+  statsNumRight: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 24, color: FG, letterSpacing: -0.7, lineHeight: 28, textAlign: "right",
+  },
+  statsNumCenter: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 24, color: FG, letterSpacing: -0.7, lineHeight: 28, textAlign: "center",
+  },
+  statsLbl: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, lineHeight: 17 },
+  statsLblCenter: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, textAlign: "center", lineHeight: 17 },
+  statsLblRight: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, textAlign: "right", lineHeight: 17 },
+  starsRow: { flexDirection: "row", alignItems: "center", gap: 2 },
+  ratingHeroRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  ratingIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: FG,
+  },
+  ratingIconWrapMuted: {
+    backgroundColor: "#EFF3F6",
+  },
+  statsAvailDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: GREEN },
+  statsAvailDotOff: { backgroundColor: colors.danger },
+
+  // ── Airbnb-style time pickers ──────────────────────────────────────────────
+  timeRow: { flexDirection: "row", alignItems: "stretch", gap: 10, marginBottom: 16 },
+  timeField: {
+    flex: 1,
+    backgroundColor: BG_2,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 16,
+  },
+  timeFieldHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  timeFieldLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 10, color: GREEN,
+    textTransform: "uppercase", letterSpacing: 1,
+  },
+  timeFieldTime: {
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 20, color: FG, letterSpacing: -0.6, lineHeight: 24,
+  },
+  timeFieldDate: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12, color: FG_MUTED, marginTop: 4,
+  },
+  timeArrow: { alignItems: "center", justifyContent: "center" },
+
+  // ── About: show more link ──────────────────────────────────────────────────
+  showMoreLink: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14, color: GREEN, marginTop: 10,
+    textDecorationLine: "underline",
+  },
+
+  // ── Reviews: empty state ───────────────────────────────────────────────────
+  reviewEmpty: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14, color: FG_SUBTLE, marginTop: 8,
+  },
 
   // Stats strip — inline card, border only, no shadow
   statsStrip: {
@@ -1259,11 +1400,11 @@ const styles = StyleSheet.create({
 
   // Extend offer — standalone card below pickers
   offerRow: {
-    flexDirection: "row", alignItems: "center", gap: 12,
+    flexDirection: "row", alignItems: "center", gap: 10,
     backgroundColor: GREEN_SOFT,
-    borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 11,
-    marginBottom: 12,
+    borderRadius: 8,
+    paddingHorizontal: 14, paddingVertical: 12,
+    marginBottom: 14,
   },
   offerIconWrap: {
     width: 28, height: 28, borderRadius: 14,
@@ -1274,7 +1415,7 @@ const styles = StyleSheet.create({
   offerTextBold: { fontFamily: "PlusJakartaSans-SemiBold", color: GREEN },
 
   // Sections
-  sectionDivider: { height: 1, backgroundColor: LINE, marginHorizontal: -spacing.screenX, opacity: 1 },
+  sectionDivider: { height: 1, backgroundColor: "#EBEBEB", marginHorizontal: -spacing.screenX },
   availabilityList: { marginTop: 0 },
   availabilityRow: {
     flexDirection: "row", alignItems: "center",
@@ -1307,17 +1448,17 @@ const styles = StyleSheet.create({
     color: FG_2, flex: 1, textAlign: "right",
   },
   availabilityHoursClosed: { color: FG_SUBTLE },
-  section: { paddingTop: 20, paddingBottom: 18 },
+  section: { paddingTop: 24, paddingBottom: 8 },
   sectionTitle: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 18, lineHeight: 22, color: FG, letterSpacing: -0.5, marginBottom: 10,
+    fontSize: 18, lineHeight: 22, color: FG, letterSpacing: -0.4, marginBottom: 14,
   },
   statsCellSub: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 9,
     color: FG_SUBTLE, marginTop: 0,
   },
-  sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, lineHeight: 26, color: "#475569" },
-  readMore: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG, marginTop: 10 },
+  sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, lineHeight: 25, color: "#475569" },
+  readMore: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG, marginTop: 12 },
 
   // Local area map
   localAreaCard: { backgroundColor: "transparent", padding: 0, gap: 14 },
@@ -1339,10 +1480,10 @@ const styles = StyleSheet.create({
   localAreaMapWrap: {
     position: "relative",
     overflow: "hidden",
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: BG_2,
-    marginTop: 2,
-    marginHorizontal: 2,
+    marginBottom: 0,
+    marginHorizontal: -spacing.screenX,
   },
   mapExpandButton: {
     position: "absolute", top: 10, right: 10,
@@ -1350,6 +1491,35 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.96)",
     borderWidth: 1, borderColor: LINE,
     alignItems: "center", justifyContent: "center",
+  },
+  mapMarkerWrap: {
+    width: 68,
+    height: 68,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mapMarkerRadius: {
+    position: "absolute",
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: "rgba(10,128,80,0.42)",
+    backgroundColor: "rgba(10,128,80,0.06)",
+  },
+  mapMarkerPin: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: GREEN,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 4,
   },
   localAreaButtons: { flexDirection: "row", gap: 10 },
   localAreaButtonSecondary: {
@@ -1417,14 +1587,14 @@ const styles = StyleSheet.create({
   },
   reviewAvatarText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG },
   reviewMetaBlock: { flex: 1 },
-  reviewAuthorName: { fontFamily: "PlusJakartaSans-Medium", fontSize: 12, color: FG_SUBTLE },
+  reviewAuthorName: { fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: FG_SUBTLE },
   reviewDateText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: FG_SUBTLE },
   reviewStarPill: {
     flexDirection: "row", alignItems: "center", gap: 3,
     backgroundColor: BG_2, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
   },
   reviewStarPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
-  reviewComment: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, lineHeight: 21, color: "#475569", marginBottom: 6 },
+  reviewComment: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, lineHeight: 22, color: "#475569", marginBottom: 8 },
   emptyReviewCard: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -1608,36 +1778,34 @@ const styles = StyleSheet.create({
   viewerCloseText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: "#fff" },
 
   // Trust notes (below time picker)
-  trustNotes: { gap: 6, marginTop: 10 },
-  trustNoteRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  trustNotes: { gap: 8, marginTop: 14 },
+  trustNoteRow: { flexDirection: "row", alignItems: "center", gap: 9 },
   trustNoteCheck: {
     width: 18, height: 18, borderRadius: 9,
     backgroundColor: GREEN_SOFT,
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
-  trustNoteText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, flex: 1, lineHeight: 18 },
+  trustNoteText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, flex: 1, lineHeight: 19 },
 
   // Feature list (replaces pill chips)
   featureListItem: {
-    flexDirection: "row", alignItems: "center", gap: 14,
-    paddingVertical: 13,
+    flexDirection: "row", alignItems: "center", gap: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1, borderBottomColor: LINE,
   },
   featureListItemLast: { borderBottomWidth: 0 },
   featureListIconWrap: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: GREEN_SOFT,
-    alignItems: "center", justifyContent: "center", flexShrink: 0,
+    width: 32, alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
-  featureListLabel: { fontFamily: "PlusJakartaSans-Medium", fontSize: 15, color: "#1e293b" },
+  featureListLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: FG, flex: 1 },
 
   // Review list (divider style)
   reviewListItem: {
-    paddingVertical: 13,
+    paddingVertical: 16,
     borderBottomWidth: 1, borderBottomColor: LINE,
   },
-  reviewListItemLast: { borderBottomWidth: 0 },
-  reviewListTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+  reviewListItemLast: { borderBottomWidth: 0, paddingBottom: 0 },
+  reviewListTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
   reviewStarRow: { flexDirection: "row", alignItems: "center", gap: 2 },
 
   // Unused legacy styles (kept for compatibility with any unused JSX branches)
