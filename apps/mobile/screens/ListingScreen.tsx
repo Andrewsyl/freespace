@@ -585,55 +585,54 @@ export function ListingScreen({ navigation, route }: Props) {
                 <View style={styles.sheetHandle} />
 
 
-                {/* ── Stats row ────────────────────────────── */}
-                <View style={styles.statsHeader}>
-                  {/* Price */}
-                  <View style={styles.statsCol}>
-                    <Text style={styles.statsNum}>
+                {/* ── Price + meta ─────────────────────────── */}
+                <View style={styles.priceBlock}>
+                  <View style={styles.priceRow}>
+                    <Text style={styles.priceHero}>
                       €{priceSummary?.total ?? (listing.price_per_hour != null ? Number(listing.price_per_hour).toFixed(2) : "—")}
                     </Text>
-                    <Text style={styles.statsLbl}>
+                    <Text style={styles.pricePer}>
                       {priceSummary?.durationLabel ?? "/ hour"}
                     </Text>
                     {priceSummary?.dailyCapApplied ? (
-                      <Text style={styles.dailyCapBadge}>Day rate</Text>
+                      <View style={styles.dayRatePill}>
+                        <Text style={styles.dayRatePillText}>Day rate</Text>
+                      </View>
                     ) : null}
                   </View>
-
-                  <View style={styles.statsVDivider} />
-
-                  {/* Rating */}
-                  <View style={styles.statsColMid}>
-                    <View style={styles.ratingValRow}>
-                      <Ionicons name="star" size={18} color={hasReviews ? FG : "#e2e8f0"} />
-                      <Text style={styles.statsNumCenter}>
-                        {hasReviews ? listing.rating?.toFixed(1) : "—"}
+                  <View style={styles.factRows}>
+                    <View style={styles.factRow}>
+                      <Ionicons name="star" size={17} color="#f4b942" style={styles.factIcon} />
+                      <Text style={styles.factText} numberOfLines={1}>
+                        <Text style={styles.factVal}>{hasReviews ? listing.rating?.toFixed(1) : "—"}</Text>
+                        <Text style={styles.factMuted}>
+                          {hasReviews
+                            ? `  ·  ${listing.rating_count ?? reviews.length} ${(listing.rating_count ?? reviews.length) === 1 ? "review" : "reviews"}`
+                            : "  ·  No reviews yet"}
+                        </Text>
                       </Text>
                     </View>
-                    <Text style={styles.statsLblCenter}>
-                      {hasReviews
-                        ? `${listing.rating_count ?? reviews.length} reviews`
-                        : "No reviews yet"}
-                    </Text>
-                  </View>
-
-                  <View style={styles.statsVDivider} />
-
-                  {/* Distance / availability */}
-                  <View style={styles.statsColRight}>
-                    {distanceLabel ? (
-                      <>
-                        <Text style={styles.statsNumRight}>{distanceLabel}</Text>
-                        <Text style={styles.statsLblRight}>away</Text>
-                      </>
-                    ) : (
-                      <>
-                        <Text style={[styles.statsNumRight, listing.is_available === false ? styles.statsNumUnavail : styles.statsNumAvail]}>
-                          {listing.is_available === false ? "Full" : "Open"}
+                    {areaLabel ? (
+                      <View style={styles.factRow}>
+                        <Ionicons name="location-sharp" size={17} color={GREEN} style={styles.factIcon} />
+                        <Text style={styles.factText} numberOfLines={1}>
+                          <Text style={styles.factVal}>{areaLabel}</Text>
+                          {distanceLabel ? <Text style={styles.factMuted}>  ·  {distanceLabel} away</Text> : null}
                         </Text>
-                        <Text style={styles.statsLblRight}>right now</Text>
-                      </>
-                    )}
+                      </View>
+                    ) : null}
+                    <View style={styles.factRow}>
+                      <Ionicons name="time-outline" size={17} color={GREEN} style={styles.factIcon} />
+                      <Text style={styles.factText} numberOfLines={1}>
+                        {availabilityFallbackText ? (
+                          <Text style={styles.factVal}>{availabilityFallbackText}</Text>
+                        ) : (
+                          <Text style={[styles.factVal, { color: isAvailable ? GREEN : colors.danger }]}>
+                            {isAvailable ? "Available now" : "Fully booked"}
+                          </Text>
+                        )}
+                      </Text>
+                    </View>
                   </View>
                 </View>
 
@@ -1229,41 +1228,67 @@ const styles = StyleSheet.create({
   distanceText: { fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: FG_MUTED, flexShrink: 0 },
 
 
-  // ── 3-column stats header ──────────────────────────────────────────────────
-  statsHeader: {
+  // ── Price + meta block ─────────────────────────────────────────────────────
+  priceBlock: {
+    paddingTop: 10,
+    paddingBottom: 16,
+    gap: 6,
+  },
+  priceRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    paddingTop: 12,
-    paddingBottom: 20,
+    alignItems: "baseline",
+    gap: 8,
   },
-  statsCol: { flex: 1, gap: 5 },
-  statsColMid: { flex: 1, alignItems: "center", gap: 5 },
-  statsColRight: { flex: 1, alignItems: "flex-end", gap: 5 },
-  statsNum: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 24, color: FG, letterSpacing: -0.7, lineHeight: 28,
+  priceHero: {
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 30, color: FG, letterSpacing: -1, lineHeight: 34,
   },
-  statsNumRight: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 24, color: FG, letterSpacing: -0.7, lineHeight: 28, textAlign: "right",
+  pricePer: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14, color: FG_SUBTLE, lineHeight: 20,
   },
-  statsNumCenter: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 24, color: FG, letterSpacing: -0.7, lineHeight: 28, textAlign: "center",
+  dayRatePill: {
+    backgroundColor: GREEN_SOFT,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    alignSelf: "center",
   },
-  statsLbl: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, lineHeight: 17 },
-  statsLblCenter: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, textAlign: "center", lineHeight: 17 },
-  statsLblRight: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, textAlign: "right", lineHeight: 17 },
-  starsRow: { flexDirection: "row", alignItems: "center", gap: 2 },
-  ratingValRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  statsNumAvail: { color: GREEN },
-  statsNumUnavail: { color: colors.danger },
+  dayRatePillText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11, color: GREEN,
+  },
+  factRows: {
+    gap: 6,
+    paddingBottom: 4,
+  },
+  factRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  factIcon: {
+    width: 18,
+    textAlign: "center",
+  },
+  factText: {
+    flex: 1,
+    fontSize: 14,
+  },
+  factVal: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14, color: FG,
+  },
+  factMuted: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14, color: FG_SUBTLE,
+  },
 
   // ── Airbnb-style time pickers ──────────────────────────────────────────────
   timeRow: { flexDirection: "row", alignItems: "stretch", gap: 10, marginBottom: 16 },
   timeField: {
     flex: 1,
-    backgroundColor: BG_2,
+    backgroundColor: "#e8eaed",
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 16,
@@ -1327,7 +1352,6 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Bold", fontSize: 14,
     color: FG, letterSpacing: -0.3,
   },
-  statsVDivider: { width: 1, backgroundColor: LINE, marginVertical: 8 },
 
   // Booking time-picker buttons (two separate cards, side by side)
   timePickerRow: {
@@ -1446,16 +1470,17 @@ const styles = StyleSheet.create({
   localAreaMapWrap: {
     position: "relative",
     overflow: "hidden",
-    borderRadius: 12,
+    borderRadius: 16,
     backgroundColor: BG_2,
     marginBottom: 0,
-    marginHorizontal: -spacing.screenX,
+    borderWidth: 1,
+    borderColor: "#dde3e7",
   },
   mapExpandButton: {
     position: "absolute", top: 10, right: 10,
     width: 34, height: 34, borderRadius: 10,
     backgroundColor: "rgba(255,255,255,0.96)",
-    borderWidth: 1, borderColor: LINE,
+    borderWidth: 1, borderColor: "#dde3e7",
     alignItems: "center", justifyContent: "center",
   },
   localAreaButtons: { flexDirection: "row", gap: 10 },

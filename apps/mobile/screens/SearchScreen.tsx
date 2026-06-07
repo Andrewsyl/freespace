@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   Easing,
   Image,
@@ -177,6 +178,9 @@ export function SearchScreen({ navigation }: Props) {
   const [from, setFrom] = useState(today.from);
   const [to, setTo] = useState(today.to);
   const [loading, setLoading] = useState(false);
+  const [isStaggerPending, setIsStaggerPending] = useState(false);
+  const [searchGeneration, setSearchGeneration] = useState(0);
+  const pillOpacity = useRef(new Animated.Value(0)).current;
   const { show: showGlobalLoading, hide: hideGlobalLoading } = useGlobalLoading();
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<ListingSummary[]>([]);
@@ -212,6 +216,15 @@ export function SearchScreen({ navigation }: Props) {
       pickerSheetAnim.setValue(400);
     }
   }, [pickerVisible, pickerSheetAnim]);
+  useEffect(() => {
+    const visible = loading || isStaggerPending;
+    Animated.timing(pillOpacity, {
+      toValue: visible ? 1 : 0,
+      duration: visible ? 150 : 350,
+      useNativeDriver: true,
+    }).start();
+  }, [loading, isStaggerPending, pillOpacity]);
+
   const timeSearchPendingRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -300,19 +313,21 @@ export function SearchScreen({ navigation }: Props) {
   useEffect(() => {
     if (showSearchArea && pendingSearch) {
       setRenderSearchArea(true);
-      searchAreaTranslateY.setValue(10);
+      // Start below its resting position so it slides up into view
+      searchAreaTranslateY.setValue(24);
+      searchAreaOpacity.setValue(0);
       Animated.parallel([
         Animated.timing(searchAreaOpacity, {
           toValue: 1,
           duration: 180,
-          easing: Easing.out(Easing.quad),
+          easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.spring(searchAreaTranslateY, {
           toValue: 0,
-          damping: 20,
-          stiffness: 260,
-          mass: 0.8,
+          damping: 18,
+          stiffness: 300,
+          mass: 0.75,
           useNativeDriver: true,
         }),
       ]).start();
@@ -322,13 +337,14 @@ export function SearchScreen({ navigation }: Props) {
     Animated.parallel([
       Animated.timing(searchAreaOpacity, {
         toValue: 0,
-        duration: 140,
-        easing: Easing.in(Easing.quad),
+        duration: 150,
+        easing: Easing.in(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(searchAreaTranslateY, {
-        toValue: 6,
-        duration: 140,
+        toValue: 20,
+        duration: 150,
+        easing: Easing.in(Easing.quad),
         useNativeDriver: true,
       }),
     ]).start(({ finished }) => {
@@ -474,6 +490,8 @@ export function SearchScreen({ navigation }: Props) {
       searchStartedAtRef.current = Date.now();
       const preserveSelection = options?.preserveSelection ?? false;
       setLoading(true);
+      setIsStaggerPending(true);
+      setSearchGeneration(prev => prev + 1);
       setIsRefreshingPins(true);
       setError(null);
       const params = buildSearchParams(paramsOverride);
@@ -1177,7 +1195,7 @@ export function SearchScreen({ navigation }: Props) {
     if (suppressRegionSearchRef.current) return;
     if (requireUserPanForRegionSearchRef.current) return;
 
-    // Debounce: wait for the map to fully settle, then auto-search the new area.
+    // Show "Search this location" button — search only fires when the user taps it.
     if (showAreaTimerRef.current) {
       clearTimeout(showAreaTimerRef.current);
     }
@@ -1186,14 +1204,9 @@ export function SearchScreen({ navigation }: Props) {
     const nextRadius = radiusKmForRegion(nextRegion).toFixed(2);
     showAreaTimerRef.current = setTimeout(() => {
       showAreaTimerRef.current = null;
-      setLat(nextLat);
-      setLng(nextLng);
-      setRadiusKm(nextRadius);
-      void runSearch(
-        { lat: nextLat, lng: nextLng, radiusKm: nextRadius },
-        { showGlobal: false, preserveSelection: true }
-      );
-    }, 700);
+      setPendingSearch({ lat: nextLat, lng: nextLng, radiusKm: nextRadius });
+      setShowSearchArea(true);
+    }, 350);
   };
 
   const priceForListing = useCallback(
@@ -1251,6 +1264,8 @@ export function SearchScreen({ navigation }: Props) {
             priceForListing={priceForListing}
             priceKey={priceKey}
             resumeNonce={mapResumeNonce}
+            searchGeneration={searchGeneration}
+            onAllPinsRevealed={() => setIsStaggerPending(false)}
           />
         ) : null}
         {mapFrozenUri ? (
@@ -1319,15 +1334,58 @@ export function SearchScreen({ navigation }: Props) {
                 <Text style={styles.clearChipText}>Clear</Text>
               </Pressable>
             ) : null}
-            {loading ? (
-              <View style={styles.searchLoadingChip}>
-                <Text style={styles.searchLoadingText}>Searching…</Text>
-              </View>
-            ) : null}
           </View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          {/* ── Finding spaces pill ─────────────────── */}
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.findingPill, { opacity: pillOpacity }]}
+          >
+            <ActivityIndicator size="small" color="#0a8050" style={styles.findingSpinner} />
+            <Text style={styles.findingText}>Finding spaces</Text>
+          </Animated.View>
         </View>
+
+        {/* ── Search this area — floating bottom-center pill ─────────────── */}
+        {renderSearchArea && !visibleSelectedListing && (
+          <Animated.View
+            pointerEvents="box-none"
+            style={[
+              styles.searchAreaFloat,
+              { bottom: 96 + insets.bottom, opacity: searchAreaOpacity, transform: [{ translateY: searchAreaTranslateY }] },
+            ]}
+          >
+            <Pressable
+              style={styles.searchAreaPill}
+              onPress={() => {
+                // Cancel any pending debounce — coordinates come from the
+                // current map position at tap time, not the stale debounce snapshot.
+                if (showAreaTimerRef.current) {
+                  clearTimeout(showAreaTimerRef.current);
+                  showAreaTimerRef.current = null;
+                }
+                const region = currentRegionRef.current;
+                if (!region) return;
+                const nextLat = region.latitude.toFixed(6);
+                const nextLng = region.longitude.toFixed(6);
+                const nextRadius = radiusKmForRegion(region).toFixed(2);
+                setLat(nextLat);
+                setLng(nextLng);
+                setRadiusKm(nextRadius);
+                void runSearch(
+                  { lat: nextLat, lng: nextLng, radiusKm: nextRadius },
+                  { showGlobal: false, preserveSelection: true }
+                );
+              }}
+            >
+              <Ionicons name="refresh" size={14} color="#0a8050" />
+              <Text style={styles.searchAreaPillText}>Search this area</Text>
+            </Pressable>
+          </Animated.View>
+        )}
+
         {visibleSelectedListing ? (
           <MapBottomCard
             title={getListingDisplayTitle(visibleSelectedListing)}
@@ -1337,12 +1395,6 @@ export function SearchScreen({ navigation }: Props) {
             price={`€${formatPriceValue(priceForListing(visibleSelectedListing))} total`}
             subtitle={visibleSelectedListing.availability_text?.trim() || "Parking space"}
             badgeLabel={selectedCardAmenities?.[0] ?? visibleSelectedListing.amenities?.[0] ?? null}
-            amenities={selectedCardAmenities ?? visibleSelectedListing.amenities ?? []}
-            vehicleSizeLabel={
-              visibleSelectedListing.vehicle_size_suitability ??
-              visibleSelectedListing.vehicleSizeSuitability ??
-              null
-            }
             isAvailable={visibleSelectedListing.is_available !== false}
             isFavorite={isFavorite(visibleSelectedListing.id)}
             onToggleFavorite={() => toggle(visibleSelectedListing)}
@@ -1976,12 +2028,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#374151",
   },
-  searchLoadingChip: {
+  findingPill: {
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.92)",
+    alignSelf: "center",
+    backgroundColor: "#ffffff",
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    elevation: 6,
+    flexDirection: "row",
+    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+  },
+  findingSpinner: {
+    marginRight: 8,
+  },
+  findingText: {
+    color: "#111827",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    letterSpacing: -0.2,
   },
 
   // keep these for compat
@@ -2051,11 +2120,6 @@ const styles = StyleSheet.create({
     top: -26,
     height: 86,
     width: 86,
-  },
-  searchLoadingText: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
   },
   filtersHeader: {
     alignItems: "center",
@@ -2455,30 +2519,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  searchAreaButton: {
+  searchAreaFloat: {
     alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: colors.accent,
+    left: 0,
+    position: "absolute",
+    right: 0,
+    zIndex: 15,
+  },
+  searchAreaPill: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
     borderRadius: radius.pill,
+    elevation: 8,
     flexDirection: "row",
-    gap: 8,
-    height: 38,
-    marginTop: 10,
-    paddingHorizontal: 16,
-    justifyContent: "center",
+    gap: 7,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
     shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
   },
-  searchAreaWrap: {
-    alignItems: "center",
-    marginTop: 10,
-  },
-  searchAreaText: {
-    ...textStyles.button,
+  searchAreaPillText: {
+    color: "#111827",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
+    letterSpacing: 0.1,
   },
   durationRow: {
     flexDirection: "row",

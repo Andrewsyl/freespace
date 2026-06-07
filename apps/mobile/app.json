@@ -17,6 +17,14 @@
     ],
     "plugins": [
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#22c55e",
+          "defaultChannel": "default"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/splash-freespace.png",

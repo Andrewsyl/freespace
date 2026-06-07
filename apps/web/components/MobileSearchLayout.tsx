@@ -253,20 +253,19 @@ export function MobileSearchLayout({
             </div>
           </div>
 
-          {/* "Search this area" button */}
-          {pendingCenter && mapDirty && !searchAsMove && (
+          {/* "Search this location" button — shows on landing arrival and after panning, hidden while any search is in flight */}
+          {!!pendingCenter && !selectedListing && !areaSearching && status !== "loading" && (
             <div
               className="pointer-events-none absolute inset-x-0 z-10 flex justify-center"
               style={{ top: "calc(env(safe-area-inset-top) + 72px)" }}
             >
               <button
                 type="button"
-                disabled={areaSearching}
                 onClick={onSearchArea}
-                className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-[0_4px_16px_rgba(15,23,42,0.18)] ring-1 ring-brand-200 disabled:opacity-60"
+                className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-[0_4px_16px_rgba(15,23,42,0.18)] ring-1 ring-brand-200"
               >
                 <RefreshIcon />
-                {areaSearching ? "Searching…" : "Search this area"}
+                Search this location
               </button>
             </div>
           )}

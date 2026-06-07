@@ -245,35 +245,60 @@ export function MapView({
     const map = mapRef.current;
     if (!mapReady || !map) return;
 
-    const signature = listings
-      .filter((l) => typeof l.latitude === "number" && typeof l.longitude === "number")
-      .map((l) => `${l.id}-${l.latitude}-${l.longitude}-${priceForListing ? priceForListing(l) : priceMode === "monthly" ? (l.pricePerMonth ?? l.pricePerDay) : l.pricePerDay}-${priceKey ?? "base"}`)
-      .join("|");
-
-    if (signature === markerSignatureRef.current) return;
-
-    markersRef.current.forEach(({ marker }) => marker.remove());
-    markersRef.current.clear();
-    markerSignatureRef.current = signature;
-
-    listings.forEach((listing) => {
-      if (typeof listing.latitude !== "number" || typeof listing.longitude !== "number") return;
-      const active = selectedListingId === listing.id;
-      const markerPrice = priceForListing
-        ? priceForListing(listing)
-        : priceMode === "monthly" && typeof listing.pricePerMonth === "number" && listing.pricePerMonth > 0
-          ? listing.pricePerMonth
-          : listing.pricePerDay;
-      const el = createMarkerEl(listing, active, markerPrice);
-      const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
-        .setLngLat([listing.longitude, listing.latitude])
-        .addTo(map);
-      el.addEventListener("click", () => {
-        onSelectListing?.(listing.id);
-        onMarkerClick?.(listing);
+    // Build incoming map: id → { listing, price, sig }
+    const incoming = new Map<string, { listing: Listing; price: number; sig: string }>();
+    for (const l of listings) {
+      if (typeof l.latitude !== "number" || typeof l.longitude !== "number") continue;
+      const price = priceForListing
+        ? priceForListing(l)
+        : priceMode === "monthly" && typeof l.pricePerMonth === "number" && l.pricePerMonth > 0
+          ? l.pricePerMonth
+          : l.pricePerDay;
+      incoming.set(l.id, {
+        listing: l,
+        price,
+        sig: `${l.id}-${l.latitude}-${l.longitude}-${price}-${priceKey ?? "base"}`,
       });
-      markersRef.current.set(listing.id, { marker, el, listing });
-    });
+    }
+
+    const fullSig = [...incoming.values()].map((v) => v.sig).join("|");
+    const listingsChanged = fullSig !== markerSignatureRef.current;
+
+    // Remove markers no longer in results — leave everything else in place
+    for (const id of [...markersRef.current.keys()]) {
+      if (!incoming.has(id)) {
+        markersRef.current.get(id)!.marker.remove();
+        markersRef.current.delete(id);
+      }
+    }
+
+    // Update existing markers (price/position changed) or add new ones
+    for (const [id, { listing, price, sig }] of incoming) {
+      const existing = markersRef.current.get(id);
+      if (existing) {
+        if ((existing.el.dataset.sig ?? "") !== sig) {
+          const active = selectedListingId === id;
+          existing.el.innerHTML = buildMarkerSvg(price, active);
+          existing.el.dataset.sig = sig;
+          existing.marker.setLngLat([listing.longitude!, listing.latitude!]);
+        }
+      } else {
+        const active = selectedListingId === id;
+        const el = createMarkerEl(listing, active, price);
+        el.dataset.sig = sig;
+        const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
+          .setLngLat([listing.longitude!, listing.latitude!])
+          .addTo(map);
+        el.addEventListener("click", () => {
+          onSelectListing?.(listing.id);
+          onMarkerClick?.(listing);
+        });
+        markersRef.current.set(id, { marker, el, listing });
+      }
+    }
+
+    if (!listingsChanged) return;
+    markerSignatureRef.current = fullSig;
 
     if (showCenterPin && center) {
       if (!disableAutoFit) {

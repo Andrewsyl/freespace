@@ -310,12 +310,17 @@ function SearchPageContainer() {
   );
 
   const handleSearchArea = useCallback(() => {
-    if (!pendingCenter) return;
     const f = filtersRef.current;
-    const radiusKm = pendingBounds ? radiusFromBounds(pendingBounds, pendingCenter) : f.radiusKm;
-    const updated = { ...f, latitude: pendingCenter.lat, longitude: pendingCenter.lng, radiusKm };
+    const searchCenter = pendingCenter ?? (
+      f.latitude !== undefined && f.longitude !== undefined
+        ? { lat: f.latitude, lng: f.longitude }
+        : null
+    );
+    if (!searchCenter) return;
+    const radiusKm = pendingBounds ? radiusFromBounds(pendingBounds, searchCenter) : f.radiusKm;
+    const updated = { ...f, latitude: searchCenter.lat, longitude: searchCenter.lng, radiusKm };
     void runSearch(updated, true, { preserveViewport: true });
-    lastAppliedCenter.current = pendingCenter;
+    lastAppliedCenter.current = searchCenter;
     setPendingCenter(null);
     setPendingBounds(null);
     setMapDirty(false);
@@ -357,8 +362,11 @@ function SearchPageContainer() {
       <MobileSearchLanding
         initialFilters={filters}
         onSearch={(f) => {
+          setFilters(f);
+          if (f.latitude !== undefined && f.longitude !== undefined) {
+            setPendingCenter({ lat: f.latitude, lng: f.longitude });
+          }
           setMobilePhase("map");
-          void runSearch(f, true);
         }}
       />
     );

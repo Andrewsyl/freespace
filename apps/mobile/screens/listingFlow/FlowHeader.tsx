@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { X } from "lucide-react-native";
+import { ArrowLeft } from "lucide-react-native";
 import { hostFlowColors } from "./hostFlowTheme";
 import { useExitListingFlowConfirm } from "./confirmExit";
 import { useListingFlow } from "./context";
@@ -46,9 +46,10 @@ export function FlowHeader({ current, total, onClose }: Props) {
     <>
       <View style={[styles.wrap, { paddingTop: insets.top + 10 }]}>
         <Pressable style={styles.closeBtn} onPress={handleClose} hitSlop={8}>
-          <X size={17} color={hostFlowColors.text} strokeWidth={2.2} />
+          <ArrowLeft size={17} color={hostFlowColors.text} strokeWidth={2.2} />
         </Pressable>
         <View style={styles.barWrap}>
+          <Text style={styles.stepLabel}>Step {current} of {total}</Text>
           <View style={styles.bar}>
             <View style={[styles.fill, { width: `${percent}%` as `${number}%` }]} />
           </View>
@@ -64,25 +65,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 18,
     backgroundColor: hostFlowColors.cardBg,
     borderBottomWidth: 1,
     borderBottomColor: hostFlowColors.border,
   },
   closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: hostFlowColors.border,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: hostFlowColors.cardBg,
     flexShrink: 0,
   },
   barWrap: {
     flex: 1,
+    gap: 6,
+  },
+  stepLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    color: hostFlowColors.textSoft,
+    letterSpacing: 0.1,
   },
   bar: {
     height: 4,
