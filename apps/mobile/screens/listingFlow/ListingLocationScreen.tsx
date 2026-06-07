@@ -3,14 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import { Keyboard, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { PROVIDER_GOOGLE, type Region } from "react-native-maps";
-import { MapPinned, Search, X } from "lucide-react-native";
+import { MapPinned, Search } from "lucide-react-native";
 import { MapPin } from "../../components/MapPin";
 import { LIGHT_MAP_STYLE } from "../../components/mapStyles";
 import { useListingFlow } from "./context";
 import { FlowHeader } from "./FlowHeader";
 import { hostFlowColors } from "./hostFlowTheme";
 import { TextInput as AppTextInput } from "../../components/ui";
-import { colors, radius, spacing, textStyles } from "../../styles/theme";
 import { FlowFooter } from "./FlowFooter";
 
 type FlowStackParamList = {
@@ -31,6 +30,10 @@ type PlaceDetailsResponse = {
     geometry?: { location?: { lat: number; lng: number } };
   };
 };
+
+const ACCENT = hostFlowColors.accent;
+const FG = hostFlowColors.text;
+const MUTED = hostFlowColors.textMuted;
 
 export function ListingLocationScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
@@ -117,13 +120,8 @@ export function ListingLocationScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={[]}>
       <FlowHeader current={1} total={8} onClose={exitFlow} />
-      {/* Compact header */}
-      <View style={styles.header}>
-        <Text style={styles.kicker}>Find your space</Text>
-        <Text style={styles.title}>Confirm location</Text>
-      </View>
 
-      {/* Map fills remaining space */}
+      {/* Map fills all remaining space below the header */}
       <View style={styles.mapShell}>
         {mapVisible ? (
           <>
@@ -136,13 +134,9 @@ export function ListingLocationScreen({ navigation }: Props) {
               customMapStyle={LIGHT_MAP_STYLE}
               onRegionChangeComplete={(region) => void handleRegionChangeComplete(region)}
             />
-
-            {/* Pin always at map centre */}
             <View style={styles.centerPin} pointerEvents="none">
               <MapPin />
             </View>
-
-            {/* Drag hint pill at bottom of map */}
             <View style={styles.dragHintWrap} pointerEvents="none">
               <View style={styles.dragHint}>
                 <Text style={styles.dragHintText}>Drag map to position pin</Text>
@@ -152,7 +146,7 @@ export function ListingLocationScreen({ navigation }: Props) {
         ) : (
           <View style={styles.mapPlaceholder} pointerEvents="none">
             <View style={styles.mapPlaceholderIconCircle}>
-              <MapPinned size={38} color={colors.accent} strokeWidth={2} />
+              <MapPinned size={38} color={ACCENT} strokeWidth={2} />
             </View>
             <Text style={styles.mapPlaceholderTitle}>Search for your address</Text>
             <Text style={styles.mapPlaceholderText}>
@@ -161,36 +155,33 @@ export function ListingLocationScreen({ navigation }: Props) {
           </View>
         )}
 
-        {/* Floating search overlay */}
+        {/* Floating overlay: search card + suggestions */}
         <View style={styles.searchOverlay} pointerEvents="box-none">
-          <View style={styles.searchField}>
-            <Search size={18} color={colors.accent} style={styles.searchIcon} strokeWidth={2.2} />
-            <AppTextInput
-              containerStyle={styles.searchInputContainer}
-              variant="embedded"
-              style={styles.searchInput}
-              value={query}
-              onChangeText={(text) => {
-                isTypingRef.current = true;
-                setQuery(text);
-              }}
-              onBlur={() => { isTypingRef.current = false; }}
-              placeholder="Search address…"
-            />
-            {query ? (
-              <Pressable
-                style={styles.clearButton}
-                onPress={() => {
-                  setQuery("");
-                  setSuggestions([]);
-                  isTypingRef.current = false;
+          {/* Search card */}
+          <View style={styles.searchCard}>
+            <View style={styles.searchCardHeader}>
+              <Text style={styles.searchCardKicker}>Step 1 · Location</Text>
+              <Text style={styles.searchCardTitle}>Confirm your parking spot</Text>
+            </View>
+            <View style={styles.searchInputRow}>
+              <Search size={18} color={ACCENT} strokeWidth={2.2} />
+              <AppTextInput
+                containerStyle={styles.searchInputContainer}
+                variant="embedded"
+                style={styles.searchInput}
+                value={query}
+                onChangeText={(text) => {
+                  isTypingRef.current = true;
+                  setQuery(text);
+                  if (!text) setSuggestions([]);
                 }}
-              >
-                <X size={16} color={colors.textSoft} strokeWidth={2.4} />
-              </Pressable>
-            ) : null}
+                onBlur={() => { isTypingRef.current = false; }}
+                placeholder="Search address…"
+              />
+            </View>
           </View>
 
+          {/* Suggestions dropdown */}
           {suggestions.length > 0 && (
             <View style={styles.suggestions}>
               {suggestions.slice(0, 4).map((suggestion, index) => {
@@ -200,11 +191,14 @@ export function ListingLocationScreen({ navigation }: Props) {
                 return (
                   <Pressable
                     key={suggestion.place_id}
-                    style={[styles.suggestionItem, index === suggestions.slice(0, 4).length - 1 && styles.suggestionItemLast]}
+                    style={[
+                      styles.suggestionItem,
+                      index === suggestions.slice(0, 4).length - 1 && styles.suggestionItemLast,
+                    ]}
                     onPress={() => void handleSelectSuggestion(suggestion)}
                   >
                     <View style={styles.suggestionIconCircle}>
-                      <MapPinned size={15} color={hostFlowColors.accent} strokeWidth={2.2} />
+                      <MapPinned size={15} color={ACCENT} strokeWidth={2.2} />
                     </View>
                     <View style={styles.suggestionCopy}>
                       <Text style={styles.suggestionText}>{mainText}</Text>
@@ -230,37 +224,15 @@ export function ListingLocationScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: hostFlowColors.appBg,
+    backgroundColor: "#F8FAFC",
     flex: 1,
   },
-  header: {
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 28,
-    paddingBottom: 8,
-  },
-  kicker: {
-    color: hostFlowColors.accent,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    letterSpacing: 2,
-    textTransform: "uppercase",
-  },
-  title: {
-    color: hostFlowColors.text,
-    fontSize: 26,
-    lineHeight: 34,
-    fontFamily: "PlusJakartaSans-Bold",
-    marginTop: 10,
-    letterSpacing: -0.8,
-  },
 
-  // Map fills all remaining space
   mapShell: {
     flex: 1,
     position: "relative",
   },
 
-  // Pin locked to centre of mapShell
   centerPin: {
     left: "50%",
     position: "absolute",
@@ -268,7 +240,6 @@ const styles = StyleSheet.create({
     transform: [{ translateX: -18 }, { translateY: -36 }],
   },
 
-  // Placeholder (shown before address is selected)
   mapPlaceholder: {
     alignItems: "center",
     flex: 1,
@@ -288,20 +259,19 @@ const styles = StyleSheet.create({
     width: 80,
   },
   mapPlaceholderTitle: {
-    color: hostFlowColors.text,
+    color: FG,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 16,
     textAlign: "center",
   },
   mapPlaceholderText: {
-    color: hostFlowColors.textMuted,
+    color: MUTED,
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 22,
     textAlign: "center",
   },
 
-  // Drag hint pill at bottom
   dragHintWrap: {
     alignItems: "center",
     bottom: 20,
@@ -322,7 +292,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
 
-  // Floating search bar + suggestions overlay
   searchOverlay: {
     left: 16,
     position: "absolute",
@@ -330,21 +299,46 @@ const styles = StyleSheet.create({
     top: 12,
     zIndex: 10,
   },
-  searchField: {
-    alignItems: "center",
+
+  // Search card: header (kicker+title) + input row
+  searchCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 14,
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingVertical: 13,
+    borderRadius: 18,
+    overflow: "hidden",
     shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.14,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowRadius: 14,
+    elevation: 6,
   },
-  searchIcon: {
-    marginRight: 10,
+  searchCardHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  searchCardKicker: {
+    color: ACCENT,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 10,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  searchCardTitle: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 18,
+    letterSpacing: -0.5,
+    lineHeight: 24,
+  },
+  searchInputRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   searchInputContainer: {
     flex: 1,
@@ -352,9 +346,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   searchInput: {
-    color: hostFlowColors.text,
+    color: FG,
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: "PlusJakartaSans-Regular",
     fontWeight: "400",
     lineHeight: 22,
@@ -362,16 +356,6 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     paddingVertical: 0,
   },
-  clearButton: {
-    alignItems: "center",
-    backgroundColor: "#f1f5f9",
-    borderRadius: radius.pill,
-    height: 26,
-    justifyContent: "center",
-    width: 26,
-  },
-
-  // Suggestions list (floats below search bar)
   suggestions: {
     backgroundColor: "#ffffff",
     borderRadius: 14,
@@ -408,7 +392,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   suggestionText: {
-    color: hostFlowColors.text,
+    color: FG,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
   },
@@ -417,53 +401,5 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
     marginTop: 2,
-  },
-
-  // Footer
-  footer: {
-    backgroundColor: hostFlowColors.cardBg,
-    borderTopColor: hostFlowColors.border,
-    borderTopWidth: 1,
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 10,
-    paddingBottom: 2,
-  },
-  footerRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 12,
-  },
-  backButton: {
-    alignItems: "center",
-    borderColor: hostFlowColors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 50,
-    justifyContent: "center",
-    paddingHorizontal: 16,
-  },
-  backButtonText: {
-    color: hostFlowColors.textMuted,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  primaryButton: {
-    flex: 1,
-    alignItems: "center",
-    backgroundColor: hostFlowColors.accent,
-    borderRadius: 12,
-    minHeight: 48,
-    justifyContent: "center",
-  },
-  primaryButtonDisabled: {
-    backgroundColor: "#d1d5db",
-  },
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    letterSpacing: -0.2,
   },
 });

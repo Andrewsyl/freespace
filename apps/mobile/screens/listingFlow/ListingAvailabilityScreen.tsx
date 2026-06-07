@@ -12,13 +12,13 @@ import {
 } from "react-native";
 import DatePicker from "../../components/AdaptiveDatePicker";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Briefcase, Check, ChevronRight, Clock, SlidersHorizontal, X } from "lucide-react-native";
+import { Briefcase, Check, ChevronRight, Clock, Info, SlidersHorizontal, X } from "lucide-react-native";
 import { Button } from "../../components/ui";
 import { useListingFlow } from "./context";
 import { FlowHeader } from "./FlowHeader";
 import { hostFlowColors } from "./hostFlowTheme";
 import { FlowFooter } from "./FlowFooter";
-import { cardShadow, colors, radius, spacing, textStyles } from "../../styles/theme";
+import { colors, radius, spacing } from "../../styles/theme";
 
 type FlowStackParamList = {
   ListingAvailability: undefined;
@@ -30,8 +30,19 @@ type Props = NativeStackScreenProps<FlowStackParamList, "ListingAvailability">;
 type PickerField = "timeStart" | "timeEnd";
 type DayCode = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
 type DayTimeRanges = Record<DayCode, { start: string; end: string }>;
-
 type AvailabilityPreset = "always" | "working" | "custom";
+
+const ACCENT = hostFlowColors.accent;
+const FG = hostFlowColors.text;
+const MUTED = hostFlowColors.textMuted;
+const SOFT = hostFlowColors.textSoft;
+const CARD_SHADOW = {
+  shadowColor: "#0f172a",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 10,
+  elevation: 3,
+} as const;
 
 function DayTimeReveal({ visible, children }: { visible: boolean; children: React.ReactNode }) {
   const progress = useState(() => new Animated.Value(visible ? 1 : 0))[0];
@@ -56,14 +67,8 @@ function DayTimeReveal({ visible, children }: { visible: boolean; children: Reac
       style={{
         overflow: "hidden",
         opacity: progress,
-        height: progress.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, 76],
-        }),
-        marginTop: progress.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, 8],
-        }),
+        height: progress.interpolate({ inputRange: [0, 1], outputRange: [0, 76] }),
+        marginTop: progress.interpolate({ inputRange: [0, 1], outputRange: [0, 8] }),
       }}
     >
       {children}
@@ -227,7 +232,6 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
       if (exists) {
         return prev.filter((item) => item !== day);
       }
-
       setDayTimeRanges((currentRanges) => {
         const dayIndex = allDays.indexOf(day as DayCode);
         const previousSelectedDay =
@@ -237,25 +241,11 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
             .at(-1) ??
           prev.at(-1) ??
           null;
-
-        if (!previousSelectedDay) {
-          return currentRanges;
-        }
-
+        if (!previousSelectedDay) return currentRanges;
         const previousRange = currentRanges[previousSelectedDay as DayCode];
-        if (!previousRange) {
-          return currentRanges;
-        }
-
-        return {
-          ...currentRanges,
-          [day]: {
-            start: previousRange.start,
-            end: previousRange.end,
-          },
-        };
+        if (!previousRange) return currentRanges;
+        return { ...currentRanges, [day]: { start: previousRange.start, end: previousRange.end } };
       });
-
       return [...prev, day];
     });
   };
@@ -312,79 +302,109 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
     if (parent?.canGoBack()) parent.goBack();
   };
 
+  const PRESETS = [
+    {
+      key: "always" as const,
+      label: "Always available",
+      body: "Mon – Sun · 24 hours · Recommended",
+      Icon: (active: boolean) => <Clock size={18} color={active ? ACCENT : SOFT} strokeWidth={2} />,
+    },
+    {
+      key: "working" as const,
+      label: "Working week",
+      body: "Mon – Fri · 06:00 – 19:00",
+      Icon: (active: boolean) => <Briefcase size={18} color={active ? ACCENT : SOFT} strokeWidth={2} />,
+    },
+    {
+      key: "custom" as const,
+      label: "Custom",
+      body: "Choose your own days and times",
+      Icon: (active: boolean) => <SlidersHorizontal size={18} color={active ? ACCENT : SOFT} strokeWidth={2} />,
+    },
+  ];
+
   return (
     <SafeAreaView style={styles.container} edges={[]}>
       <FlowHeader current={5} total={8} onClose={exitFlow} />
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.kicker}>Availability</Text>
-        <Text style={styles.title}>Set the availability for your space</Text>
-        <Text style={styles.subtitle}>You can change this at any time</Text>
-
-        <Pressable
-          style={[styles.optionCard, styles.optionCardFirst, preset === "always" && styles.optionCardActive]}
-          onPress={() => selectPreset("always")}
-        >
-          <View style={styles.optionRow}>
-            <View style={[styles.optionIconBox, preset === "always" && styles.optionIconBoxActive]}>
-              <Clock size={18} color={preset === "always" ? colors.accent : colors.textSoft} strokeWidth={2} />
-            </View>
-            <View style={styles.optionTextWrap}>
-              <Text style={styles.optionTitle}>Always available</Text>
-              <Text style={styles.optionBody}>Mon – Sun · 24 hours · Recommended</Text>
-            </View>
-            {preset === "always" && <Check size={16} color={colors.accent} strokeWidth={2.8} />}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header card */}
+        <View style={styles.headerCard}>
+          <View style={styles.headerCardTop}>
+            <Text style={styles.headerKicker}>Step 5 · Availability</Text>
+            <Text style={styles.headerTitle}>Set when your space is available</Text>
           </View>
-        </Pressable>
-
-        <Pressable
-          style={[styles.optionCard, preset === "working" && styles.optionCardActive]}
-          onPress={() => selectPreset("working")}
-        >
-          <View style={styles.optionRow}>
-            <View style={[styles.optionIconBox, preset === "working" && styles.optionIconBoxActive]}>
-              <Briefcase size={18} color={preset === "working" ? colors.accent : colors.textSoft} strokeWidth={2} />
-            </View>
-            <View style={styles.optionTextWrap}>
-              <Text style={styles.optionTitle}>Working week</Text>
-              <Text style={styles.optionBody}>Mon – Fri · 06:00 – 19:00</Text>
-            </View>
-            {preset === "working" && <Check size={16} color={colors.accent} strokeWidth={2.8} />}
+          <View style={styles.headerCardBottom}>
+            <Text style={styles.headerSubtitle}>You can change this at any time from your dashboard.</Text>
           </View>
-        </Pressable>
+        </View>
 
-        <Pressable
-          style={[styles.optionCard, preset === "custom" && styles.optionCardActive]}
-          onPress={() => selectPreset("custom")}
-        >
-          <View style={styles.optionRow}>
-            <View style={[styles.optionIconBox, preset === "custom" && styles.optionIconBoxActive]}>
-              <SlidersHorizontal size={18} color={preset === "custom" ? colors.accent : colors.textSoft} strokeWidth={2} />
-            </View>
-            <View style={styles.optionTextWrap}>
-              <Text style={styles.optionTitle}>Custom</Text>
-              <Text style={styles.optionBody}>Choose your own days and times</Text>
-            </View>
-            {preset === "custom"
-              ? <Check size={16} color={colors.accent} strokeWidth={2.8} />
-              : <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />}
-          </View>
-        </Pressable>
-        {preset === "custom" && weekdays.length ? (
+        {/* Schedule card */}
+        <View style={styles.card}>
+          <Text style={styles.cardHeader}>Schedule</Text>
+          {PRESETS.map(({ key, label, body, Icon }, idx) => {
+            const active = preset === key;
+            const isLast = idx === PRESETS.length - 1;
+            const isCustom = key === "custom";
+            return (
+              <Pressable
+                key={key}
+                style={[styles.optionRow, !isLast && styles.optionRowBorder, active && styles.optionRowActive]}
+                onPress={() => selectPreset(key)}
+              >
+                <View style={[styles.optionIconBox, active && styles.optionIconBoxActive]}>
+                  {Icon(active)}
+                </View>
+                <View style={styles.optionTextWrap}>
+                  <Text style={[styles.optionTitle, active && styles.optionTitleActive]}>{label}</Text>
+                  <Text style={styles.optionBody}>{body}</Text>
+                </View>
+                {active
+                  ? <Check size={16} color={ACCENT} strokeWidth={2.8} />
+                  : isCustom
+                  ? <ChevronRight size={18} color={SOFT} strokeWidth={2.4} />
+                  : null}
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* Custom summary card */}
+        {preset === "custom" && weekdays.length > 0 ? (
           <View style={styles.customSummaryCard}>
             <Text style={styles.customSummaryLabel}>Selected schedule</Text>
             <Text style={styles.customSummary}>{availabilitySummary}</Text>
+            <Pressable onPress={() => setCustomVisible(true)}>
+              <Text style={styles.customEditLink}>Edit →</Text>
+            </Pressable>
           </View>
         ) : null}
+
         {!timeWindowValid || !customWindowsValid ? (
           <Text style={styles.warningText}>End time must be after start time.</Text>
         ) : null}
+
+        {/* Tips card */}
+        <View style={styles.tipsCard}>
+          <View style={styles.tipsRow}>
+            <Info size={15} color={ACCENT} strokeWidth={2.2} />
+            <Text style={styles.tipsTitle}>More availability = more bookings</Text>
+          </View>
+          <Text style={styles.tipsBody}>
+            Spaces available 24/7 receive significantly more bookings. You can always update this from your dashboard whenever your schedule changes.
+          </Text>
+        </View>
       </ScrollView>
+
       <FlowFooter
         onBack={() => navigation.goBack()}
         primaryLabel="Continue"
         onPrimary={() => navigation.navigate("ListingPhotos")}
         primaryDisabled={!canSave}
       />
+
       {customVisible ? (
         <Modal animationType="slide" transparent>
           <View style={styles.modalBackdrop}>
@@ -406,15 +426,7 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
                     <View key={day} style={styles.dayBlock}>
                       <View style={styles.dayRow}>
                         <Text style={styles.dayLabel}>
-                          {{
-                            Mon: "Monday",
-                            Tue: "Tuesday",
-                            Wed: "Wednesday",
-                            Thu: "Thursday",
-                            Fri: "Friday",
-                            Sat: "Saturday",
-                            Sun: "Sunday",
-                          }[day]}
+                          {{ Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday" }[day]}
                         </Text>
                         <Pressable
                           accessibilityRole="switch"
@@ -429,15 +441,11 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
                         <View style={styles.dayTimeRow}>
                           <Pressable style={styles.timePill} onPress={() => openPicker("timeStart", day)}>
                             <Text style={styles.timePillLabel}>Start</Text>
-                            <Text style={styles.timePillValue}>
-                              {formatTime(new Date(dayTimeRanges[day].start))}
-                            </Text>
+                            <Text style={styles.timePillValue}>{formatTime(new Date(dayTimeRanges[day].start))}</Text>
                           </Pressable>
                           <Pressable style={styles.timePill} onPress={() => openPicker("timeEnd", day)}>
                             <Text style={styles.timePillLabel}>End</Text>
-                            <Text style={styles.timePillValue}>
-                              {formatTime(new Date(dayTimeRanges[day].end))}
-                            </Text>
+                            <Text style={styles.timePillValue}>{formatTime(new Date(dayTimeRanges[day].end))}</Text>
                           </Pressable>
                         </View>
                       </DayTimeReveal>
@@ -447,16 +455,14 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
               </ScrollView>
               <Button
                 title="Confirm"
-                onPress={() => {
-                  setPreset("custom");
-                  setCustomVisible(false);
-                }}
+                onPress={() => { setPreset("custom"); setCustomVisible(false); }}
                 disabled={weekdays.length === 0}
               />
             </View>
           </View>
         </Modal>
       ) : null}
+
       <DatePicker
         modal
         mode="time"
@@ -464,14 +470,8 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
         minuteInterval={5}
         date={
           pickerDay
-            ? new Date(
-                pickerField === "timeStart"
-                  ? dayTimeRanges[pickerDay].start
-                  : dayTimeRanges[pickerDay].end
-              )
-            : pickerField === "timeStart"
-              ? timeStart
-              : timeEnd
+            ? new Date(pickerField === "timeStart" ? dayTimeRanges[pickerDay].start : dayTimeRanges[pickerDay].end)
+            : pickerField === "timeStart" ? timeStart : timeEnd
         }
         onConfirm={(value) => {
           setPickerVisible(false);
@@ -488,181 +488,180 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.appBg,
-  },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
   content: {
-    padding: spacing.screenX,
-    paddingBottom: 140,
-    paddingTop: 0,
-  },
-  kicker: {
-    color: hostFlowColors.accent,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    marginTop: 28,
-  },
-  title: {
-    color: hostFlowColors.text,
-    fontSize: 26,
-    lineHeight: 34,
-    fontFamily: "PlusJakartaSans-Bold",
-    marginTop: 10,
-    letterSpacing: -0.8,
-  },
-  subtitle: {
-    color: hostFlowColors.textMuted,
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans-Regular",
-    marginTop: 8,
-    lineHeight: 22,
-  },
-  optionCard: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginTop: 12,
     paddingHorizontal: 16,
-    paddingVertical: 18,
+    paddingTop: 12,
+    paddingBottom: 140,
+    gap: 14,
   },
-  optionCardFirst: {
-    marginTop: 24,
+
+  // ── Header card (matches location screen style) ──────────────
+  headerCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    overflow: "hidden",
+    ...CARD_SHADOW,
+  },
+  headerCardTop: {
+    borderBottomColor: "#F1F5F9",
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  headerKicker: {
+    color: ACCENT,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 10,
+    letterSpacing: 1.4,
+    marginBottom: 2,
+    textTransform: "uppercase",
+  },
+  headerTitle: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 18,
+    letterSpacing: -0.5,
+    lineHeight: 24,
+  },
+  headerCardBottom: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerSubtitle: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 19,
+  },
+
+  // ── Schedule card ────────────────────────────────────────────
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    overflow: "hidden",
+    ...CARD_SHADOW,
+  },
+  cardHeader: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 15,
+    letterSpacing: -0.3,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
   optionRow: {
     alignItems: "center",
     flexDirection: "row",
     gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  optionRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  optionRowActive: {
+    backgroundColor: "#F8FEFC",
   },
   optionIconBox: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: colors.cardBgMuted,
-    borderColor: colors.border,
-    borderWidth: 1,
+    backgroundColor: "#EDF7F2",
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   optionIconBoxActive: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
+    backgroundColor: hostFlowColors.accentSoftBorder,
   },
-  optionTextWrap: {
-    flex: 1,
-  },
-  customRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  customText: {
-    flex: 1,
-  },
-  customSummary: {
-    color: colors.text,
-    fontSize: 14,
+  optionTextWrap: { flex: 1 },
+  optionTitle: {
+    color: FG,
     fontFamily: "PlusJakartaSans-SemiBold",
-    lineHeight: 22,
-    marginTop: 4,
+    fontSize: 15,
+    letterSpacing: -0.2,
+    lineHeight: 20,
   },
+  optionTitleActive: {
+    color: ACCENT,
+  },
+  optionBody: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    marginTop: 2,
+    lineHeight: 18,
+  },
+
+  // ── Custom summary ───────────────────────────────────────────
   customSummaryCard: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-    borderRadius: 12,
+    backgroundColor: hostFlowColors.accentSoft,
+    borderColor: ACCENT,
+    borderRadius: 16,
     borderWidth: 1,
-    marginTop: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
   customSummaryLabel: {
-    color: colors.accent,
+    color: ACCENT,
     fontSize: 11,
     fontFamily: "PlusJakartaSans-Bold",
-    fontWeight: "700",
     letterSpacing: 1,
     textTransform: "uppercase",
+    marginBottom: 4,
   },
-  optionCardActive: {
-    borderColor: colors.accent,
-    borderWidth: 2,
-    backgroundColor: colors.accentSoft,
-  },
-  optionTitle: {
-    color: colors.text,
-    fontSize: 16,
+  customSummary: {
+    color: FG,
+    fontSize: 14,
+    fontFamily: "PlusJakartaSans-SemiBold",
     lineHeight: 22,
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontWeight: "800",
-    letterSpacing: -0.2,
   },
-  optionBody: {
-    color: colors.textMuted,
+  customEditLink: {
+    color: ACCENT,
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
-    fontFamily: "PlusJakartaSans-Regular",
-    marginTop: 2,
-    lineHeight: 20,
-  },
-  inlineRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 12,
-  },
-  timePill: {
-    backgroundColor: colors.cardBgMuted,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    flex: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  timePillLabel: {
-    color: colors.textMuted,
-    fontSize: 10,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
-  timePillValue: {
-    color: colors.text,
-    fontSize: 16,
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontWeight: "800",
-    marginTop: 3,
-    letterSpacing: -0.3,
+    marginTop: 8,
   },
   warningText: {
     color: colors.danger,
     fontSize: 12,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    marginTop: 10,
   },
-  footer: {
-    backgroundColor: colors.cardBg,
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 10,
-    paddingBottom: 2,
+
+  // ── Tips card ────────────────────────────────────────────────
+  tipsCard: {
+    backgroundColor: "#F0FDF8",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#C6F0DC",
+    padding: 16,
   },
-  continueButton: {
-    flex: 1,
-    borderRadius: 16,
-    minHeight: 48,
+  tipsRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 6,
   },
-  continueButtonText: {
+  tipsTitle: {
+    color: ACCENT,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    fontWeight: "600",
-    letterSpacing: -0.2,
-    lineHeight: 20,
+    fontSize: 13,
+    letterSpacing: -0.1,
   },
+  tipsBody: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 19,
+  },
+
+  // ── Modal ────────────────────────────────────────────────────
   modalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(15, 23, 42, 0.4)",
@@ -694,7 +693,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 20,
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontWeight: "800",
     paddingHorizontal: 8,
     letterSpacing: -0.5,
   },
@@ -709,6 +707,9 @@ const styles = StyleSheet.create({
   dayList: {
     paddingBottom: 10,
   },
+  dayBlock: {
+    marginTop: 10,
+  },
   dayRow: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -719,19 +720,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  dayBlock: {
-    marginTop: 10,
-  },
-  dayTimeRow: {
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 2,
-  },
   dayLabel: {
     color: colors.text,
     fontSize: 15,
     fontFamily: "PlusJakartaSans-Bold",
-    fontWeight: "700",
     letterSpacing: -0.1,
   },
   dayToggleTrack: {
@@ -753,24 +745,32 @@ const styles = StyleSheet.create({
   dayToggleKnobActive: {
     marginLeft: 18,
   },
-  footerRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 12,
+  dayTimeRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 2,
   },
-  backButton: {
-    alignItems: 'center',
-    borderColor: hostFlowColors.border,
+  timePill: {
+    backgroundColor: colors.cardBgMuted,
+    borderColor: colors.border,
     borderRadius: 12,
     borderWidth: 1,
-    height: 50,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  backButtonText: {
-    color: hostFlowColors.textMuted,
-    fontFamily: 'PlusJakartaSans-SemiBold',
-    fontSize: 15,
-    fontWeight: '600',
+  timePillLabel: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontFamily: "PlusJakartaSans-Bold",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  timePillValue: {
+    color: colors.text,
+    fontSize: 16,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    marginTop: 3,
+    letterSpacing: -0.3,
   },
 });

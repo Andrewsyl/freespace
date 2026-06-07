@@ -10,11 +10,11 @@ import {
   Plus,
   Signpost,
   Warehouse,
+  Info,
 } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { FlowHeader } from "./FlowHeader";
 import { hostFlowColors } from "./hostFlowTheme";
-import { spacing } from "../../styles/theme";
 import { FlowFooter } from "./FlowFooter";
 
 type FlowStackParamList = {
@@ -24,12 +24,24 @@ type FlowStackParamList = {
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingDetails">;
 
+const ACCENT = hostFlowColors.accent;
+const FG = hostFlowColors.text;
+const MUTED = hostFlowColors.textMuted;
+const SOFT = hostFlowColors.textSoft;
+const CARD_SHADOW = {
+  shadowColor: "#0f172a",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 10,
+  elevation: 3,
+} as const;
+
 const spaceTypes = ["Private Driveway", "Garage", "Car park", "Private road"];
 const vehicleSizeOptions = [
-  { value: "small",  label: "Hatchback",   example: "Small & city cars",           image: "https://img.icons8.com/color/96/hatchback.png" },
-  { value: "medium", label: "Saloon",      example: "Saloons & family cars",       image: "https://img.icons8.com/color/96/sedan.png" },
-  { value: "large",  label: "SUV / Jeep",  example: "SUVs, jeeps & 4x4s",         image: "https://img.icons8.com/color/96/suv.png" },
-  { value: "van",    label: "Van",         example: "Vans, minibuses & campervans", image: "https://img.icons8.com/color/96/van.png" },
+  { value: "small",  label: "Hatchback",  example: "Small & city cars",            image: "https://img.icons8.com/color/96/hatchback.png" },
+  { value: "medium", label: "Saloon",     example: "Saloons & family cars",        image: "https://img.icons8.com/color/96/sedan.png" },
+  { value: "large",  label: "SUV / Jeep", example: "SUVs, jeeps & 4x4s",          image: "https://img.icons8.com/color/96/suv.png" },
+  { value: "van",    label: "Van",        example: "Vans, minibuses & campervans", image: "https://img.icons8.com/color/96/van.png" },
 ];
 
 type DetailStep = "type" | "count" | "vehicle";
@@ -44,7 +56,7 @@ function parseSpaceCount(value: string) {
 }
 
 function SpaceTypeIcon({ type, active }: { type: string; active: boolean }) {
-  const color = active ? hostFlowColors.accent : hostFlowColors.text;
+  const color = active ? ACCENT : FG;
   const size = 20;
   const strokeWidth = 1.8;
   switch (type) {
@@ -55,7 +67,6 @@ function SpaceTypeIcon({ type, active }: { type: string; active: boolean }) {
   }
 }
 
-
 export function ListingDetailsScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
   const insets = useSafeAreaInsets();
@@ -63,7 +74,7 @@ export function ListingDetailsScreen({ navigation }: Props) {
   const [spaceCountInput, setSpaceCountInput] = useState<number>(
     () => parseSpaceCount(draft.spaceCount) ?? MIN_SPACE_COUNT
   );
-const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boolean(draft.vehicleSize);
+  const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boolean(draft.vehicleSize);
   const confirmedSpaceCount = parseSpaceCount(draft.spaceCount);
   const hasConfirmedCount = confirmedSpaceCount !== null && confirmedSpaceCount > 0;
 
@@ -105,66 +116,73 @@ const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boo
         contentContainerStyle={[styles.content, { paddingBottom: 104 + Math.max(insets.bottom, 0) }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.kicker}>Space details</Text>
-          <Text style={styles.title}>What type of space is it?</Text>
+        {/* Header card */}
+        <View style={styles.headerCard}>
+          <View style={styles.headerCardTop}>
+            <Text style={styles.headerKicker}>Step 3 · Space details</Text>
+            <Text style={styles.headerTitle}>Tell us about your space</Text>
+          </View>
+          <View style={styles.headerCardBottom}>
+            <Text style={styles.headerSubtitle}>This helps drivers know if your space is the right fit for them.</Text>
+          </View>
         </View>
 
-        {/* ── Space type ── */}
-        <View style={styles.section}>
-          {showTypeSection && (
-            <>
-              <Text style={styles.sectionPrompt}>Pick the option that best matches your space</Text>
-              <View style={styles.typeGrid}>
-                {spaceTypes.map((type) => {
-                  const active = draft.spaceType === type;
-                  return (
-                    <Pressable
-                      key={type}
-                      style={[styles.typeCard, active && styles.typeCardActive]}
-                      onPress={() => {
-                        setDraft((prev) => ({ ...prev, spaceType: type }));
-                        setOpenStep("count");
-                      }}
-                    >
-                      <View style={styles.typeCardTop}>
-                        <View style={[styles.typeIconWrap, active && styles.typeIconWrapActive]}>
-                          <SpaceTypeIcon type={type} active={active} />
+        {/* ── Space type card ── */}
+        <View style={styles.card}>
+          <Text style={styles.cardHeader}>Space type</Text>
+          <View style={styles.cardBody}>
+            {showTypeSection && (
+              <>
+                <Text style={styles.cardPrompt}>Pick the option that best matches your space</Text>
+                <View style={styles.typeGrid}>
+                  {spaceTypes.map((type) => {
+                    const active = draft.spaceType === type;
+                    return (
+                      <Pressable
+                        key={type}
+                        style={[styles.typeCard, active && styles.typeCardActive]}
+                        onPress={() => {
+                          setDraft((prev) => ({ ...prev, spaceType: type }));
+                          setOpenStep("count");
+                        }}
+                      >
+                        <View style={styles.typeCardTop}>
+                          <View style={[styles.typeIconWrap, active && styles.typeIconWrapActive]}>
+                            <SpaceTypeIcon type={type} active={active} />
+                          </View>
+                          {active && (
+                            <CircleCheck size={18} color={ACCENT} strokeWidth={2.5} />
+                          )}
                         </View>
-                        {active && (
-                          <CircleCheck size={18} color={hostFlowColors.accent} strokeWidth={2.5} />
-                        )}
-                      </View>
-                      <Text style={[styles.typeLabel, active && styles.typeLabelActive]}>{type}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </>
-          )}
+                        <Text style={[styles.typeLabel, active && styles.typeLabelActive]}>{type}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            )}
 
-          {showTypeRow && (
-            <Pressable
-              style={styles.selectedTypeRow}
-              onPress={() => setOpenStep("type")}
-            >
-              <View style={[styles.typeIconWrap, styles.typeIconWrapActive]}>
-                <SpaceTypeIcon type={draft.spaceType} active />
-              </View>
-              <Text style={styles.selectedTypeLabel}>{draft.spaceType}</Text>
-              <CircleCheck size={18} color={hostFlowColors.accent} strokeWidth={2.5} />
-            </Pressable>
-          )}
+            {showTypeRow && (
+              <Pressable
+                style={styles.selectedTypeRow}
+                onPress={() => setOpenStep("type")}
+              >
+                <View style={[styles.typeIconWrap, styles.typeIconWrapActive]}>
+                  <SpaceTypeIcon type={draft.spaceType} active />
+                </View>
+                <Text style={styles.selectedTypeLabel}>{draft.spaceType}</Text>
+                <CircleCheck size={18} color={ACCENT} strokeWidth={2.5} />
+              </Pressable>
+            )}
+          </View>
         </View>
 
-        {/* ── Space count ── */}
+        {/* ── Space count card ── */}
         {showCountSection && (
-          <>
-            <View style={styles.divider} />
-            <View style={styles.section}>
-              <Text style={styles.sectionHeading}>How many spaces?</Text>
-              <Text style={styles.sectionPrompt}>
+          <View style={styles.card}>
+            <Text style={styles.cardHeader}>Number of spaces</Text>
+            <View style={styles.cardBody}>
+              <Text style={styles.cardPrompt}>
                 The number of individual spaces you're making available to rent.
               </Text>
               <View style={styles.counterRow}>
@@ -173,7 +191,7 @@ const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boo
                   onPress={() => adjustSpaceCount(-1)}
                   disabled={spaceCountInput <= MIN_SPACE_COUNT}
                 >
-                  <Minus size={20} color={hostFlowColors.text} strokeWidth={2.5} />
+                  <Minus size={20} color={FG} strokeWidth={2.5} />
                 </Pressable>
                 <View style={styles.counterValueBox}>
                   <Text style={styles.counterValueText}>{spaceCountInput}</Text>
@@ -183,20 +201,19 @@ const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boo
                   onPress={() => adjustSpaceCount(1)}
                   disabled={spaceCountInput >= MAX_SPACE_COUNT}
                 >
-                  <Plus size={20} color={hostFlowColors.text} strokeWidth={2.5} />
+                  <Plus size={20} color={FG} strokeWidth={2.5} />
                 </Pressable>
               </View>
             </View>
-          </>
+          </View>
         )}
 
-        {/* ── Vehicle fit ── */}
+        {/* ── Vehicle fit card ── */}
         {showVehicleSection && (
-          <>
-            <View style={styles.divider} />
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Vehicle fit</Text>
-              <Text style={styles.sectionHeading}>What size vehicles fit best?</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardHeader}>Vehicle fit</Text>
+            <View style={styles.cardBody}>
+              <Text style={styles.cardPrompt}>What size vehicles fit comfortably in your space?</Text>
               <View style={styles.vehicleList}>
                 {vehicleSizeOptions.map((option) => {
                   const active = draft.vehicleSize === option.value;
@@ -223,7 +240,7 @@ const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boo
                       </View>
                       {active && (
                         <View style={styles.vehicleCheckBadge}>
-                          <CircleCheck size={18} color={hostFlowColors.accent} strokeWidth={2.4} />
+                          <CircleCheck size={18} color={ACCENT} strokeWidth={2.4} />
                         </View>
                       )}
                     </Pressable>
@@ -231,9 +248,19 @@ const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boo
                 })}
               </View>
             </View>
-          </>
+          </View>
         )}
 
+        {/* Tips card — only shown once all three sections are complete */}
+        {canContinue && <View style={styles.tipsCard}>
+          <View style={styles.tipsRow}>
+            <Info size={15} color={ACCENT} strokeWidth={2.2} />
+            <Text style={styles.tipsTitle}>Accuracy matters</Text>
+          </View>
+          <Text style={styles.tipsBody}>
+            Accurate space details help drivers know if your spot is right for their vehicle — reducing cancellations and improving your rating.
+          </Text>
+        </View>}
       </ScrollView>
 
       <FlowFooter
@@ -248,86 +275,102 @@ const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boo
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: hostFlowColors.appBg,
+    backgroundColor: "#F8FAFC",
     flex: 1,
   },
   content: {
-    paddingTop: 0,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 14,
   },
 
-  // Header — matches other flow screens
-  header: {
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 28,
-    paddingBottom: 8,
+  // ── Header card (matches location screen style) ──────────────
+  headerCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    overflow: "hidden",
+    ...CARD_SHADOW,
   },
-  kicker: {
-    color: hostFlowColors.accent,
+  headerCardTop: {
+    borderBottomColor: "#F1F5F9",
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  headerKicker: {
+    color: ACCENT,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    letterSpacing: 2,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    marginBottom: 2,
     textTransform: "uppercase",
   },
-  title: {
-    color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 26,
-    letterSpacing: -0.8,
-    lineHeight: 34,
-    marginTop: 10,
+  headerTitle: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 18,
+    letterSpacing: -0.5,
+    lineHeight: 24,
   },
-
-  // Sections — web-style border + generous padding
-  divider: {
-    borderTopWidth: 1,
-    borderTopColor: hostFlowColors.border,
+  headerCardBottom: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  section: {
-    paddingHorizontal: spacing.screenX,
-    paddingVertical: 24,
-  },
-  sectionLabel: {
-    color: hostFlowColors.accent,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    marginBottom: 4,
-  },
-  sectionHeading: {
-    color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 17,
-    letterSpacing: -0.3,
-    lineHeight: 23,
-    marginBottom: 8,
-  },
-  sectionPrompt: {
-    color: hostFlowColors.textMuted,
+  headerSubtitle: {
+    color: MUTED,
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 16,
+    fontSize: 13,
+    lineHeight: 19,
   },
 
-  // Space type grid
+  // ── Cards ────────────────────────────────────────────────────
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    overflow: "hidden",
+    ...CARD_SHADOW,
+  },
+  cardHeader: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 15,
+    letterSpacing: -0.3,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  cardBody: {
+    padding: 16,
+  },
+  cardPrompt: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 14,
+  },
+
+  // ── Space type grid ──────────────────────────────────────────
   typeGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
   },
   typeCard: {
-    backgroundColor: hostFlowColors.cardBg,
-    borderColor: hostFlowColors.border,
-    borderRadius: 12,
+    backgroundColor: "#F8FAFC",
+    borderColor: "#E2E8ED",
+    borderRadius: 14,
     borderWidth: 1,
-    minHeight: 104,
+    minHeight: 100,
     paddingHorizontal: 14,
     paddingVertical: 14,
     width: "48%",
   },
   typeCardActive: {
-    borderColor: hostFlowColors.accent,
+    borderColor: ACCENT,
     backgroundColor: hostFlowColors.accentSoft,
   },
   typeCardTop: {
@@ -338,7 +381,7 @@ const styles = StyleSheet.create({
   },
   typeIconWrap: {
     alignItems: "center",
-    backgroundColor: "#f1f5f4",
+    backgroundColor: "#EDF7F2",
     borderRadius: 8,
     height: 34,
     justifyContent: "center",
@@ -348,21 +391,21 @@ const styles = StyleSheet.create({
     backgroundColor: hostFlowColors.accentSoftBorder,
   },
   typeLabel: {
-    color: hostFlowColors.text,
+    color: FG,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
     letterSpacing: -0.2,
     lineHeight: 20,
   },
   typeLabelActive: {
-    color: hostFlowColors.accent,
+    color: ACCENT,
   },
 
-  // Selected type row (collapsed)
+  // ── Selected type row ────────────────────────────────────────
   selectedTypeRow: {
     alignItems: "center",
     backgroundColor: hostFlowColors.accentSoft,
-    borderColor: hostFlowColors.accent,
+    borderColor: ACCENT,
     borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
@@ -371,14 +414,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   selectedTypeLabel: {
-    color: hostFlowColors.text,
+    color: FG,
     flex: 1,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     letterSpacing: -0.2,
   },
 
-  // Counter
+  // ── Counter ──────────────────────────────────────────────────
   counterRow: {
     alignItems: "center",
     flexDirection: "row",
@@ -387,8 +430,8 @@ const styles = StyleSheet.create({
   },
   counterButton: {
     alignItems: "center",
-    backgroundColor: hostFlowColors.cardBg,
-    borderColor: hostFlowColors.border,
+    backgroundColor: "#F8FAFC",
+    borderColor: "#E2E8ED",
     borderRadius: 999,
     borderWidth: 1,
     height: 44,
@@ -400,8 +443,8 @@ const styles = StyleSheet.create({
   },
   counterValueBox: {
     alignItems: "center",
-    backgroundColor: hostFlowColors.cardBg,
-    borderColor: hostFlowColors.border,
+    backgroundColor: "#F8FAFC",
+    borderColor: "#E2E8ED",
     borderRadius: 12,
     borderWidth: 1,
     height: 56,
@@ -409,32 +452,31 @@ const styles = StyleSheet.create({
     width: 72,
   },
   counterValueText: {
-    color: hostFlowColors.text,
+    color: FG,
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 24,
     letterSpacing: -0.5,
   },
 
-  // Vehicle size cards
+  // ── Vehicle size cards ───────────────────────────────────────
   vehicleList: {
     gap: 10,
-    marginTop: 4,
   },
   vehicleCard: {
     alignItems: "center",
-    backgroundColor: hostFlowColors.cardBg,
-    borderColor: hostFlowColors.border,
-    borderRadius: 12,
+    backgroundColor: "#F8FAFC",
+    borderColor: "#E2E8ED",
+    borderRadius: 14,
     borderWidth: 1,
     flexDirection: "row",
-    minHeight: 76,
+    minHeight: 72,
     overflow: "hidden",
     paddingHorizontal: 16,
     paddingVertical: 14,
     position: "relative",
   },
   vehicleCardActive: {
-    borderColor: hostFlowColors.accent,
+    borderColor: ACCENT,
     backgroundColor: hostFlowColors.accentSoft,
   },
   vehicleTextWrap: {
@@ -443,17 +485,17 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   vehicleTitle: {
-    color: hostFlowColors.text,
+    color: FG,
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 15,
     letterSpacing: -0.2,
     lineHeight: 20,
   },
   vehicleTitleActive: {
-    color: hostFlowColors.accent,
+    color: ACCENT,
   },
   vehicleExample: {
-    color: hostFlowColors.textSoft,
+    color: SOFT,
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     lineHeight: 18,
@@ -473,5 +515,32 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 14,
     top: 12,
+  },
+
+  // ── Tips card ────────────────────────────────────────────────
+  tipsCard: {
+    backgroundColor: "#F0FDF8",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#C6F0DC",
+    padding: 16,
+  },
+  tipsRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 6,
+  },
+  tipsTitle: {
+    color: ACCENT,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    letterSpacing: -0.1,
+  },
+  tipsBody: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 19,
   },
 });

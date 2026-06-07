@@ -1,10 +1,33 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Linking,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ArrowLeft, Plus, Pencil, Trash2, TrendingUp, CreditCard, Home, ShieldCheck } from "lucide-react-native";
+import {
+  ArrowLeft,
+  Plus,
+  Pencil,
+  Trash2,
+  TrendingUp,
+  CreditCard,
+  Home,
+  ShieldCheck,
+  ChevronRight,
+  AlertCircle,
+} from "lucide-react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { SkeletonBlock, usePulse } from "../components/ui";
 import {
   createHostPayoutLink,
@@ -12,6 +35,7 @@ import {
   getHostEarningsSummary,
   getHostPayoutStatus,
   listHostListings,
+  setListingPaused,
   type HostPayoutStatus,
 } from "../api";
 import { useAuth } from "../auth";
@@ -19,15 +43,21 @@ import { useToastOnMessage } from "../components/GlobalToast";
 import type { ListingSummary, RootStackParamList } from "../types";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { formatListingPriceLine } from "../utils/pricing";
-import { clearHostListingDraft, loadHostListingDraft, type SavedHostListingDraft } from "./listingFlow/draftStorage";
+import {
+  clearHostListingDraft,
+  loadHostListingDraft,
+  type SavedHostListingDraft,
+} from "./listingFlow/draftStorage";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Listings">;
 
 const GREEN  = "#0a8050";
-const LINE   = "#d1d5db";
 const FG     = "#111827";
 const MUTED  = "#374151";
 const SUBTLE = "#6b7280";
+const BG     = "#F8FAFC";
+const CARD   = "#ffffff";
+const LINE   = "#e8ecf0";
 
 export function ListingsScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
@@ -39,6 +69,7 @@ export function ListingsScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const skeletonPulse = usePulse();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [earnings, setEarnings] = useState<{ totalCents: number; feeCents: number; netCents: number } | null>(null);
   const [payoutStatus, setPayoutStatus] = useState<HostPayoutStatus | null>(null);
   const [payoutBusy, setPayoutBusy] = useState(false);
@@ -75,16 +106,17 @@ export function ListingsScreen({ navigation }: Props) {
   const draftTitle = savedDraft?.draft.spaceType
     ? `${savedDraft.draft.spaceType} parking`
     : "Unfinished listing";
-  const draftAddress = savedDraft?.draft.location.address?.trim() || "Finish setting up your location";
+  const draftAddress =
+    savedDraft?.draft.location.address?.trim() || "Finish setting up your location";
 
   const payoutStatusMessage = (() => {
     if (!payoutStatus) return null;
-    if (payoutStatus.payoutsEnabled) return "Payouts active — transfers arrive automatically.";
-    if (payoutIsMock) return "Connect Stripe to start receiving host payouts.";
-    if (payoutStatus.requirementsDue.length > 0) return "Stripe needs a few more details before payouts can go live.";
-    if (payoutStatus.detailsSubmitted) return "Details submitted — Stripe is reviewing your payout account.";
-    if (payoutStatus.accountId) return "Finish payout setup to receive earnings.";
-    return "Connect Stripe to start receiving host payouts.";
+    if (payoutStatus.payoutsEnabled) return "Transfers arrive automatically";
+    if (payoutIsMock) return "Connect Stripe to receive payouts";
+    if (payoutStatus.requirementsDue.length > 0) return "Stripe needs a few more details";
+    if (payoutStatus.detailsSubmitted) return "Stripe is reviewing your account";
+    if (payoutStatus.accountId) return "Finish payout setup to receive earnings";
+    return "Connect Stripe to receive payouts";
   })();
 
   const handlePayoutSetup = useCallback(async () => {
@@ -94,13 +126,18 @@ export function ListingsScreen({ navigation }: Props) {
     try {
       const link = await createHostPayoutLink({
         token,
-        accountId: payoutStatus?.accountId && !payoutStatus.accountId.startsWith("acct_mock_")
-          ? payoutStatus.accountId : undefined,
+        accountId:
+          payoutStatus?.accountId && !payoutStatus.accountId.startsWith("acct_mock_")
+            ? payoutStatus.accountId
+            : undefined,
       });
       if (link.onboardingUrl) {
         await Linking.openURL(link.onboardingUrl);
       } else {
-        Alert.alert("Payout setup unavailable", "We couldn't open the payout onboarding link right now. Please try again.");
+        Alert.alert(
+          "Payout setup unavailable",
+          "We couldn't open the payout onboarding link right now. Please try again."
+        );
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not start payout setup");
@@ -109,29 +146,51 @@ export function ListingsScreen({ navigation }: Props) {
     }
   }, [payoutStatus?.accountId, token]);
 
-  const handleDelete = useCallback((listingId: string) => {
-    if (!token) return;
-    Alert.alert("Delete listing", "This will permanently remove the listing.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          setDeletingId(listingId);
-          try {
-            await deleteListing({ token, listingId });
-            setListings((prev) => prev.filter((item) => item.id !== listingId));
-            await AsyncStorage.setItem("deletedListingId", listingId);
-            await AsyncStorage.setItem("searchRefreshToken", Date.now().toString());
-          } catch (err) {
-            setError(err instanceof Error ? err.message : "Could not delete listing");
-          } finally {
-            setDeletingId(null);
-          }
+  const handleDelete = useCallback(
+    (listingId: string) => {
+      if (!token) return;
+      Alert.alert("Delete listing", "This will permanently remove the listing.", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setDeletingId(listingId);
+            try {
+              await deleteListing({ token, listingId });
+              setListings((prev) => prev.filter((item) => item.id !== listingId));
+              await AsyncStorage.setItem("deletedListingId", listingId);
+              await AsyncStorage.setItem("searchRefreshToken", Date.now().toString());
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Could not delete listing");
+            } finally {
+              setDeletingId(null);
+            }
+          },
         },
-      },
-    ]);
-  }, [token]);
+      ]);
+    },
+    [token]
+  );
+
+  const handleTogglePause = useCallback(
+    async (listing: ListingSummary) => {
+      if (!token) return;
+      const nowPaused = listing.is_active !== false;
+      setTogglingId(listing.id);
+      try {
+        await setListingPaused({ token, listingId: listing.id, paused: nowPaused });
+        setListings((prev) =>
+          prev.map((l) => (l.id === listing.id ? { ...l, is_active: !nowPaused } : l))
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not update listing");
+      } finally {
+        setTogglingId(null);
+      }
+    },
+    [token]
+  );
 
   useFocusEffect(useCallback(() => { void loadListings(); }, [loadListings]));
 
@@ -140,19 +199,25 @@ export function ListingsScreen({ navigation }: Props) {
     else navigation.navigate("Tabs", { screen: "Search" });
   };
 
+  const hasListings = listings.length > 0 || savedDraft;
+
   return (
     <SafeAreaView style={styles.container} edges={[]}>
       <StatusBar barStyle="dark-content" />
 
       {/* Nav bar */}
-      <View style={[styles.navBar, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.navBar, { paddingTop: insets.top + 10 }]}>
         <Pressable style={styles.backBtn} onPress={goBack}>
           <ArrowLeft size={22} color={FG} />
         </Pressable>
-        <Text style={styles.navTitle}>Manage spaces</Text>
+        <View style={styles.navCenter}>
+          <Text style={styles.navTitle}>Manage spaces</Text>
+          {listings.length > 0 ? (
+            <Text style={styles.navSub}>{listings.length} listing{listings.length !== 1 ? "s" : ""}</Text>
+          ) : null}
+        </View>
         <Pressable style={styles.addBtn} onPress={() => navigation.navigate("CreateListingFlow")}>
-          <Plus size={16} color={GREEN} strokeWidth={2.5} />
-          <Text style={styles.addBtnText}>New</Text>
+          <Plus size={15} color="#ffffff" strokeWidth={2.5} />
         </Pressable>
       </View>
 
@@ -160,146 +225,165 @@ export function ListingsScreen({ navigation }: Props) {
         contentContainerStyle={[styles.scroll, { paddingBottom: 40 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Page header */}
-        <View style={styles.pageHeader}>
-          <Text style={styles.pageLabel}>Hosting</Text>
-          <Text style={styles.pageTitle}>Manage spaces</Text>
-          {listings.length > 0 ? (
-            <Text style={styles.pageSubtitle}>{listings.length} listing{listings.length !== 1 ? "s" : ""}</Text>
-          ) : (
-            <Text style={styles.pageSubtitle}>Your parking spaces, all in one place</Text>
-          )}
-        </View>
-
         {!user ? (
-          <View style={styles.gatedCard}>
-            <View style={styles.gatedIconWrap}>
-              <Home size={24} color={GREEN} strokeWidth={2.1} />
-            </View>
-            <Text style={styles.emptyTitle}>Sign in to host</Text>
-            <Text style={styles.emptyBody}>Manage your spaces, availability, and payouts from one place.</Text>
-            <Pressable style={styles.ctaBtn} onPress={() => navigation.navigate("Welcome")}>
-              <Text style={styles.ctaBtnText}>Sign in</Text>
-            </Pressable>
-            <View style={styles.gatedHintRow}>
-              <ShieldCheck size={14} color={SUBTLE} strokeWidth={2.1} />
-              <Text style={styles.gatedHintText}>Your host dashboard and earnings stay linked to your account.</Text>
+          /* ── Not signed in ────────────────────────────────────── */
+          <View style={styles.gatedWrap}>
+            <View style={styles.gatedCard}>
+              <View style={styles.gatedIconWrap}>
+                <Home size={26} color={GREEN} strokeWidth={2} />
+              </View>
+              <Text style={styles.gatedTitle}>Sign in to host</Text>
+              <Text style={styles.gatedBody}>
+                Manage your spaces, availability, and payouts from one place.
+              </Text>
+              <Pressable style={styles.primaryBtn} onPress={() => navigation.navigate("Welcome")}>
+                <Text style={styles.primaryBtnText}>Sign in</Text>
+              </Pressable>
+              <View style={styles.gatedHintRow}>
+                <ShieldCheck size={13} color={SUBTLE} strokeWidth={2} />
+                <Text style={styles.gatedHintText}>
+                  Your host dashboard and earnings stay linked to your account.
+                </Text>
+              </View>
             </View>
           </View>
         ) : (
           <>
-            {/* Earnings strip */}
+            {/* ── Earnings hero card ─────────────────────────────── */}
             {earnings ? (
-              <View style={styles.section}>
-                <View style={styles.sectionTitleRow}>
-                  <TrendingUp size={16} color={GREEN} />
-                  <Text style={styles.sectionTitle}>Earnings</Text>
-                </View>
-                <View style={styles.statsRow}>
-                  <View style={styles.statCell}>
-                    <Text style={styles.statLabel}>Total earned</Text>
-                    <Text style={styles.statValue}>{fmt(earnings.totalCents)}</Text>
+              <View style={styles.cardWrap}>
+                <View style={styles.earningsCard}>
+                  <View style={styles.earningsTop}>
+                    <View style={styles.earningsIconWrap}>
+                      <TrendingUp size={15} color={GREEN} strokeWidth={2.2} />
+                    </View>
+                    <Text style={styles.earningsLabel}>Net payout</Text>
                   </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.statCell}>
-                    <Text style={styles.statLabel}>Host fee ({platformFeePercent}%)</Text>
-                    <Text style={styles.statValue}>{fmt(earnings.feeCents)}</Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.statCell}>
-                    <Text style={styles.statLabel}>Net payout</Text>
-                    <Text style={[styles.statValue, styles.statValueGreen]}>{fmt(earnings.netCents)}</Text>
+                  <Text style={styles.earningsHero}>{fmt(earnings.netCents)}</Text>
+                  <View style={styles.earningsDivider} />
+                  <View style={styles.earningsStats}>
+                    <View style={styles.earningsStat}>
+                      <Text style={styles.earningsStatLabel}>Total earned</Text>
+                      <Text style={styles.earningsStatValue}>{fmt(earnings.totalCents)}</Text>
+                    </View>
+                    <View style={styles.earningsStatSep} />
+                    <View style={styles.earningsStat}>
+                      <Text style={styles.earningsStatLabel}>
+                        Platform fee ({platformFeePercent}%)
+                      </Text>
+                      <Text style={styles.earningsStatValue}>{fmt(earnings.feeCents)}</Text>
+                    </View>
                   </View>
                 </View>
               </View>
             ) : null}
 
-            {/* Payout status */}
+            {/* ── Payout strip ───────────────────────────────────── */}
             {payoutStatus ? (
-              <View style={styles.section}>
-                <View style={styles.sectionTitleRow}>
-                  <CreditCard size={16} color={payoutStatus.payoutsEnabled ? GREEN : MUTED} />
-                  <Text style={styles.sectionTitle}>Payouts</Text>
+              <View style={styles.cardWrap}>
+                <Pressable
+                  style={styles.payoutStrip}
+                  onPress={!payoutStatus.payoutsEnabled && !payoutIsMock ? handlePayoutSetup : undefined}
+                  disabled={payoutBusy}
+                >
+                  <View style={[
+                    styles.payoutIconWrap,
+                    payoutStatus.payoutsEnabled ? styles.payoutIconActive : styles.payoutIconPending,
+                  ]}>
+                    <CreditCard
+                      size={15}
+                      color={payoutStatus.payoutsEnabled ? GREEN : "#92400e"}
+                      strokeWidth={2.2}
+                    />
+                  </View>
+                  <View style={styles.payoutText}>
+                    <Text style={styles.payoutTitle}>Payouts</Text>
+                    <Text style={styles.payoutBody} numberOfLines={1}>
+                      {payoutStatusMessage}
+                    </Text>
+                  </View>
                   {payoutStatus.payoutsEnabled ? (
                     <View style={styles.activePill}>
+                      <View style={styles.activeDot} />
                       <Text style={styles.activePillText}>Active</Text>
                     </View>
-                  ) : null}
-                </View>
-                <Text style={styles.payoutBody}>{payoutStatusMessage}</Text>
+                  ) : payoutIsMock ? (
+                    <View style={styles.mockPill}>
+                      <Text style={styles.mockPillText}>Test</Text>
+                    </View>
+                  ) : (
+                    <ChevronRight size={16} color={SUBTLE} />
+                  )}
+                </Pressable>
                 {payoutStatus.requirementsDue.length > 0 ? (
-                  <Text style={styles.payoutHint}>
-                    Missing: {payoutStatus.requirementsDue.slice(0, 3).join(", ")}{payoutStatus.requirementsDue.length > 3 ? "…" : ""}
-                  </Text>
-                ) : null}
-                {!payoutStatus.payoutsEnabled && !payoutIsMock ? (
-                  <Pressable
-                    style={[styles.ctaBtn, styles.ctaBtnSm, payoutBusy && styles.ctaBtnDisabled]}
-                    onPress={handlePayoutSetup}
-                    disabled={payoutBusy}
-                  >
-                    <Text style={styles.ctaBtnText}>
-                      {payoutBusy ? "Opening…" : "Complete payout setup"}
+                  <View style={styles.requirementsRow}>
+                    <AlertCircle size={12} color="#92400e" />
+                    <Text style={styles.requirementsText}>
+                      Missing: {payoutStatus.requirementsDue.slice(0, 3).join(", ")}
+                      {payoutStatus.requirementsDue.length > 3 ? "…" : ""}
                     </Text>
-                  </Pressable>
-                ) : payoutIsMock && !payoutStatus.payoutsEnabled ? (
-                  <Text style={styles.payoutHint}>
-                    Running in test mode. Connect a real Stripe account to enable live payouts.
-                  </Text>
+                  </View>
                 ) : null}
               </View>
             ) : null}
 
-            {/* Listings */}
-            <View style={styles.section}>
-              <View style={styles.sectionTitleRow}>
-                <Text style={styles.sectionTitle}>Your listings</Text>
-              </View>
+            {/* ── Listings ───────────────────────────────────────── */}
+            <View style={styles.listingSection}>
+              <Text style={styles.sectionHeader}>Your spaces</Text>
 
-              {loading && listings.length === 0 ? (
+              {loading && !hasListings ? (
                 <View style={styles.skeletonList}>
                   {[0, 1].map((i) => (
                     <View key={i} style={styles.skeletonCard}>
-                      <View style={styles.skeletonCardTop}>
-                        <SkeletonBlock width="68%" height={16} pulse={skeletonPulse} />
-                        <SkeletonBlock width={52} height={22} borderRadius={999} pulse={skeletonPulse} />
-                      </View>
-                      <SkeletonBlock width="50%" height={12} pulse={skeletonPulse} style={{ marginTop: 10 }} />
-                      <View style={styles.skeletonCardBottom}>
-                        <SkeletonBlock width={80} height={12} pulse={skeletonPulse} />
-                        <SkeletonBlock width={64} height={28} borderRadius={8} pulse={skeletonPulse} />
+                      <SkeletonBlock width="100%" height={148} borderRadius={0} pulse={skeletonPulse} />
+                      <View style={styles.skeletonBody}>
+                        <SkeletonBlock width="70%" height={16} pulse={skeletonPulse} />
+                        <SkeletonBlock width="50%" height={12} pulse={skeletonPulse} style={{ marginTop: 8 }} />
+                        <View style={styles.skeletonFooter}>
+                          <SkeletonBlock width={80} height={14} pulse={skeletonPulse} />
+                          <SkeletonBlock width={60} height={28} borderRadius={8} pulse={skeletonPulse} />
+                        </View>
                       </View>
                     </View>
                   ))}
                 </View>
-              ) : listings.length === 0 && !savedDraft ? (
-                <View style={styles.emptyBox}>
+              ) : !hasListings ? (
+                /* ── Empty state ──────────────────────────────── */
+                <View style={styles.emptyCard}>
+                  <View style={styles.emptyIconWrap}>
+                    <Ionicons name="car-outline" size={28} color={GREEN} />
+                  </View>
                   <Text style={styles.emptyTitle}>No listings yet</Text>
-                  <Text style={styles.emptyBody}>Create a listing to start earning from your parking space.</Text>
-                  <Pressable style={styles.ctaBtn} onPress={() => navigation.navigate("CreateListingFlow")}>
-                    <Text style={styles.ctaBtnText}>List a space</Text>
+                  <Text style={styles.emptyBody}>
+                    Create a listing to start earning from your parking space.
+                  </Text>
+                  <Pressable
+                    style={styles.primaryBtn}
+                    onPress={() => navigation.navigate("CreateListingFlow")}
+                  >
+                    <Text style={styles.primaryBtnText}>List a space</Text>
                   </Pressable>
                 </View>
               ) : (
                 <View style={styles.listingGrid}>
+                  {/* Draft card */}
                   {savedDraft ? (
                     <Pressable
-                      style={({ pressed }) => [styles.listingCard, pressed && { opacity: 0.92 }]}
+                      style={({ pressed }) => [styles.listingCard, pressed && { opacity: 0.93 }]}
                       onPress={() => navigation.navigate("CreateListingFlow")}
                     >
-                      <View style={styles.listingImagePlaceholder}>
-                        <Text style={styles.listingImagePlaceholderText}>Draft</Text>
+                      <View style={[styles.listingImageWrap, styles.draftImageWrap]}>
+                        <Ionicons name="create-outline" size={22} color={SUBTLE} />
+                        <Text style={styles.draftLabel}>Draft</Text>
+                      </View>
+                      <View style={styles.draftBadge}>
+                        <Text style={styles.draftBadgeText}>Saved draft</Text>
                       </View>
                       <View style={styles.listingBody}>
-                        <View style={styles.listingTitleRow}>
-                          <Text style={styles.listingTitle} numberOfLines={1}>{draftTitle}</Text>
-                          <View style={styles.draftPill}>
-                            <Text style={styles.draftPillText}>Saved</Text>
-                          </View>
-                        </View>
+                        <Text style={styles.listingTitle} numberOfLines={1}>{draftTitle}</Text>
                         <Text style={styles.listingAddress} numberOfLines={1}>{draftAddress}</Text>
                         <View style={styles.listingFooter}>
-                          <Text style={styles.listingPrice}>Continue setup</Text>
+                          <Text style={styles.continueText}>Continue setup →</Text>
                           <Pressable
                             style={styles.deleteBtn}
                             onPress={async () => {
@@ -307,47 +391,116 @@ export function ListingsScreen({ navigation }: Props) {
                               setSavedDraft(null);
                             }}
                           >
-                            <Trash2 size={14} color="#b42318" />
+                            <Trash2 size={13} color="#b42318" />
                           </Pressable>
                         </View>
                       </View>
                     </Pressable>
                   ) : null}
-                  {listings.map((listing) => (
-                    <Pressable
-                      key={listing.id}
-                      style={({ pressed }) => [styles.listingCard, pressed && { opacity: 0.92 }]}
-                      onPress={() => navigation.navigate("CreateListingFlow", { listingId: listing.id })}
-                    >
-                      {listing.image_urls?.[0] ? (
-                        <Image source={{ uri: listing.image_urls[0] }} style={styles.listingImage} />
-                      ) : (
-                        <View style={styles.listingImagePlaceholder}>
-                          <Text style={styles.listingImagePlaceholderText}>No photo</Text>
+
+                  {/* Live listings */}
+                  {listings.map((listing) => {
+                    const isActive = listing.is_active !== false;
+                    const isToggling = togglingId === listing.id;
+                    return (
+                      <Pressable
+                        key={listing.id}
+                        style={({ pressed }) => [styles.listingCard, pressed && { opacity: 0.93 }]}
+                        onPress={() =>
+                          navigation.navigate("CreateListingFlow", { listingId: listing.id })
+                        }
+                      >
+                        {/* Image */}
+                        <View style={styles.listingImageWrap}>
+                          {listing.image_urls?.[0] ? (
+                            <Image
+                              source={{ uri: listing.image_urls[0] }}
+                              style={styles.listingImage}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <View style={styles.imagePlaceholder}>
+                              <Ionicons name="car-outline" size={28} color="#b0bac4" />
+                            </View>
+                          )}
+                          {/* Status badge */}
+                          <View style={[
+                            styles.statusBadge,
+                            isActive ? styles.statusBadgeActive : styles.statusBadgePaused,
+                          ]}>
+                            <View style={[
+                              styles.statusDot,
+                              isActive ? styles.statusDotActive : styles.statusDotPaused,
+                            ]} />
+                            <Text style={[
+                              styles.statusBadgeText,
+                              isActive ? styles.statusBadgeTextActive : styles.statusBadgeTextPaused,
+                            ]}>
+                              {isActive ? "Active" : "Paused"}
+                            </Text>
+                          </View>
                         </View>
-                      )}
-                      <View style={styles.listingBody}>
-                        <View style={styles.listingTitleRow}>
-                          <Text style={styles.listingTitle} numberOfLines={1}>{listing.title}</Text>
-                          <Pencil size={13} color={SUBTLE} />
+
+                        {/* Body */}
+                        <View style={styles.listingBody}>
+                          <View style={styles.listingTitleRow}>
+                            <Text style={styles.listingTitle} numberOfLines={1}>{listing.title}</Text>
+                            <View style={styles.editChip}>
+                              <Pencil size={10} color={GREEN} />
+                              <Text style={styles.editChipText}>Edit</Text>
+                            </View>
+                          </View>
+                          <Text style={styles.listingAddress} numberOfLines={1}>{listing.address}</Text>
+                          <View style={styles.listingFooter}>
+                            <Text style={styles.listingPrice}>{formatListingPriceLine(listing)}</Text>
+                            <View style={styles.cardActions}>
+                              {/* Pause / Resume toggle */}
+                              <Pressable
+                                style={[
+                                  styles.pauseBtn,
+                                  isActive ? styles.pauseBtnActive : styles.pauseBtnResume,
+                                ]}
+                                onPress={() => handleTogglePause(listing)}
+                                disabled={isToggling}
+                              >
+                                {isToggling ? (
+                                  <ActivityIndicator size={11} color={isActive ? SUBTLE : GREEN} />
+                                ) : (
+                                  <Text style={[
+                                    styles.pauseBtnText,
+                                    isActive ? styles.pauseBtnTextActive : styles.pauseBtnTextResume,
+                                  ]}>
+                                    {isActive ? "Pause" : "Resume"}
+                                  </Text>
+                                )}
+                              </Pressable>
+                              {/* Delete */}
+                              <Pressable
+                                style={styles.deleteBtn}
+                                onPress={() => handleDelete(listing.id)}
+                                disabled={deletingId === listing.id}
+                              >
+                                {deletingId === listing.id ? (
+                                  <ActivityIndicator size={12} color="#b42318" />
+                                ) : (
+                                  <Trash2 size={13} color="#b42318" />
+                                )}
+                              </Pressable>
+                            </View>
+                          </View>
                         </View>
-                        <Text style={styles.listingAddress} numberOfLines={1}>{listing.address}</Text>
-                        <View style={styles.listingFooter}>
-                          <Text style={styles.listingPrice}>{formatListingPriceLine(listing)}</Text>
-                          <Pressable
-                            style={styles.deleteBtn}
-                            onPress={() => handleDelete(listing.id)}
-                            disabled={deletingId === listing.id}
-                          >
-                            {deletingId === listing.id
-                              ? <ActivityIndicator size={12} color="#b42318" />
-                              : <Trash2 size={14} color="#b42318" />
-                            }
-                          </Pressable>
-                        </View>
-                      </View>
-                    </Pressable>
-                  ))}
+                      </Pressable>
+                    );
+                  })}
+
+                  {/* Add another space */}
+                  <Pressable
+                    style={styles.addAnotherBtn}
+                    onPress={() => navigation.navigate("CreateListingFlow")}
+                  >
+                    <Plus size={16} color={GREEN} strokeWidth={2.2} />
+                    <Text style={styles.addAnotherText}>Add another space</Text>
+                  </Pressable>
                 </View>
               )}
             </View>
@@ -358,192 +511,503 @@ export function ListingsScreen({ navigation }: Props) {
   );
 }
 
+const SHADOW = {
+  shadowColor: "#111827",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.07,
+  shadowRadius: 10,
+  elevation: 3,
+};
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#ffffff" },
+  container: { flex: 1, backgroundColor: BG },
 
   // ── Nav bar ──────────────────────────────────────────────────
   navBar: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 20, paddingBottom: 12,
-    borderBottomWidth: 1, borderBottomColor: LINE,
-    backgroundColor: "#ffffff",
-  },
-  backBtn: { padding: 6, marginLeft: -6 },
-  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG },
-  addBtn: { flexDirection: "row", alignItems: "center", gap: 4, padding: 6, marginRight: -6 },
-  addBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: GREEN },
-
-  // ── Page header ──────────────────────────────────────────────
-  pageHeader: {
-    borderBottomWidth: 1, borderBottomColor: LINE,
-    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
-  },
-  pageLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
-    color: GREEN, letterSpacing: 1.4, textTransform: "uppercase", marginBottom: 4,
-  },
-  pageTitle: {
-    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 27,
-    color: FG, letterSpacing: -0.8, lineHeight: 32, marginBottom: 2,
-  },
-  pageSubtitle: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },
-
-  // ── Scroll ───────────────────────────────────────────────────
-  scroll: {},
-
-  // ── Sections ─────────────────────────────────────────────────
-  section: {
-    borderBottomWidth: 1, borderBottomColor: LINE,
-    paddingHorizontal: 20, paddingVertical: 20,
-  },
-  sectionTitleRow: {
-    flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14,
-  },
-  sectionTitle: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 17,
-    color: FG, letterSpacing: -0.3, flex: 1,
-  },
-
-  // ── Earnings stats ───────────────────────────────────────────
-  statsRow: {
     flexDirection: "row",
-    borderRadius: 14, borderWidth: 1, borderColor: LINE, overflow: "hidden",
-  },
-  statCell: {
-    flex: 1, alignItems: "center", paddingVertical: 14, paddingHorizontal: 8,
-  },
-  statDivider: { width: 1, backgroundColor: LINE },
-  statLabel: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: MUTED,
-    textAlign: "center", marginBottom: 4,
-  },
-  statValue: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: FG, letterSpacing: -0.3,
-  },
-  statValueGreen: { color: GREEN },
-
-  // ── Payout ───────────────────────────────────────────────────
-  activePill: {
-    backgroundColor: "#EDF7F2", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3,
-  },
-  activePillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: GREEN },
-  payoutBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, lineHeight: 21 },
-  payoutHint: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: SUBTLE, marginTop: 6 },
-
-  // ── CTA button ───────────────────────────────────────────────
-  ctaBtn: {
-    alignItems: "center", justifyContent: "center",
-    backgroundColor: GREEN, borderRadius: 14,
-    height: 50, marginTop: 16,
-  },
-  ctaBtnSm: { height: 44, marginTop: 14 },
-  ctaBtnDisabled: { opacity: 0.5 },
-  ctaBtnText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#ffffff", letterSpacing: -0.2 },
-
-  // ── Empty / loading ──────────────────────────────────────────
-  emptyBox: {
-    borderRadius: 14, borderWidth: 1, borderColor: LINE,
-    padding: 24, alignItems: "center",
-  },
-  gatedCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: LINE,
-    padding: 24,
     alignItems: "center",
-    marginHorizontal: 20,
-    backgroundColor: "#ffffff",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    backgroundColor: BG,
+    gap: 10,
   },
-  gatedIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  backBtn: { padding: 8, marginLeft: -8, marginRight: 2 },
+  navCenter: { flex: 1 },
+  navTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 17,
+    color: FG,
+    letterSpacing: -0.4,
+    lineHeight: 22,
+  },
+  navSub: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: SUBTLE,
+    marginTop: 1,
+  },
+  addBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: GREEN,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#edf7f2",
+  },
+
+  // ── Scroll ───────────────────────────────────────────────────
+  scroll: { paddingTop: 8 },
+
+  // ── Card wrap ────────────────────────────────────────────────
+  cardWrap: { paddingHorizontal: 16, marginBottom: 12 },
+
+  // ── Earnings card ────────────────────────────────────────────
+  earningsCard: {
+    backgroundColor: CARD,
+    borderRadius: 18,
+    padding: 20,
+    ...SHADOW,
+  },
+  earningsTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    marginBottom: 10,
+  },
+  earningsIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: "#EDF7F2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  earningsLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    color: MUTED,
+    letterSpacing: -0.1,
+  },
+  earningsHero: {
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 38,
+    color: FG,
+    letterSpacing: -1.5,
+    lineHeight: 44,
+    marginBottom: 16,
+  },
+  earningsDivider: {
+    height: 1,
+    backgroundColor: LINE,
     marginBottom: 14,
   },
-  emptyTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG, letterSpacing: -0.3 },
-  emptyBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, textAlign: "center", marginTop: 6, lineHeight: 21 },
-  gatedHintRow: {
+  earningsStats: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  earningsStat: { flex: 1 },
+  earningsStatSep: { width: 1, height: 28, backgroundColor: LINE, marginHorizontal: 16 },
+  earningsStatLabel: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 11,
+    color: SUBTLE,
+    marginBottom: 3,
+  },
+  earningsStatValue: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 16,
+    color: FG,
+    letterSpacing: -0.3,
+  },
+
+  // ── Payout strip ─────────────────────────────────────────────
+  payoutStrip: {
+    backgroundColor: CARD,
+    borderRadius: 18,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    ...SHADOW,
+  },
+  payoutIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  payoutIconActive: { backgroundColor: "#EDF7F2" },
+  payoutIconPending: { backgroundColor: "#FEF3C7" },
+  payoutText: { flex: 1 },
+  payoutTitle: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: FG,
+    letterSpacing: -0.2,
+  },
+  payoutBody: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: SUBTLE,
+    marginTop: 2,
+  },
+  activePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#EDF7F2",
+    borderRadius: 100,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: GREEN,
+  },
+  activePillText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: GREEN,
+  },
+  mockPill: {
+    backgroundColor: "#f3f4f6",
+    borderRadius: 100,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  mockPillText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: SUBTLE,
+  },
+  requirementsRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 14,
+    marginTop: 10,
+    paddingHorizontal: 4,
   },
-  gatedHintText: {
+  requirementsText: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
-    lineHeight: 16,
-    color: SUBTLE,
-    textAlign: "center",
+    color: "#92400e",
+    flex: 1,
   },
-  loadingWrap: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12 },
-  loadingText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED },
-  skeletonList: { gap: 12 },
+
+  // ── Listings section ─────────────────────────────────────────
+  listingSection: { paddingHorizontal: 16, paddingTop: 4 },
+  sectionHeader: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 18,
+    color: FG,
+    letterSpacing: -0.5,
+    marginBottom: 14,
+  },
+
+  // ── Skeleton ─────────────────────────────────────────────────
+  skeletonList: { gap: 14 },
   skeletonCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: LINE,
-    padding: 16,
+    backgroundColor: CARD,
+    borderRadius: 18,
+    overflow: "hidden",
+    ...SHADOW,
   },
-  skeletonCardTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  skeletonCardBottom: {
+  skeletonBody: { padding: 16, gap: 0 },
+  skeletonFooter: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginTop: 16,
   },
 
-  // ── Listing cards ────────────────────────────────────────────
-  listingGrid: { gap: 12 },
+  // ── Empty state ──────────────────────────────────────────────
+  emptyCard: {
+    backgroundColor: CARD,
+    borderRadius: 18,
+    padding: 28,
+    alignItems: "center",
+    ...SHADOW,
+  },
+  emptyIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: "#EDF7F2",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 18,
+    color: FG,
+    letterSpacing: -0.4,
+    marginBottom: 8,
+  },
+  emptyBody: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    color: MUTED,
+    textAlign: "center",
+    lineHeight: 21,
+    marginBottom: 4,
+  },
+
+  // ── Gated (not signed in) ────────────────────────────────────
+  gatedWrap: { paddingHorizontal: 16, paddingTop: 8 },
+  gatedCard: {
+    backgroundColor: CARD,
+    borderRadius: 20,
+    padding: 28,
+    alignItems: "center",
+    ...SHADOW,
+  },
+  gatedIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: "#EDF7F2",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18,
+  },
+  gatedTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 20,
+    color: FG,
+    letterSpacing: -0.5,
+    marginBottom: 8,
+  },
+  gatedBody: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    color: MUTED,
+    textAlign: "center",
+    lineHeight: 21,
+    marginBottom: 4,
+  },
+  gatedHintRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+    marginTop: 16,
+    paddingHorizontal: 8,
+  },
+  gatedHintText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: SUBTLE,
+    lineHeight: 17,
+    flex: 1,
+  },
+
+  // ── Primary button ───────────────────────────────────────────
+  primaryBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: GREEN,
+    borderRadius: 14,
+    height: 50,
+    marginTop: 18,
+    width: "100%",
+  },
+  primaryBtnText: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 15,
+    color: "#ffffff",
+    letterSpacing: -0.2,
+  },
+
+  // ── Listing grid & cards ─────────────────────────────────────
+  listingGrid: { gap: 14 },
   listingCard: {
-    borderRadius: 14, borderWidth: 1, borderColor: LINE,
-    overflow: "hidden", backgroundColor: "#ffffff",
+    backgroundColor: CARD,
+    borderRadius: 18,
+    overflow: "hidden",
+    ...SHADOW,
   },
-  listingImage: { width: "100%", height: 160 },
-  listingImagePlaceholder: {
-    width: "100%", height: 160,
-    backgroundColor: "#F7F7F6", alignItems: "center", justifyContent: "center",
+  listingImageWrap: {
+    width: "100%",
+    height: 160,
+    backgroundColor: "#edf1f4",
+    position: "relative",
   },
-  listingImagePlaceholderText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: SUBTLE },
-  listingBody: { padding: 14 },
-  listingTitleRow: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8,
+  listingImage: { width: "100%", height: "100%" },
+  imagePlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  listingTitle: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: FG,
-    letterSpacing: -0.3, flex: 1,
-  },
-  draftPill: {
-    backgroundColor: "#ecfdf3",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#b7ebcd",
+
+  // Status badge (on image)
+  statusBadge: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: 100,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
   },
-  draftPillText: {
-    color: GREEN,
+  statusBadgeActive: { backgroundColor: "rgba(255,255,255,0.92)" },
+  statusBadgePaused: { backgroundColor: "rgba(255,255,255,0.92)" },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusDotActive: { backgroundColor: GREEN },
+  statusDotPaused: { backgroundColor: "#94a3b8" },
+  statusBadgeText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
   },
+  statusBadgeTextActive: { color: FG },
+  statusBadgeTextPaused: { color: SUBTLE },
+
+  // Draft card
+  draftImageWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#f1f5f9",
+  },
+  draftLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: SUBTLE,
+  },
+  draftBadge: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: "#ecfdf3",
+    borderRadius: 100,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    zIndex: 2,
+  },
+  draftBadgeText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    color: GREEN,
+  },
+
+  // Card body
+  listingBody: { padding: 14 },
+  listingTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 4,
+  },
+  listingTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 16,
+    color: FG,
+    letterSpacing: -0.3,
+    flex: 1,
+    lineHeight: 21,
+  },
+  editChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#EDF7F2",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  editChipText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    color: GREEN,
+  },
   listingAddress: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 3,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    color: SUBTLE,
+    lineHeight: 18,
   },
   listingFooter: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    marginTop: 12, paddingTop: 12,
-    borderTopWidth: 1, borderTopColor: LINE,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: LINE,
   },
-  listingPrice: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG },
+  listingPrice: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: FG,
+    letterSpacing: -0.2,
+  },
+  continueText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: GREEN,
+  },
+  cardActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  pauseBtn: {
+    height: 34,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    minWidth: 68,
+  },
+  pauseBtnActive: {
+    backgroundColor: "#f8fafc",
+    borderColor: "#d1d5db",
+  },
+  pauseBtnResume: {
+    backgroundColor: "#EDF7F2",
+    borderColor: "#a7f3d0",
+  },
+  pauseBtnText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    letterSpacing: -0.1,
+  },
+  pauseBtnTextActive: { color: MUTED },
+  pauseBtnTextResume: { color: GREEN },
   deleteBtn: {
-    padding: 8, borderRadius: 10, borderWidth: 1, borderColor: "#fcd5d5",
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     backgroundColor: "#fff5f5",
+    borderWidth: 1,
+    borderColor: "#fcd5d5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  // Add another
+  addAnotherBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: CARD,
+    borderRadius: 14,
+    height: 50,
+    borderWidth: 1.5,
+    borderColor: "#d1fae5",
+    borderStyle: "dashed",
+  },
+  addAnotherText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: GREEN,
+    letterSpacing: -0.2,
   },
 });

@@ -92,43 +92,54 @@ export function HostStreetViewStep({ data, onUpdate, onSkip }: HostStepProps & {
 
   if (!hasCoords) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 py-10 text-center">
-        <MapPin className="h-8 w-8 text-slate-300" strokeWidth={1.4} />
-        <p className="text-sm font-semibold text-slate-700">No location set</p>
-        <p className="text-xs text-slate-600">Go back and confirm your address first</p>
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-300">Street view</p>
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10 text-center">
+          <MapPin className="h-8 w-8 text-slate-300" strokeWidth={1.4} />
+          <p className="text-sm font-semibold text-slate-700">No location set</p>
+          <p className="text-xs text-slate-600">Go back and confirm your address first</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <div>
-        <p className="text-sm text-slate-600">
-          Can&apos;t see your space from here? You can add your own photos at a later step.
+    <div className="space-y-4">
+      {/* Viewer card */}
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Street view</p>
+          <button
+            type="button"
+            onClick={handleSkip}
+            className="text-[13px] font-semibold text-brand-500 hover:text-brand-600"
+          >
+            Skip →
+          </button>
+        </div>
+        <div
+          ref={viewerRef}
+          className="h-72 w-full bg-slate-100"
+        />
+        <p className="border-t border-slate-100 px-4 py-3 text-xs text-slate-600">
+          Drag to find the angle that best shows your parking entrance.
+        </p>
+      </div>
+
+      {/* Use this view callout */}
+      <div className="rounded-lg bg-brand-50 px-4 py-4 ring-1 ring-brand-100">
+        <p className="text-sm font-semibold text-brand-800">Happy with this angle?</p>
+        <p className="mt-1 text-xs leading-relaxed text-brand-700">
+          This view will be shown on your listing. You can add your own photos in the next step.
         </p>
         <button
           type="button"
-          onClick={handleSkip}
-          className="mt-1.5 text-[13px] font-semibold text-brand-500 hover:text-brand-600"
+          onClick={handleUseView}
+          className="mt-3 w-full rounded-2xl bg-brand-500 py-2.5 text-[14px] font-bold text-white transition active:bg-brand-600"
         >
-          Skip for now →
+          Use this view
         </button>
       </div>
-
-      {/* Street View viewer */}
-      <div
-        ref={viewerRef}
-        className="h-80 w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-100"
-      />
-
-      {/* Actions */}
-      <button
-        type="button"
-        onClick={handleUseView}
-        className="w-full rounded-xl bg-brand-500 py-3 text-[15px] font-bold text-white transition hover:bg-brand-600"
-      >
-        Use this view
-      </button>
     </div>
   );
 }

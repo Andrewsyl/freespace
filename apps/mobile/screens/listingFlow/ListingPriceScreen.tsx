@@ -11,12 +11,12 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { Info } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { FlowHeader } from "./FlowHeader";
 import { FlowFooter } from "./FlowFooter";
 import { hostFlowColors } from "./hostFlowTheme";
-import { spacing } from "../../styles/theme";
 
 type FlowStackParamList = {
   ListingPrice: undefined;
@@ -25,7 +25,16 @@ type FlowStackParamList = {
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingPrice">;
 
-const SERVICE_FEE = 0.08;
+const ACCENT = hostFlowColors.accent;
+const FG = hostFlowColors.text;
+const MUTED = hostFlowColors.textMuted;
+const CARD_SHADOW = {
+  shadowColor: "#0f172a",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 10,
+  elevation: 3,
+} as const;
 
 const DEFAULT_HOURLY  = 2;
 const DEFAULT_DAILY   = 12;
@@ -60,13 +69,13 @@ type FieldRowProps = {
 
 function FieldRow({ label, value, onChange, helper, warning, isLast }: FieldRowProps) {
   return (
-    <View style={[row.wrap, !isLast && row.border]}>
-      <View style={row.inputGroup}>
-        <Text style={row.label}>{label}</Text>
-        <View style={row.inputRow}>
-          <Text style={row.euro}>€</Text>
+    <View style={[fieldStyles.wrap, !isLast && fieldStyles.border]}>
+      <View style={fieldStyles.inputGroup}>
+        <Text style={fieldStyles.label}>{label}</Text>
+        <View style={fieldStyles.inputRow}>
+          <Text style={fieldStyles.euro}>€</Text>
           <TextInput
-            style={row.input}
+            style={fieldStyles.input}
             value={value}
             onChangeText={(v) => onChange(sanitize(v))}
             onBlur={() => {
@@ -81,20 +90,20 @@ function FieldRow({ label, value, onChange, helper, warning, isLast }: FieldRowP
         </View>
       </View>
       {helper ? (
-        <Text style={[row.helper, warning && row.helperWarn]}>{helper}</Text>
+        <Text style={[fieldStyles.helper, warning && fieldStyles.helperWarn]}>{helper}</Text>
       ) : null}
     </View>
   );
 }
 
-const row = StyleSheet.create({
+const fieldStyles = StyleSheet.create({
   wrap: {
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
   border: {
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0ee",
+    borderBottomColor: "#F1F5F9",
   },
   inputGroup: {
     flexDirection: "row",
@@ -104,7 +113,7 @@ const row = StyleSheet.create({
   label: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
-    color: hostFlowColors.text,
+    color: FG,
     flex: 1,
   },
   inputRow: {
@@ -120,7 +129,7 @@ const row = StyleSheet.create({
   input: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 18,
-    color: hostFlowColors.text,
+    color: FG,
     textAlign: "right",
     minWidth: 72,
     padding: 0,
@@ -139,6 +148,7 @@ const row = StyleSheet.create({
 
 export function ListingPriceScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
+  const insets = useSafeAreaInsets();
   const pricingMode = draft.pricingMode ?? "both";
 
   const [hourly,  setHourly]  = useState(fmt(parse(draft.pricePerHour)  ?? DEFAULT_HOURLY));
@@ -171,7 +181,6 @@ export function ListingPriceScreen({ navigation }: Props) {
     if (parent?.canGoBack()) parent.goBack();
   };
 
-  // Determine which field is last for border logic
   const lastField = showMonthly ? "monthly" : showHourlyDaily ? "daily" : "hourly";
 
   return (
@@ -184,43 +193,45 @@ export function ListingPriceScreen({ navigation }: Props) {
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={[styles.content, { paddingBottom: 104 + Math.max(insets.bottom, 0) }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.kicker}>Pricing</Text>
-          <Text style={styles.title}>Set your rates</Text>
-
-          {/* Market anchor */}
-          <View style={styles.anchor}>
-            <Text style={styles.anchorText}>
-              Nearby spaces charge{" "}
-              <Text style={styles.anchorBold}>€1–3/hr</Text>
-              {" "}·{" "}
-              <Text style={styles.anchorBold}>€8–15/day</Text>
-            </Text>
+          {/* Header card */}
+          <View style={styles.headerCard}>
+            <View style={styles.headerCardTop}>
+              <Text style={styles.headerKicker}>Step 7 · Pricing</Text>
+              <Text style={styles.headerTitle}>Set your rates</Text>
+            </View>
+            <View style={styles.headerCardBottom}>
+              <Text style={styles.headerSubtitle}>You can update these at any time from your host dashboard.</Text>
+            </View>
           </View>
 
-          {/* Mode tabs */}
-          <View style={styles.tabs}>
-            {PRICING_MODES.map((mode) => {
-              const active = pricingMode === mode.key;
-              return (
-                <Pressable
-                  key={mode.key}
-                  style={[styles.tab, active && styles.tabActive]}
-                  onPress={() => setDraft((p) => ({ ...p, pricingMode: mode.key }))}
-                >
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                    {mode.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+          {/* Pricing type card */}
+          <View style={styles.card}>
+            <Text style={styles.cardHeader}>Pricing type</Text>
+            <View style={styles.tabsWrap}>
+              {PRICING_MODES.map((mode) => {
+                const active = pricingMode === mode.key;
+                return (
+                  <Pressable
+                    key={mode.key}
+                    style={[styles.tab, active && styles.tabActive]}
+                    onPress={() => setDraft((p) => ({ ...p, pricingMode: mode.key }))}
+                  >
+                    <Text style={[styles.tabText, active && styles.tabTextActive]}>
+                      {mode.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
 
-          {/* Fields */}
-          <View style={styles.fieldCard}>
+          {/* Rates card */}
+          <View style={styles.card}>
+            <Text style={styles.cardHeader}>Rates</Text>
             {showHourlyDaily ? (
               <>
                 <FieldRow
@@ -249,9 +260,18 @@ export function ListingPriceScreen({ navigation }: Props) {
             ) : null}
           </View>
 
-          <Text style={styles.footnote}>
-            Drivers pay an 8% service fee on top. You keep 100%.
-          </Text>
+          {/* Tips card */}
+          <View style={styles.tipsCard}>
+            <View style={styles.tipsRow}>
+              <Info size={15} color={ACCENT} strokeWidth={2.2} />
+              <Text style={styles.tipsTitle}>Pricing tip</Text>
+            </View>
+            <Text style={styles.tipsBody}>
+              Nearby spaces charge{" "}
+              <Text style={styles.tipsBold}>€1–3/hr</Text> and{" "}
+              <Text style={styles.tipsBold}>€8–15/day</Text>. Competitive pricing helps fill short-stay gaps between monthly bookings. Drivers pay an 8% service fee on top — you keep 100%.
+            </Text>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -265,58 +285,81 @@ export function ListingPriceScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f7f7f6" },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
   flex: { flex: 1 },
-  scroll: {
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 0,
-    paddingBottom: 40,
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 14,
   },
 
-  kicker: {
-    color: hostFlowColors.accent,
+  // ── Header card (matches location screen style) ──────────────
+  headerCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    overflow: "hidden",
+    ...CARD_SHADOW,
+  },
+  headerCardTop: {
+    borderBottomColor: "#F1F5F9",
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  headerKicker: {
+    color: ACCENT,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    letterSpacing: 2,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    marginBottom: 2,
     textTransform: "uppercase",
-    marginTop: 28,
   },
-  title: {
-    color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 26,
-    letterSpacing: -0.8,
-    lineHeight: 34,
-    marginTop: 8,
-    marginBottom: 14,
+  headerTitle: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 18,
+    letterSpacing: -0.5,
+    lineHeight: 24,
   },
-
-  anchor: {
-    backgroundColor: hostFlowColors.accentSoft,
-    borderWidth: 1,
-    borderColor: hostFlowColors.accentSoftBorder,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 14,
+  headerCardBottom: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  anchorText: {
+  headerSubtitle: {
+    color: MUTED,
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
-    color: hostFlowColors.textMuted,
-  },
-  anchorBold: {
-    fontFamily: "PlusJakartaSans-Bold",
-    color: hostFlowColors.accent,
+    lineHeight: 19,
   },
 
-  tabs: {
+  // ── Cards ────────────────────────────────────────────────────
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    overflow: "hidden",
+    ...CARD_SHADOW,
+  },
+  cardHeader: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 15,
+    letterSpacing: -0.3,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+
+  // ── Pricing type tabs ────────────────────────────────────────
+  tabsWrap: {
     flexDirection: "row",
     gap: 6,
-    backgroundColor: "#e8e8e6",
+    backgroundColor: "#EEF0F2",
+    margin: 14,
     borderRadius: 12,
     padding: 4,
-    marginBottom: 14,
   },
   tab: {
     flex: 1,
@@ -340,23 +383,37 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   tabTextActive: {
-    color: hostFlowColors.text,
+    color: FG,
   },
 
-  fieldCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 14,
+  // ── Tips card ────────────────────────────────────────────────
+  tipsCard: {
+    backgroundColor: "#F0FDF8",
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    overflow: "hidden",
+    borderColor: "#C6F0DC",
+    padding: 16,
   },
-
-  footnote: {
+  tipsRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 6,
+  },
+  tipsTitle: {
+    color: ACCENT,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    letterSpacing: -0.1,
+  },
+  tipsBody: {
+    color: MUTED,
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
-    color: "#9ca3af",
-    lineHeight: 18,
-    marginTop: 12,
-    textAlign: "center",
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  tipsBold: {
+    fontFamily: "PlusJakartaSans-Bold",
+    color: ACCENT,
   },
 });

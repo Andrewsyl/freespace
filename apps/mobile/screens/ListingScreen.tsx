@@ -128,13 +128,20 @@ export function ListingScreen({ navigation, route }: Props) {
   const areaLabel = (() => {
     if (!listing?.address) return "";
     const parts = listing.address.split(",").map((p) => p.trim()).filter(Boolean);
-    const isPostcode = (s: string) => /^(Dublin\s*\d+|[A-Z]\d{2}\s*[A-Z0-9]{4})$/i.test(s);
-    // Strip postcode from the end
+    const isEircode = (s: string) => /^[A-Z]\d{2}\s*[A-Z0-9]{4}$/i.test(s);
+    const isCountry = (s: string) => /^ireland$/i.test(s);
+    // Strip Eircodes and country from the end
     const trimmed = [...parts];
-    while (trimmed.length > 1 && isPostcode(trimmed[trimmed.length - 1])) trimmed.pop();
-    // Strip house number from the first segment
-    const first = trimmed[0].replace(/^\d+[A-Za-z0-9\-\/]*\s+/, "").trim();
-    return [first || trimmed[0], ...trimmed.slice(1)].join(", ");
+    while (trimmed.length > 1 && (isEircode(trimmed[trimmed.length - 1]) || isCountry(trimmed[trimmed.length - 1]))) {
+      trimmed.pop();
+    }
+    // Strip house number from the first segment, keep the street name
+    trimmed[0] = trimmed[0].replace(/^\d+[A-Za-z0-9\-\/]*\s+/, "").trim();
+    // Shorten "Dublin N" → "D4" / "D18"; strip "Co." prefix from counties
+    return trimmed
+      .map((p) => p.replace(/^Dublin\s*(\d+)$/i, (_, n) => `D${n}`)
+                   .replace(/^Co\.?\s+/i, ""))
+      .join(", ");
   })();
 
   const isBookingTimes =
@@ -399,7 +406,7 @@ export function ListingScreen({ navigation, route }: Props) {
 
   const distanceLabel = listing?.distance_m
     ? `${(listing.distance_m / 1000).toFixed(1)} km`
-    : "0.8 km";
+    : null;
   const latitude = typeof listing?.latitude === "number" ? listing.latitude : null;
   const longitude = typeof listing?.longitude === "number" ? listing.longitude : null;
   const hasCoordinates = latitude != null && longitude != null;
@@ -527,12 +534,6 @@ export function ListingScreen({ navigation, route }: Props) {
               <View style={styles.heroTitleOverlay}>
                 <Text style={styles.heroSpaceTypeLabel}>{spaceTypeLabel}</Text>
                 <Text style={styles.heroTitleText} numberOfLines={2}>{displayTitle}</Text>
-                {areaLabel ? (
-                  <View style={styles.heroAreaRow}>
-                    <Ionicons name="location-outline" size={13} color="rgba(255,255,255,0.8)" />
-                    <Text style={styles.heroAreaText} numberOfLines={1}>{areaLabel}</Text>
-                  </View>
-                ) : null}
               </View>
             </View>
 
@@ -602,14 +603,16 @@ export function ListingScreen({ navigation, route }: Props) {
                   </View>
                   <View style={styles.factRows}>
                     <View style={styles.factRow}>
-                      <Ionicons name="star" size={17} color="#f4b942" style={styles.factIcon} />
+                      <Ionicons name="star" size={17} color={FG} style={styles.factIcon} />
                       <Text style={styles.factText} numberOfLines={1}>
-                        <Text style={styles.factVal}>{hasReviews ? listing.rating?.toFixed(1) : "—"}</Text>
-                        <Text style={styles.factMuted}>
-                          {hasReviews
-                            ? `  ·  ${listing.rating_count ?? reviews.length} ${(listing.rating_count ?? reviews.length) === 1 ? "review" : "reviews"}`
-                            : "  ·  No reviews yet"}
-                        </Text>
+                        {hasReviews ? (
+                          <>
+                            <Text style={styles.factVal}>{listing.rating?.toFixed(1)}</Text>
+                            <Text style={styles.factMuted}>{`  ·  ${listing.rating_count ?? reviews.length} ${(listing.rating_count ?? reviews.length) === 1 ? "review" : "reviews"}`}</Text>
+                          </>
+                        ) : (
+                          <Text style={styles.factMuted}>No reviews yet</Text>
+                        )}
                       </Text>
                     </View>
                     {areaLabel ? (

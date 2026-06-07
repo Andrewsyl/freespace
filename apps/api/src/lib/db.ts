@@ -314,6 +314,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
       $3
     )
     AND status <> 'archived'
+    AND is_active = TRUE
     AND ($6::text IS NULL OR lower(title) LIKE $6)
     AND ($7::text <> 'monthly' OR price_per_month IS NOT NULL)
     ORDER BY distance_m ASC
@@ -345,6 +346,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
     AND ($6::text IS NULL OR lower(title) LIKE $6)
     ORDER BY distance_m ASC
     LIMIT 200;
+
   `;
 
   const params = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter, mode];
@@ -918,6 +920,7 @@ export async function listListingsByHost(hostId: string) {
         image_urls,
         access_code,
         arrival_instructions,
+        is_active,
         ST_X(geom) AS longitude,
         ST_Y(geom) AS latitude
       FROM listings
@@ -958,6 +961,7 @@ export async function listListingsByHost(hostId: string) {
     imageUrls: row.image_urls ?? [],
     accessCode: row.access_code ?? null,
     arrivalInstructions: row.arrival_instructions ?? null,
+    isActive: row.is_active ?? true,
     longitude: row.longitude,
     latitude: row.latitude,
   }));
@@ -999,6 +1003,7 @@ export async function updateListingForHost({
   arrivalInstructions,
   permissionDeclared,
   capacity,
+  isActive,
 }: {
   listingId: string;
   hostId: string;
@@ -1017,6 +1022,7 @@ export async function updateListingForHost({
   arrivalInstructions?: string | null;
   permissionDeclared?: boolean;
   capacity?: number | null;
+  isActive?: boolean;
 }) {
   const fields: string[] = [];
   const values: any[] = [];
@@ -1073,6 +1079,10 @@ export async function updateListingForHost({
   if (typeof capacity === "number" && capacity >= 1) {
     fields.push(`capacity = $${idx++}`);
     values.push(Math.min(20, Math.floor(capacity)));
+  }
+  if (typeof isActive === "boolean") {
+    fields.push(`is_active = $${idx++}`);
+    values.push(isActive);
   }
   if (typeof latitude === "number" && typeof longitude === "number") {
     fields.push(`geom = ST_SetSRID(ST_MakePoint($${idx++}, $${idx++}), 4326)`);
@@ -1721,6 +1731,7 @@ export async function getListingWithHostAccount(listingId: string) {
     JOIN users u ON u.id = l.host_id
     WHERE l.id = $1
       AND l.status <> 'archived'
+      AND l.is_active = TRUE
     LIMIT 1
     `,
     [listingId]

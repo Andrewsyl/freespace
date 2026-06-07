@@ -328,6 +328,7 @@ const updateListingSchema = z.object({
   arrivalInstructions: z.string().trim().min(3).max(240).nullable().optional(),
   permissionDeclared: z.boolean().optional(),
   capacity: z.coerce.number().int().min(1).max(20).optional(),
+  isActive: z.boolean().optional(),
 });
 
 router.patch("/:id", requireAuth, listingWriteLimiter, async (req, res, next) => {
@@ -363,6 +364,7 @@ router.patch("/:id", requireAuth, listingWriteLimiter, async (req, res, next) =>
       arrivalInstructions: payload.arrivalInstructions ?? undefined,
       permissionDeclared: payload.permissionDeclared,
       capacity: payload.capacity,
+      isActive: payload.isActive,
     });
     if (!updated) return res.status(404).json({ message: "Listing not found" });
     res.json({ listing: updated });

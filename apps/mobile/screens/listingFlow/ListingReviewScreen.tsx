@@ -4,7 +4,18 @@ import { useEffect, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import LottieView from "lottie-react-native";
-import { Check, ChevronRight } from "lucide-react-native";
+import {
+  Check,
+  ChevronRight,
+  MapPin,
+  Clock,
+  Tag,
+  Camera,
+  KeyRound,
+  Users,
+  Pencil,
+  Lightbulb,
+} from "lucide-react-native";
 import {
   createAvailabilityEntry,
   createListing,
@@ -17,8 +28,8 @@ import { useAuth } from "../../auth";
 import type { RootStackParamList } from "../../types";
 import { useListingFlow } from "./context";
 import { FlowHeader } from "./FlowHeader";
-import { colors, radius, spacing, textStyles } from "../../styles/theme";
-import { hostFlowColors } from "./hostFlowTheme";
+import { colors, spacing } from "../../styles/theme";
+import { hostFlowColors, hostFlowShadow } from "./hostFlowTheme";
 import { clearHostListingDraft } from "./draftStorage";
 
 type FlowStackParamList = {
@@ -32,6 +43,13 @@ type FlowStackParamList = {
 };
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingReview">;
+
+const ACCENT = hostFlowColors.accent;
+const FG = hostFlowColors.text;
+const MUTED = hostFlowColors.textMuted;
+const SOFT = hostFlowColors.textSoft;
+const BORDER = "#E2E8ED";
+const CARD = "#ffffff";
 
 export function ListingReviewScreen({ navigation }: Props) {
   const { draft, setDraft, listingId } = useListingFlow();
@@ -53,15 +71,21 @@ export function ListingReviewScreen({ navigation }: Props) {
     draft.location.address.trim().length > 0 &&
     draft.permissionDeclared;
 
+  const priceLabel = (() => {
+    if (requiresShortStay && requiresMonthly)
+      return `€${draft.pricePerHour}/hr · €${draft.pricePerDay}/day · €${draft.pricePerMonth}/month`;
+    if (requiresMonthly)
+      return `€${draft.pricePerMonth || "0"}/month`;
+    if (draft.pricePerHour.trim().length > 0 && draft.pricePerDay.trim().length > 0)
+      return `€${draft.pricePerHour}/hr · €${draft.pricePerDay}/day`;
+    if (draft.pricePerHour.trim().length > 0)
+      return `€${draft.pricePerHour}/hr`;
+    return `€${draft.pricePerDay || "0"}/day`;
+  })();
+
   const buildAvailabilityPayloads = () => {
     const weekdayIndex: Record<string, number> = {
-      Sun: 0,
-      Mon: 1,
-      Tue: 2,
-      Wed: 3,
-      Thu: 4,
-      Fri: 5,
-      Sat: 6,
+      Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
     };
     const mode = draft.availability.mode;
     const timeStart = new Date(draft.availability.timeStart);
@@ -76,14 +100,7 @@ export function ListingReviewScreen({ navigation }: Props) {
       const startsAt = withTime(baseDate, timeStart);
       const endsAt = withTime(baseDate, timeEnd);
       if (endsAt <= startsAt) endsAt.setDate(endsAt.getDate() + 1);
-      return [
-        {
-          startsAt: startsAt.toISOString(),
-          endsAt: endsAt.toISOString(),
-          repeatWeekdays: [0, 1, 2, 3, 4, 5, 6],
-          repeatUntil: null,
-        },
-      ];
+      return [{ startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), repeatWeekdays: [0, 1, 2, 3, 4, 5, 6], repeatUntil: null }];
     }
     if (mode === "recurring") {
       const repeatWeekdays = draft.availability.weekdays
@@ -91,7 +108,7 @@ export function ListingReviewScreen({ navigation }: Props) {
         .filter((value) => typeof value === "number");
       if (!repeatWeekdays.length) return [];
       const dayTimeRanges = draft.availability.dayTimeRanges ?? {};
-      const payloads = repeatWeekdays.map((weekdayIdx) => {
+      return repeatWeekdays.map((weekdayIdx) => {
         const dayCode = Object.entries(weekdayIndex).find(([, idx]) => idx === weekdayIdx)?.[0] ?? "Mon";
         const range = dayTimeRanges[dayCode];
         const startRef = range?.start ? new Date(range.start) : timeStart;
@@ -99,62 +116,33 @@ export function ListingReviewScreen({ navigation }: Props) {
         const startsAt = withTime(baseDate, startRef);
         const endsAt = withTime(baseDate, endRef);
         if (endsAt <= startsAt) endsAt.setDate(endsAt.getDate() + 1);
-        return {
-          startsAt: startsAt.toISOString(),
-          endsAt: endsAt.toISOString(),
-          repeatWeekdays: [weekdayIdx],
-          repeatUntil: null,
-        };
+        return { startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), repeatWeekdays: [weekdayIdx], repeatUntil: null };
       });
-      return payloads;
     }
     const dateStart = new Date(draft.availability.dateStart);
     const dateEnd = new Date(draft.availability.dateEnd);
     const startsAt = withTime(dateStart, timeStart);
     const endsAt = withTime(dateEnd, timeEnd);
     if (endsAt <= startsAt) endsAt.setDate(endsAt.getDate() + 1);
-    return [
-      {
-        startsAt: startsAt.toISOString(),
-        endsAt: endsAt.toISOString(),
-        repeatWeekdays: null,
-        repeatUntil: null,
-      },
-    ];
+    return [{ startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), repeatWeekdays: null, repeatUntil: null }];
   };
 
   const syncAvailability = async (targetListingId: string) => {
     if (!token) return;
     const existing = await listAvailability({ token, listingId: targetListingId });
-    await Promise.all(
-      existing.map((entry) =>
-        deleteAvailabilityEntry({ token, availabilityId: entry.id })
-      )
-    );
+    await Promise.all(existing.map((entry) => deleteAvailabilityEntry({ token, availabilityId: entry.id })));
     const payloads = buildAvailabilityPayloads();
     if (!payloads.length) return;
-    await Promise.all(
-      payloads.map((payload) =>
-        createAvailabilityEntry({
-          token,
-          listingId: targetListingId,
-          kind: "open",
-          startsAt: payload.startsAt,
-          endsAt: payload.endsAt,
-          repeatWeekdays: payload.repeatWeekdays,
-          repeatUntil: payload.repeatUntil,
-        })
-      )
-    );
+    await Promise.all(payloads.map((payload) =>
+      createAvailabilityEntry({ token, listingId: targetListingId, kind: "open", startsAt: payload.startsAt, endsAt: payload.endsAt, repeatWeekdays: payload.repeatWeekdays, repeatUntil: payload.repeatUntil })
+    ));
   };
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("beforeRemove", (event) => {
       if (!published) return;
       const actionType = event.data.action.type;
-      if (actionType === "GO_BACK" || actionType === "POP") {
-        event.preventDefault();
-      }
+      if (actionType === "GO_BACK" || actionType === "POP") event.preventDefault();
     });
     return unsubscribe;
   }, [navigation, published]);
@@ -167,100 +155,40 @@ export function ListingReviewScreen({ navigation }: Props) {
     const hasHourlyPrice = draft.pricePerHour.trim().length > 0;
     const hasDailyPrice = draft.pricePerDay.trim().length > 0;
     const hasMonthlyPrice = draft.pricePerMonth.trim().length > 0;
-    if (
-      !draft.spaceType ||
-      !draft.permissionDeclared ||
-      (requiresShortStay && (!hasHourlyPrice || !hasDailyPrice)) ||
-      (requiresMonthly && !hasMonthlyPrice)
-    ) {
+    if (!draft.spaceType || !draft.permissionDeclared || (requiresShortStay && (!hasHourlyPrice || !hasDailyPrice)) || (requiresMonthly && !hasMonthlyPrice)) {
       setError("Complete the required steps first.");
       return;
     }
     setSubmitting(true);
     setError(null);
     try {
-      void trackEvent("mobile_host_publish_started", {
-        pricingMode: draft.pricingMode,
-        hasPhotos: draft.photos.length > 0,
-      });
-      const coverUrl =
-        draft.coverHeading != null && mapsKey
-          ? `https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=${draft.location.latitude},${draft.location.longitude}&heading=${draft.coverHeading}&pitch=${draft.coverPitch ?? 0}&fov=80&key=${mapsKey}`
-          : null;
-      const imageUrls = [
-        ...(coverUrl ? [coverUrl] : []),
-        ...draft.photos.filter(Boolean),
-      ];
+      void trackEvent("mobile_host_publish_started", { pricingMode: draft.pricingMode, hasPhotos: draft.photos.length > 0 });
+      const coverUrl = draft.coverHeading != null && mapsKey
+        ? `https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=${draft.location.latitude},${draft.location.longitude}&heading=${draft.coverHeading}&pitch=${draft.coverPitch ?? 0}&fov=80&key=${mapsKey}`
+        : null;
+      const imageUrls = [...(coverUrl ? [coverUrl] : []), ...draft.photos.filter(Boolean)];
       const parsedHourly = Number.parseFloat(draft.pricePerHour);
       const parsedDaily = Number.parseFloat(draft.pricePerDay);
       const parsedMonthly = Number.parseFloat(draft.pricePerMonth);
-      const inferredRateType =
-        requiresShortStay && Number.isFinite(parsedHourly) && parsedHourly > 0 ? "hourly" : "daily";
+      const inferredRateType = requiresShortStay && Number.isFinite(parsedHourly) && parsedHourly > 0 ? "hourly" : "daily";
       if (listingId) {
-        await updateListing({
-          token,
-          listingId,
-          title: draft.spaceType
-            ? `${draft.spaceType} parking`
-            : "Parking space",
-          address: draft.location.address || "Dublin",
-          rateType: inferredRateType,
-          pricePerDay: parsedDaily,
-          pricePerHour: requiresShortStay ? parsedHourly : null,
-          pricePerMonth: requiresMonthly ? parsedMonthly : null,
-          availabilityText: draft.availability.detail,
-          imageUrls,
-          amenities: draft.accessOptions,
-          accessCode: draft.accessCode.trim() || null,
-          arrivalInstructions: draft.arrivalInstructions.trim() || null,
-          permissionDeclared: draft.permissionDeclared,
-          capacity: draft.capacity,
-        });
+        await updateListing({ token, listingId, title: draft.spaceType ? `${draft.spaceType} parking` : "Parking space", address: draft.location.address || "Dublin", rateType: inferredRateType, pricePerDay: parsedDaily, pricePerHour: requiresShortStay ? parsedHourly : null, pricePerMonth: requiresMonthly ? parsedMonthly : null, availabilityText: draft.availability.detail, imageUrls, amenities: draft.accessOptions, accessCode: draft.accessCode.trim() || null, arrivalInstructions: draft.arrivalInstructions.trim() || null, permissionDeclared: draft.permissionDeclared, capacity: draft.capacity });
         await syncAvailability(listingId);
       } else {
-        const newListingId = await createListing({
-          token,
-          title: draft.spaceType
-            ? `${draft.spaceType} parking`
-            : "Parking space",
-          address: draft.location.address || "Dublin",
-          rateType: inferredRateType,
-          pricePerDay: parsedDaily,
-          pricePerHour: requiresShortStay ? parsedHourly : null,
-          pricePerMonth: requiresMonthly ? parsedMonthly : null,
-          availabilityText: draft.availability.detail,
-          latitude: draft.location.latitude,
-          longitude: draft.location.longitude,
-          imageUrls,
-          amenities: draft.accessOptions,
-          accessCode: draft.accessCode.trim() || null,
-          arrivalInstructions: draft.arrivalInstructions.trim() || null,
-          permissionDeclared: draft.permissionDeclared,
-          capacity: draft.capacity,
-        });
+        const newListingId = await createListing({ token, title: draft.spaceType ? `${draft.spaceType} parking` : "Parking space", address: draft.location.address || "Dublin", rateType: inferredRateType, pricePerDay: parsedDaily, pricePerHour: requiresShortStay ? parsedHourly : null, pricePerMonth: requiresMonthly ? parsedMonthly : null, availabilityText: draft.availability.detail, latitude: draft.location.latitude, longitude: draft.location.longitude, imageUrls, amenities: draft.accessOptions, accessCode: draft.accessCode.trim() || null, arrivalInstructions: draft.arrivalInstructions.trim() || null, permissionDeclared: draft.permissionDeclared, capacity: draft.capacity });
         await syncAvailability(newListingId);
       }
       await clearHostListingDraft();
       setPublished(true);
       setShowSuccess(true);
-      void trackEvent("mobile_host_publish_succeeded", {
-        pricingMode: draft.pricingMode,
-        listingId: listingId ?? "new",
-      });
+      void trackEvent("mobile_host_publish_succeeded", { pricingMode: draft.pricingMode, listingId: listingId ?? "new" });
       setTimeout(() => {
-        (rootNavigation as { dispatch: (action: ReturnType<typeof CommonActions.reset>) => void })
-          ?.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: "Listings" as keyof RootStackParamList }],
-            })
-          );
+        (rootNavigation as { dispatch: (action: ReturnType<typeof CommonActions.reset>) => void })?.dispatch(
+          CommonActions.reset({ index: 0, routes: [{ name: "Listings" as keyof RootStackParamList }] })
+        );
       }, 1800);
     } catch (err) {
-      void trackEvent("mobile_host_publish_failed", {
-        pricingMode: draft.pricingMode,
-        listingId: listingId ?? "new",
-      });
+      void trackEvent("mobile_host_publish_failed", { pricingMode: draft.pricingMode, listingId: listingId ?? "new" });
       setError(err instanceof Error ? err.message : "Could not publish");
       setPublished(false);
       setShowSuccess(false);
@@ -277,160 +205,182 @@ export function ListingReviewScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={[]}>
       <FlowHeader current={8} total={8} onClose={exitFlow} />
-      <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="never">
-        <Text style={styles.kicker}>
-          {listingId ? "Review & update" : "Review & publish"}
-        </Text>
-        <Text style={styles.title}>Double‑check your details</Text>
-        <Text style={styles.subtitle}>
-          {listingId ? "Confirm everything looks right." : "You can edit anything after publishing."}
-        </Text>
 
-        <Pressable
-          style={[
-            styles.confirmRow,
-            draft.permissionDeclared && styles.confirmRowActive,
-          ]}
-          onPress={() =>
-            setDraft((prev) => ({
-              ...prev,
-              permissionDeclared: !prev.permissionDeclared,
-            }))
-          }
-        >
-          <View
-            style={[
-              styles.confirmBox,
-              draft.permissionDeclared && styles.confirmBoxActive,
-            ]}
-          >
-            {draft.permissionDeclared ? (
-              <Check size={14} color={colors.cardBg} strokeWidth={3} />
-            ) : null}
-          </View>
-          <View style={styles.confirmTextWrap}>
-            <Text style={styles.confirmTitle}>I have permission to rent this space</Text>
-            <Text style={styles.confirmSubtitle}>
-              You confirm you own this space or have the owner’s consent to list it.
-            </Text>
-          </View>
-        </Pressable>
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: 32 + insets.bottom }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Page header ── */}
+        <View style={styles.pageHeader}>
+          <Text style={styles.kicker}>{listingId ? "Review & update" : "Review & publish"}</Text>
+          <Text style={styles.title}>Double‑check your details</Text>
+          <Text style={styles.subtitle}>
+            {listingId ? "Confirm everything looks right before saving." : "You can edit anything after publishing."}
+          </Text>
+        </View>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
+        {/* ── Listing preview card ── */}
         <View style={styles.card}>
-          <View style={styles.mapPreview}>
+          {/* Map */}
+          <View style={styles.mapWrap}>
             <Image
               style={styles.map}
               source={{
-                uri: `https://maps.googleapis.com/maps/api/staticmap?center=${draft.location.latitude},${draft.location.longitude}&zoom=15&size=640x320&scale=2&markers=color:0x111111%7C${draft.location.latitude},${draft.location.longitude}&key=${mapsKey}`,
+                uri: `https://maps.googleapis.com/maps/api/staticmap?center=${draft.location.latitude},${draft.location.longitude}&zoom=15&size=640x360&scale=2&style=feature:poi|visibility:off&style=feature:transit|visibility:off&markers=color:0x0a8050%7C${draft.location.latitude},${draft.location.longitude}&key=${mapsKey}`,
               }}
               resizeMode="cover"
             />
           </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Space type</Text>
-            <Text style={styles.value}>{draft.spaceType || "Not set"}</Text>
-          </View>
-          {draft.capacity > 1 && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Number of spaces</Text>
-              <Text style={styles.value}>{draft.capacity}</Text>
-            </View>
-          )}
-          <View style={styles.row}>
-            <Text style={styles.label}>Availability</Text>
-            <Text style={styles.value}>{draft.availability.detail || "Not set"}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Price</Text>
-            <Text style={styles.value}>
-              {requiresShortStay && requiresMonthly
-                ? `€${draft.pricePerHour}/hr · €${draft.pricePerDay}/day · €${draft.pricePerMonth}/month`
-                : requiresMonthly
-                  ? `€${draft.pricePerMonth || "0"}/month`
-                  : draft.pricePerHour.trim().length > 0 && draft.pricePerDay.trim().length > 0
-                    ? `€${draft.pricePerHour}/hr · €${draft.pricePerDay}/day`
-                    : draft.pricePerHour.trim().length > 0
-                      ? `€${draft.pricePerHour}/hr`
-                      : `€${draft.pricePerDay || "0"}/day`}
+          {/* Title + address row */}
+          <View style={styles.listingMeta}>
+            <Text style={styles.listingTitle} numberOfLines={1}>
+              {draft.spaceType ? `${draft.spaceType} parking` : "Parking space"}
             </Text>
+            <View style={styles.listingAddressRow}>
+              <MapPin size={12} color={SOFT} strokeWidth={2} />
+              <Text style={styles.listingAddress} numberOfLines={1}>
+                {draft.location.address || "Location not set"}
+              </Text>
+            </View>
           </View>
-        </View>
-        <View style={styles.editCard}>
-          <Text style={styles.editTitle}>Edit a section</Text>
-          <Pressable
-            style={styles.editRow}
-            onPress={() => navigation.navigate("ListingLocation")}
-          >
-            <Text style={styles.editLabel}>Location</Text>
-            <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />
-          </Pressable>
-          <Pressable
-            style={styles.editRow}
-            onPress={() => navigation.navigate("ListingStreetView")}
-          >
-            <Text style={styles.editLabel}>Street view</Text>
-            <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />
-          </Pressable>
-          <Pressable
-            style={styles.editRow}
-            onPress={() => navigation.navigate("ListingDetails")}
-          >
-            <Text style={styles.editLabel}>Space details</Text>
-            <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />
-          </Pressable>
-          <Pressable
-            style={styles.editRow}
-            onPress={() => navigation.navigate("ListingAvailability")}
-          >
-            <Text style={styles.editLabel}>Availability</Text>
-            <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />
-          </Pressable>
-          <Pressable style={styles.editRow} onPress={() => navigation.navigate("ListingPrice")}>
-            <Text style={styles.editLabel}>Price</Text>
-            <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />
-          </Pressable>
-          <Pressable
-            style={[styles.editRow, styles.editRowLast]}
-            onPress={() => navigation.navigate("ListingPhotos")}
-          >
-            <Text style={styles.editLabel}>Photos</Text>
-            <ChevronRight size={18} color={colors.textSoft} strokeWidth={2.4} />
-          </Pressable>
+          {/* Key facts strip */}
+          <View style={styles.factsStrip}>
+            <View style={styles.factItem}>
+              <Tag size={13} color={ACCENT} strokeWidth={2} />
+              <Text style={styles.factText}>{priceLabel}</Text>
+            </View>
+            <View style={styles.factDivider} />
+            <View style={styles.factItem}>
+              <Clock size={13} color={ACCENT} strokeWidth={2} />
+              <Text style={styles.factText} numberOfLines={1}>
+                {draft.availability.detail || "Availability not set"}
+              </Text>
+            </View>
+            {draft.capacity > 1 ? (
+              <>
+                <View style={styles.factDivider} />
+                <View style={styles.factItem}>
+                  <Users size={13} color={ACCENT} strokeWidth={2} />
+                  <Text style={styles.factText}>{draft.capacity} spaces</Text>
+                </View>
+              </>
+            ) : null}
+          </View>
         </View>
 
-        <View style={styles.guidanceCard}>
-          <Text style={styles.guidanceTitle}>What gets bookings</Text>
-          <Text style={styles.guidanceBody}>
-            The strongest listings are easy to trust at a glance and easy to use after booking.
-          </Text>
-          <Text style={styles.guidanceBullet}>• Show exactly where the driver should park</Text>
-          <Text style={styles.guidanceBullet}>• Add arrival notes and any code they need after booking</Text>
-          <Text style={styles.guidanceBullet}>• Keep price and availability accurate to avoid cancellations</Text>
+        {/* ── Details overview ── */}
+        <View style={styles.card}>
+          <Text style={styles.cardHeader}>Listing details</Text>
+          <DetailRow
+            icon={<Tag size={15} color={ACCENT} strokeWidth={2} />}
+            label="Space type"
+            value={draft.spaceType || "Not set"}
+          />
+          <DetailRow
+            icon={<MapPin size={15} color={ACCENT} strokeWidth={2} />}
+            label="Location"
+            value={draft.location.address || "Not set"}
+          />
+          <DetailRow
+            icon={<Clock size={15} color={ACCENT} strokeWidth={2} />}
+            label="Availability"
+            value={draft.availability.detail || "Not set"}
+          />
+          <DetailRow
+            icon={<Tag size={15} color={ACCENT} strokeWidth={2} />}
+            label="Price"
+            value={priceLabel}
+          />
+          <DetailRow
+            icon={<Camera size={15} color={ACCENT} strokeWidth={2} />}
+            label="Photos"
+            value={draft.photos.length > 0 ? `${draft.photos.length} photo${draft.photos.length !== 1 ? "s" : ""}` : "No photos added"}
+            valueStyle={draft.photos.length === 0 ? styles.valueWarning : undefined}
+          />
+          {draft.capacity > 1 ? (
+            <DetailRow
+              icon={<Users size={15} color={ACCENT} strokeWidth={2} />}
+              label="Spaces"
+              value={`${draft.capacity}`}
+            />
+          ) : null}
+          {draft.accessCode.trim() ? (
+            <DetailRow
+              icon={<KeyRound size={15} color={ACCENT} strokeWidth={2} />}
+              label="Access code"
+              value={draft.accessCode.trim()}
+              isLast
+            />
+          ) : null}
         </View>
-      </ScrollView>
-      <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 10) }]}>
+
+        {/* ── Make changes ── */}
+        <View style={styles.card}>
+          <Text style={styles.cardHeader}>Make changes</Text>
+          <EditRow label="Location" onPress={() => navigation.navigate("ListingLocation")} />
+          <EditRow label="Street view" onPress={() => navigation.navigate("ListingStreetView")} />
+          <EditRow label="Space details" onPress={() => navigation.navigate("ListingDetails")} />
+          <EditRow label="Availability" onPress={() => navigation.navigate("ListingAvailability")} />
+          <EditRow label="Price" onPress={() => navigation.navigate("ListingPrice")} />
+          <EditRow label="Photos" onPress={() => navigation.navigate("ListingPhotos")} isLast />
+        </View>
+
+        {/* ── Tips ── */}
+        <View style={styles.tipsCard}>
+          <View style={styles.tipsHeader}>
+            <View style={styles.tipsIconWrap}>
+              <Lightbulb size={15} color={ACCENT} strokeWidth={2} />
+            </View>
+            <Text style={styles.tipsTitle}>What gets bookings</Text>
+          </View>
+          <View style={styles.tipsList}>
+            <TipRow text="Show exactly where the driver should park" />
+            <TipRow text="Add arrival notes and any code needed after booking" />
+            <TipRow text="Keep price and availability accurate to avoid cancellations" />
+          </View>
+        </View>
+
+        {/* ── Error ── */}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        {/* ── Permission ── */}
         <Pressable
-          style={[
-            styles.primaryButton,
-            (!canPublish || submitting || published) && styles.primaryButtonDisabled,
-          ]}
+          style={[styles.permissionCard, draft.permissionDeclared && styles.permissionCardActive]}
+          onPress={() => setDraft((prev) => ({ ...prev, permissionDeclared: !prev.permissionDeclared }))}
+        >
+          <View style={[styles.checkbox, draft.permissionDeclared && styles.checkboxActive]}>
+            {draft.permissionDeclared ? <Check size={13} color="#ffffff" strokeWidth={3} /> : null}
+          </View>
+          <View style={styles.permissionText}>
+            <Text style={styles.permissionTitle}>I have permission to rent this space</Text>
+            <Text style={styles.permissionSubtitle}>
+              You confirm you own this space or have the owner's consent to list it.
+            </Text>
+          </View>
+        </Pressable>
+      </ScrollView>
+
+      {/* ── Footer ── */}
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        <Pressable
+          style={[styles.publishBtn, (!canPublish || submitting || published) && styles.publishBtnDisabled]}
           onPress={handlePublish}
           disabled={!canPublish || submitting || published}
         >
-          <Text style={styles.primaryButtonText}>
-            {submitting ? "Saving..." : listingId ? "Update listing" : "Publish space"}
+          <Text style={styles.publishBtnText}>
+            {submitting ? "Saving…" : listingId ? "Update listing" : "Publish space"}
           </Text>
         </Pressable>
         <Pressable
-          style={styles.secondaryButton}
+          style={styles.saveLaterBtn}
           onPress={() => navigation.goBack()}
           disabled={submitting || published}
         >
-          <Text style={styles.secondaryButtonText}>Save and finish later</Text>
+          <Text style={styles.saveLaterText}>Save and finish later</Text>
         </Pressable>
       </View>
+
+      {/* ── Success overlay ── */}
       {showSuccess ? (
         <View style={styles.successOverlay}>
           <View style={styles.successCard}>
@@ -440,8 +390,12 @@ export function ListingReviewScreen({ navigation }: Props) {
               loop={false}
               style={styles.successAnimation}
             />
-            <Text style={styles.successTitle}>Published</Text>
-            <Text style={styles.successBody}>Your space is now live.</Text>
+            <Text style={styles.successTitle}>
+              {listingId ? "Updated" : "Published"}
+            </Text>
+            <Text style={styles.successBody}>
+              {listingId ? "Your listing has been saved." : "Your space is now live."}
+            </Text>
           </View>
         </View>
       ) : null}
@@ -449,206 +403,392 @@ export function ListingReviewScreen({ navigation }: Props) {
   );
 }
 
+// ── Sub-components ─────────────────────────────────────────────────────────
+
+function DetailRow({
+  icon,
+  label,
+  value,
+  isLast,
+  valueStyle,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  isLast?: boolean;
+  valueStyle?: object;
+}) {
+  return (
+    <View style={[styles.detailRow, !isLast && styles.detailRowBorder]}>
+      <View style={styles.detailIconWrap}>{icon}</View>
+      <View style={styles.detailBody}>
+        <Text style={styles.detailLabel}>{label}</Text>
+        <Text style={[styles.detailValue, valueStyle]} numberOfLines={2}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
+function EditRow({
+  label,
+  onPress,
+  isLast,
+}: {
+  label: string;
+  onPress: () => void;
+  isLast?: boolean;
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.editRow, !isLast && styles.editRowBorder, pressed && styles.editRowPressed]}
+      onPress={onPress}
+    >
+      <View style={styles.editRowLeft}>
+        <View style={styles.editIconWrap}>
+          <Pencil size={12} color={ACCENT} strokeWidth={2.2} />
+        </View>
+        <Text style={styles.editLabel}>{label}</Text>
+      </View>
+      <ChevronRight size={16} color={SOFT} strokeWidth={2.2} />
+    </Pressable>
+  );
+}
+
+function TipRow({ text }: { text: string }) {
+  return (
+    <View style={styles.tipRow}>
+      <View style={styles.tipDot} />
+      <Text style={styles.tipText}>{text}</Text>
+    </View>
+  );
+}
+
+// ── Styles ─────────────────────────────────────────────────────────────────
+
+const CARD_SHADOW = {
+  shadowColor: "#0f172a",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 10,
+  elevation: 3,
+};
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.appBg,
-  },
-  content: {
-    padding: spacing.screenX,
-    paddingBottom: 160,
-    paddingTop: 0,
-  },
-  heroIllustration: {
-    width: "100%",
-    height: 160,
-    marginBottom: 10,
-  },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+
+  scroll: { paddingTop: 4, paddingHorizontal: 16, gap: 14 },
+
+  // ── Page header ──────────────────────────────────────────────
+  pageHeader: { paddingTop: 10, paddingBottom: 6 },
   kicker: {
-    color: hostFlowColors.accent,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
-    letterSpacing: 2,
+    color: ACCENT,
+    letterSpacing: 1.6,
     textTransform: "uppercase",
+    marginBottom: 8,
   },
   title: {
-    color: hostFlowColors.text,
+    fontFamily: "PlusJakartaSans-ExtraBold",
     fontSize: 26,
-    lineHeight: 34,
-    fontFamily: "PlusJakartaSans-Bold",
-    marginTop: 10,
+    color: FG,
     letterSpacing: -0.8,
+    lineHeight: 32,
+    marginBottom: 6,
   },
   subtitle: {
-    color: hostFlowColors.textMuted,
-    fontSize: 14,
     fontFamily: "PlusJakartaSans-Regular",
-    marginTop: 8,
-    lineHeight: 22,
+    fontSize: 14,
+    color: MUTED,
+    lineHeight: 21,
   },
-  guidanceCard: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 12,
+
+  // ── Cards ────────────────────────────────────────────────────
+  card: {
+    backgroundColor: CARD,
+    borderRadius: 18,
+    overflow: "hidden",
+    ...CARD_SHADOW,
+  },
+  cardHeader: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 15,
+    color: FG,
+    letterSpacing: -0.3,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+
+  // ── Map + listing meta ───────────────────────────────────────
+  mapWrap: { height: 175, backgroundColor: "#e8f0f4" },
+  map: { flex: 1 },
+  listingMeta: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  listingTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 17,
+    color: FG,
+    letterSpacing: -0.4,
+    marginBottom: 4,
+  },
+  listingAddressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  listingAddress: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    color: MUTED,
+    flex: 1,
+  },
+  factsStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    gap: 12,
+  },
+  factItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    flex: 1,
+    minWidth: 0,
+  },
+  factText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: FG,
+    letterSpacing: -0.1,
+    flexShrink: 1,
+  },
+  factDivider: { width: 1, height: 16, backgroundColor: BORDER },
+
+  // ── Detail rows ──────────────────────────────────────────────
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  detailRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  detailIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "#EDF7F2",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
+    flexShrink: 0,
+  },
+  detailBody: { flex: 1 },
+  detailLabel: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 11,
+    color: SOFT,
+    letterSpacing: 0.2,
+    marginBottom: 3,
+    textTransform: "uppercase",
+  },
+  detailValue: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: FG,
+    letterSpacing: -0.1,
+    lineHeight: 20,
+  },
+  valueWarning: { color: "#F59E0B" },
+
+  // ── Edit rows ────────────────────────────────────────────────
+  editRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  editRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  editRowPressed: { backgroundColor: "#F8FAFC" },
+  editRowLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  editIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "#EDF7F2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  editLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: FG,
+    letterSpacing: -0.2,
+  },
+
+  // ── Tips card ────────────────────────────────────────────────
+  tipsCard: {
+    backgroundColor: "#F0FDF8",
+    borderRadius: 18,
     borderWidth: 1,
-    marginTop: 14,
+    borderColor: "#C6F0DC",
     padding: 16,
   },
-  guidanceTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
+  tipsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
   },
-  guidanceBody: {
-    color: colors.textMuted,
+  tipsIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: "#D1FAE5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tipsTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 14,
+    color: FG,
+    letterSpacing: -0.2,
+  },
+  tipsList: { gap: 8 },
+  tipRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  tipDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: ACCENT,
+    marginTop: 7,
+    flexShrink: 0,
+  },
+  tipText: {
     fontFamily: "PlusJakartaSans-Regular",
-    lineHeight: 22,
-    marginTop: 6,
-  },
-  guidanceBullet: {
-    color: colors.text,
     fontSize: 13,
-    fontFamily: "PlusJakartaSans-Medium",
+    color: MUTED,
     lineHeight: 20,
-    marginTop: 8,
+    flex: 1,
   },
+
+  // ── Error ────────────────────────────────────────────────────
   error: {
     backgroundColor: "#fef2f2",
     borderColor: "#fecaca",
     borderRadius: 12,
     borderWidth: 1,
     color: colors.danger,
-    fontSize: 12,
     fontFamily: "PlusJakartaSans-Regular",
-    marginTop: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    fontSize: 13,
+    lineHeight: 19,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
   },
-  card: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 16,
-    overflow: "hidden",
-  },
-  editCard: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 16,
-    overflow: "hidden",
-  },
-  editTitle: {
-    color: colors.text,
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 8,
-    letterSpacing: 0.2,
-  },
-  editRow: {
-    alignItems: "center",
-    borderTopColor: "rgba(17, 24, 39, 0.06)",
-    borderTopWidth: 1,
+
+  // ── Permission card ──────────────────────────────────────────
+  permissionCard: {
+    backgroundColor: CARD,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: BORDER,
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  editRowLast: {
-    borderBottomWidth: 0,
-  },
-  editLabel: {
-    color: colors.text,
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-  },
-  mapPreview: {
-    height: 160,
-  },
-  map: {
-    flex: 1,
-  },
-  row: {
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  confirmRow: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 14,
+    gap: 14,
     padding: 16,
+    alignItems: "flex-start",
+    ...CARD_SHADOW,
   },
-  confirmRowActive: {
-    borderColor: colors.accent,
+  permissionCardActive: {
+    borderColor: ACCENT,
+    backgroundColor: "#F7FDFB",
   },
-  confirmBox: {
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderColor: "#C5D0D8",
     alignItems: "center",
-    borderColor: "#cbd5f5",
-    borderRadius: 8,
-    borderWidth: 1,
-    height: 22,
     justifyContent: "center",
-    marginTop: 2,
-    width: 22,
+    marginTop: 1,
+    flexShrink: 0,
   },
-  confirmBoxActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+  checkboxActive: {
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
   },
-  confirmTextWrap: {
-    flex: 1,
-  },
-  confirmTitle: {
-    color: colors.text,
-    fontSize: 14,
+  permissionText: { flex: 1 },
+  permissionTitle: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
+    fontSize: 14,
+    color: FG,
+    letterSpacing: -0.2,
+    lineHeight: 20,
+    marginBottom: 4,
   },
-  confirmSubtitle: {
-    color: colors.textMuted,
-    fontSize: 12,
+  permissionSubtitle: {
     fontFamily: "PlusJakartaSans-Regular",
-    marginTop: 4,
+    fontSize: 13,
+    color: MUTED,
+    lineHeight: 19,
   },
-  label: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    letterSpacing: 0.2,
-  },
-  value: {
-    color: colors.text,
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    marginTop: 6,
-  },
+
+  // ── Footer ───────────────────────────────────────────────────
   footer: {
-    backgroundColor: colors.cardBg,
-    borderTopColor: colors.border,
+    backgroundColor: "#ffffff",
     borderTopWidth: 1,
+    borderTopColor: BORDER,
     paddingHorizontal: spacing.screenX,
-    paddingTop: 10,
-    paddingBottom: 2,
+    paddingTop: 12,
+    gap: 8,
   },
+  publishBtn: {
+    alignItems: "center",
+    backgroundColor: ACCENT,
+    borderRadius: 14,
+    height: 52,
+    justifyContent: "center",
+  },
+  publishBtnDisabled: { backgroundColor: "#CBD5E1" },
+  publishBtnText: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 16,
+    color: "#ffffff",
+    letterSpacing: -0.3,
+  },
+  saveLaterBtn: {
+    alignItems: "center",
+    height: 42,
+    justifyContent: "center",
+  },
+  saveLaterText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: MUTED,
+  },
+
+  // ── Success overlay ──────────────────────────────────────────
   successOverlay: {
     alignItems: "center",
-    backgroundColor: "rgba(15, 23, 42, 0.35)",
+    backgroundColor: "rgba(15, 23, 42, 0.4)",
     bottom: 0,
     justifyContent: "center",
     left: 0,
@@ -658,63 +798,26 @@ const styles = StyleSheet.create({
   },
   successCard: {
     alignItems: "center",
-    backgroundColor: colors.cardBg,
-    borderRadius: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
+    backgroundColor: CARD,
+    borderRadius: 20,
+    paddingHorizontal: 28,
+    paddingVertical: 24,
     width: 240,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...CARD_SHADOW,
   },
-  successAnimation: {
-    height: 140,
-    width: 140,
-  },
+  successAnimation: { height: 130, width: 130 },
   successTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    marginTop: 6,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 20,
+    color: FG,
+    letterSpacing: -0.4,
+    marginTop: 8,
   },
   successBody: {
-    color: colors.textMuted,
-    fontSize: 13,
     fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    color: MUTED,
     marginTop: 4,
     textAlign: "center",
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    minHeight: 48,
-    justifyContent: "center",
-  },
-  primaryButtonDisabled: {
-    backgroundColor: "#cbd5e1",
-  },
-  primaryButtonText: {
-    color: colors.cardBg,
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    letterSpacing: -0.2,
-  },
-  secondaryButton: {
-    alignItems: "center",
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 12,
-    marginTop: 10,
-    minHeight: 44,
-    justifyContent: "center",
-  },
-  secondaryButtonText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
   },
 });

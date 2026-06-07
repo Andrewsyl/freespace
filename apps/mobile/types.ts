@@ -92,6 +92,7 @@ export type ListingSummary = {
   latitude?: number | null;
   longitude?: number | null;
   distance_m?: number | null;
+  is_active?: boolean | null;
   image_urls?: string[] | null;
   imageUrls?: string[] | null;
   capacity?: number | null;

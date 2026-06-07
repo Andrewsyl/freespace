@@ -2,9 +2,8 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useEffect, useRef, useState } from "react";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Cctv, CircleCheck, FileText, Hash, Key, Lock, Unlock, Zap, Warehouse, Sun, ShieldCheck, ArrowUpDown, Accessibility, Clock, Bike, AlignHorizontalDistributeCenter } from "lucide-react-native";
+import { Cctv, CircleCheck, FileText, Hash, Info, Key, Lock, Unlock, Zap, Warehouse, Sun, ShieldCheck, ArrowUpDown, Accessibility, Clock, Bike, AlignHorizontalDistributeCenter } from "lucide-react-native";
 import { TextInput as AppTextInput } from "../../components/ui";
-import { spacing } from "../../styles/theme";
 import { FlowHeader } from "./FlowHeader";
 import { useListingFlow } from "./context";
 import { hostFlowColors } from "./hostFlowTheme";
@@ -17,23 +16,33 @@ type FlowStackParamList = {
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingFeaturesAccess">;
 
-type Feature = { label: string; icon: React.ReactNode; activeIcon: React.ReactNode };
+const ACCENT = hostFlowColors.accent;
+const FG = hostFlowColors.text;
+const MUTED = hostFlowColors.textMuted;
+const SOFT = hostFlowColors.textSoft;
+const CARD_SHADOW = {
+  shadowColor: "#0f172a",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 10,
+  elevation: 3,
+} as const;
 
 function featureIcon(name: string, active: boolean) {
-  const color = active ? hostFlowColors.accent : "#6b7280";
+  const color = active ? ACCENT : "#6b7280";
   const props = { size: 20, color, strokeWidth: 1.8 };
   switch (name) {
-    case "CCTV":             return <Cctv {...props} />;
-    case "EV charging":      return <Zap {...props} />;
-    case "Sheltered":        return <Warehouse {...props} />;
-    case "Well lit":         return <Sun {...props} />;
-    case "Gated access":     return <ShieldCheck {...props} />;
-    case "Height-friendly":  return <ArrowUpDown {...props} />;
-    case "Disabled access":  return <Accessibility {...props} />;
-    case "24/7 access":      return <Clock {...props} />;
+    case "CCTV":               return <Cctv {...props} />;
+    case "EV charging":        return <Zap {...props} />;
+    case "Sheltered":          return <Warehouse {...props} />;
+    case "Well lit":           return <Sun {...props} />;
+    case "Gated access":       return <ShieldCheck {...props} />;
+    case "Height-friendly":    return <ArrowUpDown {...props} />;
+    case "Disabled access":    return <Accessibility {...props} />;
+    case "24/7 access":        return <Clock {...props} />;
     case "Motorbike friendly": return <Bike {...props} />;
-    case "Wide bay":         return <AlignHorizontalDistributeCenter {...props} />;
-    default:                 return <ShieldCheck {...props} />;
+    case "Wide bay":           return <AlignHorizontalDistributeCenter {...props} />;
+    default:                   return <ShieldCheck {...props} />;
   }
 }
 
@@ -46,25 +55,24 @@ const ACCESS_CHOICES = [
     label: "Key or security fob",
     description: "You'll share key collection details with drivers",
     optionValue: "Key or security fob" as const,
-    icon: <Key size={20} color={hostFlowColors.accent} strokeWidth={1.8} />,
+    icon: (active: boolean) => <Key size={20} color={active ? ACCENT : "#6b7280"} strokeWidth={1.8} />,
   },
   {
     id: "pin_code" as const,
     label: "Pin code",
     description: "A code that unlocks the entrance or barrier",
     optionValue: "Pin code" as const,
-    icon: <Hash size={20} color={hostFlowColors.accent} strokeWidth={1.8} />,
+    icon: (active: boolean) => <Hash size={20} color={active ? ACCENT : "#6b7280"} strokeWidth={1.8} />,
   },
   {
     id: "special_instructions" as const,
     label: "Special instructions",
     description: "Custom arrival guidance drivers need to know",
     optionValue: "Special instructions" as const,
-    icon: <FileText size={20} color={hostFlowColors.accent} strokeWidth={1.8} />,
+    icon: (active: boolean) => <FileText size={20} color={active ? ACCENT : "#6b7280"} strokeWidth={1.8} />,
   },
 ] as const;
 
-type AccessChoiceId = typeof ACCESS_CHOICES[number]["id"];
 type AccessChoiceValue = typeof ACCESS_CHOICES[number]["optionValue"];
 
 export function ListingFeaturesAccessScreen({ navigation }: Props) {
@@ -159,166 +167,193 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.kicker}>Features & access</Text>
-          <Text style={styles.title}>What else should drivers know?</Text>
-          <Text style={styles.subtitle}>
-            Select everything that applies — drivers use this to decide if your space suits them.
-          </Text>
-
-          {/* ── Features ── */}
-          <Text style={styles.sectionLabel}>FEATURES</Text>
-          <View style={styles.chipGrid}>
-            {visibleFeatures.map((option) => {
-              const active = draft.accessOptions.includes(option);
-              return (
-                <Pressable
-                  key={option}
-                  style={[styles.chip, active && styles.chipActive]}
-                  onPress={() => toggleFeature(option)}
-                >
-                  <View style={[styles.chipIconWrap, active && styles.chipIconWrapActive]}>
-                    {featureIcon(option, active)}
-                  </View>
-                  <Text style={[styles.chipLabel, active && styles.chipLabelActive]} numberOfLines={1}>
-                    {option}
-                  </Text>
-                  {active ? (
-                    <CircleCheck size={16} color={hostFlowColors.accent} strokeWidth={2.2} style={styles.chipCheck} />
-                  ) : null}
-                </Pressable>
-              );
-            })}
+          {/* Header card */}
+          <View style={styles.headerCard}>
+            <View style={styles.headerCardTop}>
+              <Text style={styles.headerKicker}>Step 4 · Features & access</Text>
+              <Text style={styles.headerTitle}>What else should drivers know?</Text>
+            </View>
+            <View style={styles.headerCardBottom}>
+              <Text style={styles.headerSubtitle}>
+                Select everything that applies — drivers use this to decide if your space suits them.
+              </Text>
+            </View>
           </View>
 
-          <Pressable style={styles.showMoreBtn} onPress={() => setShowAllFeatures((v) => !v)}>
-            <Text style={styles.showMoreText}>
-              {showAllFeatures ? "Show fewer features" : `More features (${EXTRA_FEATURES.length})`}
-            </Text>
-            <Text style={styles.showMoreChevron}>{showAllFeatures ? "↑" : "↓"}</Text>
-          </Pressable>
-
-          {/* ── Access control ── */}
-          <View style={styles.divider} />
-          <Text style={styles.sectionLabel}>ACCESS</Text>
-          <Text style={styles.sectionTitle}>Does getting in require a key, code, or instructions?</Text>
-
-          <View style={styles.accessTypeStack}>
-            <Pressable
-              style={[styles.accessTypeCard, draft.requiresAccessCode === false && styles.accessTypeCardActive]}
-              onPress={() =>
-                setDraft((prev) => ({
-                  ...prev,
-                  requiresAccessCode: false,
-                  accessOptions: prev.accessOptions.filter(
-                    (item) => !ACCESS_CHOICES.some((c) => c.optionValue === item)
-                  ),
-                  accessCode: "",
-                  requiresArrivalInstructions: false,
-                  arrivalInstructions: "",
-                }))
-              }
-            >
-              <View style={[styles.accessTypeIconWrap, draft.requiresAccessCode === false && styles.accessTypeIconWrapActive]}>
-                <Unlock size={20} color={draft.requiresAccessCode === false ? hostFlowColors.accent : "#6b7280"} strokeWidth={1.8} />
-              </View>
-              <View style={styles.accessTypeText}>
-                <Text style={[styles.accessTypeLabel, draft.requiresAccessCode === false && styles.accessTypeLabelActive]}>Open access</Text>
-                <Text style={styles.accessTypeDesc}>No key, code or instructions needed</Text>
-              </View>
-              {draft.requiresAccessCode === false ? (
-                <CircleCheck size={20} color={hostFlowColors.accent} strokeWidth={2.2} />
-              ) : null}
-            </Pressable>
-
-            <Pressable
-              style={[styles.accessTypeCard, draft.requiresAccessCode === true && styles.accessTypeCardActive]}
-              onPress={() =>
-                setDraft((prev) => ({
-                  ...prev,
-                  requiresAccessCode: true,
-                  requiresArrivalInstructions: prev.requiresArrivalInstructions ?? false,
-                }))
-              }
-            >
-              <View style={[styles.accessTypeIconWrap, draft.requiresAccessCode === true && styles.accessTypeIconWrapActive]}>
-                <Lock size={20} color={draft.requiresAccessCode === true ? hostFlowColors.accent : "#6b7280"} strokeWidth={1.8} />
-              </View>
-              <View style={styles.accessTypeText}>
-                <Text style={[styles.accessTypeLabel, draft.requiresAccessCode === true && styles.accessTypeLabelActive]}>Restricted access</Text>
-                <Text style={styles.accessTypeDesc}>Drivers need a key, code or instructions</Text>
-              </View>
-              {draft.requiresAccessCode === true ? (
-                <CircleCheck size={20} color={hostFlowColors.accent} strokeWidth={2.2} />
-              ) : null}
-            </Pressable>
-          </View>
-
-          {/* Access type radio cards with inline detail input */}
-          {draft.requiresAccessCode ? (
-            <View style={styles.accessChoiceStack}>
-              {ACCESS_CHOICES.map((choice) => {
-                const active = selectedAccessChoice?.id === choice.id;
-                const isSpec = choice.id === "special_instructions";
-                return (
-                  <View key={choice.id}>
+          {/* ── Features card ── */}
+          <View style={styles.card}>
+            <Text style={styles.cardHeader}>Features</Text>
+            <View style={styles.cardBody}>
+              <View style={styles.chipGrid}>
+                {visibleFeatures.map((option) => {
+                  const active = draft.accessOptions.includes(option);
+                  return (
                     <Pressable
-                      style={[styles.accessCard, active && styles.accessCardActive]}
-                      onPress={() => selectAccessChoice(choice.optionValue)}
+                      key={option}
+                      style={[styles.chip, active && styles.chipActive]}
+                      onPress={() => toggleFeature(option)}
                     >
-                      <View style={[styles.accessCardIcon, active && styles.accessCardIconActive]}>
-                        {choice.icon}
+                      <View style={[styles.chipIconWrap, active && styles.chipIconWrapActive]}>
+                        {featureIcon(option, active)}
                       </View>
-                      <View style={styles.accessCardText}>
-                        <Text style={[styles.accessCardLabel, active && styles.accessCardLabelActive]}>
-                          {choice.label}
-                        </Text>
-                        <Text style={styles.accessCardDesc}>{choice.description}</Text>
-                      </View>
+                      <Text style={[styles.chipLabel, active && styles.chipLabelActive]} numberOfLines={1}>
+                        {option}
+                      </Text>
                       {active ? (
-                        <CircleCheck size={20} color={hostFlowColors.accent} strokeWidth={2.2} />
+                        <CircleCheck size={16} color={ACCENT} strokeWidth={2.2} style={styles.chipCheck} />
                       ) : null}
                     </Pressable>
+                  );
+                })}
+              </View>
 
-                    {active ? (
-                      <View style={styles.inlineDetailBox}>
-                        <Text style={styles.detailLabel}>
-                          {isSpec
-                            ? "What should drivers do when they arrive?"
-                            : choice.id === "pin_code"
-                            ? "What is the pin code, or how will drivers receive it?"
-                            : "How do drivers collect the key or fob?"}
-                        </Text>
-                        <AppTextInput
-                          containerStyle={{ marginBottom: 0 }}
-                          style={styles.detailInput}
-                          placeholder={
-                            isSpec
-                              ? "E.g. Ring unit 4, wait for the shutter, then use bay 2 on the right."
-                              : choice.id === "pin_code"
-                              ? "E.g. The code will be sent after booking confirmation."
-                              : "E.g. Collect from the property owner on arrival."
-                          }
-                          value={isSpec ? draft.arrivalInstructions : draft.accessCode}
-                          onChangeText={(value) =>
-                            setDraft((prev) => ({
-                              ...prev,
-                              ...(isSpec
-                                ? { arrivalInstructions: value }
-                                : { accessCode: value }),
-                            }))
-                          }
-                          multiline
-                          numberOfLines={isSpec ? 4 : 2}
-                          textAlignVertical="top"
-                          maxLength={240}
-                        />
-                      </View>
-                    ) : null}
-                  </View>
-                );
-              })}
+              <Pressable style={styles.showMoreBtn} onPress={() => setShowAllFeatures((v) => !v)}>
+                <Text style={styles.showMoreText}>
+                  {showAllFeatures ? "Show fewer features ↑" : `More features (${EXTRA_FEATURES.length}) ↓`}
+                </Text>
+              </Pressable>
             </View>
-          ) : null}
+          </View>
+
+          {/* ── Access card ── */}
+          <View style={styles.card}>
+            <Text style={styles.cardHeader}>Access</Text>
+            <View style={styles.cardBody}>
+              <Text style={styles.accessQuestion}>
+                Does getting in require a key, code, or instructions?
+              </Text>
+
+              {/* Open / Restricted toggle */}
+              <View style={styles.accessTypeStack}>
+                <Pressable
+                  style={[styles.accessTypeCard, draft.requiresAccessCode === false && styles.accessTypeCardActive]}
+                  onPress={() =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      requiresAccessCode: false,
+                      accessOptions: prev.accessOptions.filter(
+                        (item) => !ACCESS_CHOICES.some((c) => c.optionValue === item)
+                      ),
+                      accessCode: "",
+                      requiresArrivalInstructions: false,
+                      arrivalInstructions: "",
+                    }))
+                  }
+                >
+                  <View style={[styles.accessTypeIconWrap, draft.requiresAccessCode === false && styles.accessTypeIconWrapActive]}>
+                    <Unlock size={20} color={draft.requiresAccessCode === false ? ACCENT : "#6b7280"} strokeWidth={1.8} />
+                  </View>
+                  <View style={styles.accessTypeText}>
+                    <Text style={[styles.accessTypeLabel, draft.requiresAccessCode === false && styles.accessTypeLabelActive]}>Open access</Text>
+                    <Text style={styles.accessTypeDesc}>No key, code or instructions needed</Text>
+                  </View>
+                  {draft.requiresAccessCode === false ? (
+                    <CircleCheck size={20} color={ACCENT} strokeWidth={2.2} />
+                  ) : null}
+                </Pressable>
+
+                <Pressable
+                  style={[styles.accessTypeCard, draft.requiresAccessCode === true && styles.accessTypeCardActive]}
+                  onPress={() =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      requiresAccessCode: true,
+                      requiresArrivalInstructions: prev.requiresArrivalInstructions ?? false,
+                    }))
+                  }
+                >
+                  <View style={[styles.accessTypeIconWrap, draft.requiresAccessCode === true && styles.accessTypeIconWrapActive]}>
+                    <Lock size={20} color={draft.requiresAccessCode === true ? ACCENT : "#6b7280"} strokeWidth={1.8} />
+                  </View>
+                  <View style={styles.accessTypeText}>
+                    <Text style={[styles.accessTypeLabel, draft.requiresAccessCode === true && styles.accessTypeLabelActive]}>Restricted access</Text>
+                    <Text style={styles.accessTypeDesc}>Drivers need a key, code or instructions</Text>
+                  </View>
+                  {draft.requiresAccessCode === true ? (
+                    <CircleCheck size={20} color={ACCENT} strokeWidth={2.2} />
+                  ) : null}
+                </Pressable>
+              </View>
+
+              {/* Access choice cards */}
+              {draft.requiresAccessCode ? (
+                <View style={styles.accessChoiceStack}>
+                  {ACCESS_CHOICES.map((choice) => {
+                    const active = selectedAccessChoice?.id === choice.id;
+                    const isSpec = choice.id === "special_instructions";
+                    return (
+                      <View key={choice.id}>
+                        <Pressable
+                          style={[styles.accessCard, active && styles.accessCardActive]}
+                          onPress={() => selectAccessChoice(choice.optionValue)}
+                        >
+                          <View style={[styles.accessCardIcon, active && styles.accessCardIconActive]}>
+                            {choice.icon(active)}
+                          </View>
+                          <View style={styles.accessCardText}>
+                            <Text style={[styles.accessCardLabel, active && styles.accessCardLabelActive]}>
+                              {choice.label}
+                            </Text>
+                            <Text style={styles.accessCardDesc}>{choice.description}</Text>
+                          </View>
+                          {active ? (
+                            <CircleCheck size={20} color={ACCENT} strokeWidth={2.2} />
+                          ) : null}
+                        </Pressable>
+
+                        {active ? (
+                          <View style={styles.inlineDetailBox}>
+                            <Text style={styles.detailLabel}>
+                              {isSpec
+                                ? "What should drivers do when they arrive?"
+                                : choice.id === "pin_code"
+                                ? "What is the pin code, or how will drivers receive it?"
+                                : "How do drivers collect the key or fob?"}
+                            </Text>
+                            <AppTextInput
+                              containerStyle={{ marginBottom: 0 }}
+                              style={styles.detailInput}
+                              placeholder={
+                                isSpec
+                                  ? "E.g. Ring unit 4, wait for the shutter, then use bay 2 on the right."
+                                  : choice.id === "pin_code"
+                                  ? "E.g. The code will be sent after booking confirmation."
+                                  : "E.g. Collect from the property owner on arrival."
+                              }
+                              value={isSpec ? draft.arrivalInstructions : draft.accessCode}
+                              onChangeText={(value) =>
+                                setDraft((prev) => ({
+                                  ...prev,
+                                  ...(isSpec
+                                    ? { arrivalInstructions: value }
+                                    : { accessCode: value }),
+                                }))
+                              }
+                              multiline
+                              numberOfLines={isSpec ? 4 : 2}
+                              textAlignVertical="top"
+                              maxLength={240}
+                            />
+                          </View>
+                        ) : null}
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : null}
+            </View>
+          </View>
+
+          {/* Tips card */}
+          <View style={styles.tipsCard}>
+            <View style={styles.tipsRow}>
+              <Info size={15} color={ACCENT} strokeWidth={2.2} />
+              <Text style={styles.tipsTitle}>Stand out with great features</Text>
+            </View>
+            <Text style={styles.tipsBody}>
+              Spaces with EV charging, CCTV, and clear access info receive significantly more bookings. Complete access details build driver confidence.
+            </Text>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -335,62 +370,77 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: hostFlowColors.appBg },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
 
   content: {
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 0,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 14,
   },
 
-  kicker: {
-    color: hostFlowColors.accent,
+  // ── Header card (matches location screen style) ──────────────
+  headerCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    overflow: "hidden",
+    ...CARD_SHADOW,
+  },
+  headerCardTop: {
+    borderBottomColor: "#F1F5F9",
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  headerKicker: {
+    color: ACCENT,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    letterSpacing: 2,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    marginBottom: 2,
     textTransform: "uppercase",
-    marginTop: 28,
   },
-  title: {
-    color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 26,
-    letterSpacing: -0.8,
-    lineHeight: 34,
-    marginTop: 10,
+  headerTitle: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 18,
+    letterSpacing: -0.5,
+    lineHeight: 24,
   },
-  subtitle: {
-    color: hostFlowColors.textMuted,
+  headerCardBottom: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerSubtitle: {
+    color: MUTED,
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    lineHeight: 22,
-    marginTop: 8,
-    marginBottom: 20,
+    fontSize: 13,
+    lineHeight: 19,
   },
 
-  // ── Section labels ──────────────────────────────────────────
-  sectionLabel: {
-    color: hostFlowColors.accent,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    marginBottom: 12,
+  // ── Cards ────────────────────────────────────────────────────
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    overflow: "hidden",
+    ...CARD_SHADOW,
   },
-  sectionTitle: {
-    color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
+  cardHeader: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 15,
     letterSpacing: -0.3,
-    lineHeight: 22,
-    marginBottom: 14,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
-  divider: {
-    height: 1,
-    backgroundColor: hostFlowColors.border,
-    marginVertical: 24,
+  cardBody: {
+    padding: 16,
   },
 
-  // ── 2-column feature chip grid ──────────────────────────────
+  // ── Feature chips ────────────────────────────────────────────
   chipGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -402,14 +452,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     borderWidth: 1,
-    borderColor: hostFlowColors.border,
+    borderColor: "#E2E8ED",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 14,
-    backgroundColor: hostFlowColors.cardBg,
+    backgroundColor: "#F8FAFC",
   },
   chipActive: {
-    borderColor: hostFlowColors.accent,
+    borderColor: ACCENT,
     backgroundColor: hostFlowColors.accentSoft,
   },
   chipIconWrap: {
@@ -418,7 +468,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f1f5f4",
+    backgroundColor: "#EDF7F2",
     flexShrink: 0,
   },
   chipIconWrapActive: {
@@ -426,42 +476,43 @@ const styles = StyleSheet.create({
   },
   chipLabel: {
     flex: 1,
-    color: hostFlowColors.text,
+    color: FG,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     letterSpacing: -0.1,
   },
   chipLabelActive: {
-    color: hostFlowColors.accent,
+    color: ACCENT,
   },
   chipCheck: {
     flexShrink: 0,
   },
 
-  // ── Show more ───────────────────────────────────────────────
   showMoreBtn: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
     marginTop: 10,
     paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: hostFlowColors.border,
-    backgroundColor: hostFlowColors.cardBg,
+    borderColor: "#E2E8ED",
+    backgroundColor: "#F8FAFC",
   },
   showMoreText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
-    color: hostFlowColors.textMuted,
-  },
-  showMoreChevron: {
-    fontSize: 12,
-    color: hostFlowColors.textSoft,
+    color: MUTED,
   },
 
-  // ── Access type (open / restricted) ────────────────────────
+  // ── Access ───────────────────────────────────────────────────
+  accessQuestion: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 14,
+    letterSpacing: -0.1,
+  },
   accessTypeStack: {
     gap: 10,
     marginBottom: 16,
@@ -471,14 +522,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     borderWidth: 1,
-    borderColor: hostFlowColors.border,
+    borderColor: "#E2E8ED",
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    backgroundColor: hostFlowColors.cardBg,
+    backgroundColor: "#F8FAFC",
   },
   accessTypeCardActive: {
-    borderColor: hostFlowColors.accent,
+    borderColor: ACCENT,
     backgroundColor: hostFlowColors.accentSoft,
   },
   accessTypeIconWrap: {
@@ -487,7 +538,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f1f5f4",
+    backgroundColor: "#EDF7F2",
     flexShrink: 0,
   },
   accessTypeIconWrapActive: {
@@ -497,41 +548,39 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   accessTypeLabel: {
-    color: hostFlowColors.text,
+    color: FG,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     letterSpacing: -0.2,
     lineHeight: 20,
   },
   accessTypeLabelActive: {
-    color: hostFlowColors.accent,
+    color: ACCENT,
   },
   accessTypeDesc: {
-    color: hostFlowColors.textSoft,
+    color: SOFT,
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     lineHeight: 18,
     marginTop: 2,
   },
 
-  // ── Access type radio cards ─────────────────────────────────
   accessChoiceStack: {
     gap: 10,
-    marginBottom: 16,
   },
   accessCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     borderWidth: 1,
-    borderColor: hostFlowColors.border,
+    borderColor: "#E2E8ED",
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    backgroundColor: hostFlowColors.cardBg,
+    backgroundColor: "#F8FAFC",
   },
   accessCardActive: {
-    borderColor: hostFlowColors.accent,
+    borderColor: ACCENT,
     backgroundColor: hostFlowColors.accentSoft,
   },
   accessCardIcon: {
@@ -540,7 +589,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f1f5f4",
+    backgroundColor: "#EDF7F2",
     flexShrink: 0,
   },
   accessCardIconActive: {
@@ -550,45 +599,44 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   accessCardLabel: {
-    color: hostFlowColors.text,
+    color: FG,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     letterSpacing: -0.2,
     lineHeight: 20,
   },
   accessCardLabelActive: {
-    color: hostFlowColors.accent,
+    color: ACCENT,
   },
   accessCardDesc: {
-    color: hostFlowColors.textSoft,
+    color: SOFT,
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     lineHeight: 18,
     marginTop: 2,
   },
 
-  // ── Detail input ────────────────────────────────────────────
   inlineDetailBox: {
-    backgroundColor: hostFlowColors.cardBg,
+    backgroundColor: "#F0FDF8",
     borderWidth: 1,
-    borderColor: hostFlowColors.border,
-    borderRadius: 14,
+    borderColor: "#C6F0DC",
+    borderRadius: 12,
     padding: 14,
     marginTop: 8,
   },
   detailLabel: {
-    color: hostFlowColors.text,
+    color: FG,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 19,
     marginBottom: 10,
   },
   detailInput: {
-    backgroundColor: "#f7f8f8",
-    borderColor: hostFlowColors.border,
+    backgroundColor: "#ffffff",
+    borderColor: "#E2E8ED",
     borderRadius: 10,
     borderWidth: 1,
-    color: hostFlowColors.text,
+    color: FG,
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 21,
@@ -596,5 +644,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 10,
     paddingBottom: 10,
+  },
+
+  // ── Tips card ────────────────────────────────────────────────
+  tipsCard: {
+    backgroundColor: "#F0FDF8",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#C6F0DC",
+    padding: 16,
+  },
+  tipsRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 6,
+  },
+  tipsTitle: {
+    color: ACCENT,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    letterSpacing: -0.1,
+  },
+  tipsBody: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 19,
   },
 });

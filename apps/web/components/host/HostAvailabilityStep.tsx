@@ -1,5 +1,5 @@
 "use client";
-import { ChevronRight, X } from "lucide-react";
+import { ChevronRight, X, CheckCircle } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import type { HostStepProps } from "./types";
@@ -33,6 +33,25 @@ function detectPreset(text: string): AvailabilityPreset {
   return "custom";
 }
 
+const PRESETS = [
+  {
+    key: "always" as const,
+    label: "Always available",
+    description: "Monday – Sunday, 24 hours",
+    badge: "Recommended",
+  },
+  {
+    key: "working" as const,
+    label: "Working week",
+    description: "Monday – Friday, 06:00 – 19:00",
+  },
+  {
+    key: "custom" as const,
+    label: "Custom schedule",
+    description: "Choose your own days and hours",
+  },
+];
+
 export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
   const [preset, setPreset] = useState<AvailabilityPreset>(() => detectPreset(data.availabilityText));
   const [customOpen, setCustomOpen] = useState(false);
@@ -43,7 +62,6 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
     return out;
   });
 
-  // Set default on first load
   useEffect(() => {
     if (!data.availabilityText) {
       onUpdate({ availabilityText: "Available 24/7 — Monday to Sunday" });
@@ -66,7 +84,6 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
     setDays(prev => {
       if (prev.includes(day)) return prev.filter(d => d !== day);
       const newDays = [...prev, day];
-      // Inherit ranges from adjacent day
       const sorted = newDays.sort((a, b) => ALL_DAYS.indexOf(a) - ALL_DAYS.indexOf(b));
       const idx = sorted.indexOf(day);
       const source = sorted[idx - 1] ?? sorted[idx + 1];
@@ -84,56 +101,68 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
   const customSummary = buildText("custom", days, ranges);
 
   return (
-    <div className="space-y-3">
-      {/* Always available */}
-      <button
-        type="button"
-        onClick={() => selectPreset("always")}
-        className={`w-full rounded-xl border p-5 text-left transition ${
-          preset === "always" ? "border-brand-500 bg-white" : "border-slate-200 bg-white hover:border-slate-300"
-        }`}
-      >
-        <p className="text-base font-semibold text-slate-900">
-          Always available
-          <span className="ml-2 text-xs font-semibold text-brand-500">Recommended</span>
+    <div className="space-y-4">
+      {/* Options card */}
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <p className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-300">
+          Schedule
         </p>
-        <p className="mt-1 text-sm text-slate-600">Monday – Sunday (24 hours)</p>
-      </button>
-
-      {/* Working week */}
-      <button
-        type="button"
-        onClick={() => selectPreset("working")}
-        className={`w-full rounded-xl border p-5 text-left transition ${
-          preset === "working" ? "border-brand-500 bg-white" : "border-slate-200 bg-white hover:border-slate-300"
-        }`}
-      >
-        <p className="text-base font-semibold text-slate-900">Working week</p>
-        <p className="mt-1 text-sm text-slate-600">Monday – Friday (06:00 – 19:00)</p>
-      </button>
-
-      {/* Custom */}
-      <button
-        type="button"
-        onClick={() => selectPreset("custom")}
-        className={`flex w-full items-center justify-between rounded-xl border p-5 text-left transition ${
-          preset === "custom" ? "border-brand-500 bg-white" : "border-slate-200 bg-white hover:border-slate-300"
-        }`}
-      >
-        <div>
-          <p className="text-base font-semibold text-slate-900">Custom</p>
-          <p className="mt-1 text-sm text-slate-600">Personalised settings</p>
-        </div>
-        <ChevronRight className="h-4 w-4 shrink-0 text-slate-600" strokeWidth={2.5} />
-      </button>
+        {PRESETS.map(({ key, label, description, badge }) => {
+          const active = preset === key;
+          const isCustom = key === "custom";
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => selectPreset(key)}
+              className={`flex w-full items-center gap-4 border-b border-slate-100 px-4 py-4 text-left transition last:border-0 ${
+                active ? "bg-brand-50" : "hover:bg-slate-50"
+              }`}
+            >
+              <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ${
+                active ? "border-brand-500 bg-brand-500" : "border-slate-300 bg-white"
+              }`}>
+                {active && <div className="h-2 w-2 rounded-full bg-white" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className={`text-sm font-semibold ${active ? "text-slate-900" : "text-slate-800"}`}>{label}</p>
+                  {badge && (
+                    <span className="text-[11px] font-semibold text-brand-500">{badge}</span>
+                  )}
+                </div>
+                <p className="mt-0.5 text-xs text-slate-600">{description}</p>
+              </div>
+              {isCustom && (
+                <ChevronRight className="h-4 w-4 shrink-0 text-slate-600" strokeWidth={2.5} />
+              )}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Custom summary */}
       {preset === "custom" && customSummary && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Selected schedule</p>
-          <p className="mt-1 text-sm font-semibold text-slate-800">{customSummary}</p>
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-brand-300">Selected schedule</p>
+          <p className="text-sm font-semibold text-slate-800">{customSummary}</p>
+          <button
+            type="button"
+            onClick={() => setCustomOpen(true)}
+            className="mt-2 text-[13px] font-semibold text-brand-500 hover:text-brand-600"
+          >
+            Edit →
+          </button>
         </div>
       )}
+
+      {/* Tip callout */}
+      <div className="rounded-lg bg-brand-50 px-4 py-4 ring-1 ring-brand-100">
+        <p className="text-sm font-semibold text-brand-800">More availability = more bookings</p>
+        <p className="mt-1 text-xs leading-relaxed text-brand-700">
+          Spaces available 24/7 receive significantly more bookings. You can always update this from your dashboard.
+        </p>
+      </div>
 
       {/* Custom modal */}
       {customOpen && (
@@ -144,7 +173,7 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
           >
             <div className="mb-1 flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900">Custom availability</h3>
-              <button type="button" onClick={() => setCustomOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button type="button" onClick={() => setCustomOpen(false)} className="text-slate-600 hover:text-slate-800">
                 <X className="h-5 w-5" strokeWidth={2.5} />
               </button>
             </div>
@@ -154,7 +183,7 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
               {ALL_DAYS.map(day => {
                 const enabled = days.includes(day);
                 return (
-                  <div key={day} className="rounded-xl border border-slate-200 p-3">
+                  <div key={day} className="rounded-lg border border-slate-200 p-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-slate-800">{DAY_LABELS[day]}</span>
                       <button
@@ -198,9 +227,9 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
               type="button"
               onClick={confirmCustom}
               disabled={days.length === 0}
-              className="mt-4 w-full rounded-xl bg-brand-500 py-3 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-40"
+              className="mt-4 w-full rounded-2xl bg-brand-500 py-3 text-sm font-bold text-white transition active:bg-brand-600 disabled:opacity-40"
             >
-              Confirm
+              Confirm schedule
             </button>
           </div>
         </div>

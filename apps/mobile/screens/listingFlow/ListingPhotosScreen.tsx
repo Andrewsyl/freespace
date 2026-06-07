@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { getListingImageUploadUrl } from "../../api";
 import { useAuth } from "../../auth";
@@ -18,8 +18,7 @@ import { useListingFlow } from "./context";
 import { FlowHeader } from "./FlowHeader";
 import { FlowFooter } from "./FlowFooter";
 import { hostFlowColors } from "./hostFlowTheme";
-import { colors, spacing } from "../../styles/theme";
-import { Camera, Plus, X, Star } from "lucide-react-native";
+import { Camera, Info, Plus, Star, X } from "lucide-react-native";
 
 type FlowStackParamList = {
   ListingPhotos: undefined;
@@ -28,10 +27,20 @@ type FlowStackParamList = {
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingPhotos">;
 
+const ACCENT = hostFlowColors.accent;
+const FG = hostFlowColors.text;
+const MUTED = hostFlowColors.textMuted;
+const CARD_SHADOW = {
+  shadowColor: "#0f172a",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 10,
+  elevation: 3,
+} as const;
+
 const MAX_PHOTO_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 
-// XHR-based S3 upload — more reliable than fetch + FormData for repeated binary uploads in RN
 function uploadToS3(uploadUrl: string, formData: FormData): Promise<{ ok: boolean; status: number; body: string }> {
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
@@ -48,6 +57,7 @@ function uploadToS3(uploadUrl: string, formData: FormData): Promise<{ ok: boolea
 export function ListingPhotosScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
   const { token } = useAuth();
+  const insets = useSafeAreaInsets();
   const [uploading, setUploading] = useState(false);
   const [uploadLabel, setUploadLabel] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -132,7 +142,6 @@ export function ListingPhotosScreen({ navigation }: Props) {
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : "Upload failed.");
     } finally {
-      // Save whatever succeeded, even if a later image errored
       if (nextUrls.length > 0) {
         setDraft((prev) => {
           const merged = [...prev.photos, ...nextUrls];
@@ -149,79 +158,101 @@ export function ListingPhotosScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={[]}>
       <FlowHeader current={6} total={8} onClose={exitFlow} />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: 104 + Math.max(insets.bottom, 0) }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.kicker}>Photos</Text>
-        <Text style={styles.title}>Show off your space</Text>
-        <Text style={styles.subtitle}>
-          Add at least one photo. Better photos improve trust and booking conversion.
-        </Text>
+        {/* Header card */}
+        <View style={styles.headerCard}>
+          <View style={styles.headerCardTop}>
+            <Text style={styles.headerKicker}>Step 6 · Photos</Text>
+            <Text style={styles.headerTitle}>Show off your space</Text>
+          </View>
+          <View style={styles.headerCardBottom}>
+            <Text style={styles.headerSubtitle}>
+              Add at least one photo. Better photos improve trust and booking conversion.
+            </Text>
+          </View>
+        </View>
 
-        {uploadError ? <Text style={styles.errorText}>{uploadError}</Text> : null}
+        {/* Photos card */}
+        <View style={styles.card}>
+          <Text style={styles.cardHeader}>Your photos</Text>
+          <View style={styles.cardBody}>
+            {uploadError ? <Text style={styles.errorText}>{uploadError}</Text> : null}
 
-        {!hasPhoto ? (
-          // Empty state — large dashed zone
-          <Pressable
-            style={[styles.emptyZone, uploading && styles.emptyZoneDisabled]}
-            onPress={uploadPhotos}
-            disabled={uploading}
-          >
-            {uploading ? (
-              <ActivityIndicator size="large" color={hostFlowColors.accent} />
+            {!hasPhoto ? (
+              <Pressable
+                style={[styles.emptyZone, uploading && styles.emptyZoneDisabled]}
+                onPress={uploadPhotos}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <ActivityIndicator size="large" color={ACCENT} />
+                ) : (
+                  <>
+                    <View style={styles.emptyIconWrap}>
+                      <Camera size={28} color={ACCENT} strokeWidth={1.8} />
+                    </View>
+                    <Text style={styles.emptyTitle}>Add photos</Text>
+                    <Text style={styles.emptyHint}>JPG, PNG, WEBP or HEIC · max 10MB each</Text>
+                  </>
+                )}
+              </Pressable>
             ) : (
               <>
-                <View style={styles.emptyIconWrap}>
-                  <Camera size={28} color={hostFlowColors.accent} strokeWidth={1.8} />
+                <View style={styles.grid}>
+                  {photos.map((uri, index) => (
+                    <View key={uri} style={styles.photoCard}>
+                      <Image source={{ uri }} style={styles.photoImage} />
+                      {index === 0 ? (
+                        <View style={styles.coverBadge}>
+                          <Star size={10} color="#ffffff" strokeWidth={2.5} fill="#ffffff" />
+                          <Text style={styles.coverBadgeText}>Cover</Text>
+                        </View>
+                      ) : null}
+                      <Pressable
+                        style={styles.removeBtn}
+                        onPress={() => removePhoto(uri)}
+                        hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                      >
+                        <X size={12} color="#ffffff" strokeWidth={2.8} />
+                      </Pressable>
+                    </View>
+                  ))}
                 </View>
-                <Text style={styles.emptyTitle}>Add photos</Text>
-                <Text style={styles.emptyHint}>JPG, PNG, WEBP or HEIC · max 10MB each</Text>
+
+                <Pressable
+                  style={[styles.addMoreBtn, uploading && styles.addMoreBtnDisabled]}
+                  onPress={uploadPhotos}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <>
+                      <ActivityIndicator size="small" color={ACCENT} />
+                      {uploadLabel ? <Text style={styles.addMoreText}>{uploadLabel}</Text> : null}
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={16} color={ACCENT} strokeWidth={2.2} />
+                      <Text style={styles.addMoreText}>Add more photos</Text>
+                    </>
+                  )}
+                </Pressable>
               </>
             )}
-          </Pressable>
-        ) : (
-          <>
-            <View style={styles.grid}>
-              {photos.map((uri, index) => (
-                <View key={uri} style={styles.photoCard}>
-                  <Image source={{ uri }} style={styles.photoImage} />
-                  {index === 0 ? (
-                    <View style={styles.coverBadge}>
-                      <Star size={10} color="#ffffff" strokeWidth={2.5} fill="#ffffff" />
-                      <Text style={styles.coverBadgeText}>Cover</Text>
-                    </View>
-                  ) : null}
-                  <Pressable
-                    style={styles.removeBtn}
-                    onPress={() => removePhoto(uri)}
-                    hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-                  >
-                    <X size={12} color="#ffffff" strokeWidth={2.8} />
-                  </Pressable>
-                </View>
-              ))}
-            </View>
+          </View>
+        </View>
 
-            {/* Add more — always full-width below the grid, never squeezed into a grid slot */}
-            <Pressable
-              style={[styles.addMoreBtn, uploading && styles.addMoreBtnDisabled]}
-              onPress={uploadPhotos}
-              disabled={uploading}
-            >
-              {uploading ? (
-                <>
-                  <ActivityIndicator size="small" color={hostFlowColors.accent} />
-                  {uploadLabel ? <Text style={styles.addMoreText}>{uploadLabel}</Text> : null}
-                </>
-              ) : (
-                <>
-                  <Plus size={16} color={hostFlowColors.accent} strokeWidth={2.2} />
-                  <Text style={styles.addMoreText}>Add more photos</Text>
-                </>
-              )}
-            </Pressable>
-          </>
-        )}
+        {/* Tips card */}
+        <View style={styles.tipsCard}>
+          <View style={styles.tipsRow}>
+            <Info size={15} color={ACCENT} strokeWidth={2.2} />
+            <Text style={styles.tipsTitle}>Photos matter</Text>
+          </View>
+          <Text style={styles.tipsBody}>
+            Listings with 3+ photos get significantly more bookings. Show the entrance, the bay, and any nearby street landmarks that help drivers find you.
+          </Text>
+        </View>
       </ScrollView>
 
       <FlowFooter
@@ -235,45 +266,87 @@ export function ListingPhotosScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.appBg,
-  },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
   content: {
-    padding: spacing.screenX,
-    paddingBottom: 120,
-    paddingTop: 0,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 14,
   },
-  kicker: {
-    color: hostFlowColors.accent,
+
+  // ── Header card (matches location screen style) ──────────────
+  headerCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    overflow: "hidden",
+    ...CARD_SHADOW,
+  },
+  headerCardTop: {
+    borderBottomColor: "#F1F5F9",
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  headerKicker: {
+    color: ACCENT,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    letterSpacing: 2,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    marginBottom: 2,
     textTransform: "uppercase",
-    marginTop: 28,
   },
-  title: {
-    color: hostFlowColors.text,
-    fontSize: 26,
-    lineHeight: 34,
-    fontFamily: "PlusJakartaSans-Bold",
-    marginTop: 10,
-    letterSpacing: -0.8,
+  headerTitle: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 18,
+    letterSpacing: -0.5,
+    lineHeight: 24,
   },
-  subtitle: {
-    color: hostFlowColors.textMuted,
-    fontSize: 14,
+  headerCardBottom: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerSubtitle: {
+    color: MUTED,
     fontFamily: "PlusJakartaSans-Regular",
-    marginTop: 8,
-    lineHeight: 22,
-    marginBottom: 20,
+    fontSize: 13,
+    lineHeight: 19,
   },
+
+  // ── Photos card ──────────────────────────────────────────────
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    overflow: "hidden",
+    ...CARD_SHADOW,
+  },
+  cardHeader: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 15,
+    letterSpacing: -0.3,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  cardBody: {
+    padding: 16,
+  },
+  errorText: {
+    color: "#ef4444",
+    fontSize: 12,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    marginBottom: 12,
+  },
+
   emptyZone: {
     borderWidth: 1.5,
     borderColor: hostFlowColors.accentSoftBorder,
     borderStyle: "dashed",
-    borderRadius: 16,
-    paddingVertical: 52,
+    borderRadius: 14,
+    paddingVertical: 48,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: hostFlowColors.accentSoft,
@@ -283,26 +356,27 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   emptyIconWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: hostFlowColors.accentSoftBorder,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
   emptyTitle: {
-    color: hostFlowColors.text,
+    color: FG,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 16,
+    fontSize: 15,
     letterSpacing: -0.3,
   },
   emptyHint: {
-    color: hostFlowColors.textSoft,
+    color: MUTED,
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
     lineHeight: 18,
   },
+
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -313,9 +387,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1.2,
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: hostFlowColors.cardBgMuted,
-    borderColor: hostFlowColors.border,
-    borderWidth: 1,
+    backgroundColor: "#EDF7F2",
     position: "relative",
   },
   photoImage: {
@@ -351,7 +423,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  // Add more — full-width row below the grid, never crammed into a grid slot
+
   addMoreBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -369,14 +441,35 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   addMoreText: {
-    color: hostFlowColors.accent,
+    color: ACCENT,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
   },
-  errorText: {
-    color: colors.danger,
-    fontSize: 12,
+
+  // ── Tips card ────────────────────────────────────────────────
+  tipsCard: {
+    backgroundColor: "#F0FDF8",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#C6F0DC",
+    padding: 16,
+  },
+  tipsRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 6,
+  },
+  tipsTitle: {
+    color: ACCENT,
     fontFamily: "PlusJakartaSans-SemiBold",
-    marginBottom: 12,
+    fontSize: 13,
+    letterSpacing: -0.1,
+  },
+  tipsBody: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 19,
   },
 });

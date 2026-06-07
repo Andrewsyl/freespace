@@ -23,10 +23,10 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
   };
 
   return (
-    <div className="space-y-3">
-      {/* ── Address search ── */}
-      <div className="space-y-1">
-        <label className="text-sm font-semibold text-slate-800">Where is your space?</label>
+    <div className="space-y-4">
+      {/* Search card */}
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-300">Location</p>
         <AddressAutocomplete
           key={`addr-${addressVersion}`}
           defaultValue={data.address}
@@ -39,11 +39,11 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
           }}
           name="address"
         />
-        <p className="text-xs text-slate-600">Drag the satellite map to fine-tune the pin to your exact spot.</p>
+        <p className="mt-2 text-xs text-slate-600">Drag the satellite map to fine-tune the pin to your exact spot.</p>
       </div>
 
-      {/* ── Satellite map ── */}
-      <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-100" style={{ height: 440 }}>
+      {/* Satellite map */}
+      <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-100" style={{ height: 400 }}>
         {hasCoords ? (
           <>
             <MapView
@@ -59,7 +59,6 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
               onBoundsChanged={(_bounds, center) => setMapCenter(center)}
             />
 
-            {/* Crosshair pin (move mode) */}
             {movePinMode && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center" style={{ paddingBottom: 32 }}>
                 <svg width="28" height="38" viewBox="0 0 24 32" fill="none">
@@ -69,7 +68,6 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
               </div>
             )}
 
-            {/* Controls */}
             <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
               {movePinMode ? (
                 <>
@@ -94,10 +92,8 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
                 </button>
               )}
             </div>
-
           </>
         ) : (
-          /* No address yet */
           <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 ring-2 ring-brand-100">
               <MapPin className="h-7 w-7 text-brand-500" strokeWidth={1.6} />
@@ -110,6 +106,15 @@ export function HostAddressStep({ data, onUpdate }: HostStepProps) {
         )}
       </div>
 
+      {/* Confirmed callout */}
+      {data.locationConfirmed && (
+        <div className="rounded-lg bg-brand-50 px-4 py-4 ring-1 ring-brand-100">
+          <p className="text-sm font-semibold text-brand-800">Location confirmed</p>
+          <p className="mt-1 text-xs leading-relaxed text-brand-700">
+            Pin placed at your entrance. Tap &ldquo;Move pin&rdquo; above if you need to adjust it.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

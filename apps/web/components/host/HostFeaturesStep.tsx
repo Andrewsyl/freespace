@@ -57,7 +57,6 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
   };
 
   const selectAccessType = (id: string) => {
-    // toggling off if already selected
     if (data.accessType === id) {
       onUpdate({ accessType: undefined, accessInstructions: "" });
     } else {
@@ -66,13 +65,10 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* ── Features ───────────────────────────────────────────── */}
-      <div className="space-y-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-brand-300">Features</p>
-          <p className="mt-1 text-base font-semibold text-slate-900">What else does your space offer?</p>
-        </div>
+    <div className="space-y-4">
+      {/* Features card */}
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-300">Features</p>
         <div className="flex flex-col gap-2">
           {[...COMMON_FEATURES, ...(showAllFeatures ? EXTRA_FEATURES : [])].map(({ label, icon }) => {
             const active = data.amenities.includes(label);
@@ -82,11 +78,11 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
                 type="button"
                 onClick={() => toggleFeature(label)}
                 className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition ${
-                  active ? "border-brand-500 bg-white" : "border-slate-200 bg-white hover:border-slate-300"
+                  active ? "border-brand-200 bg-brand-50" : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
                 }`}
               >
                 <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                  active ? "bg-brand-50 text-brand-500" : "bg-slate-100 text-slate-600"
+                  active ? "bg-white text-brand-500 ring-1 ring-brand-200" : "bg-white text-slate-600 ring-1 ring-slate-200"
                 }`}>
                   {icon}
                 </div>
@@ -100,21 +96,19 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
           <button
             type="button"
             onClick={() => setShowAllFeatures((v) => !v)}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-3 text-[14px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 bg-white py-2.5 text-[13px] font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
           >
             {showAllFeatures ? "Show less ↑" : `More features +${EXTRA_FEATURES.length} ↓`}
           </button>
         </div>
       </div>
 
-      {/* ── Access ─────────────────────────────────────────────── */}
-      <div className="space-y-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-brand-300">Access</p>
-          <p className="mt-1 text-base font-semibold leading-snug text-slate-900">
-            Does your space have gated entry or require a key or extra info?
-          </p>
-        </div>
+      {/* Access card */}
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-brand-300">Access</p>
+        <p className="mb-3 text-sm font-semibold text-slate-900">
+          Does your space need a key, code, or special info to enter?
+        </p>
 
         {/* Yes / No toggle */}
         <div className="flex gap-3">
@@ -131,10 +125,10 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
                     ...(isNo ? { accessType: undefined, accessInstructions: "" } : {}),
                   })
                 }
-                className={`flex h-12 flex-1 items-center justify-center rounded-lg border text-sm font-semibold transition ${
+                className={`flex h-11 flex-1 items-center justify-center rounded-lg border text-sm font-semibold transition ${
                   active
-                    ? "border-brand-500 text-slate-900"
-                    : "border-slate-200 text-slate-600 hover:border-slate-300"
+                    ? "border-brand-200 bg-brand-50 text-brand-800"
+                    : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white"
                 }`}
               >
                 {option}
@@ -143,10 +137,10 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
           })}
         </div>
 
-        {/* Access type choices — shown if Yes */}
+        {/* Access type — shown if Yes */}
         {data.requiresAccessCode === true && (
-          <div className="space-y-2 pt-1">
-            <p className="text-sm text-slate-600">How do drivers get into your space?</p>
+          <div className="mt-3 space-y-2">
+            <p className="text-xs text-slate-600">How do drivers get in?</p>
             {ACCESS_CHOICES.map((choice) => {
               const active = data.accessType === choice.id;
               return (
@@ -154,8 +148,8 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
                   <button
                     type="button"
                     onClick={() => selectAccessType(choice.id)}
-                    className={`flex w-full items-center justify-between rounded-lg border px-4 py-3.5 text-left transition ${
-                      active ? "border-brand-500 bg-white" : "border-slate-200 bg-white hover:border-slate-300"
+                    className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition ${
+                      active ? "border-brand-200 bg-brand-50" : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
                     }`}
                   >
                     <span className={`text-sm font-semibold ${active ? "text-slate-900" : "text-slate-700"}`}>
@@ -166,9 +160,8 @@ export function HostFeaturesStep({ data, onUpdate }: HostStepProps) {
                     )}
                   </button>
 
-                  {/* Detail input — shown when this type is selected */}
                   {active && (
-                    <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <div className="mt-2 rounded-lg border border-brand-100 bg-brand-50 p-3">
                       <textarea
                         value={data.accessInstructions ?? ""}
                         onChange={(e) => onUpdate({ accessInstructions: e.target.value })}

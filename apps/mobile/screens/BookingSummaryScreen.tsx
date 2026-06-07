@@ -544,7 +544,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
           <ArrowLeft size={22} color="#111827" />
         </Pressable>
-        <Text style={styles.headerTitle}>Confirm booking</Text>
+        <Text style={styles.navTitle}>Confirm booking</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -554,33 +554,27 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
       >
         {loadingListing ? (
-          <ScrollView style={styles.flex} contentContainerStyle={styles.skeletonScroll} scrollEnabled={false}>
-            {/* Listing summary card skeleton */}
-            <View style={styles.skeletonCard}>
-              <SkeletonBlock width={56} height={56} borderRadius={12} pulse={skeletonPulse} />
-              <View style={{ flex: 1, gap: 8 }}>
-                <SkeletonBlock width="80%" height={16} pulse={skeletonPulse} />
-                <SkeletonBlock width="55%" height={12} pulse={skeletonPulse} />
+          <ScrollView style={styles.flex} contentContainerStyle={styles.skeletonContent} scrollEnabled={false}>
+            <View style={[styles.card, { padding: 16, gap: 8 }]}>
+              <SkeletonBlock width="45%" height={10} borderRadius={4} pulse={skeletonPulse} />
+              <SkeletonBlock width="85%" height={20} borderRadius={6} pulse={skeletonPulse} />
+              <SkeletonBlock width="65%" height={13} borderRadius={4} pulse={skeletonPulse} />
+            </View>
+            <View style={[styles.card, { overflow: "hidden" }]}>
+              <SkeletonBlock width={90} height={13} borderRadius={5} pulse={skeletonPulse} style={{ margin: 16 }} />
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingBottom: 16 }}>
+                <SkeletonBlock height={60} borderRadius={10} pulse={skeletonPulse} style={{ flex: 1 }} />
+                <SkeletonBlock width={20} height={20} borderRadius={4} pulse={skeletonPulse} />
+                <SkeletonBlock height={60} borderRadius={10} pulse={skeletonPulse} style={{ flex: 1 }} />
               </View>
             </View>
-            {/* Date section skeleton */}
-            <View style={styles.skeletonSection}>
-              <SkeletonBlock width={100} height={14} borderRadius={6} pulse={skeletonPulse} />
-              <View style={styles.skeletonPickerRow}>
-                <SkeletonBlock height={56} borderRadius={14} pulse={skeletonPulse} style={{ flex: 1 }} />
-                <SkeletonBlock width={24} height={24} borderRadius={6} pulse={skeletonPulse} />
-                <SkeletonBlock height={56} borderRadius={14} pulse={skeletonPulse} style={{ flex: 1 }} />
-              </View>
+            <View style={[styles.card, { overflow: "hidden" }]}>
+              <SkeletonBlock width={110} height={13} borderRadius={5} pulse={skeletonPulse} style={{ margin: 16 }} />
+              <SkeletonBlock height={80} borderRadius={0} pulse={skeletonPulse} />
             </View>
-            {/* Price section skeleton */}
-            <View style={styles.skeletonSection}>
-              <SkeletonBlock width={80} height={14} borderRadius={6} pulse={skeletonPulse} />
-              <SkeletonBlock height={80} borderRadius={14} pulse={skeletonPulse} style={{ marginTop: 10 }} />
-            </View>
-            {/* Vehicle section skeleton */}
-            <View style={styles.skeletonSection}>
-              <SkeletonBlock width={90} height={14} borderRadius={6} pulse={skeletonPulse} />
-              <SkeletonBlock height={56} borderRadius={14} pulse={skeletonPulse} style={{ marginTop: 10 }} />
+            <View style={[styles.card, { overflow: "hidden" }]}>
+              <SkeletonBlock width={80} height={13} borderRadius={5} pulse={skeletonPulse} style={{ margin: 16 }} />
+              <SkeletonBlock height={52} borderRadius={0} pulse={skeletonPulse} />
             </View>
           </ScrollView>
         ) : !user ? (
@@ -595,41 +589,41 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         ) : listing ? (
           <ScrollView
             style={styles.flex}
-            contentContainerStyle={{ paddingBottom: 110 + insets.bottom }}
+            contentContainerStyle={[styles.content, { paddingBottom: 110 + insets.bottom }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* ── Page header ── */}
-            <View style={styles.pageHeader}>
-              <Text style={styles.pageLabel}>Confirm booking</Text>
-              <Text style={styles.pageTitle}>{listing.title || "Parking space"}</Text>
-              <Text style={styles.pageAddress}>{listing.address || ""}</Text>
-            </View>
-
-            {/* ── Time ── */}
-            <View style={styles.section}>
-              <View style={styles.timeRow}>
-                <TouchableOpacity style={styles.timeSlot} activeOpacity={0.7} onPress={() => openPicker("start")}>
-                  <Text style={styles.timeSlotLabel}>ARRIVING</Text>
-                  <Text style={styles.timeSlotTime}>{formatTimeLabel(start)}</Text>
-                  <Text style={styles.timeSlotDate}>{formatDateLabel(start)}</Text>
-                </TouchableOpacity>
-                <View style={styles.timeArrow}>
-                  <View style={styles.timeArrowLine} />
-                  <Text style={styles.timeArrowDuration}>{priceSummary?.durationLabel ?? ""}</Text>
-                  <View style={styles.timeArrowLine} />
+            {/* ── Listing + When card ── */}
+            <View style={styles.headerCard}>
+              <View style={styles.headerCardTop}>
+                <Text style={styles.headerKicker}>Confirm booking</Text>
+                <Text style={styles.headerTitle}>{listing.title || "Parking space"}</Text>
+                <Text style={styles.headerSubtitle}>{listing.address || ""}</Text>
+              </View>
+              <View style={styles.cardBody}>
+                <View style={styles.timeRow}>
+                  <TouchableOpacity style={styles.timeSlot} activeOpacity={0.7} onPress={() => openPicker("start")}>
+                    <Text style={styles.timeSlotLabel}>ARRIVING</Text>
+                    <Text style={styles.timeSlotTime}>{formatTimeLabel(start)}</Text>
+                    <Text style={styles.timeSlotDate}>{formatDateLabel(start)}</Text>
+                  </TouchableOpacity>
+                  <View style={styles.timeArrow}>
+                    <View style={styles.timeArrowLine} />
+                    <Text style={styles.timeArrowDuration}>{priceSummary?.durationLabel ?? ""}</Text>
+                    <View style={styles.timeArrowLine} />
+                  </View>
+                  <TouchableOpacity style={styles.timeSlot} activeOpacity={0.7} onPress={() => openPicker("end")}>
+                    <Text style={styles.timeSlotLabel}>LEAVING</Text>
+                    <Text style={styles.timeSlotTime}>{formatTimeLabel(end)}</Text>
+                    <Text style={styles.timeSlotDate}>{formatDateLabel(end)}</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.timeSlot} activeOpacity={0.7} onPress={() => openPicker("end")}>
-                  <Text style={styles.timeSlotLabel}>LEAVING</Text>
-                  <Text style={styles.timeSlotTime}>{formatTimeLabel(end)}</Text>
-                  <Text style={styles.timeSlotDate}>{formatDateLabel(end)}</Text>
-                </TouchableOpacity>
               </View>
             </View>
 
-            {/* ── Price breakdown ── */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Price breakdown</Text>
+            {/* ── Price card ── */}
+            <View style={styles.card}>
+              <Text style={styles.cardSectionHeader}>Price breakdown</Text>
               <View style={styles.priceRows}>
                 <View style={styles.priceRow}>
                   <Text style={styles.priceRowLabel}>Rate</Text>
@@ -666,45 +660,44 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               </View>
             </View>
 
-            {/* ── Vehicle ── */}
-            <View style={styles.section}>
-              <View style={styles.sectionTitleRow}>
-                <View>
-                  {vehicleMake ? (
-                    <View style={styles.vehicleHeaderRow}>
-                      <VehicleBrandLogo make={vehicleMake} size={40} />
-                      <Text style={styles.vehicleHeaderText}>
-                        {[vehicleMake, vehicleColor, user?.vehicleType].filter(Boolean).join(" · ")}
-                      </Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.sectionTitle}>Vehicle</Text>
-                  )}
-                </View>
+            {/* ── Vehicle (flat) ── */}
+            <View style={styles.vehicleSection}>
+              <View style={styles.vehicleSectionHeader}>
+                <Text style={styles.vehicleSectionLabel}>Vehicle</Text>
                 <Pressable style={styles.editBtn} onPress={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary" })}>
                   <Text style={styles.editBtnText}>{vehicleMake ? "Edit" : "Add"}</Text>
                 </Pressable>
               </View>
-              <Pressable
-                style={styles.plate}
-                onPress={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary", focusField: "plate" })}
-              >
-                <View style={styles.plateEuBadge} />
-                <View style={styles.plateBody}>
-                  <Text style={[styles.plateNumber, !hasVehiclePlate && styles.platePlaceholder]}>
-                    {hasVehiclePlate ? vehiclePlate : "Enter reg plate"}
-                  </Text>
-                </View>
-              </Pressable>
-              {requiresVehicleDetails ? (
-                <Text style={styles.regHint}>Add your vehicle details to continue.</Text>
-              ) : null}
+              <View style={styles.vehicleSectionBody}>
+                {vehicleMake ? (
+                  <View style={styles.vehicleHeaderRow}>
+                    <VehicleBrandLogo make={vehicleMake} size={40} />
+                    <Text style={styles.vehicleHeaderText}>
+                      {[vehicleMake, vehicleColor, user?.vehicleType].filter(Boolean).join(" · ")}
+                    </Text>
+                  </View>
+                ) : null}
+                <Pressable
+                  style={[styles.plate, vehicleMake && styles.plateMt]}
+                  onPress={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary", focusField: "plate" })}
+                >
+                  <View style={styles.plateEuBadge} />
+                  <View style={styles.plateBody}>
+                    <Text style={[styles.plateNumber, !hasVehiclePlate && styles.platePlaceholder]}>
+                      {hasVehiclePlate ? vehiclePlate : "Enter reg plate"}
+                    </Text>
+                  </View>
+                </Pressable>
+                {requiresVehicleDetails ? (
+                  <Text style={styles.regHint}>Add your vehicle details to continue.</Text>
+                ) : null}
+              </View>
             </View>
 
-            {/* ── Payment ── */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Payment</Text>
-              <View style={styles.trustCard}>
+            {/* ── Payment card ── */}
+            <View style={styles.card}>
+              <Text style={styles.cardSectionHeader}>Payment</Text>
+              <View style={styles.cardBody}>
                 <View style={styles.trustCardTop}>
                   <View style={styles.trustShieldWrap}>
                     <Ionicons name="shield-checkmark" size={22} color={GREEN} />
@@ -714,20 +707,15 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                     <Text style={styles.trustCardSub}>256-bit encryption · PCI DSS compliant</Text>
                   </View>
                 </View>
-                <View style={styles.trustDivider} />
+                <View style={[styles.trustDivider, { marginVertical: 14 }]} />
                 <View style={styles.methodsRow}>
-                  {/* Apple Pay / Google Pay */}
                   <View style={styles.methodPill}>
                     <Ionicons name={Platform.OS === "ios" ? "logo-apple" : "logo-google"} size={13} color={FG} />
                     <Text style={styles.methodPillText}>{Platform.OS === "ios" ? "Pay" : "Pay"}</Text>
                   </View>
-
-                  {/* Visa logo */}
                   <View style={[styles.methodPill, styles.visaPill]}>
                     <Text style={styles.visaText}>VISA</Text>
                   </View>
-
-                  {/* Mastercard logo */}
                   <View style={[styles.methodPill, styles.mastercardPill]}>
                     <View style={styles.mcCircleWrap}>
                       <View style={[styles.mcCircle, { backgroundColor: "#EB001B" }]} />
@@ -736,7 +724,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                     <Text style={styles.mastercardText}>Mastercard</Text>
                   </View>
                 </View>
-                <View style={styles.stripeRow}>
+                <View style={[styles.stripeRow, { marginTop: 10 }]}>
                   <Ionicons name="lock-closed" size={10} color={SUBTLE} />
                   <Text style={styles.stripeText}>Powered by Stripe · trusted by millions of businesses</Text>
                 </View>
@@ -813,151 +801,210 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   );
 }
 
-const GREEN = "#0a8050";
-const LINE  = "#d1d5db";
-const FG    = "#111827";
-const MUTED = "#374151";
-const SUBTLE = "#6b7280";
+const GREEN  = "#0a8050";
+const LINE   = "#F1F5F9";
+const FG     = "#101414";
+const MUTED  = "#5F6868";
+const SUBTLE = "#8C9494";
+
+const CARD_SHADOW = {
+  shadowColor: "#0f172a",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 10,
+  elevation: 3,
+} as const;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#ffffff" },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
   flex: { flex: 1 },
 
   // ── Skeleton ─────────────────────────────────────────────────
-  skeletonScroll: { padding: 20, gap: 0 },
-  skeletonCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E8EDF2",
-    marginBottom: 14,
-  },
-  skeletonSection: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E8EDF2",
-    padding: 16,
-    gap: 0,
-    marginBottom: 14,
-  },
-  skeletonPickerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginTop: 12,
-  },
+  skeletonContent: { paddingHorizontal: 16, paddingTop: 12, gap: 14 },
 
   // ── Nav header ──────────────────────────────────────────────
   header: {
     alignItems: "center", justifyContent: "center",
     paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: LINE,
+    borderBottomWidth: 1, borderBottomColor: "#E8EDF2",
     backgroundColor: "#ffffff",
   },
   backButton: { padding: 6, position: "absolute", left: 14 },
-  headerTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG, textAlign: "center" },
+  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG, textAlign: "center" },
   headerSpacer: { width: 34 },
 
-  // ── Page header ─────────────────────────────────────────────
-  // ── Listing card ─────────────────────────────────────────────
-  listingCard: {
-    flexDirection: "row", alignItems: "center", gap: 14,
-    paddingHorizontal: 20, paddingVertical: 16,
-    borderBottomWidth: 1, borderBottomColor: LINE,
-  },
-  listingThumb: {
-    width: 60, height: 60, borderRadius: 12,
-    backgroundColor: "#f0f0ee", flexShrink: 0,
-  },
-  listingThumbPlaceholder: { alignItems: "center", justifyContent: "center" },
-  listingCardText: { flex: 1 },
-  listingCardTitle: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 15,
-    color: FG, letterSpacing: -0.2, lineHeight: 20, marginBottom: 3,
-  },
-  listingCardAddress: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
-    color: MUTED, lineHeight: 17,
+  // ── Scroll content ───────────────────────────────────────────
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 14,
   },
 
-  pageHeader: {
-    borderBottomWidth: 1, borderBottomColor: LINE,
-    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
+  // ── Header card (listing info) ───────────────────────────────
+  headerCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    overflow: "hidden",
+    ...CARD_SHADOW,
+  },
+  headerCardTop: {
+    borderBottomColor: LINE,
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 14,
+    gap: 2,
     alignItems: "center",
   },
-  pageLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
-    color: GREEN, letterSpacing: 1.4, textTransform: "uppercase", marginBottom: 4,
+  headerKicker: {
+    color: GREEN,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 10,
+    letterSpacing: 1.4,
+    marginBottom: 2,
+    textTransform: "uppercase",
     textAlign: "center",
   },
-  pageTitle: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 22,
-    color: FG, letterSpacing: -0.5, lineHeight: 28, marginBottom: 2,
+  headerTitle: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 18,
+    letterSpacing: -0.5,
+    lineHeight: 24,
     textAlign: "center",
   },
-  pageAddress: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, textAlign: "center" },
-
-  // ── Sections ────────────────────────────────────────────────
-  section: {
-    borderBottomWidth: 1, borderBottomColor: LINE,
-    paddingHorizontal: 20, paddingVertical: 18,
+  headerCardBottom: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  sectionTitleRow: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 17,
-    color: FG, letterSpacing: -0.3,
-  },
-  sectionBody: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 14,
-    color: MUTED, lineHeight: 22, marginTop: 8,
+  headerSubtitle: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
   },
 
-  // ── Date/time picker fields ──────────────────────────────────
-  pickerRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
-  pickerField: {
-    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: "#F7F7F6", borderRadius: 12,
-    borderWidth: 1, borderColor: LINE,
-    paddingHorizontal: 12, paddingVertical: 10,
+  // ── Cards ────────────────────────────────────────────────────
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    overflow: "hidden",
+    ...CARD_SHADOW,
   },
-  pickerFieldInner: { flex: 1, gap: 2 },
-  pickerFieldLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
-    color: GREEN, textTransform: "uppercase", letterSpacing: 0.6,
+  cardSectionHeader: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 15,
+    letterSpacing: -0.3,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
   },
-  pickerFieldValue: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 13, color: FG,
+  cardBody: {
+    padding: 16,
   },
 
-  // ── Session summary box ──────────────────────────────────────
-  summaryBox: {
-    borderRadius: 14, borderWidth: 1, borderColor: LINE, overflow: "hidden",
+  // ── Vehicle flat section ──────────────────────────────────────
+  vehicleSection: {
+    paddingHorizontal: 4,
   },
-  summaryRow: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    paddingHorizontal: 14, paddingVertical: 11,
+  vehicleSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
   },
-  summaryRowBorder: { borderTopWidth: 1, borderTopColor: LINE },
-  summaryRowLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },
-  summaryRowValue: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
-
-  // ── Vehicle ─────────────────────────────────────────────────
+  vehicleSectionLabel: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 15,
+    letterSpacing: -0.3,
+  },
+  vehicleSectionBody: {
+    gap: 0,
+  },
   editBtn: {
     paddingVertical: 5, paddingHorizontal: 14,
-    borderRadius: 20, borderWidth: 1, borderColor: LINE,
+    borderRadius: 20, borderWidth: 1, borderColor: "#D1D5DB",
   },
   editBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
 
-  vehicleInfoRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  vehicleDetails: { flex: 1 },
-  vehicleMakeText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG, letterSpacing: -0.3 },
-  vehicleSubText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 2 },
+  // ── Time slot ────────────────────────────────────────────────
+  timeRow: {
+    flexDirection: "row", alignItems: "center",
+  },
+  timeSlot: {
+    flex: 1, alignItems: "center", paddingVertical: 6,
+  },
+  timeSlotLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 10,
+    color: GREEN, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 4,
+  },
+  timeSlotTime: {
+    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 26,
+    color: FG, letterSpacing: -0.8, lineHeight: 30,
+  },
+  timeSlotDate: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 12,
+    color: MUTED, marginTop: 2,
+  },
+  timeArrow: {
+    alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 8,
+  },
+  timeArrowLine: {
+    width: 18, height: 1, backgroundColor: "#D1D5DB",
+  },
+  timeArrowDuration: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
+    color: SUBTLE, letterSpacing: 0.2,
+  },
+
+  // ── Price rows ───────────────────────────────────────────────
+  priceRows: {
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+  },
+  priceRow: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12,
+  },
+  priceRowBorder: { borderTopWidth: 1, borderTopColor: LINE },
+  priceTotalRow: { paddingTop: 13, marginTop: 2 },
+  priceRowLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED },
+  priceRowValue: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG },
+  priceTotalLabel: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG },
+  priceTotalValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 22, color: GREEN, letterSpacing: -0.4 },
+  priceMetaRow: { marginTop: 2, paddingBottom: 8 },
+  serviceFeeToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    paddingVertical: 4,
+  },
+  serviceFeeToggleText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: SUBTLE,
+  },
+  serviceFeeInfoCard: {
+    marginTop: 4,
+    marginBottom: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  serviceFeeInfoText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    lineHeight: 18,
+    color: MUTED,
+  },
 
   // ── Irish number plate ───────────────────────────────────────
   plate: {
@@ -994,85 +1041,16 @@ const styles = StyleSheet.create({
   platePlaceholder: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: SUBTLE, letterSpacing: 0, textTransform: "none" },
   regHint: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: "#F59E0B", marginTop: 10, lineHeight: 18 },
 
-  // ── Price rows ───────────────────────────────────────────────
-  priceRows: { marginTop: 10 },
-  priceRow: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 11,
+  // ── Vehicle header ───────────────────────────────────────────
+  vehicleHeaderRow: {
+    flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44, marginBottom: 2,
   },
-  priceRowBorder: { borderTopWidth: 1, borderTopColor: LINE },
-  priceTotalRow: { paddingTop: 13, marginTop: 2 },
-  priceRowLabel: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, color: MUTED },
-  priceRowValue: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG },
-  priceRowMuted: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: SUBTLE },
-  priceTotalLabel: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG },
-  priceTotalValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 22, color: GREEN, letterSpacing: -0.4 },
-  priceMetaRow: { marginTop: 2 },
-  serviceFeeToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 6,
-    paddingVertical: 4,
-  },
-  serviceFeeToggleText: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
-    color: SUBTLE,
-  },
-  serviceFeeInfoCard: {
-    marginTop: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#F9FAFB",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  serviceFeeInfoText: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
-    lineHeight: 18,
-    color: MUTED,
-  },
-  noHiddenFees: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: SUBTLE, marginTop: 8 },
-
-  // ── Duration line ────────────────────────────────────────────
-  durationLine: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: SUBTLE,
-    marginTop: 10, lineHeight: 18,
+  vehicleHeaderText: {
+    flexShrink: 1,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, lineHeight: 18, color: FG,
   },
 
-  // ── Payment row ──────────────────────────────────────────────
-  paymentRow: {
-    flexDirection: "row", alignItems: "center", gap: 8,
-    marginTop: 10, backgroundColor: "#f0fdf8",
-    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
-  },
-  paymentRowText: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED,
-    flex: 1, lineHeight: 18,
-  },
-
-  // ── Footer notes ─────────────────────────────────────────────
-  footerNotes: { paddingHorizontal: 20, paddingVertical: 18, gap: 10 },
-  footerNoteRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
-  footerNoteIcon: { marginTop: 2 },
-  footerNoteText: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED,
-    flex: 1, lineHeight: 19,
-  },
-
-  // ── Legal ────────────────────────────────────────────────────
-  legalBlock: { paddingHorizontal: 20, paddingVertical: 16 },
-  legalText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: SUBTLE, lineHeight: 18 },
-
-  // ── Trust card ────────────────────────────────────────────────
-  trustCard: {
-    marginTop: 12,
-    borderRadius: 14, borderWidth: 1, borderColor: LINE,
-    backgroundColor: "#fafafa", overflow: "hidden",
-    paddingHorizontal: 14, paddingVertical: 14, gap: 12,
-  },
+  // ── Payment / trust ──────────────────────────────────────────
   trustCardTop: {
     flexDirection: "row", alignItems: "center", gap: 12,
   },
@@ -1096,23 +1074,19 @@ const styles = StyleSheet.create({
   },
   methodPill: {
     flexDirection: "row", alignItems: "center", gap: 5,
-    borderWidth: 1, borderColor: LINE, borderRadius: 6,
+    borderWidth: 1, borderColor: "#D1D5DB", borderRadius: 6,
     paddingHorizontal: 9, paddingVertical: 6,
     backgroundColor: "#ffffff",
   },
   methodPillText: {
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG,
   },
-
-  // Visa
   visaPill: { paddingHorizontal: 10, paddingVertical: 7 },
   visaText: {
     fontFamily: "PlusJakartaSans-ExtraBold",
     fontSize: 13, color: "#1A1F71",
     fontStyle: "italic", letterSpacing: 0.5,
   },
-
-  // Mastercard
   mastercardPill: { paddingHorizontal: 9, paddingVertical: 6 },
   mcCircleWrap: { flexDirection: "row", alignItems: "center" },
   mcCircle: { width: 16, height: 16, borderRadius: 8 },
@@ -1126,72 +1100,9 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: SUBTLE,
   },
 
-  // ── Legacy payment styles (unused) ───────────────────────────
-  paymentOptions: { marginTop: 12, borderRadius: 14, borderWidth: 1, borderColor: LINE, overflow: "hidden" },
-  paymentOption: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, backgroundColor: "#ffffff" },
-  paymentIconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: "#f5f5f4", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  paymentOptionText: { flex: 1, marginLeft: 12 },
-  paymentOptionBorder: { borderTopWidth: 1, borderTopColor: LINE },
-  paymentOptionLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG },
-  paymentOptionSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: MUTED, marginTop: 1 },
-  paymentBadge: { backgroundColor: "#f0fdf4", borderRadius: 6, borderWidth: 1, borderColor: "#bbf7d0", paddingHorizontal: 7, paddingVertical: 3 },
-  paymentBadgeText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 10, color: GREEN, letterSpacing: 0.2 },
-
-  // ── Time slot ────────────────────────────────────────────────
-  timeRow: {
-    flexDirection: "row", alignItems: "center", gap: 0,
-  },
-  timeSlot: {
-    flex: 1, alignItems: "center", paddingVertical: 6,
-  },
-  timeSlotLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 10,
-    color: GREEN, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 4,
-  },
-  timeSlotTime: {
-    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 26,
-    color: FG, letterSpacing: -0.8, lineHeight: 30,
-  },
-  timeSlotDate: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 12,
-    color: MUTED, marginTop: 2,
-  },
-  timeArrow: {
-    alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 8,
-  },
-  timeArrowLine: {
-    width: 18, height: 1, backgroundColor: LINE,
-  },
-  timeArrowDuration: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
-    color: SUBTLE, letterSpacing: 0.2,
-  },
-
-  // ── Price total ──────────────────────────────────────────────
-  priceTotalBlock: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-  },
-  priceTotalBig: {
-    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 36,
-    color: FG, letterSpacing: -1.2, lineHeight: 40,
-  },
-  priceTotalSub: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
-    color: MUTED, marginTop: 4, lineHeight: 18,
-  },
-
-  // ── Vehicle header ───────────────────────────────────────────
-  vehicleHeaderRow: {
-    flexDirection: "row", alignItems: "center", gap: 10, minHeight: 50,
-  },
-  vehicleHeaderText: {
-    flexShrink: 1,
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, lineHeight: 18, color: FG,
-  },
-
   // ── Reassurance block ────────────────────────────────────────
   reassuranceBlock: {
-    paddingHorizontal: 20, paddingVertical: 16, gap: 8,
+    paddingHorizontal: 4, paddingBottom: 4, gap: 8,
   },
   reassuranceRow: {
     flexDirection: "row", alignItems: "center", gap: 7,
@@ -1199,6 +1110,7 @@ const styles = StyleSheet.create({
   reassuranceText: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, flex: 1, lineHeight: 18,
   },
+  legalText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: SUBTLE, lineHeight: 18 },
 
   // ── Sticky footer ───────────────────────────────────────────
   footerBar: {
@@ -1207,9 +1119,6 @@ const styles = StyleSheet.create({
     shadowColor: "#111111", shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.07, shadowRadius: 10, elevation: 12,
   },
-  footerPriceBlock: { flex: 1 },
-  footerPriceMeta: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: SUBTLE },
-  footerPriceValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 22, color: FG, letterSpacing: -0.5 },
   footerBtn: {
     height: 54, width: "100%", borderRadius: 14,
     backgroundColor: GREEN, alignItems: "center", justifyContent: "center",

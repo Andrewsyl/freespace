@@ -1056,9 +1056,32 @@ export async function listHostListings(token: string) {
     amenities: listing.amenities ?? [],
     access_code: listing.access_code ?? listing.accessCode ?? null,
     arrival_instructions: listing.arrival_instructions ?? listing.arrivalInstructions ?? null,
+    is_active: listing.is_active ?? listing.isActive ?? true,
     latitude: listing.latitude,
     longitude: listing.longitude,
   }));
+}
+
+export async function setListingPaused({
+  token,
+  listingId,
+  paused,
+}: {
+  token: string;
+  listingId: string;
+  paused: boolean;
+}) {
+  const response = await fetch(`${baseUrl}/api/listings/${listingId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ isActive: !paused }),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "Could not update listing status"));
+  }
 }
 
 export async function updateListing(payload: {

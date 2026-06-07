@@ -1,18 +1,11 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useRef } from "react";
-import {
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import { FlowHeader } from "./FlowHeader";
 import { useListingFlow } from "./context";
 import { hostFlowColors } from "./hostFlowTheme";
-import { colors, spacing } from "../../styles/theme";
 import { FlowFooter } from "./FlowFooter";
 
 type FlowStackParamList = {
@@ -21,6 +14,17 @@ type FlowStackParamList = {
 };
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingStreetView">;
+
+const ACCENT = hostFlowColors.accent;
+const FG = hostFlowColors.text;
+const MUTED = hostFlowColors.textMuted;
+const CARD_SHADOW = {
+  shadowColor: "#0f172a",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 10,
+  elevation: 3,
+} as const;
 
 export function ListingStreetViewScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
@@ -68,23 +72,31 @@ export function ListingStreetViewScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={[]}>
       <FlowHeader current={2} total={8} onClose={exitFlow} />
-      <View style={styles.header}>
-        <Text style={styles.kicker}>Street view</Text>
-        <Text style={styles.title}>Choose your cover image</Text>
-        <Text style={styles.hint}>
-          Can't see your space from here? You can add your own photos at a later step.
-        </Text>
-        <Pressable
-          style={styles.skipButton}
-          onPress={() => {
-            setDraft((prev) => ({ ...prev, coverHeading: null }));
-            navigation.navigate("ListingDetails");
-          }}
-        >
-          <Text style={styles.skipButtonText}>Skip for now →</Text>
-        </Pressable>
+
+      {/* Header card */}
+      <View style={styles.headerCard}>
+        <View style={styles.headerCardTop}>
+          <Text style={styles.headerKicker}>Step 2 · Street view</Text>
+          <Text style={styles.headerTitle}>Choose your cover image</Text>
+        </View>
+        <View style={styles.headerCardBottom}>
+          <Text style={styles.headerSubtitle}>
+            Drag to find the best angle. If the view isn't clear, add your own photos in the next step.
+          </Text>
+        </View>
       </View>
-      <View style={styles.viewer}>
+      <Pressable
+        style={styles.skipButton}
+        onPress={() => {
+          setDraft((prev) => ({ ...prev, coverHeading: null }));
+          navigation.navigate("ListingDetails");
+        }}
+      >
+        <Text style={styles.skipButtonText}>Skip for now →</Text>
+      </Pressable>
+
+      {/* Viewer card */}
+      <View style={styles.viewerCard}>
         {Platform.OS === "web" ? (
           <View style={styles.webFallback}>
             <Text style={styles.webFallbackText}>
@@ -121,6 +133,7 @@ export function ListingStreetViewScreen({ navigation }: Props) {
           />
         )}
       </View>
+
       <FlowFooter
         onBack={() => navigation.goBack()}
         primaryLabel="Use this view"
@@ -141,74 +154,82 @@ export function ListingStreetViewScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.appBg,
+    backgroundColor: "#F8FAFC",
     flex: 1,
   },
-  header: {
-    paddingHorizontal: spacing.screenX,
-    paddingTop: 28,
-    paddingBottom: 8,
+
+  headerCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    marginHorizontal: 16,
+    marginTop: 12,
+    overflow: "hidden",
+    ...CARD_SHADOW,
   },
-  kicker: {
-    color: hostFlowColors.accent,
+  headerCardTop: {
+    borderBottomColor: "#F1F5F9",
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  headerKicker: {
+    color: ACCENT,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    letterSpacing: 2,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    marginBottom: 2,
     textTransform: "uppercase",
   },
-  title: {
-    color: hostFlowColors.text,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 26,
-    letterSpacing: -0.8,
-    lineHeight: 34,
-    marginTop: 10,
+  headerTitle: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 18,
+    letterSpacing: -0.5,
+    lineHeight: 24,
   },
-  hint: {
-    backgroundColor: hostFlowColors.accentSoft,
-    borderColor: hostFlowColors.accentSoftBorder,
-    borderRadius: 10,
-    borderWidth: 1,
-    color: hostFlowColors.accent,
-    fontFamily: "PlusJakartaSans-SemiBold",
+  headerCardBottom: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerSubtitle: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
-    lineHeight: 20,
-    marginTop: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    lineHeight: 19,
   },
   skipButton: {
     marginTop: 6,
-    paddingHorizontal: 12,
+    marginHorizontal: 16,
     paddingVertical: 4,
   },
   skipButtonText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
-    color: hostFlowColors.accent,
+    color: ACCENT,
   },
-  viewer: {
+
+  viewerCard: {
     flex: 1,
-    marginTop: 16,
+    marginHorizontal: 16,
     marginBottom: 16,
-    marginHorizontal: spacing.screenX,
-    borderRadius: 12,
+    marginTop: 8,
+    borderRadius: 18,
     overflow: "hidden",
-    borderColor: colors.border,
-    borderWidth: 1,
+    ...CARD_SHADOW,
   },
   webView: {
     flex: 1,
   },
   webFallback: {
     alignItems: "center",
-    backgroundColor: colors.appBg,
+    backgroundColor: "#F8FAFC",
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
   },
   webFallbackText: {
-    color: colors.textMuted,
+    color: MUTED,
     fontSize: 14,
     fontFamily: "PlusJakartaSans-Regular",
     textAlign: "center",

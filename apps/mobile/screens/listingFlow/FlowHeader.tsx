@@ -49,7 +49,6 @@ export function FlowHeader({ current, total, onClose }: Props) {
           <ArrowLeft size={17} color={hostFlowColors.text} strokeWidth={2.2} />
         </Pressable>
         <View style={styles.barWrap}>
-          <Text style={styles.stepLabel}>Step {current} of {total}</Text>
           <View style={styles.bar}>
             <View style={[styles.fill, { width: `${percent}%` as `${number}%` }]} />
           </View>
@@ -78,13 +77,6 @@ const styles = StyleSheet.create({
   },
   barWrap: {
     flex: 1,
-    gap: 6,
-  },
-  stepLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13,
-    color: hostFlowColors.textSoft,
-    letterSpacing: 0.1,
   },
   bar: {
     height: 4,
