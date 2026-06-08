@@ -8,6 +8,7 @@ jest.mock("../auth", () => ({
     user: {
       id: "user-1",
       email: "test@example.com",
+      phoneVerified: true,
       vehicleMake: "Ford",
       vehicleType: "Fiesta",
       vehicleColor: "Blue",
