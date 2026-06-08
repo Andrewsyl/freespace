@@ -164,7 +164,6 @@ export default function CheckoutPage() {
 
   const nextPath = `/checkout/${params?.id}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`;
   const hasRating = typeof listing.rating === "number" && listing.rating > 0;
-
   return (
     <div className="min-h-screen bg-slate-50">
       <CheckoutNav />
@@ -266,7 +265,7 @@ export default function CheckoutPage() {
               {/* Error / success */}
               {error && (
                 <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">
-                  {error}
+                  <div>{error}</div>
                 </div>
               )}
               {status === "success" && checkoutUrl && (

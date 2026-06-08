@@ -239,6 +239,15 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       return;
     }
 
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Booking confirmed",
+        body: listing.title,
+        data: { type: "booking_confirmed", historyTab: "upcoming" },
+      },
+      trigger: null,
+    });
+
     const nowMs = Date.now();
     const startReminder = new Date(start.getTime() - 60 * 60 * 1000);
     const endReminder = new Date(end.getTime() - 30 * 60 * 1000);
@@ -802,21 +811,21 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 }
 
 const GREEN  = "#0a8050";
-const LINE   = "#F1F5F9";
+const LINE   = "#E2DAD2";
 const FG     = "#101414";
-const MUTED  = "#5F6868";
-const SUBTLE = "#8C9494";
+const MUTED  = "#465050";
+const SUBTLE = "#6B7575";
 
 const CARD_SHADOW = {
-  shadowColor: "#0f172a",
+  shadowColor: "#2d1a0e",
   shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.06,
-  shadowRadius: 10,
-  elevation: 3,
+  shadowOpacity: 0.09,
+  shadowRadius: 12,
+  elevation: 4,
 } as const;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: { flex: 1, backgroundColor: "#EDE8E2" },
   flex: { flex: 1 },
 
   // ── Skeleton ─────────────────────────────────────────────────
@@ -826,8 +835,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center", justifyContent: "center",
     paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: "#E8EDF2",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#EDE8E2",
   },
   backButton: { padding: 6, position: "absolute", left: 14 },
   navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG, textAlign: "center" },
@@ -844,6 +852,8 @@ const styles = StyleSheet.create({
   headerCard: {
     backgroundColor: "#ffffff",
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D0C9C1",
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -889,14 +899,16 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#ffffff",
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D0C9C1",
     overflow: "hidden",
     ...CARD_SHADOW,
   },
   cardSectionHeader: {
     color: FG,
-    fontFamily: "PlusJakartaSans-Bold",
+    fontFamily: "PlusJakartaSans-ExtraBold",
     fontSize: 15,
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 12,
@@ -928,7 +940,7 @@ const styles = StyleSheet.create({
   },
   editBtn: {
     paddingVertical: 5, paddingHorizontal: 14,
-    borderRadius: 20, borderWidth: 1, borderColor: "#D1D5DB",
+    borderRadius: 20, borderWidth: 1, borderColor: "#BEB7AF",
   },
   editBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
 
@@ -948,14 +960,14 @@ const styles = StyleSheet.create({
     color: FG, letterSpacing: -0.8, lineHeight: 30,
   },
   timeSlotDate: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 12,
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
     color: MUTED, marginTop: 2,
   },
   timeArrow: {
     alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 8,
   },
   timeArrowLine: {
-    width: 18, height: 1, backgroundColor: "#D1D5DB",
+    width: 18, height: 1, backgroundColor: "#C8C2BA",
   },
   timeArrowDuration: {
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
@@ -972,10 +984,10 @@ const styles = StyleSheet.create({
   },
   priceRowBorder: { borderTopWidth: 1, borderTopColor: LINE },
   priceTotalRow: { paddingTop: 13, marginTop: 2 },
-  priceRowLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED },
-  priceRowValue: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG },
-  priceTotalLabel: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG },
-  priceTotalValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 22, color: GREEN, letterSpacing: -0.4 },
+  priceRowLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: SUBTLE, textTransform: "uppercase", letterSpacing: 0.8 },
+  priceRowValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG },
+  priceTotalLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: SUBTLE, textTransform: "uppercase", letterSpacing: 0.8 },
+  priceTotalValue: { fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 26, color: GREEN, letterSpacing: -0.6 },
   priceMetaRow: { marginTop: 2, paddingBottom: 8 },
   serviceFeeToggle: {
     flexDirection: "row",
@@ -994,8 +1006,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#F9FAFB",
+    borderColor: "#D8D0C7",
+    backgroundColor: "#F3EDE6",
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -1064,7 +1076,7 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Bold", fontSize: 14, color: FG, letterSpacing: -0.2,
   },
   trustCardSub: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: MUTED, marginTop: 2,
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 2,
   },
   trustDivider: {
     height: 1, backgroundColor: LINE,
@@ -1074,7 +1086,7 @@ const styles = StyleSheet.create({
   },
   methodPill: {
     flexDirection: "row", alignItems: "center", gap: 5,
-    borderWidth: 1, borderColor: "#D1D5DB", borderRadius: 6,
+    borderWidth: 1, borderColor: "#C8C2BA", borderRadius: 6,
     paddingHorizontal: 9, paddingVertical: 6,
     backgroundColor: "#ffffff",
   },
@@ -1102,7 +1114,7 @@ const styles = StyleSheet.create({
 
   // ── Reassurance block ────────────────────────────────────────
   reassuranceBlock: {
-    paddingHorizontal: 4, paddingBottom: 4, gap: 8,
+    paddingHorizontal: 12, paddingBottom: 4, gap: 8,
   },
   reassuranceRow: {
     flexDirection: "row", alignItems: "center", gap: 7,

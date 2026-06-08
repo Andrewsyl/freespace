@@ -135,6 +135,7 @@ describe("bookings routes", () => {
     db.getUserRiskProfile.mockResolvedValue({
       status: "active",
       email_verified: true,
+      phone_verified: true,
       created_at: "2026-03-01T00:00:00.000Z",
     });
     db.getRecentBookingStats.mockResolvedValue({ count: 0, total_cents: 0 });
@@ -192,6 +193,7 @@ describe("bookings routes", () => {
     db.getUserRiskProfile.mockResolvedValue({
       status: "active",
       email_verified: true,
+      phone_verified: true,
       created_at: "2026-03-01T00:00:00.000Z",
     });
     db.getRecentBookingStats.mockResolvedValue({ count: 0, total_cents: 0 });
@@ -262,6 +264,7 @@ describe("bookings routes", () => {
     db.getUserRiskProfile.mockResolvedValue({
       status: "active",
       email_verified: true,
+      phone_verified: true,
       created_at: "2026-03-01T00:00:00.000Z",
     });
     db.getRecentBookingStats.mockResolvedValue({ count: 0, total_cents: 0 });
@@ -303,6 +306,7 @@ describe("bookings routes", () => {
     db.getUserRiskProfile.mockResolvedValue({
       status: "active",
       email_verified: true,
+      phone_verified: true,
       created_at: "2026-03-01T00:00:00.000Z",
     });
     db.getRecentBookingStats.mockResolvedValue({ count: 0, total_cents: 0 });
