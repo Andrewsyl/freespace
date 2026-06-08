@@ -570,9 +570,6 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
     if (!profile.email_verified) {
       return res.status(403).json({ message: "Please verify your email before booking." });
     }
-    if (!profile.phone_verified) {
-      return res.status(403).json({ message: "Please verify your phone before booking." });
-    }
     const accountAgeMinutes = (Date.now() - new Date(profile.created_at).getTime()) / 60000;
     if (accountAgeMinutes < settings.minAccountAgeMinutes) {
       if (enforceFraud) {
@@ -739,9 +736,6 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
     }
     if (!profile.email_verified) {
       return res.status(403).json({ message: "Please verify your email before booking." });
-    }
-    if (!profile.phone_verified) {
-      return res.status(403).json({ message: "Please verify your phone before booking." });
     }
     const accountAgeMinutes = (Date.now() - new Date(profile.created_at).getTime()) / 60000;
     if (accountAgeMinutes < settings.minAccountAgeMinutes) {

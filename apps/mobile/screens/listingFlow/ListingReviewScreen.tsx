@@ -152,14 +152,6 @@ export function ListingReviewScreen({ navigation }: Props) {
       setError(listingId ? "Sign in to update your space." : "Sign in to publish your space.");
       return;
     }
-    if (!user?.phoneVerified) {
-      setError("Verify your phone number before publishing your space.");
-      navigation.getParent()?.navigate("PersonalInfo", {
-        focusField: "phone",
-        notice: "Verify your phone number before publishing your space.",
-      });
-      return;
-    }
     const hasHourlyPrice = draft.pricePerHour.trim().length > 0;
     const hasDailyPrice = draft.pricePerDay.trim().length > 0;
     const hasMonthlyPrice = draft.pricePerMonth.trim().length > 0;
@@ -482,7 +474,7 @@ const CARD_SHADOW = {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#EDE8E2" },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
 
   scroll: { paddingTop: 4, paddingHorizontal: 16, gap: 14 },
 

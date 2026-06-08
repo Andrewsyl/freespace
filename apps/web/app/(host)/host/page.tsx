@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createListing } from "../../../lib/api";
 import { trackEvent } from "../../../lib/telemetry";
@@ -170,10 +169,6 @@ export default function HostWizardPage() {
       setError("Please sign in to publish your listing.");
       return;
     }
-    if (!user?.phoneVerified) {
-      setError("Please verify your phone before hosting.");
-      return;
-    }
     if (!isStepValid(5)) {
       setError("Finish pricing before publishing.");
       setStepIndex(5);
@@ -250,8 +245,6 @@ export default function HostWizardPage() {
   };
 
   const isLastStep = stepIndex === STEPS.length - 1;
-  const phoneVerificationNeeded = !user?.phoneVerified;
-
   return (
     <HostStepperLayout
       title={STEPS[stepIndex].title}
@@ -265,21 +258,8 @@ export default function HostWizardPage() {
       loading={saving}
       error={error}
     >
-      <div className="space-y-4">
-        {phoneVerificationNeeded && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
-            <p className="font-semibold text-amber-900">Verify your phone before publishing.</p>
-            <p className="mt-1">We use it for booking coordination and important host updates.</p>
-            <Link
-              href="/dashboard/personal-info"
-              className="mt-2 inline-flex font-semibold text-amber-900 underline underline-offset-2"
-            >
-              Verify phone number
-            </Link>
-          </div>
-        )}
-        {renderStep()}
-      </div>
+      {renderStep()}
     </HostStepperLayout>
   );
 }
+import Link from "next/link";
