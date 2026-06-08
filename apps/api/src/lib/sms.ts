@@ -1,4 +1,5 @@
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
+import { logError, logInfo } from "./logger.js";
 
 const AWS_REGION = process.env.AWS_REGION?.trim() ?? "";
 const SNS_SENDER_ID = process.env.SNS_SENDER_ID?.trim() ?? "";
@@ -19,6 +20,11 @@ export class SmsConfigError extends Error {
   }
 }
 
+function redactPhoneNumber(value: string) {
+  if (value.length <= 4) return value;
+  return `${"*".repeat(Math.max(0, value.length - 4))}${value.slice(-4)}`;
+}
+
 export async function sendSms({ to, message }: { to: string; message: string }) {
   if (!snsClient || !AWS_REGION) {
     throw new SmsConfigError("Missing AWS_REGION for SMS.");
@@ -31,11 +37,31 @@ export async function sendSms({ to, message }: { to: string; message: string }) 
     attributes["AWS.SNS.SMS.SenderID"] = { DataType: "String", StringValue: SNS_SENDER_ID };
   }
 
-  await snsClient.send(
-    new PublishCommand({
-      PhoneNumber: to,
-      Message: message,
-      MessageAttributes: attributes,
-    })
-  );
+  try {
+    const response = await snsClient.send(
+      new PublishCommand({
+        PhoneNumber: to,
+        Message: message,
+        MessageAttributes: attributes,
+      })
+    );
+    logInfo("sms.sent", {
+      to: redactPhoneNumber(to),
+      messageId: response.MessageId ?? null,
+      senderId: SNS_SENDER_ID || null,
+      smsType: SNS_SMS_TYPE,
+    });
+    return response;
+  } catch (error) {
+    const err = error as { name?: string; message?: string; $metadata?: { requestId?: string } };
+    logError("sms.failed", {
+      to: redactPhoneNumber(to),
+      senderId: SNS_SENDER_ID || null,
+      smsType: SNS_SMS_TYPE,
+      errorName: err.name ?? "UnknownError",
+      errorMessage: err.message ?? "Unknown SMS error",
+      requestId: err.$metadata?.requestId ?? null,
+    });
+    throw error;
+  }
 }
