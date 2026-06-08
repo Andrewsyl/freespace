@@ -49,7 +49,7 @@ router.post("/", requireAuth, enforceBlockedList, reviewWriteLimiter, async (req
           eventType: "review_suspicious",
           payload: { bookingId, userId, reason: "low_entropy_comment" },
         });
-        return res.status(400).json({ message: "Review text looks invalid." });
+        return res.status(400).json({ message: "Your review is too short or repetitive — try writing a sentence about your experience." });
       }
     }
 

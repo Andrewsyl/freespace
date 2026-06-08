@@ -615,7 +615,8 @@ function PushRegistration() {
       }
       const projectId =
         Constants.easConfig?.projectId ??
-        (Constants.expoConfig as any)?.extra?.eas?.projectId;
+        (Constants.expoConfig as any)?.extra?.eas?.projectId ??
+        mobileEnv.easProjectId;
       if (__DEV__ && !projectId) {
         console.warn("Push registration: missing EAS projectId (Expo token may be null)");
       }

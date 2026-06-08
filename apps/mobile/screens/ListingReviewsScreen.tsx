@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { ArrowLeft } from "lucide-react-native";
 import { listListingReviews, type ListingReview } from "../api";
 import type { RootStackParamList } from "../types";
 import { formatReviewDate } from "../utils/dateFormat";
@@ -64,9 +65,10 @@ export function ListingReviewsScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={20} color="#0F172A" />
+          <ArrowLeft size={20} color="#111827" strokeWidth={2.5} />
         </Pressable>
         <Text style={styles.headerTitle}>Reviews</Text>
+        <View style={{ width: 38 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -138,25 +140,24 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 2,
-    gap: 10,
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+    backgroundColor: "#ffffff",
   },
   backButton: {
-    height: 34,
-    width: 34,
-    borderRadius: 17,
-    backgroundColor: "#ffffff",
+    width: 38,
+    height: 38,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
   },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#0F172A",
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 17,
+    color: "#111827",
+    letterSpacing: -0.3,
   },
   content: {
     paddingHorizontal: 16,
@@ -180,13 +181,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   summaryRating: {
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 17,
-    fontWeight: "700",
-    color: "#0F172A",
+    color: "#111827",
   },
   summaryCount: {
-    fontSize: 11,
-    color: "#94A3B8",
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    color: "#6b7280",
     marginTop: 2,
   },
   sortButton: {
@@ -194,16 +196,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingVertical: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "#E5E7EB",
     backgroundColor: "#ffffff",
   },
   sortText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#0F172A",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: "#111827",
   },
   loader: {
     marginTop: 24,
@@ -211,37 +213,48 @@ const styles = StyleSheet.create({
   },
   reviewList: {
     marginTop: 12,
-    gap: 18,
+    gap: 10,
   },
   reviewRow: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    padding: 16,
     gap: 6,
-  },
-  reviewHeader: {
-    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   reviewAuthor: {
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
-    fontWeight: "700",
-    color: "#0F172A",
+    color: "#111827",
   },
   reviewStarsRow: {
-    marginTop: 4,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
   },
   reviewMeta: {
-    fontSize: 10,
-    color: "#94A3B8",
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 11,
+    color: "#9ca3af",
   },
   reviewBody: {
-    fontSize: 13,
-    color: "#475569",
-    lineHeight: 20,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    color: "#374151",
+    lineHeight: 21,
+    marginTop: 2,
   },
   emptyText: {
     marginTop: 20,
-    color: "#94A3B8",
-    fontSize: 12,
+    fontFamily: "PlusJakartaSans-Regular",
+    color: "#9ca3af",
+    fontSize: 13,
+    textAlign: "center",
   },
 });

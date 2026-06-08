@@ -95,6 +95,9 @@ async function requireActiveHost(userId?: string) {
   if (!profile.email_verified) {
     return { ok: false, message: "Please verify your email before hosting." } as const;
   }
+  if (!profile.phone_verified) {
+    return { ok: false, message: "Please verify your phone before hosting." } as const;
+  }
   const accountAgeMinutes = (Date.now() - new Date(profile.created_at).getTime()) / 60000;
   if (accountAgeMinutes < settings.minAccountAgeMinutes) {
     if (!enforceFraud) {
@@ -339,6 +342,10 @@ router.patch("/:id", requireAuth, listingWriteLimiter, async (req, res, next) =>
     const ownerId = await getListingHostId(listingId);
     if (ownerId !== hostId) return res.status(403).json({ message: "Forbidden" });
     const payload = updateListingSchema.parse(req.body);
+    if (payload.isActive === true) {
+      const gate = await requireActiveHost(hostId);
+      if (!gate.ok) return res.status(403).json({ message: gate.message });
+    }
     const pricing =
       payload.rateType ||
       typeof payload.pricePerDay === "number" ||

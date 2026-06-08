@@ -201,10 +201,17 @@ export async function enforceBlockedList(req: any, res: any, next: any) {
 
 export async function getUserRiskProfile(userId: string) {
   const result = await pool.query(
-    `SELECT email_verified, status, created_at FROM users WHERE id = $1 LIMIT 1`,
+    `SELECT email_verified, phone_verified, status, created_at FROM users WHERE id = $1 LIMIT 1`,
     [userId]
   );
-  return result.rows[0] as { email_verified: boolean; status: string | null; created_at: string } | undefined;
+  return result.rows[0] as
+    | {
+        email_verified: boolean;
+        phone_verified: boolean;
+        status: string | null;
+        created_at: string;
+      }
+    | undefined;
 }
 
 export async function getRecentBookingStats(userId: string) {

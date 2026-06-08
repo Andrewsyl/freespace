@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingHorizontal: 20,
     paddingBottom: 18,
-    backgroundColor: hostFlowColors.cardBg,
+    backgroundColor: hostFlowColors.bg,
     borderBottomWidth: 1,
     borderBottomColor: hostFlowColors.border,
   },

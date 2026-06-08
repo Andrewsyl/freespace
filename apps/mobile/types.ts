@@ -38,7 +38,12 @@ export type RootStackParamList = {
       }
     | undefined;
   Profile: { hideTabBar?: boolean } | undefined;
-  PersonalInfo: undefined;
+  PersonalInfo:
+    | {
+        focusField?: "phone";
+        notice?: string;
+      }
+    | undefined;
   LoginSecurity: undefined;
   Legal: undefined;
   History: { showSuccess?: boolean; refreshToken?: number; showMapCTA?: boolean; initialTab?: "upcoming" | "active" | "past" } | undefined;

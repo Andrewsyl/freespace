@@ -172,8 +172,8 @@ export function PaymentsScreen() {
           <View style={styles.gatedIconWrap}>
             <CreditCard size={24} color="#0a8050" strokeWidth={2.2} />
           </View>
-          <Text style={styles.title}>Payments</Text>
-          <Text style={styles.subtitle}>Sign in to manage your payment methods and view booking charges.</Text>
+          <Text style={styles.emptyTitle}>Payments</Text>
+          <Text style={styles.emptySubtitle}>Sign in to manage your payment methods and view booking charges.</Text>
           <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("SignIn")}>
             <Text style={styles.primaryButtonText}>Sign in</Text>
           </Pressable>
@@ -196,11 +196,6 @@ export function PaymentsScreen() {
         <View style={styles.navSpacer} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Payments</Text>
-          <Text style={styles.subtitle}>Manage cards and review your booking charges.</Text>
-        </View>
-
         {loading ? (
           <View style={styles.loadingOverlay} pointerEvents="none">
             <View style={styles.loadingBadge}>
@@ -335,23 +330,23 @@ export function PaymentsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.appBg,
+    backgroundColor: "#F4F6F8",
   },
   content: {
     flexGrow: 1,
-    paddingHorizontal: spacing.screenX,
+    paddingHorizontal: 16,
     paddingBottom: 28,
-    paddingTop: 8,
+    paddingTop: 16,
   },
   navBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: "#d1d5db",
+    borderBottomWidth: 1, borderBottomColor: "#E5E7EB",
     backgroundColor: "#ffffff",
   },
-  backBtn: { padding: 6, marginLeft: -6 },
-  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#111827" },
-  navSpacer: { width: 34 },
+  backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+  navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#111827", letterSpacing: -0.3 },
+  navSpacer: { width: 38 },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
@@ -369,23 +364,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  header: {
-    marginBottom: 14,
-  },
-  title: {
-    color: colors.text,
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 27,
-    letterSpacing: -0.8,
-    lineHeight: 32,
-    marginTop: 6,
-  },
-  subtitle: {
-    color: "#6B6B6B",
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 6,
-  },
   muted: {
     color: colors.textMuted,
     fontSize: 12,
@@ -398,12 +376,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   section: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 14,
+    backgroundColor: "#ffffff",
+    borderColor: "#E5E7EB",
+    borderRadius: 20,
     borderWidth: 1,
     marginBottom: 16,
     overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
   sectionHeader: {
     color: colors.text,
@@ -610,6 +593,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 20,
+    color: "#111827",
+    letterSpacing: -0.4,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    color: "#6b7280",
+    textAlign: "center",
+    lineHeight: 21,
   },
   gatedIconWrap: {
     width: 56,

@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  FlatList,
   KeyboardAvoidingView,
   Modal,
   Pressable,
@@ -11,12 +12,11 @@ import {
   View,
   Platform,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { ArrowLeft, Check, ChevronDown, Search, X } from "lucide-react-native";
 import { updateMe } from "../api";
 import { useAuth } from "../auth";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import type { RootStackParamList } from "../types";
-import { colors, spacing } from "../styles/theme";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = NativeStackScreenProps<RootStackParamList, "VehicleType">;
@@ -80,18 +80,18 @@ const VEHICLE_MODELS_BY_MAKE: Record<string, string[]> = {
 };
 
 const COLOURS = [
-  { name: "Black",    hex: "#1F2937" },
-  { name: "White",    hex: "#FFFFFF" },
-  { name: "Silver",   hex: "#C0C7D1" },
-  { name: "Grey",     hex: "#8B95A7" },
-  { name: "Blue",     hex: "#2563EB" },
-  { name: "Red",      hex: "#DC2626" },
-  { name: "Green",    hex: "#16A34A" },
-  { name: "Orange",   hex: "#EA580C" },
-  { name: "Yellow",   hex: "#CA8A04" },
-  { name: "Brown",    hex: "#78350F" },
-  { name: "Beige",    hex: "#D4B896" },
-  { name: "Other",    hex: "#CBD5E1" },
+  { name: "Black",  hex: "#1F2937" },
+  { name: "White",  hex: "#FFFFFF" },
+  { name: "Silver", hex: "#C0C7D1" },
+  { name: "Grey",   hex: "#8B95A7" },
+  { name: "Blue",   hex: "#2563EB" },
+  { name: "Red",    hex: "#DC2626" },
+  { name: "Green",  hex: "#16A34A" },
+  { name: "Orange", hex: "#EA580C" },
+  { name: "Yellow", hex: "#CA8A04" },
+  { name: "Brown",  hex: "#78350F" },
+  { name: "Beige",  hex: "#D4B896" },
+  { name: "Other",  hex: "#CBD5E1" },
 ];
 
 function formatIrishPlate(raw: string) {
@@ -129,45 +129,35 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
   const scrollRef = useRef<ScrollView | null>(null);
   const plateInputRef = useRef<TextInput | null>(null);
   const plateFieldY = useRef(0);
-  const makeFieldY = useRef(0);
+  const makeSearchRef = useRef<TextInput | null>(null);
 
   const [plate, setPlate] = useState("");
   const [selectedMake, setSelectedMake] = useState("");
-  const [brandQuery, setBrandQuery] = useState("");
-  const [brandFocused, setBrandFocused] = useState(false);
   const [selectedModel, setSelectedModel] = useState("");
-  const [modelQuery, setModelQuery] = useState("");
-  const [modelFocused, setModelFocused] = useState(false);
   const [selectedColour, setSelectedColour] = useState("");
-  const [colourOpen, setColourOpen] = useState(false);
+  const [makeModalOpen, setMakeModalOpen] = useState(false);
+  const [modelModalOpen, setModelModalOpen] = useState(false);
+  const [makeSearch, setMakeSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setPlate(user?.vehiclePlate ?? "");
     setSelectedMake(user?.vehicleMake ?? "");
-    setBrandQuery(user?.vehicleMake ?? "");
     setSelectedModel(user?.vehicleType ?? "");
-    setModelQuery(user?.vehicleType ?? "");
     setSelectedColour(user?.vehicleColor ?? "");
   }, [user?.vehicleColor, user?.vehicleMake, user?.vehiclePlate, user?.vehicleType]);
 
   const filteredMakes = useMemo(() => {
-    const q = brandQuery.trim().toLowerCase();
+    const q = makeSearch.trim().toLowerCase();
     if (!q) return VEHICLE_MAKES;
     return VEHICLE_MAKES.filter((m) => m.toLowerCase().includes(q));
-  }, [brandQuery]);
+  }, [makeSearch]);
 
   const availableModels = useMemo(
     () => (selectedMake ? VEHICLE_MODELS_BY_MAKE[selectedMake] ?? ["Other"] : []),
     [selectedMake]
   );
-
-  const filteredModels = useMemo(() => {
-    const q = modelQuery.trim().toLowerCase();
-    if (!q) return availableModels;
-    return availableModels.filter((m) => m.toLowerCase().includes(q));
-  }, [availableModels, modelQuery]);
 
   const canSave = !!token && !saving && !!plate.trim();
 
@@ -200,6 +190,20 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
     return () => clearTimeout(timer);
   }, [route.params?.focusField]);
 
+  const openMakeModal = () => {
+    setMakeSearch("");
+    setMakeModalOpen(true);
+    setTimeout(() => makeSearchRef.current?.focus(), 300);
+  };
+
+  const selectMake = (make: string) => {
+    setSelectedMake(make);
+    setSelectedModel("");
+    setMakeModalOpen(false);
+  };
+
+  const selectedColourHex = COLOURS.find((c) => c.name === selectedColour)?.hex;
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView
@@ -210,7 +214,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
         {/* Nav */}
         <View style={styles.nav}>
           <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={10}>
-            <Ionicons name="arrow-back" size={22} color={colors.text} />
+            <ArrowLeft size={20} color={FG} strokeWidth={2.5} />
           </Pressable>
           <Text style={styles.navTitle}>My vehicle</Text>
           <View style={{ width: 38 }} />
@@ -222,35 +226,14 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Brand logo hero */}
-          <View style={styles.logoHero}>
-            {selectedMake ? (
-              <VehicleBrandLogo make={selectedMake} size={64} />
-            ) : (
-              <View style={styles.logoPlaceholder}>
-                <Ionicons name="car-outline" size={32} color="#9ca3af" />
-              </View>
-            )}
-            {selectedMake ? (
-              <Text style={styles.logoMakeName}>{selectedMake}</Text>
-            ) : (
-              <Text style={styles.logoMakeName} />
-            )}
-            {selectedColour ? (
-              <View style={[styles.colourDot, { backgroundColor: COLOURS.find(c => c.name === selectedColour)?.hex ?? "#ccc" }, selectedColour === "White" && styles.colourDotBorder]} />
-            ) : null}
-          </View>
 
-          {/* Plate hero */}
+          {/* ── Registration plate ── */}
           <View
-            style={styles.plateSection}
+            style={styles.card}
             onLayout={(e) => { plateFieldY.current = e.nativeEvent.layout.y; }}
           >
             <Text style={styles.fieldLabel}>Registration plate</Text>
-            <Pressable
-              style={styles.plateWrap}
-              onPress={() => plateInputRef.current?.focus()}
-            >
+            <Pressable style={styles.plateWrap} onPress={() => plateInputRef.current?.focus()}>
               <View style={styles.plateEuStripe}>
                 <Text style={styles.plateEuText}>IRL</Text>
               </View>
@@ -266,137 +249,98 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
                   autoCorrect={false}
                   textAlign="center"
                   returnKeyType="done"
-                  onFocus={() => scrollRef.current?.scrollTo({ y: Math.max(0, plateFieldY.current - 100), animated: true })}
+                  onFocus={() =>
+                    scrollRef.current?.scrollTo({ y: Math.max(0, plateFieldY.current - 100), animated: true })
+                  }
                 />
               </View>
             </Pressable>
-            <Text style={styles.plateHint}>Required for entry to the parking space</Text>
+            <Text style={styles.hint}>Required for parking space entry</Text>
           </View>
 
-          {/* Make */}
-          <View
-            style={styles.fieldSection}
-            onLayout={(e) => { makeFieldY.current = e.nativeEvent.layout.y; }}
-          >
-            <Text style={styles.fieldLabel}>Car make</Text>
-            <View style={styles.makeInputWrap}>
-              <Ionicons name="search-outline" size={16} color="#9ca3af" style={styles.makeSearchIcon} />
-              <TextInput
-                style={styles.makeInput}
-                value={brandQuery}
-                onChangeText={(v) => {
-                  setBrandQuery(v);
-                  if (v !== selectedMake) setSelectedMake("");
-                }}
-                onFocus={() => {
-                  setBrandFocused(true);
-                  scrollRef.current?.scrollTo({ y: Math.max(0, makeFieldY.current - 100), animated: true });
-                }}
-                onBlur={() => setTimeout(() => setBrandFocused(false), 120)}
-                placeholder="Type car brand"
-                placeholderTextColor="#9ca3af"
-                autoCapitalize="words"
-                autoCorrect={false}
-                returnKeyType="done"
-              />
+          {/* ── Make dropdown ── */}
+          <View style={styles.card}>
+            <Text style={styles.fieldLabel}>Make</Text>
+            <Pressable style={styles.dropdownField} onPress={openMakeModal}>
               {selectedMake ? (
-                <Ionicons name="checkmark-circle" size={18} color="#0a8050" style={{ marginRight: 12 }} />
-              ) : null}
-            </View>
-            {brandFocused && filteredMakes.length > 0 ? (
-              <View style={styles.suggestions}>
-                {filteredMakes.slice(0, 7).map((make, i) => (
-                  <Pressable
-                    key={make}
-                    style={[styles.suggestionRow, i > 0 && styles.suggestionBorder]}
-                    onPress={() => {
-                      setSelectedMake(make);
-                      setBrandQuery(make);
-                      setSelectedModel("");
-                      setModelQuery("");
-                      setBrandFocused(false);
-                    }}
-                  >
-                    <VehicleBrandLogo make={make} size={20} />
-                    <Text style={styles.suggestionText}>{make}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
+                <View style={styles.dropdownSelectedContent}>
+                  <VehicleBrandLogo make={selectedMake} size={24} />
+                  <Text style={styles.dropdownSelectedText}>{selectedMake}</Text>
+                </View>
+              ) : (
+                <Text style={styles.dropdownPlaceholder}>Select make…</Text>
+              )}
+              <ChevronDown size={18} color={MUTED} strokeWidth={2} />
+            </Pressable>
           </View>
 
-          {/* Model */}
+          {/* ── Model dropdown ── */}
           {selectedMake ? (
-            <View style={styles.fieldSection}>
+            <View style={styles.card}>
               <Text style={styles.fieldLabel}>Model</Text>
-              <View style={styles.makeInputWrap}>
-              <Ionicons name="search-outline" size={16} color="#9ca3af" style={styles.makeSearchIcon} />
-                <TextInput
-                  style={styles.makeInput}
-                  value={modelQuery}
-                  onChangeText={(v) => {
-                    setModelQuery(v);
-                    if (v !== selectedModel) setSelectedModel("");
-                  }}
-                  onFocus={() => setModelFocused(true)}
-                  onBlur={() => setTimeout(() => setModelFocused(false), 120)}
-                  placeholder="Type car model"
-                  placeholderTextColor="#9ca3af"
-                  autoCapitalize="words"
-                  autoCorrect={false}
-                  returnKeyType="done"
-                />
+              <Pressable
+                style={styles.dropdownField}
+                onPress={() => setModelModalOpen(true)}
+              >
                 {selectedModel ? (
-                  <Ionicons name="checkmark-circle" size={18} color="#0a8050" style={{ marginRight: 12 }} />
-                ) : null}
-              </View>
-              {modelFocused && filteredModels.length > 0 ? (
-                <View style={styles.suggestions}>
-                  {filteredModels.slice(0, 7).map((model, i) => (
-                    <Pressable
-                      key={model}
-                      style={[styles.suggestionRow, i > 0 && styles.suggestionBorder]}
-                      onPress={() => {
-                        setSelectedModel(model);
-                        setModelQuery(model);
-                        setModelFocused(false);
-                      }}
-                    >
-                      <Text style={styles.suggestionText}>{model}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              ) : null}
+                  <Text style={styles.dropdownSelectedText}>{selectedModel}</Text>
+                ) : (
+                  <Text style={styles.dropdownPlaceholder}>Select model…</Text>
+                )}
+                <ChevronDown size={18} color={MUTED} strokeWidth={2} />
+              </Pressable>
             </View>
           ) : null}
 
-          {/* Colour */}
-          <View style={styles.fieldSection}>
-            <Text style={styles.fieldLabel}>Colour</Text>
-            <Pressable style={styles.colourSelect} onPress={() => setColourOpen(true)}>
-              <View style={styles.colourSelectValue}>
-                {selectedColour ? (
-                  <>
-                    <View
-                      style={[
-                        styles.colourSwatch,
-                        { backgroundColor: COLOURS.find((c) => c.name === selectedColour)?.hex ?? "#CBD5E1" },
-                        selectedColour === "White" && styles.colourSwatchBorder,
-                      ]}
-                    />
-                    <Text style={styles.colourSelectText}>{selectedColour}</Text>
-                  </>
-                ) : (
-                  <Text style={styles.colourSelectPlaceholder}>Select colour…</Text>
-                )}
-              </View>
-              <Ionicons name="chevron-down" size={18} color="#6b7280" />
-            </Pressable>
+          {/* ── Colour ── */}
+          <View style={styles.card}>
+            <View style={styles.fieldLabelRow}>
+              <Text style={styles.fieldLabel}>Colour</Text>
+              {selectedColour && selectedColourHex ? (
+                <View style={styles.colourBadge}>
+                  <View
+                    style={[
+                      styles.colourBadgeDot,
+                      { backgroundColor: selectedColourHex },
+                      selectedColour === "White" && styles.colourBadgeDotBorder,
+                    ]}
+                  />
+                  <Text style={styles.colourBadgeText}>{selectedColour}</Text>
+                </View>
+              ) : null}
+            </View>
+            <View style={styles.coloursGrid}>
+              {COLOURS.map((colour) => {
+                const active = selectedColour === colour.name;
+                return (
+                  <Pressable
+                    key={colour.name}
+                    style={styles.colourCell}
+                    onPress={() => setSelectedColour(active ? "" : colour.name)}
+                  >
+                    <View style={[styles.colourRing, active && styles.colourRingActive]}>
+                      <View
+                        style={[
+                          styles.colourCircle,
+                          { backgroundColor: colour.hex },
+                          colour.name === "White" && styles.colourCircleBorder,
+                        ]}
+                      />
+                    </View>
+                    <Text
+                      style={[styles.colourName, active && styles.colourNameActive]}
+                      numberOfLines={1}
+                    >
+                      {colour.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          {/* Save */}
           <Pressable
             style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
             onPress={handleSave}
@@ -406,113 +350,175 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
           </Pressable>
 
         </ScrollView>
-
-        <Modal transparent visible={colourOpen} animationType="fade" onRequestClose={() => setColourOpen(false)}>
-          <View style={styles.colourModalRoot}>
-            <Pressable style={styles.colourModalBackdrop} onPress={() => setColourOpen(false)} />
-            <View style={[styles.colourSheet, { paddingBottom: Math.max(18, insets.bottom + 6) }]}>
-              <View style={styles.colourSheetHandle} />
-              <Text style={styles.colourSheetEyebrow}>Vehicle colour</Text>
-              <Text style={styles.colourSheetTitle}>Choose your car colour</Text>
-              <Text style={styles.colourSheetBody}>This helps hosts recognise your car when you arrive.</Text>
-
-              <ScrollView
-                style={styles.colourSheetList}
-                contentContainerStyle={styles.colourSheetListContent}
-                showsVerticalScrollIndicator={false}
-              >
-                {COLOURS.map((colour) => {
-                  const active = selectedColour === colour.name;
-                  return (
-                    <Pressable
-                      key={colour.name}
-                      style={[styles.colourOption, active && styles.colourOptionActive]}
-                      onPress={() => {
-                        setSelectedColour(colour.name);
-                        setColourOpen(false);
-                      }}
-                    >
-                      <View style={styles.colourOptionLeft}>
-                        <View
-                          style={[
-                            styles.colourOptionSwatch,
-                            { backgroundColor: colour.hex },
-                            colour.name === "White" && styles.colourSwatchBorder,
-                          ]}
-                        />
-                        <Text style={[styles.colourOptionText, active && styles.colourOptionTextActive]}>
-                          {colour.name}
-                        </Text>
-                      </View>
-                      {active ? <Ionicons name="checkmark-circle" size={20} color={GREEN} /> : null}
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
       </KeyboardAvoidingView>
+
+      {/* ── Make picker modal ── */}
+      <Modal
+        visible={makeModalOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setMakeModalOpen(false)}
+      >
+        <SafeAreaView style={styles.sheetContainer} edges={["top", "bottom"]}>
+          <View style={styles.sheetHeader}>
+            <Text style={styles.sheetTitle}>Select make</Text>
+            <Pressable style={styles.sheetClose} onPress={() => setMakeModalOpen(false)} hitSlop={10}>
+              <X size={20} color={FG} strokeWidth={2.5} />
+            </Pressable>
+          </View>
+
+          <View style={styles.sheetSearchWrap}>
+            <Search size={16} color="#9ca3af" strokeWidth={2} />
+            <TextInput
+              ref={makeSearchRef}
+              style={styles.sheetSearchInput}
+              value={makeSearch}
+              onChangeText={setMakeSearch}
+              placeholder="Search makes…"
+              placeholderTextColor="#9ca3af"
+              autoCapitalize="words"
+              autoCorrect={false}
+              returnKeyType="search"
+              clearButtonMode="while-editing"
+            />
+          </View>
+
+          <FlatList
+            data={filteredMakes}
+            keyExtractor={(item) => item}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.sheetListContent}
+            renderItem={({ item: make }) => {
+              const active = selectedMake === make;
+              return (
+                <Pressable
+                  style={[styles.sheetRow, active && styles.sheetRowActive]}
+                  onPress={() => selectMake(make)}
+                >
+                  <View style={styles.sheetRowLogo}>
+                    <VehicleBrandLogo make={make} size={26} />
+                  </View>
+                  <Text style={[styles.sheetRowText, active && styles.sheetRowTextActive]}>
+                    {make}
+                  </Text>
+                  {active && (
+                    <Check size={18} color={GREEN} strokeWidth={2.5} />
+                  )}
+                </Pressable>
+              );
+            }}
+            ItemSeparatorComponent={() => <View style={styles.sheetSeparator} />}
+          />
+        </SafeAreaView>
+      </Modal>
+
+      {/* ── Model picker modal ── */}
+      <Modal
+        visible={modelModalOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setModelModalOpen(false)}
+      >
+        <SafeAreaView style={styles.sheetContainer} edges={["top", "bottom"]}>
+          <View style={styles.sheetHeader}>
+            <Text style={styles.sheetTitle}>Select model</Text>
+            <Pressable style={styles.sheetClose} onPress={() => setModelModalOpen(false)} hitSlop={10}>
+              <X size={20} color={FG} strokeWidth={2.5} />
+            </Pressable>
+          </View>
+
+          <FlatList
+            data={availableModels}
+            keyExtractor={(item) => item}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.sheetListContent}
+            renderItem={({ item: model }) => {
+              const active = selectedModel === model;
+              return (
+                <Pressable
+                  style={[styles.sheetRow, active && styles.sheetRowActive]}
+                  onPress={() => {
+                    setSelectedModel(active ? "" : model);
+                    setModelModalOpen(false);
+                  }}
+                >
+                  <Text style={[styles.sheetRowText, active && styles.sheetRowTextActive]}>
+                    {model}
+                  </Text>
+                  {active && (
+                    <Check size={18} color={GREEN} strokeWidth={2.5} />
+                  )}
+                </Pressable>
+              );
+            }}
+            ItemSeparatorComponent={() => <View style={styles.sheetSeparator} />}
+          />
+        </SafeAreaView>
+      </Modal>
+
     </SafeAreaView>
   );
 }
 
 const GREEN = "#0a8050";
 const FG    = "#111827";
-const LINE  = "#D1D5DB";
-const MUTED = "#374151";
+const LINE  = "#E5E7EB";
+const MUTED = "#6b7280";
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#ffffff" },
+  container: { flex: 1, backgroundColor: "#F4F6F8" },
   flex: { flex: 1 },
 
   nav: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8,
+    paddingHorizontal: 20, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: LINE,
+    backgroundColor: "#ffffff",
   },
-  backBtn: {
-    width: 38, height: 38, alignItems: "center", justifyContent: "center",
-  },
-  navTitle: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG, letterSpacing: -0.3,
+  backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+  navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG, letterSpacing: -0.3 },
+
+  content: { paddingHorizontal: 16, paddingTop: 16 },
+
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: LINE,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 22,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
 
-  content: { paddingHorizontal: 20, paddingTop: 24 },
-
-  // Logo hero
-  logoHero: {
-    alignItems: "center", marginBottom: 28, gap: 8,
+  fieldLabelRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    marginBottom: 14,
   },
-  logoPlaceholder: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: "#f3f4f6",
-    alignItems: "center", justifyContent: "center",
+  fieldLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13, color: MUTED,
+    letterSpacing: 0.4, textTransform: "uppercase",
+    marginBottom: 14,
   },
-  logoMakeName: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 18, color: FG,
-    letterSpacing: -0.3, minHeight: 22,
-  },
-  colourDot: {
-    width: 12, height: 12, borderRadius: 6,
-  },
-  colourDotBorder: { borderWidth: 1, borderColor: LINE },
 
   // Plate
-  plateSection: { marginBottom: 24 },
-  fieldLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
-    color: MUTED, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 10,
-  },
   plateWrap: {
     flexDirection: "row",
-    borderRadius: 10, borderWidth: 2, borderColor: "#3D6FB6",
+    borderRadius: 11, borderWidth: 2, borderColor: "#3D6FB6",
     overflow: "hidden", backgroundColor: "#ffffff",
     shadowColor: "#3D6FB6", shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12, shadowRadius: 8, elevation: 3,
   },
   plateEuStripe: {
-    width: 38, backgroundColor: "#3D6FB6",
+    width: 40, backgroundColor: "#3D6FB6",
     alignItems: "center", justifyContent: "center",
   },
   plateEuText: {
@@ -529,172 +535,134 @@ const styles = StyleSheet.create({
     width: "100%", textAlign: "center",
     includeFontPadding: false, padding: 0,
   },
-  plateHint: {
+  hint: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 12,
-    color: "#6b7280", marginTop: 8, textAlign: "center",
+    color: MUTED, marginTop: 10, textAlign: "center",
   },
 
-  // Make
-  fieldSection: { marginBottom: 24 },
-  makeInputWrap: {
+  // Dropdown field
+  dropdownField: {
     flexDirection: "row", alignItems: "center",
-    borderWidth: 1, borderColor: LINE, borderRadius: 12,
-    backgroundColor: "#f9fafb",
+    borderWidth: 1.5, borderColor: LINE, borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 14,
+    backgroundColor: "#FAFAFA",
   },
-  makeSearchIcon: { marginLeft: 14 },
-  makeInput: {
-    flex: 1, fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG,
-    paddingHorizontal: 10, paddingVertical: 14,
+  dropdownSelectedContent: {
+    flex: 1, flexDirection: "row", alignItems: "center", gap: 10,
   },
-  suggestions: {
-    marginTop: 6, borderRadius: 12, borderWidth: 1, borderColor: LINE,
-    backgroundColor: "#ffffff", overflow: "hidden",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06, shadowRadius: 10, elevation: 4,
+  dropdownSelectedText: {
+    flex: 1, fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15, color: FG,
   },
-  suggestionRow: {
-    flexDirection: "row", alignItems: "center", gap: 12,
-    paddingHorizontal: 14, paddingVertical: 12,
-    backgroundColor: "#ffffff",
-  },
-  suggestionBorder: { borderTopWidth: 1, borderTopColor: LINE },
-  suggestionText: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG, flex: 1,
+  dropdownPlaceholder: {
+    flex: 1, fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 15, color: "#9ca3af",
   },
 
-  colourSelect: {
-    borderWidth: 1,
-    borderColor: LINE,
-    borderRadius: 12,
-    backgroundColor: "#f9fafb",
-    minHeight: 54,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  // Colour badge in label row
+  colourBadge: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    marginBottom: 14,
   },
-  colourSelectValue: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
+  colourBadgeDot: {
+    width: 14, height: 14, borderRadius: 7,
   },
-  colourSelectText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    color: FG,
+  colourBadgeDotBorder: {
+    borderWidth: 1.5, borderColor: LINE,
   },
-  colourSelectPlaceholder: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 15,
-    color: "#9ca3af",
-  },
-  colourSwatch: {
-    width: 18,
-    height: 18,
-    borderRadius: 999,
-  },
-  colourSwatchBorder: { borderWidth: 1.5, borderColor: LINE },
-  colourModalRoot: { flex: 1, justifyContent: "flex-end" },
-  colourModalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(17,24,39,0.28)",
-  },
-  colourSheet: {
-    backgroundColor: "#ffffff",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.14,
-    shadowRadius: 24,
-    elevation: 12,
-    maxHeight: "72%",
-  },
-  colourSheetHandle: {
-    alignSelf: "center",
-    width: 44,
-    height: 5,
-    borderRadius: 999,
-    backgroundColor: "#d1d5db",
-    marginBottom: 16,
-  },
-  colourSheetEyebrow: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 11,
-    color: GREEN,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  colourSheetTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 22,
-    color: FG,
-    letterSpacing: -0.4,
-  },
-  colourSheetBody: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    color: "#6b7280",
-    lineHeight: 20,
-    marginTop: 6,
-  },
-  colourSheetList: {
-    marginTop: 18,
-  },
-  colourSheetListContent: {
-    paddingBottom: 6,
-    gap: 10,
-  },
-  colourOption: {
-    minHeight: 58,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  colourOptionActive: {
-    borderColor: "#B8E0CF",
-    backgroundColor: "#F3FBF7",
-  },
-  colourOptionLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  colourOptionSwatch: {
-    width: 22,
-    height: 22,
-    borderRadius: 999,
-  },
-  colourOptionText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    color: FG,
-  },
-  colourOptionTextActive: {
-    color: GREEN,
+  colourBadgeText: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: GREEN,
   },
 
-  error: {
+  // Colour grid — 4 per row
+  coloursGrid: { flexDirection: "row", flexWrap: "wrap" },
+  colourCell: {
+    width: "25%", alignItems: "center",
+    paddingBottom: 12, gap: 6,
+  },
+  colourRing: {
+    padding: 3, borderRadius: 999,
+    borderWidth: 2.5, borderColor: "transparent",
+  },
+  colourRingActive: { borderColor: GREEN },
+  colourCircle: { width: 40, height: 40, borderRadius: 20 },
+  colourCircleBorder: { borderWidth: 1.5, borderColor: LINE },
+  colourName: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 11, color: MUTED, textAlign: "center",
+  },
+  colourNameActive: { fontFamily: "PlusJakartaSans-SemiBold", color: GREEN },
+
+  errorText: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
-    color: colors.danger, textAlign: "center", marginBottom: 12,
+    color: "#DC2626", textAlign: "center", marginBottom: 12,
   },
 
-  // Save
   saveBtn: {
-    marginTop: 8, height: 54, borderRadius: 14,
-    backgroundColor: GREEN, alignItems: "center", justifyContent: "center",
+    height: 56, borderRadius: 16,
+    backgroundColor: GREEN,
+    alignItems: "center", justifyContent: "center",
+    marginTop: 4,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  saveBtnDisabled: { opacity: 0.4 },
+  saveBtnDisabled: { opacity: 0.4, shadowOpacity: 0 },
   saveBtnText: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: "#ffffff", letterSpacing: -0.2,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 16,
+    color: "#ffffff", letterSpacing: -0.2,
+  },
+
+  // Modal sheet
+  sheetContainer: {
+    flex: 1, backgroundColor: "#ffffff",
+  },
+  sheetHeader: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 20, paddingVertical: 16,
+    borderBottomWidth: 1, borderBottomColor: LINE,
+  },
+  sheetTitle: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 17,
+    color: FG, letterSpacing: -0.3,
+  },
+  sheetClose: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center", justifyContent: "center",
+  },
+  sheetSearchWrap: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    marginHorizontal: 16, marginVertical: 12,
+    borderWidth: 1.5, borderColor: LINE, borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 12,
+    backgroundColor: "#F9FAFB",
+  },
+  sheetSearchInput: {
+    flex: 1, fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 15, color: FG, padding: 0,
+  },
+  sheetListContent: { paddingBottom: 24 },
+  sheetRow: {
+    flexDirection: "row", alignItems: "center", gap: 14,
+    paddingHorizontal: 20, paddingVertical: 16,
+  },
+  sheetRowActive: { backgroundColor: "#F0FAF6" },
+  sheetRowLogo: {
+    width: 40, height: 40, borderRadius: 10,
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1, borderColor: LINE,
+    alignItems: "center", justifyContent: "center",
+  },
+  sheetRowText: {
+    flex: 1, fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15, color: FG,
+  },
+  sheetRowTextActive: { color: GREEN },
+  sheetSeparator: {
+    height: 1, backgroundColor: "#F3F4F6",
+    marginLeft: 20,
   },
 });

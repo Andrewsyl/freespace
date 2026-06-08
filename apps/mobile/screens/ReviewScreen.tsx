@@ -17,10 +17,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
   FadeIn,
   FadeInDown,
-  FadeOut,
-  ZoomIn,
-  ZoomOut,
 } from "react-native-reanimated";
+import LottieView from "lottie-react-native";
 import { ArrowLeft } from "lucide-react-native";
 import { createReview } from "../api";
 import { useAuth } from "../auth";
@@ -53,11 +51,10 @@ export function ReviewScreen({ navigation, route }: Props) {
   }, [rating]);
 
   const submitLabel = useMemo(() => {
-    if (isSubmitted) return "✓ Thank you!";
     if (existingRating) return "Reviewed";
     if (rating >= 4) return "Share the love";
     return "Submit review";
-  }, [isSubmitted, existingRating, rating]);
+  }, [existingRating, rating]);
 
   useEffect(() => {
     void (async () => {
@@ -92,9 +89,6 @@ export function ReviewScreen({ navigation, route }: Props) {
       );
       setIsSubmitted(true);
       setExistingRating(rating);
-      setTimeout(() => {
-        navigation.popToTop();
-      }, 900);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Review failed");
     } finally {
@@ -134,14 +128,6 @@ export function ReviewScreen({ navigation, route }: Props) {
             </Animated.View>
           ) : null}
 
-          {existingRating ? (
-            <Animated.View entering={FadeInDown.delay(50)} style={styles.notice}>
-              <Text style={styles.noticeText}>
-                You already rated this booking {existingRating} out of 5.
-              </Text>
-            </Animated.View>
-          ) : null}
-
           <View style={styles.divider} />
 
           <Animated.View entering={FadeInDown.delay(100)} style={styles.section}>
@@ -155,7 +141,7 @@ export function ReviewScreen({ navigation, route }: Props) {
               />
             </View>
             {rating > 0 ? (
-              <Animated.Text entering={FadeIn} exiting={FadeOut} style={styles.ratingFeedback}>
+              <Animated.Text entering={FadeIn} style={styles.ratingFeedback}>
                 {ratingPrompt}
               </Animated.Text>
             ) : null}
@@ -176,14 +162,13 @@ export function ReviewScreen({ navigation, route }: Props) {
               onContentSizeChange={(e) => setInputHeight(e.nativeEvent.contentSize.height)}
               editable={canReview && !existingRating}
             />
-            {feedback.length > 0 ? (
-              <Animated.Text entering={FadeIn} style={styles.charCount}>
-                {feedback.length} chars · Looking good ✨
-              </Animated.Text>
-            ) : null}
           </Animated.View>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? (
+            <Animated.View entering={FadeInDown.duration(200)} style={styles.errorBanner}>
+              <Text style={styles.errorText}>{error}</Text>
+            </Animated.View>
+          ) : null}
 
           <Animated.View entering={FadeInDown.delay(300)} style={styles.ctaWrap}>
             {!canReview || rating === 0 || !!existingRating ? (
@@ -208,11 +193,23 @@ export function ReviewScreen({ navigation, route }: Props) {
       </KeyboardAvoidingView>
 
       {isSubmitted ? (
-        <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.successOverlay} pointerEvents="none">
-          <Animated.View entering={ZoomIn.springify().damping(10)} exiting={ZoomOut} style={styles.successCircle}>
-            <Text style={styles.successEmoji}>🎉</Text>
-          </Animated.View>
-        </Animated.View>
+        <Pressable style={styles.successOverlay} onPress={() => navigation.popToTop()}>
+          <View style={styles.successCard}>
+            <LottieView
+              source={require("../assets/successfully.json")}
+              autoPlay
+              loop={false}
+              onAnimationFinish={() => {
+                setTimeout(() => navigation.popToTop(), 400);
+              }}
+              style={styles.successAnimation}
+            />
+            <Text style={styles.successTitle}>Review submitted!</Text>
+            <Text style={styles.successBody}>
+              Thanks for helping other drivers find great spots.
+            </Text>
+          </View>
+        </Pressable>
       ) : null}
     </SafeAreaView>
   );
@@ -321,11 +318,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#d1d5db",
   },
-  charCount: {
-    fontSize: 12,
-    color: colors.text.muted,
-    marginTop: 4,
-  },
   ctaWrap: {
     marginTop: spacing.lg,
   },
@@ -353,32 +345,63 @@ const styles = StyleSheet.create({
     color: "#9A9A9A",
     letterSpacing: -0.1,
   },
-  error: {
-    ...typography.bodySmall,
-    color: colors.error.main,
-    marginTop: spacing.xs,
+  errorBanner: {
+    backgroundColor: "#fef2f2",
+    borderColor: "#fecaca",
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: spacing.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  errorText: {
+    color: "#b42318",
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 18,
   },
   successOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
     alignItems: "center",
+    backgroundColor: "rgba(15, 23, 42, 0.35)",
+    bottom: 0,
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.1)",
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0,
   },
-  successCircle: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: 80,
-    padding: 28,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
+  successCard: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderRadius: 22,
+    paddingHorizontal: 28,
+    paddingVertical: 28,
+    width: 280,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
   },
-  successEmoji: {
-    fontSize: 52,
+  successAnimation: {
+    height: 140,
+    width: 140,
+  },
+  successTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 20,
+    lineHeight: 26,
+    color: "#111827",
+    marginTop: 8,
+    textAlign: "center",
+    letterSpacing: -0.4,
+  },
+  successBody: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#6b7280",
+    marginTop: 6,
+    textAlign: "center",
   },
 });

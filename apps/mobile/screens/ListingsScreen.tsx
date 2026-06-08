@@ -53,11 +53,11 @@ type Props = NativeStackScreenProps<RootStackParamList, "Listings">;
 
 const GREEN  = "#0a8050";
 const FG     = "#111827";
-const MUTED  = "#374151";
-const SUBTLE = "#6b7280";
+const MUTED  = "#465050";
+const SUBTLE = "#6B7575";
 const BG     = "#F8FAFC";
 const CARD   = "#ffffff";
-const LINE   = "#e8ecf0";
+const LINE   = "#DDE5EC";
 
 export function ListingsScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
@@ -512,11 +512,11 @@ export function ListingsScreen({ navigation }: Props) {
 }
 
 const SHADOW = {
-  shadowColor: "#111827",
+  shadowColor: "#0f172a",
   shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.07,
-  shadowRadius: 10,
-  elevation: 3,
+  shadowOpacity: 0.09,
+  shadowRadius: 12,
+  elevation: 4,
 };
 
 const styles = StyleSheet.create({
@@ -565,6 +565,8 @@ const styles = StyleSheet.create({
   earningsCard: {
     backgroundColor: CARD,
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D4DCE4",
     padding: 20,
     ...SHADOW,
   },
@@ -624,6 +626,8 @@ const styles = StyleSheet.create({
   payoutStrip: {
     backgroundColor: CARD,
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D4DCE4",
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -712,6 +716,8 @@ const styles = StyleSheet.create({
   skeletonCard: {
     backgroundColor: CARD,
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D4DCE4",
     overflow: "hidden",
     ...SHADOW,
   },
@@ -727,6 +733,8 @@ const styles = StyleSheet.create({
   emptyCard: {
     backgroundColor: CARD,
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D4DCE4",
     padding: 28,
     alignItems: "center",
     ...SHADOW,
@@ -761,6 +769,8 @@ const styles = StyleSheet.create({
   gatedCard: {
     backgroundColor: CARD,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#D4DCE4",
     padding: 28,
     alignItems: "center",
     ...SHADOW,
@@ -826,6 +836,8 @@ const styles = StyleSheet.create({
   listingCard: {
     backgroundColor: CARD,
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D4DCE4",
     overflow: "hidden",
     ...SHADOW,
   },

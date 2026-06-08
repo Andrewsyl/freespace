@@ -248,7 +248,7 @@ export function ProfileScreen({ navigation }: Props) {
             onPress={() => navigation.navigate("VehicleType")}
             right={
               <View style={styles.rowRight}>
-                {user.vehicleMake ? <VehicleBrandLogo make={user.vehicleMake} size={40} /> : null}
+                {user.vehicleMake ? <VehicleBrandLogo make={user.vehicleMake} size={32} /> : null}
                 <ChevronRight size={15} color={SUBTLE} />
               </View>
             }
@@ -348,7 +348,7 @@ export function ProfileScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f2f2f0" },
+  container: { flex: 1, backgroundColor: "#F4F6F8" },
   scroll: { paddingHorizontal: 16 },
 
   // ── Page header ──────────────────────────────────────────────
@@ -361,10 +361,15 @@ const styles = StyleSheet.create({
   // ── Profile card ─────────────────────────────────────────────
   profileCard: {
     flexDirection: "row", alignItems: "center", gap: 14,
-    backgroundColor: "#ffffff", borderRadius: 16,
+    backgroundColor: "#ffffff", borderRadius: 18,
     borderWidth: 1, borderColor: LINE,
     paddingHorizontal: 16, paddingVertical: 14,
     marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
   profileCardPressed: { opacity: 0.88 },
   avatar: {
@@ -440,8 +445,13 @@ const styles = StyleSheet.create({
     marginBottom: 6, marginTop: 18, paddingHorizontal: 4,
   },
   group: {
-    borderRadius: 14, borderWidth: 1, borderColor: LINE,
+    borderRadius: 18, borderWidth: 1, borderColor: LINE,
     overflow: "hidden", backgroundColor: "#ffffff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
 
   // ── Rows ─────────────────────────────────────────────────────

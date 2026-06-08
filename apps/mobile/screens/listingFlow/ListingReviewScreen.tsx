@@ -53,7 +53,7 @@ const CARD = "#ffffff";
 
 export function ListingReviewScreen({ navigation }: Props) {
   const { draft, setDraft, listingId } = useListingFlow();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const insets = useSafeAreaInsets();
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const [submitting, setSubmitting] = useState(false);
@@ -150,6 +150,14 @@ export function ListingReviewScreen({ navigation }: Props) {
   const handlePublish = async () => {
     if (!token) {
       setError(listingId ? "Sign in to update your space." : "Sign in to publish your space.");
+      return;
+    }
+    if (!user?.phoneVerified) {
+      setError("Verify your phone number before publishing your space.");
+      navigation.getParent()?.navigate("PersonalInfo", {
+        focusField: "phone",
+        notice: "Verify your phone number before publishing your space.",
+      });
       return;
     }
     const hasHourlyPrice = draft.pricePerHour.trim().length > 0;
@@ -466,15 +474,15 @@ function TipRow({ text }: { text: string }) {
 // ── Styles ─────────────────────────────────────────────────────────────────
 
 const CARD_SHADOW = {
-  shadowColor: "#0f172a",
+  shadowColor: "#2d1a0e",
   shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.06,
-  shadowRadius: 10,
-  elevation: 3,
+  shadowOpacity: 0.09,
+  shadowRadius: 12,
+  elevation: 4,
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: { flex: 1, backgroundColor: "#EDE8E2" },
 
   scroll: { paddingTop: 4, paddingHorizontal: 16, gap: 14 },
 
@@ -507,11 +515,13 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: CARD,
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D0C9C1",
     overflow: "hidden",
     ...CARD_SHADOW,
   },
   cardHeader: {
-    fontFamily: "PlusJakartaSans-Bold",
+    fontFamily: "PlusJakartaSans-ExtraBold",
     fontSize: 15,
     color: FG,
     letterSpacing: -0.3,
@@ -528,7 +538,7 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: "#E2DAD2",
   },
   listingTitle: {
     fontFamily: "PlusJakartaSans-Bold",
@@ -581,7 +591,7 @@ const styles = StyleSheet.create({
   },
   detailRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: "#E2DAD2",
   },
   detailIconWrap: {
     width: 28,
@@ -621,7 +631,7 @@ const styles = StyleSheet.create({
   },
   editRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: "#E2DAD2",
   },
   editRowPressed: { backgroundColor: "#F8FAFC" },
   editRowLeft: { flexDirection: "row", alignItems: "center", gap: 10 },

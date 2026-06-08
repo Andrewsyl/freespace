@@ -80,11 +80,45 @@ const toPublicUser = (user: UserRecord) => ({
 
 const ensureAccountActive = (user: Pick<UserRecord, "status">) => user.status !== "suspended";
 
+const E164_PHONE_REGEX = /^\+[1-9]\d{7,14}$/;
+
+function normalizePhoneInput(value?: string | null) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  const compact = trimmed.replace(/[\s\-().]/g, "");
+  if (!compact) return null;
+
+  const withInternationalPrefix = compact.startsWith("00")
+    ? `+${compact.slice(2)}`
+    : compact;
+
+  if (E164_PHONE_REGEX.test(withInternationalPrefix)) {
+    return withInternationalPrefix;
+  }
+
+  if (/^\d+$/.test(withInternationalPrefix)) {
+    if (withInternationalPrefix.startsWith("353")) {
+      const candidate = `+${withInternationalPrefix}`;
+      return E164_PHONE_REGEX.test(candidate) ? candidate : null;
+    }
+    if (withInternationalPrefix.startsWith("0")) {
+      const candidate = `+353${withInternationalPrefix.slice(1)}`;
+      return E164_PHONE_REGEX.test(candidate) ? candidate : null;
+    }
+  }
+
+  return null;
+}
+
 const phoneSchema = z.object({
   phone: z
     .string()
     .trim()
-    .regex(/^\+[1-9]\d{7,14}$/, "Use E.164 format, e.g. +353871234567"),
+    .min(6)
+    .max(32)
+    .transform((value) => normalizePhoneInput(value))
+    .refine((value): value is string => Boolean(value), "Enter a valid phone number"),
 });
 
 const registerPhoneSchema = z
@@ -176,8 +210,8 @@ router.post("/register", enforceBlockedList, registerLimiter, async (req, res, n
     const token = generateVerificationToken();
     const expires = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24h
     const normalizedFullName = [firstName?.trim(), lastName?.trim()].filter(Boolean).join(" ") || null;
-    const normalizedPhone = phone?.trim() || null;
-    const e164Phone = normalizedPhone && /^\+[1-9]\d{7,14}$/.test(normalizedPhone) ? normalizedPhone : null;
+    const normalizedPhone = normalizePhoneInput(phone) ?? phone?.trim() ?? null;
+    const e164Phone = normalizePhoneInput(phone);
     const phoneToken = e164Phone ? generateSmsCode() : null;
     const phoneExpires = e164Phone ? new Date(Date.now() + 1000 * 60 * 10) : null; // 10 min
     const user = await createUser({
@@ -733,7 +767,7 @@ router.put("/me", requireAuth, accountWriteLimiter, async (req, res, next) => {
       userId,
       email: normalizedEmail,
       fullName: payload.name,
-      phone: payload.phone,
+      phone: payload.phone ? normalizePhoneInput(payload.phone) ?? payload.phone.trim() : payload.phone,
       vehicleMake: payload.vehicleMake,
       vehicleType: payload.vehicleType,
       vehicleColor: payload.vehicleColor,

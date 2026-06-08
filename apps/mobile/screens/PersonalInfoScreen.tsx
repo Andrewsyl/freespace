@@ -22,7 +22,7 @@ import { colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PersonalInfo">;
 
-export function PersonalInfoScreen({ navigation }: Props) {
+export function PersonalInfoScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { user, token, setAuthUser } = useAuth();
   const { showSuccess } = useGlobalToast();
@@ -65,6 +65,16 @@ export function PersonalInfoScreen({ navigation }: Props) {
     setVerificationCode("");
     setPreviewUrl(null);
   }, [user?.name, user?.email, user?.phone]);
+
+  useEffect(() => {
+    if (!route.params?.notice) return;
+    setMessage(route.params.notice);
+  }, [route.params?.notice]);
+
+  useEffect(() => {
+    if (route.params?.focusField !== "phone") return;
+    scrollToField(phoneFieldY.current);
+  }, [route.params?.focusField]);
 
   const onSave = async () => {
     if (!token) return;
@@ -157,23 +167,17 @@ export function PersonalInfoScreen({ navigation }: Props) {
       >
         <View style={styles.navBar}>
           <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <ArrowLeft size={22} color="#111827" />
+            <ArrowLeft size={20} color="#111827" strokeWidth={2.5} />
           </Pressable>
           <Text style={styles.navTitle}>Personal information</Text>
           <View style={styles.navSpacer} />
         </View>
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
+          contentContainerStyle={[styles.content, { paddingBottom: 32 + Math.max(insets.bottom, 16) }]}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>Personal information</Text>
-            <Text style={styles.subtitle}>Your account details</Text>
-          </View>
-
-          <View style={styles.sheet}>
-            <View
+          <View
               style={styles.section}
               onLayout={(event) => {
                 nameFieldY.current = event.nativeEvent.layout.y;
@@ -287,7 +291,6 @@ export function PersonalInfoScreen({ navigation }: Props) {
                   />
                 </View>
               ) : null}
-            </View>
           </View>
 
           <Button
@@ -297,6 +300,7 @@ export function PersonalInfoScreen({ navigation }: Props) {
             disabled={!hasChanges || saving}
             loading={saving}
           />
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -306,45 +310,21 @@ export function PersonalInfoScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.appBg,
+    backgroundColor: "#F4F6F8",
   },
   content: {
-    paddingBottom: spacing.xl,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   navBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: "#d1d5db",
+    borderBottomWidth: 1, borderBottomColor: "#E5E7EB",
     backgroundColor: "#ffffff",
   },
-  backBtn: { padding: 6, marginLeft: -6 },
-  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#111827" },
-  navSpacer: { width: 34 },
-  header: {
-    paddingHorizontal: spacing.screenX,
-    paddingTop: spacing.xs,
-    paddingBottom: spacing.lg,
-  },
-  title: {
-    color: colors.text,
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 27,
-    letterSpacing: -0.8,
-    lineHeight: 32,
-    marginBottom: 4,
-    marginTop: spacing.xs,
-  },
-  subtitle: {
-    color: "#6B6B6B",
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  sheet: {
-    backgroundColor: "transparent",
-    flex: 1,
-    paddingHorizontal: spacing.screenX,
-  },
+  backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+  navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#111827", letterSpacing: -0.3 },
+  navSpacer: { width: 38 },
   section: {
     marginBottom: 18,
   },
@@ -431,8 +411,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   saveButton: {
-    marginHorizontal: spacing.screenX,
-    marginTop: spacing.lg,
+    marginHorizontal: 16,
+    marginTop: 4,
   },
   previewLink: {
     alignItems: "center",

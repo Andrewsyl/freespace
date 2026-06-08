@@ -126,20 +126,15 @@ export function LoginSecurityScreen({ navigation }: Props) {
       >
         <View style={styles.navBar}>
           <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <ArrowLeft size={22} color="#111827" />
+            <ArrowLeft size={20} color="#111827" strokeWidth={2.5} />
           </Pressable>
           <Text style={styles.navTitle}>Login & security</Text>
           <View style={styles.navSpacer} />
         </View>
         <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
+          contentContainerStyle={[styles.content, { paddingBottom: 32 + Math.max(insets.bottom, 16) }]}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>Login & security</Text>
-            <Text style={styles.subtitle}>Password, sessions, and account access.</Text>
-          </View>
-
           {user?.status === "suspended" ? (
             <View style={styles.suspendedBanner}>
               <Text style={styles.suspendedTitle}>Account suspended</Text>
@@ -231,29 +226,40 @@ export function LoginSecurityScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.appBg,
+    backgroundColor: "#F4F6F8",
   },
   content: {
-    paddingBottom: spacing.xl,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   navBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: "#d1d5db",
+    borderBottomWidth: 1, borderBottomColor: "#E5E7EB",
     backgroundColor: "#ffffff",
   },
   group: {
-    marginBottom: 18,
-    marginHorizontal: spacing.screenX,
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 18,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
   groupLabel: {
-    color: "#888888",
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 11,
-    letterSpacing: 0.8,
-    lineHeight: 16,
+    color: "#6b7280",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    letterSpacing: 0.4,
     textTransform: "uppercase",
-    marginBottom: 10,
+    marginBottom: 14,
   },
   groupHelp: {
     ...textStyles.meta,
@@ -261,11 +267,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   fieldLabel: {
-    color: "#888888",
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 11,
-    letterSpacing: 0.8,
-    lineHeight: 16,
+    color: "#6b7280",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    letterSpacing: 0.4,
     textTransform: "uppercase",
     marginBottom: 10,
     marginTop: 4,
@@ -279,37 +284,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     paddingVertical: 12,
   },
-  backBtn: { padding: 6, marginLeft: -6 },
-  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#111827" },
-  navSpacer: { width: 34 },
-  header: {
-    paddingHorizontal: spacing.screenX,
-    paddingTop: spacing.xs,
-    paddingBottom: spacing.lg,
-  },
-  title: {
-    color: colors.text,
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 27,
-    letterSpacing: -0.8,
-    lineHeight: 32,
-    marginBottom: 4,
-    marginTop: spacing.xs,
-  },
-  subtitle: {
-    color: "#6B6B6B",
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    lineHeight: 21,
-  },
+  backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+  navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#111827", letterSpacing: -0.3 },
+  navSpacer: { width: 38 },
   suspendedBanner: {
     backgroundColor: "#FEF2F2",
     borderColor: "#FECACA",
     borderRadius: 16,
     borderWidth: 1,
-    marginBottom: spacing.md,
-    marginHorizontal: spacing.screenX,
-    padding: spacing.md,
+    marginBottom: 12,
+    padding: 16,
   },
   suspendedTitle: {
     ...textStyles.sectionTitle,
@@ -365,7 +349,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingVertical: 8,
     paddingHorizontal: 16,
-    marginTop: 8,
+    marginTop: 4,
     marginBottom: 16,
   },
   deleteLinkText: {

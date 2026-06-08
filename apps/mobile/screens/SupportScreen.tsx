@@ -84,17 +84,10 @@ export function SupportScreen({ navigation, route }: Props) {
           <View style={styles.navSpacer} />
         </View>
         <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + Math.max(insets.bottom, spacing.md) }]}
+          contentContainerStyle={[styles.content, { paddingBottom: 32 + Math.max(insets.bottom, 16) }]}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>Contact us</Text>
-            <Text style={styles.subtitle}>
-              We will reply to {user?.email ?? "your email"} as soon as we can.
-            </Text>
-          </View>
-
-          <View style={styles.form}>
+          <View style={styles.card}>
             <View style={styles.field}>
               <Text style={styles.label}>Subject</Text>
               <Pressable
@@ -147,6 +140,7 @@ export function SupportScreen({ navigation, route }: Props) {
             />
           </View>
 
+
         </ScrollView>
         <Modal transparent visible={subjectOpen} animationType="fade" onRequestClose={() => setSubjectOpen(false)}>
           <View style={styles.modalBackdrop}>
@@ -178,49 +172,34 @@ export function SupportScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.appBg,
+    backgroundColor: "#F4F6F8",
   },
   content: {
-    paddingBottom: spacing.xl,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   navBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: "#d1d5db",
+    borderBottomWidth: 1, borderBottomColor: "#E5E7EB",
     backgroundColor: "#ffffff",
   },
-  stickyHeader: {
-    backgroundColor: colors.appBg,
-    paddingTop: spacing.screenY,
-    paddingBottom: spacing.xs,
-    zIndex: 5,
-  },
-  backBtn: { padding: 6, marginLeft: -6 },
-  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#111827" },
-  navSpacer: { width: 34 },
-  header: {
-    paddingHorizontal: spacing.screenX,
-    paddingTop: spacing.xs,
-    paddingBottom: spacing.lg,
-  },
-  title: {
-    color: colors.text,
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 27,
-    letterSpacing: -0.8,
-    lineHeight: 32,
-    marginBottom: 4,
-    marginTop: spacing.xs,
-  },
-  subtitle: {
-    color: "#6B6B6B",
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  form: {
-    backgroundColor: "transparent",
-    paddingHorizontal: spacing.screenX,
+  backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+  navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#111827", letterSpacing: -0.3 },
+  navSpacer: { width: 38 },
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 22,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
   field: {
     marginBottom: 18,

@@ -19,11 +19,11 @@ const ACCENT = hostFlowColors.accent;
 const FG = hostFlowColors.text;
 const MUTED = hostFlowColors.textMuted;
 const CARD_SHADOW = {
-  shadowColor: "#0f172a",
+  shadowColor: "#2d1a0e",
   shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.06,
-  shadowRadius: 10,
-  elevation: 3,
+  shadowOpacity: 0.09,
+  shadowRadius: 12,
+  elevation: 4,
 } as const;
 
 export function ListingStreetViewScreen({ navigation }: Props) {
@@ -154,20 +154,22 @@ export function ListingStreetViewScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#EDE8E2",
     flex: 1,
   },
 
   headerCard: {
     backgroundColor: "#ffffff",
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D0C9C1",
     marginHorizontal: 16,
     marginTop: 12,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: "#E2DAD2",
     borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
@@ -223,7 +225,7 @@ const styles = StyleSheet.create({
   },
   webFallback: {
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#EDE8E2",
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: 24,

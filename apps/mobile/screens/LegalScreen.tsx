@@ -49,18 +49,11 @@ export function LegalScreen({ navigation }: Props) {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 32 + insets.bottom }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 + insets.bottom }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Page header */}
-        <View style={styles.pageHeader}>
-          <Text style={styles.pageLabel}>Legal</Text>
-          <Text style={styles.pageTitle}>Terms & privacy</Text>
-          <Text style={styles.pageSubtitle}>Policies, support, and company details</Text>
-        </View>
-
         {/* ── FreeSpace policies ── */}
-        <View style={styles.section}>
+        <View style={styles.card}>
           <Text style={styles.sectionTitle}>FreeSpace policies</Text>
           <Text style={styles.sectionBody}>
             Review the live legal documents that govern bookings, hosting, privacy, refunds, community conduct, parking rules, and enforcement.
@@ -83,7 +76,7 @@ export function LegalScreen({ navigation }: Props) {
         </View>
 
         {/* ── GDPR ── */}
-        <View style={styles.section}>
+        <View style={styles.card}>
           <Text style={styles.sectionTitle}>Your rights</Text>
           <Text style={styles.sectionBody}>
             You can request a copy of your data or ask us to delete your account at any time. We handle requests within 30 days.
@@ -107,7 +100,7 @@ export function LegalScreen({ navigation }: Props) {
         </View>
 
         {/* ── Company ── */}
-        <View style={styles.section}>
+        <View style={styles.card}>
           <Text style={styles.sectionTitle}>Company</Text>
           <View style={styles.listBox}>
             <View style={styles.listRow}>
@@ -132,56 +125,49 @@ export function LegalScreen({ navigation }: Props) {
   );
 }
 
-const GREEN  = "#0fa968";
-const LINE   = "#d1d5db";
-const FG     = "#111827";
-const MUTED  = "#374151";
+const LINE = "#E5E7EB";
+const FG   = "#111827";
+const MUTED = "#374151";
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#ffffff" },
+  container: { flex: 1, backgroundColor: "#F4F6F8" },
 
-  // ── Nav bar ──────────────────────────────────────────────────
   navBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: LINE,
+    backgroundColor: "#ffffff",
   },
-  backBtn: { padding: 6, marginLeft: -6 },
-  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG },
-  navSpacer: { width: 34 },
+  backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+  navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG, letterSpacing: -0.3 },
+  navSpacer: { width: 38 },
 
-  // ── Page header ──────────────────────────────────────────────
-  pageHeader: {
-    borderBottomWidth: 1, borderBottomColor: LINE,
-    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
-  },
-  pageLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
-    color: GREEN, letterSpacing: 1.4, textTransform: "uppercase", marginBottom: 4,
-  },
-  pageTitle: {
-    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 27,
-    color: FG, letterSpacing: -0.8, lineHeight: 32, marginBottom: 4,
-  },
-  pageSubtitle: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: "#6B6B6B" },
-
-  // ── Sections ─────────────────────────────────────────────────
-  section: {
-    borderBottomWidth: 1, borderBottomColor: LINE,
-    paddingHorizontal: 20, paddingVertical: 20,
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: LINE,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 6,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
   sectionTitle: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 17,
-    color: FG, letterSpacing: -0.3, marginBottom: 8,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 15,
+    color: FG, letterSpacing: -0.2, marginBottom: 8,
   },
   sectionBody: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 14,
-    color: MUTED, lineHeight: 22, marginBottom: 16,
+    color: MUTED, lineHeight: 22, marginBottom: 14,
   },
 
-  // ── List box (bordered rows) ──────────────────────────────────
   listBox: {
-    borderRadius: 14, borderWidth: 1, borderColor: LINE, overflow: "hidden",
+    borderRadius: 14, borderWidth: 1, borderColor: LINE, overflow: "hidden", marginBottom: 12,
   },
   listRow: {
     flexDirection: "row", alignItems: "center", gap: 12,

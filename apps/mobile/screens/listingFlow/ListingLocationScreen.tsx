@@ -224,7 +224,7 @@ export function ListingLocationScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#EDE8E2",
     flex: 1,
   },
 
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: "#E2DAD2",
   },
   searchCardKicker: {
     color: ACCENT,

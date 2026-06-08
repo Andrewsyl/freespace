@@ -9,7 +9,6 @@ import { listMyBookings, type BookingSummary } from "../api";
 import { useAuth } from "../auth";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { useGlobalLoading } from "../components/GlobalLoading";
-import { colors, spacing } from "../styles/theme";
 import { BookingCard } from "../components/BookingCard";
 import { Spinner } from "../components/Spinner";
 import type { RootStackParamList } from "../types";
@@ -17,6 +16,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { formatDateLabel, formatTimeLabel } from "../utils/dateFormat";
 
 type Props = NativeStackScreenProps<RootStackParamList, "History">;
+
+const ACCENT  = "#0a8050";
+const FG      = "#101414";
+const MUTED   = "#465050";
+const SUBTLE  = "#6B7575";
+const LINE    = "#DDE5EC";
+const BG      = "#F8FAFC";
+
+const CARD_SHADOW = {
+  shadowColor: "#0f172a",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.09,
+  shadowRadius: 12,
+  elevation: 4,
+} as const;
 
 export function HistoryScreen({ navigation, route }: Props) {
   const { token, user } = useAuth();
@@ -38,12 +52,13 @@ export function HistoryScreen({ navigation, route }: Props) {
   const [mapCtaVisible, setMapCtaVisible] = useState(false);
   const [ratingByBookingId, setRatingByBookingId] = useState<Record<string, number>>({});
   const tabAnim = useRef(new Animated.Value(1)).current;
-  const segmentWidth = useRef(0);
   const segmentAnim = useRef(new Animated.Value(0)).current;
+  const tabWidth = (screenWidth - 40) / 3;
   const newBookingSlideAnim = useRef(new Animated.Value(50)).current;
   const newBookingOpacityAnim = useRef(new Animated.Value(0)).current;
   const lastTabIndexRef = useRef(0);
   const skipNextFocusReload = useRef(false);
+  const hideSuccessCallback = useRef<(() => void) | null>(null);
   const [revealBookings, setRevealBookings] = useState(true);
   const [bookingTransitioning, setBookingTransitioning] = useState(false);
 
@@ -52,10 +67,10 @@ export function HistoryScreen({ navigation, route }: Props) {
   useFocusEffect(
     useCallback(() => {
       StatusBar.setBarStyle("dark-content");
-      StatusBar.setBackgroundColor("#FFFFFF");
+      StatusBar.setBackgroundColor(BG);
       return () => {
         StatusBar.setBarStyle("dark-content");
-        StatusBar.setBackgroundColor("#FFFFFF");
+        StatusBar.setBackgroundColor(BG);
       };
     }, [])
   );
@@ -199,8 +214,7 @@ export function HistoryScreen({ navigation, route }: Props) {
 
       setTimeout(() => {
         if (cancelled) return;
-        setShowSuccess(true);
-        setTimeout(() => {
+        hideSuccessCallback.current = () => {
           if (cancelled) return;
           setShowSuccess(false);
           setRevealBookings(true);
@@ -224,7 +238,8 @@ export function HistoryScreen({ navigation, route }: Props) {
               ]).start(() => setNewBookingId(null));
             });
           }
-        }, 500);
+        };
+        setShowSuccess(true);
       }, delay);
     });
 
@@ -266,11 +281,10 @@ export function HistoryScreen({ navigation, route }: Props) {
     Animated.timing(segmentAnim, {
       toValue: target,
       duration: 250,
-      easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Ease-in-out cubic
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
       useNativeDriver: true,
     }).start();
 
-    // Defer heavy list update until after animation
     const handle = InteractionManager.runAfterInteractions(() => {
       setDisplayTab(tab);
       setIsSwitchingTab(false);
@@ -304,7 +318,6 @@ export function HistoryScreen({ navigation, route }: Props) {
       setPastVisibleCount(20);
     }
   }, [displayTab, pastVisibleCount]);
-  // items are built per-pane for the sliding layout
 
   const renderBookingCard = useCallback((
     { item: booking, paneTab }: { item: BookingSummary; paneTab: "upcoming" | "active" | "past" }
@@ -372,8 +385,9 @@ export function HistoryScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
-        <Text style={styles.title}>My bookings</Text>
+        <Text style={styles.title}>My Bookings</Text>
       </View>
+
       {mapCtaVisible ? (
         <View style={styles.mapCtaBanner}>
           <View style={styles.mapCtaContent}>
@@ -392,65 +406,30 @@ export function HistoryScreen({ navigation, route }: Props) {
           </Pressable>
         </View>
       ) : null}
-      {/* Tab bar with underline indicator for active tab */}
-      <View
-        style={styles.tabBar}
-        onLayout={(event) => {
-          segmentWidth.current = event.nativeEvent.layout.width;
-        }}
-      >
-        <Pressable
-          style={styles.tab}
-          onPress={() => setTab("upcoming")}
-          android_ripple={null}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              tab === "upcoming" && styles.tabTextActive,
-            ]}
+
+      <View style={styles.tabBar}>
+        {(["upcoming", "active", "past"] as const).map((t) => (
+          <Pressable
+            key={t}
+            style={styles.tab}
+            onPress={() => setTab(t)}
+            android_ripple={null}
           >
-            Upcoming
-          </Text>
-        </Pressable>
-        <Pressable
-          style={styles.tab}
-          onPress={() => setTab("active")}
-          android_ripple={null}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              tab === "active" && styles.tabTextActive,
-            ]}
-          >
-            Active
-          </Text>
-        </Pressable>
-        <Pressable
-          style={styles.tab}
-          onPress={() => setTab("past")}
-          android_ripple={null}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              tab === "past" && styles.tabTextActive,
-            ]}
-          >
-            Past
-          </Text>
-        </Pressable>
-        {/* Animated indicator that slides between tabs */}
+            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
+              {t === "upcoming" ? "Upcoming" : t === "active" ? "Active" : "Past"}
+            </Text>
+          </Pressable>
+        ))}
         <Animated.View
           style={[
             styles.tabIndicator,
+            { width: tabWidth },
             {
               transform: [
                 {
                   translateX: segmentAnim.interpolate({
                     inputRange: [0, 1, 2],
-                    outputRange: [0, segmentWidth.current / 3, (segmentWidth.current / 3) * 2],
+                    outputRange: [20, 20 + tabWidth, 20 + tabWidth * 2],
                   }),
                 },
               ],
@@ -458,6 +437,7 @@ export function HistoryScreen({ navigation, route }: Props) {
           ]}
         />
       </View>
+
       <View style={styles.contentWrapper}>
         {loading ? (
           <View style={styles.inlineLoading}>
@@ -465,6 +445,7 @@ export function HistoryScreen({ navigation, route }: Props) {
             <Text style={styles.inlineLoadingText}>Loading bookings…</Text>
           </View>
         ) : null}
+
         <Animated.View
           style={{
             flex: 1,
@@ -481,128 +462,142 @@ export function HistoryScreen({ navigation, route }: Props) {
           }}
         >
           {["upcoming", "active", "past"].map((pane) => {
-          const paneTab = pane as "upcoming" | "active" | "past";
-          const paneData =
-            paneTab === "upcoming" ? upcoming : paneTab === "active" ? active : visiblePast;
-          const paneItems = (() => {
-            const result: Array<
-              | { type: "header"; id: string; label: string }
-              | { type: "booking"; id: string; booking: BookingSummary }
-            > = [];
-            let lastLabel = "";
-            const formatMonth = (value: string) =>
-              new Date(value).toLocaleString("en-US", { month: "long", year: "numeric" }).toUpperCase();
-            paneData.forEach((booking) => {
-              const label = formatMonth(booking.startTime);
-              if (label !== lastLabel) {
-                result.push({ type: "header", id: `header-${label}`, label });
-                lastLabel = label;
-              }
-              result.push({ type: "booking", id: booking.id, booking });
-            });
-            return result;
-          })();
-          const showPaneSkeleton =
-            (loading || (isSwitchingTab && paneTab === tabSwitchingTo)) &&
-            !bookingTransitioning;
-          const showPaneEmpty =
-            !loading && !isSwitchingTab && paneTab === displayTab && paneData.length === 0;
+            const paneTab = pane as "upcoming" | "active" | "past";
+            const paneData =
+              paneTab === "upcoming" ? upcoming : paneTab === "active" ? active : visiblePast;
+            const paneItems = (() => {
+              const result: Array<
+                | { type: "header"; id: string; label: string }
+                | { type: "booking"; id: string; booking: BookingSummary }
+              > = [];
+              let lastLabel = "";
+              const formatMonth = (value: string) =>
+                new Date(value).toLocaleString("en-US", { month: "long", year: "numeric" }).toUpperCase();
+              paneData.forEach((booking) => {
+                const label = formatMonth(booking.startTime);
+                if (label !== lastLabel) {
+                  result.push({ type: "header", id: `header-${label}`, label });
+                  lastLabel = label;
+                }
+                result.push({ type: "booking", id: booking.id, booking });
+              });
+              return result;
+            })();
+            const showPaneSkeleton =
+              (loading || (isSwitchingTab && paneTab === tabSwitchingTo)) &&
+              !bookingTransitioning;
+            const showPaneEmpty =
+              !loading && !isSwitchingTab && paneTab === displayTab && paneData.length === 0;
 
             return (
               <View key={pane} style={{ width: screenWidth }}>
                 <FlatList
-                data={!user || !revealBookings ? [] : paneItems}
-                renderItem={({ item }) => {
-                  if (item.type === "header") {
-                    return <Text style={styles.monthLabel}>{item.label}</Text>;
+                  data={!user || !revealBookings ? [] : paneItems}
+                  renderItem={({ item }) => {
+                    if (item.type === "header") {
+                      return <Text style={styles.monthLabel}>{item.label}</Text>;
+                    }
+                    return renderBookingCard({ item: item.booking, paneTab });
+                  }}
+                  keyExtractor={(item) => item.id}
+                  contentContainerStyle={[
+                    styles.content,
+                    { paddingBottom: Math.max(insets.bottom + 96, 120) },
+                  ]}
+                  ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+                  ListFooterComponent={
+                    paneTab === "past" && hasMorePast ? (
+                      <Pressable
+                        style={styles.loadMoreButton}
+                        onPress={() => setPastVisibleCount((prev) => prev + 20)}
+                      >
+                        <Text style={styles.loadMoreText}>Load more</Text>
+                        <Ionicons name="chevron-down" size={14} color={ACCENT} />
+                      </Pressable>
+                    ) : null
                   }
-                  return renderBookingCard({ item: item.booking, paneTab });
-                }}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={[
-                  styles.content,
-                  { paddingBottom: Math.max(insets.bottom + 96, 120) },
-                ]}
-                ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
-                ListFooterComponent={
-                  paneTab === "past" && hasMorePast ? (
-                    <Pressable
-                      style={styles.loadMoreButton}
-                      onPress={() => setPastVisibleCount((prev) => prev + 20)}
-                    >
-                      <Text style={styles.loadMoreText}>Load more</Text>
-                    </Pressable>
-                  ) : null
-                }
-                ListHeaderComponent={
-                  <>
-                    {!user ? (
-                      <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Sign in to view bookings</Text>
-                        <Text style={styles.cardBody}>
-                          Log in to see your upcoming reservations and past stays.
-                        </Text>
-                        <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
-                          <Text style={styles.primaryButtonText}>Sign in</Text>
-                        </Pressable>
-                      </View>
-                    ) : (
-                      <>
-                        {showPaneSkeleton ? (
-                          <View style={styles.skeletonList}>
-                            {[0, 1, 2].map((item) => (
-                              <View key={item} style={styles.skeletonCard}>
-                                <View style={styles.skeletonRow}>
-                                  <View style={styles.skeletonTitle} />
-                                  <View style={styles.skeletonBadge} />
+                  ListHeaderComponent={
+                    <>
+                      {!user ? (
+                        <View style={styles.signInCard}>
+                          <View style={styles.signInIconWrap}>
+                            <Ionicons name="calendar-outline" size={28} color={ACCENT} />
+                          </View>
+                          <Text style={styles.signInTitle}>Sign in to view bookings</Text>
+                          <Text style={styles.signInBody}>
+                            Log in to see your upcoming reservations and past stays.
+                          </Text>
+                          <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
+                            <Text style={styles.primaryButtonText}>Sign in</Text>
+                          </Pressable>
+                        </View>
+                      ) : (
+                        <>
+                          {showPaneSkeleton ? (
+                            <View style={styles.skeletonList}>
+                              {[0, 1, 2].map((i) => (
+                                <View key={i} style={styles.skeletonCard}>
+                                  <View style={styles.skeletonTop}>
+                                    <View style={styles.skeletonImage} />
+                                    <View style={styles.skeletonInfo}>
+                                      <View style={styles.skeletonTitleRow}>
+                                        <View style={styles.skeletonTitle} />
+                                        <View style={styles.skeletonPrice} />
+                                      </View>
+                                      <View style={styles.skeletonAddress} />
+                                      <View style={styles.skeletonMeta} />
+                                    </View>
+                                  </View>
+                                  <View style={styles.skeletonStrip} />
                                 </View>
-                                <View style={styles.skeletonLine} />
-                                <View style={styles.skeletonMetaRow}>
-                                  <View style={styles.skeletonMeta} />
-                                  <View style={styles.skeletonMeta} />
-                                </View>
-                                <View style={styles.skeletonPrice} />
+                              ))}
+                            </View>
+                          ) : showPaneEmpty ? (
+                            <View style={styles.emptyState}>
+                              <View style={styles.emptyIconWrap}>
+                                <Ionicons
+                                  name={paneTab === "active" ? "location-outline" : paneTab === "past" ? "time-outline" : "calendar-outline"}
+                                  size={36}
+                                  color={ACCENT}
+                                />
                               </View>
-                            ))}
-                          </View>
-                        ) : showPaneEmpty ? (
-                          <View style={styles.emptyState}>
-                            <Text style={styles.emptyTitle}>
-                              {paneTab === "upcoming" ? "No upcoming bookings" : paneTab === "active" ? "No active bookings" : "No past bookings"}
-                            </Text>
-                            <Text style={styles.emptyBody}>
-                              {paneTab === "upcoming"
-                                ? "Find a parking space and your next trip will show up here."
-                                : paneTab === "active"
-                                ? "Bookings in progress will appear here."
-                                : "Completed reservations will appear here after your stay."}
-                            </Text>
-                            {paneTab === "upcoming" ? (
-                              <Pressable
-                                style={styles.primaryButton}
-                                onPress={() => navigation.navigate("Tabs", { screen: "Search" })}
-                                android_ripple={null}
-                              >
-                                <Text style={styles.primaryButtonText}>Find parking</Text>
-                              </Pressable>
-                            ) : null}
-                          </View>
-                        ) : null}
-                      </>
-                    )}
-                  </>
-                }
-                removeClippedSubviews={false}
-                maxToRenderPerBatch={10}
-                updateCellsBatchingPeriod={50}
-                initialNumToRender={15}
-                windowSize={10}
+                              <Text style={styles.emptyTitle}>
+                                {paneTab === "upcoming" ? "No upcoming bookings" : paneTab === "active" ? "No active bookings" : "No past bookings"}
+                              </Text>
+                              <Text style={styles.emptyBody}>
+                                {paneTab === "upcoming"
+                                  ? "Find a parking space and your next trip will show up here."
+                                  : paneTab === "active"
+                                  ? "Bookings in progress will appear here."
+                                  : "Completed reservations will appear here after your stay."}
+                              </Text>
+                              {paneTab === "upcoming" ? (
+                                <Pressable
+                                  style={styles.primaryButton}
+                                  onPress={() => navigation.navigate("Tabs", { screen: "Search" })}
+                                  android_ripple={null}
+                                >
+                                  <Text style={styles.primaryButtonText}>Find parking</Text>
+                                </Pressable>
+                              ) : null}
+                            </View>
+                          ) : null}
+                        </>
+                      )}
+                    </>
+                  }
+                  removeClippedSubviews={false}
+                  maxToRenderPerBatch={10}
+                  updateCellsBatchingPeriod={50}
+                  initialNumToRender={15}
+                  windowSize={10}
                 />
               </View>
             );
           })}
         </Animated.View>
       </View>
+
       {showSuccess ? (
         <Pressable style={styles.successOverlay} onPress={() => setShowSuccess(false)}>
           <View style={styles.successCard}>
@@ -610,6 +605,12 @@ export function HistoryScreen({ navigation, route }: Props) {
               source={require("../assets/successfully.json")}
               autoPlay
               loop={false}
+              onAnimationFinish={() => {
+                setTimeout(() => {
+                  hideSuccessCallback.current?.();
+                  hideSuccessCallback.current = null;
+                }, 400);
+              }}
               style={styles.successAnimation}
             />
             <Text style={styles.successTitle}>Booking confirmed!</Text>
@@ -625,62 +626,61 @@ export function HistoryScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.appBg,
+    backgroundColor: BG,
     flex: 1,
   },
   contentWrapper: {
     flex: 1,
-    backgroundColor: colors.appBg,
+    backgroundColor: BG,
   },
-  gradientWrapper: {
-    flex: 0,
-  },
+
+  // ── Header ───────────────────────────────────────────────────
   header: {
-    backgroundColor: colors.appBg,
+    backgroundColor: BG,
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 12,
+    paddingTop: 8,
+    paddingBottom: 14,
   },
   title: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 24,
-    lineHeight: 30,
-    color: colors.accent,
-    letterSpacing: -0.4,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 26,
+    lineHeight: 32,
+    color: ACCENT,
+    letterSpacing: -0.6,
   },
+
+  // ── Map CTA banner ───────────────────────────────────────────
   mapCtaBanner: {
     alignItems: "center",
-    backgroundColor: colors.cardBg,
+    backgroundColor: "#ffffff",
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "#D4DCE4",
     flexDirection: "row",
     justifyContent: "space-between",
-    marginHorizontal: 20,
-    marginTop: 14,
-    marginBottom: 8,
+    marginHorizontal: 16,
+    marginBottom: 10,
     padding: 14,
+    ...CARD_SHADOW,
   },
-  mapCtaContent: {
-    flex: 1,
-  },
+  mapCtaContent: { flex: 1 },
   mapCtaTitle: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     lineHeight: 20,
-    color: colors.accent,
+    color: FG,
     marginBottom: 2,
   },
   mapCtaBody: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     lineHeight: 18,
-    color: colors.textMuted,
+    color: MUTED,
   },
   mapCtaButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.accent,
+    backgroundColor: ACCENT,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 9,
@@ -691,6 +691,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#ffffff",
   },
+
+  // ── Tab bar ──────────────────────────────────────────────────
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: BG,
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
+  },
+  tab: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 14,
+  },
+  tabText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    color: SUBTLE,
+    fontSize: 14,
+    letterSpacing: 0.1,
+  },
+  tabTextActive: {
+    color: ACCENT,
+  },
+  tabIndicator: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    width: "33.33%",
+    height: 2,
+    backgroundColor: ACCENT,
+    borderTopLeftRadius: 2,
+    borderTopRightRadius: 2,
+  },
+
+  // ── Loading ──────────────────────────────────────────────────
   inlineLoading: {
     alignItems: "center",
     flexDirection: "row",
@@ -702,199 +738,196 @@ const styles = StyleSheet.create({
   },
   inlineLoadingText: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    color: colors.textMuted,
+    color: MUTED,
     fontSize: 13,
   },
-  tabBar: {
-    flexDirection: "row",
-    backgroundColor: colors.appBg,
-    paddingHorizontal: 20,
-    paddingTop: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  tab: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 16,
-    position: "relative",
-  },
-  tabText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    color: colors.textMuted,
-    fontSize: 14,
-    letterSpacing: 0.1,
-  },
-  tabTextActive: {
-    color: colors.accent,
-  },
-  tabIndicator: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    width: "33.33%",
-    height: 2,
-    backgroundColor: colors.accent,
-    borderTopLeftRadius: 2,
-    borderTopRightRadius: 2,
-  },
-  tabContent: {
-    flexGrow: 1,
-  },
-  tabLoadingContainer: {
-    paddingTop: 60,
-    alignItems: "center",
-  },
+
+  // ── Content ──────────────────────────────────────────────────
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   monthLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    color: colors.textSoft,
-    fontSize: 11,
-    letterSpacing: 0.7,
+    color: SUBTLE,
+    fontSize: 10,
+    letterSpacing: 1,
     textTransform: "uppercase",
-    marginTop: 6,
-    marginBottom: 4,
+    marginTop: 4,
+    marginBottom: 10,
   },
-  skeletonList: {
+
+  // ── Skeleton ─────────────────────────────────────────────────
+  skeletonList: { gap: 14 },
+  skeletonCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D4DCE4",
+    overflow: "hidden",
+    ...CARD_SHADOW,
+  },
+  skeletonTop: {
+    flexDirection: "row",
+    padding: 14,
     gap: 12,
   },
-  skeletonCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
+  skeletonImage: {
+    width: 82,
+    height: 82,
+    borderRadius: 12,
+    backgroundColor: LINE,
   },
-  card: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 18,
+  skeletonInfo: {
+    flex: 1,
+    gap: 8,
+    justifyContent: "center",
   },
-  cardTitle: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
-    lineHeight: 22,
-    color: colors.text,
+  skeletonTitleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  skeletonTitle: {
+    flex: 1,
+    height: 14,
+    borderRadius: 6,
+    backgroundColor: LINE,
+  },
+  skeletonPrice: {
+    width: 40,
+    height: 14,
+    borderRadius: 6,
+    backgroundColor: LINE,
+  },
+  skeletonAddress: {
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: LINE,
+    width: "65%",
+  },
+  skeletonMeta: {
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: LINE,
+    width: "45%",
+  },
+  skeletonStrip: {
+    height: 52,
+    backgroundColor: BG,
+    borderTopWidth: 1,
+    borderTopColor: LINE,
+  },
+
+  // ── Sign-in card ─────────────────────────────────────────────
+  signInCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D4DCE4",
+    padding: 24,
+    alignItems: "center",
+    ...CARD_SHADOW,
+  },
+  signInIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#F0FDF8",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  signInTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 17,
+    lineHeight: 23,
+    color: FG,
     marginBottom: 8,
+    textAlign: "center",
+    letterSpacing: -0.3,
   },
-  cardBody: {
+  signInBody: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 21,
-    color: colors.textMuted,
+    color: MUTED,
+    textAlign: "center",
+    marginBottom: 20,
   },
+
+  // ── Load more ────────────────────────────────────────────────
   loadMoreButton: {
+    flexDirection: "row",
     alignItems: "center",
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
     justifyContent: "center",
-    marginTop: 8,
-    paddingVertical: 10,
-    backgroundColor: colors.cardBg,
+    gap: 6,
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#D4DCE4",
+    marginTop: 14,
+    paddingVertical: 13,
+    ...CARD_SHADOW,
   },
   loadMoreText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
-    color: colors.accent,
+    color: ACCENT,
   },
-  skeletonRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  skeletonTitle: {
-    backgroundColor: "#e5e7eb",
-    borderRadius: 6,
-    height: 16,
-    width: "55%",
-  },
-  skeletonBadge: {
-    backgroundColor: "#e5e7eb",
-    borderRadius: 999,
-    height: 20,
-    width: 64,
-  },
-  skeletonLine: {
-    backgroundColor: "#e5e7eb",
-    borderRadius: 6,
-    height: 12,
-    marginTop: 12,
-    width: "70%",
-  },
-  skeletonMetaRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 12,
-  },
-  skeletonMeta: {
-    backgroundColor: "#e5e7eb",
-    borderRadius: 6,
-    height: 12,
-    width: 90,
-  },
-  skeletonPrice: {
-    backgroundColor: "#e5e7eb",
-    borderRadius: 6,
-    height: 18,
-    marginTop: 16,
-    width: 80,
-  },
-  list: {
-    gap: 16,
-  },
+
+  // ── Empty state ──────────────────────────────────────────────
   emptyState: {
     alignItems: "center",
-    paddingTop: 56,
+    paddingTop: 64,
     paddingHorizontal: 32,
   },
-  emptyIcon: {
-    width: 156,
-    height: 120,
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#F0FDF8",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 18,
-  },
-  emptyIllustration: {
-    width: "100%",
-    height: "100%",
+    marginBottom: 20,
   },
   emptyTitle: {
-    fontFamily: "PlusJakartaSans-SemiBold",
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 20,
     lineHeight: 26,
-    color: colors.accent,
+    color: FG,
     marginBottom: 8,
+    textAlign: "center",
+    letterSpacing: -0.4,
   },
   emptyBody: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 15,
     lineHeight: 22,
-    color: colors.textMuted,
+    color: MUTED,
     textAlign: "center",
     marginBottom: 24,
   },
+
+  // ── Primary button ───────────────────────────────────────────
   primaryButton: {
     alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    marginTop: 8,
-    minHeight: 46,
+    backgroundColor: ACCENT,
+    borderRadius: 14,
+    marginTop: 4,
+    minHeight: 48,
     paddingHorizontal: 32,
-    paddingVertical: 12,
+    paddingVertical: 13,
     alignSelf: "stretch",
     justifyContent: "center",
   },
   primaryButtonText: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
+    fontSize: 15,
     color: "#ffffff",
   },
+
+  // ── Success overlay ──────────────────────────────────────────
   successOverlay: {
     alignItems: "center",
     backgroundColor: "rgba(15, 23, 42, 0.35)",
@@ -907,31 +940,35 @@ const styles = StyleSheet.create({
   },
   successCard: {
     alignItems: "center",
-    backgroundColor: colors.cardBg,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    width: 268,
+    backgroundColor: "#ffffff",
+    borderRadius: 22,
+    paddingHorizontal: 28,
+    paddingVertical: 28,
+    width: 280,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
   },
   successAnimation: {
     height: 140,
     width: 140,
   },
   successTitle: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 18,
-    lineHeight: 24,
-    color: colors.accent,
-    marginTop: 6,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 20,
+    lineHeight: 26,
+    color: FG,
+    marginTop: 8,
     textAlign: "center",
+    letterSpacing: -0.4,
   },
   successBody: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 20,
-    color: colors.textMuted,
+    color: MUTED,
     marginTop: 6,
     textAlign: "center",
   },

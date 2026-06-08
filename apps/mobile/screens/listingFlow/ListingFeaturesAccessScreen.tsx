@@ -21,11 +21,11 @@ const FG = hostFlowColors.text;
 const MUTED = hostFlowColors.textMuted;
 const SOFT = hostFlowColors.textSoft;
 const CARD_SHADOW = {
-  shadowColor: "#0f172a",
+  shadowColor: "#2d1a0e",
   shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.06,
-  shadowRadius: 10,
-  elevation: 3,
+  shadowOpacity: 0.09,
+  shadowRadius: 12,
+  elevation: 4,
 } as const;
 
 function featureIcon(name: string, active: boolean) {
@@ -370,7 +370,7 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: { flex: 1, backgroundColor: "#EDE8E2" },
 
   content: {
     paddingHorizontal: 16,
@@ -382,11 +382,13 @@ const styles = StyleSheet.create({
   headerCard: {
     backgroundColor: "#ffffff",
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D0C9C1",
     overflow: "hidden",
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: "#E2DAD2",
     borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
@@ -422,19 +424,21 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#ffffff",
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D0C9C1",
     overflow: "hidden",
     ...CARD_SHADOW,
   },
   cardHeader: {
     color: FG,
-    fontFamily: "PlusJakartaSans-Bold",
+    fontFamily: "PlusJakartaSans-ExtraBold",
     fontSize: 15,
     letterSpacing: -0.3,
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: "#E2DAD2",
   },
   cardBody: {
     padding: 16,

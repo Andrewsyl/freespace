@@ -341,20 +341,20 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <StatusBar style="dark" translucent={false} backgroundColor="#fff" />
+      <StatusBar style="dark" translucent={false} backgroundColor="#F8FAFC" />
 
-      {/* ── Nav header — mirrors BookingSummaryScreen ── */}
+      {/* Nav header */}
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={20} color={FG} />
         </Pressable>
-        <Text style={styles.headerTitle}>Booking details</Text>
+        <Text style={styles.navTitle}>Booking details</Text>
         <View style={{ width: 32 }} />
       </View>
 
-      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* ── Review CTA ── */}
+        {/* ── Review CTA — full bleed ── */}
         {canReview && !reviewed ? (
           <View style={styles.reviewSection}>
             <Text style={styles.reviewTitle}>How was your parking?</Text>
@@ -384,7 +384,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
           </View>
         ) : null}
 
-        {/* ── Directions banner ── */}
+        {/* ── Directions banner — full bleed ── */}
         {(isUpcoming || isInProgress) && !isCanceled && !canCheckIn ? (
           <TouchableOpacity style={styles.directionsBanner} onPress={handleOpenMaps} activeOpacity={0.8}>
             <View style={styles.directionsIconWrap}>
@@ -398,114 +398,119 @@ export function BookingDetailScreen({ navigation, route }: Props) {
           </TouchableOpacity>
         ) : null}
 
-        {/* ── Page header ── */}
-        <View style={styles.pageHeader}>
-          <View style={[styles.statusPill, isCanceled && styles.statusPillCanceled, (isInProgress || isCompleted) && styles.statusPillActive]}>
-            <Ionicons name={statusConfig.icon} size={11}
-              color={isCanceled ? "#DC2626" : (isInProgress || isCompleted) ? GREEN : "#374151"} />
-            <Text style={[styles.statusPillText, isCanceled && styles.statusPillTextCanceled, (isInProgress || isCompleted) && styles.statusPillTextActive]}>
-              {statusConfig.label}
-            </Text>
-          </View>
-          <Text style={styles.pageTitle} numberOfLines={2}>{booking.title}</Text>
-          <Text style={styles.pageAddress}>{booking.address}</Text>
-        </View>
+        {/* ── Cards ── */}
+        <View style={styles.cards}>
 
-        {/* ── Time section ── */}
-        <View style={styles.section}>
-          <View style={styles.timeRow}>
-            <View style={styles.timeSlot}>
-              <Text style={styles.timeSlotLabel}>ARRIVING</Text>
-              <Text style={styles.timeSlotTime}>{formatTimeLabel(start)}</Text>
-              <Text style={styles.timeSlotDate}>{startDateLabel}</Text>
-            </View>
-            <View style={styles.timeArrow}>
-              <View style={styles.timeArrowLine} />
-              <Text style={styles.timeArrowDuration}>{durationLabel}</Text>
-              <View style={styles.timeArrowLine} />
-            </View>
-            <View style={styles.timeSlot}>
-              <Text style={styles.timeSlotLabel}>LEAVING</Text>
-              <Text style={styles.timeSlotTime}>{formatTimeLabel(end)}</Text>
-              <Text style={styles.timeSlotDate}>{endDateLabel}</Text>
-            </View>
-          </View>
-          {isInProgress ? (
-            <View style={styles.progressWrap}>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${Math.round(progressPct * 100)}%` as `${number}%` }]} />
+          {/* Combined header + time card */}
+          <View style={styles.headerCard}>
+            <View style={styles.headerCardTop}>
+              <View style={[styles.statusPill, isCanceled && styles.statusPillCanceled, (isInProgress || isCompleted) && styles.statusPillActive]}>
+                <Ionicons name={statusConfig.icon} size={11}
+                  color={isCanceled ? "#DC2626" : (isInProgress || isCompleted) ? ACCENT : "#374151"} />
+                <Text style={[styles.statusPillText, isCanceled && styles.statusPillTextCanceled, (isInProgress || isCompleted) && styles.statusPillTextActive]}>
+                  {statusConfig.label}
+                </Text>
               </View>
+              <Text style={styles.headerTitle} numberOfLines={2}>{booking.title}</Text>
+              <Text style={styles.headerSubtitle}>{booking.address}</Text>
             </View>
-          ) : null}
-          {(isUpcoming || isInProgress) && !isCanceled ? (
-            <Pressable
-              style={({ pressed }) => [styles.extendRow, pressed && { opacity: 0.6 }]}
-              onPress={() => setExtendOpen(true)}
-              disabled={extendBusy}
-            >
-              <Ionicons name="time-outline" size={14} color={GREEN} />
-              <Text style={styles.extendText}>{extendBusy ? "Extending…" : "Extend end time"}</Text>
-              <Ionicons name="chevron-forward" size={13} color={GREEN} />
-            </Pressable>
-          ) : null}
-        </View>
+            <View style={styles.cardBody}>
+              <View style={styles.timeRow}>
+                <View style={styles.timeSlot}>
+                  <Text style={styles.timeSlotLabel}>ARRIVING</Text>
+                  <Text style={styles.timeSlotTime}>{formatTimeLabel(start)}</Text>
+                  <Text style={styles.timeSlotDate}>{startDateLabel}</Text>
+                </View>
+                <View style={styles.timeArrow}>
+                  <View style={styles.timeArrowLine} />
+                  <Text style={styles.timeArrowDuration}>{durationLabel}</Text>
+                  <View style={styles.timeArrowLine} />
+                </View>
+                <View style={styles.timeSlot}>
+                  <Text style={styles.timeSlotLabel}>LEAVING</Text>
+                  <Text style={styles.timeSlotTime}>{formatTimeLabel(end)}</Text>
+                  <Text style={styles.timeSlotDate}>{endDateLabel}</Text>
+                </View>
+              </View>
+              {isInProgress ? (
+                <View style={styles.progressWrap}>
+                  <View style={styles.progressTrack}>
+                    <View style={[styles.progressFill, { width: `${Math.round(progressPct * 100)}%` as `${number}%` }]} />
+                  </View>
+                </View>
+              ) : null}
+              {(isUpcoming || isInProgress) && !isCanceled ? (
+                <Pressable
+                  style={({ pressed }) => [styles.extendRow, pressed && { opacity: 0.6 }]}
+                  onPress={() => setExtendOpen(true)}
+                  disabled={extendBusy}
+                >
+                  <Ionicons name="time-outline" size={14} color={ACCENT} />
+                  <Text style={styles.extendText}>{extendBusy ? "Extending…" : "Extend end time"}</Text>
+                  <Ionicons name="chevron-forward" size={13} color={ACCENT} />
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
 
-        {/* ── Details section ── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Details</Text>
-          <View style={styles.summaryBox}>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total paid</Text>
-              <Text style={styles.summaryValue}>€{(localAmountCents / 100).toFixed(2)}</Text>
+          {/* Details card */}
+          <View style={styles.card}>
+            <Text style={styles.cardSectionHeader}>Details</Text>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Total paid</Text>
+              <Text style={styles.detailValue}>€{(localAmountCents / 100).toFixed(2)}</Text>
             </View>
-            <View style={[styles.summaryRow, styles.summaryRowBorder]}>
-              <Text style={styles.summaryLabel}>Reference</Text>
-              <Text style={[styles.summaryValue, styles.summaryRef]} selectable>{formatBookingReference(booking.id)}</Text>
+            <View style={[styles.detailRow, styles.detailRowBorder]}>
+              <Text style={styles.detailLabel}>Reference</Text>
+              <Text style={[styles.detailValue, styles.detailRef]} selectable>{formatBookingReference(booking.id)}</Text>
             </View>
             {booking.vehiclePlate ? (
-              <View style={[styles.summaryRow, styles.summaryRowBorder]}>
-                <Text style={styles.summaryLabel}>Vehicle</Text>
-                <Text style={styles.summaryValue}>{booking.vehiclePlate}</Text>
+              <View style={[styles.detailRow, styles.detailRowBorder]}>
+                <Text style={styles.detailLabel}>Vehicle</Text>
+                <Text style={styles.detailValue}>{booking.vehiclePlate}</Text>
               </View>
             ) : null}
             {checkedInAt ? (
-              <View style={[styles.summaryRow, styles.summaryRowBorder]}>
-                <Text style={styles.summaryLabel}>Checked in</Text>
-                <Text style={[styles.summaryValue, { color: GREEN }]}>{formatTimeLabel(checkedInAt)}</Text>
+              <View style={[styles.detailRow, styles.detailRowBorder]}>
+                <Text style={styles.detailLabel}>Checked in</Text>
+                <Text style={[styles.detailValue, { color: ACCENT }]}>{formatTimeLabel(checkedInAt)}</Text>
               </View>
             ) : null}
           </View>
+
+          {/* Getting in card */}
+          {showArrivalInfo ? (
+            <View style={styles.card}>
+              <Text style={styles.cardSectionHeader}>Getting in</Text>
+              <View style={styles.cardBody}>
+                {booking.arrivalInstructions?.trim() ? (
+                  <Text style={styles.instructionsText}>{booking.arrivalInstructions.trim()}</Text>
+                ) : null}
+                {booking.accessCode?.trim() ? (
+                  <View style={[styles.codeBox, booking.arrivalInstructions?.trim() ? { marginTop: 12 } : null]}>
+                    <Text style={styles.codeLabel}>Entry code</Text>
+                    <Text style={styles.codeValue} selectable>{booking.accessCode.trim()}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          ) : null}
+
+          {/* Cancellation note */}
+          {isCanceled ? (
+            <View style={styles.cancellationNote}>
+              <Text style={styles.cancellationText}>
+                {isRefunded ? "Refund submitted to your original payment method."
+                  : cancellationSource === "host" ? "Canceled by the host."
+                  : "Booking canceled."}
+                {!isRefunded ? <Text style={styles.sectionLink} onPress={handleContactSupport}> Contact support →</Text> : null}
+              </Text>
+            </View>
+          ) : null}
+
         </View>
 
-        {/* ── Getting in ── */}
-        {showArrivalInfo ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Getting in</Text>
-            {booking.arrivalInstructions?.trim() ? (
-              <Text style={styles.sectionBody}>{booking.arrivalInstructions.trim()}</Text>
-            ) : null}
-            {booking.accessCode?.trim() ? (
-              <View style={styles.codeBox}>
-                <Text style={styles.codeLabel}>Entry code</Text>
-                <Text style={styles.codeValue} selectable>{booking.accessCode.trim()}</Text>
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-
-        {/* ── Cancellation ── */}
-        {isCanceled ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionBody}>
-              {isRefunded ? "Refund submitted to your original payment method."
-                : cancellationSource === "host" ? "Canceled by the host."
-                : "Booking canceled."}
-              {!isRefunded ? <Text style={styles.sectionLink} onPress={handleContactSupport}> Contact support →</Text> : null}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* ── Actions ── */}
+        {/* Actions */}
         <View style={styles.actionsSection}>
           {canCheckIn ? (
             <TouchableOpacity style={styles.primaryBtn} onPress={handleCheckIn}>
@@ -556,145 +561,198 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   );
 }
 
-// ── Design tokens (match BookingSummaryScreen) ─────────────────────────────
-const GREEN      = "#0fa968";
-const FG         = "#111827";
-const MUTED      = "#374151";
-const LINE       = "#D1D5DB";
+const ACCENT = "#0a8050";
+const FG     = "#101414";
+const MUTED  = "#465050";
+const SUBTLE = "#6B7575";
+const LINE   = "#DDE5EC";
+
+const CARD_SHADOW = {
+  shadowColor: "#0f172a",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.09,
+  shadowRadius: 12,
+  elevation: 4,
+} as const;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
 
-  // Nav header — identical pattern to BookingSummaryScreen
+  // ── Nav header ──────────────────────────────────────────────
   header: {
     alignItems: "center", justifyContent: "center",
     paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: LINE,
-    backgroundColor: "#fff",
+    borderBottomWidth: 1, borderBottomColor: "#E8EDF2",
+    backgroundColor: "#ffffff",
   },
   backButton: { padding: 6, position: "absolute", left: 14 },
-  headerTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG, textAlign: "center" },
+  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG, textAlign: "center" },
 
-  // Review — green section at top when due
+  // ── Scroll content ───────────────────────────────────────────
+  content: { paddingBottom: 48 },
+
+  // ── Full-bleed banners ───────────────────────────────────────
   reviewSection: {
-    backgroundColor: GREEN,
+    backgroundColor: ACCENT,
     paddingVertical: 28, paddingHorizontal: 20,
     alignItems: "center", gap: 14,
-    borderBottomWidth: 1, borderBottomColor: LINE,
   },
-  reviewSectionDone: { backgroundColor: "#fff" },
+  reviewSectionDone: { backgroundColor: "#F8FAFC" },
   reviewTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 18, color: "#fff", letterSpacing: -0.3 },
   reviewTitleDone: { fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: FG },
   reviewStars: { flexDirection: "row", gap: 8 },
 
-  // Page header — mirrors BookingSummaryScreen pageHeader
-  pageHeader: {
-    borderBottomWidth: 1, borderBottomColor: LINE,
-    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
-    alignItems: "center", gap: 6,
-  },
-  statusPill: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#F3F4F6", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  statusPillCanceled: { backgroundColor: "#FEF2F2" },
-  statusPillActive: { backgroundColor: "#ECFDF5" },
-  statusPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: "#374151" },
-  statusPillTextCanceled: { color: "#DC2626" },
-  statusPillTextActive: { color: GREEN },
-  pageTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 22, color: FG, letterSpacing: -0.5, lineHeight: 28, textAlign: "center" },
-  pageAddress: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, textAlign: "center" },
-
-  // Sections — identical to BookingSummaryScreen
-  section: { borderBottomWidth: 1, borderBottomColor: LINE, paddingHorizontal: 20, paddingVertical: 18 },
-  sectionTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG, letterSpacing: -0.3, marginBottom: 12 },
-  sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, lineHeight: 22 },
-  sectionLink: { fontFamily: "PlusJakartaSans-SemiBold", color: GREEN },
-
-  // Time row — matches BookingSummaryScreen
-  timeRow: { flexDirection: "row", alignItems: "center", gap: 0 },
-  timeSlot: { flex: 1, alignItems: "center", paddingVertical: 6 },
-  timeSlotLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 10,
-    color: GREEN,
-    letterSpacing: 1.2,
-    textTransform: "uppercase" as const,
-    marginBottom: 4,
-  },
-  timeSlotTime: {
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 26,
-    color: FG,
-    letterSpacing: -0.8,
-    lineHeight: 30,
-  },
-  timeSlotDate: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
-    color: MUTED,
-    marginTop: 2,
-  },
-  timeArrow: { alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 8 },
-  timeArrowLine: { width: 18, height: 1, backgroundColor: LINE },
-  timeArrowDuration: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    color: MUTED,
-    letterSpacing: 0.2,
-  },
-
-  progressWrap: { marginTop: 14 },
-  progressTrack: { height: 4, borderRadius: 999, backgroundColor: "#E5E7EB", overflow: "hidden" },
-  progressFill: { height: "100%", borderRadius: 999, backgroundColor: GREEN },
-
   directionsBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: GREEN,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.06)",
+    flexDirection: "row", alignItems: "center", gap: 12,
+    backgroundColor: ACCENT,
+    paddingHorizontal: 20, paddingVertical: 14,
   },
   directionsIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 36, height: 36, borderRadius: 18,
     backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
   directionsText: { flex: 1 },
   directionsLabel: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#fff" },
   directionsAddress: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 1 },
-  extendRow: { flexDirection: "row", alignItems: "center", gap: 6, justifyContent: "center", marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: LINE },
-  extendText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: GREEN },
 
-  // Summary box — mirrors BookingSummaryScreen summaryBox
-  summaryBox: { borderRadius: 14, borderWidth: 1, borderColor: LINE, overflow: "hidden" },
-  summaryRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 14, paddingVertical: 12 },
-  summaryRowBorder: { borderTopWidth: 1, borderTopColor: LINE },
-  summaryLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },
-  summaryValue: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
-  summaryRef: { fontFamily: "PlusJakartaSans-Bold", letterSpacing: 1.2, fontVariant: ["tabular-nums"] as const },
+  // ── Cards wrapper ─────────────────────────────────────────────
+  cards: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 14,
+  },
 
-  // Getting in — access code stands out naturally at this size
-  codeBox: { marginTop: 12, padding: 14, backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1, borderColor: LINE },
+  // ── Header card (status + title + time) ──────────────────────
+  headerCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D4DCE4",
+    overflow: "hidden",
+    ...CARD_SHADOW,
+  },
+  headerCardTop: {
+    borderBottomColor: LINE,
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 14,
+    alignItems: "center",
+    gap: 4,
+  },
+  headerTitle: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 18,
+    letterSpacing: -0.5,
+    lineHeight: 24,
+    textAlign: "center",
+  },
+  headerSubtitle: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+  },
+
+  // ── Status pill ──────────────────────────────────────────────
+  statusPill: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    backgroundColor: "#F3F4F6", borderRadius: 999,
+    paddingHorizontal: 10, paddingVertical: 5,
+  },
+  statusPillCanceled: { backgroundColor: "#FEF2F2" },
+  statusPillActive: { backgroundColor: "#ECFDF5" },
+  statusPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: "#374151" },
+  statusPillTextCanceled: { color: "#DC2626" },
+  statusPillTextActive: { color: ACCENT },
+
+  // ── Card (generic) ───────────────────────────────────────────
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D4DCE4",
+    overflow: "hidden",
+    ...CARD_SHADOW,
+  },
+  cardSectionHeader: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 15,
+    letterSpacing: -0.3,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
+  },
+  cardBody: { padding: 16 },
+
+  // ── Time row ─────────────────────────────────────────────────
+  timeRow: { flexDirection: "row", alignItems: "center" },
+  timeSlot: { flex: 1, alignItems: "center", paddingVertical: 6 },
+  timeSlotLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 10, color: ACCENT,
+    letterSpacing: 1.2, textTransform: "uppercase" as const, marginBottom: 4,
+  },
+  timeSlotTime: {
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 26, color: FG, letterSpacing: -0.8, lineHeight: 30,
+  },
+  timeSlotDate: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: MUTED, marginTop: 2 },
+  timeArrow: { alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 8 },
+  timeArrowLine: { width: 18, height: 1, backgroundColor: "#D1D5DB" },
+  timeArrowDuration: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: SUBTLE, letterSpacing: 0.2 },
+
+  // ── Progress bar (in-progress bookings) ──────────────────────
+  progressWrap: { marginTop: 14 },
+  progressTrack: { height: 4, borderRadius: 999, backgroundColor: "#E5E7EB", overflow: "hidden" },
+  progressFill: { height: "100%", borderRadius: 999, backgroundColor: ACCENT },
+
+  // ── Extend row ───────────────────────────────────────────────
+  extendRow: {
+    flexDirection: "row", alignItems: "center", gap: 6, justifyContent: "center",
+    marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: LINE,
+  },
+  extendText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: ACCENT },
+
+  // ── Detail rows (inside Details card) ────────────────────────
+  detailRow: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    paddingHorizontal: 16, paddingVertical: 13,
+  },
+  detailRowBorder: { borderTopWidth: 1, borderTopColor: LINE },
+  detailLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },
+  detailValue: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
+  detailRef: { fontFamily: "PlusJakartaSans-Bold", letterSpacing: 1.2, fontVariant: ["tabular-nums"] as const },
+
+  // ── Getting in ───────────────────────────────────────────────
+  instructionsText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, lineHeight: 21 },
+  codeBox: { padding: 14, backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1, borderColor: LINE },
   codeLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: MUTED, letterSpacing: 0.6, textTransform: "uppercase" as const, marginBottom: 6 },
   codeValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 32, color: FG, letterSpacing: 5, fontVariant: ["tabular-nums"] as const },
 
-  // Actions section
-  actionsSection: { paddingHorizontal: 20, paddingTop: 20, gap: 10 },
+  // ── Cancellation note ────────────────────────────────────────
+  cancellationNote: { paddingHorizontal: 4 },
+  cancellationText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, lineHeight: 21 },
+  sectionLink: { fontFamily: "PlusJakartaSans-SemiBold", color: ACCENT },
+
+  // ── Actions ──────────────────────────────────────────────────
+  actionsSection: { paddingHorizontal: 16, paddingTop: 14, gap: 10 },
   primaryBtn: {
-    backgroundColor: GREEN, paddingVertical: 16, borderRadius: 14,
+    backgroundColor: ACCENT, paddingVertical: 16, borderRadius: 14,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    shadowColor: GREEN, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 3,
+    shadowColor: ACCENT, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 3,
   },
   primaryBtnText: { color: "#fff", fontSize: 16, fontFamily: "PlusJakartaSans-Bold" },
   secondaryBtn: {
     backgroundColor: "#fff", paddingVertical: 14, borderRadius: 14,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7,
-    borderWidth: 1, borderColor: LINE,
+    borderWidth: 1, borderColor: "#D1D5DB",
   },
   secondaryBtnText: { color: FG, fontSize: 15, fontFamily: "PlusJakartaSans-SemiBold" },
   errorText: { color: "#DC2626", fontSize: 13, textAlign: "center", fontFamily: "PlusJakartaSans-Regular" },

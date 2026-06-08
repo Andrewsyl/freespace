@@ -101,32 +101,26 @@ export function VehicleBrandLogo({
   const customXml = CUSTOM_BRAND_XML[make];
 
   return (
-    <View style={styles.badge}>
+    <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
       {icon ? (
         <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityLabel={`${make} logo`}>
           <Path d={icon.path} fill={colors.text} />
         </Svg>
       ) : customXml ? (
-        <SvgXml xml={customXml} width={size * 2} height={size} />
+        <SvgXml xml={customXml} width={size} height={size} />
       ) : (
-        <Text style={styles.fallback}>{getFallbackText(make)}</Text>
+        <Text style={[styles.fallback, { fontSize: Math.round(size * 0.45) }]}>
+          {getFallbackText(make)}
+        </Text>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  badge: {
-    alignItems: "center",
-    height: 52,
-    justifyContent: "center",
-    minWidth: 72,
-    paddingHorizontal: 4,
-  },
   fallback: {
     color: colors.text,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
     fontWeight: "600",
     letterSpacing: 0.4,
   },
