@@ -7,6 +7,8 @@ const authSession = {
     email: "host@example.com",
     role: "host",
     emailVerified: true,
+    phoneVerified: true,
+    phone: "+353871234567",
   },
 };
 
