@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
-import { Animated, BackHandler, Easing, FlatList, InteractionManager, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Animated, BackHandler, Easing, FlatList, Image, InteractionManager, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import LottieView from "lottie-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -554,13 +554,17 @@ export function HistoryScreen({ navigation, route }: Props) {
                             </View>
                           ) : showPaneEmpty ? (
                             <View style={styles.emptyState}>
-                              <View style={styles.emptyIconWrap}>
-                                <Ionicons
-                                  name={paneTab === "active" ? "location-outline" : paneTab === "past" ? "time-outline" : "calendar-outline"}
-                                  size={36}
-                                  color={ACCENT}
-                                />
-                              </View>
+                              <Image
+                                source={
+                                  paneTab === "active"
+                                    ? require("../assets/illustrations/calendar-bro.png")
+                                    : paneTab === "upcoming"
+                                    ? require("../assets/illustrations/calendar-amico.png")
+                                    : require("../assets/illustrations/calendar-pana.png")
+                                }
+                                style={styles.emptyImage}
+                                resizeMode="contain"
+                              />
                               <Text style={styles.emptyTitle}>
                                 {paneTab === "upcoming" ? "No upcoming bookings" : paneTab === "active" ? "No active bookings" : "No past bookings"}
                               </Text>
@@ -881,6 +885,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: 64,
     paddingHorizontal: 32,
+  },
+  emptyImage: {
+    width: 200,
+    height: 200,
+    marginBottom: 8,
   },
   emptyIconWrap: {
     width: 72,

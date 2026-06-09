@@ -350,9 +350,11 @@ export function ListingsScreen({ navigation }: Props) {
               ) : !hasListings ? (
                 /* ── Empty state ──────────────────────────────── */
                 <View style={styles.emptyCard}>
-                  <View style={styles.emptyIconWrap}>
-                    <Ionicons name="car-outline" size={28} color={GREEN} />
-                  </View>
+                  <Image
+                    source={require("../assets/illustrations/money-income.png")}
+                    style={styles.emptyImage}
+                    resizeMode="contain"
+                  />
                   <Text style={styles.emptyTitle}>No listings yet</Text>
                   <Text style={styles.emptyBody}>
                     Create a listing to start earning from your parking space.
@@ -738,6 +740,11 @@ const styles = StyleSheet.create({
     padding: 28,
     alignItems: "center",
     ...SHADOW,
+  },
+  emptyImage: {
+    width: 180,
+    height: 180,
+    marginBottom: 4,
   },
   emptyIconWrap: {
     width: 56,
