@@ -825,7 +825,7 @@ const CARD_SHADOW = {
 } as const;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#EDE8E2" },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
   flex: { flex: 1 },
 
   // ── Skeleton ─────────────────────────────────────────────────
@@ -835,7 +835,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center", justifyContent: "center",
     paddingHorizontal: 20, paddingVertical: 12,
-    backgroundColor: "#EDE8E2",
+    backgroundColor: "#F8FAFC",
   },
   backButton: { padding: 6, position: "absolute", left: 14 },
   navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG, textAlign: "center" },

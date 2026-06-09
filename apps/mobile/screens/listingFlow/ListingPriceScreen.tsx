@@ -285,7 +285,7 @@ export function ListingPriceScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#EDE8E2" },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
   flex: { flex: 1 },
   content: {
     paddingHorizontal: 16,

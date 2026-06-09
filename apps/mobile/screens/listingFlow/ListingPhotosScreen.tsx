@@ -266,7 +266,7 @@ export function ListingPhotosScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#EDE8E2" },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
   content: {
     paddingHorizontal: 16,
     paddingTop: 12,

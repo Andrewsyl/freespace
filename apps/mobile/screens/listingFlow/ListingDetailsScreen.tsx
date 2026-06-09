@@ -279,7 +279,7 @@ export function ListingDetailsScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#EDE8E2",
+    backgroundColor: "#F8FAFC",
     flex: 1,
   },
   content: {
