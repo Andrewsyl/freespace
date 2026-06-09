@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
-import { Animated, BackHandler, Easing, FlatList, Image, InteractionManager, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Animated, BackHandler, Easing, FlatList, Image, InteractionManager, PanResponder, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import LottieView from "lottie-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -37,6 +37,8 @@ export function HistoryScreen({ navigation, route }: Props) {
   const { reset: resetGlobalLoading } = useGlobalLoading();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
+  const screenWidthRef = useRef(screenWidth);
+  useEffect(() => { screenWidthRef.current = screenWidth; }, [screenWidth]);
   const [tab, setTab] = useState<"upcoming" | "active" | "past">("upcoming");
   const [displayTab, setDisplayTab] = useState<"upcoming" | "active" | "past">("upcoming");
   const [bookings, setBookings] = useState<BookingSummary[]>([]);
@@ -61,6 +63,62 @@ export function HistoryScreen({ navigation, route }: Props) {
   const hideSuccessCallback = useRef<(() => void) | null>(null);
   const [revealBookings, setRevealBookings] = useState(true);
   const [bookingTransitioning, setBookingTransitioning] = useState(false);
+
+  const TABS = ["upcoming", "active", "past"] as const;
+  const dragOffsetAnim = useRef(new Animated.Value(0)).current;
+  const currentTabIndexRef = useRef(0);
+  const swipeHandledRef = useRef(false);
+
+  const snapToTab = (idx: number) => {
+    Animated.spring(segmentAnim, {
+      toValue: idx,
+      tension: 260,
+      friction: 28,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) =>
+        Math.abs(gesture.dx) > 10 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.5,
+      onPanResponderGrant: () => {
+        segmentAnim.stopAnimation();
+        dragOffsetAnim.setValue(0);
+      },
+      onPanResponderMove: (_, gesture) => {
+        dragOffsetAnim.setValue(gesture.dx);
+      },
+      onPanResponderRelease: (_, gesture) => {
+        const idx = currentTabIndexRef.current;
+        const sw = screenWidthRef.current;
+        const posThreshold = sw * 0.25;
+        const velThreshold = 0.4;
+
+        let next = idx;
+        if ((gesture.dx < -posThreshold || gesture.vx < -velThreshold) && idx < TABS.length - 1) next = idx + 1;
+        else if ((gesture.dx > posThreshold || gesture.vx > velThreshold) && idx > 0) next = idx - 1;
+
+        // Move segmentAnim to the apparent visual position so the snap starts from here
+        segmentAnim.setValue(idx - gesture.dx / sw);
+        dragOffsetAnim.setValue(0);
+
+        if (next !== idx) {
+          swipeHandledRef.current = true;
+          currentTabIndexRef.current = next;
+          snapToTab(next);
+          setTab(TABS[next]);
+        } else {
+          snapToTab(idx);
+        }
+      },
+      onPanResponderTerminate: () => {
+        const idx = currentTabIndexRef.current;
+        dragOffsetAnim.setValue(0);
+        snapToTab(idx);
+      },
+    })
+  ).current;
 
   useToastOnMessage(error, { variant: "danger" });
 
@@ -265,6 +323,7 @@ export function HistoryScreen({ navigation, route }: Props) {
   useEffect(() => {
     const currentIndex = tab === "upcoming" ? 0 : tab === "active" ? 1 : 2;
     lastTabIndexRef.current = currentIndex;
+    currentTabIndexRef.current = currentIndex;
     tabAnim.setValue(0);
     Animated.timing(tabAnim, {
       toValue: 1,
@@ -278,6 +337,14 @@ export function HistoryScreen({ navigation, route }: Props) {
     const target = tab === "upcoming" ? 0 : tab === "active" ? 1 : 2;
     setIsSwitchingTab(true);
     setTabSwitchingTo(tab);
+
+    if (swipeHandledRef.current) {
+      swipeHandledRef.current = false;
+      setDisplayTab(tab);
+      setIsSwitchingTab(false);
+      return;
+    }
+
     Animated.timing(segmentAnim, {
       toValue: target,
       duration: 250,
@@ -438,7 +505,7 @@ export function HistoryScreen({ navigation, route }: Props) {
         />
       </View>
 
-      <View style={styles.contentWrapper}>
+      <View style={styles.contentWrapper} {...panResponder.panHandlers}>
         {loading ? (
           <View style={styles.inlineLoading}>
             <Spinner size="large" />
@@ -453,10 +520,13 @@ export function HistoryScreen({ navigation, route }: Props) {
             width: screenWidth * 3,
             transform: [
               {
-                translateX: segmentAnim.interpolate({
-                  inputRange: [0, 1, 2],
-                  outputRange: [0, -screenWidth, -screenWidth * 2],
-                }),
+                translateX: Animated.add(
+                  segmentAnim.interpolate({
+                    inputRange: [-1, 0, 1, 2, 3],
+                    outputRange: [screenWidth, 0, -screenWidth, -screenWidth * 2, -screenWidth * 3],
+                  }),
+                  dragOffsetAnim
+                ) as unknown as Animated.AnimatedInterpolation<number>,
               },
             ],
           }}
@@ -487,7 +557,7 @@ export function HistoryScreen({ navigation, route }: Props) {
               (loading || (isSwitchingTab && paneTab === tabSwitchingTo)) &&
               !bookingTransitioning;
             const showPaneEmpty =
-              !loading && !isSwitchingTab && paneTab === displayTab && paneData.length === 0;
+              !loading && !showPaneSkeleton && paneData.length === 0;
 
             return (
               <View key={pane} style={{ width: screenWidth }}>

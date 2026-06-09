@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useRef } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft } from "lucide-react-native";
 import { hostFlowColors } from "./hostFlowTheme";
@@ -16,6 +17,18 @@ type Props = {
 export function FlowHeader({ current, total, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const percent = total > 0 ? Math.min(Math.max(current / total, 0), 1) * 100 : 0;
+  const prevPercent = total > 0 ? Math.min(Math.max((current - 1) / total, 0), 1) * 100 : 0;
+  const fillAnim = useRef(new Animated.Value(prevPercent)).current;
+
+  useEffect(() => {
+    Animated.timing(fillAnim, {
+      toValue: percent,
+      duration: 240,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: false,
+    }).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const { draft, listingId } = useListingFlow();
   const { showSuccess } = useGlobalToast();
   const { presentExitConfirm, exitConfirmModal } = useExitListingFlowConfirm();
@@ -50,7 +63,7 @@ export function FlowHeader({ current, total, onClose }: Props) {
         </Pressable>
         <View style={styles.barWrap}>
           <View style={styles.bar}>
-            <View style={[styles.fill, { width: `${percent}%` as `${number}%` }]} />
+            <Animated.View style={[styles.fill, { width: fillAnim.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"] }) }]} />
           </View>
         </View>
       </View>

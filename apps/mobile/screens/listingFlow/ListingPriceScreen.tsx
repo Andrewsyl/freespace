@@ -5,7 +5,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -185,7 +184,6 @@ export function ListingPriceScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <StatusBar barStyle="dark-content" />
       <FlowHeader current={7} total={8} onClose={exitFlow} />
       <KeyboardAvoidingView
         style={styles.flex}

@@ -46,9 +46,18 @@ export function OnboardingPermissions({ onComplete }: Props) {
   const [step, setStep] = useState(0);
   const current = STEPS[step];
 
-  const ilOpacity = useRef(new Animated.Value(1)).current;
-  const txOpacity = useRef(new Animated.Value(1)).current;
-  const txY       = useRef(new Animated.Value(0)).current;
+  const ilOpacity  = useRef(new Animated.Value(1)).current;
+  const txOpacity  = useRef(new Animated.Value(1)).current;
+  const txY        = useRef(new Animated.Value(0)).current;
+  const exitOpacity = useRef(new Animated.Value(1)).current;
+
+  const handleComplete = () => {
+    Animated.timing(exitOpacity, {
+      toValue: 0,
+      duration: 260,
+      useNativeDriver: true,
+    }).start(() => onComplete());
+  };
 
   const progress = useRef(new Animated.Value(0.5)).current;
   useEffect(() => {
@@ -60,7 +69,7 @@ export function OnboardingPermissions({ onComplete }: Props) {
   }, [step, progress]);
 
   const advance = () => {
-    if (step >= STEPS.length - 1) { onComplete(); return; }
+    if (step >= STEPS.length - 1) { handleComplete(); return; }
     Animated.parallel([
       Animated.timing(ilOpacity, { toValue: 0, duration: 140, easing: Easing.in(Easing.quad),  useNativeDriver: true }),
       Animated.timing(txOpacity, { toValue: 0, duration: 110, useNativeDriver: true }),
@@ -114,7 +123,7 @@ export function OnboardingPermissions({ onComplete }: Props) {
   };
 
   return (
-    <View style={[S.root, { paddingTop: insets.top + 16, paddingBottom: Math.max(insets.bottom + 20, 36) }]}>
+    <Animated.View style={[S.root, { paddingTop: insets.top + 16, paddingBottom: Math.max(insets.bottom + 20, 36), opacity: exitOpacity }]}>
 
       {/* Logo */}
       <View style={S.logoWrap}>
@@ -155,7 +164,7 @@ export function OnboardingPermissions({ onComplete }: Props) {
         <Text style={S.skipLabel}>{current.skip}</Text>
       </Pressable>
 
-    </View>
+    </Animated.View>
   );
 }
 
