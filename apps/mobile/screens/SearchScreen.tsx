@@ -359,15 +359,61 @@ export function SearchScreen({ navigation }: Props) {
     const load = async () => {
       try {
         const stored = await AsyncStorage.getItem(MAP_REGION_KEY);
-        if (!active || !stored) return;
-        const parsed = JSON.parse(stored) as typeof mapRegion;
-        if (
-          typeof parsed?.latitude === "number" &&
-          typeof parsed?.longitude === "number" &&
-          typeof parsed?.latitudeDelta === "number" &&
-          typeof parsed?.longitudeDelta === "number"
-        ) {
-          setMapInitialRegion(parsed);
+        if (!active) return;
+        if (stored) {
+          const parsed = JSON.parse(stored) as typeof mapRegion;
+          if (
+            typeof parsed?.latitude === "number" &&
+            typeof parsed?.longitude === "number" &&
+            typeof parsed?.latitudeDelta === "number" &&
+            typeof parsed?.longitudeDelta === "number"
+          ) {
+            setMapInitialRegion(parsed);
+            setLat(parsed.latitude.toFixed(6));
+            setLng(parsed.longitude.toFixed(6));
+            return;
+          }
+        }
+
+        const permissions = await Location.getForegroundPermissionsAsync();
+        if (!active || permissions.status !== "granted") return;
+
+        let position: Location.LocationObject | null = null;
+        try {
+          position = await Promise.race([
+            Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 6000)),
+          ]);
+        } catch {
+          position = null;
+        }
+
+        if (!position) {
+          position = await Location.getLastKnownPositionAsync({
+            maxAge: 10 * 60 * 1000,
+            requiredAccuracy: 500,
+          });
+        }
+
+        if (!active || !position) return;
+
+        const nextRegion = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          latitudeDelta: 0.012,
+          longitudeDelta: 0.012,
+        };
+        setMapInitialRegion(nextRegion);
+        setLat(nextRegion.latitude.toFixed(6));
+        setLng(nextRegion.longitude.toFixed(6));
+        setAddressQuery("Current location");
+        currentRegionRef.current = nextRegion;
+        await AsyncStorage.setItem(MAP_REGION_KEY, JSON.stringify(nextRegion));
+        if (active) {
+          lastSearchCenterRef.current = {
+            lat: nextRegion.latitude,
+            lng: nextRegion.longitude,
+          };
         }
       } catch {
         // Ignore persisted region errors.

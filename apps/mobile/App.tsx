@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Platform,
@@ -47,6 +48,7 @@ import { ListingFlowScreen } from "./screens/ListingFlowScreen";
 import { EditListingScreen } from "./screens/EditListingScreen";
 import { SupportScreen } from "./screens/SupportScreen";
 import { AdminScreen } from "./screens/AdminScreen";
+import { OnboardingPermissions } from "./screens/OnboardingPermissionsScreen";
 import type { RootStackParamList } from "./types";
 import { getMe, registerPushToken, verifyEmailToken } from "./api";
 import { BottomTabButton } from "./components/BottomTabButton";
@@ -129,7 +131,6 @@ export default function App() {
         shouldSetBadge: false,
       }),
     });
-    void Notifications.requestPermissionsAsync();
     if (Platform.OS === "android") {
       void Notifications.setNotificationChannelAsync("default", {
         name: "default",
@@ -219,6 +220,8 @@ function SplashController() {
   return null;
 }
 
+const ONBOARDING_KEY = "@carpark/onboarding_done";
+
 function AppShell() {
   const { user, legalPromptRequired } = useAuth();
   const requiresLegal = !!user && (!user.termsVersion || !user.privacyVersion);
@@ -230,14 +233,33 @@ function AppShell() {
   const normalizedAppEnv = runtimeAppEnv.trim().toLowerCase();
   const showEnvBadge = normalizedAppEnv !== "production";
   const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingResolved, setOnboardingResolved] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((v) => {
+        if (!v) setShowOnboarding(true);
+      })
+      .catch(() => {})
+      .finally(() => setOnboardingResolved(true));
+  }, []);
+
+  const handleOnboardingComplete = () => {
+    void AsyncStorage.setItem(ONBOARDING_KEY, "1");
+    setShowOnboarding(false);
+  };
 
   return (
     <>
       <SplashController />
-      <AppNavigator />
+      {onboardingResolved && !showOnboarding ? <AppNavigator /> : null}
       {showAnimatedSplash && (
         <AnimatedSplash onFinish={() => setShowAnimatedSplash(false)} />
       )}
+      {showOnboarding && !showAnimatedSplash ? (
+        <OnboardingPermissions onComplete={handleOnboardingComplete} />
+      ) : null}
       <AuthToastBridge />
       {showEnvBadge ? <EnvironmentBadge env={normalizedAppEnv} /> : null}
       {shouldShowLegalGate ? <LegalGate /> : null}

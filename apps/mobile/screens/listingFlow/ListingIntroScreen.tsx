@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { X, MapPin, Camera, CircleDollarSign } from "lucide-react-native";
 import { hostFlowColors } from "./hostFlowTheme";
@@ -50,8 +50,13 @@ export function ListingIntroScreen({ navigation }: Props) {
         <View style={styles.heroBlock}>
           <Text style={styles.eyebrow}>Host on FreeSpace</Text>
           <Text style={styles.headline}>List your space</Text>
+          <Image
+            source={require("../../assets/illustrations/money-income.png")}
+            style={styles.heroImage}
+            resizeMode="contain"
+          />
           <Text style={styles.subline}>
-            Takes about 5 minutes. Here's what we'll cover:
+            Takes a few minutes. Here's what we'll cover.
           </Text>
         </View>
 
@@ -62,7 +67,7 @@ export function ListingIntroScreen({ navigation }: Props) {
               <View key={phase.label} style={styles.phaseRow}>
                 <View style={styles.phaseLeft}>
                   <View style={styles.phaseIconWrap}>
-                    <Icon size={18} color={hostFlowColors.accent} strokeWidth={2} />
+                    <Icon size={18} color="#ffffff" strokeWidth={2} />
                   </View>
                   {i < PHASES.length - 1 ? <View style={styles.phaseLine} /> : null}
                 </View>
@@ -95,7 +100,7 @@ export function ListingIntroScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: hostFlowColors.cardBg,
+    backgroundColor: hostFlowColors.bg,
   },
   topBar: {
     paddingHorizontal: 16,
@@ -120,6 +125,11 @@ const styles = StyleSheet.create({
   heroBlock: {
     marginBottom: 36,
   },
+  heroImage: {
+    width: "100%",
+    height: 220,
+    marginBottom: 24,
+  },
   eyebrow: {
     color: hostFlowColors.accent,
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -137,10 +147,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   subline: {
-    color: hostFlowColors.textMuted,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 16,
-    lineHeight: 24,
+    color:      hostFlowColors.textMuted,
+    fontFamily: "PlusJakartaSans-Medium",
+    fontSize:   15,
+    lineHeight: 23,
+    marginTop:  4,
   },
   phases: {
     gap: 0,
@@ -158,9 +169,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: hostFlowColors.accentSoft,
-    borderWidth: 1,
-    borderColor: hostFlowColors.accentSoftBorder,
+    backgroundColor: hostFlowColors.accent,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,

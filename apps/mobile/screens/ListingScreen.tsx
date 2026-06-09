@@ -595,11 +595,6 @@ export function ListingScreen({ navigation, route }: Props) {
                     <Text style={styles.pricePer}>
                       {priceSummary?.durationLabel ?? "/ hour"}
                     </Text>
-                    {priceSummary?.dailyCapApplied ? (
-                      <View style={styles.dayRatePill}>
-                        <Text style={styles.dayRatePillText}>Day rate</Text>
-                      </View>
-                    ) : null}
                   </View>
                   <View style={styles.factRows}>
                     <View style={styles.factRow}>
@@ -615,18 +610,13 @@ export function ListingScreen({ navigation, route }: Props) {
                         )}
                       </Text>
                     </View>
-                    {areaLabel ? (
-                      <View style={styles.factRow}>
-                        <Ionicons name="location-sharp" size={17} color={GREEN} style={styles.factIcon} />
-                        <Text style={styles.factText} numberOfLines={1}>
-                          <Text style={styles.factVal}>{areaLabel}</Text>
-                          {distanceLabel ? <Text style={styles.factMuted}>  ·  {distanceLabel} away</Text> : null}
-                        </Text>
-                      </View>
-                    ) : null}
                     <View style={styles.factRow}>
-                      <Ionicons name="time-outline" size={17} color={GREEN} style={styles.factIcon} />
-                      <Text style={styles.factText} numberOfLines={1}>
+                      <Ionicons name="location-sharp" size={17} color={GREEN} style={styles.factIcon} />
+                      {areaLabel ? <Text style={styles.factVal}>{areaLabel}</Text> : null}
+                      {distanceLabel ? <Text style={styles.factMuted}>{`  ·  ${distanceLabel}`}</Text> : null}
+                      <Text style={styles.factMuted}>{areaLabel ? "  ·  " : ""}</Text>
+                      <View style={styles.factInline}>
+                        <Ionicons name="time-outline" size={17} color={GREEN} />
                         {availabilityFallbackText ? (
                           <Text style={styles.factVal}>{availabilityFallbackText}</Text>
                         ) : (
@@ -634,7 +624,7 @@ export function ListingScreen({ navigation, route }: Props) {
                             {isAvailable ? "Available now" : "Fully booked"}
                           </Text>
                         )}
-                      </Text>
+                      </View>
                     </View>
                   </View>
                 </View>
@@ -882,7 +872,10 @@ export function ListingScreen({ navigation, route }: Props) {
                       })}
                     </View>
                   ) : (
-                    <Text style={styles.reviewEmpty}>No reviews yet.</Text>
+                    <View style={styles.reviewEmptyWrap}>
+                      <Text style={styles.reviewEmpty}>No reviews yet.</Text>
+                      <Text style={styles.reviewEmptyHint}>Be the first to park here and share your experience.</Text>
+                    </View>
                   )}
                 </View>
 
@@ -1206,7 +1199,7 @@ const styles = StyleSheet.create({
   sheetHandle: {
     width: 36, height: 4, borderRadius: 999,
     backgroundColor: "#D9DCE0",
-    alignSelf: "center", marginBottom: 10,
+    alignSelf: "center", marginBottom: 8,
   },
 
   // Title block
@@ -1233,9 +1226,9 @@ const styles = StyleSheet.create({
 
   // ── Price + meta block ─────────────────────────────────────────────────────
   priceBlock: {
-    paddingTop: 10,
-    paddingBottom: 16,
-    gap: 6,
+    paddingTop: 4,
+    paddingBottom: 6,
+    gap: 3,
   },
   priceRow: {
     flexDirection: "row",
@@ -1244,11 +1237,11 @@ const styles = StyleSheet.create({
   },
   priceHero: {
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 30, color: FG, letterSpacing: -1, lineHeight: 34,
+    fontSize: 26, color: FG, letterSpacing: -0.8, lineHeight: 30,
   },
   pricePer: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14, color: FG_SUBTLE, lineHeight: 20,
+    fontSize: 13, color: FG_SUBTLE, lineHeight: 18,
   },
   dayRatePill: {
     backgroundColor: GREEN_SOFT,
@@ -1261,46 +1254,34 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11, color: GREEN,
   },
-  factRows: {
-    gap: 6,
-    paddingBottom: 4,
-  },
-  factRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  factIcon: {
-    width: 18,
-    textAlign: "center",
-  },
-  factText: {
-    flex: 1,
-    fontSize: 14,
-  },
-  factVal: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14, color: FG,
-  },
-  factMuted: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14, color: FG_SUBTLE,
-  },
+  metaLine: { fontSize: 13, flexShrink: 1 },
+  metaStar: { color: "#F4B942", fontSize: 13 },
+  metaItem: { fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: FG },
+  metaSep:  { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE },
+
+  // kept for any remaining references
+  factRows: { gap: 4, paddingBottom: 2 },
+  factRow:   { flexDirection: "row", alignItems: "center", gap: 7 },
+  factInline:{ flexDirection: "row", alignItems: "center", gap: 4 },
+  factIcon: { width: 17, textAlign: "center" },
+  factText: { flex: 1, fontSize: 13 },
+  factVal:  { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
+  factMuted:{ fontFamily: "PlusJakartaSans-Regular",  fontSize: 13, color: FG_SUBTLE },
 
   // ── Airbnb-style time pickers ──────────────────────────────────────────────
-  timeRow: { flexDirection: "row", alignItems: "stretch", gap: 10, marginBottom: 16 },
+  timeRow: { flexDirection: "row", alignItems: "stretch", gap: 10, marginBottom: 12 },
   timeField: {
     flex: 1,
     backgroundColor: "#e8eaed",
     borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
   },
   timeFieldHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   timeFieldLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -1309,11 +1290,11 @@ const styles = StyleSheet.create({
   },
   timeFieldTime: {
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 20, color: FG, letterSpacing: -0.6, lineHeight: 24,
+    fontSize: 18, color: FG, letterSpacing: -0.5, lineHeight: 22,
   },
   timeFieldDate: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12, color: FG_MUTED, marginTop: 4,
+    fontSize: 12, color: FG_MUTED, marginTop: 2,
   },
   timeArrow: { alignItems: "center", justifyContent: "center" },
 
@@ -1325,9 +1306,22 @@ const styles = StyleSheet.create({
   },
 
   // ── Reviews: empty state ───────────────────────────────────────────────────
+  reviewEmptyWrap: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    backgroundColor: BG_2,
+    borderRadius: 12,
+    marginTop: 8,
+    alignItems: "center",
+  },
   reviewEmpty: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14, color: FG, textAlign: "center",
+  },
+  reviewEmptyHint: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14, color: FG_SUBTLE, marginTop: 8,
+    fontSize: 13, color: FG_SUBTLE, textAlign: "center",
+    marginTop: 4, lineHeight: 19,
   },
 
   // Stats strip — inline card, border only, no shadow
@@ -1441,16 +1435,16 @@ const styles = StyleSheet.create({
     color: FG_2, flex: 1, textAlign: "right",
   },
   availabilityHoursClosed: { color: FG_SUBTLE },
-  section: { paddingTop: 24, paddingBottom: 8 },
+  section: { paddingTop: 12, paddingBottom: 8 },
   sectionTitle: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 18, lineHeight: 22, color: FG, letterSpacing: -0.4, marginBottom: 14,
+    fontSize: 17, lineHeight: 21, color: FG, letterSpacing: -0.3, marginBottom: 8,
   },
   statsCellSub: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 9,
     color: FG_SUBTLE, marginTop: 0,
   },
-  sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, lineHeight: 25, color: "#475569" },
+  sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, lineHeight: 22, color: "#475569" },
   readMore: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG, marginTop: 12 },
 
   // Local area map
@@ -1743,7 +1737,7 @@ const styles = StyleSheet.create({
   viewerCloseText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: "#fff" },
 
   // Trust notes (below time picker)
-  trustNotes: { gap: 8, marginTop: 14 },
+  trustNotes: { gap: 7, marginTop: 10 },
   trustNoteRow: { flexDirection: "row", alignItems: "center", gap: 9 },
   trustNoteCheck: {
     width: 18, height: 18, borderRadius: 9,
@@ -1766,11 +1760,11 @@ const styles = StyleSheet.create({
 
   // Review list (divider style)
   reviewListItem: {
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: LINE,
   },
   reviewListItemLast: { borderBottomWidth: 0, paddingBottom: 0 },
-  reviewListTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
+  reviewListTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   reviewStarRow: { flexDirection: "row", alignItems: "center", gap: 2 },
 
   // Unused legacy styles (kept for compatibility with any unused JSX branches)
