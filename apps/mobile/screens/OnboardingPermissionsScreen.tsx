@@ -241,18 +241,23 @@ const S = StyleSheet.create({
 
   ctaBtn: {
     width:           "100%",
-    height:          54,
+    height:          52,
     borderRadius:    14,
-    backgroundColor: GREEN,
+    backgroundColor: "#0a8050",
     alignItems:      "center",
     justifyContent:  "center",
     marginBottom:    14,
+    shadowColor:     "#0a7a50",
+    shadowOffset:    { width: 0, height: 4 },
+    shadowOpacity:   0.28,
+    shadowRadius:    14,
+    elevation:       5,
   },
   ctaLabel: {
-    fontFamily:    "PlusJakartaSans-Bold",
+    fontFamily:    "PlusJakartaSans-SemiBold",
     fontSize:      16,
     color:         "#ffffff",
-    letterSpacing: -0.1,
+    letterSpacing: -0.3,
   },
 
   skipBtn: {

@@ -561,7 +561,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   );
 }
 
-const ACCENT = "#0a8050";
+const ACCENT = "#0fa968";
 const FG     = "#101414";
 const MUTED  = "#465050";
 const SUBTLE = "#6B7575";
@@ -744,17 +744,17 @@ const styles = StyleSheet.create({
   // ── Actions ──────────────────────────────────────────────────
   actionsSection: { paddingHorizontal: 16, paddingTop: 14, gap: 10 },
   primaryBtn: {
-    backgroundColor: ACCENT, paddingVertical: 16, borderRadius: 14,
+    backgroundColor: ACCENT, height: 52, borderRadius: 14,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    shadowColor: ACCENT, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 3,
+    shadowColor: "#0a7a50", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 5,
   },
-  primaryBtnText: { color: "#fff", fontSize: 16, fontFamily: "PlusJakartaSans-Bold" },
+  primaryBtnText: { color: "#fff", fontSize: 16, fontFamily: "PlusJakartaSans-SemiBold", letterSpacing: -0.3 },
   secondaryBtn: {
-    backgroundColor: "#fff", paddingVertical: 14, borderRadius: 14,
+    backgroundColor: "#fff", height: 48, borderRadius: 14,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7,
     borderWidth: 1, borderColor: "#D1D5DB",
   },
-  secondaryBtnText: { color: FG, fontSize: 15, fontFamily: "PlusJakartaSans-SemiBold" },
+  secondaryBtnText: { color: FG, fontSize: 15, fontFamily: "PlusJakartaSans-SemiBold", letterSpacing: -0.2 },
   errorText: { color: "#DC2626", fontSize: 13, textAlign: "center", fontFamily: "PlusJakartaSans-Regular" },
   linkRow: { flexDirection: "row", justifyContent: "center", gap: 24, paddingVertical: 4 },
   linkText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: MUTED },

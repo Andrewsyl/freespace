@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   ViewStyle,
 } from "react-native";
-import { buttons, cardShadow, colors, spacing, textStyles } from "../../styles/theme";
+import { buttons, primaryButtonShadow, colors, spacing, textStyles } from "../../styles/theme";
 
 interface ButtonProps {
   title: string;
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   },
   primary: {
     ...buttons.primary,
-    ...cardShadow,
+    ...primaryButtonShadow,
   },
   secondary: {
     ...buttons.secondary,
@@ -103,19 +103,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft,
   },
   small: {
-    minHeight: 48,
+    height: 40,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
   },
   medium: {
-    minHeight: 58,
+    height: 46,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
   },
   large: {
-    minHeight: 64,
+    height: 52,
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
   },
   disabled: {
     opacity: 1,
@@ -138,15 +135,15 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
   smallText: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
   },
   mediumText: {
-    fontSize: 17,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 22,
   },
   largeText: {
-    fontSize: 17,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 22,
   },
 });

@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: "#0fa968",
+    backgroundColor: "#0a8050",
   },
   actionPrimaryText: {
     fontSize: 15,

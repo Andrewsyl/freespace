@@ -78,6 +78,14 @@ export const floatingShadow = {
   elevation: 6,
 };
 
+export const primaryButtonShadow = {
+  shadowColor: "#0a7a50",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.28,
+  shadowRadius: 14,
+  elevation: 5,
+};
+
 export const textStyles = {
   displayHero: {
     color: colors.brandDark,
@@ -195,11 +203,11 @@ export const textStyles = {
   },
   button: {
     color: color.text.inverse,
-    fontSize: 17,
-    lineHeight: 24,
-    fontFamily: "PlusJakartaSans-Bold",
-    fontWeight: "700" as const,
-    letterSpacing: 0,
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontWeight: "600" as const,
+    letterSpacing: -0.3,
   },
   priceLarge: {
     color: colors.text,
@@ -301,11 +309,10 @@ export const fields = {
 
 export const buttons = {
   primary: {
-    backgroundColor: colors.accent,
-    borderRadius: radius.pill,
-    minHeight: 64,
+    backgroundColor: "#0a8050",
+    borderRadius: 14,
+    height: 52,
     paddingHorizontal: spacing.xl,
-    paddingVertical: 18,
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },
@@ -313,18 +320,18 @@ export const buttons = {
     backgroundColor: color.neutral[100],
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: radius.pill,
-    minHeight: 58,
+    borderRadius: 14,
+    minHeight: 48,
     paddingHorizontal: spacing.xl,
-    paddingVertical: 16,
+    paddingVertical: 11,
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },
   ghost: {
-    borderRadius: radius.pill,
-    minHeight: 56,
+    borderRadius: 14,
+    minHeight: 46,
     paddingHorizontal: spacing.lg,
-    paddingVertical: 14,
+    paddingVertical: 10,
     alignItems: "center" as const,
     justifyContent: "center" as const,
   },

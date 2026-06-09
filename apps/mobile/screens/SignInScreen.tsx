@@ -23,7 +23,7 @@ import { trackEvent } from "../analytics";
 import { logInfo, logWarn } from "../logger";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
-const AUTH_GREEN = "#0a8050";
+const AUTH_GREEN = "#0fa968";
 
 export function SignInScreen({ navigation, route }: Props) {
   const { login, loginWithOAuth } = useAuth();
@@ -326,24 +326,25 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   googleButton: {
-    backgroundColor: AUTH_GREEN,
-    borderRadius: 28,
+    backgroundColor: "#0a8050",
+    borderRadius: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    paddingVertical: 15,
+    height: 52,
     marginBottom: 18,
-    shadowColor: AUTH_GREEN,
+    shadowColor: "#0a7a50",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 5,
   },
   googleButtonText: {
     color: "#fff",
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
+    fontSize: 16,
+    letterSpacing: -0.3,
   },
   dividerRow: {
     flexDirection: "row",

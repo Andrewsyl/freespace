@@ -17,7 +17,7 @@ import { formatDateLabel, formatTimeLabel } from "../utils/dateFormat";
 
 type Props = NativeStackScreenProps<RootStackParamList, "History">;
 
-const ACCENT  = "#0a8050";
+const ACCENT  = "#0fa968";
 const FG      = "#101414";
 const MUTED   = "#465050";
 const SUBTLE  = "#6B7575";
@@ -991,19 +991,24 @@ const styles = StyleSheet.create({
   // ── Primary button ───────────────────────────────────────────
   primaryButton: {
     alignItems: "center",
-    backgroundColor: ACCENT,
+    backgroundColor: "#0a8050",
     borderRadius: 14,
     marginTop: 4,
-    minHeight: 48,
+    height: 52,
     paddingHorizontal: 32,
-    paddingVertical: 13,
     alignSelf: "stretch",
     justifyContent: "center",
+    shadowColor: "#0a7a50",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 5,
   },
   primaryButtonText: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
+    fontSize: 16,
     color: "#ffffff",
+    letterSpacing: -0.3,
   },
 
   // ── Success overlay ──────────────────────────────────────────

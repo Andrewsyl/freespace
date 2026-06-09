@@ -37,6 +37,7 @@ function featureIcon(name: string, active: boolean) {
     case "Sheltered":          return <Warehouse {...props} />;
     case "Well lit":           return <Sun {...props} />;
     case "Gated access":       return <ShieldCheck {...props} />;
+    case "Single entry":       return <Lock {...props} />;
     case "Height-friendly":    return <ArrowUpDown {...props} />;
     case "Disabled access":    return <Accessibility {...props} />;
     case "24/7 access":        return <Clock {...props} />;
@@ -47,7 +48,7 @@ function featureIcon(name: string, active: boolean) {
 }
 
 const PRIMARY_FEATURES = ["CCTV", "EV charging", "Sheltered", "Well lit", "Gated access"];
-const EXTRA_FEATURES   = ["Height-friendly", "Disabled access", "24/7 access", "Motorbike friendly", "Wide bay"];
+const EXTRA_FEATURES   = ["Single entry", "Height-friendly", "Disabled access", "24/7 access", "Motorbike friendly", "Wide bay"];
 
 const ACCESS_CHOICES = [
   {
@@ -60,7 +61,7 @@ const ACCESS_CHOICES = [
   {
     id: "pin_code" as const,
     label: "Pin code",
-    description: "A code that unlocks the entrance or barrier",
+    description: "A code that unlocks the entrance or barrier (pin removed after booking completes)",
     optionValue: "Pin code" as const,
     icon: (active: boolean) => <Hash size={20} color={active ? ACCENT : "#6b7280"} strokeWidth={1.8} />,
   },

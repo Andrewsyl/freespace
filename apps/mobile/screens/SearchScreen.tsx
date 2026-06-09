@@ -95,6 +95,11 @@ type SearchHistoryItem = {
   timestamp: number;
 };
 
+type SearchPinCoordinate = {
+  latitude: number;
+  longitude: number;
+};
+
 const pad2 = (value: number) => value.toString().padStart(2, "0");
 const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const monthNames = [
@@ -203,17 +208,19 @@ export function SearchScreen({ navigation }: Props) {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [draftDate, setDraftDate] = useState<Date | null>(null);
   const pickerSheetAnim = useRef(new Animated.Value(400)).current;
+  const mapOverlayOpacity = useRef(new Animated.Value(1)).current;
+  const [mapOverlayVisible, setMapOverlayVisible] = useState(true);
+  const mapFrozenOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (pickerVisible) {
+      pickerSheetAnim.setValue(400);
       Animated.spring(pickerSheetAnim, {
         toValue: 0,
         useNativeDriver: true,
         tension: 68,
         friction: 12,
       }).start();
-    } else {
-      pickerSheetAnim.setValue(400);
     }
   }, [pickerVisible, pickerSheetAnim]);
   useEffect(() => {
@@ -269,6 +276,14 @@ export function SearchScreen({ navigation }: Props) {
       }),
     [searchAnim]
   );
+  const backdropOpacity = useMemo(
+    () =>
+      slideAnim.interpolate({
+        inputRange: [0, windowHeight],
+        outputRange: [1, 0],
+      }),
+    [slideAnim, windowHeight]
+  );
   const searchRequestIdRef = useRef(0);
   const searchStartedAtRef = useRef(0);
   const mapReadyEventsRef = useRef({ ready: false, loaded: false });
@@ -301,6 +316,10 @@ export function SearchScreen({ navigation }: Props) {
     longitudeDelta: 0.025,
   };
   const [mapInitialRegion, setMapInitialRegion] = useState<typeof mapRegion | null>(null);
+  const [searchPinCoordinate, setSearchPinCoordinate] = useState<SearchPinCoordinate | null>({
+    latitude: Number.isFinite(parsedLat) ? parsedLat : 53.3498,
+    longitude: Number.isFinite(parsedLng) ? parsedLng : -6.2603,
+  });
   const ignoreNextRegionChangeRef = useRef(false);
   const lastSearchCenterRef = useRef<{ lat: number; lng: number } | null>(null);
   const lastSearchRadiusRef = useRef<number | null>(null);
@@ -371,6 +390,10 @@ export function SearchScreen({ navigation }: Props) {
             setMapInitialRegion(parsed);
             setLat(parsed.latitude.toFixed(6));
             setLng(parsed.longitude.toFixed(6));
+            setSearchPinCoordinate({
+              latitude: parsed.latitude,
+              longitude: parsed.longitude,
+            });
             return;
           }
         }
@@ -406,6 +429,10 @@ export function SearchScreen({ navigation }: Props) {
         setMapInitialRegion(nextRegion);
         setLat(nextRegion.latitude.toFixed(6));
         setLng(nextRegion.longitude.toFixed(6));
+        setSearchPinCoordinate({
+          latitude: nextRegion.latitude,
+          longitude: nextRegion.longitude,
+        });
         setAddressQuery("Current location");
         currentRegionRef.current = nextRegion;
         await AsyncStorage.setItem(MAP_REGION_KEY, JSON.stringify(nextRegion));
@@ -664,7 +691,10 @@ export function SearchScreen({ navigation }: Props) {
       if (!mapRef.current) return;
       try {
         const uri = await (mapRef.current as any).takeSnapshot({ format: "jpg", quality: 0.85, result: "file" });
-        if (uri) setMapFrozenUri(uri);
+        if (uri) {
+          mapFrozenOpacity.setValue(1);
+          setMapFrozenUri(uri);
+        }
       } catch {
         // snapshot failed — map will redraw normally
       }
@@ -673,8 +703,17 @@ export function SearchScreen({ navigation }: Props) {
       setMapResumeNonce((prev) => prev + 1);
       if (mapFreezeTimerRef.current) clearTimeout(mapFreezeTimerRef.current);
       mapFreezeTimerRef.current = setTimeout(() => {
-        setMapFrozenUri(null);
         mapFreezeTimerRef.current = null;
+        Animated.timing(mapFrozenOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }).start(({ finished }) => {
+          if (finished) {
+            setMapFrozenUri(null);
+            mapFrozenOpacity.setValue(1);
+          }
+        });
       }, 600);
       // Suppress region-change searches while the map settles after returning
       suppressRegionSearchRef.current = true;
@@ -709,12 +748,44 @@ export function SearchScreen({ navigation }: Props) {
     }
   };
 
+  useEffect(() => {
+    const show = !mapReady || (loading && results.length === 0);
+    if (show) {
+      mapOverlayOpacity.setValue(1);
+      setMapOverlayVisible(true);
+    } else {
+      Animated.timing(mapOverlayOpacity, {
+        toValue: 0,
+        duration: 280,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) setMapOverlayVisible(false);
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapReady, loading, results.length]);
+
   const openPicker = (field: "start" | "end") => {
     setPickerField(field);
     const current = field === "start" ? startAt : endAt;
     setDraftDate(current);
     setPickerVisible(true);
   };
+
+  const closePicker = useCallback(() => {
+    Animated.timing(pickerSheetAnim, {
+      toValue: 400,
+      duration: 220,
+      easing: Easing.in(Easing.quad),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        setPickerVisible(false);
+        setDraftDate(null);
+      }
+    });
+  }, [pickerSheetAnim]);
 
   const drumPickerRef = useRef<DrumRollPickerHandle>(null);
 
@@ -778,6 +849,10 @@ export function SearchScreen({ navigation }: Props) {
         });
         setLat(nextLat);
         setLng(nextLng);
+        setSearchPinCoordinate({
+          latitude: location.lat,
+          longitude: location.lng,
+        });
         lastSearchCenterRef.current = { lat: location.lat, lng: location.lng };
         setSelectedId(null);
         setShowSearchArea(false);
@@ -841,6 +916,10 @@ export function SearchScreen({ navigation }: Props) {
       const nextLng = position.coords.longitude.toFixed(6);
       setLat(nextLat);
       setLng(nextLng);
+      setSearchPinCoordinate({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
       setAddressQuery("Current location");
       setAddressSuggestions([]);
       skipAutocompleteRef.current = 2;
@@ -882,6 +961,10 @@ export function SearchScreen({ navigation }: Props) {
     skipAutocompleteRef.current = 2;
     setLat(nextLat);
     setLng(nextLng);
+    setSearchPinCoordinate({
+      latitude: Number.parseFloat(nextLat),
+      longitude: Number.parseFloat(nextLng),
+    });
     lastSearchCenterRef.current = {
       lat: Number.parseFloat(nextLat),
       lng: Number.parseFloat(nextLng),
@@ -1285,10 +1368,7 @@ export function SearchScreen({ navigation }: Props) {
             initialRegion={mapInitialRegion ?? mapRegion}
             results={results}
             style={styles.map}
-            searchPinCoordinate={{
-              latitude: mapRegion.latitude,
-              longitude: mapRegion.longitude,
-            }}
+            searchPinCoordinate={searchPinCoordinate}
             mapPadding={{
               top: insets.top + 120,
               bottom: 180 + insets.bottom + 16,
@@ -1315,14 +1395,14 @@ export function SearchScreen({ navigation }: Props) {
           />
         ) : null}
         {mapFrozenUri ? (
-          <Image
+          <Animated.Image
             source={{ uri: mapFrozenUri }}
-            style={StyleSheet.absoluteFillObject}
+            style={[StyleSheet.absoluteFillObject, { opacity: mapFrozenOpacity }]}
             resizeMode="cover"
           />
         ) : null}
-        {(!mapReady || (loading && results.length === 0)) ? (
-          <View style={styles.mapLoadingOverlay}>
+        {mapOverlayVisible ? (
+          <Animated.View style={[styles.mapLoadingOverlay, { opacity: mapOverlayOpacity }]}>
             <LottieView
               source={require("../assets/Insider-loading.json")}
               autoPlay
@@ -1332,7 +1412,7 @@ export function SearchScreen({ navigation }: Props) {
             <Text style={styles.mapLoadingText}>
               {mapReady ? "Searching for spaces…" : "Loading map…"}
             </Text>
-          </View>
+          </Animated.View>
         ) : null}
         <View style={[styles.overlay, { top: insets.top + 12 }]}>
 
@@ -1354,15 +1434,21 @@ export function SearchScreen({ navigation }: Props) {
           {/* ── Time strip ──────────────────────────── */}
           <View style={styles.timeStrip}>
             <Pressable style={styles.timeStripBtn} onPress={() => openPicker("start")} android_ripple={null}>
-              <Text style={styles.timeStripTime}>{formatTimeLabel(startAt)}</Text>
-              <Text style={styles.timeStripSep}> · </Text>
-              <Text style={styles.timeStripDate}>{formatDateLabel(startAt)}</Text>
+              <Text style={styles.timeStripLabel}>Arrive</Text>
+              <View style={styles.timeStripInner}>
+                <Text style={styles.timeStripTime}>{formatTimeLabel(startAt)}</Text>
+                <Text style={styles.timeStripSep}> · </Text>
+                <Text style={styles.timeStripDate}>{formatDateLabel(startAt)}</Text>
+              </View>
             </Pressable>
-            <Ionicons name="arrow-forward" size={12} color="#c0c8d2" style={{ marginHorizontal: 8 }} />
+            <Ionicons name="arrow-forward" size={12} color="#0a8050" style={{ marginHorizontal: 8 }} />
             <Pressable style={styles.timeStripBtn} onPress={() => openPicker("end")} android_ripple={null}>
-              <Text style={styles.timeStripTime}>{formatTimeLabel(endAt)}</Text>
-              <Text style={styles.timeStripSep}> · </Text>
-              <Text style={styles.timeStripDate}>{formatDateLabel(endAt)}</Text>
+              <Text style={styles.timeStripLabel}>Leave</Text>
+              <View style={styles.timeStripInner}>
+                <Text style={styles.timeStripTime}>{formatTimeLabel(endAt)}</Text>
+                <Text style={styles.timeStripSep}> · </Text>
+                <Text style={styles.timeStripDate}>{formatDateLabel(endAt)}</Text>
+              </View>
             </Pressable>
           </View>
 
@@ -1457,7 +1543,9 @@ export function SearchScreen({ navigation }: Props) {
         ) : null}
         {filtersVisible ? (
           <View style={styles.filtersOverlay}>
-            <Pressable style={styles.filtersBackdrop} onPress={closeFilters} />
+            <Animated.View style={[styles.filtersBackdrop, { opacity: backdropOpacity }]}>
+              <Pressable style={StyleSheet.absoluteFillObject} onPress={closeFilters} />
+            </Animated.View>
             <Animated.View
               style={[styles.filtersPanel, { transform: [{ translateY: slideAnim }] }]}
             >
@@ -1759,7 +1847,7 @@ export function SearchScreen({ navigation }: Props) {
           Platform.OS === "android" && pickerVisible ? (
             <Modal transparent animationType="fade" visible>
               <View style={styles.pickerBackdrop}>
-                <Pressable style={StyleSheet.absoluteFillObject} onPress={() => { setPickerVisible(false); setDraftDate(null); }} />
+                <Pressable style={StyleSheet.absoluteFillObject} onPress={closePicker} />
                 <Animated.View style={[styles.pickerSheet, { paddingBottom: Math.max(24, insets.bottom + 12), transform: [{ translateY: pickerSheetAnim }] }]}>
 
                   <View style={styles.pickerHandle} />
@@ -1813,8 +1901,7 @@ export function SearchScreen({ navigation }: Props) {
                           setPickerField("start");
                           setDraftDate(startAt);
                         } else {
-                          setPickerVisible(false);
-                          setDraftDate(null);
+                          closePicker();
                         }
                       }}
                     >
@@ -1836,8 +1923,7 @@ export function SearchScreen({ navigation }: Props) {
                         }
                         timeSearchPendingRef.current = true;
                         applyPickedDate(next);
-                        setPickerVisible(false);
-                        setDraftDate(null);
+                        closePicker();
                       }}
                     >
                       <Text style={styles.pickerFooterPrimaryText}>
@@ -2002,6 +2088,18 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   timeStripBtn: {
+    alignItems: "flex-start",
+    flexDirection: "column",
+    gap: 2,
+  },
+  timeStripLabel: {
+    color: "#0a8050",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 9,
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
+  },
+  timeStripInner: {
     alignItems: "center",
     flexDirection: "row",
     gap: 4,
@@ -2021,6 +2119,21 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
     color: "#6b7280",
+  },
+  parkingBadge: {
+    alignItems: "center",
+    backgroundColor: "#0a8050",
+    borderRadius: 7,
+    height: 24,
+    justifyContent: "center",
+    width: 21,
+  },
+  parkingBadgeText: {
+    color: "#ffffff",
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 14,
+    letterSpacing: -0.5,
+    lineHeight: 18,
   },
 
   // ── Filter / clear / loading row below card
@@ -2339,7 +2452,6 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     zIndex: 40,
-    backgroundColor: "#ffffff",
   },
   searchPanel: {
     flex: 1,
@@ -2668,8 +2780,8 @@ const styles = StyleSheet.create({
   },
   pickerQuickPillActive: {
     backgroundColor: "#0a8050",
-    borderColor: "#0a8050",
-    shadowColor: "#0a8050",
+    borderColor: "#0fa968",
+    shadowColor: "#0a7a50",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
@@ -2695,32 +2807,33 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.5,
     flex: 1,
+    height: 52,
     justifyContent: "center",
-    paddingVertical: 14,
   },
   pickerBackBtnText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     color: "#374151",
+    letterSpacing: -0.2,
   },
   pickerFooterPrimary: {
     alignItems: "center",
     backgroundColor: "#0a8050",
     borderRadius: 14,
     flex: 2,
+    height: 52,
     justifyContent: "center",
-    paddingVertical: 14,
-    shadowColor: "#0a8050",
+    shadowColor: "#0a7a50",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
     elevation: 5,
   },
   pickerFooterPrimaryText: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 15,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 16,
     color: "#ffffff",
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
   suggestionItem: {
     borderBottomColor: "#f2f4f7",

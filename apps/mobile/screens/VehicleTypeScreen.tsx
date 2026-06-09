@@ -222,7 +222,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
 
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={[styles.content, { paddingBottom: 32 + Math.max(insets.bottom, 16) }]}
+          contentContainerStyle={[styles.content, { paddingBottom: 24 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -339,8 +339,10 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
             </View>
           </View>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        </ScrollView>
 
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
           <Pressable
             style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
             onPress={handleSave}
@@ -348,8 +350,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
           >
             <Text style={styles.saveBtnText}>{saving ? "Saving…" : "Save vehicle"}</Text>
           </Pressable>
-
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
 
       {/* ── Make picker modal ── */}
@@ -593,26 +594,34 @@ const styles = StyleSheet.create({
   },
   colourNameActive: { fontFamily: "PlusJakartaSans-SemiBold", color: GREEN },
 
+  footer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: LINE,
+    backgroundColor: "#ffffff",
+  },
+
   errorText: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
-    color: "#DC2626", textAlign: "center", marginBottom: 12,
+    color: "#DC2626", textAlign: "center", marginBottom: 8,
   },
 
   saveBtn: {
-    height: 56, borderRadius: 16,
-    backgroundColor: GREEN,
+    height: 52, borderRadius: 14,
+    backgroundColor: "#0a8050",
     alignItems: "center", justifyContent: "center",
     marginTop: 4,
-    shadowColor: GREEN,
+    shadowColor: "#0a7a50",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 5,
   },
   saveBtnDisabled: { opacity: 0.4, shadowOpacity: 0 },
   saveBtnText: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 16,
-    color: "#ffffff", letterSpacing: -0.2,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16,
+    color: "#ffffff", letterSpacing: -0.3,
   },
 
   // Modal sheet

@@ -1132,11 +1132,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.07, shadowRadius: 10, elevation: 12,
   },
   footerBtn: {
-    height: 54, width: "100%", borderRadius: 14,
-    backgroundColor: GREEN, alignItems: "center", justifyContent: "center",
+    height: 52, width: "100%", borderRadius: 14,
+    backgroundColor: "#0a8050", alignItems: "center", justifyContent: "center",
+    shadowColor: "#0a7a50", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 5,
   },
-  footerBtnDisabled: { opacity: 0.45 },
-  footerBtnText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#ffffff", letterSpacing: -0.3 },
+  footerBtnDisabled: { opacity: 0.45, shadowOpacity: 0 },
+  footerBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#ffffff", letterSpacing: -0.3 },
 
   // ── Empty / auth states ─────────────────────────────────────
   centered: { alignItems: "center", flex: 1, justifyContent: "center", paddingHorizontal: 20 },
@@ -1158,9 +1159,10 @@ const styles = StyleSheet.create({
   pickerTitle: { fontSize: 18, fontFamily: "PlusJakartaSans-Bold", color: FG, marginBottom: 4, textAlign: "center" },
   pickerDoneBtn: {
     alignSelf: "stretch", marginHorizontal: 20, marginTop: 16,
-    backgroundColor: GREEN, borderRadius: 14, minHeight: 54, alignItems: "center", justifyContent: "center",
+    backgroundColor: "#0a8050", borderRadius: 14, height: 52, alignItems: "center", justifyContent: "center",
+    shadowColor: "#0a7a50", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 5,
   },
-  pickerDoneBtnText: { fontSize: 17, fontFamily: "PlusJakartaSans-Bold", color: "#ffffff", letterSpacing: -0.2 },
+  pickerDoneBtnText: { fontSize: 16, fontFamily: "PlusJakartaSans-SemiBold", color: "#ffffff", letterSpacing: -0.3 },
 
   // ── Overlay ─────────────────────────────────────────────────
   successOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(15, 23, 42, 0.35)" },

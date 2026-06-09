@@ -834,8 +834,13 @@ export function ListingScreen({ navigation, route }: Props) {
                   {reviewsLoading ? (
                     <ActivityIndicator color={GREEN} style={{ marginTop: 12, alignSelf: "flex-start" }} />
                   ) : reviews.length ? (
-                    <View style={{ marginTop: 4 }}>
-                      {reviews.slice(0, 3).map((review, index) => {
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.reviewTilesContent}
+                      style={styles.reviewTiles}
+                    >
+                      {reviews.map((review) => {
                         const authorName =
                           (review as { author_name?: string }).author_name ??
                           review.authorName ?? "Guest";
@@ -843,34 +848,27 @@ export function ListingScreen({ navigation, route }: Props) {
                           new Date((review as { created_at?: string }).created_at ?? review.createdAt)
                         );
                         return (
-                          <View
-                            key={review.id}
-                            style={[
-                              styles.reviewListItem,
-                              index === Math.min(reviews.length, 3) - 1 && styles.reviewListItemLast,
-                            ]}
-                          >
-                            <View style={styles.reviewListTop}>
-                              <View style={styles.reviewStarRow}>
-                                {Array.from({ length: 5 }, (_, i) => (
-                                  <Ionicons
-                                    key={i}
-                                    name={i < Math.round(review.rating) ? "star" : "star-outline"}
-                                    size={11}
-                                    color={i < Math.round(review.rating) ? "#F4B942" : "#e2e8f0"}
-                                  />
-                                ))}
+                          <View key={review.id} style={styles.reviewTile}>
+                            <View style={styles.reviewCardTop}>
+                              <View style={styles.reviewAvatar}>
+                                <Text style={styles.reviewAvatarText}>{authorName.charAt(0).toUpperCase()}</Text>
                               </View>
-                              <Text style={styles.reviewDateText}>{reviewDate}</Text>
+                              <View style={styles.reviewMetaBlock}>
+                                <Text style={styles.reviewAuthorName} numberOfLines={1}>{authorName}</Text>
+                                <Text style={styles.reviewDateText}>{reviewDate}</Text>
+                              </View>
+                              <View style={styles.reviewStarPill}>
+                                <Ionicons name="star" size={11} color="#F4B942" />
+                                <Text style={styles.reviewStarPillText}>{review.rating.toFixed(1)}</Text>
+                              </View>
                             </View>
                             {review.comment ? (
-                              <Text style={styles.reviewComment}>{review.comment}</Text>
+                              <Text style={styles.reviewComment} numberOfLines={4}>{review.comment}</Text>
                             ) : null}
-                            <Text style={styles.reviewAuthorName}>{authorName}</Text>
                           </View>
                         );
                       })}
-                    </View>
+                    </ScrollView>
                   ) : (
                     <View style={styles.reviewEmptyWrap}>
                       <Text style={styles.reviewEmpty}>No reviews yet.</Text>
@@ -1071,7 +1069,7 @@ export function ListingScreen({ navigation, route }: Props) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design tokens (spec)
-const GREEN      = "#0a8050";
+const GREEN      = "#0fa968";
 const GREEN_SOFT = "#edf7f2";
 const FG         = "#111827";
 const FG_2       = "#374151";
@@ -1535,6 +1533,16 @@ const styles = StyleSheet.create({
   ratingPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
   ratingPillCount: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: FG_MUTED },
   reviewList: { gap: 12, marginTop: 12 },
+  reviewTiles: { marginTop: 12, marginHorizontal: -24 },
+  reviewTilesContent: { paddingHorizontal: 24, gap: 12 },
+  reviewTile: {
+    width: 260,
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: LINE_2,
+    padding: 16,
+  },
   reviewCard: {
     backgroundColor: "#ffffff",
     borderRadius: 12, borderWidth: 1, borderColor: LINE_2, padding: 16,
@@ -1542,10 +1550,11 @@ const styles = StyleSheet.create({
   reviewCardTop: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   reviewAvatar: {
     width: 36, height: 36, borderRadius: 18,
+    backgroundColor: "#EDF7F2",
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
-  reviewAvatarText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG },
-  reviewMetaBlock: { flex: 1 },
+  reviewAvatarText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#0a8050" },
+  reviewMetaBlock: { flex: 1, minWidth: 0 },
   reviewAuthorName: { fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: FG_SUBTLE },
   reviewDateText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: FG_SUBTLE },
   reviewStarPill: {
@@ -1553,7 +1562,7 @@ const styles = StyleSheet.create({
     backgroundColor: BG_2, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
   },
   reviewStarPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
-  reviewComment: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, lineHeight: 22, color: "#475569", marginBottom: 8 },
+  reviewComment: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, lineHeight: 21, color: "#475569" },
   emptyReviewCard: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -1613,23 +1622,24 @@ const styles = StyleSheet.create({
     color: FG_MUTED, marginBottom: 20,
   },
   authModalPrimary: {
-    backgroundColor: GREEN,
-    minHeight: 48, borderRadius: 12,
+    backgroundColor: "#0a8050",
+    height: 52, borderRadius: 14,
     alignItems: "center", justifyContent: "center", marginBottom: 10,
+    shadowColor: "#0a7a50", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 5,
   },
   authModalPrimaryText: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#ffffff",
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#ffffff", letterSpacing: -0.3,
   },
   authModalSecondary: {
     backgroundColor: BG_2,
     borderWidth: 1, borderColor: LINE,
-    minHeight: 48, borderRadius: 12,
+    height: 52, borderRadius: 14,
     alignItems: "center", justifyContent: "center",
     marginBottom: 10, paddingHorizontal: 16,
   },
   authModalSecondaryText: {
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15,
-    color: FG, textAlign: "center",
+    color: FG, textAlign: "center", letterSpacing: -0.2,
   },
   authModalLink: { alignItems: "center", justifyContent: "center", paddingVertical: 10 },
   authModalLinkText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: GREEN },
@@ -1661,14 +1671,15 @@ const styles = StyleSheet.create({
   bottomDuration: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, marginTop: 1 },
   dailyCapBadge: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: GREEN, marginTop: 2 },
   reserveBtn: {
-    backgroundColor: GREEN,
-    borderRadius: 12,
-    minHeight: 48,
-    paddingVertical: 13, paddingHorizontal: 24, minWidth: 140,
+    backgroundColor: "#0a8050",
+    borderRadius: 14,
+    height: 52,
+    paddingHorizontal: 24, minWidth: 140,
     alignItems: "center", justifyContent: "center",
+    shadowColor: "#0a7a50", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 5,
   },
-  reserveBtnDisabled: { backgroundColor: LINE },
-  reserveBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#ffffff", letterSpacing: -0.1 },
+  reserveBtnDisabled: { backgroundColor: LINE, shadowOpacity: 0 },
+  reserveBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#ffffff", letterSpacing: -0.3 },
   reserveBtnDisabledText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: FG_MUTED },
 
   // Picker modal — bottom sheet
@@ -1711,18 +1722,22 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     marginHorizontal: 20,
     marginTop: 16,
-    backgroundColor: GREEN,
+    backgroundColor: "#0a8050",
     borderRadius: 14,
-    minHeight: 54,
+    height: 52,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#0a7a50",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 5,
   },
   pickerDoneBtnText: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 17,
-    fontWeight: "700",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 16,
     color: "#ffffff",
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
 
   // Image / map viewer

@@ -40,6 +40,7 @@ import {
 } from "../api";
 import { useAuth } from "../auth";
 import { useToastOnMessage } from "../components/GlobalToast";
+import { BanknoteSvg } from "../components/BanknoteSvg";
 import type { ListingSummary, RootStackParamList } from "../types";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { formatListingPriceLine } from "../utils/pricing";
@@ -51,7 +52,7 @@ import {
 
 type Props = NativeStackScreenProps<RootStackParamList, "Listings">;
 
-const GREEN  = "#0a8050";
+const GREEN  = "#0fa968";
 const FG     = "#111827";
 const MUTED  = "#465050";
 const SUBTLE = "#6B7575";
@@ -350,11 +351,7 @@ export function ListingsScreen({ navigation }: Props) {
               ) : !hasListings ? (
                 /* ── Empty state ──────────────────────────────── */
                 <View style={styles.emptyCard}>
-                  <Image
-                    source={require("../assets/illustrations/money-income.png")}
-                    style={styles.emptyImage}
-                    resizeMode="contain"
-                  />
+                  <BanknoteSvg width={180} height={180} />
                   <Text style={styles.emptyTitle}>No listings yet</Text>
                   <Text style={styles.emptyBody}>
                     Create a listing to start earning from your parking space.
@@ -827,15 +824,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: GREEN,
     borderRadius: 14,
-    height: 50,
+    height: 52,
     marginTop: 18,
     width: "100%",
+    shadowColor: "#0a7a50",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 5,
   },
   primaryBtnText: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 15,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 16,
     color: "#ffffff",
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
 
   // ── Listing grid & cards ─────────────────────────────────────

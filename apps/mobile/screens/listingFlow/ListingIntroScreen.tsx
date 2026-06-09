@@ -1,8 +1,9 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { X, MapPin, Camera, CircleDollarSign } from "lucide-react-native";
 import { hostFlowColors } from "./hostFlowTheme";
+import { BanknoteSvg } from "../../components/BanknoteSvg";
 import { spacing } from "../../styles/theme";
 
 type FlowStackParamList = {
@@ -49,14 +50,10 @@ export function ListingIntroScreen({ navigation }: Props) {
       >
         <View style={styles.heroBlock}>
           <Text style={styles.eyebrow}>Host on FreeSpace</Text>
-          <Text style={styles.headline}>List your space</Text>
-          <Image
-            source={require("../../assets/illustrations/money-income.png")}
-            style={styles.heroImage}
-            resizeMode="contain"
-          />
+          <Text style={styles.headline}>Turn your space{"\n"}into extra income</Text>
+          <BanknoteSvg width="100%" height={220} />
           <Text style={styles.subline}>
-            Takes a few minutes. Here's what we'll cover.
+            Turn an empty driveway, bay or garage into extra income in just a few minutes.
           </Text>
         </View>
 
@@ -217,16 +214,21 @@ const styles = StyleSheet.create({
     backgroundColor: hostFlowColors.cardBg,
   },
   startBtn: {
-    height: 54,
+    height: 52,
     borderRadius: 14,
-    backgroundColor: hostFlowColors.accent,
+    backgroundColor: "#0a8050",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#0a7a50",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 5,
   },
   startBtnText: {
     color: "#ffffff",
-    fontFamily: "PlusJakartaSans-Bold",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 16,
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
 });
