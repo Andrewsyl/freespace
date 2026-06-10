@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { SquircleBtn } from "../components/SquircleBtn";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { ArrowLeft, CreditCard, Lock, Plus, ShieldCheck, X } from "lucide-react-native";
@@ -174,9 +175,11 @@ export function PaymentsScreen() {
           </View>
           <Text style={styles.emptyTitle}>Payments</Text>
           <Text style={styles.emptySubtitle}>Sign in to manage your payment methods and view booking charges.</Text>
-          <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("SignIn")}>
-            <Text style={styles.primaryButtonText}>Sign in</Text>
-          </Pressable>
+          <SquircleBtn
+            label="Sign in"
+            onPress={() => navigation.navigate("SignIn")}
+            style={{ marginTop: 20 }}
+          />
           <View style={styles.gatedHintRow}>
             <ShieldCheck size={14} color="#9ca3af" strokeWidth={2.1} />
             <Text style={styles.gatedHintText}>Your payment details are encrypted and secure.</Text>
@@ -629,25 +632,5 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     flexShrink: 1,
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: "#0a8050",
-    borderRadius: 14,
-    height: 52,
-    marginTop: 20,
-    paddingHorizontal: 32,
-    justifyContent: "center",
-    shadowColor: "#0a7a50",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
-    letterSpacing: -0.3,
   },
 });

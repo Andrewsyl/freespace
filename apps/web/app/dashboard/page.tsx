@@ -27,6 +27,16 @@ export default function DashboardPage() {
   });
   const [tripsTab, setTripsTab] = useState<"upcoming" | "active" | "past">("upcoming");
 
+  const formatVehicleSummary = (booking: {
+    driverVehicleColor?: string | null;
+    driverVehicleMake?: string | null;
+    driverVehicleType?: string | null;
+  }) =>
+    [booking.driverVehicleColor, booking.driverVehicleMake, booking.driverVehicleType]
+      .map((value) => value?.trim())
+      .filter(Boolean)
+      .join(" ");
+
   const formatDateRange = (start: string, end: string) => {
     const startDate = new Date(start);
     const endDate = new Date(end);
@@ -59,6 +69,7 @@ export default function DashboardPage() {
               date,
               timeRange,
               payout: 0,
+              role: "driver",
               driver: user?.email ?? "You",
               status: (b.status as Booking["status"]) ?? "pending",
               refundStatus: b.refundStatus,
@@ -80,7 +91,11 @@ export default function DashboardPage() {
               date,
               timeRange,
               payout: (b.amountCents ?? 0) / 100,
-              driver: undefined,
+              role: "host",
+              driver: b.driverName ?? "Booked driver",
+              vehiclePlate: b.vehiclePlate ?? null,
+              vehicleSummary: formatVehicleSummary(b) || null,
+              driverPhone: b.driverPhone ?? null,
               status: (b.status as Booking["status"]) ?? "pending",
               listingId: b.listingId,
               refundStatus: b.refundStatus,
@@ -89,6 +104,8 @@ export default function DashboardPage() {
               cancellationSource: b.cancellationSource ?? null,
               startTime: b.startTime,
               endTime: b.endTime,
+              accessCode: b.accessCode ?? null,
+              arrivalInstructions: b.arrivalInstructions ?? null,
             };
           })
         );
@@ -282,7 +299,7 @@ export default function DashboardPage() {
       {/* Host bookings */}
       <section className="px-5 py-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Host payouts</h2>
+          <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Host bookings</h2>
           {hostBookings.length > 0 && (
             <span className="text-[12px] font-medium text-slate-600">{hostBookings.length} total</span>
           )}
@@ -331,7 +348,31 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="max-h-[70vh] overflow-y-auto px-5 py-4 space-y-4">
-            <p className="text-[13px] text-slate-600">Driver: {selected.driver ?? "You"}</p>
+            {selected.role === "host" ? (
+              <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-[13px] font-semibold text-slate-800">Driver details</p>
+                <p className="text-[13px] text-slate-600">{selected.driver ?? "Driver details unavailable"}</p>
+                {selected.vehicleSummary || selected.vehiclePlate ? (
+                  <p className="text-[13px] text-slate-600">
+                    {selected.vehicleSummary ? `${selected.vehicleSummary} · ` : ""}
+                    {selected.vehiclePlate ?? "Vehicle details unavailable"}
+                  </p>
+                ) : null}
+                {selected.driverPhone?.trim() ? (
+                  <p className="text-[13px] text-slate-600">Phone: {selected.driverPhone.trim()}</p>
+                ) : null}
+                {selected.arrivalInstructions?.trim() ? (
+                  <p className="text-[13px] text-slate-600">Arrival: {selected.arrivalInstructions.trim()}</p>
+                ) : null}
+                {selected.accessCode?.trim() ? (
+                  <p className="text-[13px] text-slate-600">
+                    Access code: <span className="font-semibold text-slate-800">{selected.accessCode.trim()}</span>
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-[13px] text-slate-600">Booked by you</p>
+            )}
             {selected.noShowAt ? (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
                 This booking has been marked as a no-show.
@@ -340,7 +381,7 @@ export default function DashboardPage() {
 
             {/* Leave a review — shown for driver (confirmed, ended) bookings */}
             {(() => {
-              const isDriverBooking = !selected.driver || selected.driver === user?.email;
+              const isDriverBooking = selected.role === "driver";
               const isConfirmed = selected.status === "confirmed";
               const isEnded = selected.endTime ? new Date(selected.endTime) <= new Date() : false;
               const alreadyReviewed = reviewDone === selected.id;
@@ -396,12 +437,12 @@ export default function DashboardPage() {
               );
             })()}
 
-            {selected.status !== "canceled" ? (
+            {selected.role === "host" && selected.status !== "canceled" ? (
               <button onClick={handleHostCancel} disabled={cancelingHostBooking}
                 className="w-full rounded-2xl border border-rose-200 bg-rose-50 py-3 text-[13px] font-semibold text-rose-700 active:bg-rose-100 disabled:opacity-60">
                 {cancelingHostBooking ? "Canceling…" : "Cancel booking"}
               </button>
-            ) : selected.cancellationSource === "host" ? (
+            ) : selected.role === "host" && selected.cancellationSource === "host" ? (
               <div className="rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] text-brand-700">
                 Booking was canceled by the host. Refund sent where eligible.
               </div>

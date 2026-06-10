@@ -12,6 +12,7 @@ import {
   View,
   Platform,
 } from "react-native";
+import { SquircleBtn } from "../components/SquircleBtn";
 import { ArrowLeft, Check, ChevronDown, Search, X } from "lucide-react-native";
 import { updateMe } from "../api";
 import { useAuth } from "../auth";
@@ -343,13 +344,13 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
 
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          <Pressable
-            style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
+          <SquircleBtn
+            label={saving ? "Saving…" : "Save vehicle"}
             onPress={handleSave}
             disabled={!canSave}
-          >
-            <Text style={styles.saveBtnText}>{saving ? "Saving…" : "Save vehicle"}</Text>
-          </Pressable>
+            loading={saving}
+            fullWidth
+          />
         </View>
       </KeyboardAvoidingView>
 
@@ -605,23 +606,6 @@ const styles = StyleSheet.create({
   errorText: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
     color: "#DC2626", textAlign: "center", marginBottom: 8,
-  },
-
-  saveBtn: {
-    height: 52, borderRadius: 14,
-    backgroundColor: "#0a8050",
-    alignItems: "center", justifyContent: "center",
-    marginTop: 4,
-    shadowColor: "#0a7a50",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  saveBtnDisabled: { opacity: 0.4, shadowOpacity: 0 },
-  saveBtnText: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16,
-    color: "#ffffff", letterSpacing: -0.3,
   },
 
   // Modal sheet

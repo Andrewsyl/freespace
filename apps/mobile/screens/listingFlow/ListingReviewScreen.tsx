@@ -2,6 +2,7 @@ import { CommonActions } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SquircleBtn } from "../../components/SquircleBtn";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import LottieView from "lottie-react-native";
 import {
@@ -362,15 +363,13 @@ export function ListingReviewScreen({ navigation }: Props) {
 
       {/* ── Footer ── */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-        <Pressable
-          style={[styles.publishBtn, (!canPublish || submitting || published) && styles.publishBtnDisabled]}
+        <SquircleBtn
+          label={submitting ? "Saving…" : listingId ? "Update listing" : "Publish space"}
           onPress={handlePublish}
           disabled={!canPublish || submitting || published}
-        >
-          <Text style={styles.publishBtnText}>
-            {submitting ? "Saving…" : listingId ? "Update listing" : "Publish space"}
-          </Text>
-        </Pressable>
+          loading={submitting}
+          fullWidth
+        />
         <Pressable
           style={styles.saveLaterBtn}
           onPress={() => navigation.goBack()}
@@ -761,25 +760,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screenX,
     paddingTop: 12,
     gap: 8,
-  },
-  publishBtn: {
-    alignItems: "center",
-    backgroundColor: "#0a8050",
-    borderRadius: 14,
-    height: 52,
-    justifyContent: "center",
-    shadowColor: "#0a7a50",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  publishBtnDisabled: { backgroundColor: "#CBD5E1", shadowOpacity: 0 },
-  publishBtnText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
-    color: "#ffffff",
-    letterSpacing: -0.3,
   },
   saveLaterBtn: {
     alignItems: "center",

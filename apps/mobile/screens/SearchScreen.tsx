@@ -118,6 +118,11 @@ const monthNames = [
 ];
 const MAX_SEARCH_RADIUS_KM = 50;
 const MIN_SEARCH_RADIUS_KM = 0.5;
+// Radius for searches centred on a picked destination (address, history item,
+// current location). Must not derive from the live map region: the map is still
+// animating to the destination when the search fires, so the region reflects
+// the previous viewport. Generous enough to absorb off-centre geocoding.
+const DESTINATION_SEARCH_RADIUS_KM = "3.00";
 
 const ordinalSuffix = (value: number) => {
   const mod100 = value % 100;
@@ -231,6 +236,47 @@ export function SearchScreen({ navigation }: Props) {
       useNativeDriver: true,
     }).start();
   }, [loading, isStaggerPending, pillOpacity]);
+
+  const [emptyNotice, setEmptyNotice] = useState<string | null>(null);
+  const emptyNoticeOpacity = useRef(new Animated.Value(0)).current;
+  const emptyNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const hideEmptyNotice = useCallback(() => {
+    if (emptyNoticeTimerRef.current) {
+      clearTimeout(emptyNoticeTimerRef.current);
+      emptyNoticeTimerRef.current = null;
+    }
+    Animated.timing(emptyNoticeOpacity, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) setEmptyNotice(null);
+    });
+  }, [emptyNoticeOpacity]);
+
+  const showEmptyNotice = useCallback(
+    (message: string) => {
+      if (emptyNoticeTimerRef.current) clearTimeout(emptyNoticeTimerRef.current);
+      setEmptyNotice(message);
+      Animated.timing(emptyNoticeOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+      emptyNoticeTimerRef.current = setTimeout(() => {
+        emptyNoticeTimerRef.current = null;
+        hideEmptyNotice();
+      }, 4000);
+    },
+    [emptyNoticeOpacity, hideEmptyNotice]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (emptyNoticeTimerRef.current) clearTimeout(emptyNoticeTimerRef.current);
+    };
+  }, []);
 
   const timeSearchPendingRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
@@ -557,6 +603,7 @@ export function SearchScreen({ navigation }: Props) {
       }
       setShowSearchArea(false);
       setPendingSearch(null);
+      hideEmptyNotice();
       let nextResultsSnapshot: ListingSummary[] | null = null;
       const requestId = searchRequestIdRef.current + 1;
       searchRequestIdRef.current = requestId;
@@ -634,12 +681,17 @@ export function SearchScreen({ navigation }: Props) {
           if (nextResultsSnapshot) {
             setResults(nextResultsSnapshot);
             setPendingResults(null);
+            if (nextResultsSnapshot.length === 0) {
+              showEmptyNotice("No spaces in this area — try zooming out");
+            } else if (nextResultsSnapshot.every((l) => l.is_available === false)) {
+              showEmptyNotice("All spaces are booked for these times");
+            }
           }
           setIsRefreshingPins(false);
         }, remaining);
       }
     },
-    [buildSearchParams, pendingResults]
+    [buildSearchParams, pendingResults, hideEmptyNotice, showEmptyNotice]
   );
 
   const scheduleMapReady = useCallback(() => {
@@ -849,6 +901,7 @@ export function SearchScreen({ navigation }: Props) {
         });
         setLat(nextLat);
         setLng(nextLng);
+        setRadiusKm(DESTINATION_SEARCH_RADIUS_KM);
         setSearchPinCoordinate({
           latitude: location.lat,
           longitude: location.lng,
@@ -858,16 +911,17 @@ export function SearchScreen({ navigation }: Props) {
         setShowSearchArea(false);
         setPendingSearch(null);
         isProgrammaticMoveRef.current = true;
-        mapRef.current?.animateToRegion(
-          {
-            latitude: location.lat,
-            longitude: location.lng,
-            latitudeDelta: 0.012,
-            longitudeDelta: 0.012,
-          },
-          280
-        );
-        void runSearch({ lat: nextLat, lng: nextLng });
+        const destinationRegion = {
+          latitude: location.lat,
+          longitude: location.lng,
+          latitudeDelta: 0.012,
+          longitudeDelta: 0.012,
+        };
+        // Set optimistically — the animation hasn't completed when the search
+        // below builds its params from this ref.
+        currentRegionRef.current = destinationRegion;
+        mapRef.current?.animateToRegion(destinationRegion, 280);
+        void runSearch({ lat: nextLat, lng: nextLng, radiusKm: DESTINATION_SEARCH_RADIUS_KM });
       }
     } catch {
       // Ignore lookup errors.
@@ -916,6 +970,7 @@ export function SearchScreen({ navigation }: Props) {
       const nextLng = position.coords.longitude.toFixed(6);
       setLat(nextLat);
       setLng(nextLng);
+      setRadiusKm(DESTINATION_SEARCH_RADIUS_KM);
       setSearchPinCoordinate({
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
@@ -931,19 +986,21 @@ export function SearchScreen({ navigation }: Props) {
       setShowSearchArea(false);
       setPendingSearch(null);
       isProgrammaticMoveRef.current = true;
-      mapRef.current?.animateToRegion(
-        {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          latitudeDelta: 0.012,
-          longitudeDelta: 0.012,
-        },
-        280
-      );
+      const destinationRegion = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        latitudeDelta: 0.012,
+        longitudeDelta: 0.012,
+      };
+      currentRegionRef.current = destinationRegion;
+      mapRef.current?.animateToRegion(destinationRegion, 280);
       setSearchSheetOpen(false);
       clearTimeout(loadingTimer);
       hideGlobalLoading();
-      void runSearch({ lat: nextLat, lng: nextLng }, { showGlobal: true });
+      void runSearch(
+        { lat: nextLat, lng: nextLng, radiusKm: DESTINATION_SEARCH_RADIUS_KM },
+        { showGlobal: true }
+      );
     } catch {
       setLocationError("Unable to fetch location.");
     } finally {
@@ -961,6 +1018,7 @@ export function SearchScreen({ navigation }: Props) {
     skipAutocompleteRef.current = 2;
     setLat(nextLat);
     setLng(nextLng);
+    setRadiusKm(DESTINATION_SEARCH_RADIUS_KM);
     setSearchPinCoordinate({
       latitude: Number.parseFloat(nextLat),
       longitude: Number.parseFloat(nextLng),
@@ -973,17 +1031,16 @@ export function SearchScreen({ navigation }: Props) {
     setShowSearchArea(false);
     setPendingSearch(null);
     isProgrammaticMoveRef.current = true;
-    mapRef.current?.animateToRegion(
-      {
-        latitude: Number.parseFloat(nextLat),
-        longitude: Number.parseFloat(nextLng),
-        latitudeDelta: 0.012,
-        longitudeDelta: 0.012,
-      },
-      280
-    );
+    const destinationRegion = {
+      latitude: Number.parseFloat(nextLat),
+      longitude: Number.parseFloat(nextLng),
+      latitudeDelta: 0.012,
+      longitudeDelta: 0.012,
+    };
+    currentRegionRef.current = destinationRegion;
+    mapRef.current?.animateToRegion(destinationRegion, 280);
     setSearchSheetOpen(false);
-    void runSearch({ lat: nextLat, lng: nextLng });
+    void runSearch({ lat: nextLat, lng: nextLng, radiusKm: DESTINATION_SEARCH_RADIUS_KM });
   };
 
   const selectedListing = selectedId
@@ -1259,7 +1316,8 @@ export function SearchScreen({ navigation }: Props) {
 
   const handleMapPanDrag = useCallback(() => {
     requireUserPanForRegionSearchRef.current = false;
-  }, []);
+    hideEmptyNotice();
+  }, [hideEmptyNotice]);
 
   const handleRegionChange = (nextRegion: typeof mapRegion) => {
     currentRegionRef.current = nextRegion;
@@ -1517,6 +1575,22 @@ export function SearchScreen({ navigation }: Props) {
             </Pressable>
           </Animated.View>
         )}
+
+        {/* ── No spaces notice — floating bottom-center pill ──────────── */}
+        {emptyNotice ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.searchAreaFloat,
+              { bottom: 96 + insets.bottom, opacity: emptyNoticeOpacity },
+            ]}
+          >
+            <View style={styles.emptyNoticePill}>
+              <Ionicons name="information-circle-outline" size={15} color="#6b7280" />
+              <Text style={styles.emptyNoticeText}>{emptyNotice}</Text>
+            </View>
+          </Animated.View>
+        ) : null}
 
         {visibleSelectedListing ? (
           <MapBottomCard
@@ -2702,6 +2776,26 @@ const styles = StyleSheet.create({
     color: "#111827",
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
+    letterSpacing: 0.1,
+  },
+  emptyNoticePill: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderRadius: radius.pill,
+    elevation: 8,
+    flexDirection: "row",
+    gap: 7,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+  },
+  emptyNoticeText: {
+    color: "#374151",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
     letterSpacing: 0.1,
   },
   durationRow: {

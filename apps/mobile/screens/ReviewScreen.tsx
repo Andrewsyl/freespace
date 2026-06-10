@@ -1,7 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,6 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SquircleBtn } from "../components/SquircleBtn";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
@@ -171,23 +171,13 @@ export function ReviewScreen({ navigation, route }: Props) {
           ) : null}
 
           <Animated.View entering={FadeInDown.delay(300)} style={styles.ctaWrap}>
-            {!canReview || rating === 0 || !!existingRating ? (
-              <View style={[styles.ctaBtn, styles.ctaBtnDisabled]}>
-                <Text style={styles.ctaBtnTextDisabled}>{submitLabel}</Text>
-              </View>
-            ) : (
-              <Pressable
-                style={({ pressed }) => [styles.ctaBtn, pressed && { opacity: 0.82 }]}
-                onPress={handleSubmit}
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.ctaBtnText}>{submitLabel}</Text>
-                )}
-              </Pressable>
-            )}
+            <SquircleBtn
+              label={submitLabel}
+              onPress={handleSubmit}
+              disabled={!canReview || rating === 0 || !!existingRating}
+              loading={submitting}
+              fullWidth
+            />
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -320,30 +310,6 @@ const styles = StyleSheet.create({
   },
   ctaWrap: {
     marginTop: spacing.lg,
-  },
-  ctaBtn: {
-    backgroundColor: "#0a8050",
-    borderRadius: 12,
-    minHeight: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 13,
-    paddingHorizontal: 24,
-  },
-  ctaBtnDisabled: {
-    backgroundColor: "#E0E0DE",
-  },
-  ctaBtnText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    color: "#ffffff",
-    letterSpacing: -0.1,
-  },
-  ctaBtnTextDisabled: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    color: "#9A9A9A",
-    letterSpacing: -0.1,
   },
   errorBanner: {
     backgroundColor: "#fef2f2",

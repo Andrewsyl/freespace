@@ -640,6 +640,14 @@ export type BookingSummary = {
   currency: string;
   address: string;
   title: string;
+  vehiclePlate?: string | null;
+  accessCode?: string | null;
+  arrivalInstructions?: string | null;
+  driverName?: string | null;
+  driverPhone?: string | null;
+  driverVehicleMake?: string | null;
+  driverVehicleType?: string | null;
+  driverVehicleColor?: string | null;
 };
 
 export async function getMyBookings(token?: string) {

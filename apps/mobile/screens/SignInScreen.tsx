@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { SquircleBtn } from "../components/SquircleBtn";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
@@ -189,14 +190,15 @@ export function SignInScreen({ navigation, route }: Props) {
             <Text style={styles.cardTitle}>Log in</Text>
 
             {/* Google */}
-            <Pressable
-              style={({ pressed }) => [styles.googleButton, pressed && { opacity: 0.85 }, submitting && { opacity: 0.6 }]}
+            <SquircleBtn
+              label="Continue with Google"
               onPress={handleGoogleSignIn}
               disabled={submitting}
-            >
-              <Ionicons name="logo-google" size={18} color="#fff" />
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
-            </Pressable>
+              loading={submitting}
+              icon={<Ionicons name="logo-google" size={18} color="#fff" />}
+              fullWidth
+              style={{ marginBottom: 18 }}
+            />
 
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
@@ -324,27 +326,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     ...textStyles.sectionTitle,
     marginBottom: spacing.md,
-  },
-  googleButton: {
-    backgroundColor: "#0a8050",
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    height: 52,
-    marginBottom: 18,
-    shadowColor: "#0a7a50",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  googleButtonText: {
-    color: "#fff",
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
-    letterSpacing: -0.3,
   },
   dividerRow: {
     flexDirection: "row",

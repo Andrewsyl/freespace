@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SquircleBtn } from "../components/SquircleBtn";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -513,10 +514,11 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         {/* Actions */}
         <View style={styles.actionsSection}>
           {canCheckIn ? (
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleCheckIn}>
-              <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
-              <Text style={styles.primaryBtnText}>Check in</Text>
-            </TouchableOpacity>
+            <SquircleBtn
+              label="Check in"
+              onPress={handleCheckIn}
+              icon={<Ionicons name="checkmark-circle-outline" size={18} color="#fff" />}
+            />
           ) : null}
 
           {canBookAgain ? (
@@ -743,12 +745,6 @@ const styles = StyleSheet.create({
 
   // ── Actions ──────────────────────────────────────────────────
   actionsSection: { paddingHorizontal: 16, paddingTop: 14, gap: 10 },
-  primaryBtn: {
-    backgroundColor: ACCENT, height: 52, borderRadius: 14,
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    shadowColor: "#0a7a50", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 5,
-  },
-  primaryBtnText: { color: "#fff", fontSize: 16, fontFamily: "PlusJakartaSans-SemiBold", letterSpacing: -0.3 },
   secondaryBtn: {
     backgroundColor: "#fff", height: 48, borderRadius: 14,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7,

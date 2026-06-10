@@ -1,5 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SquircleBtn } from "../../components/SquircleBtn";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { X, MapPin, Camera, CircleDollarSign } from "lucide-react-native";
 import { hostFlowColors } from "./hostFlowTheme";
@@ -83,12 +84,11 @@ export function ListingIntroScreen({ navigation }: Props) {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable
-          style={styles.startBtn}
+        <SquircleBtn
+          label="Get started"
           onPress={() => navigation.navigate("ListingLocation")}
-        >
-          <Text style={styles.startBtnText}>Get started</Text>
-        </Pressable>
+          fullWidth
+        />
       </View>
     </SafeAreaView>
   );
@@ -212,23 +212,5 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: hostFlowColors.border,
     backgroundColor: hostFlowColors.cardBg,
-  },
-  startBtn: {
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: "#0a8050",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#0a7a50",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  startBtnText: {
-    color: "#ffffff",
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
-    letterSpacing: -0.3,
   },
 });

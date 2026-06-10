@@ -1,4 +1,4 @@
-import { CalendarDays, MapPin } from "lucide-react";
+import { CalendarDays, CarFront, Phone, UserRound } from "lucide-react";
 
 export type Booking = {
   id: string;
@@ -8,7 +8,13 @@ export type Booking = {
   date: string;
   timeRange: string;
   payout?: number;
+  role: "driver" | "host";
   driver?: string;
+  vehiclePlate?: string | null;
+  vehicleSummary?: string | null;
+  driverPhone?: string | null;
+  accessCode?: string | null;
+  arrivalInstructions?: string | null;
   status: "pending" | "confirmed" | "canceled" | "upcoming" | "completed";
   refundStatus?: string | null;
   refundedAt?: string | null;
@@ -42,9 +48,27 @@ export function BookingCard({ booking }: { booking: Booking }) {
         <span className="inline-flex items-center gap-2">
           <CalendarDays className="h-4 w-4" /> {booking.date} • {booking.timeRange}
         </span>
-        {booking.driver && (
+        {booking.role === "host" && booking.driver && (
           <span className="inline-flex items-center gap-2">
-            <MapPin className="h-4 w-4" /> Driver: {booking.driver}
+            <UserRound className="h-4 w-4" /> {booking.driver}
+          </span>
+        )}
+        {booking.role === "host" && (booking.vehiclePlate || booking.vehicleSummary) && (
+          <span className="inline-flex items-center gap-2">
+            <CarFront className="h-4 w-4" />
+            {booking.vehicleSummary ? `${booking.vehicleSummary} · ` : ""}
+            {booking.vehiclePlate ?? "Vehicle details"}
+          </span>
+        )}
+        {booking.role === "host" && booking.driverPhone && (
+          <span className="inline-flex items-center gap-2">
+            <Phone className="h-4 w-4" />
+            <a
+              href={`tel:${booking.driverPhone}`}
+              className="font-medium text-emerald-700 hover:underline"
+            >
+              {booking.driverPhone}
+            </a>
           </span>
         )}
       </div>

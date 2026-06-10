@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -26,16 +26,20 @@ import {
   ShieldCheck,
   ChevronRight,
   AlertCircle,
+  Clock,
 } from "lucide-react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SkeletonBlock, usePulse } from "../components/ui";
+import { SquircleBtn } from "../components/SquircleBtn";
 import {
   createHostPayoutLink,
   deleteListing,
   getHostEarningsSummary,
   getHostPayoutStatus,
+  listMyBookings,
   listHostListings,
   setListingPaused,
+  type BookingSummary,
   type HostPayoutStatus,
 } from "../api";
 import { useAuth } from "../auth";
@@ -52,7 +56,7 @@ import {
 
 type Props = NativeStackScreenProps<RootStackParamList, "Listings">;
 
-const GREEN  = "#0fa968";
+const GREEN  = "#0a8050";
 const FG     = "#111827";
 const MUTED  = "#465050";
 const SUBTLE = "#6B7575";
@@ -60,14 +64,59 @@ const BG     = "#F8FAFC";
 const CARD   = "#ffffff";
 const LINE   = "#DDE5EC";
 
+const dublinDay = (d: Date) => d.toLocaleDateString("en-IE", { timeZone: "Europe/Dublin" });
+
+function formatDublinDayTime(date: Date): string {
+  const now = new Date();
+  const time = date.toLocaleTimeString("en-IE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Dublin",
+  });
+  if (dublinDay(date) === dublinDay(now)) return time;
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  if (dublinDay(date) === dublinDay(tomorrow)) return `tomorrow ${time}`;
+  const day = date.toLocaleDateString("en-IE", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "Europe/Dublin",
+  });
+  return `${day} ${time}`;
+}
+
+function formatDublinRange(startISO: string, endISO: string): string {
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+  const endTime = end.toLocaleTimeString("en-IE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Dublin",
+  });
+  return dublinDay(start) === dublinDay(end)
+    ? `${formatDublinDayTime(start)} – ${endTime}`
+    : `${formatDublinDayTime(start)} – ${formatDublinDayTime(end)}`;
+}
+
+function driverShortName(booking: BookingSummary): string | null {
+  const name = booking.driverName?.trim();
+  if (!name) return null;
+  const parts = name.split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+}
+
 export function ListingsScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { token, user } = useAuth();
   const platformFeePercent = 0;
   const [listings, setListings] = useState<ListingSummary[]>([]);
   const [savedDraft, setSavedDraft] = useState<SavedHostListingDraft | null>(null);
+  const [hostBookings, setHostBookings] = useState<BookingSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"bookings" | "spaces">("bookings");
+  const [showPast, setShowPast] = useState(false);
   const skeletonPulse = usePulse();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -85,16 +134,18 @@ export function ListingsScreen({ navigation }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const [data, summary, payout] = await Promise.all([
+      const [data, summary, payout, bookings] = await Promise.all([
         listHostListings(token),
         getHostEarningsSummary(token),
         getHostPayoutStatus(token),
+        listMyBookings(token),
       ]);
       const localDraft = await loadHostListingDraft();
       setListings(data);
       setSavedDraft(localDraft);
       setEarnings(summary);
       setPayoutStatus(payout);
+      setHostBookings(bookings.hostBookings ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load listings");
     } finally {
@@ -107,8 +158,6 @@ export function ListingsScreen({ navigation }: Props) {
   const draftTitle = savedDraft?.draft.spaceType
     ? `${savedDraft.draft.spaceType} parking`
     : "Unfinished listing";
-  const draftAddress =
-    savedDraft?.draft.location.address?.trim() || "Finish setting up your location";
 
   const payoutStatusMessage = (() => {
     if (!payoutStatus) return null;
@@ -119,6 +168,97 @@ export function ListingsScreen({ navigation }: Props) {
     if (payoutStatus.accountId) return "Finish payout setup to receive earnings";
     return "Connect Stripe to receive payouts";
   })();
+
+  const formatVehicleSummary = useCallback((booking: BookingSummary) => {
+    const summary = [
+      booking.driverVehicleColor?.trim(),
+      booking.driverVehicleMake?.trim(),
+      booking.driverVehicleType?.trim(),
+    ]
+      .filter(Boolean)
+      .join(" ");
+    if (summary && booking.vehiclePlate?.trim()) return `${summary} · ${booking.vehiclePlate.trim()}`;
+    return summary || booking.vehiclePlate?.trim() || "Vehicle details unavailable";
+  }, []);
+
+  const spaceActivity = useMemo(() => {
+    const now = Date.now();
+    const map = new Map<string, { current: BookingSummary | null; next: BookingSummary | null }>();
+    for (const booking of hostBookings) {
+      if (!booking.listingId || booking.status !== "confirmed" || booking.refundStatus === "refunded") continue;
+      const start = new Date(booking.startTime).getTime();
+      const end = new Date(booking.endTime).getTime();
+      const entry = map.get(booking.listingId) ?? { current: null, next: null };
+      if (start <= now && now < end) {
+        if (!entry.current || end > new Date(entry.current.endTime).getTime()) entry.current = booking;
+      } else if (start > now) {
+        if (!entry.next || start < new Date(entry.next.startTime).getTime()) entry.next = booking;
+      }
+      map.set(booking.listingId, entry);
+    }
+    return map;
+  }, [hostBookings]);
+
+  const { liveToday, arrivingToday, upcomingBookings, nextFutureBooking } = useMemo(() => {
+    const now = new Date();
+    const todayKey = dublinDay(now);
+    const live: BookingSummary[] = [];
+    const arriving: BookingSummary[] = [];
+    const upcoming: BookingSummary[] = [];
+    let nextFuture: BookingSummary | null = null;
+    for (const booking of hostBookings) {
+      if (booking.status !== "confirmed" || booking.refundStatus === "refunded") continue;
+      const start = new Date(booking.startTime);
+      const end = new Date(booking.endTime);
+      if (start <= now && now < end) {
+        live.push(booking);
+      } else if (start > now) {
+        if (dublinDay(start) === todayKey) arriving.push(booking);
+        else upcoming.push(booking);
+        if (!nextFuture || start < new Date(nextFuture.startTime)) nextFuture = booking;
+      }
+    }
+    live.sort((a, b) => new Date(a.endTime).getTime() - new Date(b.endTime).getTime());
+    arriving.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    upcoming.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    return {
+      liveToday: live,
+      arrivingToday: arriving,
+      upcomingBookings: upcoming.slice(0, 10),
+      nextFutureBooking: nextFuture,
+    };
+  }, [hostBookings]);
+
+  const pastBookings = useMemo(() => {
+    const now = Date.now();
+    return hostBookings
+      .filter(
+        (booking) =>
+          booking.status === "canceled" ||
+          booking.refundStatus === "refunded" ||
+          new Date(booking.endTime).getTime() <= now
+      )
+      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+      .slice(0, 10);
+  }, [hostBookings]);
+
+  const potentialMonthlyEuros = useMemo(() => {
+    let best = 0;
+    for (const listing of listings) {
+      const monthly = listing.price_per_month
+        ? listing.price_per_month
+        : listing.rate_type === "hourly" && listing.price_per_hour
+          ? listing.price_per_hour * 8 * 26
+          : listing.price_per_day * 26;
+      if (monthly > best) best = monthly;
+    }
+    return best > 0 ? Math.round(best) : null;
+  }, [listings]);
+
+  const occupiedCount = useMemo(
+    () => listings.filter((listing) => spaceActivity.get(listing.id)?.current).length,
+    [listings, spaceActivity]
+  );
 
   const handlePayoutSetup = useCallback(async () => {
     if (!token) return;
@@ -200,7 +340,7 @@ export function ListingsScreen({ navigation }: Props) {
     else navigation.navigate("Tabs", { screen: "Search" });
   };
 
-  const hasListings = listings.length > 0 || savedDraft;
+  const hasListings = listings.length > 0;
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
@@ -237,9 +377,12 @@ export function ListingsScreen({ navigation }: Props) {
               <Text style={styles.gatedBody}>
                 Manage your spaces, availability, and payouts from one place.
               </Text>
-              <Pressable style={styles.primaryBtn} onPress={() => navigation.navigate("Welcome")}>
-                <Text style={styles.primaryBtnText}>Sign in</Text>
-              </Pressable>
+              <SquircleBtn
+                label="Sign in"
+                onPress={() => navigation.navigate("Welcome")}
+                fullWidth
+                style={{ marginTop: 18 }}
+              />
               <View style={styles.gatedHintRow}>
                 <ShieldCheck size={13} color={SUBTLE} strokeWidth={2} />
                 <Text style={styles.gatedHintText}>
@@ -250,87 +393,333 @@ export function ListingsScreen({ navigation }: Props) {
           </View>
         ) : (
           <>
-            {/* ── Earnings hero card ─────────────────────────────── */}
+            {/* ── Alerts (only when action needed) ───────────────── */}
+            {payoutStatus && !payoutStatus.payoutsEnabled ? (
+              <View style={styles.cardWrap}>
+                <Pressable
+                  style={styles.alertRow}
+                  onPress={handlePayoutSetup}
+                  disabled={payoutBusy}
+                >
+                  <AlertCircle size={15} color="#92400e" strokeWidth={2.2} />
+                  <Text style={styles.alertText} numberOfLines={1}>
+                    {payoutBusy ? "Opening payout setup…" : payoutStatusMessage}
+                  </Text>
+                  <ChevronRight size={15} color="#92400e" />
+                </Pressable>
+              </View>
+            ) : null}
+            {savedDraft ? (
+              <View style={styles.cardWrap}>
+                <Pressable
+                  style={[styles.alertRow, styles.alertRowNeutral]}
+                  onPress={() => navigation.navigate("CreateListingFlow")}
+                >
+                  <Pencil size={14} color={GREEN} strokeWidth={2.2} />
+                  <Text style={[styles.alertText, styles.alertTextNeutral]} numberOfLines={1}>
+                    Finish your draft — {draftTitle}
+                  </Text>
+                  <Pressable
+                    hitSlop={8}
+                    onPress={async () => {
+                      await clearHostListingDraft();
+                      setSavedDraft(null);
+                    }}
+                  >
+                    <Trash2 size={14} color={SUBTLE} />
+                  </Pressable>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {/* ── Earnings hero ───────────────────────────────────── */}
             {earnings ? (
               <View style={styles.cardWrap}>
                 <View style={styles.earningsCard}>
-                  <View style={styles.earningsTop}>
-                    <View style={styles.earningsIconWrap}>
-                      <TrendingUp size={15} color={GREEN} strokeWidth={2.2} />
-                    </View>
-                    <Text style={styles.earningsLabel}>Net payout</Text>
-                  </View>
-                  <Text style={styles.earningsHero}>{fmt(earnings.netCents)}</Text>
-                  <View style={styles.earningsDivider} />
-                  <View style={styles.earningsStats}>
-                    <View style={styles.earningsStat}>
-                      <Text style={styles.earningsStatLabel}>Total earned</Text>
-                      <Text style={styles.earningsStatValue}>{fmt(earnings.totalCents)}</Text>
-                    </View>
-                    <View style={styles.earningsStatSep} />
-                    <View style={styles.earningsStat}>
-                      <Text style={styles.earningsStatLabel}>
-                        Platform fee ({platformFeePercent}%)
+                  {earnings.totalCents === 0 && potentialMonthlyEuros ? (
+                    <>
+                      <View style={styles.earningsTop}>
+                        <View style={styles.earningsIconWrap}>
+                          <TrendingUp size={15} color={GREEN} strokeWidth={2.2} />
+                        </View>
+                        <Text style={styles.earningsLabel}>Earning potential</Text>
+                      </View>
+                      <Text style={[styles.earningsHero, styles.earningsHeroPotential]}>
+                        ~€{potentialMonthlyEuros}
+                        <Text style={styles.earningsHeroUnit}>/month</Text>
                       </Text>
-                      <Text style={styles.earningsStatValue}>{fmt(earnings.feeCents)}</Text>
-                    </View>
-                  </View>
+                      <Text style={styles.earningsPotentialBody}>
+                        What your space could earn. 0% host fee — every cent is yours.
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <View style={styles.earningsTop}>
+                        <View style={styles.earningsIconWrap}>
+                          <TrendingUp size={15} color={GREEN} strokeWidth={2.2} />
+                        </View>
+                        <Text style={styles.earningsLabel}>Your earnings</Text>
+                      </View>
+                      <Text style={styles.earningsHero}>{fmt(earnings.netCents)}</Text>
+                      <View style={styles.earningsDivider} />
+                      <View style={styles.earningsStats}>
+                        <View style={styles.earningsStat}>
+                          <Text style={styles.earningsStatLabel}>Total earned</Text>
+                          <Text style={styles.earningsStatValue}>{fmt(earnings.totalCents)}</Text>
+                        </View>
+                        <View style={styles.earningsStatSep} />
+                        <View style={styles.earningsStat}>
+                          <Text style={styles.earningsStatLabel}>Host fee</Text>
+                          <Text style={styles.earningsStatValueGreen}>
+                            {platformFeePercent}% — keep it all
+                          </Text>
+                        </View>
+                      </View>
+                    </>
+                  )}
                 </View>
               </View>
             ) : null}
 
-            {/* ── Payout strip ───────────────────────────────────── */}
-            {payoutStatus ? (
-              <View style={styles.cardWrap}>
+            {/* ── Payouts (compact) ───────────────────────────────── */}
+            <View style={styles.infoRowsWrap}>
+              {payoutStatus ? (
+                <View>
+                  <Pressable
+                    style={styles.infoRow}
+                    onPress={!payoutStatus.payoutsEnabled ? handlePayoutSetup : undefined}
+                    disabled={payoutBusy}
+                  >
+                    <View style={[
+                      styles.infoIconWrap,
+                      payoutStatus.payoutsEnabled ? styles.infoIconGreen : styles.infoIconAmber,
+                    ]}>
+                      <CreditCard
+                        size={15}
+                        color={payoutStatus.payoutsEnabled ? GREEN : "#92400e"}
+                        strokeWidth={2.2}
+                      />
+                    </View>
+                    <View style={styles.infoRowText}>
+                      <Text style={styles.infoRowTitle}>Payouts</Text>
+                      <Text style={styles.infoRowBody} numberOfLines={1}>
+                        {payoutStatusMessage}
+                      </Text>
+                    </View>
+                    {payoutStatus.payoutsEnabled ? (
+                      <View style={styles.activePill}>
+                        <View style={styles.activeDot} />
+                        <Text style={styles.activePillText}>Active</Text>
+                      </View>
+                    ) : (
+                      <ChevronRight size={16} color={SUBTLE} />
+                    )}
+                  </Pressable>
+                  {payoutStatus.requirementsDue.length > 0 ? (
+                    <View style={styles.requirementsRow}>
+                      <AlertCircle size={12} color="#92400e" />
+                      <Text style={styles.requirementsText}>
+                        Missing: {payoutStatus.requirementsDue.slice(0, 3).join(", ")}
+                        {payoutStatus.requirementsDue.length > 3 ? "…" : ""}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+
+            {/* ── Tabs ────────────────────────────────────────────── */}
+            <View style={styles.segmentWrap}>
+              <View style={styles.segment}>
                 <Pressable
-                  style={styles.payoutStrip}
-                  onPress={!payoutStatus.payoutsEnabled && !payoutIsMock ? handlePayoutSetup : undefined}
-                  disabled={payoutBusy}
+                  style={[styles.segmentBtn, activeTab === "bookings" && styles.segmentBtnActive]}
+                  onPress={() => setActiveTab("bookings")}
                 >
-                  <View style={[
-                    styles.payoutIconWrap,
-                    payoutStatus.payoutsEnabled ? styles.payoutIconActive : styles.payoutIconPending,
-                  ]}>
-                    <CreditCard
-                      size={15}
-                      color={payoutStatus.payoutsEnabled ? GREEN : "#92400e"}
-                      strokeWidth={2.2}
-                    />
-                  </View>
-                  <View style={styles.payoutText}>
-                    <Text style={styles.payoutTitle}>Payouts</Text>
-                    <Text style={styles.payoutBody} numberOfLines={1}>
-                      {payoutStatusMessage}
-                    </Text>
-                  </View>
-                  {payoutStatus.payoutsEnabled ? (
-                    <View style={styles.activePill}>
-                      <View style={styles.activeDot} />
-                      <Text style={styles.activePillText}>Active</Text>
-                    </View>
-                  ) : payoutIsMock ? (
-                    <View style={styles.mockPill}>
-                      <Text style={styles.mockPillText}>Test</Text>
-                    </View>
-                  ) : (
-                    <ChevronRight size={16} color={SUBTLE} />
-                  )}
+                  {liveToday.length > 0 ? <View style={styles.segmentLiveDot} /> : null}
+                  <Text style={[styles.segmentText, activeTab === "bookings" && styles.segmentTextActive]}>
+                    Bookings
+                  </Text>
                 </Pressable>
-                {payoutStatus.requirementsDue.length > 0 ? (
-                  <View style={styles.requirementsRow}>
-                    <AlertCircle size={12} color="#92400e" />
-                    <Text style={styles.requirementsText}>
-                      Missing: {payoutStatus.requirementsDue.slice(0, 3).join(", ")}
-                      {payoutStatus.requirementsDue.length > 3 ? "…" : ""}
-                    </Text>
+                <Pressable
+                  style={[styles.segmentBtn, activeTab === "spaces" && styles.segmentBtnActive]}
+                  onPress={() => setActiveTab("spaces")}
+                >
+                  <Text style={[styles.segmentText, activeTab === "spaces" && styles.segmentTextActive]}>
+                    Spaces{listings.length > 0 ? ` (${listings.length})` : ""}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {activeTab === "bookings" ? (
+            <>
+            {/* ── Today ───────────────────────────────────────────── */}
+            <View style={styles.listingSection}>
+              <Text style={[styles.sectionHeader, styles.sectionHeaderStandalone]}>Today</Text>
+
+              {loading && hostBookings.length === 0 ? (
+                <View style={styles.todayList}>
+                  <View style={styles.todayCard}>
+                    <SkeletonBlock width="55%" height={14} pulse={skeletonPulse} />
+                    <SkeletonBlock width="72%" height={12} pulse={skeletonPulse} style={{ marginTop: 10 }} />
                   </View>
-                ) : null}
+                </View>
+              ) : liveToday.length === 0 && arrivingToday.length === 0 ? (
+                <View style={styles.todayEmpty}>
+                  <Text style={styles.todayEmptyText}>
+                    {nextFutureBooking
+                      ? `Nothing today — next booking ${formatDublinDayTime(new Date(nextFutureBooking.startTime))}`
+                      : "Nothing today. When someone books your space, it shows up here."}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.todayList}>
+                  {[
+                    ...liveToday.map((booking) => ({ booking, kind: "now" as const })),
+                    ...arrivingToday.map((booking) => ({ booking, kind: "arriving" as const })),
+                  ].map(({ booking, kind }) => (
+                    <Pressable
+                      key={booking.id}
+                      style={({ pressed }) => [styles.todayCard, pressed && { opacity: 0.93 }]}
+                      onPress={() => navigation.navigate("HostBookingDetail", { booking })}
+                    >
+                      <View style={styles.todayTopRow}>
+                        {kind === "now" ? (
+                          <View style={styles.todayNowDot} />
+                        ) : (
+                          <Clock size={13} color={SUBTLE} strokeWidth={2.4} />
+                        )}
+                        <Text style={kind === "now" ? styles.todayNowLabel : styles.todayArrivingLabel}>
+                          {kind === "now"
+                            ? `Now · until ${formatDublinDayTime(new Date(booking.endTime))}`
+                            : `Arriving ${formatDublinDayTime(new Date(booking.startTime))}`}
+                        </Text>
+                        <Text style={styles.todayAmount}>{fmt(booking.amountCents)}</Text>
+                      </View>
+                      <Text style={styles.todayTitle} numberOfLines={1}>
+                        {booking.title || booking.address}
+                      </Text>
+                      <Text style={styles.todaySub} numberOfLines={1}>
+                        {[formatVehicleSummary(booking), booking.driverName?.trim() || null]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </Text>
+                      {booking.driverPhone?.trim() ? (
+                        <View style={styles.todayContactRow}>
+                          <Pressable
+                            style={styles.todayContactBtn}
+                            onPress={() => Linking.openURL(`tel:${booking.driverPhone!.trim()}`)}
+                            hitSlop={6}
+                          >
+                            <Text style={styles.todayContactBtnText}>Call driver</Text>
+                          </Pressable>
+                          <Pressable
+                            style={[styles.todayContactBtn, styles.todayContactBtnSecondary]}
+                            onPress={() => Linking.openURL(`sms:${booking.driverPhone!.trim()}`)}
+                            hitSlop={6}
+                          >
+                            <Text style={[styles.todayContactBtnText, styles.todayContactBtnTextSecondary]}>Text</Text>
+                          </Pressable>
+                        </View>
+                      ) : null}
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* ── Upcoming ────────────────────────────────────────── */}
+            {upcomingBookings.length > 0 ? (
+              <View style={styles.listingSection}>
+                <Text style={[styles.sectionHeader, styles.sectionHeaderStandalone]}>Upcoming</Text>
+                <View style={styles.todayList}>
+                  {upcomingBookings.map((booking) => (
+                    <Pressable
+                      key={booking.id}
+                      style={({ pressed }) => [styles.todayCard, pressed && { opacity: 0.93 }]}
+                      onPress={() => navigation.navigate("HostBookingDetail", { booking })}
+                    >
+                      <View style={styles.todayTopRow}>
+                        <Clock size={13} color={SUBTLE} strokeWidth={2.4} />
+                        <Text style={styles.todayArrivingLabel} numberOfLines={1}>
+                          {formatDublinRange(booking.startTime, booking.endTime)}
+                        </Text>
+                        <Text style={styles.todayAmount}>{fmt(booking.amountCents)}</Text>
+                      </View>
+                      <Text style={styles.todayTitle} numberOfLines={1}>
+                        {booking.title || booking.address}
+                      </Text>
+                      <Text style={styles.todaySub} numberOfLines={1}>
+                        {[formatVehicleSummary(booking), booking.driverName?.trim() || null]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
             ) : null}
 
+            {/* ── Past bookings ───────────────────────────────────── */}
+            {pastBookings.length > 0 ? (
+              <View style={styles.listingSection}>
+                {showPast ? (
+                  <>
+                    <Text style={[styles.sectionHeader, styles.sectionHeaderStandalone]}>Past</Text>
+                    <View style={styles.todayList}>
+                      {pastBookings.map((booking) => {
+                        const canceled =
+                          booking.status === "canceled" || booking.refundStatus === "refunded";
+                        return (
+                          <Pressable
+                            key={booking.id}
+                            style={({ pressed }) => [
+                              styles.todayCard,
+                              styles.pastCard,
+                              pressed && { opacity: 0.93 },
+                            ]}
+                            onPress={() => navigation.navigate("HostBookingDetail", { booking })}
+                          >
+                            <View style={styles.todayTopRow}>
+                              <Text style={styles.todayArrivingLabel} numberOfLines={1}>
+                                {formatDublinRange(booking.startTime, booking.endTime)}
+                              </Text>
+                              <Text style={canceled ? styles.pastCanceled : styles.todayAmount}>
+                                {canceled ? "Canceled" : fmt(booking.amountCents)}
+                              </Text>
+                            </View>
+                            <Text style={styles.todaySub} numberOfLines={1}>
+                              {[booking.title || booking.address, booking.driverName?.trim() || null]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </>
+                ) : (
+                  <Pressable style={styles.showPastBtn} onPress={() => setShowPast(true)}>
+                    <Text style={styles.showPastText}>
+                      Show past bookings ({pastBookings.length})
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            ) : null}
+            </>
+            ) : (
+            <>
             {/* ── Listings ───────────────────────────────────────── */}
             <View style={styles.listingSection}>
-              <Text style={styles.sectionHeader}>Your spaces</Text>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeader}>Your spaces</Text>
+                {listings.length > 0 ? (
+                  <Text style={styles.sectionMeta}>
+                    {occupiedCount} of {listings.length} occupied
+                  </Text>
+                ) : null}
+              </View>
 
               {loading && !hasListings ? (
                 <View style={styles.skeletonList}>
@@ -356,51 +745,22 @@ export function ListingsScreen({ navigation }: Props) {
                   <Text style={styles.emptyBody}>
                     Create a listing to start earning from your parking space.
                   </Text>
-                  <Pressable
-                    style={styles.primaryBtn}
+                  <SquircleBtn
+                    label="List a space"
                     onPress={() => navigation.navigate("CreateListingFlow")}
-                  >
-                    <Text style={styles.primaryBtnText}>List a space</Text>
-                  </Pressable>
+                    fullWidth
+                    style={{ marginTop: 18 }}
+                  />
                 </View>
               ) : (
                 <View style={styles.listingGrid}>
-                  {/* Draft card */}
-                  {savedDraft ? (
-                    <Pressable
-                      style={({ pressed }) => [styles.listingCard, pressed && { opacity: 0.93 }]}
-                      onPress={() => navigation.navigate("CreateListingFlow")}
-                    >
-                      <View style={[styles.listingImageWrap, styles.draftImageWrap]}>
-                        <Ionicons name="create-outline" size={22} color={SUBTLE} />
-                        <Text style={styles.draftLabel}>Draft</Text>
-                      </View>
-                      <View style={styles.draftBadge}>
-                        <Text style={styles.draftBadgeText}>Saved draft</Text>
-                      </View>
-                      <View style={styles.listingBody}>
-                        <Text style={styles.listingTitle} numberOfLines={1}>{draftTitle}</Text>
-                        <Text style={styles.listingAddress} numberOfLines={1}>{draftAddress}</Text>
-                        <View style={styles.listingFooter}>
-                          <Text style={styles.continueText}>Continue setup →</Text>
-                          <Pressable
-                            style={styles.deleteBtn}
-                            onPress={async () => {
-                              await clearHostListingDraft();
-                              setSavedDraft(null);
-                            }}
-                          >
-                            <Trash2 size={13} color="#b42318" />
-                          </Pressable>
-                        </View>
-                      </View>
-                    </Pressable>
-                  ) : null}
-
                   {/* Live listings */}
                   {listings.map((listing) => {
                     const isActive = listing.is_active !== false;
                     const isToggling = togglingId === listing.id;
+                    const activity = spaceActivity.get(listing.id);
+                    const currentBooking = activity?.current ?? null;
+                    const nextBooking = activity?.next ?? null;
                     return (
                       <Pressable
                         key={listing.id}
@@ -422,20 +782,28 @@ export function ListingsScreen({ navigation }: Props) {
                               <Ionicons name="car-outline" size={28} color="#b0bac4" />
                             </View>
                           )}
-                          {/* Status badge */}
+                          {/* Status chip: Paused > Occupied > Free */}
                           <View style={[
                             styles.statusBadge,
                             isActive ? styles.statusBadgeActive : styles.statusBadgePaused,
                           ]}>
                             <View style={[
                               styles.statusDot,
-                              isActive ? styles.statusDotActive : styles.statusDotPaused,
+                              !isActive
+                                ? styles.statusDotPaused
+                                : currentBooking
+                                  ? styles.statusDotActive
+                                  : styles.statusDotFree,
                             ]} />
                             <Text style={[
                               styles.statusBadgeText,
                               isActive ? styles.statusBadgeTextActive : styles.statusBadgeTextPaused,
                             ]}>
-                              {isActive ? "Active" : "Paused"}
+                              {!isActive
+                                ? "Paused"
+                                : currentBooking
+                                  ? `Occupied until ${formatDublinDayTime(new Date(currentBooking.endTime))}`
+                                  : "Free"}
                             </Text>
                           </View>
                         </View>
@@ -450,6 +818,15 @@ export function ListingsScreen({ navigation }: Props) {
                             </View>
                           </View>
                           <Text style={styles.listingAddress} numberOfLines={1}>{listing.address}</Text>
+
+                          {nextBooking ? (
+                            <Text style={styles.nextLine} numberOfLines={1}>
+                              <Text style={styles.nextLineLabel}>Next: </Text>
+                              {formatDublinDayTime(new Date(nextBooking.startTime))} – {formatDublinDayTime(new Date(nextBooking.endTime))}
+                              {driverShortName(nextBooking) ? ` · ${driverShortName(nextBooking)}` : ""}
+                            </Text>
+                          ) : null}
+
                           <View style={styles.listingFooter}>
                             <Text style={styles.listingPrice}>{formatListingPriceLine(listing)}</Text>
                             <View style={styles.cardActions}>
@@ -503,6 +880,8 @@ export function ListingsScreen({ navigation }: Props) {
                 </View>
               )}
             </View>
+            </>
+            )}
           </>
         )}
       </ScrollView>
@@ -560,7 +939,7 @@ const styles = StyleSheet.create({
   // ── Card wrap ────────────────────────────────────────────────
   cardWrap: { paddingHorizontal: 16, marginBottom: 12 },
 
-  // ── Earnings card ────────────────────────────────────────────
+  // ── Earnings hero ────────────────────────────────────────────
   earningsCard: {
     backgroundColor: CARD,
     borderRadius: 18,
@@ -620,40 +999,137 @@ const styles = StyleSheet.create({
     color: FG,
     letterSpacing: -0.3,
   },
+  earningsStatValueGreen: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 16,
+    color: GREEN,
+    letterSpacing: -0.3,
+  },
+  earningsHeroPotential: {
+    color: GREEN,
+    marginBottom: 8,
+  },
+  earningsHeroUnit: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 18,
+    letterSpacing: -0.5,
+  },
+  earningsPotentialBody: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    color: MUTED,
+    lineHeight: 19,
+  },
 
-  // ── Payout strip ─────────────────────────────────────────────
-  payoutStrip: {
+  // ── Alert rows ───────────────────────────────────────────────
+  alertRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    backgroundColor: "#FFFBEB",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  alertRowNeutral: {
+    backgroundColor: "#F0FAF6",
+    borderColor: "#B6E8D0",
+  },
+  alertText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    color: "#92400e",
+    flex: 1,
+    letterSpacing: -0.1,
+  },
+  alertTextNeutral: {
+    color: "#065f46",
+  },
+
+  // ── Segmented tabs ───────────────────────────────────────────
+  segmentWrap: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  segment: {
+    flexDirection: "row",
+    backgroundColor: "#E9EEF3",
+    borderRadius: 12,
+    padding: 3,
+  },
+  segmentBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    height: 36,
+    borderRadius: 10,
+  },
+  segmentBtnActive: {
     backgroundColor: CARD,
-    borderRadius: 18,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  segmentText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13.5,
+    color: SUBTLE,
+    letterSpacing: -0.2,
+  },
+  segmentTextActive: {
+    color: FG,
+  },
+  segmentLiveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: GREEN,
+  },
+
+  // ── Compact info rows (earnings / payouts) ───────────────────
+  infoRowsWrap: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    gap: 10,
+  },
+  infoRow: {
+    backgroundColor: CARD,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: "#D4DCE4",
-    padding: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    ...SHADOW,
   },
-  payoutIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+  infoIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
   },
-  payoutIconActive: { backgroundColor: "#EDF7F2" },
-  payoutIconPending: { backgroundColor: "#FEF3C7" },
-  payoutText: { flex: 1 },
-  payoutTitle: {
+  infoIconGreen: { backgroundColor: "#EDF7F2" },
+  infoIconAmber: { backgroundColor: "#FEF3C7" },
+  infoRowText: { flex: 1 },
+  infoRowTitle: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
     color: FG,
     letterSpacing: -0.2,
   },
-  payoutBody: {
+  infoRowBody: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
     color: SUBTLE,
-    marginTop: 2,
+    marginTop: 1,
   },
   activePill: {
     flexDirection: "row",
@@ -702,12 +1178,144 @@ const styles = StyleSheet.create({
 
   // ── Listings section ─────────────────────────────────────────
   listingSection: { paddingHorizontal: 16, paddingTop: 4 },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 14,
+  },
   sectionHeader: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 18,
     color: FG,
     letterSpacing: -0.5,
+  },
+  sectionHeaderStandalone: {
     marginBottom: 14,
+  },
+  sectionMeta: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: SUBTLE,
+  },
+
+  // ── Today feed ───────────────────────────────────────────────
+  todayList: { gap: 12, marginBottom: 14 },
+  todayCard: {
+    backgroundColor: CARD,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#D4DCE4",
+    padding: 16,
+    gap: 8,
+    ...SHADOW,
+  },
+  todayTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  todayNowDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: GREEN,
+  },
+  todayNowLabel: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 13,
+    color: "#065f46",
+    letterSpacing: -0.2,
+    flex: 1,
+  },
+  todayArrivingLabel: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 13,
+    color: MUTED,
+    letterSpacing: -0.2,
+    flex: 1,
+  },
+  todayAmount: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 13,
+    color: FG,
+  },
+  todayTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 16,
+    color: FG,
+    letterSpacing: -0.3,
+  },
+  todaySub: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    color: MUTED,
+    lineHeight: 18,
+  },
+  todayContactRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+  },
+  todayContactBtn: {
+    flex: 1,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: GREEN,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  todayContactBtnSecondary: {
+    backgroundColor: "#F0FAF6",
+    borderWidth: 1,
+    borderColor: "#B6E8D0",
+  },
+  todayContactBtnText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    color: "#ffffff",
+  },
+  todayContactBtnTextSecondary: {
+    color: GREEN,
+  },
+  todayEmpty: {
+    backgroundColor: CARD,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#D4DCE4",
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginBottom: 14,
+  },
+  todayEmptyText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    color: MUTED,
+    lineHeight: 19,
+  },
+  pastCard: {
+    shadowOpacity: 0.04,
+    elevation: 1,
+    opacity: 0.92,
+  },
+  pastCanceled: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: "#b42318",
+  },
+  showPastBtn: {
+    alignItems: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: LINE,
+    backgroundColor: CARD,
+  },
+  showPastText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    color: MUTED,
   },
 
   // ── Skeleton ─────────────────────────────────────────────────
@@ -818,28 +1426,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // ── Primary button ───────────────────────────────────────────
-  primaryBtn: {
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: GREEN,
-    borderRadius: 14,
-    height: 52,
-    marginTop: 18,
-    width: "100%",
-    shadowColor: "#0a7a50",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  primaryBtnText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
-    color: "#ffffff",
-    letterSpacing: -0.3,
-  },
-
   // ── Listing grid & cards ─────────────────────────────────────
   listingGrid: { gap: 14 },
   listingCard: {
@@ -880,40 +1466,17 @@ const styles = StyleSheet.create({
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusDotActive: { backgroundColor: GREEN },
   statusDotPaused: { backgroundColor: "#94a3b8" },
+  statusDotFree: {
+    backgroundColor: "transparent",
+    borderWidth: 1.5,
+    borderColor: "#94a3b8",
+  },
   statusBadgeText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
   },
   statusBadgeTextActive: { color: FG },
   statusBadgeTextPaused: { color: SUBTLE },
-
-  // Draft card
-  draftImageWrap: {
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: "#f1f5f9",
-  },
-  draftLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
-    color: SUBTLE,
-  },
-  draftBadge: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    backgroundColor: "#ecfdf3",
-    borderRadius: 100,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    zIndex: 2,
-  },
-  draftBadgeText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    color: GREEN,
-  },
 
   // Card body
   listingBody: { padding: 14 },
@@ -952,6 +1515,17 @@ const styles = StyleSheet.create({
     color: SUBTLE,
     lineHeight: 18,
   },
+  nextLine: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12.5,
+    color: MUTED,
+    marginTop: 8,
+  },
+  nextLineLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    color: FG,
+  },
+
   listingFooter: {
     flexDirection: "row",
     alignItems: "center",
@@ -966,11 +1540,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: FG,
     letterSpacing: -0.2,
-  },
-  continueText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
-    color: GREEN,
   },
   cardActions: {
     flexDirection: "row",

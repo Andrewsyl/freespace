@@ -45,11 +45,59 @@ export function SupportScreen({ navigation, route }: Props) {
   ];
   const canSubmit = !!token && !!subject && message.trim().length >= 10 && !submitting;
 
+  if (!token) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+        >
+          <View style={styles.navBar}>
+            <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+              <ArrowLeft size={22} color="#111827" />
+            </Pressable>
+            <Text style={styles.navTitle}>Contact us</Text>
+            <View style={styles.navSpacer} />
+          </View>
+          <View style={styles.gatedWrap}>
+            <View style={styles.gatedCard}>
+              <Text style={styles.gatedTitle}>Sign in to contact support</Text>
+              <Text style={styles.gatedBody}>
+                Log in or create an account so we can attach your message to the right booking and reply properly.
+              </Text>
+              <Button
+                title="Sign in"
+                onPress={() =>
+                  navigation.navigate("SignIn", {
+                    returnTo: {
+                      screen: "Support",
+                      params: route.params,
+                    },
+                  })
+                }
+                style={styles.gatedPrimaryButton}
+              />
+              <Button
+                title="Create account"
+                variant="secondary"
+                onPress={() =>
+                  navigation.navigate("Register", {
+                    returnTo: {
+                      screen: "Support",
+                      params: route.params,
+                    },
+                  })
+                }
+              />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
+
   const handleSubmit = async () => {
-    if (!token) {
-      setError("Please sign in to contact support.");
-      return;
-    }
     if (!subject) {
       setError("Please select a subject.");
       return;
@@ -304,5 +352,42 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: spacing.lg,
+  },
+  gatedWrap: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+  },
+  gatedCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 22,
+    paddingVertical: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  gatedTitle: {
+    color: "#111827",
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 24,
+    letterSpacing: -0.8,
+    lineHeight: 30,
+  },
+  gatedBody: {
+    color: "#4B5563",
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  gatedPrimaryButton: {
+    marginBottom: 12,
   },
 });

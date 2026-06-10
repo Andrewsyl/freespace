@@ -1,10 +1,29 @@
 import "@testing-library/jest-native/extend-expect";
 
+process.env.EXPO_PUBLIC_API_BASE ??= "http://127.0.0.1:4000";
+process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ??= "pk_test_mock";
+
 jest.mock(
   "react-native/Libraries/Animated/NativeAnimatedHelper",
   () => require("react-native/src/private/animated/NativeAnimatedHelper"),
   { virtual: true }
 );
+
+jest.mock("react-native-reanimated", () => {
+  const React = require("react");
+  const View = require("react-native").View;
+  return {
+    __esModule: true,
+    default: {
+      View,
+      createAnimatedComponent: (Component: unknown) => Component,
+    },
+    createAnimatedComponent: (Component: unknown) => Component,
+    useSharedValue: (initial: unknown) => ({ value: initial }),
+    useAnimatedStyle: (updater: () => Record<string, unknown>) => updater(),
+    withSpring: (value: unknown) => value,
+  };
+});
 
 jest.mock("@react-navigation/native", () => {
   const React = require("react");
@@ -54,6 +73,24 @@ jest.mock("lottie-react-native", () => {
   return ({ children }: { children?: React.ReactNode }) =>
     React.createElement(View, null, children);
 });
+
+jest.mock("react-native-figma-squircle", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+  return {
+    SquircleView: ({ children }: { children?: React.ReactNode }) =>
+      React.createElement(View, null, children),
+  };
+});
+
+jest.mock("expo-haptics", () => ({
+  ImpactFeedbackStyle: {
+    Light: "light",
+    Medium: "medium",
+    Heavy: "heavy",
+  },
+  impactAsync: jest.fn().mockResolvedValue(undefined),
+}));
 
 jest.mock("@react-native-google-signin/google-signin", () => ({
   GoogleSignin: {

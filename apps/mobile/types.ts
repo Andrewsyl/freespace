@@ -61,6 +61,9 @@ export type RootStackParamList = {
   BookingDetail: {
     booking: import("./api").BookingSummary;
   };
+  HostBookingDetail: {
+    booking: import("./api").BookingSummary;
+  };
   Review: {
     booking: import("./api").BookingSummary;
     initialRating?: number;
@@ -75,7 +78,14 @@ export type RootStackParamList = {
 
 export type AuthReturnTo =
   | { screen: "Listing"; params: { id: string; from: string; to: string } }
-  | { screen: "BookingSummary"; params: { id: string; from: string; to: string } };
+  | { screen: "BookingSummary"; params: { id: string; from: string; to: string } }
+  | {
+      screen: "Support";
+      params?: {
+        prefillSubject?: string;
+        prefillMessage?: string;
+      };
+    };
 
 export type ListingSummary = {
   id: string;

@@ -2403,9 +2403,11 @@ export async function listUserBookings(userId: string) {
       ST_Y(l.geom) AS latitude,
       l.host_id,
       l.access_code,
-      l.arrival_instructions
+      l.arrival_instructions,
+      h.phone AS host_phone
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
+    JOIN users h ON h.id = l.host_id
     WHERE b.driver_id = $1
       AND b.status <> 'pending'
     ORDER BY b.start_time DESC
@@ -2437,9 +2439,15 @@ export async function listUserBookings(userId: string) {
       ST_Y(l.geom) AS latitude,
       l.host_id,
       l.access_code,
-      l.arrival_instructions
+      l.arrival_instructions,
+      u.full_name AS driver_name,
+      u.phone AS driver_phone,
+      u.vehicle_make AS driver_vehicle_make,
+      u.vehicle_type AS driver_vehicle_type,
+      u.vehicle_color AS driver_vehicle_color
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
+    JOIN users u ON u.id = b.driver_id
     WHERE l.host_id = $1
     ORDER BY b.start_time DESC
     LIMIT 50;
@@ -2468,6 +2476,12 @@ export async function listUserBookings(userId: string) {
     longitude: row.longitude ?? null,
     accessCode: row.access_code ?? null,
     arrivalInstructions: row.arrival_instructions ?? null,
+    driverName: row.driver_name ?? null,
+    driverPhone: row.driver_phone ?? null,
+    driverVehicleMake: row.driver_vehicle_make ?? null,
+    driverVehicleType: row.driver_vehicle_type ?? null,
+    driverVehicleColor: row.driver_vehicle_color ?? null,
+    hostPhone: row.host_phone ?? null,
   });
 
   const allRows = [...driverRows.rows, ...hostRows.rows];

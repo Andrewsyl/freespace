@@ -808,6 +808,23 @@ export async function cancelBooking(payload: { token: string; bookingId: string 
   };
 }
 
+export async function hostCancelBooking(payload: { token: string; bookingId: string }) {
+  const response = await fetch(`${baseUrl}/api/bookings/${payload.bookingId}/host-cancel`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${payload.token}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "Booking cancellation failed"));
+  }
+  return (await response.json()) as {
+    ok: true;
+    refunded?: boolean;
+    alreadyCanceled?: boolean;
+  };
+}
+
 export async function createReview(payload: {
   token: string;
   bookingId: string;
@@ -874,6 +891,12 @@ export type BookingSummary = {
   imageUrls?: string[] | null;
   latitude?: number | null;
   longitude?: number | null;
+  driverName?: string | null;
+  driverPhone?: string | null;
+  driverVehicleMake?: string | null;
+  driverVehicleType?: string | null;
+  driverVehicleColor?: string | null;
+  hostPhone?: string | null;
 };
 
 export async function listMyBookings(token: string) {
@@ -881,7 +904,7 @@ export async function listMyBookings(token: string) {
   if (isMobileE2EActive() && e2eState) {
     return {
       driverBookings: e2eState.bookings.map((booking) => ({ ...booking })),
-      hostBookings: [],
+      hostBookings: e2eState.hostBookings.map((booking) => ({ ...booking })),
     };
   }
   const response = await fetch(`${baseUrl}/api/bookings/me`, {

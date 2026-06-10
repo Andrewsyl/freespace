@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { SquircleBtn } from "../components/SquircleBtn";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
@@ -114,14 +115,15 @@ export function WelcomeScreen({ navigation, route }: Props) {
           resizeMode="contain"
         />
 
-        <TouchableOpacity
-          style={[styles.primaryButton, submitting && styles.buttonDisabled]}
+        <SquircleBtn
+          label={submitting ? "Connecting..." : "Continue with Google"}
           onPress={handleGoogleSignIn}
           disabled={submitting}
-        >
-          <Ionicons name="logo-google" size={20} color="#FFFFFF" />
-          <Text style={styles.buttonText}>{submitting ? "Connecting..." : "Continue with Google"}</Text>
-        </TouchableOpacity>
+          loading={submitting}
+          icon={<Ionicons name="logo-google" size={20} color="#FFFFFF" />}
+          fullWidth
+          style={{ maxWidth: 360, marginBottom: 14 }}
+        />
 
         <TouchableOpacity
           style={styles.secondaryButton}
@@ -178,30 +180,6 @@ const styles = StyleSheet.create({
     height: 268,
     marginBottom: 28,
   },
-  primaryButton: {
-    backgroundColor: "#0a8050",
-    borderRadius: 14,
-    height: 52,
-    paddingHorizontal: 28,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    width: "100%",
-    maxWidth: 360,
-    marginBottom: 14,
-    shadowColor: "#0a7a50",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
-    letterSpacing: -0.3,
-  },
   secondaryButton: {
     width: "100%",
     maxWidth: 360,
@@ -231,9 +209,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#0a8050",
-  },
-  buttonDisabled: {
-    opacity: 0.7,
   },
   errorText: {
     marginTop: 16,

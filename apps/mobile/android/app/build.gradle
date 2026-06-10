@@ -124,6 +124,10 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 100
         versionName "0.1.0"
+        manifestPlaceholders = [
+            appScheme    : "carparking",
+            expoDevScheme: "exp+carparking",
+        ]
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -147,12 +151,20 @@ android {
         debug {
             signingConfig signingConfigs.debug
             applicationIdSuffix ".dev"
+            manifestPlaceholders = [
+                appScheme    : "carparking-dev",
+                expoDevScheme: "exp+carparking-dev",
+            ]
         }
         release {
             // EAS cloud builds inject release credentials on the remote builder.
             // Local release builds must provide real upload-key credentials unless
             // an explicit debug-signed override is set for a narrow local-only check.
             signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
+            manifestPlaceholders = [
+                appScheme    : "carparking",
+                expoDevScheme: "exp+carparking",
+            ]
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds

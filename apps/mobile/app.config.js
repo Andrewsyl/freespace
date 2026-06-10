@@ -22,6 +22,7 @@ const appJson = require("./app.json");
 const isDevLike = appEnv === "dev" || appEnv === "local";
 const androidPackage = isDevLike ? "ie.freespace.app.dev" : "ie.freespace.app";
 const iosBundleId = isDevLike ? "com.andrewsyl.carparking.dev" : "com.andrewsyl.carparking";
+const appScheme = isDevLike ? "carparking-dev" : "carparking";
 
 const withCoreKtxFix = (config) =>
   withProjectBuildGradle(config, (configMod) => {
@@ -251,6 +252,12 @@ module.exports = ({ config }) => {
               withCoreKtxFix({
                 ...base,
                 extra,
+                scheme: [
+                  appScheme,
+                  ...(Array.isArray(base.scheme)
+                    ? base.scheme.filter((scheme) => scheme !== "carparking")
+                    : []),
+                ],
                 android: {
                   ...base.android,
                   package: androidPackage,

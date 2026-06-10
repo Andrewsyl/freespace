@@ -9,6 +9,11 @@ fi
 ENV_NAME="$1"
 shift || true
 
+APP_SCHEME="carparking"
+if [ "$ENV_NAME" = "local" ] || [ "$ENV_NAME" = "dev" ]; then
+  APP_SCHEME="carparking-dev"
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
@@ -27,7 +32,7 @@ launch_android_dev_client() {
         adb reverse tcp:4000 tcp:4000 >/dev/null 2>&1 || true
         if adb shell am start \
           -a android.intent.action.VIEW \
-          -d "carparking://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081" \
+          -d "${APP_SCHEME}://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081" \
           >/dev/null 2>&1; then
           echo "[dev-client] Android dev client launch requested."
         else
@@ -45,4 +50,4 @@ launch_android_dev_client
 
 cd "$APP_DIR"
 export EXPO_NO_INTERACTIVE=1
-exec ./scripts/run-with-env.sh "$ENV_NAME" expo start --localhost -c --scheme carparking "$@"
+exec ./scripts/run-with-env.sh "$ENV_NAME" expo start --localhost -c --scheme "$APP_SCHEME" "$@"

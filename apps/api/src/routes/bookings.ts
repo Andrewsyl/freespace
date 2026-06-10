@@ -462,29 +462,6 @@ async function sendBookingStatusPush({
   }
 }
 
-async function sendPaymentReceivedPush({
-  bookingId,
-  hostId,
-  listingTitle,
-}: {
-  bookingId: string;
-  hostId: string;
-  listingTitle: string;
-}) {
-  const tokens = await listPushTokensByUserIds([hostId]);
-  const hostTokens = tokens
-    .filter((token) => token.user_id === hostId)
-    .map((token) => token.expo_token);
-  if (!hostTokens.length) return;
-
-  await sendPushNotification({
-    tokens: hostTokens,
-    title: "Payment received",
-    body: `${listingTitle} booking payment received.`,
-    data: { bookingId, status: "confirmed", role: "host" },
-  });
-}
-
 async function scheduleBookingNotifications({
   bookingId,
   driverId,
@@ -1477,11 +1454,6 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
           accessCode: targets.access_code,
           arrivalInstructions: targets.arrival_instructions,
         });
-        await sendPaymentReceivedPush({
-          bookingId: targets.booking_id,
-          hostId: targets.host_id,
-          listingTitle: targets.listing_title,
-        });
         await scheduleBookingNotifications({
           bookingId: targets.booking_id,
           driverId: targets.driver_id,
@@ -1844,11 +1816,6 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           accessCode: targets.access_code,
           arrivalInstructions: targets.arrival_instructions,
         });
-        await sendPaymentReceivedPush({
-          bookingId: targets.booking_id,
-          hostId: targets.host_id,
-          listingTitle: targets.listing_title,
-        });
         await scheduleBookingNotifications({
           bookingId: targets.booking_id,
           driverId: targets.driver_id,
@@ -1997,11 +1964,6 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           receiptUrl: (intent as any).charges?.data?.[0]?.receipt_url ?? null,
           accessCode: targets.access_code,
           arrivalInstructions: targets.arrival_instructions,
-        });
-        await sendPaymentReceivedPush({
-          bookingId: targets.booking_id,
-          hostId: targets.host_id,
-          listingTitle: targets.listing_title,
         });
         await scheduleBookingNotifications({
           bookingId: targets.booking_id,

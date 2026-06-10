@@ -51,6 +51,7 @@ type E2EScenarioState = {
   listing: ListingDetail;
   searchResults: ListingSummary[];
   bookings: BookingSummary[];
+  hostBookings: BookingSummary[];
   hostListings: ListingSummary[];
   availability: AvailabilityEntry[];
   draft: ListingDraft | null;
@@ -152,6 +153,67 @@ const fixtureHostDraft: ListingDraft = {
   capacity: 1,
 };
 
+const fixtureHostListing: ListingSummary = {
+  id: "e2e-host-listing-1",
+  title: "Smithfield Lane driveway",
+  address: "12 Smithfield Lane, Dublin 7",
+  price_per_day: 12,
+  price_per_hour: 2.5,
+  price_per_month: 110,
+  rate_type: "daily",
+  is_available: true,
+  rating: 4.6,
+  rating_count: 8,
+  availability_text: "Available daily",
+  amenities: ["CCTV", "Covered"],
+  latitude: 53.3497,
+  longitude: -6.2786,
+  image_urls: [fixtureImage],
+};
+
+const fixtureHostBookings: BookingSummary[] = [
+  {
+    id: "e2e-host-booking-1",
+    listingId: fixtureHostListing.id,
+    startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    endTime: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+    status: "confirmed",
+    amountCents: 1000,
+    currency: "eur",
+    title: fixtureHostListing.title,
+    address: fixtureHostListing.address,
+    imageUrls: fixtureHostListing.image_urls ?? null,
+    latitude: fixtureHostListing.latitude ?? null,
+    longitude: fixtureHostListing.longitude ?? null,
+    vehiclePlate: "191-D-45678",
+    driverName: "Sarah Murphy",
+    driverPhone: "+353 87 123 4567",
+    driverVehicleMake: "Volkswagen",
+    driverVehicleType: "Golf",
+    driverVehicleColor: "Blue",
+  },
+  {
+    id: "e2e-host-booking-2",
+    listingId: fixtureHostListing.id,
+    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    endTime: new Date(Date.now() + 28 * 60 * 60 * 1000).toISOString(),
+    status: "confirmed",
+    amountCents: 1000,
+    currency: "eur",
+    title: fixtureHostListing.title,
+    address: fixtureHostListing.address,
+    imageUrls: fixtureHostListing.image_urls ?? null,
+    latitude: fixtureHostListing.latitude ?? null,
+    longitude: fixtureHostListing.longitude ?? null,
+    vehiclePlate: "231-G-99012",
+    driverName: "Conor Walsh",
+    driverPhone: "+353 86 987 6543",
+    driverVehicleMake: "Toyota",
+    driverVehicleType: "Corolla",
+    driverVehicleColor: "Silver",
+  },
+];
+
 const driverSession: AuthSession = {
   token: "e2e-driver-token",
   refreshToken: "e2e-driver-refresh",
@@ -203,6 +265,7 @@ function createScenario(name: E2EScenarioState["name"]): E2EScenarioState {
         listing: { ...fixtureListing },
         searchResults: [{ ...fixtureSearchResult }],
         bookings: [],
+        hostBookings: [],
         hostListings: [],
         availability: fixtureListing.availabilitySchedule?.map((entry) => ({ ...entry })) ?? [],
         draft: null,
@@ -214,12 +277,14 @@ function createScenario(name: E2EScenarioState["name"]): E2EScenarioState {
         name,
         authSession: hostSession,
         route: {
-          name: "CreateListingFlow",
+          name: "Tabs",
+          params: { screen: "Profile" },
         },
         listing: { ...fixtureListing },
         searchResults: [],
         bookings: [],
-        hostListings: [],
+        hostBookings: fixtureHostBookings.map((b) => ({ ...b })),
+        hostListings: [{ ...fixtureHostListing }],
         availability: [],
         draft: {
           ...fixtureHostDraft,
@@ -249,6 +314,7 @@ function createScenario(name: E2EScenarioState["name"]): E2EScenarioState {
         listing: { ...fixtureListing },
         searchResults: [{ ...fixtureSearchResult }],
         bookings: [],
+        hostBookings: [],
         hostListings: [],
         availability: [],
         draft: null,
@@ -302,6 +368,7 @@ export function recordMockBooking() {
     arrivalInstructions: activeScenario.listing.arrival_instructions ?? null,
   };
   activeScenario.bookings = [booking];
+  activeScenario.hostBookings = [];
   return booking;
 }
 

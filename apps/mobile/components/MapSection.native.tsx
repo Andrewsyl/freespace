@@ -225,7 +225,14 @@ export default function MapSection({
     });
   }, [labelKeys, pinImages]);
 
-  // Stagger markers in one by one as pinsReady flips true after each search
+  // Stagger markers in one by one as pinsReady flips true after each search.
+  // Also keyed on the result id set: results land after searchGeneration bumps,
+  // and if their labels were already captured pinsReady never toggles — without
+  // this key the new ids would never enter revealedIds and their pins never draw.
+  const resultIdsKey = useMemo(
+    () => nextResults.map((listing) => listing.id).join("|"),
+    [nextResults]
+  );
   useEffect(() => {
     if (!pinsReady) {
       if (!hasEverShownPins.current) setRevealedIds(new Set());
@@ -256,7 +263,7 @@ export default function MapSection({
           : MAX_STAGGERED * STAGGER_MS);
     const doneTimer = setTimeout(() => { onAllPinsRevealed?.(); }, lastStaggerMs + 60);
     return () => { timers.forEach(clearTimeout); clearTimeout(doneTimer); };
-  }, [pinsReady, searchGeneration]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pinsReady, searchGeneration, resultIdsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getPinKey = (label: string, selected: boolean) =>
     `${label}|${selected ? "selected" : "default"}|${PIN_STYLE_VERSION}|${priceKey ?? "base"}`;

@@ -2,7 +2,6 @@ import { CommonActions, useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Animated,
   BackHandler,
   Platform,
@@ -20,6 +19,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useStripe } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
 import { DrumRollPicker } from "../components/DrumRollPicker";
+import { SquircleBtn } from "../components/SquircleBtn";
 import { Ionicons } from "@expo/vector-icons";
 import { ArrowLeft } from "lucide-react-native";
 import {
@@ -759,19 +759,13 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
       {listing && user ? (
         <View style={[styles.footerBar, { paddingBottom: 14 + insets.bottom }]}>
-          <Pressable
-            style={[styles.footerBtn, (bookingBusy || bookingConfirmed || requiresVehicleDetails) && styles.footerBtnDisabled]}
+          <SquircleBtn
+            label={confirmingBooking ? "Confirming…" : `Pay €${pricing.finalPrice.toFixed(2)}`}
             onPress={handlePayment}
             disabled={bookingBusy || bookingConfirmed || requiresVehicleDetails}
-          >
-            {bookingBusy ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.footerBtnText}>
-                {confirmingBooking ? "Confirming…" : `Pay €${pricing.finalPrice.toFixed(2)}`}
-              </Text>
-            )}
-          </Pressable>
+            loading={bookingBusy && !confirmingBooking}
+            fullWidth
+          />
         </View>
       ) : null}
 
@@ -793,15 +787,15 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 applyPickedDate(d);
               }}
             />
-            <Pressable
-              style={styles.pickerDoneBtn}
+            <SquircleBtn
+              label="Done"
               onPress={() => {
                 setPickerVisible(false);
                 setDraftDate(null);
               }}
-            >
-              <Text style={styles.pickerDoneBtnText}>Done</Text>
-            </Pressable>
+              fullWidth
+              style={{ marginHorizontal: 20, marginTop: 16 }}
+            />
           </Animated.View>
         </View>
       </Modal>
@@ -1131,13 +1125,6 @@ const styles = StyleSheet.create({
     shadowColor: "#111111", shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.07, shadowRadius: 10, elevation: 12,
   },
-  footerBtn: {
-    height: 52, width: "100%", borderRadius: 14,
-    backgroundColor: "#0a8050", alignItems: "center", justifyContent: "center",
-    shadowColor: "#0a7a50", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 5,
-  },
-  footerBtnDisabled: { opacity: 0.45, shadowOpacity: 0 },
-  footerBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#ffffff", letterSpacing: -0.3 },
 
   // ── Empty / auth states ─────────────────────────────────────
   centered: { alignItems: "center", flex: 1, justifyContent: "center", paddingHorizontal: 20 },
@@ -1157,12 +1144,6 @@ const styles = StyleSheet.create({
   },
   pickerHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#E0E0E0", marginBottom: 12 },
   pickerTitle: { fontSize: 18, fontFamily: "PlusJakartaSans-Bold", color: FG, marginBottom: 4, textAlign: "center" },
-  pickerDoneBtn: {
-    alignSelf: "stretch", marginHorizontal: 20, marginTop: 16,
-    backgroundColor: "#0a8050", borderRadius: 14, height: 52, alignItems: "center", justifyContent: "center",
-    shadowColor: "#0a7a50", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 5,
-  },
-  pickerDoneBtnText: { fontSize: 16, fontFamily: "PlusJakartaSans-SemiBold", color: "#ffffff", letterSpacing: -0.3 },
 
   // ── Overlay ─────────────────────────────────────────────────
   successOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(15, 23, 42, 0.35)" },

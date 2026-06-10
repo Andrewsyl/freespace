@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { SquircleBtn } from "../components/SquircleBtn";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -123,7 +124,7 @@ export function OnboardingPermissions({ onComplete }: Props) {
   };
 
   return (
-    <Animated.View style={[S.root, { paddingTop: insets.top + 16, paddingBottom: Math.max(insets.bottom + 20, 36), opacity: exitOpacity }]}>
+    <Animated.View style={[S.root, { paddingTop: insets.top + 28, paddingBottom: Math.max(insets.bottom + 20, 36), opacity: exitOpacity }]}>
 
       {/* Logo */}
       <View style={S.logoWrap}>
@@ -155,9 +156,12 @@ export function OnboardingPermissions({ onComplete }: Props) {
       <View style={{ flex: 1 }} />
 
       {/* Primary CTA */}
-      <Pressable style={S.ctaBtn} onPress={handleContinue}>
-        <Text style={S.ctaLabel}>{current.cta}</Text>
-      </Pressable>
+      <SquircleBtn
+        label={current.cta}
+        onPress={handleContinue}
+        fullWidth
+        style={{ marginBottom: 14 }}
+      />
 
       {/* Skip — underlined text only */}
       <Pressable style={S.skipBtn} onPress={advance}>
@@ -221,7 +225,7 @@ const S = StyleSheet.create({
   headlineDark: {
     fontFamily:    "PlusJakartaSans-Medium",
     fontSize:      32,
-    lineHeight:    38,
+    lineHeight:    42,
     letterSpacing: -0.6,
     color:         FG,
   },
@@ -237,27 +241,6 @@ const S = StyleSheet.create({
     fontSize:   15,
     lineHeight: 23,
     color:      BODY_TEXT,
-  },
-
-  ctaBtn: {
-    width:           "100%",
-    height:          52,
-    borderRadius:    14,
-    backgroundColor: "#0a8050",
-    alignItems:      "center",
-    justifyContent:  "center",
-    marginBottom:    14,
-    shadowColor:     "#0a7a50",
-    shadowOffset:    { width: 0, height: 4 },
-    shadowOpacity:   0.28,
-    shadowRadius:    14,
-    elevation:       5,
-  },
-  ctaLabel: {
-    fontFamily:    "PlusJakartaSans-SemiBold",
-    fontSize:      16,
-    color:         "#ffffff",
-    letterSpacing: -0.3,
   },
 
   skipBtn: {

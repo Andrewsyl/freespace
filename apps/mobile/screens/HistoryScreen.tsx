@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { SquircleBtn } from "../components/SquircleBtn";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
 import { Animated, BackHandler, Easing, FlatList, Image, InteractionManager, PanResponder, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
@@ -597,9 +598,11 @@ export function HistoryScreen({ navigation, route }: Props) {
                           <Text style={styles.signInBody}>
                             Log in to see your upcoming reservations and past stays.
                           </Text>
-                          <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
-                            <Text style={styles.primaryButtonText}>Sign in</Text>
-                          </Pressable>
+                          <SquircleBtn
+                            label="Sign in"
+                            onPress={() => navigation.navigate("Welcome")}
+                            fullWidth
+                          />
                         </View>
                       ) : (
                         <>
@@ -646,13 +649,11 @@ export function HistoryScreen({ navigation, route }: Props) {
                                   : "Completed reservations will appear here after your stay."}
                               </Text>
                               {paneTab === "upcoming" ? (
-                                <Pressable
-                                  style={styles.primaryButton}
+                                <SquircleBtn
+                                  label="Find parking"
                                   onPress={() => navigation.navigate("Tabs", { screen: "Search" })}
-                                  android_ripple={null}
-                                >
-                                  <Text style={styles.primaryButtonText}>Find parking</Text>
-                                </Pressable>
+                                  fullWidth
+                                />
                               ) : null}
                             </View>
                           ) : null}
@@ -986,29 +987,6 @@ const styles = StyleSheet.create({
     color: MUTED,
     textAlign: "center",
     marginBottom: 24,
-  },
-
-  // ── Primary button ───────────────────────────────────────────
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: "#0a8050",
-    borderRadius: 14,
-    marginTop: 4,
-    height: 52,
-    paddingHorizontal: 32,
-    alignSelf: "stretch",
-    justifyContent: "center",
-    shadowColor: "#0a7a50",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  primaryButtonText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
-    color: "#ffffff",
-    letterSpacing: -0.3,
   },
 
   // ── Success overlay ──────────────────────────────────────────
