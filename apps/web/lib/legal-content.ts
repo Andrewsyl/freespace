@@ -2,6 +2,7 @@ export type LegalDoc = {
   slug:
     | "terms-of-service"
     | "privacy-policy"
+    | "account-deletion"
     | "cookie-policy"
     | "refund-cancellation-policy"
     | "host-terms"
@@ -99,6 +100,42 @@ export const LEGAL_DOCS: LegalDoc[] = [
         bullets: [
           "You can request access, correction, deletion, or export of your data by contacting support.",
           "Where required by law, we will also support objection, restriction, and consent-withdrawal rights.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "account-deletion",
+    title: "Account Deletion",
+    summary: "How to delete your FreeSpace account and what data is deleted or retained.",
+    sections: [
+      {
+        heading: "How to request deletion",
+        bullets: [
+          "In the FreeSpace app, go to Profile, then Login & security.",
+          "Tap Delete account and confirm the request.",
+          "If you cannot access the app, email support@freespace.ie with the subject line Account deletion request.",
+        ],
+      },
+      {
+        heading: "What is deleted",
+        bullets: [
+          "Your FreeSpace account profile and login access.",
+          "Saved vehicles, favourites, and other account preferences tied to your profile.",
+          "Listings you created that are no longer required for active or unresolved bookings.",
+        ],
+      },
+      {
+        heading: "What may be retained",
+        bullets: [
+          "Booking, payout, refund, and payment records that must be retained for accounting, fraud prevention, chargebacks, disputes, or legal compliance.",
+          "Support and enforcement records where retention is required to investigate misuse, safety issues, or legal claims.",
+        ],
+      },
+      {
+        heading: "Retention timing",
+        paragraphs: [
+          "We action account deletion requests as quickly as reasonably possible. Some operational records may be retained for a limited period where required for tax, accounting, fraud, payment, or legal obligations.",
         ],
       },
     ],
