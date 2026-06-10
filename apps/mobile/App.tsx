@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Platform,
   Pressable,
@@ -21,8 +21,7 @@ import { StripeProvider } from "@stripe/stripe-react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { enableScreens } from "react-native-screens";
 import { CalendarDays, Compass, UserRound } from "lucide-react-native";
-import { AuthProvider, useAuth } from "./auth";
-import { AppLaunchContext } from "./appLaunch";
+import { AuthProvider, EXPO_PUSH_TOKEN_KEY, useAuth } from "./auth";
 import { FavoritesProvider } from "./favorites";
 import { HistoryScreen } from "./screens/HistoryScreen";
 import { FavoritesScreen } from "./screens/FavoritesScreen";
@@ -112,7 +111,6 @@ function getSentry():
 }
 
 export default function App() {
-  const [launchComplete, setLaunchComplete] = useState(true);
   const [fontsLoaded] = useFonts({
     "PlusJakartaSans-Regular": require("./assets/fonts/PlusJakartaSans_400Regular.ttf"),
     "PlusJakartaSans-Medium": require("./assets/fonts/PlusJakartaSans_500Medium.ttf"),
@@ -140,15 +138,6 @@ export default function App() {
     }
   }, []);
 
-  const appLaunchValue = useMemo(
-    () => ({
-      launchComplete,
-      setLaunchComplete,
-    }),
-    [launchComplete]
-  );
-
-
   const stripeKey = mobileEnv.stripePublishableKey;
 
   if (!fontsLoaded) {
@@ -163,9 +152,7 @@ export default function App() {
             <FavoritesProvider>
               <GlobalLoadingProvider>
                 <GlobalToastProvider>
-                  <AppLaunchContext.Provider value={appLaunchValue}>
-                    <AppShell />
-                  </AppLaunchContext.Provider>
+                  <AppShell />
                 </GlobalToastProvider>
               </GlobalLoadingProvider>
             </FavoritesProvider>
@@ -308,9 +295,23 @@ function AppNavigator() {
       );
     };
 
+    // On cold start from a notification tap the navigator isn't ready yet when
+    // this resolves — poll briefly instead of dropping the deep-link.
     void Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (!response || !navigationRef.isReady()) return;
-      openNotificationTarget(response.notification.request.content.data as BookingNotificationData);
+      if (!response) return;
+      const data = response.notification.request.content.data as BookingNotificationData;
+      let attempts = 0;
+      const navigateWhenReady = () => {
+        if (!navigationRef.isReady()) {
+          if (attempts < 100) {
+            attempts += 1;
+            setTimeout(navigateWhenReady, 50);
+          }
+          return;
+        }
+        openNotificationTarget(data);
+      };
+      navigateWhenReady();
     });
 
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
@@ -659,6 +660,8 @@ function PushRegistration() {
         platform: Platform.OS,
         deviceId: Constants.deviceId ?? Constants.deviceName ?? undefined,
       });
+      // Persisted so logout can unregister this device (see auth.tsx).
+      await AsyncStorage.setItem(EXPO_PUSH_TOKEN_KEY, expoToken);
       if (__DEV__) {
         console.log("Push registration: token stored");
       }

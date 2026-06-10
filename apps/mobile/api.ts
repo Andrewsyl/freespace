@@ -99,7 +99,7 @@ export async function searchListings(params: SearchParams) {
   if (params.instantBook) query.set("instantBook", "true");
   const response = await fetchWithTimeout(`${baseUrl}/api/listings/search?${query.toString()}`);
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response, `Search failed (${response.status})`));
+    throw new Error(await readErrorMessage(response, "Search failed"));
   }
   const payload = (await response.json()) as { spaces?: ListingSummary[] };
   const spaces = payload.spaces ?? [];
@@ -147,7 +147,7 @@ export async function getListing(
     : `${baseUrl}/api/listings/${id}`;
   const response = await fetchWithTimeout(url);
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response, `Listing failed (${response.status})`));
+    throw new Error(await readErrorMessage(response, "Listing failed"));
   }
   const payload = (await response.json()) as { listing: ListingDetail };
   const listing: any = payload.listing ?? {};
@@ -161,9 +161,7 @@ export async function getListing(
     rating_count: listing.rating_count ?? listing.ratingCount,
     availability_text: listing.availability_text ?? listing.availability,
     availabilitySchedule:
-      listing.availabilitySchedule ??
-      listing.availability_schedule ??
-      listing.availabilitySchedule,
+      listing.availabilitySchedule ?? listing.availability_schedule,
     amenities: listing.amenities ?? null,
     access_code: listing.access_code ?? listing.accessCode ?? null,
     arrival_instructions:
@@ -175,20 +173,20 @@ export async function getListing(
 }
 
 export async function listFavorites(token: string) {
-  const response = await fetch(`${baseUrl}/api/favorites`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/favorites`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response, `Favorites failed (${response.status})`));
+    throw new Error(await readErrorMessage(response, "Favorites failed"));
   }
   const payload = (await response.json()) as { favorites?: ListingSummary[] };
   return payload.favorites ?? [];
 }
 
 export async function addFavorite(token: string, listingId: string) {
-  const response = await fetch(`${baseUrl}/api/favorites`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/favorites`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -197,20 +195,20 @@ export async function addFavorite(token: string, listingId: string) {
     body: JSON.stringify({ listingId }),
   });
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response, `Favorite failed (${response.status})`));
+    throw new Error(await readErrorMessage(response, "Favorite failed"));
   }
   return (await response.json()) as { listingId: string };
 }
 
 export async function removeFavorite(token: string, listingId: string) {
-  const response = await fetch(`${baseUrl}/api/favorites/${listingId}`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/favorites/${listingId}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
   if (!response.ok && response.status !== 204) {
-    throw new Error(await readErrorMessage(response, `Remove favorite failed (${response.status})`));
+    throw new Error(await readErrorMessage(response, "Remove favorite failed"));
   }
 }
 
@@ -225,7 +223,7 @@ export async function registerPushToken({
   platform: string;
   deviceId?: string;
 }) {
-  const response = await fetch(`${baseUrl}/api/notifications/register`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/notifications/register`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -239,7 +237,7 @@ export async function registerPushToken({
 }
 
 export async function unregisterPushToken(token: string, expoToken: string) {
-  const response = await fetch(`${baseUrl}/api/notifications/register`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/notifications/register`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -253,21 +251,21 @@ export async function unregisterPushToken(token: string, expoToken: string) {
 }
 
 export async function getHostListings(token: string) {
-  const response = await fetch(`${baseUrl}/api/listings`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/listings`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) throw new Error(await readErrorMessage(response, `Host listings failed (${response.status})`));
+  if (!response.ok) throw new Error(await readErrorMessage(response, "Host listings failed"));
   return (await response.json()) as { listings: { id: string }[] };
 }
 
 export async function getHostEarningsSummary(token: string) {
-  const response = await fetch(`${baseUrl}/api/host/earnings`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/host/earnings`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response, `Earnings failed (${response.status})`));
+    throw new Error(await readErrorMessage(response, "Earnings failed"));
   }
   const payload = (await response.json()) as {
     summary: { totalCents: number; feeCents: number; netCents: number; currency: string };
@@ -284,13 +282,13 @@ export type HostPayoutStatus = {
 };
 
 export async function getHostPayoutStatus(token: string) {
-  const response = await fetch(`${baseUrl}/api/host/payout`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/host/payout`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response, `Payout status failed (${response.status})`));
+    throw new Error(await readErrorMessage(response, "Payout status failed"));
   }
   return (await response.json()) as HostPayoutStatus;
 }
@@ -301,7 +299,7 @@ export async function createHostPayoutLink(payload: {
   returnUrl?: string;
   refreshUrl?: string;
 }) {
-  const response = await fetch(`${baseUrl}/api/host/payout`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/host/payout`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${payload.token}`,
@@ -314,22 +312,9 @@ export async function createHostPayoutLink(payload: {
     }),
   });
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response, `Payout setup failed (${response.status})`));
+    throw new Error(await readErrorMessage(response, "Payout setup failed"));
   }
   return (await response.json()) as { accountId: string; onboardingUrl: string | null; mock?: boolean };
-}
-
-export async function runHostPayouts(token: string) {
-  const response = await fetch(`${baseUrl}/api/host/payouts/run`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  if (!response.ok) {
-    throw new Error(await readErrorMessage(response, `Payout run failed (${response.status})`));
-  }
-  return (await response.json()) as { processed: number };
 }
 
 export type AdminUser = {
@@ -350,7 +335,7 @@ export type AdminListing = {
 };
 
 export async function adminListUsers(token: string) {
-  const response = await fetch(`${baseUrl}/api/admin/users`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/admin/users`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -367,7 +352,7 @@ export async function adminUpdateUser(
   userId: string,
   payload: { status?: "active" | "suspended"; role?: "driver" | "host" | "admin"; reason?: string }
 ) {
-  const response = await fetch(`${baseUrl}/api/admin/users/${userId}`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/admin/users/${userId}`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -382,7 +367,7 @@ export async function adminUpdateUser(
 }
 
 export async function adminListListings(token: string) {
-  const response = await fetch(`${baseUrl}/api/admin/listings`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/admin/listings`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -404,7 +389,7 @@ export async function adminUpdateListing(
     reason?: string;
   }
 ) {
-  const response = await fetch(`${baseUrl}/api/admin/listings/${listingId}`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/admin/listings/${listingId}`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -419,7 +404,7 @@ export async function adminUpdateListing(
 }
 
 export async function sendSupportMessage(token: string, payload: { subject: string; message: string }) {
-  const response = await fetch(`${baseUrl}/api/support`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/support`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -481,7 +466,7 @@ export async function refreshSession(refreshToken: string) {
 }
 
 export async function revokeSession(token: string) {
-  const response = await fetch(`${baseUrl}/api/auth/logout`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/logout`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -492,7 +477,7 @@ export async function revokeSession(token: string) {
 }
 
 export async function logoutAllSessions(token: string) {
-  const response = await fetch(`${baseUrl}/api/auth/logout-all`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/logout-all`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -503,7 +488,7 @@ export async function logoutAllSessions(token: string) {
 }
 
 export async function getMe(token: string, apiBaseOverride?: string) {
-  const response = await fetch(`${resolveApiBase(apiBaseOverride)}/api/auth/me`, {
+  const response = await fetchWithTimeout(`${resolveApiBase(apiBaseOverride)}/api/auth/me`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
@@ -524,7 +509,7 @@ export async function updateMe(
     vehiclePlate?: string | null;
   }
 ) {
-  const response = await fetch(`${baseUrl}/api/auth/me`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/me`, {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -605,7 +590,7 @@ export async function resetPassword(token: string, password: string, apiBaseOver
 }
 
 export async function oauthLoginGoogle(idToken: string) {
-  const response = await fetch(`${baseUrl}/api/auth/oauth/google`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/oauth/google`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ idToken }),
@@ -617,7 +602,7 @@ export async function oauthLoginGoogle(idToken: string) {
 }
 
 export async function oauthLoginFacebook(accessToken: string) {
-  const response = await fetch(`${baseUrl}/api/auth/oauth/facebook`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/oauth/facebook`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ accessToken }),
@@ -629,7 +614,7 @@ export async function oauthLoginFacebook(accessToken: string) {
 }
 
 export async function acceptLegal(token: string, payload: { termsVersion: string; privacyVersion: string }) {
-  const response = await fetch(`${baseUrl}/api/auth/legal`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/legal`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -644,7 +629,7 @@ export async function acceptLegal(token: string, payload: { termsVersion: string
 }
 
 export async function requestEmailVerification(email: string) {
-  const response = await fetch(`${baseUrl}/api/auth/request-verification`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/request-verification`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
@@ -657,7 +642,7 @@ export async function requestEmailVerification(email: string) {
 }
 
 export async function deleteAccount(token: string) {
-  const response = await fetch(`${baseUrl}/api/auth/me`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/me`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -683,35 +668,6 @@ export async function changePassword(token: string, currentPassword: string, new
   return (await response.json()) as { ok: true };
 }
 
-export async function createBooking(payload: {
-  listingId: string;
-  from: string;
-  to: string;
-  amountCents: number;
-  vehiclePlate?: string | null;
-  token: string;
-}) {
-  const response = await fetch(`${baseUrl}/api/bookings`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${payload.token}`,
-    },
-    body: JSON.stringify({
-      listingId: payload.listingId,
-      from: payload.from,
-      to: payload.to,
-      amountCents: payload.amountCents,
-      vehiclePlate: payload.vehiclePlate ?? undefined,
-    }),
-  });
-  if (!response.ok) {
-    throw new Error(await readErrorMessage(response, `Booking failed (${response.status})`));
-  }
-  const data = (await response.json()) as { checkoutUrl: string };
-  return data.checkoutUrl;
-}
-
 export async function createBookingPaymentIntent(payload: {
   listingId: string;
   from: string;
@@ -729,7 +685,7 @@ export async function createBookingPaymentIntent(payload: {
       ephemeralKeySecret: "ephkey_e2e",
     };
   }
-  const response = await fetch(`${baseUrl}/api/bookings/payment-intent`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/bookings/payment-intent`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -772,7 +728,7 @@ export async function confirmBookingPayment(payload: {
     recordMockBooking();
     return;
   }
-  const response = await fetch(`${baseUrl}/api/bookings/confirm`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/bookings/confirm`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -792,7 +748,7 @@ export async function confirmBookingPayment(payload: {
 }
 
 export async function cancelBooking(payload: { token: string; bookingId: string }) {
-  const response = await fetch(`${baseUrl}/api/bookings/${payload.bookingId}/cancel`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/bookings/${payload.bookingId}/cancel`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${payload.token}`,
@@ -809,7 +765,7 @@ export async function cancelBooking(payload: { token: string; bookingId: string 
 }
 
 export async function hostCancelBooking(payload: { token: string; bookingId: string }) {
-  const response = await fetch(`${baseUrl}/api/bookings/${payload.bookingId}/host-cancel`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/bookings/${payload.bookingId}/host-cancel`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${payload.token}`,
@@ -831,7 +787,7 @@ export async function createReview(payload: {
   rating: number;
   comment?: string;
 }) {
-  const response = await fetch(`${baseUrl}/api/reviews`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/reviews`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -861,7 +817,7 @@ export type ListingReview = {
 };
 
 export async function listListingReviews(listingId: string) {
-  const response = await fetch(`${baseUrl}/api/reviews/listing/${listingId}`);
+  const response = await fetchWithTimeout(`${baseUrl}/api/reviews/listing/${listingId}`);
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, "Reviews fetch failed"));
   }
@@ -907,7 +863,7 @@ export async function listMyBookings(token: string) {
       hostBookings: e2eState.hostBookings.map((booking) => ({ ...booking })),
     };
   }
-  const response = await fetch(`${baseUrl}/api/bookings/me`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/bookings/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -926,7 +882,7 @@ export async function listMyBookings(token: string) {
 }
 
 export async function checkInBooking(payload: { token: string; bookingId: string }) {
-  const response = await fetch(`${baseUrl}/api/bookings/${payload.bookingId}/check-in`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/bookings/${payload.bookingId}/check-in`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${payload.token}`,
@@ -943,7 +899,7 @@ export async function createBookingExtensionIntent(payload: {
   bookingId: string;
   newEndTime: string;
 }) {
-  const response = await fetch(`${baseUrl}/api/bookings/${payload.bookingId}/extend-intent`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/bookings/${payload.bookingId}/extend-intent`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -978,7 +934,7 @@ export async function confirmBookingExtension(payload: {
   newEndTime: string;
   newTotalCents: number;
 }) {
-  const response = await fetch(`${baseUrl}/api/bookings/${payload.bookingId}/extend-confirm`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/bookings/${payload.bookingId}/extend-confirm`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -1021,7 +977,7 @@ export async function createListing(payload: {
   if (isMobileE2EActive()) {
     return recordMockListingPublish() ?? "e2e-host-listing-1";
   }
-  const response = await fetch(`${baseUrl}/api/listings`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/listings`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -1057,7 +1013,7 @@ export async function listHostListings(token: string) {
   if (isMobileE2EActive() && e2eState) {
     return e2eState.hostListings.map((listing) => ({ ...listing }));
   }
-  const response = await fetch(`${baseUrl}/api/listings`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/listings`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -1094,7 +1050,7 @@ export async function setListingPaused({
   listingId: string;
   paused: boolean;
 }) {
-  const response = await fetch(`${baseUrl}/api/listings/${listingId}`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/listings/${listingId}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -1124,7 +1080,7 @@ export async function updateListing(payload: {
   permissionDeclared?: boolean;
   capacity?: number | null;
 }) {
-  const response = await fetch(`${baseUrl}/api/listings/${payload.listingId}`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/listings/${payload.listingId}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -1152,7 +1108,7 @@ export async function updateListing(payload: {
 }
 
 export async function deleteListing(payload: { token: string; listingId: string }) {
-  const response = await fetch(`${baseUrl}/api/listings/${payload.listingId}`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/listings/${payload.listingId}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${payload.token}`,
@@ -1168,7 +1124,7 @@ export async function getListingImageUploadUrl(payload: {
   contentType: string;
   fileSizeBytes: number;
 }) {
-  const response = await fetch(`${baseUrl}/api/listings/image-upload-url`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/listings/image-upload-url`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${payload.token}`,
@@ -1215,7 +1171,7 @@ export async function listAvailability(payload: { token: string; listingId: stri
   if (isMobileE2EActive() && e2eState) {
     return e2eState.availability.map((entry) => ({ ...entry }));
   }
-  const response = await fetch(`${baseUrl}/api/host/listings/${payload.listingId}/availability`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/host/listings/${payload.listingId}/availability`, {
     headers: {
       Authorization: `Bearer ${payload.token}`,
     },
@@ -1249,7 +1205,7 @@ export async function createAvailabilityEntry(payload: {
     e2eState.availability = [...e2eState.availability, entry];
     return entry;
   }
-  const response = await fetch(`${baseUrl}/api/host/listings/${payload.listingId}/availability`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/host/listings/${payload.listingId}/availability`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -1279,7 +1235,7 @@ export async function deleteAvailabilityEntry(payload: {
     e2eState.availability = e2eState.availability.filter((entry) => entry.id !== payload.availabilityId);
     return;
   }
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `${baseUrl}/api/host/availability/${payload.availabilityId}`,
     {
       method: "DELETE",
@@ -1305,7 +1261,7 @@ export type PaymentHistoryItem = {
 };
 
 export async function listPaymentMethods(token: string): Promise<PaymentMethod[]> {
-  const response = await fetch(`${baseUrl}/api/payment-methods`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/payment-methods`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -1318,7 +1274,7 @@ export async function listPaymentMethods(token: string): Promise<PaymentMethod[]
 }
 
 export async function createPaymentMethodSetupIntent(token: string) {
-  const response = await fetch(`${baseUrl}/api/payment-methods`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/payment-methods`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -1338,7 +1294,7 @@ export async function createPaymentMethodSetupIntent(token: string) {
 }
 
 export async function deletePaymentMethod(token: string, id: string) {
-  const response = await fetch(`${baseUrl}/api/payment-methods/${id}`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/payment-methods/${id}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -1350,7 +1306,7 @@ export async function deletePaymentMethod(token: string, id: string) {
 }
 
 export async function setDefaultPaymentMethod(token: string, id: string) {
-  const response = await fetch(`${baseUrl}/api/payment-methods/${id}`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/payment-methods/${id}`, {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -1362,7 +1318,7 @@ export async function setDefaultPaymentMethod(token: string, id: string) {
 }
 
 export async function listPaymentHistory(token: string): Promise<PaymentHistoryItem[]> {
-  const response = await fetch(`${baseUrl}/api/payments/history`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/payments/history`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -1375,7 +1331,7 @@ export async function listPaymentHistory(token: string): Promise<PaymentHistoryI
 }
 
 export async function retryPayment(token: string, id: string) {
-  const response = await fetch(`${baseUrl}/api/payments/${id}/retry`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/payments/${id}/retry`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

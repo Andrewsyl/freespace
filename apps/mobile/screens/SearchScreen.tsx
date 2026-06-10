@@ -19,14 +19,13 @@ import {
 import LottieView from "lottie-react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import type MapView from "react-native-maps";
 import DatePicker from "../components/AdaptiveDatePicker";
 import { DrumRollPicker, type DrumRollPickerHandle } from "../components/DrumRollPicker";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../auth";
-import { useAppLaunch } from "../appLaunch";
 import { useFavorites } from "../favorites";
 import MapSection from "../components/MapSection";
 import { MapBottomCard } from "../components/MapBottomCard";
@@ -166,10 +165,6 @@ const formatMapCardMetaLine = (fromIso: string, toIso: string, distanceM?: numbe
   return `${dayLabel}: ${formatTimeLabel(fromDate)} - ${formatTimeLabel(toDate)}${distanceLabel ? ` | ${distanceLabel}` : ""}`;
 };
 
-function rankResultsForSearch(results: ListingSummary[], start: Date, end: Date) {
-  return results;
-}
-
 export function SearchScreen({ navigation }: Props) {
   const today = useMemo(() => {
     const now = new Date();
@@ -304,8 +299,6 @@ export function SearchScreen({ navigation }: Props) {
   const [renderSearchArea, setRenderSearchArea] = useState(false);
   const isProgrammaticMoveRef = useRef(false);
   useAuth();
-  const { launchComplete } = useAppLaunch();
-  const isFocused = useIsFocused();
   const { favorites, isFavorite, toggle } = useFavorites();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -643,7 +636,7 @@ export function SearchScreen({ navigation }: Props) {
         const carryOver = resultsRef.current.filter(
           (listing) => !nextIds.has(listing.id) && isWithinRadius(listing, center, radiusM)
         );
-        nextResultsSnapshot = [...rankResultsForSearch(spaces, startAt, endAt), ...carryOver];
+        nextResultsSnapshot = [...spaces, ...carryOver];
         // If preserving selection, keep the selected listing in results so the card stays visible
         if (preserveSelection) {
           setSelectedId((prev) => {
@@ -1183,7 +1176,7 @@ export function SearchScreen({ navigation }: Props) {
   );
 
   useEffect(() => {
-    if (launchComplete && !mapReady) {
+    if (!mapReady) {
       if (mapReadyFailSafeRef.current) clearTimeout(mapReadyFailSafeRef.current);
       mapReadyFailSafeRef.current = setTimeout(() => {
         setMapReady(true);
@@ -1200,14 +1193,14 @@ export function SearchScreen({ navigation }: Props) {
         mapReadyFailSafeRef.current = null;
       }
     };
-  }, [launchComplete, mapReady]);
+  }, [mapReady]);
 
   useEffect(() => {
-    if (!launchComplete || !mapReady || loading || results.length > 0) return;
+    if (!mapReady || loading || results.length > 0) return;
     if (initialSearchTriggeredRef.current) return;
     initialSearchTriggeredRef.current = true;
     void runSearch();
-  }, [launchComplete, mapReady, loading, results.length, runSearch]);
+  }, [mapReady, loading, results.length, runSearch]);
 
   useEffect(() => {
     if (showFilters) {
@@ -1421,8 +1414,7 @@ export function SearchScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={[]}>
       <View style={styles.mapShell}>
-        {launchComplete ? (
-          <MapSection
+        <MapSection
             initialRegion={mapInitialRegion ?? mapRegion}
             results={results}
             style={styles.map}
@@ -1451,7 +1443,6 @@ export function SearchScreen({ navigation }: Props) {
             searchGeneration={searchGeneration}
             onAllPinsRevealed={() => setIsStaggerPending(false)}
           />
-        ) : null}
         {mapFrozenUri ? (
           <Animated.Image
             source={{ uri: mapFrozenUri }}
@@ -2194,22 +2185,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#6b7280",
   },
-  parkingBadge: {
-    alignItems: "center",
-    backgroundColor: "#0a8050",
-    borderRadius: 7,
-    height: 24,
-    justifyContent: "center",
-    width: 21,
-  },
-  parkingBadgeText: {
-    color: "#ffffff",
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 14,
-    letterSpacing: -0.5,
-    lineHeight: 18,
-  },
-
   // ── Filter / clear / loading row below card
   searchCardRow: {
     alignItems: "center",
@@ -2286,108 +2261,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
 
-  // keep these for compat
-  searchInput: {
-    ...textStyles.bodyMedium,
-    fontSize: 14,
-    lineHeight: 18,
-    flex: 1,
-    color: colors.text,
-  },
-  searchInputPlaceholder: {
-    color: "#98a2b3",
-  },
-  clearButton: {
-    alignItems: "center",
-    backgroundColor: "#F3F4F6",
-    borderRadius: radius.pill,
-    height: 22,
-    justifyContent: "center",
-    width: 22,
-  },
-  clearButtonText: {
-    color: colors.textMuted,
-    fontSize: 16,
-    fontWeight: "600",
-    lineHeight: 18,
-  },
-  actionButtonPressed: {
-    opacity: 0.9,
-  },
-  dateRowCard: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    marginTop: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  searchOverlayTrigger: {
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
-  },
-  searchLoadingBubble: {
-    alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.82)",
-    borderRadius: radius.pill,
-    height: 38,
-    justifyContent: "center",
-    marginTop: 10,
-    overflow: "visible",
-    paddingLeft: 52,
-    paddingRight: 12,
-  },
-  searchLoadingLottie: {
-    left: -10,
-    position: "absolute",
-    top: -26,
-    height: 86,
-    width: 86,
-  },
-  filtersHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
-  },
-  filtersToggle: {
-    backgroundColor: colors.appBg,
-    borderRadius: radius.pill,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  filtersToggleActive: {
-    backgroundColor: "#e8fff8",
-  },
-  filtersToggleText: {
-    ...textStyles.meta,
-    color: colors.text,
-  },
-  filtersToggleTextActive: {
-    color: colors.accent,
-  },
-  clearFilters: {
-    alignSelf: "flex-start",
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    borderRadius: radius.pill,
-    marginTop: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    ...cardShadow,
-  },
-  clearFiltersText: {
-    ...textStyles.meta,
-  },
   filtersPanel: {
     backgroundColor: colors.cardBg,
     padding: spacing.screenX,
@@ -2509,14 +2382,6 @@ const styles = StyleSheet.create({
   applyButtonText: {
     ...textStyles.button,
     fontSize: 14,
-  },
-  suggestions: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 8,
-    overflow: "hidden",
   },
   // ── Search sheet ──────────────────────────────────────────────
   searchOverlay: {
@@ -2710,46 +2575,11 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
 
-  emptyText: {
-    color: "#374151",
-    fontSize: 13,
-  },
   sectionLabel: {
     ...textStyles.meta,
     color: colors.text,
     letterSpacing: 0.4,
     marginBottom: 10,
-  },
-  dateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  dateTimeColumn: {
-    flex: 1,
-    minWidth: 0,
-  },
-  dateTimeLabel: {
-    ...textStyles.label,
-    marginBottom: 4,
-  },
-  dateTimeValue: {
-    ...textStyles.bodyStrong,
-    fontSize: 14,
-    lineHeight: 19,
-  },
-  dateArrowIcon: {
-    marginHorizontal: 4,
-  },
-  dateArrow: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: 12,
-  },
-  dateArrowText: {
-    color: colors.textMuted,
-    fontSize: 14,
-    fontWeight: "600",
   },
   searchAreaFloat: {
     alignItems: "center",
@@ -2797,23 +2627,6 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     letterSpacing: 0.1,
-  },
-  durationRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 8,
-  },
-  durationPill: {
-    backgroundColor: "#f8fafc",
-    borderColor: "#e2e8f0",
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  durationText: {
-    ...textStyles.meta,
-    color: colors.textMuted,
   },
   pickerBackdrop: {
     flex: 1,
@@ -2929,32 +2742,9 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     letterSpacing: -0.3,
   },
-  suggestionItem: {
-    borderBottomColor: "#f2f4f7",
-    borderBottomWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  suggestionText: {
-    ...textStyles.body,
-  },
-  suggestionMuted: {
-    ...textStyles.meta,
-    color: colors.textSoft,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
   error: {
     color: "#b42318",
     marginTop: 8,
-  },
-  card: {
-    backgroundColor: "#ffffff",
-    borderColor: "#eaecf0",
-    borderRadius: 16,
-    borderWidth: 1,
-    marginTop: 12,
-    padding: 16,
   },
   overlappingBackdrop: {
     flex: 1,

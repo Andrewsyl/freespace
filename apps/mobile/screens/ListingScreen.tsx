@@ -147,8 +147,8 @@ export function ListingScreen({ navigation, route }: Props) {
 
   const isBookingTimes =
     booking &&
-    startAt.toISOString() === booking.startTime &&
-    endAt.toISOString() === booking.endTime;
+    startAt.getTime() === new Date(booking.startTime).getTime() &&
+    endAt.getTime() === new Date(booking.endTime).getTime();
   const showBookingMode = booking && isBookingTimes;
 
   const prevIdRef = useRef<string | null>(null);
@@ -297,11 +297,15 @@ export function ListingScreen({ navigation, route }: Props) {
   const applyPickedDate = (next: Date) => {
     if (pickerField === "start") {
       setStartAt(next);
-      // Always push "until" to 2 h after the new "from" time.
-      const bumped = new Date(next);
-      bumped.setHours(bumped.getHours() + 2);
-      setEndAt(bumped);
-      return bumped;
+      // Keep the chosen "until" time unless the new "from" passes it
+      // (same behaviour as the search screen).
+      if (next > endAt) {
+        const bumped = new Date(next);
+        bumped.setHours(bumped.getHours() + 2);
+        setEndAt(bumped);
+        return bumped;
+      }
+      return endAt;
     }
     // For the "until" picker: enforce at least 1 h after "from".
     const minEnd = new Date(startAt);

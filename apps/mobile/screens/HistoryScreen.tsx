@@ -143,22 +143,19 @@ export function HistoryScreen({ navigation, route }: Props) {
       }
       return [];
     }
-    let active = true;
     if (!options?.silent) {
       setLoading(true);
       setError(null);
     }
     try {
       const data = await listMyBookings(token);
-      if (!active) return [];
       setBookings(data.driverBookings ?? []);
       return data.driverBookings ?? [];
     } catch (err) {
-      if (!active) return [];
       setError(err instanceof Error ? err.message : "Could not load bookings");
       return [];
     } finally {
-      if (active && !options?.silent) {
+      if (!options?.silent) {
         setLoading(false);
       }
     }
@@ -367,7 +364,14 @@ export function HistoryScreen({ navigation, route }: Props) {
     navigation.setParams({ refreshToken: undefined });
   }, [loadBookings, navigation, route.params?.refreshToken]);
 
-  const now = new Date();
+  // Re-bucket every minute so bookings move between Upcoming/Active/Past while
+  // the screen stays open.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+  const now = new Date(nowMs);
   const upcoming = bookings.filter(
     (booking) => new Date(booking.startTime) > now && booking.status !== "canceled"
   );

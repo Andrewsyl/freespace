@@ -29,7 +29,7 @@ import {
 } from "../api";
 import { useAuth } from "../auth";
 import { logError, logInfo, logWarn } from "../logger";
-import { getNotificationImageAttachment } from "../notifications";
+import { bookingReminderIds, getNotificationImageAttachment } from "../notifications";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
@@ -211,10 +211,13 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const applyPickedDate = (next: Date) => {
     if (pickerField === "start") {
       setStartAt(next);
-      // Always push "until" to 2 h after the new "from" time.
-      const bumped = new Date(next);
-      bumped.setHours(bumped.getHours() + 2);
-      setEndAt(bumped);
+      // Keep the chosen "until" time unless the new "from" passes it
+      // (same behaviour as the search screen).
+      if (next > endAt) {
+        const bumped = new Date(next);
+        bumped.setHours(bumped.getHours() + 2);
+        setEndAt(bumped);
+      }
       return;
     }
     // For the "until" picker: enforce at least 1 h after "from".
@@ -255,6 +258,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     if (startReminder.getTime() > nowMs) {
       const attachments = await getNotificationImageAttachment();
       await Notifications.scheduleNotificationAsync({
+        identifier: bookingReminderIds.start(listing.id, start.getTime()),
         content: {
           title: "Booking starts soon",
           body: `${listing.title} starts in 1 hour.`,
@@ -271,6 +275,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     if (endReminder.getTime() > nowMs) {
       const attachments = await getNotificationImageAttachment();
       await Notifications.scheduleNotificationAsync({
+        identifier: bookingReminderIds.end(listing.id, end.getTime()),
         content: {
           title: "Your parking ends in 30 minutes",
           body: `${listing.title} — need more time?`,
@@ -291,6 +296,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     setError(null);
     setPaymentFailureMessage(null);
     let didConfirm = false;
+    let paymentCompleted = false;
     try {
       logInfo("Booking started", {
         listingId: listing.id,
@@ -391,13 +397,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             setConfirmingBooking(false);
             resetGlobalLoading();
             const nowMs = Date.now();
-            const startMs = Date.parse(from);
-            const endMs = Date.parse(to);
             const initialTab =
-              Number.isFinite(startMs) &&
-              Number.isFinite(endMs) &&
-              startMs <= nowMs &&
-              nowMs < endMs
+              startAt.getTime() <= nowMs && nowMs < endAt.getTime()
                 ? "active"
                 : "upcoming";
             void scheduleBookingReminders().catch((notificationError) => {
@@ -455,6 +456,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         );
         return;
       }
+      paymentCompleted = true;
       const confirmWithRetry = async () => {
         const attempts = [0, 400, 900];
         let lastError: unknown;
@@ -489,13 +491,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         amountCents: pricing.finalCents,
       });
       const nowMs = Date.now();
-      const startMs = Date.parse(from);
-      const endMs = Date.parse(to);
       const initialTab =
-        Number.isFinite(startMs) &&
-        Number.isFinite(endMs) &&
-        startMs <= nowMs &&
-        nowMs < endMs
+        startAt.getTime() <= nowMs && nowMs < endAt.getTime()
           ? "active"
           : "upcoming";
       void scheduleBookingReminders().catch((notificationError) => {
@@ -531,6 +528,15 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       if (message.toLowerCase().includes("time slot already booked")) {
         setPaymentFailureMessage(
           "That slot was just taken. Choose another time."
+        );
+        setError(null);
+        return;
+      }
+      if (paymentCompleted) {
+        // The payment sheet succeeded; only the confirmation call failed. Don't
+        // tell the user the booking failed outright — they may have been charged.
+        setPaymentFailureMessage(
+          "We couldn't confirm your booking, but your payment may have gone through. Check your bookings before trying again."
         );
         setError(null);
         return;

@@ -9,6 +9,7 @@ import {
   refreshSession,
   register as apiRegister,
   revokeSession,
+  unregisterPushToken,
 } from "./api";
 import { trackEvent } from "./analytics";
 
@@ -61,6 +62,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const TOKEN_KEY = "authToken";
 const USER_KEY = "authUser";
 const REFRESH_TOKEN_KEY = "authRefreshToken";
+// Written by PushRegistration (App.tsx); read here so logout can unbind the device.
+export const EXPO_PUSH_TOKEN_KEY = "expoPushToken";
 
 type JwtPayload = {
   exp?: number;
@@ -115,6 +118,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // logout/refresh callbacks are intentionally stable (empty deps); these refs
+  // give them the current values instead of the ones captured at mount.
+  const tokenRef = useRef<string | null>(null);
+  tokenRef.current = token;
+  const userRef = useRef<AuthUser | null>(null);
+  userRef.current = user;
 
   useEffect(() => {
     const restore = async () => {
@@ -229,7 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
-    const currentToken = token;
+    const currentToken = tokenRef.current;
     setToken(null);
     setUser(null);
     setLegalPromptRequired(false);
@@ -246,6 +255,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshTimerRef.current = null;
     }
     if (currentToken) {
+      // Unbind this device from the account's push notifications before the
+      // session token is revoked (the call needs a valid token).
+      try {
+        const expoToken = await AsyncStorage.getItem(EXPO_PUSH_TOKEN_KEY);
+        if (expoToken) {
+          await unregisterPushToken(currentToken, expoToken);
+        }
+      } catch {
+        // Ignore push unregister errors; logout proceeds regardless.
+      }
       try {
         await revokeSession(currentToken);
       } catch {
@@ -347,28 +366,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!payload?.exp) return;
     const expiresAt = payload.exp * 1000;
     const delayMs = expiresAt - Date.now();
+    const refreshNow = async () => {
+      if (!refreshToken) return;
+      try {
+        const refreshed = await refreshSession(refreshToken);
+        const nextUser = withAuthProvider(refreshed.user, userRef.current?.authProvider);
+        setToken(refreshed.token);
+        setUser(nextUser);
+        setLegalPromptRequired(false);
+        const nextRefreshToken = refreshed.refreshToken ?? refreshToken;
+        setRefreshToken(nextRefreshToken);
+        await AsyncStorage.setItem(TOKEN_KEY, refreshed.token);
+        await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+        await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
+      } catch {
+        void logout();
+      }
+    };
     if (delayMs <= 0) {
-      void logout();
+      // Token already expired (e.g. the app was suspended past expiry).
+      // Try to refresh before giving up on the session.
+      if (refreshToken) {
+        void refreshNow();
+      } else {
+        void logout();
+      }
       return;
     }
-    const refreshDelayMs = Math.max(delayMs - 60_000, 0);
     if (refreshToken) {
-      refreshTimerRef.current = setTimeout(async () => {
-        try {
-          const refreshed = await refreshSession(refreshToken);
-          const nextUser = withAuthProvider(refreshed.user, user?.authProvider);
-          setToken(refreshed.token);
-          setUser(nextUser);
-          setLegalPromptRequired(false);
-          const nextRefreshToken = refreshed.refreshToken ?? refreshToken;
-          setRefreshToken(nextRefreshToken);
-          await AsyncStorage.setItem(TOKEN_KEY, refreshed.token);
-          await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
-          await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
-        } catch {
-          void logout();
-        }
+      // With a refresh token there is no hard-logout deadline: timers don't run
+      // while the app is suspended, and racing a logout timer against an
+      // in-flight refresh on resume can wipe a session that was just renewed.
+      // If the refresh fails, refreshNow logs out.
+      const refreshDelayMs = Math.max(delayMs - 60_000, 0);
+      refreshTimerRef.current = setTimeout(() => {
+        void refreshNow();
       }, refreshDelayMs);
+      return;
     }
     logoutTimerRef.current = setTimeout(() => {
       void logout();

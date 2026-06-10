@@ -6,10 +6,6 @@ jest.mock("../auth", () => ({
   useAuth: () => ({ user: null }),
 }));
 
-jest.mock("../appLaunch", () => ({
-  useAppLaunch: () => ({ launchComplete: true }),
-}));
-
 jest.mock("../favorites", () => ({
   useFavorites: () => ({
     favorites: [],

@@ -19,7 +19,11 @@ import DatePicker from "../components/AdaptiveDatePicker";
 import { useStripe } from "@stripe/stripe-react-native";
 import { cancelBooking, checkInBooking, confirmBookingExtension, createBookingExtensionIntent } from "../api";
 import { useAuth } from "../auth";
-import { getNotificationImageAttachment } from "../notifications";
+import {
+  bookingReminderIds,
+  cancelBookingReminders,
+  getNotificationImageAttachment,
+} from "../notifications";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
@@ -47,7 +51,13 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const start = new Date(booking.startTime);
   const end = localEndTime;
-  const now = Date.now();
+  // Ticks every 30s so status flags (in progress / completed / check-in window)
+  // stay accurate while the screen is open.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(interval);
+  }, []);
   const isUpcoming = end.getTime() > now && start.getTime() > now;
   const isInProgress = start.getTime() <= now && end.getTime() > now && localStatus === "confirmed";
   const isCanceled = localStatus === "canceled";
@@ -74,7 +84,10 @@ export function BookingDetailScreen({ navigation, route }: Props) {
           },
         ]);
         if (cancelled) return;
+        // Deterministic id: replaces the reminder scheduled at booking time and
+        // any reminder from a previous visit to this screen, instead of stacking.
         await Notifications.scheduleNotificationAsync({
+          identifier: bookingReminderIds.end(booking.listingId, end.getTime()),
           content: {
             title: "Your parking ends in 30 minutes",
             body: `${booking.title} — need more time?`,
@@ -143,8 +156,8 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   const canCheckIn =
     localStatus === "confirmed" &&
     !checkedInAt &&
-    Date.now() >= start.getTime() - 15 * 60 * 1000 &&
-    Date.now() <= end.getTime();
+    now >= start.getTime() - 15 * 60 * 1000 &&
+    now <= end.getTime();
   const isCompleted = !isUpcoming && !isInProgress && !isCanceled;
   const canBookAgain = isCanceled || (!isUpcoming && !isInProgress);
   const statusConfig = (() => {
@@ -198,6 +211,11 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     try {
       const result = await cancelBooking({ token, bookingId: booking.id });
       await AsyncStorage.setItem("searchRefreshToken", Date.now().toString());
+      // Drop the pending "starts soon"/"ends soon" reminders for this booking.
+      void cancelBookingReminders([
+        bookingReminderIds.start(booking.listingId, start.getTime()),
+        bookingReminderIds.end(booking.listingId, end.getTime()),
+      ]);
       setLocalStatus("canceled");
       if (result.refunded) {
         setLocalRefundStatus("succeeded");
@@ -243,6 +261,9 @@ export function BookingDetailScreen({ navigation, route }: Props) {
       });
 
       if ("noCharge" in result && result.noCharge) {
+        void cancelBookingReminders([
+          bookingReminderIds.end(booking.listingId, end.getTime()),
+        ]);
         setLocalEndTime(new Date(result.newEndTime));
         setLocalAmountCents(result.newTotalCents);
         Alert.alert("Booking updated", "Your end time has been extended.");
@@ -283,6 +304,11 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         newEndTime: result.newEndTime,
         newTotalCents: result.newTotalCents,
       });
+      // The old end-time reminder is now wrong; the schedule effect will create
+      // one for the new end time when localEndTime updates.
+      void cancelBookingReminders([
+        bookingReminderIds.end(booking.listingId, end.getTime()),
+      ]);
       setLocalEndTime(new Date(confirm.newEndTime));
       setLocalAmountCents(confirm.newTotalCents);
       Alert.alert("Booking extended", "Your end time has been updated.");
