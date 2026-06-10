@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": "18.0.4",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -18,7 +18,7 @@
       }
     },
     "qa": {
-      "autoIncrement": true,
+      "autoIncrement": false,
       "distribution": "internal",
       "node": "20.19.4",
       "yarn": "1.22.22",
@@ -34,7 +34,7 @@
       }
     },
     "preview": {
-      "autoIncrement": true,
+      "autoIncrement": false,
       "distribution": "internal",
       "node": "20.19.4",
       "yarn": "1.22.22",
@@ -50,7 +50,7 @@
       }
     },
     "production": {
-      "autoIncrement": true,
+      "autoIncrement": false,
       "node": "20.19.4",
       "yarn": "1.22.22",
       "env": {

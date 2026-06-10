@@ -84,6 +84,19 @@ def hasReleaseSigning =
     releaseStorePassword &&
     releaseKeyAlias &&
     releaseKeyPassword
+def isReleaseTask = gradle.startParameter.taskNames.any { task ->
+    def lower = task.toLowerCase()
+    lower.contains("release") || lower.contains("bundle")
+}
+def allowDebugSignedRelease =
+    (findProperty('ALLOW_DEBUG_SIGNED_RELEASE') ?: System.getenv('ALLOW_DEBUG_SIGNED_RELEASE') ?: '0') == '1'
+
+if (isReleaseTask && !hasReleaseSigning && !allowDebugSignedRelease && System.getenv("EAS_BUILD") != "true") {
+    throw new GradleException(
+        "Release signing credentials are required for local release builds. " +
+        "Set ANDROID_UPLOAD_* env vars or ALLOW_DEBUG_SIGNED_RELEASE=1 for a narrow local-only check."
+    )
+}
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -109,7 +122,7 @@ android {
         applicationId "ie.freespace.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 23
+        versionCode 100
         versionName "0.1.0"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
@@ -137,9 +150,8 @@ android {
         }
         release {
             // EAS cloud builds inject release credentials on the remote builder.
-            // Local release builds can opt into a real upload key via
-            // ANDROID_UPLOAD_* env vars or Gradle properties; otherwise they
-            // fall back to the debug keystore for narrow local-only checks.
+            // Local release builds must provide real upload-key credentials unless
+            // an explicit debug-signed override is set for a narrow local-only check.
             signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()

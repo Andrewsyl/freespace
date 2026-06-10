@@ -72,7 +72,10 @@
               "pathPrefix": "/reset-password"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "usesCleartextTraffic": true,
@@ -88,7 +91,8 @@
         "googleMaps": {
           "apiKey": "AIzaSyC1h1NFLFz7SPauw85Udh0O1CBlN5bqOek"
         }
-      }
+      },
+      "versionCode": 100
     },
     "androidStatusBar": {
       "translucent": true,
