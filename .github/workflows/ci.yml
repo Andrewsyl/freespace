@@ -37,7 +37,7 @@ jobs:
           printf 'registry "https://registry.npmjs.org"\n' > ~/.yarnrc
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile --no-default-rc --registry https://registry.npmjs.org
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
