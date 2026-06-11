@@ -105,6 +105,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.andrewsyl.carparking",
+      "buildNumber": "1",
       "jsEngine": "jsc",
       "associatedDomains": [
         "applinks:freespace.ie"

@@ -27,6 +27,7 @@
     "ios:dev": "./scripts/run-with-env.sh dev expo run:ios",
     "ios:qa": "./scripts/run-with-env.sh qa expo run:ios",
     "ios:prod": "./scripts/run-with-env.sh production expo run:ios",
+    "ios:prod:ipa": "./scripts/run-with-env.sh production ./scripts/ios-build-ipa.sh",
     "web": "expo start --web",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "jest",
