@@ -41,11 +41,11 @@
       "node": "20.19.4",
       "yarn": "1.22.22",
       "android": {
-        "buildType": "apk"
+        "buildType": "aab"
       },
       "env": {
-        "APP_ENV": "qa",
-        "EXPO_PUBLIC_API_BASE": "https://api-qa.freespace.ie",
+        "APP_ENV": "production",
+        "EXPO_PUBLIC_API_BASE": "https://api.freespace.ie",
         "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_51Sfpe4Gns2wLk4HQl5Xhkdkg2NuIjVB6qjvQyaVOkADndX8ZVKtzgEsODrYh31RGdFyXmMH8trJAKSN3FW0Awtml00rPRUF7Qi",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyC1h1NFLFz7SPauw85Udh0O1CBlN5bqOek",
         "EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID": "427792130041-s3dlgu4vsq0t7oujuhbev0tgqhvt0dk7.apps.googleusercontent.com",
