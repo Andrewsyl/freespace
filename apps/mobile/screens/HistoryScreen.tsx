@@ -367,10 +367,15 @@ export function HistoryScreen({ navigation, route }: Props) {
   // Re-bucket every minute so bookings move between Upcoming/Active/Past while
   // the screen stays open.
   const [nowMs, setNowMs] = useState(() => Date.now());
-  useEffect(() => {
-    const interval = setInterval(() => setNowMs(Date.now()), 60_000);
-    return () => clearInterval(interval);
-  }, []);
+  // Re-bucket only while focused (and refresh on focus) so the timer isn't
+  // firing on a backgrounded tab.
+  useFocusEffect(
+    useCallback(() => {
+      setNowMs(Date.now());
+      const interval = setInterval(() => setNowMs(Date.now()), 60_000);
+      return () => clearInterval(interval);
+    }, [])
+  );
   const now = new Date(nowMs);
   const upcoming = bookings.filter(
     (booking) => new Date(booking.startTime) > now && booking.status !== "canceled"
@@ -487,9 +492,14 @@ export function HistoryScreen({ navigation, route }: Props) {
             onPress={() => setTab(t)}
             android_ripple={null}
           >
-            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === "upcoming" ? "Upcoming" : t === "active" ? "Active" : "Past"}
-            </Text>
+            <View style={styles.tabLabelRow}>
+              <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
+                {t === "upcoming" ? "Upcoming" : t === "active" ? "Active" : "Past"}
+              </Text>
+              {((t === "upcoming" && upcoming.length > 0) || (t === "active" && active.length > 0)) ? (
+                <View style={styles.tabDot} />
+              ) : null}
+            </View>
           </Pressable>
         ))}
         <Animated.View
@@ -785,6 +795,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 14,
   },
+  tabLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   tabText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     color: SUBTLE,
@@ -793,6 +808,12 @@ const styles = StyleSheet.create({
   },
   tabTextActive: {
     color: ACCENT,
+  },
+  tabDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
+    backgroundColor: ACCENT,
   },
   tabIndicator: {
     position: "absolute",

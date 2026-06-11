@@ -54,10 +54,15 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   // Ticks every 30s so status flags (in progress / completed / check-in window)
   // stay accurate while the screen is open.
   const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(interval);
-  }, []);
+  // Tick only while focused (and refresh on focus) so the screen doesn't keep
+  // waking every 30s while it sits unfocused under the navigation stack.
+  useFocusEffect(
+    useCallback(() => {
+      setNow(Date.now());
+      const interval = setInterval(() => setNow(Date.now()), 30_000);
+      return () => clearInterval(interval);
+    }, [])
+  );
   const isUpcoming = end.getTime() > now && start.getTime() > now;
   const isInProgress = start.getTime() <= now && end.getTime() > now && localStatus === "confirmed";
   const isCanceled = localStatus === "canceled";
@@ -186,7 +191,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     (isUpcoming || isInProgress || canReview) &&
     (Boolean(booking.arrivalInstructions?.trim()) || Boolean(booking.accessCode?.trim()));
   const cancellationSource = booking.cancellationSource ?? null;
-  const bookingDateLabel = `${start.toLocaleDateString(undefined, {
+  const bookingDateLabel = `${start.toLocaleDateString("en-IE", {
     weekday: "short",
     day: "2-digit",
     month: "short",
