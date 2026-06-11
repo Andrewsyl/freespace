@@ -122,8 +122,8 @@ android {
         applicationId "ie.freespace.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 100
-        versionName "0.1.0"
+        versionCode (findProperty('appVersionCode')?.toInteger() ?: 100)
+        versionName (findProperty('appVersionName') ?: "0.1.0")
         manifestPlaceholders = [
             appScheme    : "carparking",
             expoDevScheme: "exp+carparking",
