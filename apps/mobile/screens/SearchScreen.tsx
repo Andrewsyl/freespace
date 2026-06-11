@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Easing,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -940,14 +942,34 @@ export function SearchScreen({ navigation }: Props) {
       showGlobalLoading("Locating...");
     }, 120);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status !== "granted") {
         setLocationError("Location permission needed.");
+        if (!permission.canAskAgain) {
+          // The OS won't show the prompt again (user previously denied), so a
+          // bare error leaves this button permanently dead. Route to Settings.
+          Alert.alert(
+            "Location is off",
+            "Enable location access for FreeSpace in Settings to find parking near you.",
+            [
+              { text: "Not now", style: "cancel" },
+              { text: "Open Settings", onPress: () => void Linking.openSettings() },
+            ]
+          );
+        }
         return;
       }
       const servicesEnabled = await Location.hasServicesEnabledAsync();
       if (!servicesEnabled) {
         setLocationError("Location services are off.");
+        Alert.alert(
+          "Location services are off",
+          "Turn on Location Services in Settings so we can find parking near you.",
+          [
+            { text: "Not now", style: "cancel" },
+            { text: "Open Settings", onPress: () => void Linking.openSettings() },
+          ]
+        );
         return;
       }
       const withTimeout = async <T,>(promise: Promise<T>, ms: number) =>

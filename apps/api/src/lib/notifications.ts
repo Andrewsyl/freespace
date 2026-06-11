@@ -12,6 +12,9 @@ type PushPayload = {
   title: string;
   body: string;
   data?: Record<string, unknown>;
+  // Android notification channel; the app registers "booking-reminders"
+  // (high importance) for time-critical reminders. Defaults to "default".
+  channelId?: string;
 };
 
 type PushSendResult = {
@@ -20,7 +23,7 @@ type PushSendResult = {
   error: number;
 };
 
-export async function sendPushNotification({ tokens, title, body, data }: PushPayload) {
+export async function sendPushNotification({ tokens, title, body, data, channelId }: PushPayload) {
   if (!tokens.length) {
     return { attempted: 0, ok: 0, error: 0 } satisfies PushSendResult;
   }
@@ -33,6 +36,7 @@ export async function sendPushNotification({ tokens, title, body, data }: PushPa
       title,
       body,
       data,
+      ...(channelId ? { channelId } : {}),
     }));
 
   if (!messages.length) {
@@ -114,6 +118,10 @@ export async function processScheduledNotifications(limit = 50) {
           type: item.type,
           ...(item.payload ?? {}),
         },
+        channelId:
+          item.type === "booking_start_soon" || item.type === "booking_end_soon"
+            ? "booking-reminders"
+            : undefined,
       });
       shouldMarkSent = result.ok > 0;
       if (!shouldMarkSent && process.env.PUSH_LOGGING === "true") {

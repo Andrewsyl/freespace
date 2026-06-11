@@ -2,10 +2,12 @@ import { CommonActions, useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   BackHandler,
   Platform,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -239,6 +241,16 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     }
     if (!permissions.granted) {
       logWarn("Booking reminders skipped: notification permission not granted");
+      // Don't fail silently: the user expects start/end reminders for this
+      // booking. Missing the end-time one can mean a fine, so offer Settings.
+      Alert.alert(
+        "Reminders are off",
+        "Your booking is confirmed, but we can't remind you before it starts or ends. Enable notifications in Settings to get parking reminders.",
+        [
+          { text: "Not now", style: "cancel" },
+          { text: "Open Settings", onPress: () => void Linking.openSettings() },
+        ]
+      );
       return;
     }
 
@@ -268,7 +280,11 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           },
           attachments,
         },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: startReminder },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: startReminder,
+          channelId: "booking-reminders",
+        },
       });
     }
 
@@ -285,7 +301,11 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           },
           attachments,
         },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: endReminder },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: endReminder,
+          channelId: "booking-reminders",
+        },
       });
     }
   }, [end, listing, start]);
