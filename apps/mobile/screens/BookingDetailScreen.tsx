@@ -103,7 +103,11 @@ export function BookingDetailScreen({ navigation, route }: Props) {
               historyTab: "active" as const,
             },
           },
-          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: endReminder },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: endReminder,
+            channelId: "booking-reminders",
+          },
         });
       } catch {
         // Notification scheduling is best-effort
@@ -286,6 +290,8 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         customerEphemeralKeySecret: result.ephemeralKeySecret,
         paymentIntentClientSecret: result.paymentIntentClientSecret,
         allowsDelayedPaymentMethods: false,
+        applePay: { merchantCountryCode: "IE" },
+        googlePay: { merchantCountryCode: "IE", testEnv: __DEV__ },
       });
       if (initResult.error) {
         setExtendError("We couldn't start the extension payment.");

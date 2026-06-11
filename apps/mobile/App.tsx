@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useRef, useState } from "react";
 import {
+  AppState,
   Platform,
   Pressable,
   StatusBar,
@@ -132,8 +133,15 @@ export default function App() {
     });
     if (Platform.OS === "android") {
       void Notifications.setNotificationChannelAsync("default", {
-        name: "default",
+        name: "General",
         importance: Notifications.AndroidImportance.DEFAULT,
+      });
+      // Time-critical "starts soon"/"ends soon" reminders get their own
+      // high-importance channel so users can't lose them by muting general
+      // updates (and vice versa). Channel settings stick once created.
+      void Notifications.setNotificationChannelAsync("booking-reminders", {
+        name: "Booking reminders",
+        importance: Notifications.AndroidImportance.HIGH,
       });
     }
   }, []);
@@ -147,7 +155,12 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <View style={styles.app}>
-        <StripeProvider publishableKey={stripeKey}>
+        {/* merchantIdentifier must match the in-app-payments entitlement; without
+            it the Payment Sheet silently hides Apple Pay. */}
+        <StripeProvider
+          publishableKey={stripeKey}
+          merchantIdentifier="merchant.com.andrewsyl.carparking"
+        >
           <AuthProvider>
             <FavoritesProvider>
               <GlobalLoadingProvider>
@@ -678,8 +691,18 @@ function PushRegistration() {
     void register().catch((error) => {
       console.warn("Push registration failed", error);
     });
+    // Re-attempt on foreground: if the user enables notifications in OS
+    // Settings after denying, the earlier attempt bailed before storing a
+    // token, and nothing else re-runs registration until restart/re-login.
+    const appStateSubscription = AppState.addEventListener("change", (state) => {
+      if (state !== "active") return;
+      void register().catch((error) => {
+        console.warn("Push registration failed", error);
+      });
+    });
     return () => {
       active = false;
+      appStateSubscription.remove();
     };
   }, [token, user]);
 
