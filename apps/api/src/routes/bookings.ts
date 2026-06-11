@@ -1113,7 +1113,9 @@ router.post("/:id/extend-confirm", requireAuth, enforceBlockedList, bookingLimit
       newEndTime: z.string().datetime(),
       newTotalCents: z.number().int().positive().max(10000000),
     });
-    const { paymentIntentId, newEndTime, newTotalCents } = schema.parse(req.body);
+    // newTotalCents is accepted for backward compatibility but never trusted —
+    // the charge is recomputed from the listing below.
+    const { paymentIntentId, newEndTime } = schema.parse(req.body);
     const driverId = req.user?.userId;
     if (!driverId) return res.status(401).json({ message: "Unauthorized" });
     const gate = await requireActiveDriver(driverId);
@@ -1126,10 +1128,36 @@ router.post("/:id/extend-confirm", requireAuth, enforceBlockedList, bookingLimit
     }
 
     const currentEnd = new Date(booking.end_time);
+    const startTime = new Date(booking.start_time);
     const requestedEnd = new Date(newEndTime);
+    if (Number.isNaN(requestedEnd.getTime())) {
+      return res.status(400).json({ message: "Invalid end time" });
+    }
     if (requestedEnd.getTime() <= currentEnd.getTime()) {
       return res.status(400).json({ message: "New end time must be after current end time" });
     }
+
+    // Recompute the charge server-side instead of trusting the client. This
+    // mirrors /extend-intent so the new total and the additional charge owed
+    // are derived from the listing's pricing, not from the request body.
+    const recalculatedTotalCents = calculateListingChargeCents({
+      rateType: booking.rate_type,
+      pricePerDay: booking.price_per_day,
+      pricePerHour: booking.price_per_hour,
+      startTime,
+      endTime: requestedEnd,
+    });
+    const currentTotalCents =
+      booking.amount_cents ??
+      calculateListingChargeCents({
+        rateType: booking.rate_type,
+        pricePerDay: booking.price_per_day,
+        pricePerHour: booking.price_per_hour,
+        startTime,
+        endTime: currentEnd,
+      });
+    const effectiveTotalCents = Math.max(currentTotalCents, recalculatedTotalCents);
+    const additionalAmountCents = effectiveTotalCents - currentTotalCents;
 
     const intent = await stripe.paymentIntents.retrieve(paymentIntentId, {
       expand: ["charges.data.balance_transaction"],
@@ -1137,13 +1165,22 @@ router.post("/:id/extend-confirm", requireAuth, enforceBlockedList, bookingLimit
     if (intent.status !== "succeeded") {
       return res.status(400).json({ message: `Payment not completed (${intent.status})` });
     }
+    // The intent must belong to this booking's extension and cover the
+    // recomputed additional charge — otherwise a driver could reuse an
+    // unrelated payment, or pay for a short extension and claim a long one.
+    if (intent.metadata?.booking_id !== bookingId || intent.metadata?.type !== "extension") {
+      return res.status(400).json({ message: "Payment does not match this booking" });
+    }
+    if (intent.amount < additionalAmountCents) {
+      return res.status(400).json({ message: "Payment does not cover the requested extension" });
+    }
 
     try {
       const updated = await updateBookingExtension({
         bookingId,
         driverId,
         newEndTime: requestedEnd.toISOString(),
-        newAmountCents: newTotalCents,
+        newAmountCents: effectiveTotalCents,
         paymentIntentId,
         receiptUrl: (intent as any).charges?.data?.[0]?.receipt_url ?? null,
       });

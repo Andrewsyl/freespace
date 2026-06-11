@@ -1,15 +1,21 @@
 const PARKING_LOCALE = "en-IE";
 const PARKING_TIME_ZONE = "Europe/Dublin";
 
+// Calendar day (YYYY-MM-DD) for a date as observed in the app's timezone, so
+// "Today"/"Tomorrow" line up with the times we render in Europe/Dublin instead
+// of the device's local timezone.
+const parkingDayKey = (date: Date) =>
+  date.toLocaleDateString("en-CA", { timeZone: PARKING_TIME_ZONE });
+
 export const formatDateLabel = (date: Date) => {
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const todayKey = parkingDayKey(now);
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const tomorrowKey = parkingDayKey(tomorrow);
+  const checkKey = parkingDayKey(date);
 
-  if (checkDate.getTime() === today.getTime()) return "Today";
-  if (checkDate.getTime() === tomorrow.getTime()) return "Tomorrow";
+  if (checkKey === todayKey) return "Today";
+  if (checkKey === tomorrowKey) return "Tomorrow";
 
   return date.toLocaleDateString(PARKING_LOCALE, {
     weekday: "short",

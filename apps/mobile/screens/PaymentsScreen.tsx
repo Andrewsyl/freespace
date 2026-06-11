@@ -28,6 +28,7 @@ import {
   type PaymentMethod,
 } from "../api";
 import { useAuth } from "../auth";
+import { formatReviewDate } from "../utils/dateFormat";
 import type { RootStackParamList } from "../types";
 
 export function PaymentsScreen() {
@@ -154,7 +155,7 @@ export function PaymentsScreen() {
       history.map((item) => ({
         ...item,
         amountLabel: `${(item.amount / 100).toFixed(2)} ${item.currency.toUpperCase()}`,
-        dateLabel: new Date(item.created_at).toLocaleDateString(),
+        dateLabel: formatReviewDate(new Date(item.created_at)),
       })),
     [history]
   );

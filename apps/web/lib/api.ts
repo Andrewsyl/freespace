@@ -10,6 +10,29 @@ const API_BASE =
     ? webEnv.NEXT_PUBLIC_API_BASE
     : "";
 
+const REQUEST_TIMEOUT_MS = 15000;
+
+// All API calls go through this so a dead/stalled connection fails fast with a
+// clear error instead of hanging the UI (e.g. mid-checkout) indefinitely.
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  timeoutMs = REQUEST_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function handleResponse<T>(res: Response): Promise<{ data: T | null; error: string | null }> {
   const body = await res.json().catch(() => ({}));
   if (body === null) {
@@ -52,7 +75,7 @@ export async function searchSpaces(filters: SearchFilters): Promise<Listing[]> {
   if (filters.spaceType) params.set("spaceType", filters.spaceType);
   if (filters.instantBook) params.set("instantBook", "true");
 
-  const res = await fetch(`${API_BASE}/api/listings/search?${params.toString()}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/listings/search?${params.toString()}`, {
     cache: "no-store",
   });
   const { data, error } = await handleResponse<{ spaces: Listing[] }>(res);
@@ -79,7 +102,7 @@ export type AvailabilityEntry = {
 
 export async function listAvailability(listingId: string, token?: string): Promise<AvailabilityEntry[]> {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/host/listings/${listingId}/availability`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/host/listings/${listingId}/availability`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });
@@ -94,7 +117,7 @@ export async function createAvailability(
   token?: string
 ) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/host/listings/${listingId}/availability`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/host/listings/${listingId}/availability`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({
@@ -112,7 +135,7 @@ export async function createAvailability(
 
 export async function deleteAvailability(availabilityId: string, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/host/availability/${availabilityId}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/host/availability/${availabilityId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -142,7 +165,7 @@ export type CreateListingInput = {
 
 export async function createListing(input: CreateListingInput, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/listings`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/listings`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify(input),
@@ -157,7 +180,7 @@ export async function createListing(input: CreateListingInput, token?: string) {
 export async function uploadImage(file: File, token: string): Promise<string> {
   const buffer = await file.arrayBuffer();
   const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-  const res = await fetch(`${API_BASE}/api/listings/upload-image`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/listings/upload-image`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify({ data: base64, contentType: file.type, fileSizeBytes: file.size }),
@@ -169,7 +192,7 @@ export async function uploadImage(file: File, token: string): Promise<string> {
 
 export async function getImageUploadUrl(contentType: string, fileSizeBytes: number, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/listings/image-upload-url`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/listings/image-upload-url`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify({ contentType, fileSizeBytes }),
@@ -188,7 +211,7 @@ export async function getImageUploadUrl(contentType: string, fileSizeBytes: numb
 
 export async function getHostListings(token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/listings`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/listings`, {
     cache: "no-store",
     headers: { ...authHeaders(token) },
   });
@@ -201,7 +224,7 @@ export async function getHostListings(token?: string) {
 
 export async function deleteListing(listingId: string, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/listings/${listingId}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/listings/${listingId}`, {
     method: "DELETE",
     headers: { ...authHeaders(token) },
   });
@@ -215,7 +238,7 @@ export async function deleteListing(listingId: string, token?: string) {
 
 export async function deleteAccount(token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/auth/me`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/me`, {
     method: "DELETE",
     headers: { ...authHeaders(token) },
   });
@@ -227,7 +250,7 @@ export async function deleteAccount(token?: string) {
 }
 
 export async function requestEmailVerification(email: string) {
-  const res = await fetch(`${API_BASE}/api/auth/request-verification`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/request-verification`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
@@ -239,7 +262,7 @@ export async function requestEmailVerification(email: string) {
 }
 
 export async function requestPasswordReset(email: string) {
-  const res = await fetch(`${API_BASE}/api/auth/request-password-reset`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/request-password-reset`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
@@ -252,7 +275,7 @@ export async function requestPasswordReset(email: string) {
 }
 
 export async function resetPassword(token: string, password: string) {
-  const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/reset-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token, password }),
@@ -312,7 +335,7 @@ export type AdminMetrics = {
 
 export async function getAdminDashboard(token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/admin/dashboard`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/admin/dashboard`, {
     headers: { ...authHeaders(token) },
     cache: "no-store",
   });
@@ -339,7 +362,7 @@ export async function listAdminBookings(
     if (value === undefined || value === null || value === "") return;
     query.set(key, String(value));
   });
-  const res = await fetch(`${API_BASE}/api/admin/bookings?${query.toString()}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/admin/bookings?${query.toString()}`, {
     headers: { ...authHeaders(token) },
     cache: "no-store",
   });
@@ -350,7 +373,7 @@ export async function listAdminBookings(
 
 export async function getAdminBooking(id: string, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/admin/bookings/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/admin/bookings/${id}`, {
     headers: { ...authHeaders(token) },
     cache: "no-store",
   });
@@ -361,7 +384,7 @@ export async function getAdminBooking(id: string, token?: string) {
 
 export async function updateAdminBooking(id: string, payload: Record<string, any>, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/admin/bookings/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/admin/bookings/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify(payload),
@@ -381,7 +404,7 @@ export async function listAdminPayments(
     if (value === undefined || value === null || value === "") return;
     query.set(key, String(value));
   });
-  const res = await fetch(`${API_BASE}/api/admin/payments?${query.toString()}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/admin/payments?${query.toString()}`, {
     headers: { ...authHeaders(token) },
     cache: "no-store",
   });
@@ -400,7 +423,7 @@ export async function listAdminPayouts(
     if (value === undefined || value === null || value === "") return;
     query.set(key, String(value));
   });
-  const res = await fetch(`${API_BASE}/api/admin/payouts?${query.toString()}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/admin/payouts?${query.toString()}`, {
     headers: { ...authHeaders(token) },
     cache: "no-store",
   });
@@ -419,7 +442,7 @@ export async function listAdminSupportTickets(
     if (value === undefined || value === null || value === "") return;
     query.set(key, String(value));
   });
-  const res = await fetch(`${API_BASE}/api/admin/support?${query.toString()}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/admin/support?${query.toString()}`, {
     headers: { ...authHeaders(token) },
     cache: "no-store",
   });
@@ -430,7 +453,7 @@ export async function listAdminSupportTickets(
 
 export async function updateAdminSupportTicket(id: string, payload: Record<string, any>, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/admin/support/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/admin/support/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify(payload),
@@ -442,7 +465,7 @@ export async function updateAdminSupportTicket(id: string, payload: Record<strin
 
 export async function listAdminSettings(token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/admin/settings`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/admin/settings`, {
     headers: { ...authHeaders(token) },
     cache: "no-store",
   });
@@ -453,7 +476,7 @@ export async function listAdminSettings(token?: string) {
 
 export async function updateAdminSetting(key: string, payload: Record<string, any>, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/admin/settings/${encodeURIComponent(key)}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/admin/settings/${encodeURIComponent(key)}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify(payload),
@@ -472,7 +495,7 @@ export async function listAdminEvents(
   if (params.eventType) query.set("eventType", params.eventType);
   if (params.limit) query.set("limit", String(params.limit));
   if (params.offset) query.set("offset", String(params.offset));
-  const res = await fetch(`${API_BASE}/api/admin/events?${query.toString()}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/admin/events?${query.toString()}`, {
     headers: { ...authHeaders(token) },
     cache: "no-store",
   });
@@ -503,7 +526,7 @@ export type ListingDetail = {
 };
 
 export async function getListing(id: string): Promise<ListingDetail> {
-  const res = await fetch(`${API_BASE}/api/listings/${id}`, { cache: "no-store" });
+  const res = await fetchWithTimeout(`${API_BASE}/api/listings/${id}`, { cache: "no-store" });
   const { data, error } = await handleResponse<{ listing: ListingDetail }>(res);
   if (error) {
     throw new Error(error);
@@ -523,7 +546,7 @@ export async function listListingReviews(listingId: string, params?: { limit?: n
   const query = new URLSearchParams();
   if (params?.limit) query.set("limit", String(params.limit));
   if (params?.offset) query.set("offset", String(params.offset));
-  const res = await fetch(`${API_BASE}/api/reviews/listing/${listingId}?${query.toString()}`, { cache: "no-store" });
+  const res = await fetchWithTimeout(`${API_BASE}/api/reviews/listing/${listingId}?${query.toString()}`, { cache: "no-store" });
   const { data, error } = await handleResponse<{ reviews: any[] }>(res);
   if (error) throw new Error(error);
   return (data?.reviews ?? []) as ListingReview[];
@@ -534,7 +557,7 @@ export async function createReview(
   token?: string
 ) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/reviews`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/reviews`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify(payload),
@@ -558,7 +581,7 @@ export type FavouriteListing = {
 
 export async function getFavourites(token?: string): Promise<FavouriteListing[]> {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/favorites`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/favorites`, {
     cache: "no-store",
     headers: { ...authHeaders(token) },
   });
@@ -569,7 +592,7 @@ export async function getFavourites(token?: string): Promise<FavouriteListing[]>
 
 export async function addFavourite(listingId: string, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/favorites`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/favorites`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify({ listingId }),
@@ -580,7 +603,7 @@ export async function addFavourite(listingId: string, token?: string) {
 
 export async function removeFavourite(listingId: string, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/favorites/${listingId}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/favorites/${listingId}`, {
     method: "DELETE",
     headers: { ...authHeaders(token) },
   });
@@ -601,7 +624,7 @@ export type CreateBookingInput = {
 
 export async function createBooking(input: CreateBookingInput, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/bookings`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/bookings`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify(input),
@@ -614,7 +637,7 @@ export async function createBooking(input: CreateBookingInput, token?: string) {
 }
 
 export async function createPortalBooking(input: { listingId: string; until: string; vehiclePlate: string }) {
-  const res = await fetch(`${API_BASE}/api/bookings/portal`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/bookings/portal`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -652,7 +675,7 @@ export type BookingSummary = {
 
 export async function getMyBookings(token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/bookings/me`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/bookings/me`, {
     cache: "no-store",
     headers: { ...authHeaders(token) },
   });
@@ -665,7 +688,7 @@ export async function getMyBookings(token?: string) {
 
 export async function cancelHostBooking(bookingId: string, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/bookings/${bookingId}/host-cancel`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/bookings/${bookingId}/host-cancel`, {
     method: "POST",
     headers: { ...authHeaders(token) },
   });
@@ -676,7 +699,7 @@ export async function cancelHostBooking(bookingId: string, token?: string) {
 
 export async function getHostPayoutStatus(token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/host/payout`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/host/payout`, {
     headers: { ...authHeaders(token) },
     cache: "no-store",
   });
@@ -698,7 +721,7 @@ export async function createHostPayoutAccount(
   options?: { accountId?: string | null; returnUrl?: string; refreshUrl?: string }
 ) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/host/payout`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/host/payout`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify({
@@ -716,7 +739,7 @@ export async function createHostPayoutAccount(
 
 export async function getHostEarningsSummary(token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/host/earnings`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/host/earnings`, {
     headers: { ...authHeaders(token) },
     cache: "no-store",
   });
@@ -736,7 +759,7 @@ export type AuthResponse = {
 };
 
 export async function updateMe(token: string, payload: { name?: string | null; phone?: string | null; vehiclePlate?: string | null; vehicleMake?: string | null; vehicleType?: string | null; vehicleColor?: string | null }) {
-  const res = await fetch(`${API_BASE}/api/auth/me`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/me`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify(payload),
@@ -747,7 +770,7 @@ export async function updateMe(token: string, payload: { name?: string | null; p
 }
 
 export async function changePassword(token: string, currentPassword: string, newPassword: string) {
-  const res = await fetch(`${API_BASE}/api/auth/change-password`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/change-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify({ currentPassword, newPassword }),
@@ -757,7 +780,7 @@ export async function changePassword(token: string, currentPassword: string, new
 }
 
 export async function logoutAllSessions(token: string) {
-  const res = await fetch(`${API_BASE}/api/auth/logout-all`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/logout-all`, {
     method: "POST",
     headers: { ...authHeaders(token) },
   });
@@ -766,7 +789,7 @@ export async function logoutAllSessions(token: string) {
 }
 
 export async function sendSupportMessage(token: string, payload: { subject: string; message: string }) {
-  const res = await fetch(`${API_BASE}/api/support`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/support`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify(payload),
@@ -778,7 +801,7 @@ export async function sendSupportMessage(token: string, payload: { subject: stri
 const LEGAL_VERSION = "2026-01-10";
 
 export async function register(email: string, password: string, phone?: string, firstName?: string, lastName?: string) {
-  const res = await fetch(`${API_BASE}/api/auth/register`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -803,7 +826,7 @@ export async function register(email: string, password: string, phone?: string, 
 
 export async function requestPhoneVerification(phone: string, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/auth/request-phone-verification`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/request-phone-verification`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify({ phone }),
@@ -817,7 +840,7 @@ export async function requestPhoneVerification(phone: string, token?: string) {
 
 export async function verifyPhone(code: string, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/auth/verify-phone`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/verify-phone`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify({ code }),
@@ -830,7 +853,7 @@ export async function verifyPhone(code: string, token?: string) {
 }
 
 export async function login(email: string, password: string) {
-  const res = await fetch(`${API_BASE}/api/auth/login`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -846,7 +869,7 @@ export async function login(email: string, password: string) {
 }
 
 export async function oauthLoginGoogle(idToken: string) {
-  const res = await fetch(`${API_BASE}/api/auth/oauth/google`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/oauth/google`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ idToken }),
@@ -862,7 +885,7 @@ export async function oauthLoginGoogle(idToken: string) {
 }
 
 export async function refreshSession(refreshToken: string) {
-  const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refreshToken }),
@@ -875,7 +898,7 @@ export async function refreshSession(refreshToken: string) {
 }
 
 export async function revokeSession(token: string) {
-  const res = await fetch(`${API_BASE}/api/auth/logout`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/logout`, {
     method: "POST",
     headers: { ...authHeaders(token) },
   });
@@ -887,7 +910,7 @@ export async function revokeSession(token: string) {
 }
 
 export async function requestVerification(email: string) {
-  const res = await fetch(`${API_BASE}/api/auth/request-verification`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/request-verification`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
@@ -900,7 +923,7 @@ export async function requestVerification(email: string) {
 }
 
 export async function verifyEmail(token: string) {
-  const res = await fetch(`${API_BASE}/api/auth/verify?token=${token}`);
+  const res = await fetchWithTimeout(`${API_BASE}/api/auth/verify?token=${token}`);
   const { error } = await handleResponse<{ ok: boolean }>(res);
   if (error) throw new Error(error);
   return true;
@@ -909,7 +932,7 @@ export async function verifyEmail(token: string) {
 // Payments (driver)
 export async function listPaymentMethods(token?: string): Promise<PaymentMethod[]> {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/payment-methods`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/payment-methods`, {
     headers: { ...authHeaders(token) },
     cache: "no-store",
   });
@@ -920,7 +943,7 @@ export async function listPaymentMethods(token?: string): Promise<PaymentMethod[
 
 export async function addPaymentMethod(input: Record<string, any>, token?: string): Promise<any> {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/payment-methods`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/payment-methods`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify(input),
@@ -932,7 +955,7 @@ export async function addPaymentMethod(input: Record<string, any>, token?: strin
 
 export async function setDefaultPaymentMethod(id: string, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/payment-methods/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/payment-methods/${id}`, {
     method: "PUT",
     headers: { ...authHeaders(token) },
   });
@@ -943,7 +966,7 @@ export async function setDefaultPaymentMethod(id: string, token?: string) {
 
 export async function deletePaymentMethod(id: string, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/payment-methods/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/payment-methods/${id}`, {
     method: "DELETE",
     headers: { ...authHeaders(token) },
   });
@@ -955,7 +978,7 @@ export async function deletePaymentMethod(id: string, token?: string) {
 
 export async function listPaymentHistory(token?: string): Promise<PaymentHistoryItem[]> {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/payments/history`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/payments/history`, {
     headers: { ...authHeaders(token) },
     cache: "no-store",
   });
@@ -966,7 +989,7 @@ export async function listPaymentHistory(token?: string): Promise<PaymentHistory
 
 export async function retryPayment(paymentId: string, token?: string) {
   if (!token) throw new Error("Authentication required");
-  const res = await fetch(`${API_BASE}/api/payments/${paymentId}/retry`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/payments/${paymentId}/retry`, {
     method: "POST",
     headers: { ...authHeaders(token) },
   });

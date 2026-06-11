@@ -32,25 +32,43 @@ import type { ListingDetail, RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
 import { formatDateLabel, formatDateTimeLabel, formatReviewDate, formatTimeLabel } from "../utils/dateFormat";
 import { calculateListingTotal, formatPriceValue, getListingRateType } from "../utils/pricing";
-import { ArrowDownUp, Cctv, EvCharger, Home, Fence, IdCard, KeyRound } from "lucide-react-native";
+import {
+  Accessibility,
+  ArrowDownUp,
+  Bike,
+  Cctv,
+  Clock,
+  EvCharger,
+  Fence,
+  Home,
+  IdCard,
+  KeyRound,
+  Lightbulb,
+  type LucideIcon,
+  Maximize2,
+  Warehouse,
+} from "lucide-react-native";
 import { SkeletonBlock, usePulse } from "../components/ui";
 import { SquircleBtn } from "../components/SquircleBtn";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Listing">;
 
-const FEATURE_ICON_URL: Record<string, string> = {
-  cctv:     "https://img.icons8.com/ios/96/security-camera.png",
-  ev:       "https://img.icons8.com/ios/96/lightning-bolt.png",
-  sheltered:"https://img.icons8.com/ios/96/garage.png",
-  lit:      "https://img.icons8.com/ios/96/light-on.png",
-  gated:    "https://img.icons8.com/ios/96/road-closure.png",
-  low:      "https://img.icons8.com/ios/96/height.png",
-  permit:   "https://img.icons8.com/ios/96/key.png",
-  code:     "https://img.icons8.com/ios/96/lock.png",
-  disabled: "https://img.icons8.com/ios/96/wheelchair.png",
-  allday:   "https://img.icons8.com/ios/96/time.png",
-  motorbike:"https://img.icons8.com/ios/96/scooter.png",
-  wide:     "https://img.icons8.com/ios/96/expand.png",
+// Bundled vector icons keyed by feature type. Previously these loaded from
+// icons8.com at runtime, which blanked offline, depended on a third-party CDN,
+// and leaked every listing view to it.
+const FEATURE_ICONS: Record<string, LucideIcon> = {
+  cctv:      Cctv,
+  ev:        EvCharger,
+  sheltered: Warehouse,
+  lit:       Lightbulb,
+  gated:     Fence,
+  low:       ArrowDownUp,
+  permit:    IdCard,
+  code:      KeyRound,
+  disabled:  Accessibility,
+  allday:    Clock,
+  motorbike: Bike,
+  wide:      Maximize2,
 };
 
 const getFeatureIconType = (label: string) => {
@@ -70,6 +88,20 @@ const getFeatureIconType = (label: string) => {
   return "sheltered";
 };
 
+// Turn raw amenity keys (e.g. "ev_charging", "cctv") into display labels
+// ("EV Charging", "CCTV"): split on _/-, title-case words, keep known acronyms.
+const AMENITY_ACRONYMS: Record<string, string> = { ev: "EV", cctv: "CCTV" };
+const humanizeAmenity = (value: string) =>
+  value
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .map((word) => {
+      const lower = word.toLowerCase();
+      return AMENITY_ACRONYMS[lower] ?? lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+
 const getAddressWithoutHouseNumber = (address: string) => {
   const parts = address.split(",").map((p) => p.trim()).filter(Boolean);
   if (!parts.length) return address;
@@ -78,9 +110,8 @@ const getAddressWithoutHouseNumber = (address: string) => {
 };
 
 const FeatureIcon = ({ type, size = 22 }: { type: string; size?: number }) => {
-  if (type === "cctv") return <Cctv size={size} color="#6b7280" strokeWidth={1.75} />;
-  const url = FEATURE_ICON_URL[type] ?? FEATURE_ICON_URL.sheltered;
-  return <Image source={{ uri: url }} style={{ width: size, height: size }} resizeMode="contain" />;
+  const Icon = FEATURE_ICONS[type] ?? FEATURE_ICONS.sheltered;
+  return <Icon size={size} color="#6b7280" strokeWidth={1.75} />;
 };
 
 const AVATAR_BG = ["#CCE9E6", "#FFE4C8", "#D8E4FF", "#FFD6D6", "#D6F5E3"];
@@ -180,8 +211,13 @@ export function ListingScreen({ navigation, route }: Props) {
   }, [id, startAt, endAt]);
 
   useEffect(() => {
-    setStartAt(new Date(from));
-    setEndAt(new Date(to));
+    // Only update when the times actually change. Assigning fresh Date objects
+    // unconditionally would change their reference identity and retrigger the
+    // load effect above, fetching the listing twice on every open.
+    const nextStart = new Date(from).getTime();
+    const nextEnd = new Date(to).getTime();
+    setStartAt((prev) => (prev.getTime() === nextStart ? prev : new Date(nextStart)));
+    setEndAt((prev) => (prev.getTime() === nextEnd ? prev : new Date(nextEnd)));
   }, [from, to]);
 
   useEffect(() => {
@@ -324,11 +360,9 @@ export function ListingScreen({ navigation, route }: Props) {
 
   const amenities = listing?.amenities ?? [];
   const featureLabels = useMemo(
-    () => amenities.map((v) => {
-      if (!v) return v;
-      if (v.toLowerCase() === "cctv") return "CCTV";
-      return v.charAt(0).toUpperCase() + v.slice(1);
-    }),
+    // Dedupe after humanizing: distinct raw values ("ev_charging", "EV charging")
+    // can map to the same label, and the chips use the label as their React key.
+    () => Array.from(new Set(amenities.filter(Boolean).map(humanizeAmenity))),
     [amenities]
   );
 
@@ -349,7 +383,12 @@ export function ListingScreen({ navigation, route }: Props) {
     (entry) => Array.isArray(entry.repeatWeekdays) && entry.repeatWeekdays.length > 0
   );
   const formatHour = (value: string) =>
-    new Date(value).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", hour12: true });
+    new Date(value).toLocaleTimeString("en-IE", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Europe/Dublin",
+    });
   const weekdayOrder = [
     { label: "Mon", dow: 1 },
     { label: "Tue", dow: 2 },

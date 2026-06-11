@@ -626,7 +626,14 @@ function PushRegistration() {
   const lastTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!token || !user) return;
+    if (!token || !user) {
+      // Signed out (or mid account-switch on a shared device): forget the
+      // registered token. The Expo push token is stable per device, so without
+      // this the guard below would skip re-registering the next user and they'd
+      // receive no notifications until an app restart.
+      lastTokenRef.current = null;
+      return;
+    }
     let active = true;
 
     const register = async () => {

@@ -364,6 +364,9 @@ export function SearchScreen({ navigation }: Props) {
   const lastSearchRadiusRef = useRef<number | null>(null);
   const mapRef = useRef<MapView | null>(null);
   const skipAutocompleteRef = useRef(0);
+  // Monotonic id so a slow earlier autocomplete response can't overwrite the
+  // suggestions for a newer query.
+  const autocompleteSeqRef = useRef(0);
   const historyLoadedRef = useRef(false);
   const HISTORY_KEY = "searchHistory";
   const MAP_REGION_KEY = "search.mapRegion";
@@ -661,8 +664,10 @@ export function SearchScreen({ navigation }: Props) {
           radiusKm: params.radiusKm,
           message,
         });
-        setError(message);
+        // Only surface the failure if this is still the latest search; a stale
+        // request erroring shouldn't toast over a newer one's results.
         if (searchRequestIdRef.current === requestId) {
+          setError(message);
           setPendingResults([]);
         }
       } finally {
@@ -844,7 +849,10 @@ export function SearchScreen({ navigation }: Props) {
 
   const fetchAutocomplete = async (query: string) => {
     if (!mapsKey) return;
+    const seq = ++autocompleteSeqRef.current;
     setAddressLoading(true);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
     try {
       const params = new URLSearchParams({
         input: query,
@@ -852,14 +860,18 @@ export function SearchScreen({ navigation }: Props) {
         components: "country:ie",
       });
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/autocomplete/json?${params.toString()}`
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?${params.toString()}`,
+        { signal: controller.signal }
       );
       const payload = (await response.json()) as { predictions?: PlaceSuggestion[] };
+      // Drop the result if a newer query has been issued since this one started.
+      if (seq !== autocompleteSeqRef.current) return;
       setAddressSuggestions(payload.predictions ?? []);
     } catch {
-      setAddressSuggestions([]);
+      if (seq === autocompleteSeqRef.current) setAddressSuggestions([]);
     } finally {
-      setAddressLoading(false);
+      clearTimeout(timeout);
+      if (seq === autocompleteSeqRef.current) setAddressLoading(false);
     }
   };
 

@@ -118,7 +118,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setGlobalError(null);
     try {
       const res = await login(email, password);
-      console.debug("auth: login response", res);
       setUser(res.user);
       setToken(res.token);
       const nextRefreshToken = res.refreshToken ?? null;
@@ -150,7 +149,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setGlobalError(null);
     try {
       const res = await register(email, password, phone, firstName, lastName);
-      console.debug("auth: signup response", res);
       setUser(res.user);
       setToken(res.token);
       const nextRefreshToken = res.refreshToken ?? null;
@@ -182,7 +180,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setGlobalError(null);
     try {
       const res = await oauthLoginGoogle(idToken);
-      console.debug("auth: google oauth response", res);
       setUser(res.user);
       setToken(res.token);
       const nextRefreshToken = res.refreshToken ?? null;
@@ -243,26 +240,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!payload?.exp) return;
     const expiresAt = payload.exp * 1000;
     const delayMs = expiresAt - Date.now();
+    const refreshNow = async () => {
+      if (!refreshToken) return;
+      try {
+        const refreshed = await refreshSession(refreshToken);
+        setUser(refreshed.user);
+        setToken(refreshed.token);
+        const nextRefreshToken = refreshed.refreshToken ?? refreshToken;
+        setRefreshToken(nextRefreshToken);
+        localStorage.setItem("auth_token", refreshed.token);
+        localStorage.setItem("auth_user", JSON.stringify(refreshed.user));
+        localStorage.setItem("auth_refresh", nextRefreshToken);
+      } catch {
+        signOut();
+      }
+    };
     if (delayMs <= 0) {
-      signOut();
+      // Access token already expired (e.g. the tab was suspended past expiry).
+      // Try to refresh before giving up on the session.
+      if (refreshToken) {
+        void refreshNow();
+      } else {
+        signOut();
+      }
       return;
     }
-    const refreshDelayMs = Math.max(delayMs - 60_000, 0);
     if (refreshToken) {
-      refreshTimerRef.current = setTimeout(async () => {
-        try {
-          const refreshed = await refreshSession(refreshToken);
-          setUser(refreshed.user);
-          setToken(refreshed.token);
-          const nextRefreshToken = refreshed.refreshToken ?? refreshToken;
-          setRefreshToken(nextRefreshToken);
-          localStorage.setItem("auth_token", refreshed.token);
-          localStorage.setItem("auth_user", JSON.stringify(refreshed.user));
-          localStorage.setItem("auth_refresh", nextRefreshToken);
-        } catch {
-          signOut();
-        }
+      // With a refresh token there is no hard-logout deadline: a timer doesn't
+      // fire while the tab is suspended, and racing a logout against an in-flight
+      // refresh on resume can wipe a session that was just renewed. If the
+      // refresh fails, refreshNow signs out.
+      const refreshDelayMs = Math.max(delayMs - 60_000, 0);
+      refreshTimerRef.current = setTimeout(() => {
+        void refreshNow();
       }, refreshDelayMs);
+      return;
     }
     logoutTimerRef.current = setTimeout(() => {
       signOut();
@@ -278,31 +290,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
   }, [token, refreshToken, signOut]);
-
-  useEffect(() => {
-    if (logoutTimerRef.current) {
-      clearTimeout(logoutTimerRef.current);
-      logoutTimerRef.current = null;
-    }
-    if (!token) return;
-    const payload = decodeJwtPayload(token);
-    if (!payload?.exp) return;
-    const expiresAt = payload.exp * 1000;
-    const delayMs = expiresAt - Date.now();
-    if (delayMs <= 0) {
-      signOut();
-      return;
-    }
-    logoutTimerRef.current = setTimeout(() => {
-      signOut();
-    }, delayMs);
-    return () => {
-      if (logoutTimerRef.current) {
-        clearTimeout(logoutTimerRef.current);
-        logoutTimerRef.current = null;
-      }
-    };
-  }, [token, signOut]);
 
   const value = useMemo(
     () => ({

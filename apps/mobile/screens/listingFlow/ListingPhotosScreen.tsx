@@ -41,6 +41,10 @@ const CARD_SHADOW = {
 const MAX_PHOTO_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 
+// Generous because photos can be several MB on slow uplinks, but bounded so a
+// stalled connection can't leave the "Uploading…" state stuck forever.
+const UPLOAD_TIMEOUT_MS = 60_000;
+
 function uploadToS3(uploadUrl: string, formData: FormData): Promise<{ ok: boolean; status: number; body: string }> {
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
@@ -49,6 +53,8 @@ function uploadToS3(uploadUrl: string, formData: FormData): Promise<{ ok: boolea
       resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, body: xhr.responseText ?? "" });
     };
     xhr.onerror = () => resolve({ ok: false, status: 0, body: "" });
+    xhr.timeout = UPLOAD_TIMEOUT_MS;
+    xhr.ontimeout = () => resolve({ ok: false, status: 0, body: "timeout" });
     xhr.open("POST", uploadUrl);
     xhr.send(formData);
   });
@@ -102,6 +108,7 @@ export function ListingPhotosScreen({ navigation }: Props) {
 
     const result = await uploadToS3(upload.uploadUrl, formData);
     if (!result.ok) {
+      if (result.body === "timeout") throw new Error("Upload timed out. Check your connection and try again.");
       if (result.body.includes("AccessDenied")) throw new Error("Image upload is currently unavailable.");
       if (result.body.includes("SignatureDoesNotMatch")) throw new Error("Image upload signature failed.");
       if (result.body.includes("InvalidAccessKeyId") || result.body.includes("InvalidToken")) throw new Error("Image upload credentials are invalid.");
