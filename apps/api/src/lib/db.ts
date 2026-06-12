@@ -65,6 +65,7 @@ export type SpaceSearchInput = {
   to: string;
   spaceType?: string;
   mode?: ListingSearchMode;
+  excludeHostId?: string;
 };
 
 function oneOffAvailabilityRange(alias: string) {
@@ -76,7 +77,7 @@ function recurringAvailabilityRange(alias: string) {
 }
 
 export async function findAvailableSpaces(input: SpaceSearchInput) {
-  const { lat, lng, radiusKm, from, to, spaceType, mode = "daily" } = input;
+  const { lat, lng, radiusKm, from, to, spaceType, mode = "daily", excludeHostId } = input;
   const spaceTypeFilter = spaceType?.trim()
     ? `%${spaceType.trim().toLowerCase()}%`
     : null;
@@ -108,6 +109,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
     AND status <> 'archived'
     AND ($6::text IS NULL OR lower(title) LIKE $6)
     AND ($7::text <> 'monthly' OR price_per_month IS NOT NULL)
+    AND ($8::uuid IS NULL OR host_id != $8)
     AND (
       SELECT COUNT(*) FROM bookings b
       WHERE b.listing_id = listings.id
@@ -179,6 +181,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       $3
     )
     AND ($6::text IS NULL OR lower(title) LIKE $6)
+    AND ($7::uuid IS NULL OR host_id != $7)
     AND NOT EXISTS (
       SELECT 1 FROM bookings b
       WHERE b.listing_id = listings.id
@@ -188,7 +191,8 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
     LIMIT 200;
   `;
 
-  const params = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter, mode];
+  const params = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter, mode, excludeHostId ?? null];
+  const legacyParams = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter, excludeHostId ?? null];
   try {
     const result = await pool.query(
       baseQuery.replace(
@@ -216,7 +220,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
     if (err?.code !== "42703" && err?.code !== "42P01") throw err;
     // Fallback for older schema without image_urls / rating_count / availability table
     const legacy = legacyQuery.replace("rating_count,", "");
-    const result = await pool.query(legacy, params.slice(0, 6));
+    const result = await pool.query(legacy, legacyParams);
     return result.rows.map((row) => ({
       id: row.id,
       title: row.title,
@@ -236,7 +240,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
 }
 
 export async function findSpacesWithAvailability(input: SpaceSearchInput) {
-  const { lat, lng, radiusKm, from, to, spaceType, mode = "daily" } = input;
+  const { lat, lng, radiusKm, from, to, spaceType, mode = "daily", excludeHostId } = input;
   const spaceTypeFilter = spaceType?.trim()
     ? `%${spaceType.trim().toLowerCase()}%`
     : null;
@@ -317,6 +321,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
     AND is_active = TRUE
     AND ($6::text IS NULL OR lower(title) LIKE $6)
     AND ($7::text <> 'monthly' OR price_per_month IS NOT NULL)
+    AND ($8::uuid IS NULL OR host_id != $8)
     ORDER BY distance_m ASC
     LIMIT 200;
   `;
@@ -344,12 +349,14 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
       $3
     )
     AND ($6::text IS NULL OR lower(title) LIKE $6)
+    AND ($7::uuid IS NULL OR host_id != $7)
     ORDER BY distance_m ASC
     LIMIT 200;
 
   `;
 
-  const params = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter, mode];
+  const params = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter, mode, excludeHostId ?? null];
+  const legacyParams = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter, excludeHostId ?? null];
   try {
     const result = await pool.query(
       baseQuery.replace(
@@ -377,7 +384,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
   } catch (err: any) {
     if (err?.code !== "42703" && err?.code !== "42P01") throw err;
     const legacy = legacyQuery.replace("rating_count,", "");
-    const result = await pool.query(legacy, params.slice(0, 6));
+    const result = await pool.query(legacy, legacyParams);
     return result.rows.map((row) => ({
       id: row.id,
       title: row.title,
@@ -508,6 +515,8 @@ export async function createBooking({
   platformFeeCents,
   payoutAvailableAt,
   vehiclePlate,
+  promoCodeId,
+  discountCents,
 }: {
   listingId: string;
   driverId: string;
@@ -520,6 +529,8 @@ export async function createBooking({
   platformFeeCents: number;
   payoutAvailableAt: Date;
   vehiclePlate?: string | null;
+  promoCodeId?: string | null;
+  discountCents?: number;
 }) {
   const insertWithStatus = `
     INSERT INTO bookings (
@@ -535,9 +546,11 @@ export async function createBooking({
       platform_fee_cents,
       payout_available_at,
       payout_status,
-      vehicle_plate
+      vehicle_plate,
+      promo_code_id,
+      discount_cents
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, 'pending', $11)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, 'pending', $11, $12, $13)
     RETURNING id;
   `;
   try {
@@ -553,6 +566,8 @@ export async function createBooking({
       platformFeeCents,
       payoutAvailableAt,
       vehiclePlate ?? null,
+      promoCodeId ?? null,
+      discountCents ?? 0,
     ]);
     return result.rows[0];
   } catch (err: any) {
@@ -3568,4 +3583,174 @@ export async function listListingReviews({
     createdAt: row.created_at,
     authorEmail: row.author_email,
   }));
+}
+
+export type PromoCode = {
+  id: string;
+  code: string;
+  description: string | null;
+  discount_type: "percent" | "fixed";
+  discount_value: number;
+  max_redemptions: number | null;
+  max_redemptions_per_user: number;
+  min_amount_cents: number;
+  starts_at: Date | null;
+  expires_at: Date | null;
+  active: boolean;
+  created_at: Date;
+};
+
+export function normalizePromoCode(code: string) {
+  return code.trim().toUpperCase().replace(/\s+/g, "");
+}
+
+export async function getPromoCodeByCode(code: string) {
+  const result = await pool.query(
+    `SELECT * FROM promo_codes WHERE code = $1 LIMIT 1`,
+    [normalizePromoCode(code)]
+  );
+  return (result.rows[0] as PromoCode | undefined) ?? null;
+}
+
+export async function getPromoRedemptionCounts(promoCodeId: string, userId: string) {
+  const result = await pool.query(
+    `SELECT
+       COUNT(*)::int AS total,
+       COUNT(*) FILTER (WHERE driver_id = $2)::int AS by_user
+     FROM bookings
+     WHERE promo_code_id = $1
+       AND (status IS NULL OR status <> 'canceled')`,
+    [promoCodeId, userId]
+  );
+  const row = result.rows[0] ?? { total: 0, by_user: 0 };
+  return { total: Number(row.total), byUser: Number(row.by_user) };
+}
+
+// Stripe rejects charges under €0.50, so a discount never brings the
+// charged total below this floor.
+const MIN_CHARGE_CENTS = 50;
+
+export type PromoValidationResult =
+  | { ok: true; promo: PromoCode; discountCents: number; finalCents: number }
+  | { ok: false; message: string };
+
+export async function validatePromoForBooking({
+  code,
+  userId,
+  amountCents,
+}: {
+  code: string;
+  userId: string;
+  amountCents: number;
+}): Promise<PromoValidationResult> {
+  const promo = await getPromoCodeByCode(code);
+  if (!promo || !promo.active) {
+    return { ok: false, message: "That promo code isn't valid." };
+  }
+  const now = Date.now();
+  if (promo.starts_at && new Date(promo.starts_at).getTime() > now) {
+    return { ok: false, message: "That promo code isn't active yet." };
+  }
+  if (promo.expires_at && new Date(promo.expires_at).getTime() < now) {
+    return { ok: false, message: "That promo code has expired." };
+  }
+  if (amountCents < promo.min_amount_cents) {
+    const min = (promo.min_amount_cents / 100).toFixed(2);
+    return { ok: false, message: `This code needs a booking of at least €${min}.` };
+  }
+  const counts = await getPromoRedemptionCounts(promo.id, userId);
+  if (promo.max_redemptions != null && counts.total >= promo.max_redemptions) {
+    return { ok: false, message: "That promo code has been fully redeemed." };
+  }
+  if (counts.byUser >= promo.max_redemptions_per_user) {
+    return { ok: false, message: "You've already used this promo code." };
+  }
+  const rawDiscount =
+    promo.discount_type === "percent"
+      ? Math.round((amountCents * promo.discount_value) / 100)
+      : promo.discount_value;
+  const discountCents = Math.min(rawDiscount, Math.max(amountCents - MIN_CHARGE_CENTS, 0));
+  if (discountCents <= 0) {
+    return { ok: false, message: "This code can't be applied to that booking." };
+  }
+  return { ok: true, promo, discountCents, finalCents: amountCents - discountCents };
+}
+
+export async function listPromoCodes() {
+  const result = await pool.query(
+    `SELECT
+       p.*,
+       (SELECT COUNT(*)::int FROM bookings b
+        WHERE b.promo_code_id = p.id AND (b.status IS NULL OR b.status <> 'canceled')) AS redemption_count
+     FROM promo_codes p
+     ORDER BY p.created_at DESC`
+  );
+  return result.rows as (PromoCode & { redemption_count: number })[];
+}
+
+export async function createPromoCode(input: {
+  code: string;
+  description?: string | null;
+  discountType: "percent" | "fixed";
+  discountValue: number;
+  maxRedemptions?: number | null;
+  maxRedemptionsPerUser?: number;
+  minAmountCents?: number;
+  startsAt?: string | null;
+  expiresAt?: string | null;
+}) {
+  const result = await pool.query(
+    `INSERT INTO promo_codes (
+       code, description, discount_type, discount_value,
+       max_redemptions, max_redemptions_per_user, min_amount_cents,
+       starts_at, expires_at
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+     RETURNING *`,
+    [
+      normalizePromoCode(input.code),
+      input.description ?? null,
+      input.discountType,
+      input.discountValue,
+      input.maxRedemptions ?? null,
+      input.maxRedemptionsPerUser ?? 1,
+      input.minAmountCents ?? 0,
+      input.startsAt ?? null,
+      input.expiresAt ?? null,
+    ]
+  );
+  return result.rows[0] as PromoCode;
+}
+
+export async function updatePromoCode(
+  id: string,
+  patch: {
+    active?: boolean;
+    description?: string | null;
+    maxRedemptions?: number | null;
+    maxRedemptionsPerUser?: number;
+    expiresAt?: string | null;
+  }
+) {
+  const result = await pool.query(
+    `UPDATE promo_codes
+     SET active = COALESCE($2, active),
+         description = COALESCE($3, description),
+         max_redemptions = CASE WHEN $4::boolean THEN $5 ELSE max_redemptions END,
+         max_redemptions_per_user = COALESCE($6, max_redemptions_per_user),
+         expires_at = CASE WHEN $7::boolean THEN $8 ELSE expires_at END
+     WHERE id = $1
+     RETURNING *`,
+    [
+      id,
+      patch.active ?? null,
+      patch.description ?? null,
+      patch.maxRedemptions !== undefined,
+      patch.maxRedemptions ?? null,
+      patch.maxRedemptionsPerUser ?? null,
+      patch.expiresAt !== undefined,
+      patch.expiresAt ?? null,
+    ]
+  );
+  return (result.rows[0] as PromoCode | undefined) ?? null;
 }

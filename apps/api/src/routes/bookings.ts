@@ -32,6 +32,7 @@ import {
   markPayoutProcessing,
   markPayoutTransferred,
   markPayoutPending,
+  validatePromoForBooking,
 } from "../lib/db.js";
 import { createCheckoutSession, stripe } from "../lib/stripe.js";
 import { sendBookingEmail, sendBookingStatusEmail } from "../lib/email.js";
@@ -287,14 +288,25 @@ const bookingSchema = bookingSchemaBase.superRefine((value, ctx) => {
   }
 });
 
-const paymentIntentSchema = bookingSchemaBase.pick({
-  listingId: true,
-  from: true,
-  to: true,
-  amountCents: true,
-  currency: true,
-  platformFeePercent: true,
-  vehiclePlate: true,
+const paymentIntentSchema = bookingSchemaBase
+  .pick({
+    listingId: true,
+    from: true,
+    to: true,
+    amountCents: true,
+    currency: true,
+    platformFeePercent: true,
+    vehiclePlate: true,
+  })
+  .extend({
+    promoCode: z.string().trim().min(1).max(40).optional(),
+  });
+
+const promoValidateSchema = z.object({
+  code: z.string().trim().min(1).max(40),
+  listingId: z.string().uuid(),
+  from: z.string().datetime(),
+  to: z.string().datetime(),
 });
 
 const portalBookingSchema = z.object({
@@ -573,6 +585,9 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
     if (!listingWithHost) {
       return res.status(404).json({ message: "Listing not found" });
     }
+    if (listingWithHost.hostId === driverId) {
+      return res.status(403).json({ message: "You cannot book your own listing." });
+    }
     const expectedParkingCents = calculateListingChargeCents({
       rateType: listingWithHost.rateType,
       pricePerDay: listingWithHost.pricePerDay,
@@ -697,6 +712,43 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
   }
 });
 
+router.post("/promo/validate", requireAuth, bookingReadLimiter, async (req, res, next) => {
+  try {
+    const payload = promoValidateSchema.parse(req.body);
+    const driverId = req.user?.userId;
+    if (!driverId) return res.status(401).json({ message: "Unauthorized" });
+
+    const listingWithHost = await getListingWithHostAccount(payload.listingId);
+    if (!listingWithHost) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
+    const parkingCents = calculateListingChargeCents({
+      rateType: listingWithHost.rateType,
+      pricePerDay: listingWithHost.pricePerDay,
+      pricePerHour: listingWithHost.pricePerHour,
+      startTime: new Date(payload.from),
+      endTime: new Date(payload.to),
+    });
+    const amountCents = Math.round(parkingCents * 1.08);
+    const result = await validatePromoForBooking({
+      code: payload.code,
+      userId: driverId,
+      amountCents,
+    });
+    if (!result.ok) {
+      return res.status(422).json({ message: result.message });
+    }
+    res.json({
+      code: result.promo.code,
+      description: result.promo.description,
+      discountCents: result.discountCents,
+      finalCents: result.finalCents,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, async (req, res, next) => {
   try {
     if (!stripe) return res.status(500).json({ message: "Stripe not configured" });
@@ -740,6 +792,9 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
     if (!listingWithHost) {
       return res.status(404).json({ message: "Listing not found" });
     }
+    if (listingWithHost.hostId === driverId) {
+      return res.status(403).json({ message: "You cannot book your own listing." });
+    }
     const expectedParkingCents = calculateListingChargeCents({
       rateType: listingWithHost.rateType,
       pricePerDay: listingWithHost.pricePerDay,
@@ -748,18 +803,37 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
       endTime: new Date(payload.to),
     });
     const expectedAmountCents = Math.round(expectedParkingCents * 1.08);
-    if (payload.amountCents !== expectedAmountCents) {
+
+    let promoCodeId: string | null = null;
+    let promoCode: string | null = null;
+    let discountCents = 0;
+    if (payload.promoCode) {
+      const promoResult = await validatePromoForBooking({
+        code: payload.promoCode,
+        userId: driverId,
+        amountCents: expectedAmountCents,
+      });
+      if (!promoResult.ok) {
+        return res.status(422).json({ message: promoResult.message });
+      }
+      promoCodeId = promoResult.promo.id;
+      promoCode = promoResult.promo.code;
+      discountCents = promoResult.discountCents;
+    }
+    const chargeAmountCents = expectedAmountCents - discountCents;
+
+    if (payload.amountCents !== chargeAmountCents) {
       return res.status(400).json({ message: "Booking price is out of date. Please refresh and try again." });
     }
 
-    if (recent.total_cents + expectedAmountCents > settings.maxAmountPerDayCents) {
+    if (recent.total_cents + chargeAmountCents > settings.maxAmountPerDayCents) {
       if (enforceFraud) {
         return res.status(429).json({ message: "Daily booking limit reached." });
       }
       console.warn("[fraud] booking spend above threshold", {
         userId: driverId,
         totalCents: recent.total_cents,
-        attemptedCents: expectedAmountCents,
+        attemptedCents: chargeAmountCents,
         maxAmountPerDayCents: settings.maxAmountPerDayCents,
       });
     }
@@ -793,9 +867,12 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
       { apiVersion: "2024-06-20" }
     );
 
-    const platformFeeCents = Math.round(expectedAmountCents * payload.platformFeePercent);
+    // The platform funds the promo: the fee shrinks by the discount so the
+    // host's payout (charge minus fee) stays based on the undiscounted price.
+    const platformFeeCents =
+      Math.round(expectedAmountCents * payload.platformFeePercent) - discountCents;
     const intentParams: any = {
-      amount: expectedAmountCents,
+      amount: chargeAmountCents,
       currency: payload.currency,
       customer: customerId,
       automatic_payment_methods: { enabled: true, allow_redirects: "never" },
@@ -804,10 +881,13 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
         driver_id: driverId,
         platform_fee_cents: String(platformFeeCents),
         host_account_id: listingWithHost?.hostStripeAccountId ?? "",
-        amount_cents: String(expectedAmountCents),
+        amount_cents: String(chargeAmountCents),
         currency: payload.currency,
         manual_review: settings.manualReview ? "true" : "false",
         source: "payment_intent",
+        ...(promoCode
+          ? { promo_code: promoCode, discount_cents: String(discountCents) }
+          : {}),
       },
     };
 
@@ -821,11 +901,13 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
         to: payload.to,
         stripePaymentIntentId: intent.id,
         checkoutSessionId: null,
-        amountCents: expectedAmountCents,
+        amountCents: chargeAmountCents,
         currency: payload.currency,
         platformFeeCents,
         payoutAvailableAt,
         vehiclePlate: payload.vehiclePlate ? payload.vehiclePlate.toUpperCase() : null,
+        promoCodeId,
+        discountCents,
       });
     } catch (error) {
       try {

@@ -10,6 +10,19 @@ declare global {
   }
 }
 
+export function optionalAuth(req: Request, res: Response, next: NextFunction) {
+  const header = req.headers.authorization;
+  if (header && header.toLowerCase().startsWith("bearer ")) {
+    const token = header.slice(7).trim();
+    try {
+      req.user = verifyToken(token);
+    } catch {
+      // Invalid token — treat as unauthenticated, don't reject
+    }
+  }
+  next();
+}
+
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (!header || !header.toLowerCase().startsWith("bearer ")) {

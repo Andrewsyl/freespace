@@ -16,7 +16,7 @@ import {
 } from "../lib/db.js";
 import { getPresignedPostUpload, uploadBufferToS3, MAX_LISTING_IMAGE_BYTES, S3UploadConfigError } from "../lib/s3.js";
 import { geocodeAddress } from "../lib/geocode.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, optionalAuth } from "../middleware/auth.js";
 import { enforceBlockedList, getFraudSettings, getUserRiskProfile, shouldEnforceFraud } from "../middleware/fraud.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
 import { env } from "../env.js";
@@ -263,12 +263,13 @@ const searchSchema = z
     }
   });
 
-router.get("/search", searchLimiter, async (req, res, next) => {
+router.get("/search", searchLimiter, optionalAuth, async (req, res, next) => {
   try {
     const query = searchSchema.parse(req.query);
+    const excludeHostId = req.user?.userId;
     const results = query.includeUnavailable
-      ? await findSpacesWithAvailability(query)
-      : await findAvailableSpaces(query);
+      ? await findSpacesWithAvailability({ ...query, excludeHostId })
+      : await findAvailableSpaces({ ...query, excludeHostId });
     res.json({ spaces: results });
   } catch (error) {
     next(error);

@@ -1,13 +1,17 @@
 import { useCallback, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
+  adminCreatePromo,
   adminListListings,
+  adminListPromos,
   adminListUsers,
   adminUpdateListing,
+  adminUpdatePromo,
   adminUpdateUser,
   type AdminListing,
+  type AdminPromo,
   type AdminUser,
 } from "../api";
 import { useAuth } from "../auth";
@@ -19,11 +23,17 @@ type Props = NativeStackScreenProps<RootStackParamList, "Admin">;
 
 export function AdminScreen({ navigation }: Props) {
   const { token } = useAuth();
-  const [activeTab, setActiveTab] = useState<"users" | "listings">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "listings" | "promos">("users");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [listings, setListings] = useState<AdminListing[]>([]);
+  const [promos, setPromos] = useState<AdminPromo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoValue, setPromoValue] = useState("");
+  const [promoType, setPromoType] = useState<"percent" | "fixed">("percent");
+  const [promoMaxUses, setPromoMaxUses] = useState("");
+  const [creatingPromo, setCreatingPromo] = useState(false);
 
   const loadUsers = useCallback(async () => {
     if (!token) return;
@@ -53,14 +63,88 @@ export function AdminScreen({ navigation }: Props) {
     }
   }, [token]);
 
-  const handleTab = (tab: "users" | "listings") => {
+  const loadPromos = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await adminListPromos(token);
+      setPromos(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load promos");
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  const handleTab = (tab: "users" | "listings" | "promos") => {
     setActiveTab(tab);
     if (tab === "users") {
       void loadUsers();
-    } else {
+    } else if (tab === "listings") {
       void loadListings();
+    } else {
+      void loadPromos();
     }
   };
+
+  const handleCreatePromo = async () => {
+    if (!token || creatingPromo) return;
+    const value = Number(promoValue);
+    if (!promoCode.trim() || !Number.isInteger(value) || value <= 0) {
+      setError(
+        promoType === "percent"
+          ? "Enter a code and a whole-number percentage."
+          : "Enter a code and a discount amount in cents (e.g. 500 = €5)."
+      );
+      return;
+    }
+    const maxUses = promoMaxUses.trim() ? Number(promoMaxUses) : null;
+    setCreatingPromo(true);
+    setError(null);
+    try {
+      const result = await adminCreatePromo(token, {
+        code: promoCode.trim(),
+        discountType: promoType,
+        discountValue: value,
+        maxRedemptions: maxUses && Number.isInteger(maxUses) && maxUses > 0 ? maxUses : null,
+      });
+      setPromos((prev) => [{ ...result.promo, redemption_count: 0 }, ...prev]);
+      setPromoCode("");
+      setPromoValue("");
+      setPromoMaxUses("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Promo creation failed");
+    } finally {
+      setCreatingPromo(false);
+    }
+  };
+
+  const togglePromoActive = (promo: AdminPromo) => {
+    if (!token) return;
+    const next = !promo.active;
+    Alert.alert("Update promo", `${next ? "Activate" : "Deactivate"} ${promo.code}?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Confirm",
+        onPress: async () => {
+          try {
+            const result = await adminUpdatePromo(token, promo.id, { active: next });
+            setPromos((prev) =>
+              prev.map((item) => (item.id === promo.id ? { ...item, ...result.promo } : item))
+            );
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Promo update failed");
+          }
+        },
+      },
+    ]);
+  };
+
+  const formatPromoDiscount = (promo: AdminPromo) =>
+    promo.discount_type === "percent"
+      ? `${promo.discount_value}% off`
+      : `€${(promo.discount_value / 100).toFixed(2)} off`;
 
   const updateUserStatus = (user: AdminUser) => {
     if (!token) return;
@@ -146,6 +230,12 @@ export function AdminScreen({ navigation }: Props) {
         >
           <Text style={[styles.tabText, activeTab === "listings" && styles.tabTextActive]}>Listings</Text>
         </Pressable>
+        <Pressable
+          style={[styles.tabButton, activeTab === "promos" && styles.tabButtonActive]}
+          onPress={() => handleTab("promos")}
+        >
+          <Text style={[styles.tabText, activeTab === "promos" && styles.tabTextActive]}>Promos</Text>
+        </Pressable>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -175,27 +265,112 @@ export function AdminScreen({ navigation }: Props) {
               </View>
             ))
           )
-        ) : listings.length === 0 && !loading ? (
-          <Text style={styles.muted}>No listings found.</Text>
+        ) : activeTab === "listings" ? (
+          listings.length === 0 && !loading ? (
+            <Text style={styles.muted}>No listings found.</Text>
+          ) : (
+            listings.map((listing) => (
+              <View key={listing.id} style={styles.card}>
+                <Text style={styles.cardTitle}>{listing.title}</Text>
+                <Text style={styles.cardMeta}>{listing.address}</Text>
+                <Text style={styles.cardMeta}>Status: {listing.status}</Text>
+                <View style={styles.actionRow}>
+                  <Pressable style={styles.actionButton} onPress={() => updateListing(listing, "approved")}>
+                    <Text style={styles.actionText}>Approve</Text>
+                  </Pressable>
+                  <Pressable style={styles.actionButton} onPress={() => updateListing(listing, "rejected")}>
+                    <Text style={styles.actionText}>Reject</Text>
+                  </Pressable>
+                  <Pressable style={styles.actionButton} onPress={() => updateListing(listing, "disabled")}>
+                    <Text style={styles.actionText}>Disable</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))
+          )
         ) : (
-          listings.map((listing) => (
-            <View key={listing.id} style={styles.card}>
-              <Text style={styles.cardTitle}>{listing.title}</Text>
-              <Text style={styles.cardMeta}>{listing.address}</Text>
-              <Text style={styles.cardMeta}>Status: {listing.status}</Text>
-              <View style={styles.actionRow}>
-                <Pressable style={styles.actionButton} onPress={() => updateListing(listing, "approved")}>
-                  <Text style={styles.actionText}>Approve</Text>
+          <>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>New promo code</Text>
+              <TextInput
+                style={styles.promoField}
+                value={promoCode}
+                onChangeText={setPromoCode}
+                placeholder="Code (e.g. LAUNCH10)"
+                placeholderTextColor={colors.textSoft}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+              <View style={styles.promoTypeRow}>
+                <Pressable
+                  style={[styles.actionButton, promoType === "percent" && styles.promoTypeActive]}
+                  onPress={() => setPromoType("percent")}
+                >
+                  <Text style={[styles.actionText, promoType === "percent" && styles.promoTypeTextActive]}>
+                    % off
+                  </Text>
                 </Pressable>
-                <Pressable style={styles.actionButton} onPress={() => updateListing(listing, "rejected")}>
-                  <Text style={styles.actionText}>Reject</Text>
-                </Pressable>
-                <Pressable style={styles.actionButton} onPress={() => updateListing(listing, "disabled")}>
-                  <Text style={styles.actionText}>Disable</Text>
+                <Pressable
+                  style={[styles.actionButton, promoType === "fixed" && styles.promoTypeActive]}
+                  onPress={() => setPromoType("fixed")}
+                >
+                  <Text style={[styles.actionText, promoType === "fixed" && styles.promoTypeTextActive]}>
+                    Fixed (cents)
+                  </Text>
                 </Pressable>
               </View>
+              <TextInput
+                style={styles.promoField}
+                value={promoValue}
+                onChangeText={setPromoValue}
+                placeholder={promoType === "percent" ? "Percent (e.g. 10)" : "Cents (e.g. 500 = €5)"}
+                placeholderTextColor={colors.textSoft}
+                keyboardType="number-pad"
+              />
+              <TextInput
+                style={styles.promoField}
+                value={promoMaxUses}
+                onChangeText={setPromoMaxUses}
+                placeholder="Max total uses (blank = unlimited)"
+                placeholderTextColor={colors.textSoft}
+                keyboardType="number-pad"
+              />
+              <Pressable
+                style={[styles.actionButton, styles.promoCreateButton]}
+                onPress={() => void handleCreatePromo()}
+                disabled={creatingPromo}
+              >
+                <Text style={[styles.actionText, styles.promoCreateText]}>
+                  {creatingPromo ? "Creating…" : "Create promo"}
+                </Text>
+              </Pressable>
             </View>
-          ))
+            {promos.length === 0 && !loading ? (
+              <Text style={styles.muted}>No promo codes yet.</Text>
+            ) : (
+              promos.map((promo) => (
+                <View key={promo.id} style={styles.card}>
+                  <Text style={styles.cardTitle}>{promo.code}</Text>
+                  <Text style={styles.cardMeta}>
+                    {formatPromoDiscount(promo)} · Used {promo.redemption_count}
+                    {promo.max_redemptions != null ? ` of ${promo.max_redemptions}` : ""} ·{" "}
+                    {promo.max_redemptions_per_user} per user
+                  </Text>
+                  <Text style={styles.cardMeta}>
+                    {promo.active ? "Active" : "Inactive"}
+                    {promo.expires_at
+                      ? ` · Expires ${new Date(promo.expires_at).toLocaleDateString("en-IE")}`
+                      : ""}
+                  </Text>
+                  <View style={styles.actionRow}>
+                    <Pressable style={styles.actionButton} onPress={() => togglePromoActive(promo)}>
+                      <Text style={styles.actionText}>{promo.active ? "Deactivate" : "Activate"}</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))
+            )}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -310,6 +485,37 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 12,
     fontWeight: "600",
+  },
+  promoField: {
+    borderColor: colors.border,
+    borderRadius: 10,
+    borderWidth: 1,
+    color: colors.text,
+    fontSize: 13,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  promoTypeRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 10,
+  },
+  promoTypeActive: {
+    backgroundColor: colors.text,
+    borderColor: colors.text,
+  },
+  promoTypeTextActive: {
+    color: colors.cardBg,
+  },
+  promoCreateButton: {
+    alignItems: "center",
+    backgroundColor: colors.text,
+    borderColor: colors.text,
+    marginTop: 12,
+  },
+  promoCreateText: {
+    color: colors.cardBg,
   },
   error: {
     backgroundColor: "#fef2f2",

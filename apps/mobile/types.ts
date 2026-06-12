@@ -128,6 +128,7 @@ export type ListingDetail = ListingSummary & {
   description?: string | null;
   access_directions?: string | null;
   accessDirections?: string | null;
+  hostId?: string | null;
   availabilitySchedule?: {
     id: string;
     kind: "open" | "blocked";

@@ -24,6 +24,9 @@ import {
   listAdminSettings,
   upsertAdminSetting,
   listEventLog,
+  listPromoCodes,
+  createPromoCode,
+  updatePromoCode,
 } from "../lib/db.js";
 import { stripe } from "../lib/stripe.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
@@ -123,6 +126,42 @@ const updateSupportSchema = z.object({
 
 const upsertSettingSchema = z.object({
   value: z.any(),
+  reason: z.string().trim().max(200).optional(),
+});
+
+const createPromoSchema = z
+  .object({
+    code: z
+      .string()
+      .trim()
+      .min(3)
+      .max(40)
+      .regex(/^[A-Za-z0-9\-]+$/, "Letters, numbers, and dashes only"),
+    description: z.string().trim().max(200).optional(),
+    discountType: z.enum(["percent", "fixed"]),
+    discountValue: z.number().int().positive(),
+    maxRedemptions: z.number().int().positive().nullable().optional(),
+    maxRedemptionsPerUser: z.number().int().positive().max(100).default(1),
+    minAmountCents: z.number().int().min(0).default(0),
+    startsAt: z.string().datetime().nullable().optional(),
+    expiresAt: z.string().datetime().nullable().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.discountType === "percent" && value.discountValue > 100) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["discountValue"],
+        message: "Percent discounts can't exceed 100",
+      });
+    }
+  });
+
+const updatePromoSchema = z.object({
+  active: z.boolean().optional(),
+  description: z.string().trim().max(200).optional(),
+  maxRedemptions: z.number().int().positive().nullable().optional(),
+  maxRedemptionsPerUser: z.number().int().positive().max(100).optional(),
+  expiresAt: z.string().datetime().nullable().optional(),
   reason: z.string().trim().max(200).optional(),
 });
 
@@ -443,6 +482,59 @@ router.put("/settings/:key", requireAuth, requireAdmin, adminWriteLimiter, async
       ua: req.headers["user-agent"] as string,
     });
     res.json({ setting: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/promos", requireAuth, requireAdmin, adminReadLimiter, async (_req, res, next) => {
+  try {
+    const promos = await listPromoCodes();
+    res.json({ promos });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/promos", requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
+  try {
+    const payload = createPromoSchema.parse(req.body ?? {});
+    const promo = await createPromoCode(payload);
+    await insertAuditLog({
+      adminId: req.user!.userId,
+      action: "create_promo",
+      targetType: "promo_code",
+      targetId: promo.id,
+      afterState: promo,
+      ip: req.ip,
+      ua: req.headers["user-agent"] as string,
+    });
+    res.status(201).json({ promo });
+  } catch (error: any) {
+    if (error?.code === "23505") {
+      return res.status(409).json({ message: "A promo code with that name already exists." });
+    }
+    next(error);
+  }
+});
+
+router.patch("/promos/:id", requireAuth, requireAdmin, adminWriteLimiter, async (req, res, next) => {
+  try {
+    const { id } = idParamSchema.parse(req.params);
+    const payload = updatePromoSchema.parse(req.body ?? {});
+    const promo = await updatePromoCode(id, payload);
+    if (!promo) return res.status(404).json({ message: "Promo code not found" });
+    await insertAuditLog({
+      adminId: req.user!.userId,
+      action: "update_promo",
+      targetType: "promo_code",
+      targetId: promo.id,
+      afterState: promo,
+      reason: payload.reason,
+      ip: req.ip,
+      ua: req.headers["user-agent"] as string,
+    });
+    res.json({ promo });
   } catch (error) {
     next(error);
   }

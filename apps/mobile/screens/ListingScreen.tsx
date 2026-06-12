@@ -935,22 +935,28 @@ export function ListingScreen({ navigation, route }: Props) {
                     <Text style={styles.dailyCapBadge}>Day rate — saves €{formatPriceValue(priceSummary.dailyCapSaving)}</Text>
                   ) : null}
                 </View>
-                <SquircleBtn
-                  label={listing.is_available === false || !!showBookingMode ? "Unavailable" : "Book Now"}
-                  disabled={listing.is_available === false || !!showBookingMode}
-                  loading={navigatingToBooking}
-                  onPress={() => {
-                    if (!user) { setShowAuthModal(true); return; }
-                    if (navigatingToBooking) return;
-                    setNavigatingToBooking(true);
-                    navigation.navigate("BookingSummary", {
-                      id,
-                      from: startAt.toISOString(),
-                      to: endAt.toISOString(),
-                    });
-                    setTimeout(() => setNavigatingToBooking(false), 800);
-                  }}
-                />
+                {listing.hostId && user?.id === listing.hostId ? (
+                  <View style={styles.ownListingBadge}>
+                    <Text style={styles.ownListingText}>This is your listing</Text>
+                  </View>
+                ) : (
+                  <SquircleBtn
+                    label={listing.is_available === false || !!showBookingMode ? "Unavailable" : "Book Now"}
+                    disabled={listing.is_available === false || !!showBookingMode}
+                    loading={navigatingToBooking}
+                    onPress={() => {
+                      if (!user) { setShowAuthModal(true); return; }
+                      if (navigatingToBooking) return;
+                      setNavigatingToBooking(true);
+                      navigation.navigate("BookingSummary", {
+                        id,
+                        from: startAt.toISOString(),
+                        to: endAt.toISOString(),
+                      });
+                      setTimeout(() => setNavigatingToBooking(false), 800);
+                    }}
+                  />
+                )}
               </View>
             ) : null}
           </>
@@ -1711,6 +1717,8 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
     shadowColor: "#0a7a50", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.22, shadowRadius: 10, elevation: 4,
   },
+  ownListingBadge: { paddingVertical: 14, paddingHorizontal: 20, borderRadius: 14, backgroundColor: "#f0f0f0", alignItems: "center" as const, justifyContent: "center" as const },
+  ownListingText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#666", letterSpacing: -0.2 },
   reserveBtnPressed: { backgroundColor: "#0a6a40" },
   reserveBtnDisabled: { backgroundColor: LINE, shadowOpacity: 0 },
   reserveBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#ffffff", letterSpacing: -0.3 },

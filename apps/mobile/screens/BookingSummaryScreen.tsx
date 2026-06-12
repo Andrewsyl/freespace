@@ -14,6 +14,7 @@ import {
   StyleSheet,
   StatusBar,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -28,6 +29,8 @@ import {
   confirmBookingPayment,
   createBookingPaymentIntent,
   getListing,
+  validatePromoCode,
+  type PromoValidation,
 } from "../api";
 import { useAuth } from "../auth";
 import { logError, logInfo, logWarn } from "../logger";
@@ -58,6 +61,10 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const [confirmingBooking, setConfirmingBooking] = useState(false);
   const [paymentFailureMessage, setPaymentFailureMessage] = useState<string | null>(null);
   const [showServiceFeeInfo, setShowServiceFeeInfo] = useState(false);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoBusy, setPromoBusy] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [appliedPromo, setAppliedPromo] = useState<PromoValidation | null>(null);
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleColor, setVehicleColor] = useState("");
   const [vehiclePlate, setVehiclePlate] = useState("");
@@ -188,15 +195,74 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const pricing = useMemo(() => {
     const parkingFee = priceSummary?.total ?? 0;
     const serviceFee = Math.round(parkingFee * 0.08 * 100) / 100;
-    const finalPrice = parkingFee + serviceFee;
-    const finalCents = Math.round(finalPrice * 100);
+    const baseCents = Math.round((parkingFee + serviceFee) * 100);
+    // Same floor the API applies: Stripe can't charge less than €0.50.
+    const discountCents = appliedPromo
+      ? Math.min(appliedPromo.discountCents, Math.max(baseCents - 50, 0))
+      : 0;
+    const finalCents = baseCents - discountCents;
     return {
       parkingFee,
       serviceFee,
-      finalPrice,
+      discountCents,
+      finalPrice: finalCents / 100,
       finalCents,
     };
-  }, [priceSummary]);
+  }, [priceSummary, appliedPromo]);
+
+  const applyPromo = useCallback(async () => {
+    const code = promoInput.trim();
+    if (!code || !listing || !token || promoBusy) return;
+    setPromoBusy(true);
+    setPromoError(null);
+    try {
+      const result = await validatePromoCode({
+        code,
+        listingId: listing.id,
+        from: startAt.toISOString(),
+        to: endAt.toISOString(),
+        token,
+      });
+      setAppliedPromo(result);
+      setPromoInput("");
+    } catch (err) {
+      setPromoError(err instanceof Error ? err.message : "That promo code isn't valid.");
+    } finally {
+      setPromoBusy(false);
+    }
+  }, [promoInput, listing, token, promoBusy, startAt, endAt]);
+
+  // Booking times change the total, so an applied code has to be re-quoted
+  // (percent discounts scale; minimum-spend rules may stop applying).
+  const appliedCodeRef = useRef<string | null>(null);
+  useEffect(() => {
+    appliedCodeRef.current = appliedPromo?.code ?? null;
+  }, [appliedPromo]);
+  useEffect(() => {
+    const code = appliedCodeRef.current;
+    if (!code || !listing || !token) return;
+    let active = true;
+    validatePromoCode({
+      code,
+      listingId: listing.id,
+      from: startAt.toISOString(),
+      to: endAt.toISOString(),
+      token,
+    })
+      .then((result) => {
+        if (active) setAppliedPromo(result);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setAppliedPromo(null);
+        setPromoError(
+          err instanceof Error ? err.message : "Promo code no longer applies to these times."
+        );
+      });
+    return () => {
+      active = false;
+    };
+  }, [startAt, endAt, listing, token]);
 
   const hasVehicleProfile =
     !!user?.vehicleMake?.trim() && !!user?.vehicleType?.trim();
@@ -335,6 +401,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         to: endAt.toISOString(),
         amountCents: pricing.finalCents,
         vehiclePlate: vehiclePlate.trim().toUpperCase() || undefined,
+        promoCode: appliedPromo?.code ?? undefined,
         token,
       });
       const paymentIntentId = payment.paymentIntentId ?? "";
@@ -668,10 +735,62 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                   <Text style={styles.priceRowLabel}>Duration</Text>
                   <Text style={styles.priceRowValue}>{priceSummary?.durationLabel ?? ""}</Text>
                 </View>
+                {appliedPromo ? (
+                  <View style={[styles.priceRow, styles.priceRowBorder]}>
+                    <View style={styles.promoAppliedLabelWrap}>
+                      <Text style={styles.priceRowLabel}>Promo · {appliedPromo.code}</Text>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Remove promo code"
+                        hitSlop={8}
+                        onPress={() => {
+                          setAppliedPromo(null);
+                          setPromoError(null);
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={16} color={SUBTLE} />
+                      </Pressable>
+                    </View>
+                    <Text style={styles.promoDiscountValue}>
+                      −€{(pricing.discountCents / 100).toFixed(2)}
+                    </Text>
+                  </View>
+                ) : null}
                 <View style={[styles.priceRow, styles.priceRowBorder, styles.priceTotalRow]}>
                   <Text style={styles.priceTotalLabel}>Total</Text>
                   <Text style={styles.priceTotalValue}>€{pricing.finalPrice.toFixed(2)}</Text>
                 </View>
+                {!appliedPromo ? (
+                  <View style={styles.promoInputRow}>
+                    <TextInput
+                      style={styles.promoInput}
+                      value={promoInput}
+                      onChangeText={(value) => {
+                        setPromoInput(value);
+                        if (promoError) setPromoError(null);
+                      }}
+                      placeholder="Promo code"
+                      placeholderTextColor={SUBTLE}
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                      returnKeyType="done"
+                      onSubmitEditing={() => void applyPromo()}
+                      editable={!promoBusy}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      style={[
+                        styles.promoApplyBtn,
+                        (!promoInput.trim() || promoBusy) && styles.promoApplyBtnDisabled,
+                      ]}
+                      disabled={!promoInput.trim() || promoBusy}
+                      onPress={() => void applyPromo()}
+                    >
+                      <Text style={styles.promoApplyText}>{promoBusy ? "…" : "Apply"}</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+                {promoError ? <Text style={styles.promoErrorText}>{promoError}</Text> : null}
                 <View style={styles.priceMetaRow}>
                   <Pressable
                     accessibilityRole="button"
@@ -1036,6 +1155,55 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     color: MUTED,
+  },
+  promoAppliedLabelWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  promoDiscountValue: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 15,
+    color: GREEN,
+  },
+  promoInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  promoInput: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: LINE,
+    backgroundColor: "#FBF8F4",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: FG,
+  },
+  promoApplyBtn: {
+    borderRadius: 12,
+    backgroundColor: FG,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+  },
+  promoApplyBtnDisabled: {
+    opacity: 0.4,
+  },
+  promoApplyText: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 13,
+    color: "#fff",
+  },
+  promoErrorText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: "#C03A2B",
+    marginBottom: 8,
   },
 
   // ── Irish number plate ───────────────────────────────────────

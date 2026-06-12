@@ -403,6 +403,80 @@ export async function adminUpdateListing(
   return (await response.json()) as { listing: AdminListing };
 }
 
+export type AdminPromo = {
+  id: string;
+  code: string;
+  description: string | null;
+  discount_type: "percent" | "fixed";
+  discount_value: number;
+  max_redemptions: number | null;
+  max_redemptions_per_user: number;
+  min_amount_cents: number;
+  starts_at: string | null;
+  expires_at: string | null;
+  active: boolean;
+  created_at: string;
+  redemption_count: number;
+};
+
+export async function adminListPromos(token: string) {
+  const response = await fetchWithTimeout(`${baseUrl}/api/admin/promos`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Admin promos failed (${response.status})`);
+  }
+  const payload = (await response.json()) as { promos: AdminPromo[] };
+  return payload.promos ?? [];
+}
+
+export async function adminCreatePromo(
+  token: string,
+  payload: {
+    code: string;
+    description?: string;
+    discountType: "percent" | "fixed";
+    discountValue: number;
+    maxRedemptions?: number | null;
+    maxRedemptionsPerUser?: number;
+    expiresAt?: string | null;
+  }
+) {
+  const response = await fetchWithTimeout(`${baseUrl}/api/admin/promos`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "Promo creation failed"));
+  }
+  return (await response.json()) as { promo: AdminPromo };
+}
+
+export async function adminUpdatePromo(
+  token: string,
+  promoId: string,
+  payload: { active?: boolean; expiresAt?: string | null; maxRedemptions?: number | null }
+) {
+  const response = await fetchWithTimeout(`${baseUrl}/api/admin/promos/${promoId}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "Promo update failed"));
+  }
+  return (await response.json()) as { promo: AdminPromo };
+}
+
 export async function sendSupportMessage(token: string, payload: { subject: string; message: string }) {
   const response = await fetchWithTimeout(`${baseUrl}/api/support`, {
     method: "POST",
@@ -668,12 +742,46 @@ export async function changePassword(token: string, currentPassword: string, new
   return (await response.json()) as { ok: true };
 }
 
+export type PromoValidation = {
+  code: string;
+  description: string | null;
+  discountCents: number;
+  finalCents: number;
+};
+
+export async function validatePromoCode(payload: {
+  code: string;
+  listingId: string;
+  from: string;
+  to: string;
+  token: string;
+}) {
+  const response = await fetchWithTimeout(`${baseUrl}/api/bookings/promo/validate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${payload.token}`,
+    },
+    body: JSON.stringify({
+      code: payload.code,
+      listingId: payload.listingId,
+      from: payload.from,
+      to: payload.to,
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "That promo code isn't valid."));
+  }
+  return (await response.json()) as PromoValidation;
+}
+
 export async function createBookingPaymentIntent(payload: {
   listingId: string;
   from: string;
   to: string;
   amountCents: number;
   vehiclePlate?: string | null;
+  promoCode?: string | null;
   token: string;
 }) {
   const e2eState = getMobileE2EState();
@@ -697,6 +805,7 @@ export async function createBookingPaymentIntent(payload: {
       to: payload.to,
       amountCents: payload.amountCents,
       vehiclePlate: payload.vehiclePlate ?? undefined,
+      promoCode: payload.promoCode ?? undefined,
     }),
   });
   if (!response.ok) {
