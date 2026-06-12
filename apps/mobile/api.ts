@@ -745,6 +745,8 @@ export async function changePassword(token: string, currentPassword: string, new
 export type PromoValidation = {
   code: string;
   description: string | null;
+  discountType: "percent" | "fixed";
+  discountValue: number;
   discountCents: number;
   finalCents: number;
 };

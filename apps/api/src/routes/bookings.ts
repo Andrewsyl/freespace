@@ -741,6 +741,8 @@ router.post("/promo/validate", requireAuth, bookingReadLimiter, async (req, res,
     res.json({
       code: result.promo.code,
       description: result.promo.description,
+      discountType: result.promo.discount_type,
+      discountValue: result.promo.discount_value,
       discountCents: result.discountCents,
       finalCents: result.finalCents,
     });

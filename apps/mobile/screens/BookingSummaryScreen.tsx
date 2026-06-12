@@ -738,7 +738,12 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 {appliedPromo ? (
                   <View style={[styles.priceRow, styles.priceRowBorder]}>
                     <View style={styles.promoAppliedLabelWrap}>
-                      <Text style={styles.priceRowLabel}>Promo · {appliedPromo.code}</Text>
+                      <Text style={styles.priceRowLabel}>
+                        {appliedPromo.code} ·{" "}
+                        {appliedPromo.discountType === "percent"
+                          ? `${appliedPromo.discountValue}% off`
+                          : `€${(appliedPromo.discountValue / 100).toFixed(2)} off`}
+                      </Text>
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel="Remove promo code"
