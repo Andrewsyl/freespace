@@ -373,8 +373,10 @@ export function SearchScreen({ navigation }: Props) {
   const HISTORY_KEY = "searchHistory";
   const MAP_REGION_KEY = "search.mapRegion";
 
+  const searchAreaVisible = showSearchArea && !!pendingSearch;
+
   useEffect(() => {
-    if (showSearchArea && pendingSearch) {
+    if (searchAreaVisible) {
       setRenderSearchArea(true);
       // Start below its resting position so it slides up into view
       searchAreaTranslateY.setValue(24);
@@ -415,7 +417,7 @@ export function SearchScreen({ navigation }: Props) {
         setRenderSearchArea(false);
       }
     });
-  }, [pendingSearch, searchAreaOpacity, searchAreaTranslateY, showSearchArea]);
+  }, [searchAreaVisible, searchAreaOpacity, searchAreaTranslateY]);
 
   useEffect(() => {
     let active = true;
@@ -1175,8 +1177,8 @@ export function SearchScreen({ navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      setSelectedId(null);
-      setShowSelectedCard(false);
+      // Keep the selected pin/card on return from a listing — clearing it here
+      // remounts the marker mid-transition and the pin visibly flickers.
       setSearchSheetOpen(false);
       // Don't reset mapReady when switching tabs - keep map mounted
       // setMapReady(false);
@@ -1630,8 +1632,8 @@ export function SearchScreen({ navigation }: Props) {
             isFavorite={isFavorite(visibleSelectedListing.id)}
             onToggleFavorite={() => toggle(visibleSelectedListing)}
             onPress={() => {
-              setShowSelectedCard(false);
-              setSelectedId(null);
+              // Leave the pin selected — clearing it remounts the marker
+              // mid-transition and it visibly flickers behind the push.
               navigation.navigate("Listing", { id: visibleSelectedListing.id, from, to });
             }}
             bottomOffset={82 + insets.bottom}
