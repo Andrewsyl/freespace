@@ -1,0 +1,6 @@
+// Overrides for local App Store archive builds.
+// Manual signing with explicit profile specifier avoids the CLI Automatic
+// signing limitation (which always creates Development profiles, not Distribution).
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY[sdk=iphoneos*] = Apple Distribution
+PROVISIONING_PROFILE_SPECIFIER = FreeSpace App Store

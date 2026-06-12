@@ -4,6 +4,7 @@
     "slug": "carparking",
     "version": "0.1.0",
     "userInterfaceStyle": "light",
+    "icon": "./assets/white/png/icon-1024-rounded.png",
     "scheme": [
       "carparking",
       "com.googleusercontent.apps.742052774291-32p3r3jcea4oge0uec8aqqe9chi2f79l",
@@ -56,6 +57,10 @@
     "android": {
       "userInterfaceStyle": "light",
       "package": "ie.freespace.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/white/png/icon-1024-rounded.png",
+        "backgroundColor": "#FFFFFF"
+      },
       "intentFilters": [
         {
           "action": "VIEW",
@@ -92,7 +97,7 @@
           "apiKey": "AIzaSyC1h1NFLFz7SPauw85Udh0O1CBlN5bqOek"
         }
       },
-      "versionCode": 100
+      "versionCode": 103
     },
     "androidStatusBar": {
       "translucent": true,
@@ -105,7 +110,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.andrewsyl.carparking",
-      "buildNumber": "1",
+      "buildNumber": "21",
       "jsEngine": "jsc",
       "associatedDomains": [
         "applinks:freespace.ie"

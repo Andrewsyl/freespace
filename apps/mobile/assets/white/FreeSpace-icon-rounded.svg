@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 64 64" fill="none">
+  
+  <rect width="64" height="64" rx="14.3" fill="#FFFFFF"></rect>
+  <text x="14.62" y="18" font-family="Urbanist, sans-serif" font-weight="200" font-size="11.45" letter-spacing="3.456" fill="#111111">FREE</text>
+  <path d="M17 25 L17 51 L47 51 L47 25" stroke="#2E8B5B" stroke-width="3.5" fill="none"></path>
+</svg>

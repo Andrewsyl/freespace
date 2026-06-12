@@ -17,20 +17,23 @@ RELEASE_ENTITLEMENTS="$IOS_DIR/FreeSpace/FreeSpace.release.entitlements"
 # ── Team ID ──────────────────────────────────────────────────────────────────
 
 load_ios_credentials() {
-  if [ -z "${APPLE_TEAM_ID:-}" ]; then
-    if [ -f "$DEFAULT_CREDENTIALS_JSON" ]; then
-      local team_id
-      team_id="$(node -e "
-        const fs = require('fs');
-        const d = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'));
-        const t = d && d.ios && d.ios.teamId;
-        if (!t || t === 'YOUR_APPLE_TEAM_ID') process.exit(2);
-        process.stdout.write(t);
-      " "$DEFAULT_CREDENTIALS_JSON" 2>/dev/null)" || return 1
-      APPLE_TEAM_ID="$team_id"
-      export APPLE_TEAM_ID
-    fi
-  fi
+  [ -f "$DEFAULT_CREDENTIALS_JSON" ] || return 0
+  local json="$DEFAULT_CREDENTIALS_JSON"
+
+  _cred() {
+    node -e "
+      const d = JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'));
+      const v = (d.ios || {})[process.argv[2]] || '';
+      process.stdout.write(v);
+    " "$json" "$1" 2>/dev/null
+  }
+
+  local team_id; team_id="$(_cred teamId)"
+  if [ -z "$team_id" ] || [ "$team_id" = "YOUR_APPLE_TEAM_ID" ]; then return 1; fi
+
+  [ -z "${APPLE_TEAM_ID:-}" ]              && { APPLE_TEAM_ID="$team_id"; export APPLE_TEAM_ID; }
+  [ -z "${APPLE_ID:-}" ]                   && { APPLE_ID="$(_cred appleId)"; export APPLE_ID; }
+  [ -z "${APPLE_APP_SPECIFIC_PASSWORD:-}" ] && { APPLE_APP_SPECIFIC_PASSWORD="$(_cred appSpecificPassword)"; export APPLE_APP_SPECIFIC_PASSWORD; }
 }
 
 load_ios_credentials || true
@@ -134,6 +137,11 @@ cat > "$EXPORT_OPTIONS_PLIST" <<PLIST
     <true/>
     <key>compileBitcode</key>
     <false/>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.andrewsyl.carparking</key>
+        <string>FreeSpace App Store</string>
+    </dict>
 </dict>
 </plist>
 PLIST
@@ -148,7 +156,7 @@ xcodebuild archive \
   -archivePath "$ARCHIVE_PATH" \
   -destination "generic/platform=iOS" \
   -allowProvisioningUpdates \
-  CODE_SIGN_STYLE=Automatic \
+  -xcconfig "$IOS_DIR/release-signing.xcconfig" \
   DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
   MARKETING_VERSION="$VERSION_NAME" \
   CURRENT_PROJECT_VERSION="$NEW_BUILD" \
@@ -164,7 +172,7 @@ if [ ! -d "$ARCHIVE_PATH" ]; then
     -archivePath "$ARCHIVE_PATH" \
     -destination "generic/platform=iOS" \
     -allowProvisioningUpdates \
-    CODE_SIGN_STYLE=Automatic \
+    -xcconfig "$IOS_DIR/release-signing.xcconfig" \
     DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
     MARKETING_VERSION="$VERSION_NAME" \
     CURRENT_PROJECT_VERSION="$NEW_BUILD" \
@@ -192,6 +200,22 @@ fi
 echo ""
 echo "[prod] ✓ IPA ready: $IPA_PATH"
 echo "[prod]   version=$VERSION_NAME  buildNumber=$NEW_BUILD"
-echo "[prod]   Upload to TestFlight via Xcode → Organizer, or:"
-echo "[prod]   xcrun altool --upload-app -f \"$IPA_PATH\" -t ios --apiKey KEY --apiIssuer ISSUER"
+echo ""
+
+# ── Upload to TestFlight ──────────────────────────────────────────────────────
+
+if [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_APP_SPECIFIC_PASSWORD:-}" ]; then
+  echo "[prod] Uploading to TestFlight..."
+  xcrun altool --upload-app \
+    -f "$IPA_PATH" \
+    -t ios \
+    -u "$APPLE_ID" \
+    -p "$APPLE_APP_SPECIFIC_PASSWORD" \
+    --output-format xml
+  echo "[prod] ✓ Uploaded — check App Store Connect → TestFlight in a few minutes."
+else
+  echo "[prod] Skipping upload (no APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD set)."
+  echo "[prod]   Add appleId and appSpecificPassword to credentials.json to auto-upload."
+fi
+
 echo "[prod]   Commit the buildNumber bump in app.json before your next build."
