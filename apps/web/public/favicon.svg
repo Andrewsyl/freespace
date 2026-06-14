@@ -1,12 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <style>
-    /* Light mode: just the mark on a transparent background.
-       Dark mode (dark browser tab): white rounded tile so the green stays legible. */
-    .bg { fill: transparent; }
+    /* Brand green normally; a lighter green on a dark browser tab so it stays legible. */
+    .mark { stroke: #1B8A5A; }
     @media (prefers-color-scheme: dark) {
-      .bg { fill: #FFFFFF; }
+      .mark { stroke: #34C77E; }
     }
   </style>
-  <rect class="bg" x="2" y="2" width="60" height="60" rx="14"></rect>
-  <path d="M12 14 L12 50 L52 50 L52 14" fill="none" stroke="#1B8A5A" stroke-width="5" stroke-linejoin="miter"></path>
+  <path class="mark" d="M12 14 L12 50 L52 50 L52 14" fill="none" stroke-width="5" stroke-linejoin="miter"></path>
 </svg>
