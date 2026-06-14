@@ -51,16 +51,26 @@ server.on("error", (error: NodeJS.ErrnoException) => {
   throw error;
 });
 
+let lastUnhandledAlertKey = "";
+let lastUnhandledAlertAt = 0;
+const UNHANDLED_ALERT_COOLDOWN_MS = 5 * 60 * 1000;
+
 process.on("unhandledRejection", (reason) => {
+  const message = reason instanceof Error ? reason.message : String(reason);
   logError("process.unhandled_rejection", {
-    reason: reason instanceof Error ? { message: reason.message, stack: reason.stack } : String(reason),
+    reason: reason instanceof Error ? { message, stack: reason.stack } : message,
   });
   Sentry.captureException(reason);
+  const key = message.slice(0, 120);
+  const now = Date.now();
+  if (key === lastUnhandledAlertKey && now - lastUnhandledAlertAt < UNHANDLED_ALERT_COOLDOWN_MS) return;
+  lastUnhandledAlertKey = key;
+  lastUnhandledAlertAt = now;
   void reportOperationalAlert({
     source: "api-process",
     title: "Unhandled promise rejection",
     payload: {
-      reason: reason instanceof Error ? { message: reason.message, stack: reason.stack } : String(reason),
+      reason: reason instanceof Error ? { message, stack: reason.stack } : message,
     },
   });
 });
