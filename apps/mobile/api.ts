@@ -39,6 +39,11 @@ type AuthResponse = {
 };
 
 async function readErrorMessage(response: Response, fallback: string) {
+  // Server/gateway errors return an HTML page from the load balancer, not JSON.
+  // Never surface raw HTML to the user — show a friendly message instead.
+  if (response.status >= 500) {
+    return "We're having trouble reaching FreeSpace right now. Please try again in a moment.";
+  }
   try {
     const data = (await response.clone().json()) as { error?: string; message?: string };
     if (typeof data?.error === "string") return data.error;
@@ -47,8 +52,10 @@ async function readErrorMessage(response: Response, fallback: string) {
     // Ignore json parse errors.
   }
   try {
-    const text = await response.text();
-    if (text) return text;
+    const text = (await response.text()).trim();
+    // Only use the body if it looks like a real message — not an HTML error page.
+    const looksLikeHtml = /^<(?:!doctype|html|head|body)/i.test(text) || text.includes("</");
+    if (text && !looksLikeHtml && text.length <= 200) return text;
   } catch {
     // Ignore text errors.
   }

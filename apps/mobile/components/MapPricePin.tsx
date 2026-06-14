@@ -8,6 +8,26 @@ type MapPricePinProps = {
   soldOut?: boolean;
 };
 
+// Pure geometry for a pin given its rendered label. Shared with MapSection so the
+// captured-image markers can size their child <Image> to the exact pixel bounds
+// (avoids the default red marker flash that the native `image` prop produces).
+export function getPinDimensions(priceText: string, selected = false, soldOut = false) {
+  const textLength = priceText.length;
+  const baseWidth   = soldOut ? 52 : 46;
+  const extraWidth  = soldOut ? 0  : Math.max(0, (textLength - 3) * 6.5);
+  const width       = Math.max(baseWidth, baseWidth + extraWidth);
+  // Selected bubble is taller — gives the "scale up on select" feel without animation
+  const bubbleHeight = soldOut ? 18 : selected ? 28 : 24;
+  const tailHeight   = soldOut ? 4  : selected ? 6  : 5;
+  const totalHeight  = bubbleHeight + tailHeight;
+  const tailWidth    = soldOut ? 7  : 9;
+  const strokeWidth  = soldOut ? 0.85 : selected ? 1.2 : 0.85;
+  const padding      = strokeWidth;
+  const viewBoxWidth  = width + padding * 2;
+  const viewBoxHeight = totalHeight + padding * 2;
+  return { width, bubbleHeight, tailHeight, totalHeight, tailWidth, strokeWidth, viewBoxWidth, viewBoxHeight };
+}
+
 export function MapPricePin({ price, selected = false, soldOut = false }: MapPricePinProps) {
   const priceText = soldOut ? "Sold out" : `€${price}`;
 
@@ -17,18 +37,10 @@ export function MapPricePin({ price, selected = false, soldOut = false }: MapPri
   const stroke    = soldOut ? "#D7DDE2" : selected ? "#111827" : "#C6CDD6";
   const textColor = soldOut ? "#7A8493" : selected ? "#FFFFFF"  : "#111827";
 
-  const dimensions = useMemo(() => {
-    const textLength = priceText.length;
-    const baseWidth   = soldOut ? 52 : 46;
-    const extraWidth  = soldOut ? 0  : Math.max(0, (textLength - 3) * 6.5);
-    const width       = Math.max(baseWidth, baseWidth + extraWidth);
-    // Selected bubble is taller — gives the "scale up on select" feel without animation
-    const bubbleHeight = soldOut ? 18 : selected ? 28 : 24;
-    const tailHeight   = soldOut ? 4  : selected ? 6  : 5;
-    const totalHeight  = bubbleHeight + tailHeight;
-    const tailWidth    = soldOut ? 7  : 9;
-    return { width, bubbleHeight, tailHeight, totalHeight, tailWidth };
-  }, [priceText, soldOut, selected]);
+  const dimensions = useMemo(
+    () => getPinDimensions(priceText, selected, soldOut),
+    [priceText, soldOut, selected]
+  );
 
   const { width, bubbleHeight, tailHeight, totalHeight, tailWidth } = dimensions;
   const strokeWidth = soldOut ? 0.85 : selected ? 1.2 : 0.85;

@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useRef, useState, type Ref } from "react";
-import { Platform, StyleSheet, Vibration, View } from "react-native";
+import { Image, Platform, StyleSheet, Vibration, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import MapView, {
   type EdgePadding,
   Marker,
+  type MarkerPressEvent,
   PROVIDER_DEFAULT,
   PROVIDER_GOOGLE,
   type Region,
 } from "react-native-maps";
 import ViewShot from "react-native-view-shot";
-import { MapPricePin } from "./MapPricePin";
+import { MapPricePin, getPinDimensions } from "./MapPricePin";
 import { formatPriceValue } from "../utils/pricing";
 
 type ListingResult = {
@@ -41,6 +42,61 @@ function SearchOriginPin() {
         fill="#0a8050"
       />
     </Svg>
+  );
+}
+
+// Renders the pre-captured pin as a CHILD <Image> rather than via the Marker
+// `image` prop. With a child view present, react-native-maps never draws the
+// default red annotation, so there's no red-pin flash while the file URI decodes.
+// tracksViewChanges stays true only until the image reports loaded, then flips
+// off to keep the map performant.
+function ListingPinMarker({
+  listingId,
+  coordinate,
+  selected,
+  label,
+  pinImage,
+  resumeNonce,
+  onPress,
+}: {
+  listingId: string;
+  coordinate: { latitude: number; longitude: number };
+  selected: boolean;
+  label: string;
+  pinImage: string;
+  resumeNonce?: number;
+  onPress: (event: MarkerPressEvent) => void;
+}) {
+  const soldOut = label === "Sold out";
+  const { viewBoxWidth, viewBoxHeight } = getPinDimensions(label, selected, soldOut);
+  const [tracks, setTracks] = useState(true);
+
+  // Stop tracking shortly after the bitmap is on screen so the marker freezes.
+  const handleLoad = () => {
+    const timer = setTimeout(() => setTracks(false), 64);
+    return () => clearTimeout(timer);
+  };
+
+  return (
+    <Marker
+      key={`marker-${listingId}-${selected ? "sel" : "def"}-${PIN_STYLE_VERSION}-${resumeNonce ?? 0}`}
+      coordinate={coordinate}
+      tracksViewChanges={tracks}
+      anchor={{ x: 0.5, y: 0.96 }}
+      centerOffset={{ x: 0, y: selected ? -2 : 0 }}
+      onPress={onPress}
+      zIndex={selected ? 1000000 : Math.round((90 - coordinate.latitude) * 10000)}
+      tappable={true}
+      stopPropagation={true}
+    >
+      <Image
+        source={{ uri: pinImage }}
+        style={{ width: viewBoxWidth, height: viewBoxHeight }}
+        resizeMode="contain"
+        fadeDuration={0}
+        onLoad={handleLoad}
+      />
+    </Marker>
   );
 }
 
@@ -323,26 +379,23 @@ export default function MapSection({
           const pinImage = pinImages[pinKey] ?? stableImagesRef.current[stableKey];
           if (!pinImage) return null;
           return (
-            <Marker
+            <ListingPinMarker
               key={`marker-${listing.id}-${isSelected ? "sel" : "def"}-${PIN_STYLE_VERSION}-${resumeNonce ?? 0}`}
+              listingId={listing.id}
               coordinate={{
                 latitude: listing.latitude as number,
                 longitude: listing.longitude as number,
               }}
-              tracksViewChanges={false}
-              anchor={{ x: 0.5, y: 0.96 }}
-              centerOffset={{ x: 0, y: isSelected ? -2 : 0 }}
+              selected={isSelected}
+              label={label}
+              pinImage={pinImage}
+              resumeNonce={resumeNonce}
               onPress={(e) => {
                 e?.stopPropagation?.();
                 lastMarkerPressRef.current = Date.now();
                 if (Platform.OS === "android") Vibration.vibrate(8);
                 onSelect?.(listing.id);
               }}
-              zIndex={isSelected ? 1000000 : Math.round((90 - (listing.latitude as number)) * 10000)}
-              image={{ uri: pinImage }}
-              pinColor="transparent"
-              tappable={true}
-              stopPropagation={true}
             />
           );
         })}
