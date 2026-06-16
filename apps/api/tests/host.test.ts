@@ -104,6 +104,11 @@ describe("host payout routes", () => {
     });
     expect(stripeMocks.accountsCreate).toHaveBeenCalledWith({
       type: "express",
+      business_type: "individual",
+      business_profile: {
+        mcc: "7523",
+        url: "http://localhost:3000",
+      },
       capabilities: {
         card_payments: { requested: true },
         transfers: { requested: true },
