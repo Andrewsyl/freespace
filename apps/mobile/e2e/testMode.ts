@@ -151,6 +151,7 @@ const fixtureHostDraft: ListingDraft = {
   pricePerMonth: "110.00",
   photos: [fixtureImage],
   capacity: 1,
+  description: "",
 };
 
 const fixtureHostListing: ListingSummary = {

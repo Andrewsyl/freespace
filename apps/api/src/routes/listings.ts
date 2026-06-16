@@ -184,6 +184,7 @@ const createListingSchema = z.object({
   arrivalInstructions: z.string().trim().min(3).max(240).nullable().optional(),
   permissionDeclared: z.boolean().optional(),
   capacity: z.coerce.number().int().min(1).max(20).optional(),
+  description: z.string().trim().max(2000).nullable().optional(),
 });
 
 router.post("/", requireAuth, enforceBlockedList, listingWriteLimiter, async (req, res, next) => {
@@ -330,6 +331,7 @@ const updateListingSchema = z.object({
   permissionDeclared: z.boolean().optional(),
   capacity: z.coerce.number().int().min(1).max(20).optional(),
   isActive: z.boolean().optional(),
+  description: z.string().trim().max(2000).nullable().optional(),
 });
 
 router.patch("/:id", requireAuth, listingWriteLimiter, async (req, res, next) => {
@@ -370,6 +372,7 @@ router.patch("/:id", requireAuth, listingWriteLimiter, async (req, res, next) =>
       permissionDeclared: payload.permissionDeclared,
       capacity: payload.capacity,
       isActive: payload.isActive,
+      description: payload.description ?? undefined,
     });
     if (!updated) return res.status(404).json({ message: "Listing not found" });
     res.json({ listing: updated });

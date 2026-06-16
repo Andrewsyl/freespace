@@ -632,14 +632,6 @@ export function ListingScreen({ navigation, route }: Props) {
 
                 {/* ── Price + meta ─────────────────────────── */}
                 <View style={styles.priceBlock}>
-                  <View style={styles.priceRow}>
-                    <Text style={styles.priceHero}>
-                      €{priceSummary?.total ?? (listing.price_per_hour != null ? Number(listing.price_per_hour).toFixed(2) : "—")}
-                    </Text>
-                    <Text style={styles.pricePer}>
-                      {priceSummary?.durationLabel ?? "/ hour"}
-                    </Text>
-                  </View>
                   <View style={styles.factRows}>
                     <View style={styles.factRow}>
                       <Ionicons name="star" size={17} color={FG} style={styles.factIcon} />
@@ -656,19 +648,20 @@ export function ListingScreen({ navigation, route }: Props) {
                     </View>
                     <View style={styles.factRow}>
                       <Ionicons name="location-sharp" size={17} color={GREEN} style={styles.factIcon} />
-                      {areaLabel ? <Text style={styles.factVal}>{areaLabel}</Text> : null}
-                      {distanceLabel ? <Text style={styles.factMuted}>{`  ·  ${distanceLabel}`}</Text> : null}
-                      <Text style={styles.factMuted}>{areaLabel ? "  ·  " : ""}</Text>
-                      <View style={styles.factInline}>
-                        <Ionicons name="time-outline" size={17} color={GREEN} />
-                        {availabilityFallbackText ? (
-                          <Text style={styles.factVal}>{availabilityFallbackText}</Text>
-                        ) : (
-                          <Text style={[styles.factVal, { color: isAvailable ? GREEN : colors.danger }]}>
-                            {isAvailable ? "Available now" : "Fully booked"}
-                          </Text>
-                        )}
-                      </View>
+                      <Text style={styles.factLine} numberOfLines={1}>
+                        {areaLabel ? <Text style={styles.factVal}>{areaLabel}</Text> : null}
+                        {distanceLabel ? <Text style={styles.factMuted}>{`  ·  ${distanceLabel}`}</Text> : null}
+                      </Text>
+                    </View>
+                    <View style={styles.factRowSecondary}>
+                      <Ionicons name="time-outline" size={17} color={GREEN} style={styles.factIcon} />
+                      {availabilityFallbackText ? (
+                        <Text style={styles.factVal} numberOfLines={1}>{availabilityFallbackText}</Text>
+                      ) : (
+                        <Text style={[styles.factVal, { color: isAvailable ? GREEN : colors.danger }]} numberOfLines={1}>
+                          {isAvailable ? "Available now" : "Fully booked"}
+                        </Text>
+                      )}
                     </View>
                   </View>
                 </View>
@@ -1108,12 +1101,12 @@ export function ListingScreen({ navigation, route }: Props) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design tokens (spec)
-const GREEN      = "#0fa968";
+const GREEN      = "#0a8050";
 const GREEN_SOFT = "#edf7f2";
 const FG         = "#111827";
 const FG_2       = "#374151";
 const FG_MUTED   = "#374151";
-const FG_SUBTLE  = "#6b7280";
+const FG_SUBTLE  = "#4b5563";
 const LINE       = "#C4CCD5";
 const LINE_2     = "#C4CCD5";
 const BG_2       = "#F7F7F6";
@@ -1264,21 +1257,8 @@ const styles = StyleSheet.create({
   // ── Price + meta block ─────────────────────────────────────────────────────
   priceBlock: {
     paddingTop: 4,
-    paddingBottom: 6,
+    paddingBottom: 16,
     gap: 3,
-  },
-  priceRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 8,
-  },
-  priceHero: {
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 26, color: FG, letterSpacing: -0.8, lineHeight: 30,
-  },
-  pricePer: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13, color: FG_SUBTLE, lineHeight: 18,
   },
   dayRatePill: {
     backgroundColor: GREEN_SOFT,
@@ -1299,6 +1279,8 @@ const styles = StyleSheet.create({
   // kept for any remaining references
   factRows: { gap: 4, paddingBottom: 2 },
   factRow:   { flexDirection: "row", alignItems: "center", gap: 7 },
+  factRowSecondary: { flexDirection: "row", alignItems: "center", gap: 7 },
+  factLine: { flex: 1, minWidth: 0 },
   factInline:{ flexDirection: "row", alignItems: "center", gap: 4 },
   factIcon: { width: 17, textAlign: "center" },
   factText: { flex: 1, fontSize: 13 },
@@ -1472,7 +1454,7 @@ const styles = StyleSheet.create({
     color: FG_2, flex: 1, textAlign: "right",
   },
   availabilityHoursClosed: { color: FG_SUBTLE },
-  section: { paddingTop: 12, paddingBottom: 8 },
+  section: { paddingVertical: 16 },
   sectionTitle: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 17, lineHeight: 21, color: FG, letterSpacing: -0.3, marginBottom: 8,
@@ -1481,7 +1463,7 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Regular", fontSize: 9,
     color: FG_SUBTLE, marginTop: 0,
   },
-  sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, lineHeight: 22, color: "#475569" },
+  sectionBody: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 22, color: "#334155" },
   readMore: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG, marginTop: 12 },
 
   // Local area map
@@ -1498,7 +1480,7 @@ const styles = StyleSheet.create({
   },
   localAreaMap: {
     width: "100%",
-    height: 168,
+    height: 130,
     backgroundColor: BG_2,
   },
   localAreaMapWrap: {
@@ -1601,7 +1583,7 @@ const styles = StyleSheet.create({
     backgroundColor: BG_2, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
   },
   reviewStarPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
-  reviewComment: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, lineHeight: 21, color: "#475569" },
+  reviewComment: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 21, color: "#334155" },
   emptyReviewCard: {
     flexDirection: "row",
     alignItems: "flex-start",

@@ -136,7 +136,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     if (isInProgress) return {
       label: "In progress",
       icon: "play-circle" as const,
-      cardGradient: ["#0fa968", "#000000"] as const,
+      cardGradient: ["#0a8050", "#000000"] as const,
     };
     if (isUpcoming) return {
       label: "Confirmed",
@@ -547,7 +547,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   );
 }
 
-const ACCENT = "#0fa968";
+const ACCENT = "#0a8050";
 const FG     = "#101414";
 const MUTED  = "#465050";
 const SUBTLE = "#6B7575";

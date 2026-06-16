@@ -1,7 +1,7 @@
 import { CommonActions } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SquircleBtn } from "../../components/SquircleBtn";
 import { PhoneVerifyModal } from "../../components/PhoneVerifyModal";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,6 +28,7 @@ import { trackEvent } from "../../analytics";
 import { useAuth } from "../../auth";
 import type { RootStackParamList } from "../../types";
 import { useListingFlow } from "./context";
+import { generateListingDescription } from "./generateDescription";
 import { FlowHeader } from "./FlowHeader";
 import { colors, spacing } from "../../styles/theme";
 import { hostFlowColors, hostFlowShadow } from "./hostFlowTheme";
@@ -156,6 +157,16 @@ export function ListingReviewScreen({ navigation }: Props) {
     return unsubscribe;
   }, [navigation, published]);
 
+  // Pre-fill the description box with an auto-generated one the first time the
+  // host reaches this screen (only if they haven't written/edited their own).
+  useEffect(() => {
+    if (!draft.description?.trim()) {
+      setDraft((prev) => ({ ...prev, description: generateListingDescription(prev) }));
+    }
+    // Run once on mount; the host can freely edit afterwards.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handlePublish = async () => {
     if (!token) {
       setError(listingId ? "Sign in to update your space." : "Sign in to publish your space.");
@@ -195,10 +206,10 @@ export function ListingReviewScreen({ navigation }: Props) {
       const parsedMonthly = Number.parseFloat(draft.pricePerMonth);
       const inferredRateType = requiresShortStay && Number.isFinite(parsedHourly) && parsedHourly > 0 ? "hourly" : "daily";
       if (listingId) {
-        await updateListing({ token, listingId, title: draft.spaceType ? `${draft.spaceType} parking` : "Parking space", address: draft.location.address || "Dublin", rateType: inferredRateType, pricePerDay: parsedDaily, pricePerHour: requiresShortStay ? parsedHourly : null, pricePerMonth: requiresMonthly ? parsedMonthly : null, availabilityText: draft.availability.detail, imageUrls, amenities: draft.accessOptions, accessCode: draft.accessCode.trim() || null, arrivalInstructions: draft.arrivalInstructions.trim() || null, permissionDeclared: draft.permissionDeclared, capacity: draft.capacity });
+        await updateListing({ token, listingId, title: draft.spaceType ? `${draft.spaceType} parking` : "Parking space", address: draft.location.address || "Dublin", rateType: inferredRateType, pricePerDay: parsedDaily, pricePerHour: requiresShortStay ? parsedHourly : null, pricePerMonth: requiresMonthly ? parsedMonthly : null, availabilityText: draft.availability.detail, imageUrls, amenities: draft.accessOptions, accessCode: draft.accessCode.trim() || null, arrivalInstructions: draft.arrivalInstructions.trim() || null, permissionDeclared: draft.permissionDeclared, capacity: draft.capacity, description: (draft.description ?? "").trim() || null });
         await syncAvailability(listingId);
       } else {
-        const newListingId = await createListing({ token, title: draft.spaceType ? `${draft.spaceType} parking` : "Parking space", address: draft.location.address || "Dublin", rateType: inferredRateType, pricePerDay: parsedDaily, pricePerHour: requiresShortStay ? parsedHourly : null, pricePerMonth: requiresMonthly ? parsedMonthly : null, availabilityText: draft.availability.detail, latitude: draft.location.latitude, longitude: draft.location.longitude, imageUrls, amenities: draft.accessOptions, accessCode: draft.accessCode.trim() || null, arrivalInstructions: draft.arrivalInstructions.trim() || null, permissionDeclared: draft.permissionDeclared, capacity: draft.capacity });
+        const newListingId = await createListing({ token, title: draft.spaceType ? `${draft.spaceType} parking` : "Parking space", address: draft.location.address || "Dublin", rateType: inferredRateType, pricePerDay: parsedDaily, pricePerHour: requiresShortStay ? parsedHourly : null, pricePerMonth: requiresMonthly ? parsedMonthly : null, availabilityText: draft.availability.detail, latitude: draft.location.latitude, longitude: draft.location.longitude, imageUrls, amenities: draft.accessOptions, accessCode: draft.accessCode.trim() || null, arrivalInstructions: draft.arrivalInstructions.trim() || null, permissionDeclared: draft.permissionDeclared, capacity: draft.capacity, description: (draft.description ?? "").trim() || null });
         await syncAvailability(newListingId);
       }
       await clearHostListingDraft();
@@ -289,6 +300,21 @@ export function ListingReviewScreen({ navigation }: Props) {
               </>
             ) : null}
           </View>
+        </View>
+
+        {/* ── Description (auto-generated, editable) ── */}
+        <View style={styles.card}>
+          <Text style={styles.cardHeader}>Description</Text>
+          <Text style={styles.cardSubHeader}>We wrote this for you — edit it or keep it as is.</Text>
+          <TextInput
+            style={styles.descriptionInput}
+            value={draft.description ?? ""}
+            onChangeText={(text) => setDraft((prev) => ({ ...prev, description: text }))}
+            multiline
+            textAlignVertical="top"
+            placeholder="Describe your space…"
+            placeholderTextColor={MUTED}
+          />
         </View>
 
         {/* ── Details (tap any row to edit) ── */}
@@ -560,6 +586,19 @@ const styles = StyleSheet.create({
     color: MUTED,
     paddingHorizontal: 16,
     paddingBottom: 10,
+  },
+  descriptionInput: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    minHeight: 96,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    lineHeight: 20,
+    color: FG,
   },
 
   // ── Map + listing meta ───────────────────────────────────────

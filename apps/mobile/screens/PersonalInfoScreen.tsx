@@ -211,7 +211,7 @@ export function PersonalInfoScreen({ navigation, route }: Props) {
                 <View style={styles.statusRow}>
                   {user?.emailVerified ? (
                     <>
-                      <Ionicons name="checkmark-circle" size={15} color="#0fa968" />
+                      <Ionicons name="checkmark-circle" size={15} color="#0a8050" />
                       <Text style={styles.statusOk}>Verified</Text>
                     </>
                   ) : (
@@ -242,7 +242,7 @@ export function PersonalInfoScreen({ navigation, route }: Props) {
                 <View style={styles.statusRow}>
                   {phoneVerified ? (
                     <>
-                      <Ionicons name="checkmark-circle" size={15} color="#0fa968" />
+                      <Ionicons name="checkmark-circle" size={15} color="#0a8050" />
                       <Text style={styles.statusOk}>Verified</Text>
                     </>
                   ) : (
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   statusOk: {
-    color: "#0fa968",
+    color: "#0a8050",
     fontFamily: "PlusJakartaSans-Medium",
     fontSize: 13,
     lineHeight: 18,

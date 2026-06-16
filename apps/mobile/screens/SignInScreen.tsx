@@ -24,7 +24,7 @@ import { trackEvent } from "../analytics";
 import { logInfo, logWarn } from "../logger";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
-const AUTH_GREEN = "#0fa968";
+const AUTH_GREEN = "#0a8050";
 
 export function SignInScreen({ navigation, route }: Props) {
   const { login, loginWithOAuth } = useAuth();

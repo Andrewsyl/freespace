@@ -21,7 +21,7 @@ import {
   toE164,
 } from "./countryDialCodes";
 
-const ACCENT = "#22c55e";
+const ACCENT = "#0a8050";
 const FG = "#0f172a";
 const MUTED = "#64748b";
 const BORDER = "#E2E8ED";

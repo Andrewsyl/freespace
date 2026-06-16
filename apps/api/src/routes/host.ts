@@ -169,6 +169,16 @@ router.post("/payout", requireAuth, enforceBlockedList, payoutLimiter, async (re
         try {
           const account = await stripe.accounts.create({
             type: "express",
+            // Most hosts are individuals renting a private space; this is the
+            // common default and onboarding still lets them switch to company.
+            business_type: "individual",
+            // Platform-level details Stripe would otherwise flag as "missing"
+            // and that hosts can't reasonably provide themselves: MCC 7523 is
+            // "Automobile Parking Lots & Garages"; the URL is the marketplace.
+            business_profile: {
+              mcc: "7523",
+              url: process.env.WEB_BASE_URL ?? "https://freespace.ie",
+            },
             capabilities: {
               card_payments: { requested: true },
               transfers: { requested: true },

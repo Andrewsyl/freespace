@@ -1626,8 +1626,7 @@ export function SearchScreen({ navigation }: Props) {
             rating={visibleSelectedListing.rating ?? 0}
             reviewCount={visibleSelectedListing.rating_count ?? 0}
             price={`€${formatPriceValue(priceForListing(visibleSelectedListing))} total`}
-            subtitle={visibleSelectedListing.availability_text?.trim() || "Parking space"}
-            badgeLabel={selectedCardAmenities?.[0] ?? visibleSelectedListing.amenities?.[0] ?? null}
+            amenities={selectedCardAmenities ?? visibleSelectedListing.amenities ?? null}
             isAvailable={visibleSelectedListing.is_available !== false}
             isFavorite={isFavorite(visibleSelectedListing.id)}
             onToggleFavorite={() => toggle(visibleSelectedListing)}
@@ -2723,7 +2722,7 @@ const styles = StyleSheet.create({
   },
   pickerQuickPillActive: {
     backgroundColor: "#0a8050",
-    borderColor: "#0fa968",
+    borderColor: "#0a8050",
     shadowColor: "#0a7a50",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,

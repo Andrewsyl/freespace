@@ -34,6 +34,8 @@ export type ListingDraft = {
   pricePerMonth: string;
   photos: string[];
   capacity: number;
+  // Auto-generated from the fields above, but editable by the host.
+  description: string;
 };
 
 export type ListingFlowValue = {

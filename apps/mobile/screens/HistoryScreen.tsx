@@ -18,7 +18,7 @@ import { formatDateLabel, formatTimeLabel } from "../utils/dateFormat";
 
 type Props = NativeStackScreenProps<RootStackParamList, "History">;
 
-const ACCENT  = "#0fa968";
+const ACCENT  = "#0a8050";
 const FG      = "#101414";
 const MUTED   = "#465050";
 const SUBTLE  = "#6B7575";

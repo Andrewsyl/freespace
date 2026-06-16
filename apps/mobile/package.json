@@ -22,6 +22,7 @@
     "android:prod:local-debug": "./scripts/run-with-env.sh production ./scripts/android-release-install.sh",
     "android:prod:apk": "./scripts/run-with-env.sh production ./scripts/android-release-install.sh",
     "android:prod:aab": "./scripts/run-with-env.sh production ./scripts/android-build-aab.sh",
+    "android:prod:publish": "./scripts/run-with-env.sh production ./scripts/android-build-and-upload-play.sh",
     "ios": "expo run:ios",
     "ios:local": "./scripts/run-with-env.sh local expo run:ios",
     "ios:dev": "./scripts/run-with-env.sh dev expo run:ios",

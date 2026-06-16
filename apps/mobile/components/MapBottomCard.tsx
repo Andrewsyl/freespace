@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Cctv, CircleCheck, ShieldCheck, Warehouse, Zap } from "lucide-react-native";
 import { colors } from "../styles/theme";
 
 type MapBottomCardProps = {
@@ -17,9 +18,7 @@ type MapBottomCardProps = {
   rating: number;
   reviewCount: number;
   price: string;
-  subtitle?: string;
-  metaLine?: string;
-  badgeLabel?: string | null;
+  amenities?: string[] | null;
   isAvailable?: boolean;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
@@ -30,6 +29,60 @@ type MapBottomCardProps = {
   onHeightChange?: (height: number) => void;
 };
 
+type FeatureKey = "instant" | "cctv" | "ev" | "gated" | "covered";
+
+function deriveFeatureKeys(amenities?: string[] | null, title?: string): FeatureKey[] {
+  const features = [...(amenities ?? [])].map((value) => value.toLowerCase());
+  const titleText = title?.toLowerCase() ?? "";
+  const has = (needle: string) => features.some((feature) => feature.includes(needle));
+
+  const out: FeatureKey[] = [];
+  if (has("instant")) out.push("instant");
+  if (has("cctv") || has("camera")) out.push("cctv");
+  if (has("ev") || has("charg")) out.push("ev");
+  if (has("gat") || has("barrier")) out.push("gated");
+  if (
+    has("cover") ||
+    has("shelter") ||
+    has("roof") ||
+    titleText.includes("garage") ||
+    titleText.includes("underground") ||
+    titleText.includes("indoor") ||
+    titleText.includes("covered")
+  ) {
+    out.push("covered");
+  }
+
+  return out;
+}
+
+function FeatureBadge({ feature }: { feature: FeatureKey }) {
+  const iconProps = { size: 13, strokeWidth: 1.8 } as const;
+  if (feature === "instant") {
+    return (
+      <View style={[styles.featureBadge, styles.instantBadge]}>
+        <CircleCheck {...iconProps} color="#0f7a4d" />
+        <Text style={styles.instantBadgeText}>Instant</Text>
+      </View>
+    );
+  }
+
+  const Icon =
+    feature === "cctv"
+      ? Cctv
+      : feature === "ev"
+        ? Zap
+        : feature === "gated"
+          ? ShieldCheck
+          : Warehouse;
+
+  return (
+    <View style={styles.featureBadge}>
+      <Icon {...iconProps} color="#4b5563" />
+    </View>
+  );
+}
+
 
 export function MapBottomCard({
   title,
@@ -38,6 +91,7 @@ export function MapBottomCard({
   reviewCount,
   price,
   isAvailable = true,
+  amenities,
   isFavorite,
   onToggleFavorite,
   onPress,
@@ -91,6 +145,7 @@ export function MapBottomCard({
   }, [translateAnim, opacityAnim, title, dismissing]);
 
   const hasRating = reviewCount > 0 && rating > 0;
+  const features = useMemo(() => deriveFeatureKeys(amenities, title), [amenities, title]);
 
   return (
     <Animated.View
@@ -127,7 +182,7 @@ export function MapBottomCard({
                 <Ionicons
                   name={isFavorite ? "heart" : "heart-outline"}
                   size={17}
-                  color="#0fa968"
+                  color="#0a8050"
                 />
               </Pressable>
             ) : null}
@@ -146,6 +201,13 @@ export function MapBottomCard({
             ) : (
               <Text style={styles.soldOut}>SOLD OUT</Text>
             )}
+            {features.length > 0 ? (
+              <View style={styles.featureRow}>
+                {features.slice(0, 3).map((feature) => (
+                  <FeatureBadge key={feature} feature={feature} />
+                ))}
+              </View>
+            ) : null}
           </View>
         </View>
       </Pressable>
@@ -226,10 +288,46 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
   },
+  featureBadge: {
+    alignItems: "center",
+    backgroundColor: "#f3f4f6",
+    borderColor: "#e5e7eb",
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 22,
+    justifyContent: "center",
+    minWidth: 22,
+    paddingHorizontal: 6,
+  },
+  instantBadge: {
+    backgroundColor: "#ecfdf5",
+    borderColor: "#bbf7d0",
+    flexDirection: "row",
+    gap: 3,
+    paddingHorizontal: 7,
+  },
+  instantBadgeText: {
+    color: "#0f7a4d",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 10,
+    letterSpacing: -0.1,
+  },
   priceRow: {
     borderTopColor: "#eaeff3",
     borderTopWidth: 1,
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "space-between",
     paddingTop: 8,
+  },
+  featureRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    justifyContent: "flex-end",
+    marginLeft: 8,
+    flex: 1,
   },
   price: {
     color: "#111827",

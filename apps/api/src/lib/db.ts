@@ -422,6 +422,7 @@ export type NewListing = {
   arrivalInstructions?: string | null;
   permissionDeclared?: boolean;
   capacity?: number | null;
+  description?: string | null;
 };
 
 export async function createListing(listing: NewListing) {
@@ -441,9 +442,10 @@ export async function createListing(listing: NewListing) {
       access_code,
       arrival_instructions,
       permission_declared,
-      capacity
+      capacity,
+      description
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, ST_SetSRID(ST_MakePoint($10, $11), 4326), $12, $13, $14, $15, $16)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, ST_SetSRID(ST_MakePoint($10, $11), 4326), $12, $13, $14, $15, $16, $17)
     RETURNING id;
   `;
   const params = [
@@ -463,6 +465,7 @@ export async function createListing(listing: NewListing) {
     listing.arrivalInstructions ?? null,
     listing.permissionDeclared ?? false,
     listing.capacity ?? 1,
+    listing.description ?? null,
   ];
   try {
     const result = await pool.query(query, params);
@@ -1019,6 +1022,7 @@ export async function updateListingForHost({
   permissionDeclared,
   capacity,
   isActive,
+  description,
 }: {
   listingId: string;
   hostId: string;
@@ -1038,6 +1042,7 @@ export async function updateListingForHost({
   permissionDeclared?: boolean;
   capacity?: number | null;
   isActive?: boolean;
+  description?: string | null;
 }) {
   const fields: string[] = [];
   const values: any[] = [];
@@ -1098,6 +1103,10 @@ export async function updateListingForHost({
   if (typeof isActive === "boolean") {
     fields.push(`is_active = $${idx++}`);
     values.push(isActive);
+  }
+  if (description !== undefined) {
+    fields.push(`description = $${idx++}`);
+    values.push(description ? description.trim() : null);
   }
   if (typeof latitude === "number" && typeof longitude === "number") {
     fields.push(`geom = ST_SetSRID(ST_MakePoint($${idx++}, $${idx++}), 4326)`);
@@ -1196,6 +1205,7 @@ export async function getListingById(listingId: string) {
         rating,
         rating_count,
         capacity,
+        description,
         ST_X(geom) AS longitude,
         ST_Y(geom) AS latitude
       FROM listings
@@ -1250,6 +1260,7 @@ export async function getListingById(listingId: string) {
     rating: row.rating != null ? Number(row.rating) : null,
     ratingCount: Number(row.rating_count ?? 0),
     capacity: row.capacity != null ? Number(row.capacity) : 1,
+    description: row.description ?? null,
     latitude: row.latitude,
     longitude: row.longitude,
   };
@@ -1329,6 +1340,7 @@ export async function getListingByIdWithAvailability(
         rating,
         rating_count,
         capacity,
+        description,
         (${availabilityCheck}) AS is_available,
         ST_X(geom) AS longitude,
         ST_Y(geom) AS latitude
@@ -1385,6 +1397,7 @@ export async function getListingByIdWithAvailability(
     rating: row.rating != null ? Number(row.rating) : null,
     ratingCount: Number(row.rating_count ?? 0),
     capacity: row.capacity != null ? Number(row.capacity) : 1,
+    description: row.description ?? null,
     latitude: row.latitude,
     longitude: row.longitude,
     isAvailable: row.is_available,

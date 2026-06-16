@@ -21,7 +21,7 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#22c55e",
+          "color": "#0a8050",
           "defaultChannel": "default"
         }
       ],
@@ -89,7 +89,7 @@
       "buildToolsVersion": "35.0.0",
       "notification": {
         "icon": "./assets/notification-icon.png",
-        "color": "#22c55e"
+        "color": "#0a8050"
       },
       "googleServicesFile": "./google-services.json",
       "config": {
@@ -97,7 +97,7 @@
           "apiKey": "AIzaSyC1h1NFLFz7SPauw85Udh0O1CBlN5bqOek"
         }
       },
-      "versionCode": 110
+      "versionCode": 111
     },
     "androidStatusBar": {
       "translucent": true,
@@ -110,7 +110,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.andrewsyl.carparking",
-      "buildNumber": "30",
+      "buildNumber": "31",
       "icon": "./assets/icon-ios-1024.png",
       "jsEngine": "jsc",
       "associatedDomains": [

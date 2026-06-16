@@ -487,19 +487,18 @@ async function scheduleBookingNotifications({
 }) {
   const now = Date.now();
   const startSoon = new Date(startTime.getTime() - 60 * 60 * 1000);
-  // Always queue a "starting soon" reminder; if the booking is very soon, schedule it immediately.
-  const scheduledStartSoon =
-    startTime.getTime() > now + 5 * 60 * 1000
-      ? startSoon.getTime() > now + 60 * 1000
-        ? startSoon
-        : new Date(now + 60 * 1000)
-      : new Date(now + 10 * 1000);
-  await insertScheduledNotification({
-    userId: driverId,
-    bookingId,
-    type: "booking_start_soon",
-    scheduledAt: scheduledStartSoon,
-  });
+  // Only send the "starts in 1 hour" reminder when the booking is genuinely
+  // more than an hour away. For imminent bookings the "1 hour" copy would be
+  // wrong and the reminder is pointless (the user just booked it), so skip it —
+  // the "Booking confirmed" notification already covers the immediate case.
+  if (startSoon.getTime() > now + 60 * 1000) {
+    await insertScheduledNotification({
+      userId: driverId,
+      bookingId,
+      type: "booking_start_soon",
+      scheduledAt: startSoon,
+    });
+  }
 
   const endSoon = new Date(endTime.getTime() - 30 * 60 * 1000);
   if (endSoon.getTime() > now + 5 * 60 * 1000) {

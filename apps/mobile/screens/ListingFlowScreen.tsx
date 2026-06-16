@@ -68,6 +68,7 @@ const defaultDraft: ListingDraft = {
   pricePerMonth: "100.00",
   photos: [],
   capacity: 1,
+  description: "",
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, "CreateListingFlow">;
