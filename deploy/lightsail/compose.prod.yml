@@ -1,0 +1,70 @@
+# FreeSpace production stack for a single Lightsail box (Option A: RDS kept off-box).
+# Caddy terminates TLS (auto Let's Encrypt) and host-routes to the web + api containers,
+# which are the SAME images already built/pushed to ECR — no rebuild needed.
+#
+#   freespace.ie / www.freespace.ie  -> web :8080
+#   api.freespace.ie                 -> api :8080
+#
+# Usage on the box:
+#   cp .env.example .env   # fill in secrets (from Secrets Manager freespace/api-iHluTi) + tags
+#   ./deploy.sh            # ecr login -> pull -> up -> migrate
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - api
+
+  web:
+    image: ${ECR_REGISTRY}/freespace-web:${WEB_TAG}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "8080"
+      HOSTNAME: 0.0.0.0
+    expose:
+      - "8080"
+    # NEXT_PUBLIC_* values are baked at build time, so the runtime needs nothing else.
+
+  api:
+    image: ${ECR_REGISTRY}/freespace-api:${API_TAG}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: "8080"
+      AWS_REGION: eu-west-1
+      ENFORCE_HTTPS: "true"
+      STRIPE_CONNECT_ENABLED: "true"
+      NOTIFICATION_PROCESSOR_INTERVAL_MS: "60000"
+      S3_BUCKET_NAME: freespace-uploads-530726524685-eu-west-1
+      WEB_BASE_URL: https://freespace.ie
+      SUPPORT_EMAIL: support@freespace.ie
+      EMAIL_FROM: FreeSpace <hello@freespace.ie>
+      EMAIL_FROM_SUPPORT: FreeSpace Support <support@freespace.ie>
+      EMAIL_FROM_BOOKINGS: FreeSpace Bookings <booking@freespace.ie>
+      EMAIL_FROM_SIGNUP: FreeSpace Accounts <accounts@freespace.ie>
+      GOOGLE_OAUTH_CLIENT_ID: 427792130041-s3dlgu4vsq0t7oujuhbev0tgqhvt0dk7.apps.googleusercontent.com
+      GOOGLE_IOS_CLIENT_ID: 742052774291-7ebm33putsqqjjb8h5kebok0214hp38h.apps.googleusercontent.com
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -8,11 +8,17 @@ APP_JSON="$MOBILE_DIR/app.json"
 DEFAULT_CREDENTIALS_JSON="$MOBILE_DIR/credentials.json"
 
 WORKSPACE="$IOS_DIR/FreeSpace.xcworkspace"
+PROJECT="$IOS_DIR/FreeSpace.xcodeproj"
 SCHEME="FreeSpace"
 ARCHIVE_PATH="$IOS_DIR/build/FreeSpace.xcarchive"
 EXPORT_DIR="$IOS_DIR/build/export"
 IPA_PATH="$EXPORT_DIR/FreeSpace.ipa"
 RELEASE_ENTITLEMENTS="$IOS_DIR/FreeSpace/FreeSpace.release.entitlements"
+
+XCODEBUILD_CONTAINER=(-workspace "$WORKSPACE")
+if ! xcodebuild -list -workspace "$WORKSPACE" >/dev/null 2>&1; then
+  XCODEBUILD_CONTAINER=(-project "$PROJECT")
+fi
 
 # ── Team ID ──────────────────────────────────────────────────────────────────
 
@@ -150,7 +156,7 @@ PLIST
 
 echo "[prod] Archiving..."
 xcodebuild archive \
-  -workspace "$WORKSPACE" \
+  "${XCODEBUILD_CONTAINER[@]}" \
   -scheme "$SCHEME" \
   -configuration Release \
   -archivePath "$ARCHIVE_PATH" \
@@ -166,7 +172,7 @@ xcodebuild archive \
 if [ ! -d "$ARCHIVE_PATH" ]; then
   echo "[prod] Archive failed — re-running without xcpretty for full output:"
   xcodebuild archive \
-    -workspace "$WORKSPACE" \
+    "${XCODEBUILD_CONTAINER[@]}" \
     -scheme "$SCHEME" \
     -configuration Release \
     -archivePath "$ARCHIVE_PATH" \

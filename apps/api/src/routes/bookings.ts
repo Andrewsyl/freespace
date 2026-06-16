@@ -881,6 +881,8 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
       metadata: {
         listing_id: payload.listingId,
         driver_id: driverId,
+        start_time: payload.from,
+        end_time: payload.to,
         platform_fee_cents: String(platformFeeCents),
         host_account_id: listingWithHost?.hostStripeAccountId ?? "",
         amount_cents: String(chargeAmountCents),
@@ -1495,6 +1497,7 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
     });
     const { paymentIntentId, status = "confirmed" } = schema.parse(req.body);
     let receiptUrl: string | null = null;
+    let booking: { id: string; listing_id: string; start_time: Date; end_time: Date } | undefined;
     if (status === "confirmed") {
       const bookingRow = await pool.query(
         `
@@ -1505,20 +1508,74 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
         `,
         [paymentIntentId]
       );
-      const booking = bookingRow.rows[0] as
+      booking = bookingRow.rows[0] as
         | { id: string; listing_id: string; start_time: Date; end_time: Date }
         | undefined;
+      if (!booking && stripe) {
+        try {
+          const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+          const listingId = intent.metadata?.listing_id?.trim() ?? "";
+          const driverId = intent.metadata?.driver_id?.trim() ?? "";
+          const startTime = intent.metadata?.start_time?.trim() ?? "";
+          const endTime = intent.metadata?.end_time?.trim() ?? "";
+          const amountCents = Number(intent.metadata?.amount_cents ?? intent.amount ?? 0);
+          const currency = (intent.metadata?.currency ?? intent.currency ?? "").trim().toLowerCase();
+          if (listingId && driverId && startTime && endTime && amountCents > 0 && currency) {
+            const fallbackRow = await pool.query(
+              `
+              SELECT id, listing_id, start_time, end_time
+              FROM bookings
+              WHERE listing_id = $1
+                AND driver_id = $2
+                AND start_time = $3::timestamptz
+                AND end_time = $4::timestamptz
+                AND amount_cents = $5
+                AND lower(currency) = $6
+                AND (status IS NULL OR status = 'pending')
+              ORDER BY created_at DESC
+              LIMIT 1
+              `,
+              [listingId, driverId, startTime, endTime, amountCents, currency]
+            );
+            booking = fallbackRow.rows[0] as
+              | { id: string; listing_id: string; start_time: Date; end_time: Date }
+              | undefined;
+            if (booking) {
+              await pool.query(
+                `
+                UPDATE bookings
+                SET payment_intent_id = $1
+                WHERE id = $2
+                  AND (payment_intent_id IS NULL OR payment_intent_id <> $1)
+                `,
+                [paymentIntentId, booking.id]
+              );
+              await insertEventLog({
+                eventType: "booking_confirm_relinked",
+                payload: {
+                  paymentIntentId,
+                  bookingId: booking.id,
+                  listingId,
+                  driverId,
+                },
+              });
+            }
+          }
+        } catch (fallbackError) {
+          console.warn("Booking confirm fallback lookup failed", fallbackError);
+        }
+      }
       if (!booking) return res.status(404).json({ message: "Booking not found" });
       const confirmCapacityCheck = await pool.query(
         `
         SELECT
           (SELECT COUNT(*) FROM bookings
            WHERE listing_id = $1
-             AND id <> $2
-             AND (status IS NULL OR status <> 'canceled')
-             AND tstzrange(start_time, end_time, '[)') && tstzrange($3::timestamptz, $4::timestamptz, '[)')
-          ) AS booked_count,
-          COALESCE(capacity, 1) AS capacity
+          AND id <> $2
+          AND (status IS NULL OR status <> 'canceled')
+          AND tstzrange(start_time, end_time, '[)') && tstzrange($3::timestamptz, $4::timestamptz, '[)')
+         ) AS booked_count,
+         COALESCE(capacity, 1) AS capacity
         FROM listings WHERE id = $1 LIMIT 1
         `,
         [booking.listing_id, booking.id, booking.start_time, booking.end_time]
@@ -1546,6 +1603,12 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
     const ok = await updateBookingStatusByPaymentIntent({ paymentIntentId, status, receiptUrl });
     if (!ok) {
       const existing = await getBookingByPaymentIntent(paymentIntentId);
+      // The Stripe payment_intent.succeeded webhook may have already confirmed
+      // this booking before the client's confirm call arrived. That's a success,
+      // not a failure — return ok so the app doesn't show a scary error.
+      if (status === "confirmed" && existing?.status === "confirmed") {
+        return res.json({ ok: true, alreadyConfirmed: true });
+      }
       if (existing?.status === "canceled") {
         return res.status(409).json({ message: "Booking already canceled" });
       }

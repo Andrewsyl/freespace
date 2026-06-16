@@ -1,6 +1,6 @@
 {
   "cli": {
-    "version": "18.0.4",
+    "version": ">=18.0.4",
     "appVersionSource": "local"
   },
   "build": {
@@ -41,12 +41,12 @@
       "node": "20.19.4",
       "yarn": "1.22.22",
       "android": {
-        "buildType": "aab"
+        "buildType": "app-bundle"
       },
       "env": {
         "APP_ENV": "production",
         "EXPO_PUBLIC_API_BASE": "https://api.freespace.ie",
-        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_51Sfpe4Gns2wLk4HQl5Xhkdkg2NuIjVB6qjvQyaVOkADndX8ZVKtzgEsODrYh31RGdFyXmMH8trJAKSN3FW0Awtml00rPRUF7Qi",
+        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_h54YYEIQMx4mUrtW5wIwnTuc00gA4yzLhn",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyC1h1NFLFz7SPauw85Udh0O1CBlN5bqOek",
         "EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID": "427792130041-s3dlgu4vsq0t7oujuhbev0tgqhvt0dk7.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "742052774291-7ebm33putsqqjjb8h5kebok0214hp38h.apps.googleusercontent.com"
@@ -59,7 +59,7 @@
       "env": {
         "APP_ENV": "production",
         "EXPO_PUBLIC_API_BASE": "https://api.freespace.ie",
-        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "$STRIPE_PUBLISHABLE_KEY",
+        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_h54YYEIQMx4mUrtW5wIwnTuc00gA4yzLhn",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyC1h1NFLFz7SPauw85Udh0O1CBlN5bqOek",
         "EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID": "427792130041-s3dlgu4vsq0t7oujuhbev0tgqhvt0dk7.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "742052774291-7ebm33putsqqjjb8h5kebok0214hp38h.apps.googleusercontent.com"

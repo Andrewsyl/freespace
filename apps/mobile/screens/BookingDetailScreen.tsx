@@ -14,7 +14,6 @@ import { SquircleBtn } from "../components/SquircleBtn";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Notifications from "expo-notifications";
 import DatePicker from "../components/AdaptiveDatePicker";
 import { useStripe } from "@stripe/stripe-react-native";
 import { cancelBooking, checkInBooking, confirmBookingExtension, createBookingExtensionIntent } from "../api";
@@ -22,7 +21,6 @@ import { useAuth } from "../auth";
 import {
   bookingReminderIds,
   cancelBookingReminders,
-  getNotificationImageAttachment,
 } from "../notifications";
 import type { RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
@@ -72,50 +70,10 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   const [reviewedRating, setReviewedRating] = useState<number | null>(null);
   const [pendingRating, setPendingRating] = useState<number | null>(null);
 
-  // Schedule "ending soon" notification with an Extend action button
-  useEffect(() => {
-    if (isCanceled || (!isUpcoming && !isInProgress)) return;
-    const endReminder = new Date(end.getTime() - 30 * 60 * 1000);
-    if (endReminder.getTime() <= Date.now()) return;
-
-    let cancelled = false;
-    void (async () => {
-      try {
-        await Notifications.setNotificationCategoryAsync("booking_ending", [
-          {
-            identifier: "extend_booking",
-            buttonTitle: "Extend +",
-            options: { opensAppToForeground: true },
-          },
-        ]);
-        if (cancelled) return;
-        // Deterministic id: replaces the reminder scheduled at booking time and
-        // any reminder from a previous visit to this screen, instead of stacking.
-        await Notifications.scheduleNotificationAsync({
-          identifier: bookingReminderIds.end(booking.listingId, end.getTime()),
-          content: {
-            title: "Your parking ends in 30 minutes",
-            body: `${booking.title} — need more time?`,
-            categoryIdentifier: "booking_ending",
-            data: {
-              type: "booking_extend_prompt",
-              bookingId: booking.id,
-              historyTab: "active" as const,
-            },
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: endReminder,
-            channelId: "booking-reminders",
-          },
-        });
-      } catch {
-        // Notification scheduling is best-effort
-      }
-    })();
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [booking.id, booking.title, end]);
+  // The "ending soon" reminder (with the "Extend +" action) is now sent
+  // server-side via the notification processor, so we no longer schedule it
+  // locally here — that avoids duplicate notifications and keeps it correct if
+  // the booking is extended or cancelled.
 
   useFocusEffect(
     useCallback(() => {
@@ -231,19 +189,9 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         setLocalRefundedAt(new Date().toISOString());
       }
       setCanceling(false);
-      try {
-        const attachments = await getNotificationImageAttachment();
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: "Booking canceled",
-            body: "The space is now back on the map.",
-            attachments,
-          },
-          trigger: null,
-        });
-      } catch {
-        // Notification failures shouldn't block the cancel flow.
-      }
+      // The "Booking canceled" notification is sent server-side
+      // (sendBookingStatusPush) to both driver and host, so we don't fire a
+      // duplicate local one here.
     } catch (err) {
       setCanceling(false);
       Alert.alert("Cancellation failed", err instanceof Error ? err.message : "Could not cancel booking. Please try again.");
@@ -291,7 +239,6 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         paymentIntentClientSecret: result.paymentIntentClientSecret,
         allowsDelayedPaymentMethods: false,
         applePay: { merchantCountryCode: "IE" },
-        googlePay: { merchantCountryCode: "IE", testEnv: __DEV__ },
       });
       if (initResult.error) {
         setExtendError("We couldn't start the extension payment.");

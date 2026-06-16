@@ -34,7 +34,6 @@ import {
 } from "../api";
 import { useAuth } from "../auth";
 import { logError, logInfo, logWarn } from "../logger";
-import { bookingReminderIds, getNotificationImageAttachment } from "../notifications";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
@@ -320,61 +319,13 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       return;
     }
 
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Booking confirmed",
-        body: listing.title,
-        data: { type: "booking_confirmed", historyTab: "upcoming" },
-      },
-      trigger: null,
-    });
-
-    const nowMs = Date.now();
-    const startReminder = new Date(start.getTime() - 60 * 60 * 1000);
-    const endReminder = new Date(end.getTime() - 30 * 60 * 1000);
-
-    if (startReminder.getTime() > nowMs) {
-      const attachments = await getNotificationImageAttachment();
-      await Notifications.scheduleNotificationAsync({
-        identifier: bookingReminderIds.start(listing.id, start.getTime()),
-        content: {
-          title: "Booking starts soon",
-          body: `${listing.title} starts in 1 hour.`,
-          data: {
-            type: "booking_reminder",
-            historyTab: "upcoming",
-          },
-          attachments,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: startReminder,
-          channelId: "booking-reminders",
-        },
-      });
-    }
-
-    if (endReminder.getTime() > nowMs) {
-      const attachments = await getNotificationImageAttachment();
-      await Notifications.scheduleNotificationAsync({
-        identifier: bookingReminderIds.end(listing.id, end.getTime()),
-        content: {
-          title: "Your parking ends in 30 minutes",
-          body: `${listing.title} — need more time?`,
-          data: {
-            type: "booking_reminder",
-            historyTab: "active",
-          },
-          attachments,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: endReminder,
-          channelId: "booking-reminders",
-        },
-      });
-    }
-  }, [end, listing, start]);
+    // All booking notifications — the "Booking confirmed" message plus the
+    // start/end reminders — are sent server-side (sendBookingStatusPush +
+    // scheduled_notifications/notification processor). That keeps a single
+    // source of truth, avoids duplicate notifications, works cross-device, and
+    // stays correct if the booking is extended or cancelled. We only ensure
+    // notification permission here so those pushes can be shown.
+  }, []);
 
   const handlePayment = async () => {
     if (!listing || !priceSummary || !token || bookingConfirmed) return;
@@ -444,7 +395,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         paymentIntentClientSecret: payment.paymentIntentClientSecret,
         allowsDelayedPaymentMethods: false,
         applePay: { merchantCountryCode: "IE" },
-        googlePay: { merchantCountryCode: "IE", testEnv: __DEV__ },
       });
       if (initResult.error) {
         logWarn("Payment sheet init failed", {

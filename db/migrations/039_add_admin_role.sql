@@ -1,0 +1,14 @@
+-- Add the 'admin' value to the user_role enum.
+--
+-- The admin panel (web + mobile) and the requireAdmin middleware have always
+-- checked for role = 'admin', but the enum created in 005_add_enums.sql only
+-- defined ('driver', 'host'). That left admin access impossible: setting a
+-- user's role to 'admin' failed with "invalid input value for enum user_role".
+-- This migration closes that gap so admin promotion works on every environment.
+--
+-- Note: ALTER TYPE ... ADD VALUE is permitted inside a transaction on
+-- PostgreSQL 12+ provided the new value is not used in the same transaction
+-- (this migration only adds it; promoting a specific user is a data change done
+-- separately). IF NOT EXISTS keeps this a no-op where the value was already
+-- added manually.
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'admin';

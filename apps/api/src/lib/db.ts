@@ -1680,11 +1680,14 @@ export async function insertScheduledNotification({
 export async function listDueScheduledNotifications(limit = 50) {
   const res = await pool.query(
     `
-    SELECT id, user_id, booking_id, type, scheduled_at, payload
-    FROM scheduled_notifications
-    WHERE sent_at IS NULL
-      AND scheduled_at <= NOW()
-    ORDER BY scheduled_at ASC
+    SELECT sn.id, sn.user_id, sn.booking_id, sn.type, sn.scheduled_at, sn.payload,
+           l.title AS listing_title
+    FROM scheduled_notifications sn
+    LEFT JOIN bookings b ON b.id = sn.booking_id
+    LEFT JOIN listings l ON l.id = b.listing_id
+    WHERE sn.sent_at IS NULL
+      AND sn.scheduled_at <= NOW()
+    ORDER BY sn.scheduled_at ASC
     LIMIT $1;
     `,
     [limit]
@@ -1696,6 +1699,7 @@ export async function listDueScheduledNotifications(limit = 50) {
     type: string;
     scheduled_at: Date;
     payload: Record<string, unknown> | null;
+    listing_title: string | null;
   }[];
 }
 

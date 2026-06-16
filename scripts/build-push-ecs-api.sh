@@ -5,7 +5,7 @@ set -euo pipefail
 : "${AWS_PROFILE:=default}"
 : "${AWS_ACCOUNT_ID:?Set AWS_ACCOUNT_ID}"
 : "${ECR_REPOSITORY:=freespace-api}"
-: "${IMAGE_TAG:=$(git rev-parse --short HEAD)}"
+: "${IMAGE_TAG:=$(git rev-parse HEAD)}"
 
 IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
 

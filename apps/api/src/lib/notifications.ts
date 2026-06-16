@@ -15,6 +15,9 @@ type PushPayload = {
   // Android notification channel; the app registers "booking-reminders"
   // (high importance) for time-critical reminders. Defaults to "default".
   channelId?: string;
+  // Notification category (registered on the client) that adds action buttons,
+  // e.g. "booking_ending" → "Extend +".
+  categoryId?: string;
 };
 
 type PushSendResult = {
@@ -23,7 +26,7 @@ type PushSendResult = {
   error: number;
 };
 
-export async function sendPushNotification({ tokens, title, body, data, channelId }: PushPayload) {
+export async function sendPushNotification({ tokens, title, body, data, channelId, categoryId }: PushPayload) {
   if (!tokens.length) {
     return { attempted: 0, ok: 0, error: 0 } satisfies PushSendResult;
   }
@@ -37,6 +40,7 @@ export async function sendPushNotification({ tokens, title, body, data, channelI
       body,
       data,
       ...(channelId ? { channelId } : {}),
+      ...(categoryId ? { categoryId } : {}),
     }));
 
   if (!messages.length) {
@@ -97,17 +101,18 @@ export async function processScheduledNotifications(limit = 50) {
     const userTokens = tokensByUser.get(item.user_id) ?? [];
     let shouldMarkSent = userTokens.length === 0;
     if (userTokens.length) {
+      const listingName = item.listing_title?.trim() || "Your parking space";
       const title =
         item.type === "booking_start_soon"
           ? "Booking starts soon"
           : item.type === "booking_end_soon"
-            ? "Booking ending soon"
+            ? "Your parking ends in 30 minutes"
             : "Leave a review";
       const body =
         item.type === "booking_start_soon"
-          ? "Your booking starts in 1 hour."
+          ? `${listingName} starts in 1 hour.`
           : item.type === "booking_end_soon"
-            ? "Your booking ends in 30 minutes."
+            ? `${listingName} — need more time?`
             : "How was your parking? Leave a quick review.";
       const result = await sendPushNotification({
         tokens: userTokens,
@@ -115,13 +120,22 @@ export async function processScheduledNotifications(limit = 50) {
         body,
         data: {
           bookingId: item.booking_id,
-          type: item.type,
+          type: item.type === "booking_end_soon" ? "booking_extend_prompt" : item.type,
+          historyTab:
+            item.type === "booking_end_soon"
+              ? "active"
+              : item.type === "booking_start_soon"
+                ? "upcoming"
+                : "past",
           ...(item.payload ?? {}),
         },
         channelId:
           item.type === "booking_start_soon" || item.type === "booking_end_soon"
             ? "booking-reminders"
             : undefined,
+        // "Extend +" action button on the end-soon reminder (category is
+        // registered on the client at app startup).
+        categoryId: item.type === "booking_end_soon" ? "booking_ending" : undefined,
       });
       shouldMarkSent = result.ok > 0;
       if (!shouldMarkSent && process.env.PUSH_LOGGING === "true") {

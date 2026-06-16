@@ -1,0 +1,14 @@
+# Auto-HTTPS via Let's Encrypt for all three names. Replace the ACME email if desired.
+{
+	email hello@freespace.ie
+}
+
+freespace.ie, www.freespace.ie {
+	encode zstd gzip
+	reverse_proxy web:8080
+}
+
+api.freespace.ie {
+	encode zstd gzip
+	reverse_proxy api:8080
+}

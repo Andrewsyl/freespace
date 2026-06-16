@@ -42,7 +42,10 @@ const loginLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 5, keyPr
 const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: "register" });
 const resetLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 3, keyPrefix: "reset" });
 const verifyLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 3, keyPrefix: "verify" });
-const smsLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 3, keyPrefix: "sms" });
+// Sending an SMS costs money, so keep the send rate tight.
+const smsLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 5, keyPrefix: "sms" });
+// Checking a code sends nothing; allow more attempts (just guards brute force).
+const phoneCodeLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, keyPrefix: "phone-code" });
 const oauthLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 10, keyPrefix: "oauth" });
 const refreshLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 30, keyPrefix: "refresh" });
 const accountWriteLimiter = createRateLimiter({
@@ -553,7 +556,7 @@ router.post("/request-phone-verification", requireAuth, enforceBlockedList, smsL
   }
 });
 
-router.post("/verify-phone", requireAuth, enforceBlockedList, smsLimiter, async (req, res, next) => {
+router.post("/verify-phone", requireAuth, enforceBlockedList, phoneCodeLimiter, async (req, res, next) => {
   try {
     const { code } = phoneVerifySchema.parse(req.body);
     const userId = req.user!.userId;

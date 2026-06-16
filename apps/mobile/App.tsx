@@ -144,6 +144,16 @@ export default function App() {
         importance: Notifications.AndroidImportance.HIGH,
       });
     }
+    // Register the "Extend +" action shown on the server-sent "ends soon"
+    // reminder (categoryId: "booking_ending"). Registered globally at startup
+    // so the action is available whenever the push arrives.
+    void Notifications.setNotificationCategoryAsync("booking_ending", [
+      {
+        identifier: "extend_booking",
+        buttonTitle: "Extend +",
+        options: { opensAppToForeground: true },
+      },
+    ]);
   }, []);
 
   const stripeKey = mobileEnv.stripePublishableKey;
@@ -291,7 +301,20 @@ function AppNavigator() {
       data: BookingNotificationData | Record<string, unknown> | null | undefined
     ) => {
       if (!data || typeof data !== "object") return;
-      if (data.type !== "booking_confirmed" && data.type !== "booking_reminder") return;
+      // All booking-related notifications (status changes, reminders, review
+      // prompt) deep-link into the History tab. Keep this in sync with the
+      // `type` values the server sends in apps/api/src/lib/notifications.ts and
+      // sendBookingStatusPush.
+      const bookingTypes = new Set([
+        "booking_confirmed",
+        "booking_canceled",
+        "booking_reminder",
+        "booking_start_soon",
+        "booking_end_soon",
+        "booking_extend_prompt",
+        "review_reminder",
+      ]);
+      if (typeof data.type !== "string" || !bookingTypes.has(data.type)) return;
       const initialTab =
         data.historyTab === "active" || data.historyTab === "past" ? data.historyTab : "upcoming";
       navigationRef.dispatch(

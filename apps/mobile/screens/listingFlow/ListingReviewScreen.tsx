@@ -3,6 +3,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SquircleBtn } from "../../components/SquircleBtn";
+import { PhoneVerifyModal } from "../../components/PhoneVerifyModal";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import LottieView from "lottie-react-native";
 import {
@@ -14,7 +15,6 @@ import {
   Camera,
   KeyRound,
   Users,
-  Pencil,
   Lightbulb,
 } from "lucide-react-native";
 import {
@@ -38,12 +38,19 @@ type FlowStackParamList = {
   ListingLocation: undefined;
   ListingStreetView: undefined;
   ListingDetails: undefined;
+  ListingFeaturesAccess: undefined;
   ListingAvailability: undefined;
   ListingPrice: undefined;
   ListingPhotos: undefined;
 };
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingReview">;
+
+// Require hosts to verify their phone before a listing goes live. Keep this OFF
+// until AWS grants SMS production access (out of the SNS sandbox) — while in the
+// sandbox only pre-verified numbers can receive codes, so enforcing it would
+// block every host from publishing. Flip to true once the sandbox exit is approved.
+const PHONE_VERIFICATION_REQUIRED = false;
 
 const ACCENT = hostFlowColors.accent;
 const FG = hostFlowColors.text;
@@ -54,12 +61,13 @@ const CARD = "#ffffff";
 
 export function ListingReviewScreen({ navigation }: Props) {
   const { draft, setDraft, listingId } = useListingFlow();
-  const { token, user } = useAuth();
+  const { token, user, setAuthUser } = useAuth();
   const insets = useSafeAreaInsets();
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const [submitting, setSubmitting] = useState(false);
   const [published, setPublished] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showPhoneVerify, setShowPhoneVerify] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const rootNavigation = navigation.getParent();
   const requiresShortStay =
@@ -160,6 +168,20 @@ export function ListingReviewScreen({ navigation }: Props) {
       setError("Complete the required steps first.");
       return;
     }
+    // Hosts must have a verified phone before a listing goes live, since drivers
+    // may call them if they can't find the space. Verified once, never re-asked.
+    // Gated behind a flag so we don't block publishing while SMS is still in the
+    // SNS sandbox (see PHONE_VERIFICATION_REQUIRED above).
+    if (PHONE_VERIFICATION_REQUIRED && !user?.phoneVerified) {
+      setError(null);
+      setShowPhoneVerify(true);
+      return;
+    }
+    await doPublish();
+  };
+
+  const doPublish = async () => {
+    if (!token) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -269,61 +291,62 @@ export function ListingReviewScreen({ navigation }: Props) {
           </View>
         </View>
 
-        {/* ── Details overview ── */}
+        {/* ── Details (tap any row to edit) ── */}
         <View style={styles.card}>
           <Text style={styles.cardHeader}>Listing details</Text>
+          <Text style={styles.cardSubHeader}>Tap any section to edit it.</Text>
           <DetailRow
             icon={<Tag size={15} color={ACCENT} strokeWidth={2} />}
             label="Space type"
             value={draft.spaceType || "Not set"}
+            onPress={() => navigation.navigate("ListingDetails")}
           />
           <DetailRow
             icon={<MapPin size={15} color={ACCENT} strokeWidth={2} />}
             label="Location"
             value={draft.location.address || "Not set"}
+            onPress={() => navigation.navigate("ListingLocation")}
+          />
+          <DetailRow
+            icon={<Camera size={15} color={ACCENT} strokeWidth={2} />}
+            label="Street view"
+            value={draft.coverHeading != null ? "Cover set" : "Set the cover view"}
+            onPress={() => navigation.navigate("ListingStreetView")}
           />
           <DetailRow
             icon={<Clock size={15} color={ACCENT} strokeWidth={2} />}
             label="Availability"
             value={draft.availability.detail || "Not set"}
+            onPress={() => navigation.navigate("ListingAvailability")}
           />
           <DetailRow
             icon={<Tag size={15} color={ACCENT} strokeWidth={2} />}
             label="Price"
             value={priceLabel}
+            onPress={() => navigation.navigate("ListingPrice")}
           />
           <DetailRow
             icon={<Camera size={15} color={ACCENT} strokeWidth={2} />}
             label="Photos"
             value={draft.photos.length > 0 ? `${draft.photos.length} photo${draft.photos.length !== 1 ? "s" : ""}` : "No photos added"}
             valueStyle={draft.photos.length === 0 ? styles.valueWarning : undefined}
+            onPress={() => navigation.navigate("ListingPhotos")}
           />
           {draft.capacity > 1 ? (
             <DetailRow
               icon={<Users size={15} color={ACCENT} strokeWidth={2} />}
               label="Spaces"
               value={`${draft.capacity}`}
+              onPress={() => navigation.navigate("ListingDetails")}
             />
           ) : null}
-          {draft.accessCode.trim() ? (
-            <DetailRow
-              icon={<KeyRound size={15} color={ACCENT} strokeWidth={2} />}
-              label="Access code"
-              value={draft.accessCode.trim()}
-              isLast
-            />
-          ) : null}
-        </View>
-
-        {/* ── Make changes ── */}
-        <View style={styles.card}>
-          <Text style={styles.cardHeader}>Make changes</Text>
-          <EditRow label="Location" onPress={() => navigation.navigate("ListingLocation")} />
-          <EditRow label="Street view" onPress={() => navigation.navigate("ListingStreetView")} />
-          <EditRow label="Space details" onPress={() => navigation.navigate("ListingDetails")} />
-          <EditRow label="Availability" onPress={() => navigation.navigate("ListingAvailability")} />
-          <EditRow label="Price" onPress={() => navigation.navigate("ListingPrice")} />
-          <EditRow label="Photos" onPress={() => navigation.navigate("ListingPhotos")} isLast />
+          <DetailRow
+            icon={<KeyRound size={15} color={ACCENT} strokeWidth={2} />}
+            label="Access code"
+            value={draft.accessCode.trim() || "None"}
+            onPress={() => navigation.navigate("ListingFeaturesAccess")}
+            isLast
+          />
         </View>
 
         {/* ── Tips ── */}
@@ -379,6 +402,23 @@ export function ListingReviewScreen({ navigation }: Props) {
         </Pressable>
       </View>
 
+      {/* ── Phone verification gate ── */}
+      {token ? (
+        <PhoneVerifyModal
+          visible={showPhoneVerify}
+          token={token}
+          initialPhone={user?.phone}
+          onClose={() => setShowPhoneVerify(false)}
+          onVerified={async (verifiedPhone) => {
+            setShowPhoneVerify(false);
+            if (user) {
+              await setAuthUser({ ...user, phone: verifiedPhone, phoneVerified: true });
+            }
+            await doPublish();
+          }}
+        />
+      ) : null}
+
       {/* ── Success overlay ── */}
       {showSuccess ? (
         <View style={styles.successOverlay}>
@@ -410,46 +450,41 @@ function DetailRow({
   value,
   isLast,
   valueStyle,
+  onPress,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   isLast?: boolean;
   valueStyle?: object;
+  onPress?: () => void;
 }) {
-  return (
-    <View style={[styles.detailRow, !isLast && styles.detailRowBorder]}>
+  const content = (
+    <>
       <View style={styles.detailIconWrap}>{icon}</View>
       <View style={styles.detailBody}>
         <Text style={styles.detailLabel}>{label}</Text>
         <Text style={[styles.detailValue, valueStyle]} numberOfLines={2}>{value}</Text>
       </View>
-    </View>
+      {onPress ? <ChevronRight size={18} color={SOFT} strokeWidth={2.2} /> : null}
+    </>
   );
-}
-
-function EditRow({
-  label,
-  onPress,
-  isLast,
-}: {
-  label: string;
-  onPress: () => void;
-  isLast?: boolean;
-}) {
+  if (onPress) {
+    return (
+      <Pressable
+        style={({ pressed }) => [
+          styles.detailRow,
+          !isLast && styles.detailRowBorder,
+          pressed && styles.editRowPressed,
+        ]}
+        onPress={onPress}
+      >
+        {content}
+      </Pressable>
+    );
+  }
   return (
-    <Pressable
-      style={({ pressed }) => [styles.editRow, !isLast && styles.editRowBorder, pressed && styles.editRowPressed]}
-      onPress={onPress}
-    >
-      <View style={styles.editRowLeft}>
-        <View style={styles.editIconWrap}>
-          <Pencil size={12} color={ACCENT} strokeWidth={2.2} />
-        </View>
-        <Text style={styles.editLabel}>{label}</Text>
-      </View>
-      <ChevronRight size={16} color={SOFT} strokeWidth={2.2} />
-    </Pressable>
+    <View style={[styles.detailRow, !isLast && styles.detailRowBorder]}>{content}</View>
   );
 }
 
@@ -518,7 +553,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 12,
+    paddingBottom: 4,
+  },
+  cardSubHeader: {
+    fontSize: 12.5,
+    color: MUTED,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
 
   // ── Map + listing meta ───────────────────────────────────────
@@ -613,33 +654,7 @@ const styles = StyleSheet.create({
   valueWarning: { color: "#F59E0B" },
 
   // ── Edit rows ────────────────────────────────────────────────
-  editRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  editRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2DAD2",
-  },
   editRowPressed: { backgroundColor: "#F8FAFC" },
-  editRowLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-  editIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: "#EDF7F2",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  editLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
-    color: FG,
-    letterSpacing: -0.2,
-  },
 
   // ── Tips card ────────────────────────────────────────────────
   tipsCard: {

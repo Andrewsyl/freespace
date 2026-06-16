@@ -97,7 +97,7 @@
           "apiKey": "AIzaSyC1h1NFLFz7SPauw85Udh0O1CBlN5bqOek"
         }
       },
-      "versionCode": 103
+      "versionCode": 110
     },
     "androidStatusBar": {
       "translucent": true,
@@ -110,7 +110,8 @@
     },
     "ios": {
       "bundleIdentifier": "com.andrewsyl.carparking",
-      "buildNumber": "21",
+      "buildNumber": "30",
+      "icon": "./assets/icon-ios-1024.png",
       "jsEngine": "jsc",
       "associatedDomains": [
         "applinks:freespace.ie"
