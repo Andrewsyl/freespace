@@ -63,7 +63,12 @@ remote_tag_var="$(printf '%s' "$DEPLOY_SERVICE" | tr '[:lower:]' '[:upper:]')_TA
 remote_cmd=$(cat <<EOF
 set -euo pipefail
 cd "$LIGHTSAIL_REPO_DIR"
-$remote_tag_var="$DEPLOY_TAG" ./deploy/lightsail/redeploy.sh
+[ -f .env ] || { echo "Missing .env on Lightsail host"; exit 1; }
+set -a
+. ./.env
+set +a
+$remote_tag_var="$DEPLOY_TAG" ./make-env.sh
+./deploy.sh
 EOF
 )
 
