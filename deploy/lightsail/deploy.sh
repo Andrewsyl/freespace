@@ -20,6 +20,19 @@ docker compose -f compose.prod.yml up -d
 echo "==> Running DB migrations"
 docker compose -f compose.prod.yml exec -T api npm --workspace apps/api run migrate:dist
 
-echo "==> Up. Local health checks:"
-curl -fsS --resolve api.freespace.ie:443:127.0.0.1 https://api.freespace.ie/health && echo " api OK"
+echo "==> Waiting for API to become healthy (the container needs a few seconds to boot)"
+api_ok=false
+for attempt in $(seq 1 30); do
+  if curl -fsS --resolve api.freespace.ie:443:127.0.0.1 https://api.freespace.ie/health >/dev/null 2>&1; then
+    echo " api OK (after $attempt attempt(s))"
+    api_ok=true
+    break
+  fi
+  sleep 2
+done
+if [ "$api_ok" != true ]; then
+  echo "API did not return a healthy /health within ~60s" >&2
+  docker compose -f compose.prod.yml logs --tail=50 api >&2 || true
+  exit 1
+fi
 echo "    (web: open https://freespace.ie once DNS points here)"

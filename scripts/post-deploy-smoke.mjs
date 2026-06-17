@@ -41,6 +41,30 @@ const parseJsonSafely = async (response) => {
   }
 };
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// A freshly-restarted container takes a few seconds to start serving. Wait for
+// the health endpoint to come up before running the rest of the checks so the
+// smoke step doesn't race the boot window with a transient 502.
+const waitForReady = async () => {
+  const healthPath = mode === "api" ? "/health" : "/";
+  for (let attempt = 1; attempt <= 30; attempt += 1) {
+    try {
+      const response = await fetch(`${baseUrl}${healthPath}`);
+      if (response.ok) {
+        return;
+      }
+    } catch {
+      // network error while the service is still coming up — keep waiting
+    }
+    await sleep(2000);
+  }
+  console.error(`Smoke check failed: ${baseUrl}${healthPath} did not become ready within ~60s`);
+  process.exit(1);
+};
+
+await waitForReady();
+
 let listingSearchResult = null;
 
 for (const check of checks) {
