@@ -794,9 +794,14 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 {vehicleMake ? (
                   <View style={styles.vehicleHeaderRow}>
                     <VehicleBrandLogo make={vehicleMake} size={40} />
-                    <Text style={styles.vehicleHeaderText}>
-                      {[vehicleMake, vehicleColor, user?.vehicleType].filter(Boolean).join(" · ")}
-                    </Text>
+                    <View style={styles.vehicleHeaderInfo}>
+                      <Text style={styles.vehicleHeaderText}>
+                        {[vehicleMake, user?.vehicleType].filter(Boolean).join(" ")}
+                      </Text>
+                      {vehicleColor ? (
+                        <Text style={styles.vehicleSubText}>{vehicleColor}</Text>
+                      ) : null}
+                    </View>
                   </View>
                 ) : null}
                 <Pressable
@@ -1219,9 +1224,14 @@ const styles = StyleSheet.create({
   vehicleHeaderRow: {
     flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44, marginBottom: 2,
   },
+  vehicleHeaderInfo: {
+    flexShrink: 1, gap: 2,
+  },
   vehicleHeaderText: {
-    flexShrink: 1,
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, lineHeight: 18, color: FG,
+  },
+  vehicleSubText: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 12, lineHeight: 16, color: MUTED,
   },
 
   // ── Payment / trust ──────────────────────────────────────────

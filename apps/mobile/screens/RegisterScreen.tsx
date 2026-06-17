@@ -300,6 +300,7 @@ export function RegisterScreen({ navigation, route }: Props) {
               <Pressable
                 style={styles.checkboxRow}
                 onPress={() => setAccepted((value) => !value)}
+                testID="terms-checkbox"
               >
                 <View style={[styles.checkbox, accepted && styles.checkboxChecked]}>
                   {accepted ? <Ionicons name="checkmark" size={16} color="#FFFFFF" /> : null}
@@ -321,6 +322,7 @@ export function RegisterScreen({ navigation, route }: Props) {
                 disabled={submitting}
                 loading={submitting}
                 title={submitting ? "Creating..." : "Create account"}
+                testID="register-btn"
               />
             </View>
           </ScrollView>

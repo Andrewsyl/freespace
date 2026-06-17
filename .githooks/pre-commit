@@ -23,6 +23,14 @@ for file in $staged_files; do
   esac
 done
 
+# Always run all tests — fast enough (~5s) and catches cross-cutting regressions
+echo "pre-commit: running api tests"
+npm --workspace apps/api run test
+
+echo "pre-commit: running mobile tests"
+npm --workspace apps/mobile run test -- --runInBand
+
+# Path-aware build/typecheck on top of tests
 if [ "$run_web" = true ]; then
   echo "pre-commit: typechecking web"
   npm --workspace apps/web run lint
@@ -31,13 +39,9 @@ fi
 if [ "$run_api" = true ]; then
   echo "pre-commit: verifying api build"
   npm run build:api
-  echo "pre-commit: running api tests"
-  npm --workspace apps/api run test
 fi
 
 if [ "$run_mobile" = true ]; then
   echo "pre-commit: verifying mobile typecheck"
   npm run typecheck:mobile
-  echo "pre-commit: running mobile tests"
-  npm --workspace apps/mobile run test -- --runInBand
 fi

@@ -569,4 +569,104 @@ describe("bookings routes", () => {
       expect.objectContaining({ paymentIntentId: "pi_123", status: "confirmed" })
     );
   });
+
+  it("cancels a confirmed booking and issues a Stripe refund", async () => {
+    db.getBookingForRefund.mockResolvedValue({
+      id: "booking-1",
+      status: "confirmed",
+      payment_intent_id: "pi_123",
+      payout_status: "pending",
+      end_time: new Date("2026-03-20T12:00:00.000Z"),
+      refund_status: null,
+      refund_id: null,
+    });
+    stripeMocks.refundsCreate.mockResolvedValue({ id: "re_123" });
+    db.markBookingRefundedByPaymentIntent.mockResolvedValue(undefined);
+    db.cancelBookingWithRefund.mockResolvedValue(true);
+    db.getBookingNotificationTargets.mockResolvedValue(null);
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    const token = signToken({ userId: "user-1", email: "driver@example.com", role: "driver" });
+
+    const response = await request(app)
+      .post("/api/bookings/11111111-1111-4111-8111-111111111111/cancel")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, refunded: true });
+    expect(stripeMocks.refundsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ payment_intent: "pi_123" }),
+      expect.objectContaining({ idempotencyKey: expect.stringContaining("pi_123") })
+    );
+    expect(db.cancelBookingWithRefund).toHaveBeenCalledWith(
+      expect.objectContaining({ bookingId: "11111111-1111-4111-8111-111111111111", refundId: "re_123" })
+    );
+  });
+
+  it("cancels a pending booking without issuing a refund", async () => {
+    db.getBookingForRefund.mockResolvedValue({
+      id: "booking-1",
+      status: "pending",
+      payment_intent_id: null,
+      payout_status: null,
+      end_time: new Date("2026-03-20T12:00:00.000Z"),
+      refund_status: null,
+      refund_id: null,
+    });
+    db.cancelBookingByDriver.mockResolvedValue(true);
+    db.getBookingNotificationTargets.mockResolvedValue(null);
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    const token = signToken({ userId: "user-1", email: "driver@example.com", role: "driver" });
+
+    const response = await request(app)
+      .post("/api/bookings/11111111-1111-4111-8111-111111111111/cancel")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, refunded: false });
+    expect(stripeMocks.refundsCreate).not.toHaveBeenCalled();
+    expect(db.cancelBookingByDriver).toHaveBeenCalledWith(
+      expect.objectContaining({ bookingId: "11111111-1111-4111-8111-111111111111" })
+    );
+  });
+
+  it("blocks a booking attempt when the daily booking limit is exceeded", async () => {
+    db.getFraudSettings.mockResolvedValue({
+      minAccountAgeMinutes: 0,
+      maxBookingsPerDay: 3,
+      maxAmountPerDayCents: 100000,
+    });
+    db.getUserRiskProfile.mockResolvedValue({
+      status: "active",
+      email_verified: true,
+      phone_verified: true,
+      created_at: "2026-01-01T00:00:00.000Z",
+    });
+    db.getRecentBookingStats.mockResolvedValue({ count: 3, total_cents: 0 });
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    const token = signToken({ userId: "user-1", email: "driver@example.com", role: "driver" });
+
+    const response = await request(app)
+      .post("/api/bookings/payment-intent")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        listingId: "11111111-1111-4111-8111-111111111111",
+        from: "2026-03-20T10:00:00.000Z",
+        to: "2026-03-20T12:00:00.000Z",
+        amountCents: 324,
+        currency: "eur",
+        platformFeePercent: 0.1,
+      });
+
+    expect(response.status).toBe(429);
+    expect(response.body.message).toBe("Booking limit reached. Try again later.");
+  });
 });
