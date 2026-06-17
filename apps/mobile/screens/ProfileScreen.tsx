@@ -324,9 +324,9 @@ export function ProfileScreen({ navigation }: Props) {
           />
         </View>
 
-        {/* ── Sign out / danger ── */}
-        <View style={[styles.group, { marginTop: 24 }]}>
-          {user.role === "admin" ? (
+        {/* ── Admin ── */}
+        {user.role === "admin" ? (
+          <View style={[styles.group, { marginTop: 8 }]}>
             <Row
               first
               icon="shield-outline"
@@ -334,14 +334,22 @@ export function ProfileScreen({ navigation }: Props) {
               sub="Moderate users and listings"
               onPress={() => navigation.navigate("Admin")}
             />
-          ) : null}
-          <Row
-            first={user.role !== "admin"}
-            icon="log-out-outline"
-            label="Sign out"
-            onPress={() => logout()}
-          />
-        </View>
+          </View>
+        ) : null}
+
+        {/* ── Sign out ── */}
+        <Pressable
+          style={({ pressed }) => [styles.signOutBtn, pressed && styles.signOutBtnPressed]}
+          onPress={() =>
+            Alert.alert("Sign out", "Are you sure you want to sign out?", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Sign out", style: "destructive", onPress: () => logout() },
+            ])
+          }
+        >
+          <Ionicons name="log-out-outline" size={19} color="#c0392b" />
+          <Text style={styles.signOutText}>Sign out</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -483,4 +491,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15, shadowRadius: 2, elevation: 2,
   },
   toggleKnobOn: { alignSelf: "flex-end" },
+
+  // ── Sign out button ──────────────────────────────────────────
+  signOutBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    marginTop: 24, marginBottom: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#fff1f0",
+    borderWidth: 1, borderColor: "#fac5c0",
+  },
+  signOutBtnPressed: { backgroundColor: "#ffe4e1" },
+  signOutText: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#c0392b",
+  },
 });
