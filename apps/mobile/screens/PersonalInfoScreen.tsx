@@ -166,7 +166,7 @@ export function PersonalInfoScreen({ navigation, route }: Props) {
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         <View style={styles.navBar}>
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
             <ArrowLeft size={20} color="#111827" strokeWidth={2.5} />
           </Pressable>
           <Text style={styles.navTitle}>Personal information</Text>

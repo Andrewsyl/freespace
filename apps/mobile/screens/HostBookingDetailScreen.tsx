@@ -152,7 +152,7 @@ export function HostBookingDetailScreen({ navigation, route }: Props) {
 
       {/* Nav bar */}
       <View style={[styles.navBar, { paddingTop: insets.top + 10 }]}>
-        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
+        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8} accessibilityLabel="Go back">
           <ArrowLeft size={22} color={FG} />
         </Pressable>
         <Text style={styles.navTitle}>Booking</Text>

@@ -133,7 +133,7 @@ export function SignInScreen({ navigation, route }: Props) {
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         <View style={styles.navBar}>
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
+          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8} accessibilityLabel="Go back">
             <Ionicons name="arrow-back" size={22} color="#111827" />
           </Pressable>
         </View>

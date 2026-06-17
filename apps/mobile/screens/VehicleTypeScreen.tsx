@@ -219,7 +219,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
       >
         {/* Nav */}
         <View style={styles.nav}>
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={10}>
+          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={10} accessibilityLabel="Go back">
             <ArrowLeft size={20} color={FG} strokeWidth={2.5} />
           </Pressable>
           <Text style={styles.navTitle}>My vehicle</Text>

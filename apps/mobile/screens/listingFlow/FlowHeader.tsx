@@ -58,7 +58,7 @@ export function FlowHeader({ current, total, onClose }: Props) {
   return (
     <>
       <View style={[styles.wrap, { paddingTop: insets.top + 10 }]}>
-        <Pressable style={styles.closeBtn} onPress={handleClose} hitSlop={8}>
+        <Pressable style={styles.closeBtn} onPress={handleClose} hitSlop={8} accessibilityLabel="Close">
           <ArrowLeft size={17} color={hostFlowColors.text} strokeWidth={2.2} />
         </Pressable>
         <View style={styles.barWrap}>

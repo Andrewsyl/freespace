@@ -134,18 +134,19 @@ export function ListingsScreen({ navigation }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const [data, summary, payout, bookings] = await Promise.all([
+      const [dataResult, summaryResult, payoutResult, bookingsResult] = await Promise.allSettled([
         listHostListings(token),
         getHostEarningsSummary(token),
         getHostPayoutStatus(token),
         listMyBookings(token),
       ]);
+      if (dataResult.status === "rejected") throw dataResult.reason;
       const localDraft = await loadHostListingDraft();
-      setListings(data);
+      setListings(dataResult.value);
       setSavedDraft(localDraft);
-      setEarnings(summary);
-      setPayoutStatus(payout);
-      setHostBookings(bookings.hostBookings ?? []);
+      if (summaryResult.status === "fulfilled") setEarnings(summaryResult.value);
+      if (payoutResult.status === "fulfilled") setPayoutStatus(payoutResult.value);
+      if (bookingsResult.status === "fulfilled") setHostBookings(bookingsResult.value.hostBookings ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load listings");
     } finally {
@@ -348,7 +349,7 @@ export function ListingsScreen({ navigation }: Props) {
 
       {/* Nav bar */}
       <View style={[styles.navBar, { paddingTop: insets.top + 10 }]}>
-        <Pressable style={styles.backBtn} onPress={goBack}>
+        <Pressable style={styles.backBtn} onPress={goBack} accessibilityLabel="Go back">
           <ArrowLeft size={22} color={FG} />
         </Pressable>
         <View style={styles.navCenter}>

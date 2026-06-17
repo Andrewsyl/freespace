@@ -40,6 +40,7 @@ export function ListingIntroScreen({ navigation }: Props) {
           style={styles.closeBtn}
           onPress={() => navigation.goBack()}
           hitSlop={8}
+          accessibilityLabel="Close"
         >
           <X size={17} color={hostFlowColors.text} strokeWidth={2.2} />
         </Pressable>

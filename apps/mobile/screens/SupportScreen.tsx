@@ -54,7 +54,7 @@ export function SupportScreen({ navigation, route }: Props) {
           keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
         >
           <View style={styles.navBar}>
-            <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
               <ArrowLeft size={22} color="#111827" />
             </Pressable>
             <Text style={styles.navTitle}>Contact us</Text>

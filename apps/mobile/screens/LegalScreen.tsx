@@ -41,7 +41,7 @@ export function LegalScreen({ navigation }: Props) {
 
       {/* Nav bar */}
       <View style={styles.navBar}>
-        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
           <ArrowLeft size={22} color="#111827" />
         </Pressable>
         <Text style={styles.navTitle}>Terms & privacy</Text>
