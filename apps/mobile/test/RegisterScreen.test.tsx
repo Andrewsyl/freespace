@@ -20,33 +20,37 @@ function renderScreen() {
   return render(<RegisterScreen navigation={navigation as any} route={route as any} />);
 }
 
-async function getReady() {
-  const screen = renderScreen();
-  const user = userEvent.setup({ delay: null as unknown as number });
-  await waitFor(() => screen.getByTestId("register-btn"));
-  return { ...screen, user };
-}
-
 describe("RegisterScreen", () => {
+  // userEvent waits real time for press/type durations, which blows the
+  // 5s Jest budget on slower CI runners. Fake timers let userEvent advance
+  // them programmatically — the pattern RNTL recommends for user-event.
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it("shows an error when first name is missing", async () => {
-    const { getByText, getByTestId, user } = await getReady();
+    const user = userEvent.setup();
+    const { getByText, getByTestId } = renderScreen();
     await user.press(getByTestId("register-btn"));
     await waitFor(() => expect(getByText("Enter your first name.")).toBeTruthy());
   });
 
   it("shows an error when last name is missing", async () => {
-    const { getByText, getByPlaceholderText, getByTestId, user } = await getReady();
+    const user = userEvent.setup();
+    const { getByText, getByPlaceholderText, getByTestId } = renderScreen();
     await user.type(getByPlaceholderText("John"), "Jane");
     await user.press(getByTestId("register-btn"));
     await waitFor(() => expect(getByText("Enter your last name.")).toBeTruthy());
   });
 
   it("shows an error when terms are not accepted", async () => {
-    const { getByText, getByPlaceholderText, getByTestId, user } = await getReady();
+    const user = userEvent.setup();
+    const { getByText, getByPlaceholderText, getByTestId } = renderScreen();
     await user.type(getByPlaceholderText("John"), "Jane");
     await user.type(getByPlaceholderText("Smith"), "Doe");
     await user.press(getByTestId("register-btn"));
@@ -56,7 +60,8 @@ describe("RegisterScreen", () => {
   });
 
   it("shows an error for an invalid email address", async () => {
-    const { getByText, getByPlaceholderText, getByTestId, user } = await getReady();
+    const user = userEvent.setup();
+    const { getByText, getByPlaceholderText, getByTestId } = renderScreen();
     await user.type(getByPlaceholderText("John"), "Jane");
     await user.type(getByPlaceholderText("Smith"), "Doe");
     await user.press(getByTestId("terms-checkbox"));
@@ -66,7 +71,8 @@ describe("RegisterScreen", () => {
   });
 
   it("shows an error when the password is too short", async () => {
-    const { getByText, getByPlaceholderText, getAllByPlaceholderText, getByTestId, user } = await getReady();
+    const user = userEvent.setup();
+    const { getByText, getByPlaceholderText, getAllByPlaceholderText, getByTestId } = renderScreen();
     await user.type(getByPlaceholderText("John"), "Jane");
     await user.type(getByPlaceholderText("Smith"), "Doe");
     await user.press(getByTestId("terms-checkbox"));
@@ -80,7 +86,8 @@ describe("RegisterScreen", () => {
   });
 
   it("shows an error when passwords do not match", async () => {
-    const { getByText, getByPlaceholderText, getAllByPlaceholderText, getByTestId, user } = await getReady();
+    const user = userEvent.setup();
+    const { getByText, getByPlaceholderText, getAllByPlaceholderText, getByTestId } = renderScreen();
     await user.type(getByPlaceholderText("John"), "Jane");
     await user.type(getByPlaceholderText("Smith"), "Doe");
     await user.press(getByTestId("terms-checkbox"));
@@ -97,7 +104,8 @@ describe("RegisterScreen", () => {
       user: { termsVersion: "2026-01-10", privacyVersion: "2026-01-10" },
     });
 
-    const { getByPlaceholderText, getAllByPlaceholderText, getByTestId, user } = await getReady();
+    const user = userEvent.setup();
+    const { getByPlaceholderText, getAllByPlaceholderText, getByTestId } = renderScreen();
     await user.type(getByPlaceholderText("John"), "Jane");
     await user.type(getByPlaceholderText("Smith"), "Doe");
     await user.press(getByTestId("terms-checkbox"));
@@ -118,7 +126,8 @@ describe("RegisterScreen", () => {
   it("shows the API error and clears password fields on failure", async () => {
     mockRegister.mockRejectedValue(new Error("Email already in use"));
 
-    const { getByText, getByPlaceholderText, getAllByPlaceholderText, getByTestId, user } = await getReady();
+    const user = userEvent.setup();
+    const { getByText, getByPlaceholderText, getAllByPlaceholderText, getByTestId } = renderScreen();
     await user.type(getByPlaceholderText("John"), "Jane");
     await user.type(getByPlaceholderText("Smith"), "Doe");
     await user.press(getByTestId("terms-checkbox"));
