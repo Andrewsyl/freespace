@@ -52,7 +52,7 @@ describe("SearchScreen", () => {
     const { getByTestId, getByPlaceholderText } = render(
       <GlobalLoadingProvider><SearchScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider>
     );
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null as unknown as number });
 
     await user.press(getByTestId("search-bar"));
     expect(getByPlaceholderText("Area, address or landmark")).toBeTruthy();

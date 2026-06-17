@@ -27,14 +27,14 @@ describe("RegisterScreen", () => {
 
   it("shows an error when first name is missing", async () => {
     const { getByText, getByTestId } = renderScreen();
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null as unknown as number });
     await user.press(getByTestId("register-btn"));
     await waitFor(() => expect(getByText("Enter your first name.")).toBeTruthy());
   });
 
   it("shows an error when last name is missing", async () => {
     const { getByText, getByPlaceholderText, getByTestId } = renderScreen();
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null as unknown as number });
     await user.type(getByPlaceholderText("John"), "Jane");
     await user.press(getByTestId("register-btn"));
     await waitFor(() => expect(getByText("Enter your last name.")).toBeTruthy());
@@ -42,7 +42,7 @@ describe("RegisterScreen", () => {
 
   it("shows an error when terms are not accepted", async () => {
     const { getByText, getByPlaceholderText, getByTestId } = renderScreen();
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null as unknown as number });
     await user.type(getByPlaceholderText("John"), "Jane");
     await user.type(getByPlaceholderText("Smith"), "Doe");
     await user.press(getByTestId("register-btn"));
@@ -53,7 +53,7 @@ describe("RegisterScreen", () => {
 
   it("shows an error for an invalid email address", async () => {
     const { getByText, getByPlaceholderText, getByTestId } = renderScreen();
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null as unknown as number });
     await user.type(getByPlaceholderText("John"), "Jane");
     await user.type(getByPlaceholderText("Smith"), "Doe");
     await user.press(getByTestId("terms-checkbox"));
@@ -64,7 +64,7 @@ describe("RegisterScreen", () => {
 
   it("shows an error when the password is too short", async () => {
     const { getByText, getByPlaceholderText, getAllByPlaceholderText, getByTestId } = renderScreen();
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null as unknown as number });
     await user.type(getByPlaceholderText("John"), "Jane");
     await user.type(getByPlaceholderText("Smith"), "Doe");
     await user.press(getByTestId("terms-checkbox"));
@@ -79,7 +79,7 @@ describe("RegisterScreen", () => {
 
   it("shows an error when passwords do not match", async () => {
     const { getByText, getByPlaceholderText, getAllByPlaceholderText, getByTestId } = renderScreen();
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null as unknown as number });
     await user.type(getByPlaceholderText("John"), "Jane");
     await user.type(getByPlaceholderText("Smith"), "Doe");
     await user.press(getByTestId("terms-checkbox"));
@@ -97,7 +97,7 @@ describe("RegisterScreen", () => {
     });
 
     const { getByText, getByPlaceholderText, getAllByPlaceholderText, getByTestId } = renderScreen();
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null as unknown as number });
     await user.type(getByPlaceholderText("John"), "Jane");
     await user.type(getByPlaceholderText("Smith"), "Doe");
     await user.press(getByTestId("terms-checkbox"));
@@ -119,7 +119,7 @@ describe("RegisterScreen", () => {
     mockRegister.mockRejectedValue(new Error("Email already in use"));
 
     const { getByText, getByPlaceholderText, getAllByPlaceholderText, getByTestId } = renderScreen();
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null as unknown as number });
     await user.type(getByPlaceholderText("John"), "Jane");
     await user.type(getByPlaceholderText("Smith"), "Doe");
     await user.press(getByTestId("terms-checkbox"));

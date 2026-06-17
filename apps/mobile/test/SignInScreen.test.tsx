@@ -43,7 +43,7 @@ describe("SignInScreen", () => {
         <SignInScreen navigation={navigation as any} route={route as any} />
       </GlobalToastProvider>
     );
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null as unknown as number });
 
     await user.type(getByPlaceholderText("you@example.com"), "invalid");
     await user.type(getByPlaceholderText("••••••••"), "123456");

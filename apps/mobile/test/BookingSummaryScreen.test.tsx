@@ -84,7 +84,7 @@ describe("BookingSummaryScreen", () => {
     const { getByText } = render(
       <GlobalToastProvider><GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider></GlobalToastProvider>
     );
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null as unknown as number });
 
     const payCta = await waitFor(() => getByText(/^Pay €\d+\.\d{2}$/i));
     await user.press(payCta);
@@ -99,7 +99,7 @@ describe("BookingSummaryScreen", () => {
     const { getByText, queryByText } = render(
       <GlobalToastProvider><GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider></GlobalToastProvider>
     );
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null as unknown as number });
 
     const payCta = await waitFor(() => getByText(/^Pay €\d+\.\d{2}$/i));
     await user.press(payCta);
@@ -116,7 +116,7 @@ describe("BookingSummaryScreen", () => {
     const { getByText, findByText } = render(
       <GlobalToastProvider><GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider></GlobalToastProvider>
     );
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null as unknown as number });
 
     const payCta = await waitFor(() => getByText(/^Pay €\d+\.\d{2}$/i));
     await user.press(payCta);
@@ -131,7 +131,7 @@ describe("BookingSummaryScreen", () => {
     const { getByText, findByText } = render(
       <GlobalToastProvider><GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider></GlobalToastProvider>
     );
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null as unknown as number });
 
     const payCta = await waitFor(() => getByText(/^Pay €\d+\.\d{2}$/i));
     await user.press(payCta);
