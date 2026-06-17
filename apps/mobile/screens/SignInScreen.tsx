@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -9,28 +8,22 @@ import {
   Text,
   View,
 } from "react-native";
-import { SquircleBtn } from "../components/SquircleBtn";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
-import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { useAuth } from "../auth";
 import { requestEmailVerification } from "../api";
 import type { AuthReturnTo, RootStackParamList } from "../types";
-import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
+import { Button, TextInput as AppTextInput } from "../components/ui";
 import { colors, spacing, textStyles } from "../styles/theme";
-import { trackEvent } from "../analytics";
-import { logInfo, logWarn } from "../logger";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
 const AUTH_GREEN = "#0a8050";
 
 export function SignInScreen({ navigation, route }: Props) {
-  const { login, loginWithOAuth } = useAuth();
+  const { login } = useAuth();
   const returnTo = route.params?.returnTo;
-  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
-  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
 
   const navigateAfterAuth = (dest?: AuthReturnTo) => {
     if (dest) {
@@ -62,13 +55,6 @@ export function SignInScreen({ navigation, route }: Props) {
     !candidate.termsVersion || !candidate.privacyVersion;
 
   useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: Platform.OS === "android" ? googleWebClientId || undefined : undefined,
-      iosClientId: Platform.OS === "ios" ? googleIosClientId || undefined : undefined,
-    });
-  }, [googleWebClientId, googleIosClientId]);
-
-  useEffect(() => {
     if (resendCooldown <= 0) return;
     const timer = setTimeout(() => setResendCooldown((value) => value - 1), 1000);
     return () => clearTimeout(timer);
@@ -79,37 +65,6 @@ export function SignInScreen({ navigation, route }: Props) {
       if (successTimerRef.current) clearTimeout(successTimerRef.current);
     };
   }, []);
-
-  const handleGoogleSignIn = async () => {
-    setError(null);
-    setSubmitting(true);
-    try {
-      logInfo("Google sign-in starting", { screen: "SignIn" });
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      const signInResult = await GoogleSignin.signIn();
-      if (signInResult.type !== "success") return;
-      let idToken: string | null = signInResult.data.idToken ?? null;
-      if (!idToken) {
-        try {
-          const tokens = await GoogleSignin.getTokens();
-          idToken = tokens.idToken ?? null;
-        } catch {
-          idToken = null;
-        }
-      }
-      if (!idToken) return;
-      await loginWithOAuth("google", idToken);
-      void trackEvent("mobile_login_succeeded", { method: "google" });
-    } catch (err) {
-      const errorCode = err && typeof err === "object" && "code" in err ? String(err.code) : "";
-      if (errorCode === statusCodes.SIGN_IN_CANCELLED) return;
-      const message = err instanceof Error ? err.message : "Google sign-in failed";
-      logWarn("Google sign-in failed", { screen: "SignIn", code: errorCode || null, message });
-      setError(errorCode ? `${message} (${errorCode})` : message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const handleLogin = async () => {
     const trimmed = email.trim();
@@ -177,117 +132,99 @@ export function SignInScreen({ navigation, route }: Props) {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
+        <View style={styles.navBar}>
+          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
+            <Ionicons name="arrow-back" size={22} color="#111827" />
+          </Pressable>
+        </View>
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.header}>
-            <BackButton onPress={() => navigation.goBack()} />
+          <View style={styles.iconBadge}>
+            <Ionicons name="person-outline" size={24} color={AUTH_GREEN} />
+          </View>
+          <Text style={styles.title}>Log in</Text>
+          <Text style={styles.subtitle}>Welcome back. Sign in to your account.</Text>
+
+          <View
+            style={styles.inputGroup}
+            onLayout={(event) => { emailFieldY.current = event.nativeEvent.layout.y; }}
+          >
+            <Text style={styles.inputLabel}>Email</Text>
+            <AppTextInput
+              containerStyle={styles.inputContainer}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholder="you@example.com"
+              onFocus={() => scrollToField(emailFieldY.current)}
+            />
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Log in</Text>
-
-            {/* Google */}
-            <SquircleBtn
-              label="Continue with Google"
-              onPress={handleGoogleSignIn}
-              disabled={submitting}
-              loading={submitting}
-              icon={<Ionicons name="logo-google" size={18} color="#fff" />}
-              fullWidth
-              style={{ marginBottom: 18 }}
+          <View
+            style={styles.inputGroup}
+            onLayout={(event) => { passwordFieldY.current = event.nativeEvent.layout.y; }}
+          >
+            <Text style={styles.inputLabel}>Password</Text>
+            <AppTextInput
+              containerStyle={styles.inputContainer}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              placeholder="••••••••"
+              onFocus={() => scrollToField(passwordFieldY.current)}
             />
-
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <View
-              style={styles.inputGroup}
-              onLayout={(event) => {
-                emailFieldY.current = event.nativeEvent.layout.y;
-              }}
-            >
-              <Text style={styles.inputLabel}>Email</Text>
-              <AppTextInput
-                containerStyle={styles.inputContainer}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                placeholder="you@example.com"
-                onFocus={() => scrollToField(emailFieldY.current)}
-              />
-            </View>
-
-            <View
-              style={styles.inputGroup}
-              onLayout={(event) => {
-                passwordFieldY.current = event.nativeEvent.layout.y;
-              }}
-            >
-              <Text style={styles.inputLabel}>Password</Text>
-              <AppTextInput
-                containerStyle={styles.inputContainer}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                placeholder="••••••••"
-                onFocus={() => scrollToField(passwordFieldY.current)}
-              />
-            </View>
-
-            <Pressable style={styles.forgotRow} onPress={() => navigation.navigate("ResetPassword")}>
-              <Text style={styles.forgotText}>Forgot password?</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.checkboxRow}
-              onPress={() => setAcceptLegalChecked((value) => !value)}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: acceptLegalChecked }}
-            >
-              <MaterialIcons
-                name={acceptLegalChecked ? "check-box" : "check-box-outline-blank"}
-                size={20}
-                color={acceptLegalChecked ? AUTH_GREEN : colors.textSoft}
-              />
-              <Text style={styles.checkboxText}>
-                I agree to{" "}
-                <Text style={styles.link} onPress={() => navigation.navigate("Legal")}>
-                  Terms & Privacy
-                </Text>
-                .
-              </Text>
-            </Pressable>
-
-            <Button
-              style={styles.primaryButton}
-              onPress={handleLogin}
-              disabled={submitting}
-              loading={submitting}
-              title={submitting ? "Signing in..." : "Sign In"}
-              testID="sign-in-button"
-            />
-
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-            {notice ? <Text style={styles.noticeText}>{notice}</Text> : null}
-            <Pressable
-              style={styles.linkButton}
-              onPress={handleResend}
-              disabled={submitting || resendCooldown > 0}
-            >
-              <Text style={styles.linkButtonText}>
-                {resendCooldown > 0
-                  ? `Resend available in ${resendCooldown}s`
-                  : "Resend verification email"}
-              </Text>
-            </Pressable>
           </View>
+
+          <Pressable style={styles.forgotRow} onPress={() => navigation.navigate("ResetPassword")}>
+            <Text style={styles.forgotText}>Forgot password?</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.checkboxRow}
+            onPress={() => setAcceptLegalChecked((value) => !value)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: acceptLegalChecked }}
+          >
+            <MaterialIcons
+              name={acceptLegalChecked ? "check-box" : "check-box-outline-blank"}
+              size={20}
+              color={acceptLegalChecked ? AUTH_GREEN : colors.textSoft}
+            />
+            <Text style={styles.checkboxText}>
+              I agree to{" "}
+              <Text style={styles.link} onPress={() => navigation.navigate("Legal")}>
+                Terms & Privacy
+              </Text>
+              .
+            </Text>
+          </Pressable>
+
+          <Button
+            style={styles.primaryButton}
+            onPress={handleLogin}
+            disabled={submitting}
+            loading={submitting}
+            title={submitting ? "Signing in..." : "Sign In"}
+            testID="sign-in-button"
+          />
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {notice ? <Text style={styles.noticeText}>{notice}</Text> : null}
+          <Pressable
+            style={styles.linkButton}
+            onPress={handleResend}
+            disabled={submitting || resendCooldown > 0}
+          >
+            <Text style={styles.linkButtonText}>
+              {resendCooldown > 0
+                ? `Resend available in ${resendCooldown}s`
+                : "Resend verification email"}
+            </Text>
+          </Pressable>
         </ScrollView>
 
         {authSuccess ? (
@@ -308,48 +245,54 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.appBg,
   },
-  content: {
-    flexGrow: 1,
-    paddingBottom: spacing.lg,
-  },
-  header: {
-    paddingHorizontal: spacing.screenX,
-    paddingTop: spacing.lg,
-    paddingBottom: 4,
-  },
-  card: {
-    flex: 1,
-    backgroundColor: colors.appBg,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  cardTitle: {
-    ...textStyles.sectionTitle,
-    marginBottom: spacing.md,
-  },
-  dividerRow: {
+  navBar: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  backBtn: {
+    padding: 6,
+    marginLeft: -6,
+  },
+  content: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.screenX,
+    paddingBottom: 32,
+    paddingTop: 8,
+  },
+  iconBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: "#edf7f2",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 18,
   },
-  dividerLine: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
+  title: {
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 26,
+    letterSpacing: -0.6,
+    lineHeight: 36,
+    marginBottom: 8,
   },
-  dividerText: {
-    color: colors.textSoft,
+  subtitle: {
+    color: colors.textMuted,
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
+    fontSize: 14.5,
+    lineHeight: 21,
+    marginBottom: 26,
   },
   inputGroup: {
-    marginBottom: spacing.sm,
+    marginBottom: 16,
   },
   inputLabel: {
-    ...textStyles.meta,
-    color: colors.textSoft,
-    marginBottom: 6,
+    color: colors.textMuted,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12.5,
+    marginBottom: 7,
   },
   inputContainer: {
     marginBottom: 0,
@@ -360,7 +303,8 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   forgotText: {
-    ...textStyles.meta,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
     color: AUTH_GREEN,
   },
   checkboxRow: {
@@ -371,7 +315,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   checkboxText: {
-    ...textStyles.meta,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
     color: colors.textMuted,
     flex: 1,
   },
@@ -385,13 +330,15 @@ const styles = StyleSheet.create({
     borderColor: AUTH_GREEN,
   },
   errorText: {
-    ...textStyles.meta,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
     color: colors.danger,
     marginTop: spacing.xs,
     textAlign: "center",
   },
   noticeText: {
-    ...textStyles.meta,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
     color: AUTH_GREEN,
     marginTop: 6,
     textAlign: "center",
@@ -401,7 +348,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   linkButtonText: {
-    ...textStyles.meta,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
     color: AUTH_GREEN,
   },
   successOverlay: {

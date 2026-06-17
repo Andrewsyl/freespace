@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
   },
   timeSlotTime: {
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 26, color: FG, letterSpacing: -0.8, lineHeight: 30,
+    fontSize: 26, color: FG, letterSpacing: -0.8, lineHeight: 36,
   },
   timeSlotDate: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: MUTED, marginTop: 2 },
   timeArrow: { alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 8 },

@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-ExtraBold",
     fontSize: 26,
     letterSpacing: -0.6,
-    lineHeight: 31,
+    lineHeight: 36,
     marginBottom: 8,
   },
   subtitle: {

@@ -64,9 +64,14 @@ remote_cmd=$(cat <<EOF
 set -euo pipefail
 cd "$LIGHTSAIL_REPO_DIR"
 [ -f .env ] || { echo "Missing .env on Lightsail host"; exit 1; }
-set -a
-. ./.env
-set +a
+while IFS= read -r _env_line || [ -n "\$_env_line" ]; do
+  case "\$_env_line" in '#'*|'') continue ;; esac
+  _env_key="\${_env_line%%=*}"
+  _env_val="\${_env_line#*=}"
+  [ "\$_env_key" = "\$_env_line" ] && continue
+  export "\$_env_key=\$_env_val"
+done < .env
+unset _env_line _env_key _env_val
 $remote_tag_var="$DEPLOY_TAG" ./make-env.sh
 ./deploy.sh
 EOF
