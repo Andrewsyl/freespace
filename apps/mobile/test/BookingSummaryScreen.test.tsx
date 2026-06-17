@@ -1,6 +1,18 @@
 import { render, userEvent, waitFor } from "@testing-library/react-native";
 import { BookingSummaryScreen } from "../screens/BookingSummaryScreen";
 import { GlobalLoadingProvider } from "../components/GlobalLoading";
+import { GlobalToastProvider } from "../components/GlobalToast";
+
+const mockInitPaymentSheet = jest.fn();
+const mockPresentPaymentSheet = jest.fn();
+
+jest.mock("@stripe/stripe-react-native", () => ({
+  useStripe: () => ({
+    initPaymentSheet: mockInitPaymentSheet,
+    presentPaymentSheet: mockPresentPaymentSheet,
+  }),
+  StripeProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 jest.mock("../auth", () => ({
   useAuth: () => ({
@@ -54,9 +66,15 @@ const route = {
 };
 
 describe("BookingSummaryScreen", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockInitPaymentSheet.mockResolvedValue({});
+    mockPresentPaymentSheet.mockResolvedValue({});
+  });
+
   it("renders the booking summary header", async () => {
     const { getByText } = render(
-      <GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider>
+      <GlobalToastProvider><GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider></GlobalToastProvider>
     );
 
     await waitFor(() => expect(getByText("Confirm booking")).toBeTruthy());
@@ -64,7 +82,7 @@ describe("BookingSummaryScreen", () => {
 
   it("starts payment when tapping the pay button", async () => {
     const { getByText } = render(
-      <GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider>
+      <GlobalToastProvider><GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider></GlobalToastProvider>
     );
     const user = userEvent.setup();
 
@@ -73,5 +91,51 @@ describe("BookingSummaryScreen", () => {
 
     const api = require("../api");
     await waitFor(() => expect(api.createBookingPaymentIntent).toHaveBeenCalled());
+  });
+
+  it("does not show an error when the user silently cancels the payment sheet", async () => {
+    mockPresentPaymentSheet.mockResolvedValue({ error: { code: "Canceled" } });
+
+    const { getByText, queryByText } = render(
+      <GlobalToastProvider><GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider></GlobalToastProvider>
+    );
+    const user = userEvent.setup();
+
+    const payCta = await waitFor(() => getByText(/^Pay €\d+\.\d{2}$/i));
+    await user.press(payCta);
+
+    await waitFor(() => expect(mockPresentPaymentSheet).toHaveBeenCalled());
+    expect(queryByText(/declined|failed|error/i)).toBeNull();
+  });
+
+  it("shows an error message when Stripe returns a payment failure", async () => {
+    mockPresentPaymentSheet.mockResolvedValue({
+      error: { code: "Failed", message: "Your card was declined." },
+    });
+
+    const { getByText, findByText } = render(
+      <GlobalToastProvider><GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider></GlobalToastProvider>
+    );
+    const user = userEvent.setup();
+
+    const payCta = await waitFor(() => getByText(/^Pay €\d+\.\d{2}$/i));
+    await user.press(payCta);
+
+    expect(await findByText(/Payment failed\. Try again\./i)).toBeTruthy();
+  });
+
+  it("shows an error when payment intent creation fails", async () => {
+    const api = require("../api");
+    api.createBookingPaymentIntent.mockRejectedValueOnce(new Error("Service unavailable"));
+
+    const { getByText, findByText } = render(
+      <GlobalToastProvider><GlobalLoadingProvider><BookingSummaryScreen navigation={navigation as any} route={route as any} /></GlobalLoadingProvider></GlobalToastProvider>
+    );
+    const user = userEvent.setup();
+
+    const payCta = await waitFor(() => getByText(/^Pay €\d+\.\d{2}$/i));
+    await user.press(payCta);
+
+    expect(await findByText(/Service unavailable/i)).toBeTruthy();
   });
 });

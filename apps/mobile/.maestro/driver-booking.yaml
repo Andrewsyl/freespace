@@ -2,9 +2,24 @@ appId: ie.freespace.app.dev
 ---
 - launchApp
 - openLink: "carparking://e2e?scenario=driver-booking"
+
+# Listing screen → confirm booking
 - assertVisible: "Book Now"
 - tapOn: "Book Now"
 - assertVisible: "Review booking"
+- assertVisible:
+    text: "Pay"
+    enabled: true
+
+# Confirm payment (test mode bypasses Stripe UI)
 - tapOn: "Book Now"
 - assertVisible: "Booking confirmed!"
 - assertVisible: "My bookings"
+
+# Navigate to bookings history and verify the new booking appears
+- tapOn: "My bookings"
+- assertVisible: "Mountjoy Square secure parking"
+
+# Verify booking detail is accessible
+- tapOn: "Mountjoy Square secure parking"
+- assertVisible: "Active"

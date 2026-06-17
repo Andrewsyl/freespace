@@ -464,4 +464,109 @@ describe("bookings routes", () => {
     expect(response.status).toBe(409);
     expect(response.body.message).toBe("Booking already canceled");
   });
+
+  it("confirms a booking when payment_intent.succeeded webhook fires for a valid booking", async () => {
+    // Call 1: booking lookup by payment_intent_id
+    // Call 2: hasBookingOverlap — booked_count 0 < capacity 1 = no conflict
+    // Call 3+: getBookingNotificationTargetsByPaymentIntent — empty rows → null → skip notifications
+    db.poolQuery
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            id: "booking-1",
+            listing_id: "11111111-1111-4111-8111-111111111111",
+            start_time: new Date("2026-03-20T10:00:00.000Z"),
+            end_time: new Date("2026-03-20T12:00:00.000Z"),
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ booked_count: "0", capacity: "1" }] })
+      .mockResolvedValue({ rowCount: 0, rows: [] });
+
+    stripeMocks.webhooksConstructEvent.mockReturnValue({
+      type: "payment_intent.succeeded",
+      data: { object: { id: "pi_123" } },
+    });
+
+    const { createApp } = await import("../src/app.js");
+    const app = createApp();
+
+    const response = await request(app)
+      .post("/api/bookings/webhook")
+      .set("stripe-signature", "sig_test")
+      .set("Content-Type", "application/json")
+      .send(JSON.stringify({ id: "evt_123" }));
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ received: true });
+    expect(db.updateBookingStatusByPaymentIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ paymentIntentId: "pi_123", status: "confirmed" })
+    );
+    expect(db.insertEventLog).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: "booking_confirmed" })
+    );
+  });
+
+  it("cancels the booking when payment_intent.payment_failed webhook fires", async () => {
+    db.poolQuery.mockResolvedValue({ rowCount: 0, rows: [] });
+    stripeMocks.webhooksConstructEvent.mockReturnValue({
+      type: "payment_intent.payment_failed",
+      data: { object: { id: "pi_456" } },
+    });
+
+    const { createApp } = await import("../src/app.js");
+    const app = createApp();
+
+    const response = await request(app)
+      .post("/api/bookings/webhook")
+      .set("stripe-signature", "sig_test")
+      .set("Content-Type", "application/json")
+      .send(JSON.stringify({ id: "evt_456" }));
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ received: true });
+    expect(db.updateBookingStatusByPaymentIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ paymentIntentId: "pi_456", status: "canceled" })
+    );
+  });
+
+  it("confirms a booking via the mobile /confirm endpoint", async () => {
+    db.poolQuery
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            id: "booking-1",
+            listing_id: "11111111-1111-4111-8111-111111111111",
+            start_time: new Date("2026-03-20T10:00:00.000Z"),
+            end_time: new Date("2026-03-20T12:00:00.000Z"),
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ booked_count: "0", capacity: "1" }] })
+      .mockResolvedValue({ rowCount: 0, rows: [] });
+
+    stripeMocks.paymentIntentsRetrieve.mockResolvedValue({
+      status: "succeeded",
+      charges: { data: [{ receipt_url: "https://receipt.test/1" }] },
+    });
+    db.getBookingByPaymentIntent.mockResolvedValue({ id: "booking-1", status: "pending" });
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    const token = signToken({ userId: "user-1", email: "driver@example.com", role: "driver" });
+
+    const response = await request(app)
+      .post("/api/bookings/confirm")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ paymentIntentId: "pi_123" });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true });
+    expect(db.updateBookingStatusByPaymentIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ paymentIntentId: "pi_123", status: "confirmed" })
+    );
+  });
 });

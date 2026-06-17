@@ -1,0 +1,61 @@
+name: Production Smoke Test
+
+on:
+  schedule:
+    # Every 30 minutes
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    name: Live API health
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check API health endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://freespace.ie/api/health)
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::API health check failed — got HTTP $STATUS"
+            exit 1
+          fi
+
+      - name: Check web home page
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://freespace.ie/)
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::Web home page returned HTTP $STATUS"
+            exit 1
+          fi
+
+  api-unit-tests:
+    name: API unit tests
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      JWT_SECRET: test-jwt-secret-123456
+      DATABASE_URL: postgres://test:test@localhost:5432/test
+      WEB_BASE_URL: http://localhost:3000
+      STRIPE_SECRET_KEY: sk_test_smoke
+      STRIPE_WEBHOOK_SECRET: whsec_smoke
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      - name: Force public npm registry
+        run: |
+          printf 'registry=https://registry.npmjs.org/\n' > ~/.npmrc
+          printf 'registry "https://registry.npmjs.org"\n' > ~/.yarnrc
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --no-default-rc --registry https://registry.npmjs.org
+
+      - name: Run API tests
+        run: npm --workspace apps/api run test
