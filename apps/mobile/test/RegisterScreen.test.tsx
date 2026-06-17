@@ -21,16 +21,8 @@ function renderScreen() {
 }
 
 describe("RegisterScreen", () => {
-  // userEvent waits real time for press/type durations, which blows the
-  // 5s Jest budget on slower CI runners. Fake timers let userEvent advance
-  // them programmatically — the pattern RNTL recommends for user-event.
   beforeEach(() => {
-    jest.useFakeTimers();
     jest.clearAllMocks();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
   });
 
   it("shows an error when first name is missing", async () => {

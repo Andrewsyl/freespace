@@ -1,7 +1,24 @@
 import "@testing-library/jest-native/extend-expect";
+import { Animated } from "react-native";
 
 process.env.EXPO_PUBLIC_API_BASE ??= "http://127.0.0.1:4000";
 process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ??= "pk_test_mock";
+
+// Neutralize Animated.spring in tests. Our Button fires native-driver springs
+// on pressIn/pressOut (with no completion callback). When userEvent drives the
+// full TouchableOpacity press sequence, those springs race the act() environment
+// and hang the press to the Jest timeout on slower CI runners (passes locally).
+// We only override spring — timing is left intact because its completion
+// callbacks drive state and must run normally.
+const noopAnimation = () =>
+  ({
+    start: (callback?: (result: { finished: boolean }) => void) =>
+      callback?.({ finished: true }),
+    stop: () => {},
+    reset: () => {},
+  }) as unknown as Animated.CompositeAnimation;
+
+jest.spyOn(Animated, "spring").mockImplementation(noopAnimation as never);
 
 jest.mock(
   "react-native/Libraries/Animated/NativeAnimatedHelper",
