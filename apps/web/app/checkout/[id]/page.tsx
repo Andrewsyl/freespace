@@ -169,8 +169,9 @@ export default function CheckoutPage() {
       <CheckoutNav />
 
       <form id="checkout-form" onSubmit={handleSubmit}>
-        <div className="mx-auto max-w-6xl px-6 py-10">
-          <div className="flex items-start gap-8">
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
+          {/* Stacks on mobile (summary on top), two columns from lg up. */}
+          <div className="flex flex-col-reverse gap-5 lg:flex-row lg:items-start lg:gap-8">
 
             {/* ── Left column ── */}
             <div className="min-w-0 flex-1 space-y-4">
@@ -299,8 +300,8 @@ export default function CheckoutPage() {
             </div>
 
             {/* ── Right column — sticky order summary ── */}
-            <div className="w-[400px] shrink-0">
-              <div className="sticky top-8 rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="w-full lg:w-[400px] lg:shrink-0">
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm lg:sticky lg:top-8">
 
                 {/* Listing header */}
                 <div className="border-b border-slate-100 px-6 py-5">

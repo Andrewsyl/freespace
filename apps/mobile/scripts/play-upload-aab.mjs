@@ -123,7 +123,7 @@ async function main() {
 
   if (!serviceAccountPath) {
     usageAndExit(
-      "Set GOOGLE_PLAY_SERVICE_ACCOUNT_JSON or GOOGLE_PLAY_SERVICE_ACCOUNT_KEY_PATH to a Play service-account JSON file."
+      "Set GOOGLE_PLAY_SERVICE_ACCOUNT_JSON, GOOGLE_PLAY_SERVICE_ACCOUNT_KEY_PATH, or place the file at credentials/google-play-service-account.json."
     );
   }
 

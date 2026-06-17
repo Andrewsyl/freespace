@@ -18,6 +18,8 @@ ARGS=(
 
 if [ -n "${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON:-${GOOGLE_PLAY_SERVICE_ACCOUNT_KEY_PATH:-}}" ]; then
   ARGS+=(--service-account-json "${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON:-${GOOGLE_PLAY_SERVICE_ACCOUNT_KEY_PATH:-}}")
+elif [ -f "$MOBILE_DIR/credentials/google-play-service-account.json" ]; then
+  ARGS+=(--service-account-json "$MOBILE_DIR/credentials/google-play-service-account.json")
 fi
 
 node "$SCRIPT_DIR/play-upload-aab.mjs" "${ARGS[@]}"

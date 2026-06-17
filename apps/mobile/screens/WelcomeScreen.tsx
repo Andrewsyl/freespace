@@ -146,6 +146,14 @@ export function WelcomeScreen({ navigation, route }: Props) {
         </TouchableOpacity>
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+        <Text style={styles.legalText}>
+          By continuing, you agree to our{" "}
+          <Text style={styles.legalLink} onPress={() => navigation.navigate("Legal")}>
+            Terms &amp; Privacy
+          </Text>
+          .
+        </Text>
       </View>
     </SafeAreaView>
   );
@@ -216,5 +224,18 @@ const styles = StyleSheet.create({
     color: "#D14343",
     textAlign: "center",
     maxWidth: 360,
+  },
+  legalText: {
+    marginTop: 22,
+    maxWidth: 320,
+    textAlign: "center",
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#6B7280",
+  },
+  legalLink: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    color: "#0a8050",
   },
 });

@@ -60,13 +60,13 @@ export function LoginForm({
   return (
     <div className="mx-auto w-full max-w-sm">
       {/* Logo + heading */}
-      <div className="mb-8 text-center">
+      <div className="mb-7 text-center">
         <img
           src="/freespace-logo-grid-black.png"
           alt="FreeSpace"
-          className="mx-auto mb-6 h-10 w-auto mix-blend-multiply"
+          className="mx-auto mb-5 h-9 w-auto mix-blend-multiply"
         />
-        <h1 className="text-[28px] font-bold tracking-tight text-slate-900">Welcome back</h1>
+        <h1 className="text-[24px] font-bold tracking-[-0.02em] text-slate-900">Welcome back</h1>
         <p className="mt-1.5 text-[15px] text-slate-600">Sign in to your account</p>
       </div>
 
@@ -93,18 +93,19 @@ export function LoginForm({
         <button
           type="button"
           onClick={() => setShowEmailForm(true)}
-          className="flex h-12 w-full items-center justify-center rounded-full border border-slate-200 bg-white text-[15px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+          className="flex h-12 w-full items-center justify-center rounded-xl border border-slate-200 bg-white text-[15px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
         >
           Continue with email
         </button>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <TextField
             required
             type="email"
             label="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            inputClassName="h-12 rounded-xl"
           />
           <TextField
             required
@@ -112,15 +113,16 @@ export function LoginForm({
             label="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            inputClassName="h-12 rounded-xl"
           />
           <div className="text-right">
-            <Link href="/reset-password" onClick={onNavigate} className="text-sm font-semibold text-brand-700">
+            <Link href="/reset-password" onClick={onNavigate} className="text-[13px] font-semibold text-brand-700">
               Forgot password?
             </Link>
           </div>
           <button
             type="submit"
-            className="flex h-12 w-full items-center justify-center rounded-full bg-brand-500 text-[15px] font-bold text-white shadow-sm transition hover:bg-brand-600 disabled:opacity-50"
+            className="flex h-12 w-full items-center justify-center rounded-xl bg-brand-500 text-[15px] font-bold text-white shadow-sm transition hover:bg-brand-600 active:scale-[0.99] disabled:opacity-50"
             disabled={loading}
           >
             {loading ? "Signing in…" : "Sign in"}

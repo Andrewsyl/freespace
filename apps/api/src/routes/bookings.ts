@@ -641,7 +641,9 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
       hostStripeAccountId: listingWithHost?.hostStripeAccountId ?? null,
       platformFeePercent: payload.platformFeePercent,
       successUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/booking/cancel?session_id={CHECKOUT_SESSION_ID}`,
+      // Dismissing Stripe Checkout isn't an error — send the user straight back
+      // to the booking page instead of an alarming "cancelled" screen.
+      cancelUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/checkout/${payload.listingId}`,
       driverId,
       userEmail: driver?.email ?? null,
       manualReview: settings.manualReview,

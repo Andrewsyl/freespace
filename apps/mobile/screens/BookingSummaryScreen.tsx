@@ -33,6 +33,7 @@ import {
   type PromoValidation,
 } from "../api";
 import { useAuth } from "../auth";
+import { googlePayConfig } from "../utils/googlePay";
 import { logError, logInfo, logWarn } from "../logger";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { useToastOnMessage } from "../components/GlobalToast";
@@ -395,6 +396,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         paymentIntentClientSecret: payment.paymentIntentClientSecret,
         allowsDelayedPaymentMethods: false,
         applePay: { merchantCountryCode: "IE" },
+        googlePay: googlePayConfig,
       });
       if (initResult.error) {
         logWarn("Payment sheet init failed", {
@@ -483,7 +485,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           }
         }
         if (presentResult.error.code === "Canceled") {
-          setPaymentFailureMessage("Payment canceled.");
+          // User dismissed the payment sheet — not an error. Stay silent; the
+          // pending booking was already cleaned up above.
           return;
         }
         setPaymentFailureMessage(
@@ -846,7 +849,13 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 <Ionicons name="refresh-outline" size={13} color={SUBTLE} />
                 <Text style={styles.reassuranceText}>Free cancellation up to 2 hours before arrival</Text>
               </View>
-              <Text style={styles.legalText}>By booking you agree to the FreeSpace terms and liability policy.</Text>
+              <Text style={styles.legalText}>
+                By booking you agree to the FreeSpace{" "}
+                <Text style={styles.legalLink} onPress={() => navigation.navigate("Legal")}>
+                  terms and liability policy
+                </Text>
+                .
+              </Text>
             </View>
 
           </ScrollView>
@@ -1266,6 +1275,7 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, flex: 1, lineHeight: 18,
   },
   legalText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: SUBTLE, lineHeight: 18 },
+  legalLink: { fontFamily: "PlusJakartaSans-SemiBold", color: "#0a8050" },
 
   // ── Sticky footer ───────────────────────────────────────────
   footerBar: {

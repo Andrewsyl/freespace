@@ -18,6 +18,7 @@ import DatePicker from "../components/AdaptiveDatePicker";
 import { useStripe } from "@stripe/stripe-react-native";
 import { cancelBooking, checkInBooking, confirmBookingExtension, createBookingExtensionIntent } from "../api";
 import { useAuth } from "../auth";
+import { googlePayConfig } from "../utils/googlePay";
 import {
   bookingReminderIds,
   cancelBookingReminders,
@@ -239,6 +240,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         paymentIntentClientSecret: result.paymentIntentClientSecret,
         allowsDelayedPaymentMethods: false,
         applePay: { merchantCountryCode: "IE" },
+        googlePay: googlePayConfig,
       });
       if (initResult.error) {
         setExtendError("We couldn't start the extension payment.");
@@ -247,11 +249,10 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 
       const presentResult = await presentPaymentSheet();
       if (presentResult.error) {
-        setExtendError(
-          presentResult.error.code === "Canceled"
-            ? "Extension canceled."
-            : presentResult.error.message ?? "Payment failed."
-        );
+        // Dismissing the payment sheet isn't an error — stay silent.
+        if (presentResult.error.code !== "Canceled") {
+          setExtendError(presentResult.error.message ?? "Payment failed.");
+        }
         return;
       }
 

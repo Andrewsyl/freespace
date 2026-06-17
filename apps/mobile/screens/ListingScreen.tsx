@@ -30,6 +30,7 @@ import { useFavorites } from "../favorites";
 import { LIGHT_MAP_STYLE } from "../components/mapStyles";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { Ionicons } from "@expo/vector-icons";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { formatDateLabel, formatDateTimeLabel, formatReviewDate, formatTimeLabel } from "../utils/dateFormat";
 import { calculateListingTotal, formatPriceValue, getListingRateType } from "../utils/pricing";
 import {
@@ -119,7 +120,7 @@ const avatarBg = (name: string) => AVATAR_BG[(name.charCodeAt(0) || 0) % AVATAR_
 
 export function ListingScreen({ navigation, route }: Props) {
   const { id, from, to, booking } = route.params;
-  const { user } = useAuth();
+  const { user, loginWithOAuth } = useAuth();
   const { isFavorite, toggle } = useFavorites();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -134,6 +135,7 @@ export function ListingScreen({ navigation, route }: Props) {
   const [viewerIndex, setViewerIndex] = useState(0);
   const [showMapViewer, setShowMapViewer] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [authOverlayVisible, setAuthOverlayVisible] = useState(false);
   const [reviews, setReviews] = useState<ListingReview[]>([]);
@@ -510,6 +512,64 @@ export function ListingScreen({ navigation, route }: Props) {
     closeAuthOverlay();
     const returnTo = { screen: "Listing" as const, params: { id, from: startAt.toISOString(), to: endAt.toISOString() } };
     setTimeout(() => navigation.navigate(screen, { returnTo }), 180);
+  };
+
+  const openLegal = () => {
+    closeAuthOverlay();
+    setTimeout(() => navigation.navigate("Legal"), 180);
+  };
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId:
+        Platform.OS === "android"
+          ? process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID || undefined
+          : undefined,
+      iosClientId:
+        Platform.OS === "ios"
+          ? process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || undefined
+          : undefined,
+    });
+  }, []);
+
+  // Fire the native Google sign-in straight from the sheet, then continue to
+  // booking — no detour through the Welcome screen.
+  const handleGoogleSignIn = async () => {
+    if (googleSubmitting) return;
+    setGoogleSubmitting(true);
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const signInResult = await GoogleSignin.signIn();
+      if (signInResult.type !== "success") return;
+      let idToken: string | null = signInResult.data.idToken ?? null;
+      if (!idToken) {
+        try {
+          const tokens = await GoogleSignin.getTokens();
+          idToken = tokens.idToken ?? null;
+        } catch {
+          idToken = null;
+        }
+      }
+      if (!idToken) return;
+      await loginWithOAuth("google", idToken);
+      void trackEvent("mobile_login_succeeded", { method: "google" });
+      closeAuthOverlay();
+      setTimeout(() => {
+        navigation.navigate("BookingSummary", {
+          id,
+          from: startAt.toISOString(),
+          to: endAt.toISOString(),
+        });
+      }, 180);
+    } catch (err) {
+      const errorCode =
+        err && typeof err === "object" && "code" in err ? String(err.code) : "";
+      if (errorCode === statusCodes.SIGN_IN_CANCELLED) return;
+      const message = err instanceof Error ? err.message : "Google sign-in failed";
+      Alert.alert("Google sign-in failed", message);
+    } finally {
+      setGoogleSubmitting(false);
+    }
   };
 
   return (
@@ -1003,32 +1063,66 @@ export function ListingScreen({ navigation, route }: Props) {
               },
             ]}
           >
-            <Text style={styles.authModalTitle}>Sign in to book</Text>
-            <Text style={styles.authModalBody}>Choose how you want to continue.</Text>
+            <View style={styles.authModalHandle} />
             <Pressable
-              style={styles.authModalPrimary}
-              onPress={() => {
-                openAuthScreen("Welcome");
-              }}
+              style={styles.authModalClose}
+              onPress={closeAuthOverlay}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              hitSlop={10}
             >
-              <Text style={styles.authModalPrimaryText}>Continue with Google</Text>
+              <Ionicons name="close" size={22} color="#9ca3af" />
+            </Pressable>
+            <Text style={styles.authModalTitle}>
+              <Text style={styles.authModalTitleAccent}>Log in </Text>
+              or create an account.
+            </Text>
+            <Text style={styles.authModalBody}>
+              You&apos;ll need an account to book this space and manage your reservations.
+            </Text>
+            <Pressable
+              style={styles.authModalOutlineBtn}
+              disabled={googleSubmitting}
+              onPress={handleGoogleSignIn}
+            >
+              {googleSubmitting ? (
+                <ActivityIndicator size="small" color={GREEN} />
+              ) : (
+                <>
+                  <Ionicons name="logo-google" size={20} color={GREEN} style={styles.authModalBtnIcon} />
+                  <Text style={styles.authModalOutlineText}>Continue with Google</Text>
+                </>
+              )}
             </Pressable>
             <Pressable
-              style={styles.authModalSecondary}
+              style={styles.authModalOutlineBtn}
               onPress={() => {
                 openAuthScreen("SignIn");
               }}
             >
-              <Text style={styles.authModalSecondaryText}>Log in with email or phone number</Text>
+              <Ionicons name="mail" size={19} color={GREEN} style={styles.authModalBtnIcon} />
+              <Text style={styles.authModalOutlineText}>Log in with email</Text>
             </Pressable>
+            <View style={styles.authModalDivider}>
+              <View style={styles.authModalDividerLine} />
+              <Text style={styles.authModalDividerText}>or</Text>
+              <View style={styles.authModalDividerLine} />
+            </View>
             <Pressable
-              style={styles.authModalLink}
+              style={styles.authModalCreateBtn}
               onPress={() => {
                 openAuthScreen("Register");
               }}
             >
-              <Text style={styles.authModalLinkText}>Create account</Text>
+              <Text style={styles.authModalCreateText}>Create account</Text>
             </Pressable>
+            <Text style={styles.authModalLegal}>
+              By continuing, you agree to our{" "}
+              <Text style={styles.authModalLegalLink} onPress={openLegal}>
+                Terms &amp; Privacy
+              </Text>
+              .
+            </Text>
           </Animated.View>
         </View>
       </Modal>
@@ -1625,45 +1719,71 @@ const styles = StyleSheet.create({
   },
   authModalSheet: {
     backgroundColor: "#ffffff",
-    borderTopLeftRadius: 16, borderTopRightRadius: 16,
-    paddingHorizontal: 20, paddingTop: 18, paddingBottom: 28,
-    borderWidth: 1, borderColor: LINE_2, borderBottomWidth: 0,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingHorizontal: 22, paddingTop: 12, paddingBottom: 28,
     shadowColor: "#111111",
-    shadowOffset: { width: 0, height: -1 },
-    shadowOpacity: 0.06, shadowRadius: 12, elevation: 16,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08, shadowRadius: 20, elevation: 16,
+  },
+  authModalHandle: {
+    alignSelf: "center",
+    width: 40, height: 5, borderRadius: 999,
+    backgroundColor: "#E5E7EB",
+    marginBottom: 16,
+  },
+  authModalClose: {
+    position: "absolute", top: 14, right: 14,
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: "center", justifyContent: "center",
   },
   authModalTitle: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 20, lineHeight: 25, letterSpacing: -0.2,
-    color: FG, marginBottom: 6,
+    fontSize: 21, lineHeight: 27, letterSpacing: -0.4,
+    color: FG, marginBottom: 8,
   },
+  authModalTitleAccent: { color: GREEN },
   authModalBody: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 15, lineHeight: 22,
+    fontSize: 14, lineHeight: 20,
     color: FG_MUTED, marginBottom: 20,
   },
-  authModalPrimary: {
-    backgroundColor: "#0a8050",
-    height: 52, borderRadius: 14,
-    alignItems: "center", justifyContent: "center", marginBottom: 10,
-    shadowColor: "#0a7a50", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 5,
-  },
-  authModalPrimaryText: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#ffffff", letterSpacing: -0.3,
-  },
-  authModalSecondary: {
-    backgroundColor: BG_2,
+  authModalOutlineBtn: {
+    backgroundColor: "#ffffff",
     borderWidth: 1, borderColor: LINE,
-    height: 52, borderRadius: 14,
-    alignItems: "center", justifyContent: "center",
+    height: 50, borderRadius: 12,
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
     marginBottom: 10, paddingHorizontal: 16,
   },
-  authModalSecondaryText: {
+  authModalBtnIcon: { marginRight: 10 },
+  authModalOutlineText: {
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15,
-    color: FG, textAlign: "center", letterSpacing: -0.2,
+    color: FG, letterSpacing: -0.2,
   },
-  authModalLink: { alignItems: "center", justifyContent: "center", paddingVertical: 10 },
-  authModalLinkText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: GREEN },
+  authModalDivider: {
+    flexDirection: "row", alignItems: "center",
+    marginTop: 4, marginBottom: 14,
+  },
+  authModalDividerLine: { flex: 1, height: 1, backgroundColor: LINE },
+  authModalDividerText: {
+    marginHorizontal: 12,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG_SUBTLE,
+  },
+  authModalCreateBtn: {
+    backgroundColor: GREEN,
+    height: 50, borderRadius: 12,
+    alignItems: "center", justifyContent: "center",
+    shadowColor: "#0a7a50", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.16, shadowRadius: 10, elevation: 3,
+  },
+  authModalCreateText: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#ffffff", letterSpacing: -0.2,
+  },
+  authModalLegal: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12, lineHeight: 17,
+    color: FG_SUBTLE, textAlign: "center",
+    marginTop: 12, paddingHorizontal: 8,
+  },
+  authModalLegalLink: { fontFamily: "PlusJakartaSans-SemiBold", color: GREEN },
 
   // Bottom dock — fixed, border-top separator, sheet shadow
   bottomBar: {

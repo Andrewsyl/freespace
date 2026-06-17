@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
-  Linking,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,11 +10,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { Ionicons } from "@expo/vector-icons";
 import { requestPasswordReset, resetPassword } from "../api";
 import { useToastOnMessage } from "../components/GlobalToast";
 import type { RootStackParamList } from "../types";
-import { colors, radius, spacing, textStyles } from "../styles/theme";
-import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
+import { colors, spacing } from "../styles/theme";
+import { Button, TextInput as AppTextInput } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPassword">;
 const AUTH_GREEN = "#0a8050";
@@ -101,22 +102,33 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
+        <View style={styles.navBar}>
+          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
+            <Ionicons name="arrow-back" size={22} color="#111827" />
+          </Pressable>
+        </View>
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.header}>
-            <Text style={styles.kicker}>Account</Text>
-            <Text style={styles.title}>Reset password</Text>
-            <Text style={styles.subtitle}>
-              {step === "request"
-                ? "We will send a secure link to update your password."
-                : "Choose a new password for your account."}
-            </Text>
+          <View style={styles.iconBadge}>
+            <Ionicons
+              name={step === "request" ? "mail-outline" : "lock-closed-outline"}
+              size={24}
+              color={AUTH_GREEN}
+            />
           </View>
+          <Text style={styles.title}>
+            {step === "request" ? "Reset password" : "Set a new password"}
+          </Text>
+          <Text style={styles.subtitle}>
+            {step === "request"
+              ? "Enter your email and we'll send you a secure link to reset your password."
+              : "Choose a new password for your account."}
+          </Text>
 
-          <View style={styles.card}>
+          <View style={styles.form}>
             {step === "request" ? (
               <>
                 <View
@@ -182,8 +194,6 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
               </>
             )}
           </View>
-
-          <BackButton style={styles.ghostButton} onPress={() => navigation.goBack()} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -195,59 +205,62 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.appBg,
   },
+  navBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  backBtn: {
+    padding: 6,
+    marginLeft: -6,
+  },
   content: {
     flexGrow: 1,
     paddingHorizontal: spacing.screenX,
     paddingBottom: 32,
-    paddingTop: spacing.screenY,
+    paddingTop: 8,
   },
-  header: {
-    marginBottom: 14,
+  iconBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: "#edf7f2",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18,
   },
-  kicker: textStyles.kicker,
   title: {
-    ...textStyles.title,
-    marginTop: 6,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 26,
+    letterSpacing: -0.6,
+    lineHeight: 31,
+    marginBottom: 8,
   },
   subtitle: {
-    ...textStyles.subtitle,
-    marginTop: 6,
+    color: colors.textMuted,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14.5,
+    lineHeight: 21,
+    marginBottom: 26,
   },
-  card: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.card,
-  },
+  form: {},
   field: {
-    marginBottom: 14,
+    marginBottom: 16,
   },
   label: {
     color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
-    marginBottom: 6,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12.5,
+    marginBottom: 7,
   },
   fieldInput: {
     marginBottom: 0,
   },
-  previewRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 10,
-  },
-  linkButton: {
-    flex: 1,
-    borderColor: AUTH_GREEN,
-  },
   primaryButton: {
-    marginTop: 4,
+    marginTop: 6,
     backgroundColor: AUTH_GREEN,
     borderColor: AUTH_GREEN,
-  },
-  ghostButton: {
-    alignSelf: "center",
-    marginTop: 16,
   },
 });

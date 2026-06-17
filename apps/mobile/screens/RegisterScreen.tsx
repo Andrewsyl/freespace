@@ -196,7 +196,11 @@ export function RegisterScreen({ navigation, route }: Props) {
                   {accepted ? <Ionicons name="checkmark" size={16} color="#FFFFFF" /> : null}
                 </View>
                 <Text style={styles.checkboxText}>
-                  I agree to <Text style={styles.link}>Terms & Privacy</Text>.
+                  I agree to{" "}
+                  <Text style={styles.link} onPress={() => navigation.navigate("Legal")}>
+                    Terms &amp; Privacy
+                  </Text>
+                  .
                 </Text>
               </Pressable>
 
