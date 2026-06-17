@@ -4,12 +4,12 @@ import { Animated } from "react-native";
 process.env.EXPO_PUBLIC_API_BASE ??= "http://127.0.0.1:4000";
 process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ??= "pk_test_mock";
 
-// Neutralize Animated.spring in tests. Our Button fires native-driver springs
-// on pressIn/pressOut (with no completion callback). When userEvent drives the
-// full TouchableOpacity press sequence, those springs race the act() environment
-// and hang the press to the Jest timeout on slower CI runners (passes locally).
-// We only override spring — timing is left intact because its completion
-// callbacks drive state and must run normally.
+// Neutralize Animated.spring in tests. Several components fire native-driver
+// springs on press/mount (often with no completion callback). When userEvent
+// drives the full press sequence, those springs race the act() environment and
+// can hang to the Jest timeout on slower CI runners (passes locally). We only
+// override spring — timing is left intact because its completion callbacks
+// drive state and must run normally.
 const noopAnimation = () =>
   ({
     start: (callback?: (result: { finished: boolean }) => void) =>

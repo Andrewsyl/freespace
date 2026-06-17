@@ -1,7 +1,5 @@
-import React from "react";
 import {
   ActivityIndicator,
-  Animated,
   StyleSheet,
   Text,
   TextStyle,
@@ -33,49 +31,28 @@ export function Button({
   textStyle,
   testID,
 }: ButtonProps) {
-  const scaleAnim = React.useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.98,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      friction: 4,
-      useNativeDriver: true,
-    }).start();
-  };
-
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <TouchableOpacity
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        disabled={disabled || loading}
-        activeOpacity={0.9}
-        testID={testID}
-        style={[
-          styles.button,
-          styles[variant],
-          styles[size],
-          (disabled || loading) && styles.disabled,
-          style,
-        ]}
-      >
-        {loading ? (
-          <ActivityIndicator color={variant === "primary" ? colors.cardBg : colors.accent} />
-        ) : (
-          <Text style={[styles.text, styles[`${variant}Text`], styles[`${size}Text`], textStyle]}>
-            {title}
-          </Text>
-        )}
-      </TouchableOpacity>
-    </Animated.View>
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled || loading}
+      activeOpacity={0.9}
+      testID={testID}
+      style={[
+        styles.button,
+        styles[variant],
+        styles[size],
+        (disabled || loading) && styles.disabled,
+        style,
+      ]}
+    >
+      {loading ? (
+        <ActivityIndicator color={variant === "primary" ? colors.cardBg : colors.accent} />
+      ) : (
+        <Text style={[styles.text, styles[`${variant}Text`], styles[`${size}Text`], textStyle]}>
+          {title}
+        </Text>
+      )}
+    </TouchableOpacity>
   );
 }
 
