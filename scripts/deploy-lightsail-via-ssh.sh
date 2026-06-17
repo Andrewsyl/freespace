@@ -63,7 +63,6 @@ remote_tag_var="$(printf '%s' "$DEPLOY_SERVICE" | tr '[:lower:]' '[:upper:]')_TA
 remote_cmd=$(cat <<EOF
 set -euo pipefail
 cd "$LIGHTSAIL_REPO_DIR"
-git pull --ff-only
 $remote_tag_var="$DEPLOY_TAG" ./deploy/lightsail/redeploy.sh
 EOF
 )
