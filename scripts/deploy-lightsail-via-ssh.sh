@@ -18,10 +18,11 @@ else
   exit 1
 fi
 
-case "$ssh_key_path" in
-  "~/"*) ssh_key_path="$HOME/${ssh_key_path#~/}" ;;
-  "~") ssh_key_path="$HOME" ;;
-esac
+if [[ "$ssh_key_path" == "~/"* ]]; then
+  ssh_key_path="$HOME/${ssh_key_path:2}"
+elif [[ "$ssh_key_path" == "~" ]]; then
+  ssh_key_path="$HOME"
+fi
 
 ssh_cert_path=""
 if [ -n "${LIGHTSAIL_SSH_CERT_PATH:-}" ]; then
@@ -33,10 +34,11 @@ elif [ -n "${LIGHTSAIL_SSH_CERT:-}" ]; then
 fi
 
 if [ -n "$ssh_cert_path" ]; then
-  case "$ssh_cert_path" in
-    "~/"*) ssh_cert_path="$HOME/${ssh_cert_path#~/}" ;;
-    "~") ssh_cert_path="$HOME" ;;
-  esac
+  if [[ "$ssh_cert_path" == "~/"* ]]; then
+    ssh_cert_path="$HOME/${ssh_cert_path:2}"
+  elif [[ "$ssh_cert_path" == "~" ]]; then
+    ssh_cert_path="$HOME"
+  fi
 fi
 
 case "$DEPLOY_SERVICE" in
