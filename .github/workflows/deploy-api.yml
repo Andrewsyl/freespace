@@ -13,8 +13,7 @@ on:
       - 'db/**'
       - 'docs/deploy/**'
       - 'infra/**'
-      - 'scripts/build-push-ecs-api.sh'
-      - 'scripts/setup-ecs-api-aws.sh'
+      - 'scripts/deploy-lightsail-via-ssh.sh'
       - '.github/workflows/deploy-api.yml'
 
 jobs:
@@ -35,8 +34,7 @@ jobs:
               - 'db/**'
               - 'docs/deploy/**'
               - 'infra/**'
-              - 'scripts/build-push-ecs-api.sh'
-              - 'scripts/setup-ecs-api-aws.sh'
+              - 'scripts/deploy-lightsail-via-ssh.sh'
       - id: set
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then

@@ -7,7 +7,13 @@ if (!connectionString) {
   console.warn("DATABASE_URL not set. Database calls will fail until configured.");
 }
 
-export const pool = new Pool({ connectionString });
+export const pool = new Pool({
+  connectionString,
+  max: 10,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 5_000,
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+});
 
 type ListingRateType = "hourly" | "daily";
 type ListingSearchMode = "daily" | "monthly";
