@@ -45,41 +45,10 @@ jobs:
             echo "api=${{ steps.filter.outputs.api }}" >> "$GITHUB_OUTPUT"
           fi
 
-  target:
-    name: Detect active deploy target
-    needs: changes
-    runs-on: ubuntu-latest
-    outputs:
-      ecs: ${{ steps.check.outputs.ecs }}
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-1
-
-      - id: check
-        name: Check ECS service
-        run: |
-          service_arn="$(aws ecs describe-services \
-            --cluster freespace-prod \
-            --services freespace-api-v2 \
-            --query 'services[0].serviceArn' \
-            --output text)"
-
-          if [ "$service_arn" = "None" ] || [ -z "$service_arn" ]; then
-            echo "ecs=false" >> "$GITHUB_OUTPUT"
-            echo "ECS service freespace-api-v2 is missing; skipping deploy."
-          else
-            echo "ecs=true" >> "$GITHUB_OUTPUT"
-            echo "ECS service detected: $service_arn"
-          fi
-
   deploy-api:
-    name: Deploy API to ECS Fargate
-    needs: [changes, target]
-    if: needs.changes.outputs.api == 'true' && needs.target.outputs.ecs == 'true'
+    name: Deploy API to Lightsail
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     environment: production
 
@@ -114,32 +83,21 @@ jobs:
           docker push "$image_uri"
           echo "image_uri=$image_uri" >> "$GITHUB_OUTPUT"
 
-      - name: Render task definition
+      - name: Write Lightsail SSH key
         run: |
-          aws ecs describe-task-definition \
-            --task-definition freespace-api \
-            --query taskDefinition > task-definition.json
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${{ secrets.LIGHTSAIL_SSH_KEY }}" > ~/.ssh/lightsail_deploy_key
+          chmod 600 ~/.ssh/lightsail_deploy_key
 
-          jq --arg IMAGE "${{ steps.image.outputs.image_uri }}" '
-            del(
-              .taskDefinitionArn,
-              .revision,
-              .status,
-              .requiresAttributes,
-              .compatibilities,
-              .registeredAt,
-              .registeredBy
-            )
-            | .containerDefinitions[0].image = $IMAGE
-          ' task-definition.json > task-definition-rendered.json
-
-      - name: Deploy ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: task-definition-rendered.json
-          service: freespace-api-v2
-          cluster: freespace-prod
-          wait-for-service-stability: true
+      - name: Deploy Lightsail stack
+        env:
+          LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          LIGHTSAIL_USER: ${{ secrets.LIGHTSAIL_USER }}
+          LIGHTSAIL_SSH_KEY_PATH: ~/.ssh/lightsail_deploy_key
+          LIGHTSAIL_REPO_DIR: ${{ secrets.LIGHTSAIL_REPO_DIR }}
+          DEPLOY_SERVICE: api
+          DEPLOY_TAG: ${{ github.sha }}
+        run: bash scripts/deploy-lightsail-via-ssh.sh
 
       - name: Post-deploy API smoke checks
         env:
