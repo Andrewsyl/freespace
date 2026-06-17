@@ -18,6 +18,11 @@ else
   exit 1
 fi
 
+case "$ssh_key_path" in
+  "~/"*) ssh_key_path="$HOME/${ssh_key_path#~/}" ;;
+  "~") ssh_key_path="$HOME" ;;
+esac
+
 ssh_cert_path=""
 if [ -n "${LIGHTSAIL_SSH_CERT_PATH:-}" ]; then
   ssh_cert_path="$LIGHTSAIL_SSH_CERT_PATH"
@@ -25,6 +30,13 @@ elif [ -n "${LIGHTSAIL_SSH_CERT:-}" ]; then
   ssh_cert_path="$(mktemp)"
   printf '%s\n' "$LIGHTSAIL_SSH_CERT" > "$ssh_cert_path"
   chmod 600 "$ssh_cert_path"
+fi
+
+if [ -n "$ssh_cert_path" ]; then
+  case "$ssh_cert_path" in
+    "~/"*) ssh_cert_path="$HOME/${ssh_cert_path#~/}" ;;
+    "~") ssh_cert_path="$HOME" ;;
+  esac
 fi
 
 case "$DEPLOY_SERVICE" in
