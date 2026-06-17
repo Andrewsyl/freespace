@@ -18,6 +18,15 @@ else
   exit 1
 fi
 
+ssh_cert_path=""
+if [ -n "${LIGHTSAIL_SSH_CERT_PATH:-}" ]; then
+  ssh_cert_path="$LIGHTSAIL_SSH_CERT_PATH"
+elif [ -n "${LIGHTSAIL_SSH_CERT:-}" ]; then
+  ssh_cert_path="$(mktemp)"
+  printf '%s\n' "$LIGHTSAIL_SSH_CERT" > "$ssh_cert_path"
+  chmod 600 "$ssh_cert_path"
+fi
+
 case "$DEPLOY_SERVICE" in
   api|web) ;;
   *)
@@ -45,9 +54,14 @@ $remote_tag_var="$DEPLOY_TAG" ./deploy/lightsail/redeploy.sh
 EOF
 )
 
-ssh \
-  -i "$ssh_key_path" \
-  -o UserKnownHostsFile="$known_hosts" \
-  -o StrictHostKeyChecking=yes \
-  "$LIGHTSAIL_USER@$LIGHTSAIL_HOST" \
-  "$remote_cmd"
+ssh_args=(
+  -i "$ssh_key_path"
+  -o UserKnownHostsFile="$known_hosts"
+  -o StrictHostKeyChecking=yes
+)
+
+if [ -n "$ssh_cert_path" ]; then
+  ssh_args+=(-o "CertificateFile=$ssh_cert_path")
+fi
+
+ssh "${ssh_args[@]}" "$LIGHTSAIL_USER@$LIGHTSAIL_HOST" "$remote_cmd"
