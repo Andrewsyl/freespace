@@ -3,10 +3,20 @@ set -euo pipefail
 
 : "${LIGHTSAIL_HOST:?Set LIGHTSAIL_HOST}"
 : "${LIGHTSAIL_USER:=ubuntu}"
-: "${LIGHTSAIL_SSH_KEY_PATH:?Set LIGHTSAIL_SSH_KEY_PATH}"
 : "${LIGHTSAIL_REPO_DIR:=/home/ubuntu/freespace}"
 : "${DEPLOY_SERVICE:?Set DEPLOY_SERVICE to api or web}"
 : "${DEPLOY_TAG:?Set DEPLOY_TAG to the ECR image tag}"
+
+if [ -n "${LIGHTSAIL_SSH_KEY_PATH:-}" ]; then
+  ssh_key_path="$LIGHTSAIL_SSH_KEY_PATH"
+elif [ -n "${LIGHTSAIL_SSH_KEY:-}" ]; then
+  ssh_key_path="$(mktemp)"
+  printf '%s\n' "$LIGHTSAIL_SSH_KEY" > "$ssh_key_path"
+  chmod 600 "$ssh_key_path"
+else
+  echo "Set LIGHTSAIL_SSH_KEY or LIGHTSAIL_SSH_KEY_PATH"
+  exit 1
+fi
 
 case "$DEPLOY_SERVICE" in
   api|web) ;;
@@ -16,13 +26,13 @@ case "$DEPLOY_SERVICE" in
     ;;
 esac
 
-if [ ! -f "$LIGHTSAIL_SSH_KEY_PATH" ]; then
-  echo "SSH key not found: $LIGHTSAIL_SSH_KEY_PATH"
+if [ ! -f "$ssh_key_path" ]; then
+  echo "SSH key not found: $ssh_key_path"
   exit 1
 fi
 
 tmp_dir="$(mktemp -d)"
-trap 'rm -rf "$tmp_dir"' EXIT
+trap 'rm -rf "$tmp_dir" "${ssh_key_path:-}"' EXIT
 known_hosts="$tmp_dir/known_hosts"
 ssh-keyscan -H "$LIGHTSAIL_HOST" > "$known_hosts" 2>/dev/null
 
@@ -36,7 +46,7 @@ EOF
 )
 
 ssh \
-  -i "$LIGHTSAIL_SSH_KEY_PATH" \
+  -i "$ssh_key_path" \
   -o UserKnownHostsFile="$known_hosts" \
   -o StrictHostKeyChecking=yes \
   "$LIGHTSAIL_USER@$LIGHTSAIL_HOST" \

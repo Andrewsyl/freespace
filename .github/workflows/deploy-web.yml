@@ -140,10 +140,8 @@ jobs:
 
       - name: Deploy Lightsail stack
         env:
-          LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
-          LIGHTSAIL_USER: ${{ secrets.LIGHTSAIL_USER }}
-          LIGHTSAIL_SSH_KEY_PATH: ~/.ssh/lightsail_deploy_key
-          LIGHTSAIL_REPO_DIR: ${{ secrets.LIGHTSAIL_REPO_DIR }}
+          LIGHTSAIL_HOST: ${{ vars.LIGHTSAIL_HOST }}
+          LIGHTSAIL_SSH_KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
           DEPLOY_SERVICE: web
           DEPLOY_TAG: ${{ github.sha }}
         run: bash scripts/deploy-lightsail-via-ssh.sh
