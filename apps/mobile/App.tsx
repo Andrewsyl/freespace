@@ -64,7 +64,7 @@ import {
   mobileE2EEnabled,
 } from "./e2e/testMode";
 import { mobileEnv } from "./env";
-import { installGlobalErrorLogging } from "./logger";
+import { installGlobalErrorLogging, logWarn } from "./logger";
 import { colors } from "./theme/colors";
 import { radius, spacing as appSpacing } from "./styles/theme";
 
@@ -711,16 +711,16 @@ function PushRegistration() {
       lastTokenRef.current = expoToken;
     };
 
-    void register().catch((error) => {
-      console.warn("Push registration failed", error);
+    void register().catch((err) => {
+      logWarn("Push registration failed", { message: err instanceof Error ? err.message : String(err) });
     });
     // Re-attempt on foreground: if the user enables notifications in OS
     // Settings after denying, the earlier attempt bailed before storing a
     // token, and nothing else re-runs registration until restart/re-login.
     const appStateSubscription = AppState.addEventListener("change", (state) => {
       if (state !== "active") return;
-      void register().catch((error) => {
-        console.warn("Push registration failed", error);
+      void register().catch((err) => {
+        logWarn("Push registration failed", { message: err instanceof Error ? err.message : String(err) });
       });
     });
     return () => {

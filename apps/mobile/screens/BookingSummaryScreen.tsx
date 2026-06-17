@@ -58,6 +58,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [bookingBusy, setBookingBusy] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const bookingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [confirmingBooking, setConfirmingBooking] = useState(false);
   const [paymentFailureMessage, setPaymentFailureMessage] = useState<string | null>(null);
   const [showServiceFeeInfo, setShowServiceFeeInfo] = useState(false);
@@ -333,6 +334,11 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     setBookingBusy(true);
     setError(null);
     setPaymentFailureMessage(null);
+    bookingTimeoutRef.current = setTimeout(() => {
+      setBookingBusy(false);
+      setPaymentFailureMessage("Payment timed out. Please check your bookings before trying again.");
+      bookingTimeoutRef.current = null;
+    }, 45_000);
     let didConfirm = false;
     let paymentCompleted = false;
     try {
@@ -583,6 +589,10 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       }
       setError(message);
     } finally {
+      if (bookingTimeoutRef.current) {
+        clearTimeout(bookingTimeoutRef.current);
+        bookingTimeoutRef.current = null;
+      }
       setConfirmingBooking(false);
       if (!didConfirm) {
         setBookingBusy(false);

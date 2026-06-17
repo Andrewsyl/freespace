@@ -12,7 +12,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Favorites">;
 
 export function FavoritesScreen({ navigation }: Props) {
   const { user } = useAuth();
-  const { favorites, loading, error } = useFavorites();
+  const { favorites, loading, error, refresh } = useFavorites();
   const skeletonPulse = usePulse();
 
   if (!user) {
@@ -49,7 +49,14 @@ export function FavoritesScreen({ navigation }: Props) {
       </View>
       <View style={styles.contentWrapper}>
         <ScrollView contentContainerStyle={styles.content}>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? (
+            <View style={styles.errorRow}>
+              <Text style={styles.error}>{error}</Text>
+              <Pressable onPress={() => void refresh()} style={styles.retryBtn}>
+                <Text style={styles.retryText}>Try again</Text>
+              </Pressable>
+            </View>
+          ) : null}
           {loading ? (
             <View style={styles.skeletonList}>
               {[0, 1, 2, 3].map((i) => (
@@ -212,6 +219,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 6,
   },
+  errorRow: {
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
   error: {
     backgroundColor: "#fef2f2",
     borderColor: "#fecaca",
@@ -219,10 +231,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: "#b42318",
     fontSize: 12,
-    marginBottom: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     textAlign: "center",
+    width: "100%",
+  },
+  retryBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#0a8050",
+  },
+  retryText: {
+    color: "#0a8050",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
   },
   muted: {
     color: colors.textSoft,

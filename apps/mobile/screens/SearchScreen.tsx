@@ -1553,7 +1553,14 @@ export function SearchScreen({ navigation }: Props) {
             ) : null}
           </View>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? (
+            <View style={styles.errorRow}>
+              <Text style={styles.error}>{error}</Text>
+              <Pressable onPress={() => void runSearch()} style={styles.retryBtn}>
+                <Text style={styles.retryText}>Try again</Text>
+              </Pressable>
+            </View>
+          ) : null}
 
           {/* ── Finding spaces pill ─────────────────── */}
           <Animated.View
@@ -2777,9 +2784,28 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     letterSpacing: -0.3,
   },
+  errorRow: {
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+  },
   error: {
     color: "#b42318",
-    marginTop: 8,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    textAlign: "center",
+  },
+  retryBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#0a8050",
+  },
+  retryText: {
+    color: "#0a8050",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
   },
   overlappingBackdrop: {
     flex: 1,

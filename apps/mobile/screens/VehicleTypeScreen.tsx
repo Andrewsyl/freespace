@@ -164,6 +164,11 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
 
   const handleSave = async () => {
     if (!canSave) return;
+    const plateVal = plate.trim().toUpperCase();
+    if (!/^\d{2,3}-[A-Z]{1,2}-\d{1,6}$/.test(plateVal)) {
+      setError("Enter a valid Irish plate, e.g. 231-D-12345");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {

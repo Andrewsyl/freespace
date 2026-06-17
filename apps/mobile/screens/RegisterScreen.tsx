@@ -155,6 +155,8 @@ export function RegisterScreen({ navigation, route }: Props) {
       navigateAfterAuth(returnTo);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign up failed");
+      setPassword("");
+      setConfirmPassword("");
     } finally {
       setSubmitting(false);
     }
