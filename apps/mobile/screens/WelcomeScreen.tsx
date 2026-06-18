@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { SquircleBtn } from "../components/SquircleBtn";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
@@ -13,6 +12,7 @@ import { trackEvent } from "../analytics";
 import { logInfo, logWarn } from "../logger";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Welcome">;
+const AUTH_GREEN = "#0a8050";
 
 export function WelcomeScreen({ navigation, route }: Props) {
   const { user, loginWithOAuth } = useAuth();
@@ -115,35 +115,60 @@ export function WelcomeScreen({ navigation, route }: Props) {
           resizeMode="contain"
         />
 
-        <SquircleBtn
-          label={submitting ? "Connecting..." : "Continue with Google"}
-          onPress={handleGoogleSignIn}
-          disabled={submitting}
-          loading={submitting}
-          icon={<Ionicons name="logo-google" size={20} color="#FFFFFF" />}
-          fullWidth
-          style={{ maxWidth: 360, marginBottom: 14 }}
-        />
+        <View style={styles.authCopyWrap}>
+          <Text style={styles.authTitle}>
+            <Text style={styles.authTitleAccent}>Log in </Text>
+            or create an account.
+          </Text>
+          <Text style={styles.authBody}>
+            You&apos;ll need an account to book spaces and manage your reservations.
+          </Text>
+        </View>
 
-        <TouchableOpacity
-          style={styles.secondaryButton}
+        <Pressable
+          style={({ pressed }) => [
+            styles.authOutlineBtn,
+            (pressed || submitting) && !submitting ? styles.authOutlineBtnPressed : null,
+          ]}
+          disabled={submitting}
+          onPress={handleGoogleSignIn}
+        >
+          {submitting ? (
+            <ActivityIndicator size="small" color={AUTH_GREEN} />
+          ) : (
+            <>
+              <Ionicons name="logo-google" size={20} color={AUTH_GREEN} style={styles.authBtnIcon} />
+              <Text style={styles.authOutlineText}>Continue with Google</Text>
+            </>
+          )}
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [styles.authOutlineBtn, pressed ? styles.authOutlineBtnPressed : null]}
           onPress={() => {
             void trackEvent("mobile_signin_view_started", { source: "welcome" });
             navigation.navigate("SignIn", returnTo ? { returnTo } : undefined);
           }}
         >
-          <Text style={styles.secondaryButtonText}>Log in with email or phone number</Text>
-        </TouchableOpacity>
+          <Ionicons name="mail" size={19} color={AUTH_GREEN} style={styles.authBtnIcon} />
+          <Text style={styles.authOutlineText}>Log in with email</Text>
+        </Pressable>
 
-        <TouchableOpacity
-          style={styles.tertiaryButton}
+        <View style={styles.authDivider}>
+          <View style={styles.authDividerLine} />
+          <Text style={styles.authDividerText}>or</Text>
+          <View style={styles.authDividerLine} />
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.authCreateBtn, pressed ? styles.authCreateBtnPressed : null]}
           onPress={() => {
             void trackEvent("mobile_signup_view_started", { source: "welcome" });
             navigation.navigate("Register", returnTo ? { returnTo } : undefined);
           }}
         >
-          <Text style={styles.tertiaryButtonText}>Create account</Text>
-        </TouchableOpacity>
+          <Text style={styles.authCreateText}>Create account</Text>
+        </Pressable>
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -173,50 +198,112 @@ const styles = StyleSheet.create({
   },
   logoWrap: {
     width: "100%",
-    height: 110,
+    height: 98,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 6,
+    marginTop: 6,
+    marginBottom: 2,
     overflow: "visible",
   },
   logo: {
-    width: 250,
-    height: 142,
+    width: 220,
+    height: 126,
   },
   illustration: {
-    width: 408,
-    height: 268,
-    marginBottom: 28,
+    width: 360,
+    height: 214,
+    marginBottom: 14,
   },
-  secondaryButton: {
+  authCopyWrap: {
     width: "100%",
     maxWidth: 360,
-    borderRadius: 14,
+    marginBottom: 18,
+  },
+  authTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 21,
+    lineHeight: 27,
+    letterSpacing: -0.4,
+    color: "#111827",
+    marginBottom: 8,
+  },
+  authTitleAccent: {
+    color: "#0a8050",
+  },
+  authBody: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#6B7280",
+  },
+  authOutlineBtn: {
+    width: "100%",
+    maxWidth: 360,
+    height: 50,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#D9DEDE",
     backgroundColor: "#FFFFFF",
-    height: 52,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 14,
+    marginBottom: 10,
+    paddingHorizontal: 16,
   },
-  secondaryButtonText: {
-    color: "#101414",
+  authOutlineBtnPressed: {
+    opacity: 0.92,
+  },
+  authBtnIcon: {
+    marginRight: 10,
+  },
+  authOutlineText: {
+    color: "#111827",
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     letterSpacing: -0.2,
   },
-  tertiaryButton: {
+  authDivider: {
     width: "100%",
     maxWidth: 360,
-    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    marginBottom: 14,
+  },
+  authDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#D9DEDE",
+  },
+  authDividerText: {
+    marginHorizontal: 12,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  authCreateBtn: {
+    width: "100%",
+    maxWidth: 360,
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: "#0a8050",
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 14,
+    shadowColor: "#0a7a50",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  tertiaryButtonText: {
+  authCreateBtnPressed: {
+    opacity: 0.95,
+  },
+  authCreateText: {
+    color: "#ffffff",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
-    fontWeight: "600",
-    color: "#0a8050",
+    letterSpacing: -0.2,
   },
   errorText: {
     marginTop: 16,

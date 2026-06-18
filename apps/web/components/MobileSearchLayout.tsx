@@ -15,6 +15,7 @@ import { SlimNav } from "./SlimNav";
 import type { SharedLayoutProps } from "./searchLayoutTypes";
 import type { Listing } from "./ListingCard";
 import { calculateListingTotal, formatPriceValue } from "../lib/pricing";
+import { deriveFeatureKeys } from "./amenityFeatures";
 import { Search, SlidersHorizontal, X, RefreshCw, List, MapPin, Star, ChevronLeft, ChevronRight, Check, Cctv, Zap, Lock, Home } from "lucide-react";
 
 // ── Date/time helpers ────────────────────────────────────────────────────────
@@ -878,15 +879,6 @@ const AMENITY_ICONS: Record<string, React.ReactElement> = {
   Covered:     <Home className="h-3.5 w-3.5" strokeWidth={2} />,
 };
 
-function normaliseAmenity(v: string): string {
-  const s = v.toLowerCase();
-  if (s.includes("cctv") || s.includes("camera")) return "CCTV";
-  if (s.includes("ev") || s.includes("charg")) return "EV charging";
-  if (s.includes("gate") || s.includes("barrier")) return "Gated";
-  if (s.includes("cover") || s.includes("shelter") || s.includes("roof")) return "Covered";
-  return v.trim();
-}
-
 function MapBottomCard({
   listing,
   priceDisplay,
@@ -897,11 +889,11 @@ function MapBottomCard({
   priceDisplay: { label: string; value: number; suffix: string };
   onDismiss: () => void;
   onOpen: () => void;
-}) {
+  }) {
   const image = listingGradient(listing);
   const isUrl = image?.startsWith("http");
   const amenities: string[] = (listing as any).amenities ?? listing.tags ?? [];
-  const features = [...new Set(amenities.map(normaliseAmenity))].slice(0, 3);
+  const features = deriveFeatureKeys(amenities, listing.title);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_32px_rgba(15,23,42,0.20)]">

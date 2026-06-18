@@ -9,7 +9,20 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Cctv, CircleCheck, ShieldCheck, Warehouse, Zap } from "lucide-react-native";
+import {
+  Accessibility,
+  ArrowDownUp,
+  Bike,
+  Cctv,
+  Clock,
+  EvCharger,
+  Fence,
+  Home,
+  IdCard,
+  KeyRound,
+  Lightbulb,
+  Warehouse,
+} from "lucide-react-native";
 import { colors } from "../styles/theme";
 
 type MapBottomCardProps = {
@@ -29,56 +42,60 @@ type MapBottomCardProps = {
   onHeightChange?: (height: number) => void;
 };
 
-type FeatureKey = "instant" | "cctv" | "ev" | "gated" | "covered";
+const AMENITY_ACRONYMS: Record<string, string> = { ev: "EV", cctv: "CCTV" };
 
-function deriveFeatureKeys(amenities?: string[] | null, title?: string): FeatureKey[] {
-  const features = [...(amenities ?? [])].map((value) => value.toLowerCase());
-  const titleText = title?.toLowerCase() ?? "";
-  const has = (needle: string) => features.some((feature) => feature.includes(needle));
-
-  const out: FeatureKey[] = [];
-  if (has("instant")) out.push("instant");
-  if (has("cctv") || has("camera")) out.push("cctv");
-  if (has("ev") || has("charg")) out.push("ev");
-  if (has("gat") || has("barrier")) out.push("gated");
-  if (
-    has("cover") ||
-    has("shelter") ||
-    has("roof") ||
-    titleText.includes("garage") ||
-    titleText.includes("underground") ||
-    titleText.includes("indoor") ||
-    titleText.includes("covered")
-  ) {
-    out.push("covered");
-  }
-
-  return out;
+function humanizeAmenity(value: string) {
+  return value
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .map((word) => {
+      const lower = word.toLowerCase();
+      return AMENITY_ACRONYMS[lower] ?? lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
 }
 
-function FeatureBadge({ feature }: { feature: FeatureKey }) {
-  const iconProps = { size: 13, strokeWidth: 1.8 } as const;
-  if (feature === "instant") {
-    return (
-      <View style={[styles.featureBadge, styles.instantBadge]}>
-        <CircleCheck {...iconProps} color="#0f7a4d" />
-        <Text style={styles.instantBadgeText}>Instant</Text>
-      </View>
-    );
-  }
+function getFeatureIconType(label: string) {
+  const n = label.toLowerCase();
+  if (n.includes("low") || n.includes("clearance") || n.includes("height")) return "low";
+  if (n.includes("permit")) return "permit";
+  if (n.includes("ev") || n.includes("charger") || n.includes("charging")) return "ev";
+  if (n.includes("cctv") || n.includes("camera")) return "cctv";
+  if (n.includes("light") || n.includes("lit")) return "lit";
+  if (n.includes("shelter") || n.includes("covered") || n.includes("roof")) return "sheltered";
+  if (n.includes("gate") || n.includes("gated") || n.includes("barrier")) return "gated";
+  if (n.includes("code") || n.includes("keypad") || n.includes("entry")) return "code";
+  if (n.includes("disabled") || (n.includes("access") && n.includes("wheel"))) return "disabled";
+  if (n.includes("24") || n.includes("always") || n.includes("round")) return "allday";
+  if (n.includes("motorbike") || n.includes("motorcycle") || n.includes("scooter") || n.includes("bike")) return "motorbike";
+  if (n.includes("wide")) return "wide";
+  return "sheltered";
+}
 
-  const Icon =
-    feature === "cctv"
-      ? Cctv
-      : feature === "ev"
-        ? Zap
-        : feature === "gated"
-          ? ShieldCheck
-          : Warehouse;
+const FEATURE_ICONS = {
+  cctv: Cctv,
+  ev: EvCharger,
+  sheltered: Warehouse,
+  lit: Lightbulb,
+  gated: Fence,
+  low: ArrowDownUp,
+  permit: IdCard,
+  code: KeyRound,
+  disabled: Accessibility,
+  allday: Clock,
+  motorbike: Bike,
+  wide: Home,
+} as const;
 
+function FeatureChip({ label }: { label: string }) {
+  const iconType = getFeatureIconType(label);
+  const Icon = FEATURE_ICONS[iconType];
   return (
-    <View style={styles.featureBadge}>
-      <Icon {...iconProps} color="#4b5563" />
+    <View style={styles.featureChip} accessibilityLabel={label}>
+      <View style={styles.featureChipIconWrap}>
+        <Icon size={16} color="#475569" strokeWidth={1.9} />
+      </View>
     </View>
   );
 }
@@ -145,7 +162,10 @@ export function MapBottomCard({
   }, [translateAnim, opacityAnim, title, dismissing]);
 
   const hasRating = reviewCount > 0 && rating > 0;
-  const features = useMemo(() => deriveFeatureKeys(amenities, title), [amenities, title]);
+  const features = useMemo(
+    () => Array.from(new Set((amenities ?? []).filter(Boolean).map(humanizeAmenity))),
+    [amenities]
+  );
 
   return (
     <Animated.View
@@ -204,7 +224,7 @@ export function MapBottomCard({
             {features.length > 0 ? (
               <View style={styles.featureRow}>
                 {features.slice(0, 3).map((feature) => (
-                  <FeatureBadge key={feature} feature={feature} />
+                  <FeatureChip key={feature} label={feature} />
                 ))}
               </View>
             ) : null}
@@ -299,18 +319,20 @@ const styles = StyleSheet.create({
     minWidth: 22,
     paddingHorizontal: 6,
   },
-  instantBadge: {
-    backgroundColor: "#ecfdf5",
-    borderColor: "#bbf7d0",
-    flexDirection: "row",
-    gap: 3,
-    paddingHorizontal: 7,
+  featureChip: {
+    alignItems: "center",
+    backgroundColor: "#f3f4f6",
+    borderColor: "#e5e7eb",
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 24,
+    justifyContent: "center",
+    minWidth: 24,
+    paddingHorizontal: 4,
   },
-  instantBadgeText: {
-    color: "#0f7a4d",
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 10,
-    letterSpacing: -0.1,
+  featureChipIconWrap: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   priceRow: {
     borderTopColor: "#eaeff3",

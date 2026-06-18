@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import clsx from "clsx";
 import { formatPriceValue } from "../lib/pricing";
+import { deriveFeatureKeys } from "./amenityFeatures";
 
 export type AvailabilityScheduleEntry = {
   id: string;
@@ -146,17 +147,11 @@ export function ListingCard({
   const isVerified = hasRating && (listing.ratingCount ?? 0) >= 3;
   const dist = listing.distanceKm;
 
-  // Derive features from actual amenities + tags, with title-only fallback
-  const features = [...(listing.amenities ?? []), ...(listing.tags ?? [])];
-  const feats = (s: string) => features.some((f) => f.toLowerCase().includes(s));
-  const title = listing.title.toLowerCase();
-
-  const isInstantBook = feats("instant");
-  const hasCctv    = feats("cctv") || feats("camera");
-  const hasEv      = feats("ev") || feats("charg");
-  const hasGated   = feats("gat") || feats("barrier");
-  const hasCovered = feats("cover") || feats("shelter") || feats("roof")
-    || title.includes("garage") || title.includes("underground") || title.includes("indoor") || title.includes("covered");
+  // Instant book is still surfaced as a top badge, but the feature row below
+  // now uses the same shared feature ordering as the map card.
+  const isInstantBook = [...(listing.amenities ?? []), ...(listing.tags ?? [])]
+    .some((f) => f.toLowerCase().includes("instant"));
+  const features = deriveFeatureKeys([...(listing.amenities ?? []), ...(listing.tags ?? [])], listing.title);
 
   const spaceType  = deriveSpaceType(listing.tags);
   const defaultPriceDisplay =
@@ -224,10 +219,9 @@ export function ListingCard({
 
         {/* Bottom row: feature icons + rating + distance */}
         <div className="mt-2 flex items-center gap-1.5">
-          {hasCovered  && <FeatureIcon type="covered" />}
-          {hasGated    && <FeatureIcon type="gated" />}
-          {hasCctv     && <FeatureIcon type="cctv" />}
-          {hasEv       && <FeatureIcon type="ev" />}
+          {features.map((feature) => (
+            <FeatureIcon key={feature} type={feature} />
+          ))}
 
           <div className="ml-auto flex items-center gap-2.5">
             {hasRating && (
