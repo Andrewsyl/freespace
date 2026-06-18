@@ -19,6 +19,7 @@
     "lucide-react": "^1.17.0",
     "mapbox-gl": "^3.20.0",
     "next": "15.0.3",
+    "posthog-js": "^1.390.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "zod": "^3.23.8"

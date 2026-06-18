@@ -2898,6 +2898,18 @@
   dependencies:
     playwright "1.58.2"
 
+"@posthog/core@^1.35.1":
+  version "1.35.1"
+  resolved "https://artifacts.shuttercorp.net/npm-composite/@posthog/core/-/core-1.35.1.tgz#05e35bf795322b647e821eab27c51bc9753f555a"
+  integrity sha512-2a9JgJgR+Ow8lrUQHVZYXH9EgXskYDlpbgNW6UvtsVxp8pEEFD8PxjZMnzq73Dx3NhAwNUrnVpb8KeZzHAtoSA==
+  dependencies:
+    "@posthog/types" "^1.389.0"
+
+"@posthog/types@^1.389.0", "@posthog/types@^1.390.0":
+  version "1.390.0"
+  resolved "https://artifacts.shuttercorp.net/npm-composite/@posthog/types/-/types-1.390.0.tgz#efab2bdd91b54b8653c2fbf79162f1d2ad9f5b9e"
+  integrity sha512-zMjK6nrUWhAlL8ECrM4WldvgawqdoAE5B0ys7eA0lCoWuyzfFoSyh6zYtEuBSDRyN7fQLSfNCK+mQH4ngOl7Zw==
+
 "@prisma/instrumentation@7.4.2":
   version "7.4.2"
   resolved "https://registry.npmjs.org/@prisma/instrumentation/-/instrumentation-7.4.2.tgz"
@@ -4757,6 +4769,11 @@
   resolved "https://registry.npmjs.org/@types/tough-cookie/-/tough-cookie-4.0.5.tgz"
   integrity sha512-/Ad8+nIOV7Rl++6f1BdKxFSMgmoqEoYbHRpPcx3JEfv8VRsQe9Z4mCXeJBzxs7mbHY/XOZZuXlRNfhpVPbs6ZA==
 
+"@types/trusted-types@^2.0.7":
+  version "2.0.7"
+  resolved "https://artifacts.shuttercorp.net/npm-composite/@types/trusted-types/-/trusted-types-2.0.7.tgz#baccb07a970b91707df3a3e8ba6896c57ead2d11"
+  integrity sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==
+
 "@types/use-sync-external-store@^0.0.6":
   version "0.0.6"
   resolved "https://registry.npmjs.org/@types/use-sync-external-store/-/use-sync-external-store-0.0.6.tgz"
@@ -6118,6 +6135,11 @@ core-js-compat@^3.43.0:
   dependencies:
     browserslist "^4.28.1"
 
+core-js@^3.38.1:
+  version "3.49.0"
+  resolved "https://artifacts.shuttercorp.net/npm-composite/core-js/-/core-js-3.49.0.tgz#8b4d520ac034311fa21aa616f017ada0e0dbbddd"
+  integrity sha512-es1U2+YTtzpwkxVLwAFdSpaIMyQaq0PBgm3YD1W3Qpsn1NAmO3KSgZfu+oGSWVu6NvLHoHCV/aYcsE5wiB7ALg==
+
 cors@^2.8.5:
   version "2.8.6"
   resolved "https://registry.npmjs.org/cors/-/cors-2.8.6.tgz"
@@ -6552,6 +6574,13 @@ domhandler@^5.0.2, domhandler@^5.0.3:
   integrity sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w==
   dependencies:
     domelementtype "^2.3.0"
+
+dompurify@^3.3.2:
+  version "3.4.11"
+  resolved "https://artifacts.shuttercorp.net/npm-composite/dompurify/-/dompurify-3.4.11.tgz#29c8ba496475f279ef4015784068452fb14a0680"
+  integrity sha512-zhlUV12GsaRzMsf9q5M254YhA4+VuF0fG+QFqu6aYpoGlKtz+w8//jBcGVYBgQkR5GHjUomejY84AV+/uPbWdw==
+  optionalDependencies:
+    "@types/trusted-types" "^2.0.7"
 
 domutils@^3.0.1:
   version "3.2.2"
@@ -7562,6 +7591,11 @@ fecha@3.0.3:
   version "3.0.3"
   resolved "https://registry.npmjs.org/fecha/-/fecha-3.0.3.tgz"
   integrity sha512-6LQK/1jud/FZnfEEZJ7y81vw7ge81DNd/XEsX0hgMUjhS+QMljkb1C0czBaP7dMNRVrd5mw/J2J7qI2Nw+TWZw==
+
+fflate@^0.4.8:
+  version "0.4.8"
+  resolved "https://artifacts.shuttercorp.net/npm-composite/fflate/-/fflate-0.4.8.tgz#f90b82aefbd8ac174213abb338bd7ef848f0f5ae"
+  integrity sha512-FJqqoDBR00Mdj9ppamLa/Y7vxm+PRmNWA67N846RvsoYVMKB4q3y/de5PA7gUmRMYK/8CMz2GDZQmCRN1wBcWA==
 
 figma-squircle@^1.1.0:
   version "1.1.0"
@@ -10953,10 +10987,37 @@ postgres-interval@^1.1.0:
   dependencies:
     xtend "^4.0.0"
 
+posthog-js@^1.390.2:
+  version "1.390.2"
+  resolved "https://artifacts.shuttercorp.net/npm-composite/posthog-js/-/posthog-js-1.390.2.tgz#ea060d51684cf4e067c837acf661bb537cffb25d"
+  integrity sha512-z1zh0mMokecCILXxabmo5Xag6uCVYEDhP2JnMYLNxwmKN7d7u1S94XYmhUTF3iyAo2JOg6c7n86mGaTXliz4MA==
+  dependencies:
+    "@posthog/core" "^1.35.1"
+    "@posthog/types" "^1.390.0"
+    core-js "^3.38.1"
+    dompurify "^3.3.2"
+    fflate "^0.4.8"
+    preact "^10.28.2"
+    query-selector-shadow-dom "^1.0.1"
+    web-vitals "^5.1.0"
+
+posthog-react-native@^4.49.2:
+  version "4.49.2"
+  resolved "https://artifacts.shuttercorp.net/npm-composite/posthog-react-native/-/posthog-react-native-4.49.2.tgz#fa1637d2dd04e1aba1ceda77a82233059bd573e9"
+  integrity sha512-0KaS/3qxqV2x9ViT52hVjdkMgPAPvEGufehWG/59OAk7FWaWsWFav9Zydr0nd84QDSrdgwvi03r8p8Y0PUYc7Q==
+  dependencies:
+    "@posthog/core" "^1.35.1"
+    "@posthog/types" "^1.389.0"
+
 potpack@^2.0.0:
   version "2.1.0"
   resolved "https://registry.npmjs.org/potpack/-/potpack-2.1.0.tgz"
   integrity sha512-pcaShQc1Shq0y+E7GqJqvZj8DTthWV1KeHGdi0Z6IAin2Oi3JnLCOfwnCo84qc+HAp52wT9nK9H7FAJp5a44GQ==
+
+preact@^10.28.2:
+  version "10.29.2"
+  resolved "https://artifacts.shuttercorp.net/npm-composite/preact/-/preact-10.29.2.tgz#3e6069c471718b8d124d1cd67565114532e88d70"
+  integrity sha512-7tNmwg/7mzzAoB/8kSg6Hl37JraAZw3Z3A0JSY7VXlZwo82Xn0G7wKbNNs2qoF4ZEEsQGTwDAroNdqKs1ofJxQ==
 
 prelude-ls@^1.2.1:
   version "1.2.1"
@@ -11082,6 +11143,11 @@ qs@^6.14.1, qs@~6.14.0:
   integrity sha512-V/yCWTTF7VJ9hIh18Ugr2zhJMP01MY7c5kh4J870L7imm6/DIzBsNLTXzMwUA3yZ5b/KBqLx8Kp3uRvd7xSe3Q==
   dependencies:
     side-channel "^1.1.0"
+
+query-selector-shadow-dom@^1.0.1:
+  version "1.0.1"
+  resolved "https://artifacts.shuttercorp.net/npm-composite/query-selector-shadow-dom/-/query-selector-shadow-dom-1.0.1.tgz#1c7b0058eff4881ac44f45d8f84ede32e9a2f349"
+  integrity sha512-lT5yCqEBgfoMYpf3F2xQRK7zEr1rhIIZuceDK6+xRkJQ4NMbHTwXqk4NkwDwQMNqXgG9r9fyHnzwNVs6zV5KRw==
 
 query-string@^7.1.3:
   version "7.1.3"
@@ -12999,6 +13065,11 @@ wcwidth@^1.0.1:
   integrity sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==
   dependencies:
     defaults "^1.0.3"
+
+web-vitals@^5.1.0:
+  version "5.3.0"
+  resolved "https://artifacts.shuttercorp.net/npm-composite/web-vitals/-/web-vitals-5.3.0.tgz#a67f57f229fdf68be99eb99d3725946def284ff3"
+  integrity sha512-q6LWsLatGYZp5VGBIOvbTj6JBV2nOmC8KvWztXBmwJcfFAzhwKwbOxhUH306XY3CcaZDUlSmSuNPBsCn0bFu+g==
 
 webidl-conversions@^3.0.0:
   version "3.0.1"

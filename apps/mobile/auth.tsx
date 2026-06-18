@@ -11,7 +11,7 @@ import {
   revokeSession,
   unregisterPushToken,
 } from "./api";
-import { trackEvent } from "./analytics";
+import { trackEvent, identifyPostHogUser, resetPostHogUser } from "./analytics";
 
 export type AuthUser = {
   id: string;
@@ -200,6 +200,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       method: "password",
       userId: nextUser?.id ?? null,
     });
+    if (nextUser) void identifyPostHogUser(nextUser.id, { email: nextUser.email, name: nextUser.name });
     return nextUser as AuthUser;
   }, []);
 
@@ -232,6 +233,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userId: nextUser?.id ?? null,
         phoneProvided: Boolean(legal.phone),
       });
+      if (nextUser) void identifyPostHogUser(nextUser.id, { email: nextUser.email, name: nextUser.name });
       return { previewUrl: response.previewUrl ?? null, user: nextUser as AuthUser };
     },
     []
@@ -277,6 +279,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Ignore Google sign-out failures; local session is already cleared.
     }
+    void resetPostHogUser();
   }, []);
 
   const loginWithOAuth = useCallback(async (provider: "google" | "facebook", tokenValue: string) => {
@@ -299,6 +302,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       method: provider,
       userId: nextUser?.id ?? null,
     });
+    if (nextUser) void identifyPostHogUser(nextUser.id, { email: nextUser.email, name: nextUser.name });
     return nextUser as AuthUser;
   }, []);
 

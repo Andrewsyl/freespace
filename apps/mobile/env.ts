@@ -17,6 +17,7 @@ const appEnv =
   process.env.APP_ENV?.trim().toLowerCase() ??
   (__DEV__ ? "local" : "production");
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN?.trim();
+const postHogKey = process.env.EXPO_PUBLIC_POSTHOG_KEY?.trim();
 
 if (!/^https?:\/\//.test(apiBase)) {
   throw new Error("EXPO_PUBLIC_API_BASE must be an absolute URL");
@@ -53,6 +54,7 @@ export const mobileEnv = {
   googleIosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
   googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
   googleOauthClientId: process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID,
+  postHogKey,
   sentryDsn,
   stripePublishableKey: stripeKey,
 } as const;

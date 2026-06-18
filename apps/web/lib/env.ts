@@ -21,6 +21,8 @@ const webEnvSchema = z
       ),
     BASIC_AUTH_USER: z.string().optional(),
     BASIC_AUTH_PASS: z.string().optional(),
+    NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
+    NEXT_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
   })
   .superRefine((value, ctx) => {
     const apiUsesLocalNetwork = isLocalApiBase(value.NEXT_PUBLIC_API_BASE);
@@ -55,6 +57,8 @@ const candidateEnv = {
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
   BASIC_AUTH_USER: process.env.BASIC_AUTH_USER,
   BASIC_AUTH_PASS: process.env.BASIC_AUTH_PASS,
+  NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+  NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
 };
 
 const parsed = webEnvSchema.safeParse(candidateEnv);

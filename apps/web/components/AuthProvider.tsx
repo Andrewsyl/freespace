@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { login, refreshSession, register, revokeSession, oauthLoginGoogle, type AuthResponse } from "../lib/api";
 import { trackEvent } from "../lib/telemetry";
 import { useAppStatus } from "./AppStatusProvider";
+import { usePostHog } from "posthog-js/react";
 
 type User = AuthResponse["user"];
 
@@ -65,6 +66,7 @@ function readSession() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const ph = usePostHog();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
@@ -130,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "password",
         userId: res.user.id,
       });
+      ph?.identify(res.user.id, { email: res.user.email, name: res.user.name });
       return res.user;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Login failed";
@@ -162,6 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userId: res.user.id,
         phoneProvided: Boolean(phone),
       });
+      ph?.identify(res.user.id, { email: res.user.email, name: res.user.name });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Signup failed";
       setError(msg);
@@ -192,6 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "google",
         userId: res.user.id,
       });
+      ph?.identify(res.user.id, { email: res.user.email, name: res.user.name });
       return res.user;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Google sign-in failed";
@@ -223,8 +228,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (currentToken) {
       void revokeSession(currentToken);
     }
+    ph?.reset();
     setAuthLoading(false);
-  }, [token]);
+  }, [token, ph]);
 
   useEffect(() => {
     if (logoutTimerRef.current) {
