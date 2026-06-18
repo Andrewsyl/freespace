@@ -60,7 +60,7 @@
       "package": "ie.freespace.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/white/png/icon-1024-rounded.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#0a8050"
       },
       "intentFilters": [
         {
