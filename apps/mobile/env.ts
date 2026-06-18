@@ -16,7 +16,6 @@ const appEnv =
   (Constants.expoConfig as { extra?: { appEnv?: string } } | null)?.extra?.appEnv?.trim().toLowerCase() ??
   process.env.APP_ENV?.trim().toLowerCase() ??
   (__DEV__ ? "local" : "production");
-const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN?.trim();
 const postHogKey = process.env.EXPO_PUBLIC_POSTHOG_KEY?.trim();
 
 if (!/^https?:\/\//.test(apiBase)) {
@@ -39,14 +38,6 @@ if (appEnv !== "production" && stripeKey.startsWith("pk_live_")) {
   throw new Error("Live Stripe publishable keys are not allowed outside production");
 }
 
-if (sentryDsn) {
-  try {
-    new URL(sentryDsn);
-  } catch {
-    throw new Error("EXPO_PUBLIC_SENTRY_DSN must be a valid URL");
-  }
-}
-
 export const mobileEnv = {
   apiBase,
   appEnv,
@@ -55,6 +46,5 @@ export const mobileEnv = {
   googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
   googleOauthClientId: process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID,
   postHogKey,
-  sentryDsn,
   stripePublishableKey: stripeKey,
 } as const;

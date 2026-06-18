@@ -61,12 +61,8 @@ export function installGlobalErrorLogging() {
 
   const existingHandler = globalErrorUtils.getGlobalHandler?.();
   globalErrorUtils.setGlobalHandler((error, isFatal) => {
-    getSentry()?.captureException(error, {
-      tags: {
-        source: "global-error-handler",
-        isFatal: String(Boolean(isFatal)),
-      },
-    });
+    const { capturePostHogException } = require("./posthog") as typeof import("./posthog");
+    capturePostHogException(error, { source: "global-error-handler", isFatal: String(Boolean(isFatal)) });
     logError("Unhandled JS error", {
       name: error?.name,
       message: error?.message,
@@ -82,20 +78,6 @@ export function installGlobalErrorLogging() {
     });
     existingHandler?.(error, isFatal);
   });
-}
-
-function getSentry():
-  | {
-      captureException: (error: unknown, context?: unknown) => void;
-    }
-  | null {
-  try {
-    // Use a runtime require so Jest does not need to parse the package unless configured.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require("@sentry/react-native");
-  } catch {
-    return null;
-  }
 }
 
 async function reportClientError(payload: {

@@ -2,7 +2,7 @@ import "./loadEnv.js";
 import cors from "cors";
 import express from "express";
 import { randomUUID } from "crypto";
-import * as Sentry from "@sentry/node";
+import { captureException } from "./lib/posthog.js";
 import { z } from "zod";
 import authRouter from "./routes/auth.js";
 import analyticsRouter from "./routes/analytics.js";
@@ -151,12 +151,10 @@ export function createApp() {
       path: req.originalUrl,
       error: err instanceof Error ? { name: err.name, message: err.message, stack: err.stack } : err,
     });
-    Sentry.captureException(err, {
-      tags: {
-        requestId,
-        method: req.method,
-        path: req.originalUrl,
-      },
+    captureException(err, {
+      requestId,
+      method: req.method,
+      path: req.originalUrl,
     });
 
     if (err instanceof z.ZodError) {

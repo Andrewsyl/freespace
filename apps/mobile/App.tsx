@@ -65,6 +65,7 @@ import {
 } from "./e2e/testMode";
 import { mobileEnv } from "./env";
 import { installGlobalErrorLogging, logWarn } from "./logger";
+import { initPostHog } from "./posthog";
 import { colors } from "./theme/colors";
 import { radius, spacing as appSpacing } from "./styles/theme";
 
@@ -80,36 +81,8 @@ type BookingNotificationData = {
 
 enableScreens(false);
 void SplashScreen.preventAutoHideAsync();
+initPostHog();
 installGlobalErrorLogging();
-
-if (mobileEnv.sentryDsn) {
-  getSentry()?.init({
-    dsn: mobileEnv.sentryDsn,
-    enabled: true,
-    enableNativeFramesTracking: false,
-    environment: mobileEnv.appEnv ?? (__DEV__ ? "local" : "production"),
-    tracesSampleRate: 0,
-  });
-}
-
-function getSentry():
-  | {
-      init: (options: {
-        dsn: string;
-        enabled: boolean;
-        enableNativeFramesTracking: boolean;
-        environment: string;
-        tracesSampleRate: number;
-      }) => void;
-    }
-  | null {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require("@sentry/react-native");
-  } catch {
-    return null;
-  }
-}
 
 export default function App() {
   const [fontsLoaded] = useFonts({

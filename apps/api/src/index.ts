@@ -2,21 +2,15 @@ import "./loadEnv.js";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import * as Sentry from "@sentry/node";
 import { createApp } from "./app.js";
 import { processScheduledNotifications } from "./lib/notifications.js";
 import { reportOperationalAlert } from "./lib/opsAlerts.js";
 import { pool } from "./lib/db.js";
 import { env } from "./env.js";
 import { logError, logInfo, logWarn } from "./lib/logger.js";
+import { initPostHog, captureException } from "./lib/posthog.js";
 
-if (env.SENTRY_DSN) {
-  Sentry.init({
-    dsn: env.SENTRY_DSN,
-    environment: env.NODE_ENV,
-    tracesSampleRate: 0,
-  });
-}
+initPostHog();
 
 const app = createApp();
 const port = env.PORT;
@@ -60,7 +54,7 @@ process.on("unhandledRejection", (reason) => {
   logError("process.unhandled_rejection", {
     reason: reason instanceof Error ? { message, stack: reason.stack } : message,
   });
-  Sentry.captureException(reason);
+  captureException(reason);
   const key = message.slice(0, 120);
   const now = Date.now();
   if (key === lastUnhandledAlertKey && now - lastUnhandledAlertAt < UNHANDLED_ALERT_COOLDOWN_MS) return;
@@ -80,7 +74,7 @@ process.on("uncaughtException", (error) => {
     message: error.message,
     stack: error.stack,
   });
-  Sentry.captureException(error);
+  captureException(error);
   void reportOperationalAlert({
     source: "api-process",
     title: "Uncaught exception",
