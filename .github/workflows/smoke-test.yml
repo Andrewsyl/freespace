@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Check API health endpoint
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://freespace.ie/api/health)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://api.freespace.ie/health)
           echo "HTTP status: $STATUS"
           if [ "$STATUS" != "200" ]; then
             echo "::error::API health check failed — got HTTP $STATUS"
