@@ -76,6 +76,11 @@
               "scheme": "https",
               "host": "freespace.ie",
               "pathPrefix": "/reset-password"
+            },
+            {
+              "scheme": "https",
+              "host": "freespace.ie",
+              "pathPrefix": "/bookings"
             }
           ],
           "category": [
@@ -98,7 +103,7 @@
           "apiKey": "AIzaSyC1h1NFLFz7SPauw85Udh0O1CBlN5bqOek"
         }
       },
-      "versionCode": 115
+      "versionCode": 119
     },
     "androidStatusBar": {
       "translucent": true,

@@ -8,6 +8,7 @@ import {
   insertEventLog,
   markBookingRefundedByPaymentIntent,
   listUserBookings,
+  getBookingById,
   getListingWithHostAccount,
   findUserById,
   cancelBookingByDriver,
@@ -349,6 +350,8 @@ async function sendDriverBookingLifecycleEmail(input: {
   receiptUrl?: string | null;
   accessCode?: string | null;
   arrivalInstructions?: string | null;
+  amountCents?: number | null;
+  vehiclePlate?: string | null;
 }) {
   if (!input.driverEmail) return;
   const windowText = formatBookingWindow(input.startTime, input.endTime);
@@ -360,9 +363,13 @@ async function sendDriverBookingLifecycleEmail(input: {
       listingTitle: input.listingTitle,
       listingAddress: input.listingAddress,
       windowText,
+      startTime: input.startTime,
+      endTime: input.endTime,
       accessCode: input.accessCode,
       arrivalInstructions: input.arrivalInstructions,
       receiptUrl: input.receiptUrl,
+      amountCents: input.amountCents,
+      vehiclePlate: input.vehiclePlate,
     });
   } catch (error) {
     await insertEventLog({
@@ -1638,6 +1645,8 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
           receiptUrl,
           accessCode: targets.access_code,
           arrivalInstructions: targets.arrival_instructions,
+          amountCents: targets.amount_cents,
+          vehiclePlate: targets.vehicle_plate,
         });
         await scheduleBookingNotifications({
           bookingId: targets.booking_id,
@@ -1667,6 +1676,8 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
             receiptUrl,
             accessCode: targets.access_code,
             arrivalInstructions: targets.arrival_instructions,
+          amountCents: targets.amount_cents,
+          vehiclePlate: targets.vehicle_plate,
           });
         }
         await deleteScheduledNotificationsByBooking(targets.booking_id);
@@ -1738,6 +1749,8 @@ router.post("/:id/cancel", requireAuth, enforceBlockedList, bookingLimiter, asyn
         endTime: new Date(targets.end_time),
         accessCode: targets.access_code,
         arrivalInstructions: targets.arrival_instructions,
+          amountCents: targets.amount_cents,
+          vehiclePlate: targets.vehicle_plate,
       });
       await deleteScheduledNotificationsByBooking(targets.booking_id);
     }
@@ -1806,6 +1819,8 @@ router.post("/:id/host-cancel", requireAuth, enforceBlockedList, bookingLimiter,
         endTime: new Date(targets.end_time),
         accessCode: targets.access_code,
         arrivalInstructions: targets.arrival_instructions,
+          amountCents: targets.amount_cents,
+          vehiclePlate: targets.vehicle_plate,
       });
       await deleteScheduledNotificationsByBooking(targets.booking_id);
     }
@@ -1939,6 +1954,8 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
               endTime: new Date(conflictTargets.end_time),
               accessCode: conflictTargets.access_code,
               arrivalInstructions: conflictTargets.arrival_instructions,
+              amountCents: conflictTargets.amount_cents,
+              vehiclePlate: conflictTargets.vehicle_plate,
             });
             await deleteScheduledNotificationsByBooking(conflictTargets.booking_id);
           }
@@ -2000,6 +2017,8 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           receiptUrl,
           accessCode: targets.access_code,
           arrivalInstructions: targets.arrival_instructions,
+          amountCents: targets.amount_cents,
+          vehiclePlate: targets.vehicle_plate,
         });
         await scheduleBookingNotifications({
           bookingId: targets.booking_id,
@@ -2097,6 +2116,8 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
               endTime: new Date(conflictTargets.end_time),
               accessCode: conflictTargets.access_code,
               arrivalInstructions: conflictTargets.arrival_instructions,
+              amountCents: conflictTargets.amount_cents,
+              vehiclePlate: conflictTargets.vehicle_plate,
             });
             await deleteScheduledNotificationsByBooking(conflictTargets.booking_id);
           }
@@ -2149,6 +2170,8 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           receiptUrl: (intent as any).charges?.data?.[0]?.receipt_url ?? null,
           accessCode: targets.access_code,
           arrivalInstructions: targets.arrival_instructions,
+          amountCents: targets.amount_cents,
+          vehiclePlate: targets.vehicle_plate,
         });
         await scheduleBookingNotifications({
           bookingId: targets.booking_id,
@@ -2225,6 +2248,18 @@ router.get("/me", requireAuth, bookingReadLimiter, async (req, res, next) => {
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
     const bookings = await listUserBookings(userId);
     res.json(bookings);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/:id", requireAuth, bookingReadLimiter, async (req, res, next) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const booking = await getBookingById(userId, req.params.id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    res.json(booking);
   } catch (error) {
     next(error);
   }

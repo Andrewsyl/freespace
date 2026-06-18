@@ -999,6 +999,17 @@ export async function listMyBookings(token: string) {
   };
 }
 
+export async function getBooking(token: string, bookingId: string, apiBase?: string) {
+  const base = apiBase ?? baseUrl;
+  const response = await fetchWithTimeout(`${base}/api/bookings/${bookingId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "Booking fetch failed"));
+  }
+  return (await response.json()) as BookingSummary;
+}
+
 export async function checkInBooking(payload: { token: string; bookingId: string }) {
   const response = await fetchWithTimeout(`${baseUrl}/api/bookings/${payload.bookingId}/check-in`, {
     method: "POST",

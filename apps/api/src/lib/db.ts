@@ -1570,7 +1570,9 @@ export async function getBookingNotificationTargetsByPaymentIntent(paymentIntent
            l.arrival_instructions,
            driver.email AS driver_email,
            b.start_time,
-           b.end_time
+           b.end_time,
+           b.amount_cents,
+           b.vehicle_plate
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
     LEFT JOIN users driver ON driver.id = b.driver_id
@@ -1591,6 +1593,8 @@ export async function getBookingNotificationTargetsByPaymentIntent(paymentIntent
         driver_email: string | null;
         start_time: Date;
         end_time: Date;
+        amount_cents: number | null;
+        vehicle_plate: string | null;
       }
     | undefined;
 }
@@ -1607,7 +1611,9 @@ export async function getBookingNotificationTargetsByCheckoutSession(checkoutSes
            l.arrival_instructions,
            driver.email AS driver_email,
            b.start_time,
-           b.end_time
+           b.end_time,
+           b.amount_cents,
+           b.vehicle_plate
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
     LEFT JOIN users driver ON driver.id = b.driver_id
@@ -1628,6 +1634,8 @@ export async function getBookingNotificationTargetsByCheckoutSession(checkoutSes
         driver_email: string | null;
         start_time: Date;
         end_time: Date;
+        amount_cents: number | null;
+        vehicle_plate: string | null;
       }
     | undefined;
 }
@@ -1644,7 +1652,9 @@ export async function getBookingNotificationTargets(bookingId: string) {
            l.arrival_instructions,
            driver.email AS driver_email,
            b.start_time,
-           b.end_time
+           b.end_time,
+           b.amount_cents,
+           b.vehicle_plate
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
     LEFT JOIN users driver ON driver.id = b.driver_id
@@ -1665,6 +1675,8 @@ export async function getBookingNotificationTargets(bookingId: string) {
         driver_email: string | null;
         start_time: Date;
         end_time: Date;
+        amount_cents: number | null;
+        vehicle_plate: string | null;
       }
     | undefined;
 }
@@ -2567,6 +2579,83 @@ async function getBookingStatusSignals(bookingIds: string[]) {
     });
   }
   return map;
+}
+
+export async function getBookingById(userId: string, bookingId: string) {
+  const result = await pool.query(
+    `
+    SELECT
+      b.id,
+      b.listing_id,
+      b.start_time,
+      b.end_time,
+      b.status,
+      b.refund_status,
+      b.refunded_at,
+      b.receipt_url,
+      b.checked_in_at,
+      b.no_show_at,
+      b.vehicle_plate,
+      b.amount_cents,
+      b.currency,
+      l.title,
+      l.address,
+      l.image_urls,
+      ST_X(l.geom) AS longitude,
+      ST_Y(l.geom) AS latitude,
+      l.host_id,
+      l.access_code,
+      l.arrival_instructions,
+      h.phone AS host_phone,
+      d.full_name AS driver_name,
+      d.phone AS driver_phone,
+      d.vehicle_make AS driver_vehicle_make,
+      d.vehicle_type AS driver_vehicle_type,
+      d.vehicle_color AS driver_vehicle_color
+    FROM bookings b
+    JOIN listings l ON l.id = b.listing_id
+    JOIN users h ON h.id = l.host_id
+    JOIN users d ON d.id = b.driver_id
+    WHERE b.id = $1
+      AND (b.driver_id = $2 OR l.host_id = $2)
+    `,
+    [bookingId, userId]
+  );
+
+  const row = result.rows[0];
+  if (!row) return null;
+
+  const signals = await getBookingStatusSignals([bookingId]);
+
+  return {
+    id: row.id,
+    listingId: row.listing_id,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    status: row.status ?? "pending",
+    refundStatus: row.refund_status ?? null,
+    refundedAt: row.refunded_at ?? null,
+    receiptUrl: row.receipt_url ?? null,
+    checkedInAt: row.checked_in_at ?? null,
+    noShowAt: row.no_show_at ?? null,
+    vehiclePlate: row.vehicle_plate ?? null,
+    amountCents: row.amount_cents ?? 0,
+    currency: row.currency ?? "eur",
+    address: row.address,
+    title: row.title,
+    imageUrls: row.image_urls ?? null,
+    latitude: row.latitude ?? null,
+    longitude: row.longitude ?? null,
+    accessCode: row.access_code ?? null,
+    arrivalInstructions: row.arrival_instructions ?? null,
+    driverName: row.driver_name ?? null,
+    driverPhone: row.driver_phone ?? null,
+    driverVehicleMake: row.driver_vehicle_make ?? null,
+    driverVehicleType: row.driver_vehicle_type ?? null,
+    driverVehicleColor: row.driver_vehicle_color ?? null,
+    hostPhone: row.host_phone ?? null,
+    cancellationSource: signals.get(bookingId)?.cancellationSource ?? null,
+  };
 }
 
 export async function getHostEarningsSummary(hostId: string) {

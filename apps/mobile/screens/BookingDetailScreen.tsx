@@ -370,20 +370,6 @@ export function BookingDetailScreen({ navigation, route }: Props) {
           </View>
         ) : null}
 
-        {/* ── Directions banner — full bleed ── */}
-        {(isUpcoming || isInProgress) && !isCanceled && !canCheckIn ? (
-          <TouchableOpacity style={styles.directionsBanner} onPress={handleOpenMaps} activeOpacity={0.8}>
-            <View style={styles.directionsIconWrap}>
-              <Ionicons name="navigate" size={20} color="#fff" />
-            </View>
-            <View style={styles.directionsText}>
-              <Text style={styles.directionsLabel}>Get directions</Text>
-              <Text style={styles.directionsAddress} numberOfLines={1}>{booking.address}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
-          </TouchableOpacity>
-        ) : null}
-
         {/* ── Cards ── */}
         <View style={styles.cards}>
 
@@ -438,6 +424,20 @@ export function BookingDetailScreen({ navigation, route }: Props) {
               ) : null}
             </View>
           </View>
+
+          {/* Directions card */}
+          {(isUpcoming || isInProgress) && !isCanceled && !canCheckIn ? (
+            <TouchableOpacity style={styles.card} onPress={handleOpenMaps} activeOpacity={0.8}>
+              <Text style={styles.cardSectionHeader}>Location</Text>
+              <View style={[styles.detailRow]}>
+                <View style={styles.directionsIconWrap}>
+                  <Ionicons name="navigate" size={16} color={ACCENT} />
+                </View>
+                <Text style={styles.directionsAddress} numberOfLines={2}>{booking.address}</Text>
+                <Ionicons name="chevron-forward" size={16} color={MUTED} />
+              </View>
+            </TouchableOpacity>
+          ) : null}
 
           {/* Details card */}
           <View style={styles.card}>
@@ -589,19 +589,12 @@ const styles = StyleSheet.create({
   reviewTitleDone: { fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: FG },
   reviewStars: { flexDirection: "row", gap: 8 },
 
-  directionsBanner: {
-    flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: ACCENT,
-    paddingHorizontal: 20, paddingVertical: 14,
-  },
   directionsIconWrap: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center", justifyContent: "center", flexShrink: 0,
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: "#ECFDF5",
+    alignItems: "center", justifyContent: "center", flexShrink: 0, marginRight: 12,
   },
-  directionsText: { flex: 1 },
-  directionsLabel: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#fff" },
-  directionsAddress: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 1 },
+  directionsAddress: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: FG, flex: 1, lineHeight: 20 },
 
   // ── Cards wrapper ─────────────────────────────────────────────
   cards: {

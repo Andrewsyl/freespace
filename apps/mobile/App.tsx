@@ -51,7 +51,7 @@ import { SupportScreen } from "./screens/SupportScreen";
 import { AdminScreen } from "./screens/AdminScreen";
 import { OnboardingPermissions } from "./screens/OnboardingPermissionsScreen";
 import type { RootStackParamList } from "./types";
-import { getMe, registerPushToken, verifyEmailToken } from "./api";
+import { getBooking, getMe, registerPushToken, verifyEmailToken } from "./api";
 import { BottomTabButton } from "./components/BottomTabButton";
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { GlobalLoadingProvider, useGlobalLoading } from "./components/GlobalLoading";
@@ -112,7 +112,7 @@ export default function App() {
       // Time-critical "starts soon"/"ends soon" reminders get their own
       // high-importance channel so users can't lose them by muting general
       // updates (and vice versa). Channel settings stick once created.
-      void Notifications.setNotificationChannelAsync("booking-reminders", {
+      void Notifications.setNotificationChannelAsync("booking-reminders-v2", {
         name: "Booking reminders",
         importance: Notifications.AndroidImportance.HIGH,
       });
@@ -387,6 +387,28 @@ function AppNavigator() {
           showSuccess(`Loaded ${scenario?.name ?? "guest-smoke"} mobile test scenario.`);
         };
         navigateToScenario();
+        return;
+      }
+      if (path.startsWith("bookings/")) {
+        const bookingId = path.slice("bookings/".length);
+        if (!bookingId) return;
+        if (!token) {
+          showError("Sign in to view your booking.");
+          return;
+        }
+        try {
+          const booking = await getBooking(token, bookingId, apiBaseParam);
+          if (navigationRef.isReady()) {
+            navigationRef.dispatch(
+              CommonActions.navigate({
+                name: "BookingDetail",
+                params: { booking } as RootStackParamList["BookingDetail"],
+              })
+            );
+          }
+        } catch {
+          showError("Could not load booking.");
+        }
         return;
       }
       if (path === "reset-password") {

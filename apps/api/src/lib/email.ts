@@ -12,9 +12,13 @@ export async function sendBookingStatusEmail({
   listingTitle,
   listingAddress,
   windowText,
+  startTime,
+  endTime,
   accessCode,
   arrivalInstructions,
   receiptUrl,
+  amountCents,
+  vehiclePlate,
 }: {
   to: string;
   status: "confirmed" | "canceled";
@@ -22,18 +26,22 @@ export async function sendBookingStatusEmail({
   listingTitle: string;
   listingAddress: string;
   windowText: string;
+  startTime: Date;
+  endTime: Date;
   accessCode?: string | null;
   arrivalInstructions?: string | null;
   receiptUrl?: string | null;
+  amountCents?: number | null;
+  vehiclePlate?: string | null;
 }) {
   const subject =
     status === "confirmed"
-      ? `Booking confirmed — ${listingTitle}`
+      ? `You're booked in — ${listingTitle}`
       : `Booking cancelled — ${listingTitle}`;
 
   const html =
     status === "confirmed"
-      ? buildBookingConfirmationEmail({ bookingId, listingTitle, listingAddress, windowText, accessCode, arrivalInstructions, receiptUrl })
+      ? buildBookingConfirmationEmail({ bookingId, listingTitle, listingAddress, windowText, startTime, endTime, accessCode, arrivalInstructions, receiptUrl, amountCents, vehiclePlate })
       : buildBookingCancellationEmail({ listingTitle, listingAddress, windowText });
 
   const text =

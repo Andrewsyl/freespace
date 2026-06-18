@@ -11,7 +11,7 @@ export function initPostHog() {
   const key = (process.env.POSTHOG_API_KEY ?? "").trim();
   if (!key) return;
   _client = new PostHog(key, {
-    host: "https://us.i.posthog.com",
+    host: "https://eu.i.posthog.com",
     flushAt: 1,
     flushInterval: 0,
   });

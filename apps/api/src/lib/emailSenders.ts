@@ -14,7 +14,10 @@ export function getDefaultEmailFrom() {
 export function getAuthEmailFrom() {
   const configured = normalize(process.env.EMAIL_FROM_SIGNUP) ?? getDefaultEmailFrom();
   if (/no-reply@freespace\.ie/i.test(configured)) {
-    return "FreeSpace Accounts <accounts@freespace.ie>";
+    return "FreeSpace <accounts@freespace.ie>";
+  }
+  if (!configured.includes("<")) {
+    return `FreeSpace <${configured}>`;
   }
   return configured;
 }
@@ -22,7 +25,10 @@ export function getAuthEmailFrom() {
 export function getBookingEmailFrom() {
   const configured = normalize(process.env.EMAIL_FROM_BOOKINGS) ?? getDefaultEmailFrom();
   if (/no-reply@freespace\.ie/i.test(configured)) {
-    return "FreeSpace Bookings <booking@freespace.ie>";
+    return "FreeSpace <booking@freespace.ie>";
+  }
+  if (!configured.includes("<")) {
+    return `FreeSpace <${configured}>`;
   }
   return configured;
 }
@@ -30,7 +36,10 @@ export function getBookingEmailFrom() {
 export function getSupportEmailFrom() {
   const configured = normalize(process.env.EMAIL_FROM_SUPPORT) ?? getDefaultEmailFrom();
   if (/no-reply@freespace\.ie/i.test(configured)) {
-    return "FreeSpace Support <support@freespace.ie>";
+    return "FreeSpace <support@freespace.ie>";
+  }
+  if (!configured.includes("<")) {
+    return `FreeSpace <${configured}>`;
   }
   return configured;
 }

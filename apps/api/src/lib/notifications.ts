@@ -131,7 +131,7 @@ export async function processScheduledNotifications(limit = 50) {
         },
         channelId:
           item.type === "booking_start_soon" || item.type === "booking_end_soon"
-            ? "booking-reminders"
+            ? "booking-reminders-v2"
             : undefined,
         // "Extend +" action button on the end-soon reminder (category is
         // registered on the client at app startup).
