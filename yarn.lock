@@ -5431,7 +5431,7 @@ axe-core@^4.10.0:
 
 axios@^1.8.2:
   version "1.18.0"
-  resolved "https://artifacts.shuttercorp.net/npm-composite/axios/-/axios-1.18.0.tgz#8a7f8854af280fcaae063272df2ed9f3837d2398"
+  resolved "https://registry.npmjs.org/axios/-/axios-1.18.0.tgz#8a7f8854af280fcaae063272df2ed9f3837d2398"
   integrity sha512-E32NzpYKp++W7XRe52rHiXV2ehxmh3wbdgO7MHeFM+vqxLBYHzt0ElkiImtOBxtOmyp0yoC8C6uESVV84Y2/hw==
   dependencies:
     follow-redirects "^1.16.0"
@@ -7694,7 +7694,7 @@ flow-enums-runtime@^0.0.6:
 
 follow-redirects@^1.16.0:
   version "1.16.0"
-  resolved "https://artifacts.shuttercorp.net/npm-composite/follow-redirects/-/follow-redirects-1.16.0.tgz#28474a159d3b9d11ef62050a14ed60e4df6d61bc"
+  resolved "https://registry.npmjs.org/follow-redirects/-/follow-redirects-1.16.0.tgz#28474a159d3b9d11ef62050a14ed60e4df6d61bc"
   integrity sha512-y5rN/uOsadFT/JfYwhxRS5R7Qce+g3zG97+JrtFZlC9klX/W5hD7iiLzScI4nZqUS7DNUdhPgw4xI8W2LuXlUw==
 
 fontfaceobserver@^2.1.0:
@@ -11018,7 +11018,7 @@ posthog-js@^1.390.2:
 
 posthog-node@4:
   version "4.18.0"
-  resolved "https://artifacts.shuttercorp.net/npm-composite/posthog-node/-/posthog-node-4.18.0.tgz#dc520b857a5de7c3b03683a20e90257d84344af0"
+  resolved "https://registry.npmjs.org/posthog-node/-/posthog-node-4.18.0.tgz#dc520b857a5de7c3b03683a20e90257d84344af0"
   integrity sha512-XROs1h+DNatgKh/AlIlCtDxWzwrKdYDb2mOs58n4yN8BkGN9ewqeQwG5ApS4/IzwCb7HPttUkOVulkYatd2PIw==
   dependencies:
     axios "^1.8.2"
@@ -11134,7 +11134,7 @@ proxy-from-env@^1.1.0:
 
 proxy-from-env@^2.1.0:
   version "2.1.0"
-  resolved "https://artifacts.shuttercorp.net/npm-composite/proxy-from-env/-/proxy-from-env-2.1.0.tgz#a7487568adad577cfaaa7e88c49cab3ab3081aba"
+  resolved "https://registry.npmjs.org/proxy-from-env/-/proxy-from-env-2.1.0.tgz#a7487568adad577cfaaa7e88c49cab3ab3081aba"
   integrity sha512-cJ+oHTW1VAEa8cJslgmUZrc+sjRKgAKl3Zyse6+PV38hZe/V6Z14TbCuXcan9F9ghlz4QrFr2c92TNF82UkYHA==
 
 psl@^1.1.33:
