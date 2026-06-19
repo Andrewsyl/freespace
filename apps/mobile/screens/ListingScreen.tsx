@@ -62,6 +62,12 @@ import {
   Warehouse,
   X,
   Zap,
+  Footprints,
+  Train,
+  TramFront,
+  Trophy,
+  Landmark,
+  Trees,
 } from "lucide-react-native";
 import { SkeletonBlock, usePulse } from "../components/ui";
 import { SquircleBtn } from "../components/SquircleBtn";
@@ -85,6 +91,15 @@ const FEATURE_ICONS: Record<string, LucideIcon> = {
   allday:    Clock,
   motorbike: Bike,
   wide:      Maximize2,
+};
+
+// Icons for the "Getting around" rows, keyed by the server's nearby category.
+const NEARBY_ICONS: Record<string, LucideIcon> = {
+  transit:  Train,
+  tram:     TramFront,
+  stadium:  Trophy,
+  landmark: Landmark,
+  park:     Trees,
 };
 
 const getFeatureIconType = (label: string) => {
@@ -389,6 +404,11 @@ export function ListingScreen({ navigation, route }: Props) {
     // can map to the same label, and the chips use the label as their React key.
     () => Array.from(new Set(amenities.filter(Boolean).map(humanizeAmenity))),
     [amenities]
+  );
+
+  const nearbyPlaces = useMemo(
+    () => (listing?.nearby ?? []).filter((p) => p && p.name),
+    [listing?.nearby]
   );
 
   const availabilityFallbackText = useMemo(() => {
@@ -860,6 +880,26 @@ export function ListingScreen({ navigation, route }: Props) {
                           </Text>
                         </Pressable>
                       ) : null}
+                      {nearbyPlaces.length ? (
+                        <View style={styles.nearbyWrap}>
+                          <Text style={styles.nearbyHeading}>Getting around</Text>
+                          {nearbyPlaces.map((place) => {
+                            const Icon = NEARBY_ICONS[place.category] ?? Footprints;
+                            return (
+                              <View key={`${place.category}-${place.name}`} style={styles.nearbyRow}>
+                                <View style={styles.nearbyIconWrap}>
+                                  <Icon size={15} color={GREEN} strokeWidth={2} />
+                                </View>
+                                <Text style={styles.nearbyText} numberOfLines={1}>
+                                  <Text style={styles.nearbyWalk}>{place.walkMinutes} min walk</Text>
+                                  <Text style={styles.nearbyDot}>{"  ·  "}</Text>
+                                  {place.name}
+                                </Text>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      ) : null}
                     </View>
                   </>
                 ) : null}
@@ -975,6 +1015,7 @@ export function ListingScreen({ navigation, route }: Props) {
                 ) : null}
 
                 {/* ── Reviews ──────────────────────────────── */}
+                <View style={styles.sectionDivider} />
                 <View style={styles.section}>
                   <View style={styles.reviewsHeader}>
                     <Text style={styles.sectionTitle}>Reviews</Text>
@@ -1276,10 +1317,11 @@ const GREEN      = "#0a8050";
 const GREEN_SOFT = "#edf7f2";
 const FG         = "#111827";
 const FG_2       = "#374151";
-const FG_MUTED   = "#374151";
+const FG_MUTED   = FG_2;        // alias — was a duplicate of FG_2 (#374151)
 const FG_SUBTLE  = "#4b5563";
-const LINE       = "#C4CCD5";
-const LINE_2     = "#C4CCD5";
+const LINE       = "#C4CCD5";   // card / control borders
+const LINE_2     = LINE;        // alias — was a duplicate of LINE
+const DIVIDER    = "#EBEBEB";   // section + row separators
 const BG_2       = "#F7F7F6";
 
 const styles = StyleSheet.create({
@@ -1391,7 +1433,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.8,
     textTransform: "uppercase",
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(255,255,255,0.88)",
     marginBottom: 4,
   },
   heroTitleText: {
@@ -1401,17 +1443,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     color: "#ffffff",
     marginBottom: 6,
-  },
-  heroAreaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  heroAreaText: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    color: "rgba(255,255,255,0.8)",
-    flex: 1,
   },
 
   // Floating controls
@@ -1451,25 +1482,6 @@ const styles = StyleSheet.create({
   },
 
   // Title block
-  titleBlock: { paddingBottom: 16 },
-  titleText: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 26, lineHeight: 31, letterSpacing: -0.5,
-    color: FG, marginBottom: 10,
-  },
-  metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 6 },
-  starPill: { flexDirection: "row", alignItems: "center", gap: 4 },
-  starPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
-  starPillCount: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED },
-  metaDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: LINE_2 },
-  availPulseDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: GREEN, marginRight: 4 },
-  availPulseDotOff: { backgroundColor: colors.danger },
-  availText: { fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: GREEN },
-  availTextOff: { color: colors.danger },
-  addressRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  addressText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, flex: 1, flexShrink: 1 },
-  addressSep: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: LINE_2, flexShrink: 0 },
-  distanceText: { fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: FG_MUTED, flexShrink: 0 },
 
 
   // ── Price + meta block ─────────────────────────────────────────────────────
@@ -1478,28 +1490,12 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     gap: 4,
   },
-  dayRatePill: {
-    backgroundColor: GREEN_SOFT,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    alignSelf: "center",
-  },
-  dayRatePillText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11, color: GREEN,
-  },
-  metaLine: { fontSize: 13, flexShrink: 1 },
-  metaStar: { color: "#F4B942", fontSize: 13 },
-  metaItem: { fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: FG },
-  metaSep:  { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE },
 
   // kept for any remaining references
-  factRows: { gap: 4, paddingBottom: 2 },
+  factRows: { gap: 8, paddingBottom: 2 },
   factRow:   { flexDirection: "row", alignItems: "center", gap: 7 },
   factRowSecondary: { flexDirection: "row", alignItems: "center", gap: 7 },
   factLine: { flex: 1, minWidth: 0 },
-  factInline:{ flexDirection: "row", alignItems: "center", gap: 4 },
   factIcon: { width: 17, textAlign: "center" },
   factText: { flex: 1, fontSize: 13 },
   factVal:  { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
@@ -1529,7 +1525,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#eef2f5",
     borderRadius: 14,
     paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   timeFieldHeader: {
     flexDirection: "row",
@@ -1539,7 +1535,9 @@ const styles = StyleSheet.create({
   },
   timeFieldLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 10, color: GREEN,
+    // Darker than GREEN so the 10px uppercase label clears WCAG AA (4.5:1) on the
+    // light grey field background.
+    fontSize: 10, color: "#0a6a40",
     textTransform: "uppercase", letterSpacing: 1,
   },
   timeFieldTime: {
@@ -1558,6 +1556,25 @@ const styles = StyleSheet.create({
     fontSize: 14, color: GREEN, marginTop: 10,
     textDecorationLine: "underline",
   },
+
+  // ── Getting around (nearby transit / landmarks) ────────────────────────────
+  nearbyWrap: { marginTop: 16, gap: 8 },
+  nearbyHeading: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 14, color: FG, marginBottom: 2, letterSpacing: -0.2,
+  },
+  nearbyRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  nearbyIconWrap: {
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: GREEN_SOFT,
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  nearbyText: {
+    flex: 1, fontFamily: "PlusJakartaSans-Medium", fontSize: 14,
+    color: "#334155", lineHeight: 20,
+  },
+  nearbyWalk: { fontFamily: "PlusJakartaSans-SemiBold", color: FG },
+  nearbyDot: { color: FG_SUBTLE },
 
   // ── Reviews: empty state ───────────────────────────────────────────────────
   reviewEmptyWrap: {
@@ -1579,71 +1596,14 @@ const styles = StyleSheet.create({
   },
 
   // Stats strip — inline card, border only, no shadow
-  statsStrip: {
-    flexDirection: "row",
-    backgroundColor: "#ffffff",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#E6EBF0",
-    overflow: "hidden",
-    marginBottom: 4,
-    marginTop: 8,
-    shadowColor: "#111827",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    elevation: 4,
-  },
-  statsCell: { flex: 1, paddingVertical: 12, paddingHorizontal: 8, alignItems: "center", gap: 2 },
-  statsCellLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 9,
-    color: FG_SUBTLE, letterSpacing: 1.4, textTransform: "uppercase",
-  },
-  statsCellValue: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 14,
-    color: FG, letterSpacing: -0.3,
-  },
 
   // Booking time-picker buttons (two separate cards, side by side)
-  timePickerRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 10,
-  },
-  timePickerBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#ffffff",
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#E8EDF2",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    shadowColor: "#111827",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    elevation: 4,
-  },
-  timePickerBtnLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    color: GREEN,
-    marginBottom: 3,
-  },
-  timePickerBtnValue: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 13,
-    color: "#0f172a",
-  },
 
   // Extend offer — standalone card below pickers
   offerRow: {
     flexDirection: "row", alignItems: "center", gap: 10,
     backgroundColor: GREEN_SOFT,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 12,
     marginBottom: 14,
   },
@@ -1658,7 +1618,7 @@ const styles = StyleSheet.create({
   // Sections
   sectionDivider: {
     height: 1,
-    backgroundColor: "#EBEBEB",
+    backgroundColor: DIVIDER,
     marginHorizontal: 0,
   },
   availabilityList: { marginTop: 0 },
@@ -1667,7 +1627,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   availabilityRowDivider: {
-    borderBottomWidth: 1, borderBottomColor: LINE,
+    borderBottomWidth: 1, borderBottomColor: DIVIDER,
   },
   availabilityRowToday: {
     backgroundColor: GREEN_SOFT, borderRadius: 8,
@@ -1698,25 +1658,9 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 17, lineHeight: 21, color: FG, letterSpacing: -0.3, marginBottom: 8,
   },
-  statsCellSub: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 9,
-    color: FG_SUBTLE, marginTop: 0,
-  },
   sectionBody: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 22, color: "#334155" },
-  readMore: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: FG, marginTop: 12 },
 
   // Local area map
-  localAreaCard: { backgroundColor: "transparent", padding: 0, gap: 14 },
-  localAreaHeader: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  localAreaHeaderTextWrap: { flex: 1 },
-  localAreaAddress: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, lineHeight: 21,
-    color: FG, letterSpacing: -0.1,
-  },
-  localAreaSub: {
-    marginTop: 4, fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13, lineHeight: 18, color: FG_MUTED,
-  },
   localAreaMap: {
     width: "100%",
     height: 130,
@@ -1738,15 +1682,6 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: "#dde3e7",
     alignItems: "center", justifyContent: "center",
   },
-  localAreaButtons: { flexDirection: "row", gap: 10 },
-  localAreaButtonSecondary: {
-    flex: 1, minHeight: 48, borderRadius: 12,
-    backgroundColor: BG_2,
-    alignItems: "center", justifyContent: "center", paddingHorizontal: 16,
-  },
-  localAreaButtonSecondaryText: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG,
-  },
 
   // Feature chips — pill shape, bg-2 fill, no border (spec .chip pattern)
   chipsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
@@ -1764,20 +1699,6 @@ const styles = StyleSheet.create({
   },
 
   // Guarantee strip
-  guaranteeStrip: {
-    flexDirection: "row", alignItems: "center", gap: 14,
-    backgroundColor: "#ffffff",
-    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 4,
-    borderWidth: 1, borderColor: LINE,
-  },
-  guaranteeIconTile: {
-    width: 40, height: 40, borderRadius: 8,
-    backgroundColor: BG_2,
-    alignItems: "center", justifyContent: "center", flexShrink: 0,
-  },
-  guaranteeCopy: { flex: 1 },
-  guaranteeTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG, letterSpacing: -0.1 },
-  guaranteeSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, marginTop: 2 },
 
   // Reviews
   reviewsHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 0 },
@@ -1786,13 +1707,6 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13,
     color: GREEN,
   },
-  ratingPill: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: BG_2, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5,
-  },
-  ratingPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
-  ratingPillCount: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: FG_MUTED },
-  reviewList: { gap: 12, marginTop: 12 },
   reviewTiles: { marginTop: 12, marginHorizontal: -24 },
   reviewTilesContent: { paddingHorizontal: 24, gap: 12 },
   reviewTile: {
@@ -1802,10 +1716,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: LINE_2,
     padding: 16,
-  },
-  reviewCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16, borderWidth: 1, borderColor: LINE_2, padding: 16,
   },
   reviewCardTop: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   reviewAvatar: {
@@ -1823,38 +1733,6 @@ const styles = StyleSheet.create({
   },
   reviewStarPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
   reviewComment: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 21, color: "#334155" },
-  emptyReviewCard: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    marginTop: 10,
-    backgroundColor: BG_2,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-  },
-  emptyReviewIconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: GREEN_SOFT,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  emptyReviewCopy: { flex: 1 },
-  emptyReviewTitle: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
-    color: FG,
-    marginBottom: 3,
-  },
-  emptyReviewBody: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    lineHeight: 19,
-    color: FG_MUTED,
-  },
 
   // Auth modal — bottom sheet
   authModalRoot: { flex: 1, justifyContent: "flex-end" },
@@ -1957,27 +1835,10 @@ const styles = StyleSheet.create({
   bottomDuration: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, marginTop: 1 },
   bottomUnavailableHint: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: colors.danger, marginTop: 2 },
   dailyCapBadge: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: GREEN, marginTop: 2 },
-  reserveBtn: {
-    backgroundColor: "#0a8050",
-    borderRadius: 26,
-    height: 52,
-    paddingHorizontal: 28, minWidth: 130,
-    alignItems: "center", justifyContent: "center",
-    shadowColor: "#0a7a50", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.22, shadowRadius: 10, elevation: 4,
-  },
   ownListingBadge: { paddingVertical: 14, paddingHorizontal: 20, borderRadius: 14, backgroundColor: "#f0f0f0", alignItems: "center" as const, justifyContent: "center" as const },
   ownListingText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#666", letterSpacing: -0.2 },
-  reserveBtnPressed: { backgroundColor: "#0a6a40" },
-  reserveBtnDisabled: { backgroundColor: LINE, shadowOpacity: 0 },
-  reserveBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#ffffff", letterSpacing: -0.3 },
-  reserveBtnDisabledText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: FG_MUTED },
 
   // Picker modal — bottom sheet
-  pickerBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
   pickerBackdropLayer: {
     backgroundColor: "rgba(0,0,0,0.45)",
   },
@@ -2044,51 +1905,11 @@ const styles = StyleSheet.create({
   // Trust notes (below time picker)
   trustNotes: { gap: 7, marginTop: 10 },
   trustNoteRow: { flexDirection: "row", alignItems: "center", gap: 9 },
-  trustNoteCheck: {
-    width: 18, height: 18, borderRadius: 9,
-    backgroundColor: GREEN_SOFT,
-    alignItems: "center", justifyContent: "center", flexShrink: 0,
-  },
   trustNoteText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, flex: 1, lineHeight: 19 },
 
   // Feature list (replaces pill chips)
-  featureListItem: {
-    flexDirection: "row", alignItems: "center", gap: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: LINE,
-  },
-  featureListItemLast: { borderBottomWidth: 0 },
-  featureListIconWrap: {
-    width: 32, alignItems: "center", justifyContent: "center", flexShrink: 0,
-  },
-  featureListLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: FG, flex: 1 },
 
   // Review list (divider style)
-  reviewListItem: {
-    paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: LINE,
-  },
-  reviewListItemLast: { borderBottomWidth: 0, paddingBottom: 0 },
-  reviewListTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
-  reviewStarRow: { flexDirection: "row", alignItems: "center", gap: 2 },
 
   // Unused legacy styles (kept for compatibility with any unused JSX branches)
-  airSummaryHeaderRow: { flexDirection: "row", alignItems: "center", gap: 16, paddingHorizontal: 4, marginBottom: 14 },
-  airSummaryThumb: { width: 84, height: 84, borderRadius: 42, backgroundColor: BG_2 },
-  taxiSummaryAvatarPlaceholder: { justifyContent: "center", alignItems: "center" },
-  airSummaryHeaderContent: { flex: 1, minWidth: 0 },
-  airSummaryTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 24, lineHeight: 29, color: FG, marginBottom: 4 },
-  airSummarySub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, lineHeight: 19, color: FG_MUTED },
-  airSummaryStars: { flexDirection: "row", alignItems: "center", gap: 2 },
-  airReviewSummaryLine: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
-  airReviewSummarySecondary: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED },
-  airStatsPills: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 18 },
-  airStatPill: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    borderWidth: 1, borderColor: LINE, backgroundColor: BG_2,
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999,
-  },
-  airStatPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG_2 },
-  typePill: { alignSelf: "flex-start", backgroundColor: GREEN_SOFT, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginBottom: 10 },
-  typePillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: GREEN, letterSpacing: 0.5 },
 });
