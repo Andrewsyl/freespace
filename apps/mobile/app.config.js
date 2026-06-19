@@ -209,6 +209,40 @@ const withForceDarkAllowedInManifest = (config) =>
     return configMod;
   });
 
+const withFirebaseNotificationDefaults = (config) =>
+  withAndroidManifest(config, (configMod) => {
+    const application = configMod.modResults.manifest.application?.[0];
+    if (!application) return configMod;
+
+    application["meta-data"] = application["meta-data"] ?? [];
+    const setMetaData = (name, valueKey, value) => {
+      const existing = application["meta-data"].find((item) => item.$?.["android:name"] === name);
+      if (existing) {
+        existing.$[valueKey] = value;
+        return;
+      }
+      application["meta-data"].push({
+        $: {
+          "android:name": name,
+          [valueKey]: value,
+        },
+      });
+    };
+
+    setMetaData(
+      "com.google.firebase.messaging.default_notification_icon",
+      "android:resource",
+      "@drawable/notification_icon"
+    );
+    setMetaData(
+      "com.google.firebase.messaging.default_notification_color",
+      "android:resource",
+      "@color/default_notification_color"
+    );
+
+    return configMod;
+  });
+
 const withIosGoogleMapsKey = (config) =>
   withInfoPlist(config, (configMod) => {
     const key =
@@ -246,32 +280,34 @@ module.exports = ({ config }) => {
   return withGoogleServicesPlugin(
     withIosGoogleMapsKey(
       withForceDarkDisabled(
-        withForceDarkAllowedInManifest(
-          withGradleWrapperVersion(
-            withGradleTuning(
-              withCoreKtxFix({
-                ...base,
-                extra,
-                scheme: [
-                  appScheme,
-                  ...(Array.isArray(base.scheme)
-                    ? base.scheme.filter((scheme) => scheme !== "carparking")
-                    : []),
-                ],
-                android: {
-                  ...base.android,
-                  package: androidPackage,
-                  usesCleartextTraffic: isDevLike,
-                  compileSdkVersion: 35,
-                  targetSdkVersion: 35,
-                  buildToolsVersion: "35.0.0",
-                },
-                ios: {
-                  ...base.ios,
-                  bundleIdentifier: iosBundleId,
-                },
-                plugins: [...plugins, buildProps],
-              })
+        withFirebaseNotificationDefaults(
+          withForceDarkAllowedInManifest(
+            withGradleWrapperVersion(
+              withGradleTuning(
+                withCoreKtxFix({
+                  ...base,
+                  extra,
+                  scheme: [
+                    appScheme,
+                    ...(Array.isArray(base.scheme)
+                      ? base.scheme.filter((scheme) => scheme !== "carparking")
+                      : []),
+                  ],
+                  android: {
+                    ...base.android,
+                    package: androidPackage,
+                    usesCleartextTraffic: isDevLike,
+                    compileSdkVersion: 35,
+                    targetSdkVersion: 35,
+                    buildToolsVersion: "35.0.0",
+                  },
+                  ios: {
+                    ...base.ios,
+                    bundleIdentifier: iosBundleId,
+                  },
+                  plugins: [...plugins, buildProps],
+                })
+              )
             )
           )
         )
