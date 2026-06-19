@@ -109,6 +109,13 @@ export default function App() {
         name: "General",
         importance: Notifications.AndroidImportance.DEFAULT,
       });
+      // Older builds created booking-specific channels. Server pushes now use
+      // the app default channel so all Android notifications use the same icon.
+      void Promise.all(
+        ["booking-reminders", "booking-reminders-v2"].map((id) =>
+          Notifications.deleteNotificationChannelAsync(id).catch(() => undefined)
+        )
+      );
     }
     // Register the "Extend +" action shown on the server-sent "ends soon"
     // reminder (categoryId: "booking_ending"). Registered globally at startup

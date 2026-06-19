@@ -31,6 +31,7 @@ export async function sendPushNotification({ tokens, title, body, data, channelI
     return { attempted: 0, ok: 0, error: 0 } satisfies PushSendResult;
   }
 
+  const resolvedChannelId = channelId ?? "default";
   const messages = tokens
     .filter((token) => Expo.isExpoPushToken(token))
     .map((token) => ({
@@ -39,7 +40,7 @@ export async function sendPushNotification({ tokens, title, body, data, channelI
       title,
       body,
       data,
-      ...(channelId ? { channelId } : {}),
+      channelId: resolvedChannelId,
       ...(categoryId ? { categoryId } : {}),
     }));
 
