@@ -30,6 +30,7 @@ type MapViewProps = {
   satellite?: boolean;
   /** Set false to produce a static, non-interactive map (no zoom/pan/controls). */
   interactive?: boolean;
+  onUnavailableChange?: (unavailable: boolean) => void;
 };
 
 // ─── Price-bubble markers ────────────────────────────────────────────────────
@@ -166,6 +167,7 @@ export function MapView({
   centerPinRadius,
   satellite = false,
   interactive = true,
+  onUnavailableChange,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -177,6 +179,10 @@ export function MapView({
   const [mapUnavailable, setMapUnavailable] = useState(false);
   const hasUserDraggedRef = useRef(false);
   const prevSelectedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    onUnavailableChange?.(tokenMissing || mapUnavailable);
+  }, [mapUnavailable, onUnavailableChange, tokenMissing]);
 
   // Initialise map once
   useEffect(() => {
@@ -430,8 +436,8 @@ export function MapView({
     >
       <div ref={containerRef} className="h-full w-full" />
       {(tokenMissing || mapUnavailable) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/90 text-center text-sm text-slate-600">
-          <div className="max-w-xs rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="absolute inset-0 flex items-center justify-center bg-white/90 p-6 text-center text-sm text-slate-600">
+          <div className="max-w-xs rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-900">
               {tokenMissing ? "Mapbox token missing" : "Map unavailable"}
             </p>
@@ -441,7 +447,7 @@ export function MapView({
               </p>
             ) : (
               <p className="mt-2 text-xs text-slate-600">
-                This browser could not start the interactive map. Search results are still available below.
+                This browser could not start the interactive map. Search results are still available in the list.
               </p>
             )}
           </div>

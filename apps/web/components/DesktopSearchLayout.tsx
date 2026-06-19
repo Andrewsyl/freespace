@@ -37,6 +37,7 @@ export function DesktopSearchLayout({
   const router = useRouter();
   const [showFilters, setShowFilters] = useState(false);
   const [showListingOverlay, setShowListingOverlay] = useState(false);
+  const [mapUnavailable, setMapUnavailable] = useState(false);
   const [sortMode, setSortMode] = useState<"recommended" | "cheapest" | "closest">("recommended");
   const selectedListing = selectedListingId ? results.find((l) => l.id === selectedListingId) ?? null : null;
   const { start: searchStart, end: searchEnd } = useMemo(() => getSearchWindow(filters), [filters]);
@@ -110,7 +111,9 @@ export function DesktopSearchLayout({
       <div className="flex min-h-0 flex-1 min-w-0 overflow-hidden pl-6">
 
         {/* ── Col 1: cards list (always visible) ── */}
-        <div className="flex h-full w-[520px] shrink-0 flex-col overflow-hidden border-r border-slate-200">
+        <div className={`flex h-full shrink-0 flex-col overflow-hidden border-r border-slate-200 transition-[width] duration-300 ${
+          mapUnavailable ? "w-[600px]" : "w-[520px]"
+        }`}>
           <AnimatePresence mode="wait" initial={false}>
             {showFilters ? (
               <motion.div
@@ -142,23 +145,39 @@ export function DesktopSearchLayout({
               >
                 {/* Header */}
                 <div className="shrink-0 border-b border-slate-100 px-4 pb-3 pt-4">
-                  <div className="mb-2.5">
-                    {status === "loading" ? (
-                      <div className="h-5 w-48 animate-pulse rounded-full bg-slate-100" />
-                    ) : (
-                      <h1 className="text-[15px] font-bold text-slate-900">
-                        {results.length}{" "}
-                        <span className="font-semibold text-slate-600">
-                          {results.length === 1 ? "space" : "spaces"}
-                          {filters.location ? ` near ${filters.location.split(",")[0]}` : ""}
+                  <div className="mb-2.5 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      {status === "loading" ? (
+                        <div className="h-5 w-48 animate-pulse rounded-full bg-slate-100" />
+                      ) : (
+                        <h1 className="text-[15px] font-bold text-slate-900">
+                          {results.length}{" "}
+                          <span className="font-semibold text-slate-600">
+                            {results.length === 1 ? "space" : "spaces"}
+                            {filters.location ? ` near ${filters.location.split(",")[0]}` : ""}
+                          </span>
+                        </h1>
+                      )}
+                      <p className="mt-0.5 text-[11.5px] text-slate-600">
+                        {filters.mode === "monthly"
+                          ? `${filters.date} → ${filters.endDate ?? "30 days"}`
+                          : `${filters.date} · ${filters.startTime}–${filters.endTime}`}
+                        {formatRadiusLabel(filters.radiusKm) ? ` · within ${formatRadiusLabel(filters.radiusKm)}` : ""}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowFilters(true)}
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 shadow-sm transition hover:border-slate-300"
+                    >
+                      <SlidersHorizontal className="h-3.5 w-3.5" />
+                      Filters
+                      {activeFilterCount > 0 && (
+                        <span className="flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold text-white">
+                          {activeFilterCount}
                         </span>
-                      </h1>
-                    )}
-                    <p className="mt-0.5 text-[11.5px] text-slate-600">
-                      {filters.mode === "monthly"
-                        ? `${filters.date} → ${filters.endDate ?? "30 days"}`
-                        : `${filters.date} · ${filters.startTime}–${filters.endTime}`}
-                    </p>
+                      )}
+                    </button>
                   </div>
                   <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-0.5">
                     {SORT_TABS.map((tab) => (
@@ -218,7 +237,10 @@ export function DesktopSearchLayout({
                     )}
                   </div>
                   {status !== "loading" && results.length === 0 && !error && (
-                    <EmptyState location={filters.location} />
+                    <EmptyState
+                      location={filters.location}
+                      onAdjustFilters={() => setShowFilters(true)}
+                    />
                   )}
                 </div>
               </motion.div>
@@ -274,6 +296,7 @@ export function DesktopSearchLayout({
             onMarkerClick={(listing) => { onMarkerClick(listing); setShowListingOverlay(true); }}
             disableAutoFit={lockViewport}
             onBoundsChanged={onBoundsChanged}
+            onUnavailableChange={setMapUnavailable}
           />
 
           {/* Filters button */}
@@ -316,7 +339,13 @@ export function DesktopSearchLayout({
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 
-function EmptyState({ location }: { location?: string }) {
+function EmptyState({
+  location,
+  onAdjustFilters,
+}: {
+  location?: string;
+  onAdjustFilters: () => void;
+}) {
   return (
     <div className="flex flex-col items-center px-4 py-10 text-center">
       <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-slate-100">
@@ -332,6 +361,13 @@ function EmptyState({ location }: { location?: string }) {
           : "No spaces match your search."}
         {" "}Try adjusting your dates, times or search radius.
       </p>
+      <button
+        type="button"
+        onClick={onAdjustFilters}
+        className="mt-5 rounded-full bg-slate-900 px-5 py-2.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-slate-800"
+      >
+        Adjust filters
+      </button>
     </div>
   );
 }
@@ -972,6 +1008,11 @@ function getSearchWindow(filters: SharedLayoutProps["filters"]) {
       ? new Date(rawEnd.getTime() + 24 * 60 * 60 * 1000)
       : rawEnd;
   return { start, end };
+}
+
+function formatRadiusLabel(radiusKm?: number) {
+  if (typeof radiusKm !== "number" || !Number.isFinite(radiusKm) || radiusKm <= 0) return null;
+  return `${radiusKm.toFixed(1).replace(/\.0$/, "")} km`;
 }
 
 function buildSearchPriceDisplay(

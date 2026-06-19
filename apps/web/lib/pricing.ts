@@ -107,5 +107,5 @@ export function formatListingPriceLine(listing: ListingWithPricing) {
 
 export function formatPriceValue(value: number) {
   if (Number.isInteger(value)) return String(value);
-  return value.toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+  return value.toFixed(2).replace(/\.00$/, "");
 }

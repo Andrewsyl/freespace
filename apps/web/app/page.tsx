@@ -198,7 +198,7 @@ export default function HomePage() {
       <SlimNav />
 
 
-      <main className="mx-auto w-full max-w-6xl px-6 py-8 sm:py-12">
+      <main className="mx-auto w-full max-w-6xl px-6 py-9 sm:py-12">
         {/* ── Hero ── */}
         <section className="grid lg:grid-cols-[1fr_460px] gap-8 lg:gap-14 items-center">
           <div>
@@ -206,12 +206,12 @@ export default function HomePage() {
               <span className="block text-[30px] font-medium leading-[1.06] text-slate-800 sm:text-[40px] lg:text-[58px]">Find your space,</span>
               <span className="block text-[30px] font-extrabold leading-[1.06] text-brand-500 sm:text-[40px] lg:text-[58px]">stress free.</span>
             </h1>
-            <p className="mt-5 max-w-[380px] text-[15px] leading-relaxed text-slate-600">
-              Search thousands of trusted spaces. Compare great prices and book instantly — no stress, no surprises.
+            <p className="mt-6 max-w-[430px] text-[15px] leading-relaxed text-slate-700">
+              Book driveways, garages, and trusted parking spaces near your destination. Compare prices upfront and reserve instantly.
             </p>
 
             {/* ── Mobile search card (phones only) ── */}
-            <div className="mt-8 sm:hidden rounded-3xl bg-white shadow-[0_4px_32px_rgba(0,0,0,0.14)] ring-1 ring-slate-900/[0.10]">
+            <div className="mt-9 sm:hidden rounded-3xl bg-white shadow-[0_4px_32px_rgba(0,0,0,0.14)] ring-1 ring-slate-900/[0.10]">
               <div className="flex border-b border-slate-200 px-6">
                 {(["daily", "monthly"] as const).map((value) => (
                   <button
@@ -447,7 +447,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-3 divide-x divide-slate-200 border-t border-slate-200 pt-5">
+            <div className="mt-7 grid grid-cols-3 divide-x divide-slate-200 border-t border-slate-200 pt-6">
               {[
                 { stat: "Instant", label: "Booking" },
                 { stat: "Flexible", label: "Cancellation" },
@@ -455,7 +455,7 @@ export default function HomePage() {
               ].map((item, i) => (
                 <div key={item.stat} className={`text-center ${i === 0 ? "pr-4" : i === 1 ? "px-4" : "pl-4"}`}>
                   <p className="font-display text-sm font-extrabold text-slate-900">{item.stat}</p>
-                  <p className="mt-0.5 text-[11px] text-slate-600">{item.label}</p>
+                  <p className="mt-0.5 text-[11px] font-medium text-slate-600">{item.label}</p>
                 </div>
               ))}
             </div>
@@ -474,7 +474,7 @@ export default function HomePage() {
         </section>
 
         {/* ── Ways to park — bento grid ── */}
-        <section className="mt-10 sm:mt-16">
+        <section className="mt-12 sm:mt-16">
           <div className="mb-7">
             <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500">Ways to park</p>
             <h2 className="font-display mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
@@ -487,19 +487,19 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => launchScenario(homepageScenarios[0].filters)}
-              className="group relative col-span-2 overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-brand-600 px-6 py-6 text-left transition hover:bg-brand-700 lg:min-h-[220px] lg:px-8 lg:py-8"
+              className="group relative col-span-2 overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-brand-600 px-6 py-6 text-left transition hover:bg-brand-700 lg:min-h-[220px] lg:px-7 lg:py-7"
             >
               <svg className="pointer-events-none absolute -right-6 -top-6 h-44 w-44 text-white/[0.07]" viewBox="0 0 24 24" fill="currentColor">
                 <path fillRule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clipRule="evenodd" />
               </svg>
               <div className="relative flex items-start justify-between gap-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-brand-200/70">{homepageScenarios[0].title}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-brand-100/80">{homepageScenarios[0].title}</p>
                 <span className="shrink-0 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white/90">from €80/mo</span>
               </div>
               <div className="relative">
                 <h3 className="font-display text-2xl font-bold text-white lg:text-3xl">{homepageScenarios[0].title}</h3>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-brand-100/70">{homepageScenarios[0].body}</p>
-                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-brand-200 transition group-hover:gap-3">
+                <p className="mt-2 text-[13px] leading-relaxed text-brand-50/85">{homepageScenarios[0].body}</p>
+                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-white transition group-hover:gap-3">
                   {homepageScenarios[0].cta}
                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                 </span>
@@ -510,16 +510,16 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => launchScenario(homepageScenarios[1].filters)}
-              className="group relative overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-[#FBF8F2] px-5 py-5 text-left transition hover:bg-[#F4EFE5] lg:min-h-[220px] lg:px-6 lg:py-6"
+              className="group relative overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-[#FBF8F2] px-6 py-6 text-left transition hover:bg-[#F4EFE5] lg:min-h-[220px] lg:px-7 lg:py-7"
             >
               <svg className="pointer-events-none absolute -right-5 -top-5 h-32 w-32 text-amber-400/20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
               </svg>
-              <p className="relative text-[10px] font-bold uppercase tracking-[0.28em] text-amber-700/70">{homepageScenarios[1].title}</p>
+              <p className="relative text-[10px] font-bold uppercase tracking-[0.28em] text-amber-800/75">{homepageScenarios[1].title}</p>
               <div className="relative">
-                <h3 className="font-display text-lg font-bold text-slate-900 lg:text-xl">{homepageScenarios[1].title}</h3>
-                <p className="mt-1 text-[12px] leading-relaxed text-slate-600 lg:text-[13px]">{homepageScenarios[1].body}</p>
-                <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-amber-700 transition group-hover:gap-3">
+                <h3 className="font-display text-xl font-bold text-slate-950">{homepageScenarios[1].title}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-slate-700">{homepageScenarios[1].body}</p>
+                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-amber-800 transition group-hover:gap-3">
                   {homepageScenarios[1].cta}
                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                 </span>
@@ -530,16 +530,16 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => launchScenario(homepageScenarios[2].filters)}
-              className="group relative overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-[#F0F2FA] px-5 py-5 text-left transition hover:bg-[#E7EAF5] lg:min-h-[220px] lg:px-6 lg:py-6"
+              className="group relative overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-[#F0F2FA] px-6 py-6 text-left transition hover:bg-[#E7EAF5] lg:min-h-[220px] lg:px-7 lg:py-7"
             >
               <svg className="pointer-events-none absolute -right-5 -top-5 h-32 w-32 text-indigo-400/20" viewBox="0 0 24 24" fill="currentColor">
                 <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
               </svg>
-              <p className="relative text-[10px] font-bold uppercase tracking-[0.28em] text-indigo-500/80">{homepageScenarios[2].title}</p>
+              <p className="relative text-[10px] font-bold uppercase tracking-[0.28em] text-indigo-700/75">{homepageScenarios[2].title}</p>
               <div className="relative">
-                <h3 className="font-display text-lg font-bold text-slate-900 lg:text-xl">{homepageScenarios[2].title}</h3>
-                <p className="mt-1 text-[12px] leading-relaxed text-slate-600 lg:text-[13px]">{homepageScenarios[2].body}</p>
-                <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-indigo-600 transition group-hover:gap-3">
+                <h3 className="font-display text-xl font-bold text-slate-950">{homepageScenarios[2].title}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-slate-700">{homepageScenarios[2].body}</p>
+                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-indigo-700 transition group-hover:gap-3">
                   {homepageScenarios[2].cta}
                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                 </span>
@@ -550,19 +550,19 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => launchScenario(homepageScenarios[3].filters)}
-              className="group relative col-span-2 overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-slate-900 px-6 py-6 text-left transition hover:bg-slate-800 lg:min-h-[220px] lg:px-8 lg:py-8"
+              className="group relative col-span-2 overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-slate-900 px-6 py-6 text-left transition hover:bg-slate-800 lg:min-h-[220px] lg:px-7 lg:py-7"
             >
               <svg className="pointer-events-none absolute -right-4 -top-4 h-44 w-44 text-brand-500/[0.13]" viewBox="0 0 24 24" fill="currentColor">
                 <path fillRule="evenodd" d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z" clipRule="evenodd" />
               </svg>
               <div className="relative flex items-start justify-between gap-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500">{homepageScenarios[3].title}</p>
-                <span className="shrink-0 rounded-full bg-brand-500/20 px-3 py-1 text-[11px] font-bold text-brand-400">EV friendly</span>
+                <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">{homepageScenarios[3].title}</p>
+                <span className="shrink-0 rounded-full bg-brand-500/20 px-3 py-1 text-[11px] font-bold text-brand-300">EV friendly</span>
               </div>
               <div className="relative">
                 <h3 className="font-display text-2xl font-bold text-white lg:text-3xl">{homepageScenarios[3].title}</h3>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-slate-400">{homepageScenarios[3].body}</p>
-                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-slate-300 transition group-hover:gap-3">
+                <p className="mt-2 text-[13px] leading-relaxed text-slate-300">{homepageScenarios[3].body}</p>
+                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-white transition group-hover:gap-3">
                   {homepageScenarios[3].cta}
                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                 </span>
@@ -573,7 +573,7 @@ export default function HomePage() {
         </section>
 
         {/* ── How it works — editorial numbered ── */}
-        <section className="mt-10 pb-10 sm:mt-16 sm:pb-16">
+        <section id="how-it-works" className="mt-12 pb-10 sm:mt-16 sm:pb-16">
           <div className="mb-8">
             <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500">How it works</p>
             <h2 className="font-display mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">

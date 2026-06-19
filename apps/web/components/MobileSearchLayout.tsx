@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AnimatePresence,
@@ -121,6 +121,17 @@ function buildSearchPriceDisplay(
   };
 }
 
+function formatRadiusLabel(radiusKm?: number) {
+  if (typeof radiusKm !== "number" || !Number.isFinite(radiusKm) || radiusKm <= 0) return null;
+  return `${radiusKm.toFixed(1).replace(/\.0$/, "")} km`;
+}
+
+function formatSearchMeta(filters: SharedLayoutProps["filters"], startAt: Date, endAt: Date) {
+  const radius = formatRadiusLabel(filters.radiusKm);
+  const time = `${formatDate(startAt)} · ${formatTime(startAt)} → ${formatTime(endAt)}`;
+  return radius ? `${time} · ${radius}` : time;
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 
 export function MobileSearchLayout({
@@ -165,6 +176,7 @@ export function MobileSearchLayout({
   const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
   const [sortMode, setSortMode] = useState("recommended");
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
+  const [mapUnavailable, setMapUnavailable] = useState(false);
 
   const selectedListing = selectedListingId
     ? results.find((l) => l.id === selectedListingId) ?? null
@@ -186,6 +198,14 @@ export function MobileSearchLayout({
     filters.endDate ?? filters.date,
     filters.endTime ?? formatTime(fallbackEnd),
   );
+  const searchMeta = formatSearchMeta(filters, startAt, endAt);
+
+  useEffect(() => {
+    if (mapUnavailable && viewMode === "map") {
+      setViewMode("list");
+      onMarkerSelect("");
+    }
+  }, [mapUnavailable, onMarkerSelect, viewMode]);
 
   function switchToList() {
     setViewMode("list");
@@ -229,6 +249,7 @@ export function MobileSearchLayout({
               onMarkerClick={onMarkerClick}
               disableAutoFit={lockViewport}
               onBoundsChanged={onBoundsChanged}
+              onUnavailableChange={setMapUnavailable}
             />
           </motion.div>
 
@@ -245,8 +266,8 @@ export function MobileSearchLayout({
                   <p className="truncate text-[13.5px] font-semibold leading-tight text-slate-900">
                     {filters.location || "Where are you parking?"}
                   </p>
-                  <p className="text-[11px] leading-tight text-slate-600">
-                    {formatDate(startAt)} · {formatTime(startAt)} → {formatTime(endAt)}
+                  <p className="truncate text-[11px] leading-tight text-slate-600">
+                    {searchMeta}
                   </p>
                 </div>
                 <ChevronLeft className="h-3.5 w-3.5 shrink-0 -rotate-90 text-slate-600" strokeWidth={2.5} />
@@ -336,8 +357,8 @@ export function MobileSearchLayout({
                   <p className="truncate text-[13px] font-semibold leading-tight text-slate-900">
                     {filters.location || "Where are you parking?"}
                   </p>
-                  <p className="text-[10.5px] leading-tight text-slate-600">
-                    {formatDate(startAt)} · {formatTime(startAt)} → {formatTime(endAt)}
+                  <p className="truncate text-[10.5px] leading-tight text-slate-600">
+                    {searchMeta}
                   </p>
                 </div>
               </button>
@@ -355,13 +376,18 @@ export function MobileSearchLayout({
 
             {/* Count row */}
             <div className="flex items-center justify-between pb-1">
-              <p className="text-[13px] font-semibold text-slate-600">
+              <p className="text-[13px] font-semibold text-slate-700">
                 {status === "loading"
                   ? "Searching…"
                   : results.length === 0
                     ? filters.location ? "No spaces found" : "Search to find spaces"
                     : `${results.length} space${results.length === 1 ? "" : "s"} nearby`}
               </p>
+              {formatRadiusLabel(filters.radiusKm) && (
+                <p className="text-[11.5px] font-medium text-slate-500">
+                  Within {formatRadiusLabel(filters.radiusKm)}
+                </p>
+              )}
             </div>
 
             {/* Sort tabs */}
@@ -398,7 +424,9 @@ export function MobileSearchLayout({
 
             {status !== "loading" && results.length === 0 && (
               <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-                <div className="mb-3 text-4xl">🅿️</div>
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                  <MapPin className="h-6 w-6" strokeWidth={2.2} />
+                </div>
                 <p className="text-[15px] font-semibold text-slate-700">
                   {filters.location ? "No spaces found" : "Start your search"}
                 </p>
@@ -408,13 +436,22 @@ export function MobileSearchLayout({
                     : "Search for a location above to see available spaces"}
                 </p>
                 {filters.location && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchPanelOpen(true)}
-                    className="mt-5 rounded-full bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white"
-                  >
-                    Edit search
-                  </button>
+                  <div className="mt-5 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSearchPanelOpen(true)}
+                      className="rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white"
+                    >
+                      Edit search
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFiltersPanelOpen(true)}
+                      className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700"
+                    >
+                      Filters
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -427,10 +464,6 @@ export function MobileSearchLayout({
                   priceDisplay={getSearchPrice(listing)}
                   selected={listing.id === selectedListingId}
                   onOpen={() => router.push(listingHref(listing.id) as any)}
-                  onSelect={() => {
-                    onMarkerSelect(listing.id);
-                    switchToMap();
-                  }}
                 />
               ))}
 
@@ -445,10 +478,15 @@ export function MobileSearchLayout({
             <button
               type="button"
               onClick={switchToMap}
-              className="flex items-center gap-2 rounded-full bg-slate-900 px-7 py-2.5 text-[13px] font-semibold text-white shadow-md active:bg-slate-700"
+              disabled={mapUnavailable}
+              className={`flex items-center gap-2 rounded-full px-7 py-2.5 text-[13px] font-semibold shadow-md ${
+                mapUnavailable
+                  ? "bg-slate-200 text-slate-500"
+                  : "bg-slate-900 text-white active:bg-slate-700"
+              }`}
             >
               <MapPinIcon />
-              Map
+              {mapUnavailable ? "Map unavailable" : "Map"}
             </button>
           </div>
         </motion.div>
@@ -584,32 +622,45 @@ export function MobileSearchLayout({
 
 // ── ResultCard ────────────────────────────────────────────────────────────────
 
+function CompactFeatureIcon({ type }: { type: "covered" | "gated" | "cctv" | "ev" }) {
+  const Icon = type === "cctv" ? Cctv : type === "ev" ? Zap : type === "gated" ? Lock : Home;
+  const label = type === "cctv" ? "CCTV" : type === "ev" ? "EV charging" : type === "gated" ? "Gated" : "Covered";
+  return (
+    <span
+      title={label}
+      aria-label={label}
+      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600"
+    >
+      <Icon className="h-3.5 w-3.5" strokeWidth={2.1} />
+    </span>
+  );
+}
+
 function ResultCard({
   listing,
   priceDisplay,
   selected,
   onOpen,
-  onSelect,
 }: {
   listing: Listing;
   priceDisplay: { label: string; value: number; suffix: string };
   selected: boolean;
   onOpen: () => void;
-  onSelect: () => void;
 }) {
   const image = listingGradient(listing);
   const isUrl = image?.startsWith("http");
-  const amenities: string[] = (listing as any).amenities ?? listing.tags ?? [];
+  const features = deriveFeatureKeys([...(listing.amenities ?? []), ...(listing.tags ?? [])], listing.title).slice(0, 3);
+  const priceSuffix = priceDisplay.suffix.replace(/^for\s+/i, "");
 
   return (
     <div
-      className={`flex cursor-pointer gap-3 border-b border-slate-100 px-4 py-3.5 transition active:bg-slate-50 ${
-        selected ? "bg-brand-50" : ""
+      className={`mx-3 mb-3 flex cursor-pointer gap-3 rounded-2xl border bg-white p-2.5 shadow-sm transition active:scale-[0.99] active:bg-slate-50 ${
+        selected ? "border-brand-300 bg-brand-50/60 ring-2 ring-brand-500/10" : "border-slate-200"
       }`}
-      onClick={onSelect}
+      onClick={onOpen}
     >
       {/* Thumbnail */}
-      <div className="relative h-[88px] w-[100px] shrink-0 overflow-hidden rounded-xl">
+      <div className="relative h-[104px] w-[112px] shrink-0 overflow-hidden rounded-xl">
         {isUrl ? (
           <img src={image} alt={listing.title} className="h-full w-full object-cover" />
         ) : (
@@ -623,41 +674,39 @@ function ResultCard({
       {/* Content */}
       <div className="flex min-w-0 flex-1 flex-col justify-between">
         <div>
-          <div className="flex items-start justify-between gap-2">
-            <p className="line-clamp-1 text-[14px] font-bold leading-snug text-slate-900">
+          <div className="flex items-start justify-between gap-3">
+            <p className="line-clamp-2 text-[14px] font-bold leading-snug text-slate-950">
               {listing.title}
             </p>
-            <p className="shrink-0 text-[16px] font-extrabold tracking-tight text-brand-600">
-              €{formatPriceValue(priceDisplay.value)}
-              <span className="text-[10px] font-semibold text-slate-600">{priceDisplay.suffix}</span>
-            </p>
+            <div className="shrink-0 text-right">
+              <p className="text-[16px] font-extrabold leading-none tracking-tight text-brand-700">
+                €{formatPriceValue(priceDisplay.value)}
+              </p>
+              <p className="mt-1 max-w-[60px] text-[10px] font-semibold leading-tight text-slate-500">{priceSuffix}</p>
+            </div>
           </div>
-          <div className="mt-0.5 flex items-center gap-1.5">
-            <p className="line-clamp-1 text-[11.5px] text-slate-600">{listing.address}</p>
+          <div className="mt-1 flex items-center gap-1.5">
+            <MapPin className="h-3 w-3 shrink-0 text-slate-500" strokeWidth={2.2} />
+            <p className="line-clamp-1 text-[11.5px] leading-snug text-slate-600">{listing.address}</p>
             {typeof listing.distanceKm === "number" && (
               <span className="shrink-0 text-[11px] font-medium text-slate-600">· {listing.distanceKm.toFixed(1)} km</span>
             )}
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="mt-2 flex items-end justify-between gap-2">
+          <div className="min-w-0">
             <span className="text-[12px] text-slate-600">
-              <span className="text-amber-500">★</span>{" "}
+              <Star className="-mt-0.5 mr-0.5 inline h-3.5 w-3.5 fill-amber-400 text-amber-400" strokeWidth={2} />
               {(listing.rating ?? 0).toFixed(1)}
               {typeof listing.ratingCount === "number" && listing.ratingCount > 0
                 ? ` · ${listing.ratingCount}`
                 : ""}
             </span>
-            {amenities.length > 0 && (
-              <div className="flex items-center gap-1">
-                {amenities.slice(0, 2).map((a) => (
-                  <span
-                    key={a}
-                    className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600"
-                  >
-                    {a.length > 10 ? a.slice(0, 9) + "…" : a}
-                  </span>
+            {features.length > 0 && (
+              <div className="mt-1.5 flex items-center gap-1">
+                {features.map((feature) => (
+                  <CompactFeatureIcon key={feature} type={feature} />
                 ))}
               </div>
             )}
@@ -665,7 +714,7 @@ function ResultCard({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onOpen(); }}
-            className="rounded-lg bg-brand-500 px-3 py-1.5 text-[12px] font-semibold text-white"
+            className="min-h-9 rounded-xl bg-brand-500 px-3.5 py-2 text-[12px] font-bold text-white shadow-sm"
           >
             View
           </button>
