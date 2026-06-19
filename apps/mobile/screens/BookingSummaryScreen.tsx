@@ -21,9 +21,10 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useStripe } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
+import { Ionicons } from "@expo/vector-icons";
 import { DrumRollPicker } from "../components/DrumRollPicker";
 import { SquircleBtn } from "../components/SquircleBtn";
-import { Apple, ArrowLeft, Chrome, CircleX, Info, Lock, RefreshCw, ShieldCheck } from "lucide-react-native";
+import { Apple, ArrowLeft, CircleX, Info, Lock, RefreshCw, ShieldCheck } from "lucide-react-native";
 import {
   confirmBookingPayment,
   createBookingPaymentIntent,
@@ -43,6 +44,7 @@ import { trackEvent } from "../analytics";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { formatDateLabel, formatDateTimeLabel, formatTimeLabel } from "../utils/dateFormat";
 import { calculateListingTotal, formatListingPriceLine } from "../utils/pricing";
+import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingSummary">;
 
@@ -60,6 +62,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const bookingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [confirmingBooking, setConfirmingBooking] = useState(false);
   const [paymentFailureMessage, setPaymentFailureMessage] = useState<string | null>(null);
+  const [paymentRecoveryAction, setPaymentRecoveryAction] = useState<"retry" | "bookings" | "time" | null>(null);
   const [showServiceFeeInfo, setShowServiceFeeInfo] = useState(false);
   const [promoInput, setPromoInput] = useState("");
   const [promoBusy, setPromoBusy] = useState(false);
@@ -98,13 +101,49 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   useToastOnMessage(error, { variant: "danger" });
   useToastOnMessage(paymentFailureMessage, { variant: "danger" });
 
+  const showPaymentRecovery = (
+    message: string,
+    action: "retry" | "bookings" | "time" | null = "retry"
+  ) => {
+    setPaymentFailureMessage(message);
+    setPaymentRecoveryAction(action);
+  };
+
+  const clearPaymentRecovery = () => {
+    setPaymentFailureMessage(null);
+    setPaymentRecoveryAction(null);
+  };
+
+  const goToBookings = () => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: "Tabs",
+            params: {
+              screen: "History",
+              params: {
+                refreshToken: Date.now(),
+                initialTab: "upcoming",
+              },
+            },
+          },
+        ],
+      })
+    );
+  };
+
   useEffect(() => {
     let active = true;
     const load = async () => {
       setLoadingListing(true);
       setError(null);
       try {
-        const data = await getListing(id);
+        const data = await getListing(id, {
+          from: startAt.toISOString(),
+          to: endAt.toISOString(),
+        });
         if (!active) return;
         setListing(data);
       } catch (err) {
@@ -119,7 +158,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [endAt, id, startAt]);
 
   useEffect(() => {
     navigation.setOptions({ gestureEnabled: false });
@@ -268,6 +307,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     !!user?.vehicleMake?.trim() && !!user?.vehicleType?.trim();
   const hasVehiclePlate = vehiclePlate.trim().length > 0;
   const requiresVehicleDetails = !hasVehicleProfile || !hasVehiclePlate;
+  const selectedTimeUnavailable = listing?.is_available === false;
 
   const openPicker = (field: "start" | "end") => {
     setPickerField(field);
@@ -330,12 +370,20 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
   const handlePayment = async () => {
     if (!listing || !priceSummary || !token || bookingConfirmed) return;
+    if (selectedTimeUnavailable) {
+      showPaymentRecovery("That time is unavailable. Choose another arrival time.", "time");
+      openPicker("start");
+      return;
+    }
     setBookingBusy(true);
     setError(null);
-    setPaymentFailureMessage(null);
+    clearPaymentRecovery();
     bookingTimeoutRef.current = setTimeout(() => {
       setBookingBusy(false);
-      setPaymentFailureMessage("Payment timed out. Please check your bookings before trying again.");
+      showPaymentRecovery(
+        "Still checking this booking. Open My bookings before paying again.",
+        "bookings"
+      );
       bookingTimeoutRef.current = null;
     }, 45_000);
     let didConfirm = false;
@@ -416,7 +464,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             // Ignore cancellation failures; booking cleanup is best-effort.
           }
         }
-        setPaymentFailureMessage("Couldn’t start payment. Try again.");
+        showPaymentRecovery("Couldn’t start payment. Try again.", "retry");
         return;
       }
       const presentResult = await presentPaymentSheet();
@@ -494,10 +542,11 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           // pending booking was already cleaned up above.
           return;
         }
-        setPaymentFailureMessage(
+        showPaymentRecovery(
           isAmbiguousResult
-            ? "We couldn’t confirm payment. Check your bookings before trying again."
-            : "Payment failed. Try again."
+            ? "Still checking this booking. Open My bookings before paying again."
+            : "Payment not completed. No booking was created.",
+          isAmbiguousResult ? "bookings" : "retry"
         );
         return;
       }
@@ -571,17 +620,19 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         message,
       });
       if (message.toLowerCase().includes("time slot already booked")) {
-        setPaymentFailureMessage(
-          "That slot was just taken. Choose another time."
+        showPaymentRecovery(
+          "That slot was just taken. Choose another time.",
+          "time"
         );
         setError(null);
         return;
       }
       if (paymentCompleted) {
-        // The payment sheet succeeded; only the confirmation call failed. Don't
-        // tell the user the booking failed outright — they may have been charged.
-        setPaymentFailureMessage(
-          "We couldn't confirm your booking, but your payment may have gone through. Check your bookings before trying again."
+        // The payment sheet succeeded; only the confirmation call failed.
+        // Send users to their bookings instead of asking them to pay again.
+        showPaymentRecovery(
+          "Payment received. We're still confirming your booking. Check My bookings now.",
+          "bookings"
         );
         setError(null);
         return;
@@ -605,7 +656,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
       {/* Nav bar */}
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Pressable style={styles.backButton} onPress={() => goBackOrFallback(navigation, fallbackRoutes.search)}>
           <ArrowLeft size={22} color="#111827" />
         </Pressable>
         <Text style={styles.navTitle}>Confirm booking</Text>
@@ -682,6 +733,15 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                     <Text style={styles.timeSlotDate}>{formatDateLabel(end)}</Text>
                   </TouchableOpacity>
                 </View>
+                {selectedTimeUnavailable ? (
+                  <Pressable style={styles.timeUnavailableCard} onPress={() => openPicker("start")}>
+                    <CircleX size={16} color="#B42318" strokeWidth={2.2} />
+                    <View style={styles.timeUnavailableCopy}>
+                      <Text style={styles.timeUnavailableTitle}>This time is unavailable</Text>
+                      <Text style={styles.timeUnavailableBody}>Choose another arrival time to continue.</Text>
+                    </View>
+                  </Pressable>
+                ) : null}
               </View>
             </View>
 
@@ -820,6 +880,43 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               </View>
             </View>
 
+            {paymentFailureMessage ? (
+              <View style={styles.recoveryCard}>
+                <View style={styles.recoveryIconWrap}>
+                  <Info size={18} color={GREEN} strokeWidth={2.2} />
+                </View>
+                <View style={styles.recoveryCopy}>
+                  <Text style={styles.recoveryTitle}>
+                    {paymentRecoveryAction === "bookings"
+                      ? "Check booking status"
+                      : paymentRecoveryAction === "time"
+                        ? "Choose another time"
+                        : "Payment needs attention"}
+                  </Text>
+                  <Text style={styles.recoveryBody}>{paymentFailureMessage}</Text>
+                  <Pressable
+                    style={styles.recoveryButton}
+                    disabled={bookingBusy}
+                    onPress={
+                      paymentRecoveryAction === "bookings"
+                        ? goToBookings
+                        : paymentRecoveryAction === "time"
+                          ? () => openPicker("start")
+                          : handlePayment
+                    }
+                  >
+                    <Text style={styles.recoveryButtonText}>
+                      {paymentRecoveryAction === "bookings"
+                        ? "Open My bookings"
+                        : paymentRecoveryAction === "time"
+                          ? "Change time"
+                          : "Try payment again"}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
+
             {/* ── Payment card ── */}
             <View style={styles.card}>
               <Text style={styles.cardSectionHeader}>Payment</Text>
@@ -839,7 +936,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                     {Platform.OS === "ios" ? (
                       <Apple size={13} color={FG} strokeWidth={2.1} />
                     ) : (
-                      <Chrome size={13} color={FG} strokeWidth={2} />
+                      <Ionicons name="logo-google" size={13} color={GREEN} />
                     )}
                     <Text style={styles.methodPillText}>{Platform.OS === "ios" ? "Pay" : "Pay"}</Text>
                   </View>
@@ -887,9 +984,15 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       {listing && user ? (
         <View style={[styles.footerBar, { paddingBottom: 14 + insets.bottom }]}>
           <SquircleBtn
-            label={confirmingBooking ? "Confirming…" : `Pay €${pricing.finalPrice.toFixed(2)}`}
-            onPress={handlePayment}
-            disabled={bookingBusy || bookingConfirmed || requiresVehicleDetails}
+            label={
+              selectedTimeUnavailable
+                ? "Choose another time"
+                : confirmingBooking
+                  ? "Confirming…"
+                  : `Pay €${pricing.finalPrice.toFixed(2)}`
+            }
+            onPress={selectedTimeUnavailable ? () => openPicker("start") : handlePayment}
+            disabled={bookingBusy || bookingConfirmed || (!selectedTimeUnavailable && requiresVehicleDetails)}
             loading={bookingBusy && !confirmingBooking}
             fullWidth
           />
@@ -1057,6 +1160,55 @@ const styles = StyleSheet.create({
   vehicleSectionBody: {
     gap: 0,
   },
+  recoveryCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#B8E4D0",
+    backgroundColor: "#F0FAF6",
+    padding: 14,
+  },
+  recoveryIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  recoveryCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  recoveryTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 14,
+    color: FG,
+    letterSpacing: -0.2,
+    marginBottom: 3,
+  },
+  recoveryBody: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 18,
+    color: MUTED,
+  },
+  recoveryButton: {
+    alignSelf: "flex-start",
+    marginTop: 10,
+    borderRadius: 999,
+    backgroundColor: GREEN,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  recoveryButtonText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: "#ffffff",
+  },
   editBtn: {
     paddingVertical: 5, paddingHorizontal: 14,
     borderRadius: 20, borderWidth: 1, borderColor: "#BEB7AF",
@@ -1084,6 +1236,35 @@ const styles = StyleSheet.create({
   timeArrowDuration: {
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
     color: SUBTLE, letterSpacing: 0.2,
+  },
+  timeUnavailableCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    marginTop: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#F5C2C7",
+    backgroundColor: "#FFF5F5",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  timeUnavailableCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  timeUnavailableTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 13,
+    color: "#B42318",
+    letterSpacing: -0.1,
+  },
+  timeUnavailableBody: {
+    marginTop: 2,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    lineHeight: 17,
+    color: MUTED,
   },
 
   // ── Price rows ───────────────────────────────────────────────

@@ -18,6 +18,7 @@ import { useToastOnMessage } from "../components/GlobalToast";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
 import type { RootStackParamList } from "../types";
 import { colors, spacing, textStyles } from "../styles/theme";
+import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "EditListing">;
 
@@ -85,7 +86,7 @@ export function EditListingScreen({ navigation, route }: Props) {
         imageUrls: imageUrl.trim() ? [imageUrl.trim()] : [],
       });
       setToast("Listing updated.");
-      navigation.goBack();
+      goBackOrFallback(navigation, fallbackRoutes.listings);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save listing");
     } finally {
@@ -108,7 +109,7 @@ export function EditListingScreen({ navigation, route }: Props) {
             await deleteListing({ token, listingId: id });
             await AsyncStorage.setItem("searchRefreshToken", Date.now().toString());
             setToast("Listing deleted.");
-            navigation.goBack();
+            goBackOrFallback(navigation, fallbackRoutes.listings);
           } catch (err) {
             setError(err instanceof Error ? err.message : "Could not delete listing");
           }
@@ -120,7 +121,7 @@ export function EditListingScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.topBar}>
-        <BackButton onPress={() => navigation.goBack()} />
+        <BackButton onPress={() => goBackOrFallback(navigation, fallbackRoutes.listings)} />
         <Text style={styles.topTitle}>Edit listing</Text>
         <View style={styles.topBarSpacer} />
       </View>

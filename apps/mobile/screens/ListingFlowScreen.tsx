@@ -201,6 +201,7 @@ export function ListingFlowScreen({ route }: Props) {
               : prev.pricePerMonth,
           photos: listing.image_urls ?? prev.photos,
           capacity: (listing as { capacity?: number | null }).capacity ?? 1,
+          description: listing.description?.trim() ?? "",
         }));
         if (token) {
           try {

@@ -1,5 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
   Alert,
@@ -34,6 +35,7 @@ import { formatDateLabel, formatDateTimeLabel, formatReviewDate, formatTimeLabel
 import { calculateListingTotal, formatPriceValue, getListingRateType } from "../utils/pricing";
 import {
   Accessibility,
+  AlertCircle,
   ArrowLeft,
   ArrowRight,
   ArrowDownUp,
@@ -43,7 +45,6 @@ import {
   Cctv,
   ChevronDown,
   ChevronRight,
-  Chrome,
   CircleCheck,
   Clock,
   Fence,
@@ -55,6 +56,7 @@ import {
   MapPin,
   type LucideIcon,
   Maximize2,
+  RefreshCw,
   Share2,
   Star,
   Warehouse,
@@ -63,6 +65,7 @@ import {
 } from "lucide-react-native";
 import { SkeletonBlock, usePulse } from "../components/ui";
 import { SquircleBtn } from "../components/SquircleBtn";
+import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Listing">;
 
@@ -140,6 +143,7 @@ export function ListingScreen({ navigation, route }: Props) {
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const skeletonPulse = usePulse();
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const [showFullAbout, setShowFullAbout] = useState(false);
@@ -210,19 +214,26 @@ export function ListingScreen({ navigation, route }: Props) {
         const data = await getListing(id, { from: startAt.toISOString(), to: endAt.toISOString() });
         if (!active) return;
         setListing(data);
+        setError(null);
         if (isIdChange) {
           void trackEvent("mobile_listing_viewed", { listingId: id, title: data.title });
         }
       } catch (err) {
         if (!active) return;
-        if (isIdChange) setError(err instanceof Error ? err.message : "Failed to load listing");
+        setError(err instanceof Error ? err.message : "Failed to load listing");
       } finally {
         if (active) setLoading(false);
       }
     };
     void load();
     return () => { active = false; };
-  }, [id, startAt, endAt]);
+  }, [id, reloadNonce, startAt, endAt]);
+
+  const handleRetryListing = useCallback(() => {
+    setError(null);
+    setLoading(true);
+    setReloadNonce((value) => value + 1);
+  }, []);
 
   useEffect(() => {
     // Only update when the times actually change. Assigning fresh Date objects
@@ -380,8 +391,6 @@ export function ListingScreen({ navigation, route }: Props) {
     [amenities]
   );
 
-  const aboutText = listing?.description?.trim() || null;
-
   const availabilityFallbackText = useMemo(() => {
     const raw = (listing?.availability_text ?? "").trim();
     if (!raw) return null;
@@ -419,7 +428,7 @@ export function ListingScreen({ navigation, route }: Props) {
         Array.isArray(item.repeatWeekdays) && item.repeatWeekdays.includes(dow)
       );
       if (entry) return { day: label, hours: `${formatHour(entry.startsAt)} – ${formatHour(entry.endsAt)}`, isToday: dow === todayDow };
-      return { day: label, hours: "Closed", isToday: dow === todayDow };
+      return { day: label, hours: "Unavailable", isToday: dow === todayDow };
     }
     return { day: label, hours: availabilityFallbackText, isToday: dow === todayDow };
   });
@@ -458,6 +467,27 @@ export function ListingScreen({ navigation, route }: Props) {
     }
     return listing?.title ?? spaceTypeLabel;
   }, [listing, spaceTypeLabel]);
+
+  const aboutText = useMemo(() => {
+    const explicitDescription = listing?.description?.trim();
+    if (explicitDescription) return explicitDescription;
+    if (!listing) return null;
+
+    const typePhrase = /parking$/i.test(spaceTypeLabel)
+      ? spaceTypeLabel
+      : `${spaceTypeLabel} parking`;
+    const locationText = areaLabel ? ` in ${areaLabel}` : "";
+    const availabilityText = availabilityFallbackText
+      ? availabilityFallbackText === "24/7"
+        ? " Available 24/7."
+        : ` Available ${availabilityFallbackText}.`
+      : "";
+    const includedText = featureLabels.length
+      ? ` Includes ${featureLabels.slice(0, 3).join(", ")}.`
+      : "";
+
+    return `${typePhrase}${locationText} with clear booking details and secure payment.${availabilityText}${includedText}`;
+  }, [areaLabel, availabilityFallbackText, featureLabels, listing, spaceTypeLabel]);
 
   const heroHeight = Math.round(width * 0.8);
   const heroTapHeight = Math.max(0, heroHeight - 40);
@@ -523,7 +553,7 @@ export function ListingScreen({ navigation, route }: Props) {
 
   const openAuthScreen = (screen: "Welcome" | "SignIn" | "Register") => {
     closeAuthOverlay();
-    const returnTo = { screen: "Listing" as const, params: { id, from: startAt.toISOString(), to: endAt.toISOString() } };
+    const returnTo = { screen: "BookingSummary" as const, params: { id, from: startAt.toISOString(), to: endAt.toISOString() } };
     setTimeout(() => navigation.navigate(screen, { returnTo }), 180);
   };
 
@@ -625,7 +655,18 @@ export function ListingScreen({ navigation, route }: Props) {
           </View>
         ) : error ? (
           <View style={styles.centered}>
+            <View style={styles.errorIconWrap}>
+              <AlertCircle size={26} color={colors.danger} strokeWidth={2.1} />
+            </View>
+            <Text style={styles.errorTitle}>Couldn't load this space</Text>
             <Text style={styles.errorText}>{error}</Text>
+            <Pressable style={styles.errorPrimaryBtn} onPress={handleRetryListing}>
+              <RefreshCw size={16} color="#ffffff" strokeWidth={2.2} />
+              <Text style={styles.errorPrimaryText}>Try again</Text>
+            </Pressable>
+            <Pressable style={styles.errorSecondaryBtn} onPress={() => goBackOrFallback(navigation, fallbackRoutes.search)}>
+              <Text style={styles.errorSecondaryText}>Back to search</Text>
+            </Pressable>
           </View>
         ) : listing ? (
           <>
@@ -661,7 +702,7 @@ export function ListingScreen({ navigation, route }: Props) {
 
             {/* Floating glass controls */}
             <View style={[styles.headerOverlay, { top: insets.top + 12 }]}>
-              <Pressable style={styles.glassBtn} onPress={() => navigation.goBack()}>
+              <Pressable style={styles.glassBtn} onPress={() => goBackOrFallback(navigation, fallbackRoutes.search)}>
                 <ArrowLeft size={19} color="#fff" strokeWidth={2.2} />
               </Pressable>
               <View style={styles.headerRightColumn}>
@@ -748,6 +789,12 @@ export function ListingScreen({ navigation, route }: Props) {
                 {/* ── Booking ──────────────────────────────── */}
                 <View style={styles.sectionDivider} />
                 <View style={styles.section}>
+                  <View style={styles.bookingHeader}>
+                    <Text style={styles.bookingHeaderTitle}>Choose your parking time</Text>
+                    <Text style={styles.bookingHeaderBody}>
+                      Check availability before you book.
+                    </Text>
+                  </View>
                   <View style={styles.timeRow}>
                     <Pressable style={styles.timeField} onPress={() => openPicker("start")}>
                       <View style={styles.timeFieldHeader}>
@@ -881,15 +928,15 @@ export function ListingScreen({ navigation, route }: Props) {
                   ) : null}
                 </View>
 
-                {/* ── Opening hours ────────────────────────── */}
+                {/* ── Availability ─────────────────────────── */}
                 {shouldShowAvailability ? (
                   <>
                     <View style={styles.sectionDivider} />
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>Opening hours</Text>
+                      <Text style={styles.sectionTitle}>Availability</Text>
                       <View style={styles.availabilityList}>
                         {openingHours.map((entry, index) => {
-                          const isClosed = entry.hours === "Closed";
+                          const isClosed = entry.hours === "Unavailable";
                           const isLast = index === openingHours.length - 1;
                           return (
                             <View
@@ -1004,6 +1051,9 @@ export function ListingScreen({ navigation, route }: Props) {
                   <Text style={styles.bottomLabel}>TOTAL</Text>
                   <Text style={styles.bottomPrice}>€{priceSummary.total}</Text>
                   <Text style={styles.bottomDuration}>{priceSummary.durationLabel}</Text>
+                  {listing.is_available === false ? (
+                    <Text style={styles.bottomUnavailableHint}>Try another arrival time</Text>
+                  ) : null}
                   {priceSummary.dailyCapApplied ? (
                     <Text style={styles.dailyCapBadge}>Day rate — saves €{formatPriceValue(priceSummary.dailyCapSaving)}</Text>
                   ) : null}
@@ -1018,10 +1068,13 @@ export function ListingScreen({ navigation, route }: Props) {
                   </View>
                 ) : (
                   <SquircleBtn
-                    label={listing.is_available === false ? "Unavailable" : "Book Now"}
-                    disabled={listing.is_available === false}
+                    label={listing.is_available === false ? "Choose another time" : "Book Now"}
                     loading={navigatingToBooking}
                     onPress={() => {
+                      if (listing.is_available === false) {
+                        openPicker("start");
+                        return;
+                      }
                       if (!user) { setShowAuthModal(true); return; }
                       if (navigatingToBooking) return;
                       setNavigatingToBooking(true);
@@ -1113,7 +1166,7 @@ export function ListingScreen({ navigation, route }: Props) {
                 <ActivityIndicator size="small" color={GREEN} />
               ) : (
                 <>
-                  <Chrome size={20} color={GREEN} strokeWidth={2} style={styles.authModalBtnIcon} />
+                  <Ionicons name="logo-google" size={20} color={GREEN} style={styles.authModalBtnIcon} />
                   <Text style={styles.authModalOutlineText}>Continue with Google</Text>
                 </>
               )}
@@ -1234,10 +1287,57 @@ const styles = StyleSheet.create({
   centered: {
     flex: 1, alignItems: "center", justifyContent: "center",
     backgroundColor: "#ffffff",
+    paddingHorizontal: 24,
+  },
+  errorIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: "#FEF2F2",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 20,
+    lineHeight: 25,
+    color: FG,
+    letterSpacing: -0.4,
+    textAlign: "center",
+    marginBottom: 8,
   },
   errorText: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: colors.danger,
-    textAlign: "center", paddingHorizontal: 24,
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: FG_MUTED,
+    lineHeight: 20,
+    textAlign: "center",
+    marginBottom: 18,
+  },
+  errorPrimaryBtn: {
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: GREEN,
+    paddingHorizontal: 22,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minWidth: 180,
+  },
+  errorPrimaryText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15,
+    color: "#ffffff",
+  },
+  errorSecondaryBtn: {
+    marginTop: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  errorSecondaryText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: GREEN,
   },
 
   // Skeleton
@@ -1406,6 +1506,23 @@ const styles = StyleSheet.create({
   factMuted:{ fontFamily: "PlusJakartaSans-Regular",  fontSize: 13, color: FG_SUBTLE },
 
   // ── Airbnb-style time pickers ──────────────────────────────────────────────
+  bookingHeader: {
+    marginBottom: 12,
+  },
+  bookingHeaderTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 17,
+    lineHeight: 21,
+    color: FG,
+    letterSpacing: -0.3,
+  },
+  bookingHeaderBody: {
+    marginTop: 3,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 18,
+    color: FG_SUBTLE,
+  },
   timeRow: { flexDirection: "row", alignItems: "stretch", gap: 10, marginBottom: 12 },
   timeField: {
     flex: 1,
@@ -1539,7 +1656,11 @@ const styles = StyleSheet.create({
   offerTextBold: { fontFamily: "PlusJakartaSans-SemiBold", color: GREEN },
 
   // Sections
-  sectionDivider: { height: 1, backgroundColor: "#EBEBEB", marginHorizontal: -spacing.screenX },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: "#EBEBEB",
+    marginHorizontal: 0,
+  },
   availabilityList: { marginTop: 0 },
   availabilityRow: {
     flexDirection: "row", alignItems: "center",
@@ -1572,7 +1693,7 @@ const styles = StyleSheet.create({
     color: FG_2, flex: 1, textAlign: "right",
   },
   availabilityHoursClosed: { color: FG_SUBTLE },
-  section: { paddingVertical: 16 },
+  section: { paddingVertical: 20 },
   sectionTitle: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 17, lineHeight: 21, color: FG, letterSpacing: -0.3, marginBottom: 8,
@@ -1834,6 +1955,7 @@ const styles = StyleSheet.create({
     fontSize: 24, color: FG, letterSpacing: -0.5, lineHeight: 29,
   },
   bottomDuration: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, marginTop: 1 },
+  bottomUnavailableHint: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: colors.danger, marginTop: 2 },
   dailyCapBadge: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: GREEN, marginTop: 2 },
   reserveBtn: {
     backgroundColor: "#0a8050",

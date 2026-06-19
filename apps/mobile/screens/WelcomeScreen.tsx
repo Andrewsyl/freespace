@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Chrome, Mail } from "lucide-react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Mail } from "lucide-react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
@@ -137,7 +138,7 @@ export function WelcomeScreen({ navigation, route }: Props) {
             <ActivityIndicator size="small" color={AUTH_GREEN} />
           ) : (
             <>
-              <Chrome size={20} color={AUTH_GREEN} strokeWidth={2} style={styles.authBtnIcon} />
+              <Ionicons name="logo-google" size={20} color={AUTH_GREEN} style={styles.authBtnIcon} />
               <Text style={styles.authOutlineText}>Continue with Google</Text>
             </>
           )}

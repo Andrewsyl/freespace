@@ -19,6 +19,7 @@ import { useAuth } from "../auth";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import type { RootStackParamList } from "../types";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "VehicleType">;
 
@@ -179,7 +180,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
         vehiclePlate: plate.trim().toUpperCase(),
       });
       await setAuthUser(response.user);
-      navigation.goBack();
+      goBackOrFallback(navigation, fallbackRoutes.profile);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save vehicle");
     } finally {
@@ -210,6 +211,41 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
 
   const selectedColourHex = COLOURS.find((c) => c.name === selectedColour)?.hex;
 
+  if (!token || !user) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <View style={styles.nav}>
+          <Pressable
+            style={styles.backBtn}
+            onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}
+            hitSlop={10}
+            accessibilityLabel="Go back"
+          >
+            <ArrowLeft size={20} color={FG} strokeWidth={2.5} />
+          </Pressable>
+          <Text style={styles.navTitle}>My vehicle</Text>
+          <View style={{ width: 38 }} />
+        </View>
+        <View style={styles.gatedWrap}>
+          <Text style={styles.gatedTitle}>Sign in to save your vehicle</Text>
+          <Text style={styles.gatedBody}>Vehicle details are stored securely on your account for faster checkout.</Text>
+          <SquircleBtn
+            label="Sign in"
+            onPress={() => navigation.navigate("SignIn")}
+            style={styles.gatedPrimaryButton}
+            fullWidth
+          />
+          <Pressable
+            style={styles.gatedSecondaryButton}
+            onPress={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
+          >
+            <Text style={styles.gatedSecondaryButtonText}>Browse spaces</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView
@@ -219,7 +255,12 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
       >
         {/* Nav */}
         <View style={styles.nav}>
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={10} accessibilityLabel="Go back">
+          <Pressable
+            style={styles.backBtn}
+            onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}
+            hitSlop={10}
+            accessibilityLabel="Go back"
+          >
             <ArrowLeft size={20} color={FG} strokeWidth={2.5} />
           </Pressable>
           <Text style={styles.navTitle}>My vehicle</Text>
@@ -488,6 +529,47 @@ const styles = StyleSheet.create({
   navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG, letterSpacing: -0.3 },
 
   content: { paddingHorizontal: 16, paddingTop: 16 },
+
+  gatedWrap: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 48,
+  },
+  gatedTitle: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 26,
+    letterSpacing: -0.7,
+    lineHeight: 32,
+    marginBottom: 10,
+  },
+  gatedBody: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  gatedPrimaryButton: {
+    marginBottom: 12,
+  },
+  gatedSecondaryButton: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderColor: LINE,
+    borderRadius: 20,
+    borderWidth: 1,
+    minHeight: 52,
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  gatedSecondaryButtonText: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 16,
+    letterSpacing: -0.3,
+  },
 
   card: {
     backgroundColor: "#ffffff",

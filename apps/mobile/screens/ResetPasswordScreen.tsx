@@ -16,6 +16,7 @@ import { useToastOnMessage } from "../components/GlobalToast";
 import type { RootStackParamList } from "../types";
 import { colors, spacing } from "../styles/theme";
 import { Button, TextInput as AppTextInput } from "../components/ui";
+import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPassword">;
 const AUTH_GREEN = "#0a8050";
@@ -104,7 +105,12 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         <View style={styles.navBar}>
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8} accessibilityLabel="Go back">
+          <Pressable
+            style={styles.backBtn}
+            onPress={() => goBackOrFallback(navigation, fallbackRoutes.search)}
+            hitSlop={8}
+            accessibilityLabel="Go back"
+          >
             <ArrowLeft size={22} color="#111827" strokeWidth={2.2} />
           </Pressable>
         </View>

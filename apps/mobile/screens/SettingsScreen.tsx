@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, BellRing, LifeBuoy, LockKeyhole, ShieldCheck } from "lucide-react-native";
 import type { RootStackParamList } from "../types";
 import { colors, spacing, textStyles } from "../styles/theme";
+import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 
@@ -11,7 +12,11 @@ export function SettingsScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.navBar}>
-        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
+        <Pressable
+          style={styles.backBtn}
+          onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}
+          accessibilityLabel="Go back"
+        >
           <ArrowLeft size={22} color="#111827" />
         </Pressable>
         <Text style={styles.navTitle}>Settings</Text>

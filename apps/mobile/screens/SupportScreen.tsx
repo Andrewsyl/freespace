@@ -9,6 +9,7 @@ import { useToastOnMessage } from "../components/GlobalToast";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
 import type { RootStackParamList } from "../types";
 import { Button, TextInput as AppTextInput } from "../components/ui";
+import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Support">;
 
@@ -53,7 +54,11 @@ export function SupportScreen({ navigation, route }: Props) {
           keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
         >
           <View style={styles.navBar}>
-            <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
+            <Pressable
+              style={styles.backBtn}
+              onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}
+              accessibilityLabel="Go back"
+            >
               <ArrowLeft size={22} color="#111827" />
             </Pressable>
             <Text style={styles.navTitle}>Contact us</Text>
@@ -88,6 +93,12 @@ export function SupportScreen({ navigation, route }: Props) {
                     },
                   })
                 }
+              />
+              <Button
+                title="Browse spaces"
+                variant="secondary"
+                onPress={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
+                style={{ marginTop: 12 }}
               />
             </View>
           </View>
@@ -124,7 +135,7 @@ export function SupportScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}>
         <View style={styles.navBar}>
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Pressable style={styles.backBtn} onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}>
             <ArrowLeft size={22} color="#111827" />
           </Pressable>
           <Text style={styles.navTitle}>Contact us</Text>

@@ -29,6 +29,7 @@ import {
 import { useAuth } from "../auth";
 import { formatReviewDate } from "../utils/dateFormat";
 import type { RootStackParamList } from "../types";
+import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
 
 export function PaymentsScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -163,7 +164,11 @@ export function PaymentsScreen() {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <View style={styles.navBar}>
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
+          <Pressable
+            style={styles.backBtn}
+            onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}
+            accessibilityLabel="Go back"
+          >
             <ArrowLeft size={22} color="#111827" />
           </Pressable>
           <Text style={styles.navTitle}>Payments</Text>
@@ -180,6 +185,12 @@ export function PaymentsScreen() {
             onPress={() => navigation.navigate("SignIn")}
             style={{ marginTop: 20 }}
           />
+          <Button
+            title="Browse spaces"
+            variant="secondary"
+            onPress={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
+            style={{ marginTop: 12 }}
+          />
           <View style={styles.gatedHintRow}>
             <ShieldCheck size={14} color="#9ca3af" strokeWidth={2.1} />
             <Text style={styles.gatedHintText}>Your payment details are encrypted and secure.</Text>
@@ -192,7 +203,7 @@ export function PaymentsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.navBar}>
-        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+        <Pressable style={styles.backBtn} onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}>
           <ArrowLeft size={22} color="#111827" />
         </Pressable>
         <Text style={styles.navTitle}>Payments</Text>

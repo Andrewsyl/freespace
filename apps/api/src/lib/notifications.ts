@@ -12,8 +12,8 @@ type PushPayload = {
   title: string;
   body: string;
   data?: Record<string, unknown>;
-  // Android notification channel; the app registers "booking-reminders"
-  // (high importance) for time-critical reminders. Defaults to "default".
+  // Optional Android notification channel. Leave unset for the app default
+  // channel so Android uses the configured FreeSpace notification icon.
   channelId?: string;
   // Notification category (registered on the client) that adds action buttons,
   // e.g. "booking_ending" → "Extend +".
@@ -129,10 +129,6 @@ export async function processScheduledNotifications(limit = 50) {
                 : "past",
           ...(item.payload ?? {}),
         },
-        channelId:
-          item.type === "booking_start_soon" || item.type === "booking_end_soon"
-            ? "booking-reminders-v2"
-            : undefined,
         // "Extend +" action button on the end-soon reminder (category is
         // registered on the client at app startup).
         categoryId: item.type === "booking_end_soon" ? "booking_ending" : undefined,

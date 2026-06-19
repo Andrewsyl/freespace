@@ -177,6 +177,7 @@ export async function getListing(
     permission_declared:
       listing.permission_declared ?? listing.permissionDeclared ?? null,
     image_urls: listing.image_urls ?? listing.imageUrls ?? null,
+    description: listing.description ?? null,
   } as ListingDetail;
 }
 

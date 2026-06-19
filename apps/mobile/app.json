@@ -37,7 +37,7 @@
         "@stripe/stripe-react-native",
         {
           "merchantIdentifier": "merchant.com.andrewsyl.carparking",
-          "enableGooglePay": true
+          "enableGooglePay": false
         }
       ],
       [
@@ -103,7 +103,7 @@
           "apiKey": "AIzaSyC1h1NFLFz7SPauw85Udh0O1CBlN5bqOek"
         }
       },
-      "versionCode": 119
+      "versionCode": 120
     },
     "androidStatusBar": {
       "translucent": true,

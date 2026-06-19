@@ -182,6 +182,7 @@ describe("bookings routes", () => {
     expect(stripeMocks.paymentIntentsCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         amount: 324,
+        payment_method_types: ["card"],
       })
     );
   });

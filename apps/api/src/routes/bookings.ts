@@ -885,7 +885,7 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
       amount: chargeAmountCents,
       currency: payload.currency,
       customer: customerId,
-      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
+      payment_method_types: ["card"],
       metadata: {
         listing_id: payload.listingId,
         driver_id: driverId,
@@ -1171,7 +1171,7 @@ router.post("/:id/extend-intent", requireAuth, enforceBlockedList, bookingLimite
       amount: additionalAmountCents,
       currency: (booking.currency ?? "eur").toLowerCase(),
       customer: customerId,
-      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
+      payment_method_types: ["card"],
       metadata: {
         booking_id: bookingId,
         driver_id: driverId,
@@ -1404,7 +1404,7 @@ router.post("/:id/change-intent", requireAuth, enforceBlockedList, bookingLimite
       amount: additionalAmountCents,
       currency: (booking.currency ?? "eur").toLowerCase(),
       customer: customerId,
-      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
+      payment_method_types: ["card"],
       metadata: {
         booking_id: bookingId,
         driver_id: driverId,

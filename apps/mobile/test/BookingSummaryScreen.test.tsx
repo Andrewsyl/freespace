@@ -121,7 +121,7 @@ describe("BookingSummaryScreen", () => {
     const payCta = await waitFor(() => getByText(/^Pay €\d+\.\d{2}$/i));
     await user.press(payCta);
 
-    expect(await findByText(/Payment failed\. Try again\./i)).toBeTruthy();
+    expect(await findByText(/Payment not completed\. No booking was created\./i)).toBeTruthy();
   });
 
   it("shows an error when payment intent creation fails", async () => {

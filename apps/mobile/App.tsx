@@ -109,13 +109,6 @@ export default function App() {
         name: "General",
         importance: Notifications.AndroidImportance.DEFAULT,
       });
-      // Time-critical "starts soon"/"ends soon" reminders get their own
-      // high-importance channel so users can't lose them by muting general
-      // updates (and vice versa). Channel settings stick once created.
-      void Notifications.setNotificationChannelAsync("booking-reminders-v2", {
-        name: "Booking reminders",
-        importance: Notifications.AndroidImportance.HIGH,
-      });
     }
     // Register the "Extend +" action shown on the server-sent "ends soon"
     // reminder (categoryId: "booking_ending"). Registered globally at startup
@@ -351,6 +344,28 @@ function AppNavigator() {
     const handleUrl = async (url: string | null | undefined) => {
       if (!active || !url || handledUrls.has(url)) return;
       handledUrls.add(url);
+      const dispatchWhenReady = (action: ReturnType<typeof CommonActions.reset> | ReturnType<typeof CommonActions.navigate>) => {
+        let attempts = 0;
+        const run = () => {
+          if (navigationRef.isReady()) {
+            navigationRef.dispatch(action);
+            return;
+          }
+          if (attempts < 100) {
+            attempts += 1;
+            setTimeout(run, 50);
+          }
+        };
+        run();
+      };
+      const resetToTabs = (screen: "Search" | "History" | "Favorites" | "Profile" = "Search") => {
+        dispatchWhenReady(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: "Tabs", params: { screen } }],
+          })
+        );
+      };
       const parsed = Linking.parse(url);
       const pathCandidate =
         ("hostname" in parsed && typeof parsed.hostname === "string" && parsed.hostname) ||
@@ -394,44 +409,52 @@ function AppNavigator() {
         if (!bookingId) return;
         if (!token) {
           showError("Sign in to view your booking.");
+          dispatchWhenReady(
+            CommonActions.navigate({
+              name: "Welcome",
+            })
+          );
           return;
         }
         try {
           const booking = await getBooking(token, bookingId, apiBaseParam);
-          if (navigationRef.isReady()) {
-            navigationRef.dispatch(
-              CommonActions.navigate({
-                name: "BookingDetail",
-                params: { booking } as RootStackParamList["BookingDetail"],
-              })
-            );
-          }
+          dispatchWhenReady(
+            CommonActions.navigate({
+              name: "BookingDetail",
+              params: { booking } as RootStackParamList["BookingDetail"],
+            })
+          );
         } catch {
           showError("Could not load booking.");
+          resetToTabs("History");
         }
         return;
       }
       if (path === "reset-password") {
         if (!tokenParam) {
           showError("Reset link is missing its token.");
-          return;
-        }
-        if (navigationRef.isReady()) {
-          navigationRef.dispatch(
+          dispatchWhenReady(
             CommonActions.navigate({
               name: "ResetPassword",
-              params: {
-                token: tokenParam,
-                apiBase: apiBaseParam,
-              } as RootStackParamList["ResetPassword"],
             })
           );
+          return;
         }
+        dispatchWhenReady(
+          CommonActions.navigate({
+            name: "ResetPassword",
+            params: {
+              token: tokenParam,
+              apiBase: apiBaseParam,
+            } as RootStackParamList["ResetPassword"],
+          })
+        );
         return;
       }
       if (path !== "verify-email") return;
       if (!tokenParam) {
         showError("Verification link is missing its token.");
+        resetToTabs("Profile");
         return;
       }
       try {
@@ -441,18 +464,17 @@ function AppNavigator() {
           await setAuthUser(profile.user);
         }
         showSuccess("Email verified. You can continue in the app.");
-        if (navigationRef.isReady()) {
-          navigationRef.dispatch(
-            CommonActions.navigate({
-              name: "Tabs",
-              params: {
-                screen: "Profile",
-              } as RootStackParamList["Tabs"],
-            })
-          );
-        }
+        dispatchWhenReady(
+          CommonActions.navigate({
+            name: "Tabs",
+            params: {
+              screen: "Profile",
+            } as RootStackParamList["Tabs"],
+          })
+        );
       } catch (error) {
         showError(error instanceof Error ? error.message : "Email verification failed");
+        resetToTabs("Profile");
       }
     };
 

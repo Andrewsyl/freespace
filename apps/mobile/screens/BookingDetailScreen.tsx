@@ -40,6 +40,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { formatTimeLabel } from "../utils/dateFormat";
 import { formatBookingReference } from "../utils/bookingFormat";
+import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingDetail">;
 
@@ -344,7 +345,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 
       {/* Nav header */}
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Pressable style={styles.backButton} onPress={() => goBackOrFallback(navigation, fallbackRoutes.bookings)}>
           <ArrowLeft size={20} color={FG} strokeWidth={2.2} />
         </Pressable>
         <Text style={styles.navTitle}>Booking details</Text>

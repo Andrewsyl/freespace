@@ -13,6 +13,7 @@ import { ArrowLeft, ChevronDown, Star } from "lucide-react-native";
 import { listListingReviews, type ListingReview } from "../api";
 import type { RootStackParamList } from "../types";
 import { formatReviewDate } from "../utils/dateFormat";
+import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
 
 const SORT_OPTIONS = ["Most relevant", "Newest"] as const;
 
@@ -63,7 +64,7 @@ export function ListingReviewsScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Pressable style={styles.backButton} onPress={() => goBackOrFallback(navigation, fallbackRoutes.search)}>
           <ArrowLeft size={20} color="#111827" strokeWidth={2.5} />
         </Pressable>
         <Text style={styles.headerTitle}>Reviews</Text>
@@ -125,7 +126,12 @@ export function ListingReviewsScreen({ navigation, route }: Props) {
             })}
           </View>
         ) : (
-          <Text style={styles.emptyText}>No reviews yet.</Text>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No reviews yet.</Text>
+            <Pressable style={styles.emptyButton} onPress={() => resetToSafeRoute(navigation, fallbackRoutes.search)}>
+              <Text style={styles.emptyButtonText}>Browse spaces</Text>
+            </Pressable>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -250,11 +256,26 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     marginTop: 2,
   },
+  emptyState: {
+    alignItems: "center",
+    paddingTop: 20,
+  },
   emptyText: {
-    marginTop: 20,
     fontFamily: "PlusJakartaSans-Regular",
     color: "#9ca3af",
     fontSize: 13,
     textAlign: "center",
+  },
+  emptyButton: {
+    backgroundColor: "#0a8050",
+    borderRadius: 12,
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+  },
+  emptyButtonText: {
+    color: "#ffffff",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
   },
 });

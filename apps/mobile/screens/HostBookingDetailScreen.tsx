@@ -26,6 +26,7 @@ import { hostCancelBooking, type BookingSummary } from "../api";
 import { useAuth } from "../auth";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import type { RootStackParamList } from "../types";
+import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "HostBookingDetail">;
 
@@ -152,7 +153,12 @@ export function HostBookingDetailScreen({ navigation, route }: Props) {
 
       {/* Nav bar */}
       <View style={[styles.navBar, { paddingTop: insets.top + 10 }]}>
-        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8} accessibilityLabel="Go back">
+        <Pressable
+          style={styles.backBtn}
+          onPress={() => goBackOrFallback(navigation, fallbackRoutes.listings)}
+          hitSlop={8}
+          accessibilityLabel="Go back"
+        >
           <ArrowLeft size={22} color={FG} />
         </Pressable>
         <Text style={styles.navTitle}>Booking</Text>

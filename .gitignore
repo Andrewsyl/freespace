@@ -38,3 +38,4 @@ apps/mobile/*.aab
 apps/mobile/*.jks
 apps/mobile/credentials.json
 apps/mobile/credentials/
+docs/plans/

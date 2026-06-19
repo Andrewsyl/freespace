@@ -25,6 +25,7 @@ import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
 import { StarRating } from "../components/ui/StarRating";
 import { colors, spacing, typography } from "../theme";
+import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Review">;
 
@@ -101,7 +102,7 @@ export function ReviewScreen({ navigation, route }: Props) {
       <StatusBar barStyle="dark-content" />
 
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Pressable style={styles.backButton} onPress={() => goBackOrFallback(navigation, fallbackRoutes.bookings)}>
           <ArrowLeft size={22} color={colors.text.primary} />
         </Pressable>
         <Text style={styles.headerTitle}>Leave a review</Text>
@@ -183,14 +184,14 @@ export function ReviewScreen({ navigation, route }: Props) {
       </KeyboardAvoidingView>
 
       {isSubmitted ? (
-        <Pressable style={styles.successOverlay} onPress={() => navigation.popToTop()}>
+        <Pressable style={styles.successOverlay} onPress={() => resetToSafeRoute(navigation, fallbackRoutes.bookings)}>
           <View style={styles.successCard}>
             <LottieView
               source={require("../assets/successfully.json")}
               autoPlay
               loop={false}
               onAnimationFinish={() => {
-                setTimeout(() => navigation.popToTop(), 400);
+                setTimeout(() => resetToSafeRoute(navigation, fallbackRoutes.bookings), 400);
               }}
               style={styles.successAnimation}
             />

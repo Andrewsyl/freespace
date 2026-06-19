@@ -3,6 +3,7 @@ import { Linking, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } fro
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, ChevronRight } from "lucide-react-native";
 import type { RootStackParamList } from "../types";
+import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Legal">;
 
@@ -41,7 +42,11 @@ export function LegalScreen({ navigation }: Props) {
 
       {/* Nav bar */}
       <View style={styles.navBar}>
-        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
+        <Pressable
+          style={styles.backBtn}
+          onPress={() => goBackOrFallback(navigation, fallbackRoutes.search)}
+          accessibilityLabel="Go back"
+        >
           <ArrowLeft size={22} color="#111827" />
         </Pressable>
         <Text style={styles.navTitle}>Terms & privacy</Text>

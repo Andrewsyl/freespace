@@ -7,6 +7,7 @@ import { useFavorites } from "../favorites";
 import { colors, radius, spacing } from "../styles/theme";
 import type { RootStackParamList } from "../types";
 import { ArrowLeft, Heart, MapPin, ShieldCheck } from "lucide-react-native";
+import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Favorites">;
 
@@ -28,6 +29,12 @@ export function FavoritesScreen({ navigation }: Props) {
             <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
               <Text style={styles.primaryButtonText}>Sign in</Text>
             </Pressable>
+            <Pressable
+              style={[styles.primaryButton, styles.secondaryButton]}
+              onPress={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
+            >
+              <Text style={[styles.primaryButtonText, styles.secondaryButtonText]}>Browse spaces</Text>
+            </Pressable>
             <View style={styles.gatedHintRow}>
               <ShieldCheck size={14} color={colors.textSoft} strokeWidth={2.1} />
               <Text style={styles.gatedHintText}>Your saved spaces stay attached to your account.</Text>
@@ -41,7 +48,11 @@ export function FavoritesScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.navBar}>
-        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
+        <Pressable
+          style={styles.backBtn}
+          onPress={() => goBackOrFallback(navigation, fallbackRoutes.saved)}
+          accessibilityLabel="Go back"
+        >
           <ArrowLeft size={22} color="#111827" />
         </Pressable>
         <Text style={styles.navTitle}>Favourites</Text>
@@ -74,6 +85,12 @@ export function FavoritesScreen({ navigation }: Props) {
             <View style={styles.emptyState}>
               <Text style={styles.subtitle}>No favourites yet.</Text>
               <Text style={styles.helper}>Tap the heart on a listing to save it.</Text>
+              <Pressable
+                style={styles.primaryButton}
+                onPress={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
+              >
+                <Text style={styles.primaryButtonText}>Browse spaces</Text>
+              </Pressable>
             </View>
           ) : (
             favorites.map((item) => (
@@ -276,6 +293,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
+  },
+  secondaryButton: {
+    backgroundColor: "#ffffff",
+    borderColor: colors.border,
+    borderWidth: 1,
+  },
+  secondaryButtonText: {
+    color: colors.text,
   },
   gatedHintRow: {
     alignItems: "center",

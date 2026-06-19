@@ -18,6 +18,7 @@ import { useGlobalToast, useToastOnMessage } from "../components/GlobalToast";
 import type { RootStackParamList } from "../types";
 import { Button, TextInput as AppTextInput } from "../components/ui";
 import { colors, spacing, textStyles } from "../styles/theme";
+import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PersonalInfo">;
 
@@ -157,6 +158,34 @@ export function PersonalInfoScreen({ navigation, route }: Props) {
     });
   };
 
+  if (!token || !user) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <View style={styles.navBar}>
+          <Pressable
+            style={styles.backBtn}
+            onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}
+            accessibilityLabel="Go back"
+          >
+            <ArrowLeft size={20} color="#111827" strokeWidth={2.5} />
+          </Pressable>
+          <Text style={styles.navTitle}>Personal information</Text>
+          <View style={styles.navSpacer} />
+        </View>
+        <View style={styles.gatedWrap}>
+          <Text style={styles.gatedTitle}>Sign in to edit your profile</Text>
+          <Text style={styles.gatedBody}>Your name, email, and phone number are only available after you sign in.</Text>
+          <Button title="Sign in" onPress={() => navigation.navigate("SignIn")} style={styles.gatedPrimaryButton} />
+          <Button
+            title="Browse spaces"
+            variant="secondary"
+            onPress={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView
@@ -165,7 +194,11 @@ export function PersonalInfoScreen({ navigation, route }: Props) {
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         <View style={styles.navBar}>
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
+          <Pressable
+            style={styles.backBtn}
+            onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}
+            accessibilityLabel="Go back"
+          >
             <ArrowLeft size={20} color="#111827" strokeWidth={2.5} />
           </Pressable>
           <Text style={styles.navTitle}>Personal information</Text>
@@ -324,6 +357,30 @@ const styles = StyleSheet.create({
   backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
   navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#111827", letterSpacing: -0.3 },
   navSpacer: { width: 38 },
+  gatedWrap: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: spacing.screenX,
+    paddingBottom: 48,
+  },
+  gatedTitle: {
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 26,
+    letterSpacing: -0.7,
+    lineHeight: 32,
+    marginBottom: 10,
+  },
+  gatedBody: {
+    color: colors.textMuted,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  gatedPrimaryButton: {
+    marginBottom: 12,
+  },
   section: {
     marginBottom: 20,
   },

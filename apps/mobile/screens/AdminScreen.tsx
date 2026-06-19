@@ -18,6 +18,7 @@ import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
 import { cardShadow, colors, radius, spacing } from "../styles/theme";
 import { ArrowLeft } from "lucide-react-native";
+import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Admin">;
 
@@ -211,7 +212,7 @@ export function AdminScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.topBar}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Pressable style={styles.backButton} onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}>
           <ArrowLeft size={24} color={colors.text} strokeWidth={2.2} />
         </Pressable>
         <Text style={styles.topTitle}>Admin</Text>
