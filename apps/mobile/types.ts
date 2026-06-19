@@ -60,6 +60,9 @@ export type RootStackParamList = {
   Admin: undefined;
   BookingDetail: {
     booking: import("./api").BookingSummary;
+    // Set by the "Extend +" notification action / "ending soon" reminder so the
+    // extend picker opens automatically on arrival.
+    autoExtend?: boolean;
   };
   HostBookingDetail: {
     booking: import("./api").BookingSummary;

@@ -269,25 +269,28 @@ function AppNavigator() {
   const { token, setAuthUser, hydrateSession } = useAuth();
   const { showError, showSuccess } = useGlobalToast();
 
+  // Keep the latest token reachable from the notification handlers below, which
+  // are registered once (empty deps) and would otherwise capture a stale token.
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
+
   useEffect(() => {
-    const openNotificationTarget = (
-      data: BookingNotificationData | Record<string, unknown> | null | undefined
-    ) => {
-      if (!data || typeof data !== "object") return;
-      // All booking-related notifications (status changes, reminders, review
-      // prompt) deep-link into the History tab. Keep this in sync with the
-      // `type` values the server sends in apps/api/src/lib/notifications.ts and
-      // sendBookingStatusPush.
-      const bookingTypes = new Set([
-        "booking_confirmed",
-        "booking_canceled",
-        "booking_reminder",
-        "booking_start_soon",
-        "booking_end_soon",
-        "booking_extend_prompt",
-        "review_reminder",
-      ]);
-      if (typeof data.type !== "string" || !bookingTypes.has(data.type)) return;
+    // Booking-related notification types. Keep in sync with the `type` values
+    // the server sends in apps/api/src/lib/notifications.ts and
+    // sendBookingStatusPush.
+    const bookingTypes = new Set([
+      "booking_confirmed",
+      "booking_canceled",
+      "booking_reminder",
+      "booking_start_soon",
+      "booking_end_soon",
+      "booking_extend_prompt",
+      "review_reminder",
+    ]);
+
+    // Fallback when we can't resolve the specific booking (no id, no session, or
+    // the fetch fails): land on the relevant History sub-tab as before.
+    const openHistoryList = (data: BookingNotificationData) => {
       const initialTab =
         data.historyTab === "active" || data.historyTab === "past" ? data.historyTab : "upcoming";
       navigationRef.dispatch(
@@ -295,50 +298,78 @@ function AppNavigator() {
           name: "Tabs",
           params: {
             screen: "History",
-            params: {
-              initialTab,
-              refreshToken: Date.now(),
-            },
+            params: { initialTab, refreshToken: Date.now() },
           } as RootStackParamList["Tabs"],
         })
       );
     };
 
+    // Deep-link a notification tap to the exact place that fulfils it:
+    //  • review_reminder → the Review form for that booking
+    //  • everything else → the booking's detail screen (access code, directions,
+    //    extend flow). The "Extend +" action opens the extend picker directly.
+    const openNotificationTarget = async (
+      data: BookingNotificationData | Record<string, unknown> | null | undefined,
+      opts: { autoExtend?: boolean } = {}
+    ) => {
+      if (!data || typeof data !== "object") return;
+      if (typeof data.type !== "string" || !bookingTypes.has(data.type)) return;
+
+      const bookingId = typeof data.bookingId === "string" ? data.bookingId : null;
+      const authToken = tokenRef.current;
+
+      if (bookingId && authToken) {
+        try {
+          const booking = await getBooking(authToken, bookingId);
+          if (data.type === "review_reminder") {
+            navigationRef.dispatch(
+              CommonActions.navigate({ name: "Review", params: { booking } })
+            );
+          } else {
+            navigationRef.dispatch(
+              CommonActions.navigate({
+                name: "BookingDetail",
+                params: { booking, autoExtend: opts.autoExtend ?? false },
+              })
+            );
+          }
+          return;
+        } catch {
+          // Booking couldn't be fetched (offline, deleted, etc.) — fall back.
+        }
+      }
+      openHistoryList(data);
+    };
+
     // On cold start from a notification tap the navigator isn't ready yet when
-    // this resolves — poll briefly instead of dropping the deep-link.
+    // this resolves — poll briefly instead of dropping the deep-link. Also wait
+    // a short while for the session to hydrate so we can deep-link rather than
+    // fall back to the list.
     void Notifications.getLastNotificationResponseAsync().then((response) => {
       if (!response) return;
       const data = response.notification.request.content.data as BookingNotificationData;
+      const isExtend = response.actionIdentifier === "extend_booking";
       let attempts = 0;
       const navigateWhenReady = () => {
-        if (!navigationRef.isReady()) {
+        const waitingForToken = !tokenRef.current && attempts < 40;
+        if (!navigationRef.isReady() || waitingForToken) {
           if (attempts < 100) {
             attempts += 1;
             setTimeout(navigateWhenReady, 50);
           }
           return;
         }
-        openNotificationTarget(data);
+        void openNotificationTarget(data, { autoExtend: isExtend });
       };
       navigateWhenReady();
     });
 
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data as BookingNotificationData;
-      // "Extend +" action button on ending-soon notification
-      if (response.actionIdentifier === "extend_booking") {
-        navigationRef.dispatch(
-          CommonActions.navigate({
-            name: "Tabs",
-            params: {
-              screen: "History",
-              params: { initialTab: "active", refreshToken: Date.now() },
-            } as RootStackParamList["Tabs"],
-          })
-        );
-        return;
-      }
-      openNotificationTarget(data);
+      // "Extend +" action button on the ending-soon reminder opens the booking's
+      // extend picker directly.
+      const isExtend = response.actionIdentifier === "extend_booking";
+      void openNotificationTarget(data, { autoExtend: isExtend });
     });
 
     return () => subscription.remove();

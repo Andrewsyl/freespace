@@ -89,6 +89,18 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   // locally here — that avoids duplicate notifications and keeps it correct if
   // the booking is extended or cancelled.
 
+  // Arriving from the "Extend +" notification action opens the extend picker
+  // straight away. Guarded so it only fires once per mount and only while the
+  // booking can actually be extended.
+  const autoExtendHandledRef = useRef(false);
+  useEffect(() => {
+    if (autoExtendHandledRef.current || !route.params?.autoExtend) return;
+    if ((isUpcoming || isInProgress) && !isCanceled && localStatus === "confirmed") {
+      autoExtendHandledRef.current = true;
+      setExtendOpen(true);
+    }
+  }, [isUpcoming, isInProgress, isCanceled, localStatus, route.params?.autoExtend]);
+
   useFocusEffect(
     useCallback(() => {
       let active = true;
