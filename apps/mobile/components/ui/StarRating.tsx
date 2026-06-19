@@ -1,6 +1,6 @@
 import React from "react";
 import { Animated, StyleSheet, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Star } from "lucide-react-native";
 import { colors, spacing } from "../../styles/theme";
 
 interface StarRatingProps {
@@ -45,10 +45,11 @@ export function StarRating({ rating, onRatingChange, size = 40, disabled = false
               activeOpacity={0.7}
               style={[styles.star, { width: size, height: size }]}
             >
-              <Ionicons
-                name={isSelected ? "star" : "star-outline"}
+              <Star
                 size={size}
                 color={isSelected ? colors.star.active : colors.star.inactive}
+                fill={isSelected ? colors.star.active : "none"}
+                strokeWidth={2}
               />
             </TouchableOpacity>
           </Animated.View>

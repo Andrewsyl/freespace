@@ -1,5 +1,15 @@
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  ArrowRight,
+  CarFront,
+  CircleCheck,
+  CirclePlay,
+  CircleX,
+  Clock,
+  Navigation,
+  Undo2,
+  type LucideIcon,
+} from "lucide-react-native";
 import type { BookingSummary } from "../api";
 
 type Props = {
@@ -21,14 +31,14 @@ const BG     = "#F8FAFC";
 
 const STATUS: Record<
   Props["statusTone"],
-  { icon: string; pillBg: string; pillText: string }
+  { icon: LucideIcon; pillBg: string; pillText: string }
 > = {
-  confirmed: { icon: "checkmark-circle",         pillBg: "rgba(255,255,255,0.93)", pillText: ACCENT      },
-  active:    { icon: "play-circle",               pillBg: ACCENT,                  pillText: "#ffffff"    },
-  completed: { icon: "checkmark-circle-outline",  pillBg: "rgba(255,255,255,0.93)", pillText: MUTED       },
-  pending:   { icon: "time",                      pillBg: "rgba(255,255,255,0.93)", pillText: "#B6691A"   },
-  canceled:  { icon: "close-circle-outline",      pillBg: "rgba(255,255,255,0.93)", pillText: "#DC2626"   },
-  refunded:  { icon: "arrow-undo",                pillBg: "rgba(255,255,255,0.93)", pillText: "#2563EB"   },
+  confirmed: { icon: CircleCheck, pillBg: "rgba(255,255,255,0.93)", pillText: ACCENT      },
+  active:    { icon: CirclePlay,  pillBg: ACCENT,                  pillText: "#ffffff"    },
+  completed: { icon: CircleCheck, pillBg: "rgba(255,255,255,0.93)", pillText: MUTED       },
+  pending:   { icon: Clock,       pillBg: "rgba(255,255,255,0.93)", pillText: "#B6691A"   },
+  canceled:  { icon: CircleX,     pillBg: "rgba(255,255,255,0.93)", pillText: "#DC2626"   },
+  refunded:  { icon: Undo2,       pillBg: "rgba(255,255,255,0.93)", pillText: "#2563EB"   },
 };
 
 export function BookingCard({
@@ -40,6 +50,7 @@ export function BookingCard({
   onPress,
 }: Props) {
   const badge = STATUS[statusTone];
+  const StatusIcon = badge.icon;
   const price = Math.round(booking.amountCents / 100);
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const imageUrl =
@@ -73,11 +84,11 @@ export function BookingCard({
             <Image source={{ uri: imageUrl }} style={styles.thumb} />
           ) : (
             <View style={styles.thumbPlaceholder}>
-              <Ionicons name="car-outline" size={28} color={SUBTLE} />
+              <CarFront size={28} color={SUBTLE} strokeWidth={1.9} />
             </View>
           )}
           <View style={[styles.imagePill, { backgroundColor: badge.pillBg }]}>
-            <Ionicons name={badge.icon as any} size={9} color={badge.pillText} />
+            <StatusIcon size={10} color={badge.pillText} strokeWidth={2.3} />
             <Text style={[styles.imagePillText, { color: badge.pillText }]}>{statusLabel}</Text>
           </View>
         </View>
@@ -105,7 +116,7 @@ export function BookingCard({
         <View style={styles.timeCenter}>
           <View style={styles.timeLine} />
           <View style={styles.timePuck}>
-            <Ionicons name="navigate" size={11} color={ACCENT} />
+            <Navigation size={11} color={ACCENT} strokeWidth={2.4} />
           </View>
           <View style={styles.timeLine} />
         </View>
@@ -120,7 +131,7 @@ export function BookingCard({
       {/* ── Footer ── */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>View details</Text>
-        <Ionicons name="arrow-forward" size={13} color={ACCENT} />
+        <ArrowRight size={13} color={ACCENT} strokeWidth={2.4} />
       </View>
     </Pressable>
   );
@@ -129,14 +140,14 @@ export function BookingCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
+    borderColor: "#E3E8EE",
     overflow: "hidden",
     shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.09,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
     elevation: 4,
   },
   cardPressed: { opacity: 0.92 },
@@ -144,13 +155,13 @@ const styles = StyleSheet.create({
   // ── Top ──────────────────────────────────────────────────────
   top: {
     flexDirection: "row",
-    padding: 14,
-    gap: 12,
+    padding: 16,
+    gap: 14,
   },
   imageWrap: {
-    width: 82,
-    height: 82,
-    borderRadius: 12,
+    width: 88,
+    height: 88,
+    borderRadius: 14,
     overflow: "hidden",
     flexShrink: 0,
     backgroundColor: BG,
@@ -171,47 +182,48 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 3,
-    paddingVertical: 5,
+    paddingVertical: 6,
   },
   imagePillText: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: "PlusJakartaSans-SemiBold",
-    letterSpacing: 0.1,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
   },
   info: {
     flex: 1,
-    gap: 4,
+    gap: 6,
     justifyContent: "center",
   },
   titleRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 8,
+    gap: 10,
   },
   title: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: "PlusJakartaSans-Bold",
     color: FG,
-    lineHeight: 20,
-    letterSpacing: -0.2,
+    lineHeight: 21,
+    letterSpacing: -0.3,
   },
   price: {
-    fontSize: 17,
+    fontSize: 18,
     fontFamily: "PlusJakartaSans-Bold",
     color: ACCENT,
     letterSpacing: -0.3,
   },
   address: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontFamily: "PlusJakartaSans-Regular",
     color: MUTED,
   },
   secondaryMeta: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontFamily: "PlusJakartaSans-SemiBold",
     color: ACCENT,
-    marginTop: 2,
+    marginTop: 1,
   },
 
   // ── Time strip ───────────────────────────────────────────────
@@ -221,7 +233,7 @@ const styles = StyleSheet.create({
     backgroundColor: BG,
     borderTopWidth: 1,
     borderTopColor: LINE,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
   },
   timeColumn: {
@@ -229,7 +241,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   timeLabel: {
-    fontSize: 9,
+    fontSize: 8.5,
     fontFamily: "PlusJakartaSans-SemiBold",
     color: ACCENT,
     letterSpacing: 0.9,
@@ -237,13 +249,13 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   timeValue: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "PlusJakartaSans-Bold",
     color: FG,
     letterSpacing: -0.2,
   },
   timeDate: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontFamily: "PlusJakartaSans-Regular",
     color: MUTED,
     marginTop: 1,
@@ -280,13 +292,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
-    paddingVertical: 11,
+    paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: LINE,
     backgroundColor: "#ffffff",
   },
   footerText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontFamily: "PlusJakartaSans-SemiBold",
     color: ACCENT,
   },

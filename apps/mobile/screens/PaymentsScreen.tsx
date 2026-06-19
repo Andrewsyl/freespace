@@ -10,8 +10,7 @@ import {
 } from "react-native";
 import { SquircleBtn } from "../components/SquircleBtn";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MaterialIcons } from "@expo/vector-icons";
-import { ArrowLeft, CreditCard, Lock, Plus, ShieldCheck, X } from "lucide-react-native";
+import { ArrowLeft, CreditCard, Lock, Plus, ReceiptText, ShieldCheck, X } from "lucide-react-native";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { CardField, useStripe } from "@stripe/stripe-react-native";
 import { colors, radius, spacing, textStyles } from "../styles/theme";
@@ -306,7 +305,7 @@ export function PaymentsScreen() {
           ) : (
             formattedHistory.map((item) => (
               <View key={item.id} style={styles.row}>
-                <MaterialIcons name="receipt-long" size={24} color="#111827" />
+                <ReceiptText size={24} color="#111827" strokeWidth={2} />
                 <View style={styles.rowText}>
                   <Text style={styles.rowTitle}>{item.description}</Text>
                   <Text style={styles.rowSubtitle}>
@@ -339,12 +338,12 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: 16,
-    paddingBottom: 28,
-    paddingTop: 16,
+    paddingBottom: 32,
+    paddingTop: 14,
   },
   navBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 20, paddingVertical: 12,
+    paddingHorizontal: 16, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: "#E5E7EB",
     backgroundColor: "#ffffff",
   },
@@ -381,7 +380,7 @@ const styles = StyleSheet.create({
   },
   section: {
     backgroundColor: "#ffffff",
-    borderColor: "#E5E7EB",
+    borderColor: "#E3E8EE",
     borderRadius: 20,
     borderWidth: 1,
     marginBottom: 16,
@@ -424,9 +423,9 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   cardIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: "#f3f4f6",
     alignItems: "center",
     justifyContent: "center",
@@ -434,7 +433,7 @@ const styles = StyleSheet.create({
   },
   defaultBadge: {
     backgroundColor: "#f0faf5",
-    borderRadius: 6,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: "#a7f3d0",
     paddingHorizontal: 8,
@@ -450,14 +449,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 15,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
   addCardRowIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: "#f0faf5",
     borderWidth: 1,
     borderColor: "#a7f3d0",
@@ -473,8 +472,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 20,
+    paddingTop: 18,
+    paddingBottom: 22,
     gap: 14,
   },
   addCardPanelHeader: {
@@ -497,7 +496,7 @@ const styles = StyleSheet.create({
   cardField: {
     backgroundColor: "#f9fafb",
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     fontSize: 16,
   },
@@ -511,8 +510,8 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#9ca3af",
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 13,
+    lineHeight: 18,
   },
   saveCardBtn: {
     minHeight: 50,
@@ -524,21 +523,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 17,
   },
   rowText: {
     flex: 1,
   },
   rowTitle: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   rowSubtitle: {
     color: colors.textMuted,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 13,
+    lineHeight: 19,
     marginTop: 2,
   },
   rowMeta: {
@@ -552,20 +551,20 @@ const styles = StyleSheet.create({
   },
   rowActionButton: {
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
   },
   rowActionText: {
     color: colors.text,
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
   rowStatus: {
     color: "#0a8050",
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
@@ -574,7 +573,7 @@ const styles = StyleSheet.create({
   },
   rowDeleteText: {
     color: "#b42318",
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
   },
@@ -584,12 +583,12 @@ const styles = StyleSheet.create({
   emptyRow: {
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 18,
   },
   emptyText: {
     color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 21,
     textAlign: "center",
   },
   emptyState: {
@@ -600,22 +599,22 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 20,
+    fontSize: 21,
     color: "#111827",
     letterSpacing: -0.4,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
+    fontSize: 15,
     color: "#6b7280",
     textAlign: "center",
-    lineHeight: 21,
+    lineHeight: 22,
   },
   gatedIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: "#f0faf5",
     alignItems: "center",
     justifyContent: "center",
@@ -631,7 +630,7 @@ const styles = StyleSheet.create({
   gatedHintText: {
     color: "#9ca3af",
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
+    fontSize: 14,
     flexShrink: 1,
   },
 });

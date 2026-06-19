@@ -17,7 +17,7 @@ import {
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
 import { cardShadow, colors, radius, spacing } from "../styles/theme";
-import { Ionicons } from "@expo/vector-icons";
+import { ArrowLeft } from "lucide-react-native";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Admin">;
 
@@ -212,7 +212,7 @@ export function AdminScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.topBar}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <ArrowLeft size={24} color={colors.text} strokeWidth={2.2} />
         </Pressable>
         <Text style={styles.topTitle}>Admin</Text>
         <View style={styles.backButton} />

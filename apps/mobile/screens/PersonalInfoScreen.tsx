@@ -10,8 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Ionicons } from "@expo/vector-icons";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, CircleCheck } from "lucide-react-native";
 import * as Linking from "expo-linking";
 import { useAuth } from "../auth";
 import { requestPhoneVerification, updateMe, verifyPhone } from "../api";
@@ -211,7 +210,7 @@ export function PersonalInfoScreen({ navigation, route }: Props) {
                 <View style={styles.statusRow}>
                   {user?.emailVerified ? (
                     <>
-                      <Ionicons name="checkmark-circle" size={15} color="#0a8050" />
+                      <CircleCheck size={15} color="#0a8050" strokeWidth={2.2} />
                       <Text style={styles.statusOk}>Verified</Text>
                     </>
                   ) : (
@@ -242,7 +241,7 @@ export function PersonalInfoScreen({ navigation, route }: Props) {
                 <View style={styles.statusRow}>
                   {phoneVerified ? (
                     <>
-                      <Ionicons name="checkmark-circle" size={15} color="#0a8050" />
+                      <CircleCheck size={15} color="#0a8050" strokeWidth={2.2} />
                       <Text style={styles.statusOk}>Verified</Text>
                     </>
                   ) : (
@@ -314,11 +313,11 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 14,
   },
   navBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 20, paddingVertical: 12,
+    paddingHorizontal: 16, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: "#E5E7EB",
     backgroundColor: "#ffffff",
   },
@@ -326,7 +325,7 @@ const styles = StyleSheet.create({
   navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#111827", letterSpacing: -0.3 },
   navSpacer: { width: 38 },
   section: {
-    marginBottom: 18,
+    marginBottom: 20,
   },
   sectionLabel: {
     color: "#888888",
@@ -335,14 +334,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     lineHeight: 16,
     textTransform: "uppercase",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   phoneStatusRow: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: spacing.sm,
-    marginTop: 10,
+    marginTop: 12,
   },
   statusRow: {
     alignItems: "center",
@@ -350,7 +349,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   statusMetaRow: {
-    marginTop: 10,
+    marginTop: 12,
   },
   statusOk: {
     color: "#0a8050",
@@ -369,7 +368,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 8,
   },
   inlineButtonDisabled: {
     opacity: 0.7,
@@ -377,18 +376,18 @@ const styles = StyleSheet.create({
   inlineButtonText: {
     color: "#111111",
     fontFamily: "PlusJakartaSans-Medium",
-    fontSize: 13,
+    fontSize: 14,
     lineHeight: 18,
   },
   verifyPanel: {
     gap: spacing.xs,
-    marginTop: 10,
+    marginTop: 12,
   },
   verifyHelp: {
     color: "#374151",
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 14,
+    lineHeight: 20,
   },
   editInputContainer: {
     marginBottom: 0,
@@ -404,7 +403,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.cardBg,
     borderColor: "#D7DEE7",
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     minHeight: 56,
     paddingHorizontal: 16,
@@ -412,7 +411,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginHorizontal: 16,
-    marginTop: 4,
+    marginTop: 8,
   },
   previewLink: {
     alignItems: "center",

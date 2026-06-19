@@ -70,9 +70,31 @@ export type SpaceSearchInput = {
   from: string;
   to: string;
   spaceType?: string;
+  priceMin?: number;
+  priceMax?: number;
+  coveredParking?: boolean;
+  evCharging?: boolean;
+  securityLevel?: "basic" | "gated" | "cctv";
+  vehicleSize?: "motorcycle" | "car" | "van";
+  instantBook?: boolean;
   mode?: ListingSearchMode;
   excludeHostId?: string;
 };
+
+function vehicleSizeToCapacity(vehicleSize?: SpaceSearchInput["vehicleSize"]) {
+  if (vehicleSize === "van") return 2;
+  return null;
+}
+
+function spaceTypeToFilter(spaceType?: string) {
+  const value = spaceType?.trim().toLowerCase();
+  if (!value) return null;
+  if (value.includes("driveway")) return "%driveway%";
+  if (value.includes("garage")) return "%garage%";
+  if (value.includes("car park") || value.includes("carpark")) return "%car%park%";
+  if (value.includes("road")) return "%road%";
+  return `%${value}%`;
+}
 
 function oneOffAvailabilityRange(alias: string) {
   return `tstzrange(${alias}.starts_at, CASE WHEN ${alias}.ends_at < ${alias}.starts_at THEN ${alias}.ends_at + interval '1 day' ELSE ${alias}.ends_at END, '[)')`;
@@ -83,10 +105,24 @@ function recurringAvailabilityRange(alias: string) {
 }
 
 export async function findAvailableSpaces(input: SpaceSearchInput) {
-  const { lat, lng, radiusKm, from, to, spaceType, mode = "daily", excludeHostId } = input;
-  const spaceTypeFilter = spaceType?.trim()
-    ? `%${spaceType.trim().toLowerCase()}%`
-    : null;
+  const {
+    lat,
+    lng,
+    radiusKm,
+    from,
+    to,
+    spaceType,
+    priceMin,
+    priceMax,
+    coveredParking,
+    evCharging,
+    securityLevel,
+    vehicleSize,
+    mode = "daily",
+    excludeHostId,
+  } = input;
+  const spaceTypeFilter = spaceTypeToFilter(spaceType);
+  const minCapacity = vehicleSizeToCapacity(vehicleSize);
   const baseQuery = `
     SELECT
       id,
@@ -113,9 +149,24 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       $3
     )
     AND status <> 'archived'
-    AND ($6::text IS NULL OR lower(title) LIKE $6)
-    AND ($7::text <> 'monthly' OR price_per_month IS NOT NULL)
-    AND ($8::uuid IS NULL OR host_id != $8)
+    AND ($6::text IS NULL OR lower(title) LIKE $6 OR lower(availability_text) LIKE $6 OR EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) LIKE $6))
+    AND ($7::numeric IS NULL OR price_per_day >= $7)
+    AND ($8::numeric IS NULL OR price_per_day <= $8)
+    AND ($9::boolean IS NOT TRUE OR EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) IN ('covered', 'garage', 'indoor')))
+    AND ($10::boolean IS NOT TRUE OR EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) IN ('ev_charging', 'ev charging', 'ev')))
+    AND (
+      $11::text IS NULL
+      OR $11::text = 'basic'
+      OR ($11::text = 'cctv' AND EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) = 'cctv'))
+      OR ($11::text = 'gated' AND (
+        EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) IN ('gated', 'security'))
+        OR lower(title) LIKE '%gated%'
+        OR lower(title) LIKE '%secure%'
+      ))
+    )
+    AND ($12::int IS NULL OR COALESCE(capacity, 1) >= $12)
+    AND ($13::text <> 'monthly' OR price_per_month IS NOT NULL)
+    AND ($14::uuid IS NULL OR host_id != $14)
     AND (
       SELECT COUNT(*) FROM bookings b
       WHERE b.listing_id = listings.id
@@ -187,7 +238,9 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       $3
     )
     AND ($6::text IS NULL OR lower(title) LIKE $6)
-    AND ($7::uuid IS NULL OR host_id != $7)
+    AND ($7::numeric IS NULL OR price_per_day >= $7)
+    AND ($8::numeric IS NULL OR price_per_day <= $8)
+    AND ($9::uuid IS NULL OR host_id != $9)
     AND NOT EXISTS (
       SELECT 1 FROM bookings b
       WHERE b.listing_id = listings.id
@@ -197,8 +250,33 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
     LIMIT 200;
   `;
 
-  const params = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter, mode, excludeHostId ?? null];
-  const legacyParams = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter, excludeHostId ?? null];
+  const params = [
+    lng,
+    lat,
+    radiusKm * 1000,
+    from,
+    to,
+    spaceTypeFilter,
+    priceMin ?? null,
+    priceMax ?? null,
+    coveredParking === true,
+    evCharging === true,
+    securityLevel ?? null,
+    minCapacity,
+    mode,
+    excludeHostId ?? null,
+  ];
+  const legacyParams = [
+    lng,
+    lat,
+    radiusKm * 1000,
+    from,
+    to,
+    spaceTypeFilter,
+    priceMin ?? null,
+    priceMax ?? null,
+    excludeHostId ?? null,
+  ];
   try {
     const result = await pool.query(
       baseQuery.replace(
@@ -246,10 +324,25 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
 }
 
 export async function findSpacesWithAvailability(input: SpaceSearchInput) {
-  const { lat, lng, radiusKm, from, to, spaceType, mode = "daily", excludeHostId } = input;
-  const spaceTypeFilter = spaceType?.trim()
-    ? `%${spaceType.trim().toLowerCase()}%`
-    : null;
+  const {
+    lat,
+    lng,
+    radiusKm,
+    from,
+    to,
+    spaceType,
+    priceMin,
+    priceMax,
+    coveredParking,
+    evCharging,
+    securityLevel,
+    vehicleSize,
+    instantBook,
+    mode = "daily",
+    excludeHostId,
+  } = input;
+  const spaceTypeFilter = spaceTypeToFilter(spaceType);
+  const minCapacity = vehicleSizeToCapacity(vehicleSize);
   const availabilityCheck = `
     (
       SELECT COUNT(*) FROM bookings b
@@ -325,9 +418,25 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
     )
     AND status <> 'archived'
     AND is_active = TRUE
-    AND ($6::text IS NULL OR lower(title) LIKE $6)
-    AND ($7::text <> 'monthly' OR price_per_month IS NOT NULL)
-    AND ($8::uuid IS NULL OR host_id != $8)
+    AND ($6::text IS NULL OR lower(title) LIKE $6 OR lower(availability_text) LIKE $6 OR EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) LIKE $6))
+    AND ($7::numeric IS NULL OR price_per_day >= $7)
+    AND ($8::numeric IS NULL OR price_per_day <= $8)
+    AND ($9::boolean IS NOT TRUE OR EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) IN ('covered', 'garage', 'indoor')))
+    AND ($10::boolean IS NOT TRUE OR EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) IN ('ev_charging', 'ev charging', 'ev')))
+    AND (
+      $11::text IS NULL
+      OR $11::text = 'basic'
+      OR ($11::text = 'cctv' AND EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) = 'cctv'))
+      OR ($11::text = 'gated' AND (
+        EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) IN ('gated', 'security'))
+        OR lower(title) LIKE '%gated%'
+        OR lower(title) LIKE '%secure%'
+      ))
+    )
+    AND ($12::int IS NULL OR COALESCE(capacity, 1) >= $12)
+    AND ($13::boolean IS NOT TRUE OR (${availabilityCheck}))
+    AND ($14::text <> 'monthly' OR price_per_month IS NOT NULL)
+    AND ($15::uuid IS NULL OR host_id != $15)
     ORDER BY distance_m ASC
     LIMIT 200;
   `;
@@ -355,14 +464,42 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
       $3
     )
     AND ($6::text IS NULL OR lower(title) LIKE $6)
-    AND ($7::uuid IS NULL OR host_id != $7)
+    AND ($7::numeric IS NULL OR price_per_day >= $7)
+    AND ($8::numeric IS NULL OR price_per_day <= $8)
+    AND ($9::uuid IS NULL OR host_id != $9)
     ORDER BY distance_m ASC
     LIMIT 200;
 
   `;
 
-  const params = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter, mode, excludeHostId ?? null];
-  const legacyParams = [lng, lat, radiusKm * 1000, from, to, spaceTypeFilter, excludeHostId ?? null];
+  const params = [
+    lng,
+    lat,
+    radiusKm * 1000,
+    from,
+    to,
+    spaceTypeFilter,
+    priceMin ?? null,
+    priceMax ?? null,
+    coveredParking === true,
+    evCharging === true,
+    securityLevel ?? null,
+    minCapacity,
+    instantBook === true,
+    mode,
+    excludeHostId ?? null,
+  ];
+  const legacyParams = [
+    lng,
+    lat,
+    radiusKm * 1000,
+    from,
+    to,
+    spaceTypeFilter,
+    priceMin ?? null,
+    priceMax ?? null,
+    excludeHostId ?? null,
+  ];
   try {
     const result = await pool.query(
       baseQuery.replace(

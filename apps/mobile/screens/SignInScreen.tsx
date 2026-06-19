@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
-import { MaterialIcons, Ionicons } from "@expo/vector-icons";
+import { ArrowLeft, Square, SquareCheck, UserRound } from "lucide-react-native";
 import { useAuth } from "../auth";
 import { requestEmailVerification } from "../api";
 import type { AuthReturnTo, RootStackParamList } from "../types";
@@ -134,7 +134,7 @@ export function SignInScreen({ navigation, route }: Props) {
       >
         <View style={styles.navBar}>
           <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8} accessibilityLabel="Go back">
-            <Ionicons name="arrow-back" size={22} color="#111827" />
+            <ArrowLeft size={22} color="#111827" strokeWidth={2.2} />
           </Pressable>
         </View>
         <ScrollView
@@ -143,7 +143,7 @@ export function SignInScreen({ navigation, route }: Props) {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.iconBadge}>
-            <Ionicons name="person-outline" size={24} color={AUTH_GREEN} />
+            <UserRound size={24} color={AUTH_GREEN} strokeWidth={2.1} />
           </View>
           <Text style={styles.title}>Log in</Text>
           <Text style={styles.subtitle}>Welcome back. Sign in to your account.</Text>
@@ -189,11 +189,19 @@ export function SignInScreen({ navigation, route }: Props) {
             accessibilityRole="checkbox"
             accessibilityState={{ checked: acceptLegalChecked }}
           >
-            <MaterialIcons
-              name={acceptLegalChecked ? "check-box" : "check-box-outline-blank"}
+            {acceptLegalChecked ? (
+              <SquareCheck
+                size={20}
+                color={AUTH_GREEN}
+                strokeWidth={2.2}
+              />
+            ) : (
+              <Square
               size={20}
-              color={acceptLegalChecked ? AUTH_GREEN : colors.textSoft}
-            />
+                color={colors.textSoft}
+                strokeWidth={2}
+              />
+            )}
             <Text style={styles.checkboxText}>
               I agree to{" "}
               <Text style={styles.link} onPress={() => navigation.navigate("Legal")}>
@@ -248,22 +256,25 @@ const styles = StyleSheet.create({
   navBar: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   backBtn: {
-    padding: 6,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
     marginLeft: -6,
   },
   content: {
     flexGrow: 1,
     paddingHorizontal: spacing.screenX,
-    paddingBottom: 32,
-    paddingTop: 8,
+    paddingBottom: 36,
+    paddingTop: 12,
   },
   iconBadge: {
-    width: 56,
-    height: 56,
+    width: 58,
+    height: 58,
     borderRadius: 18,
     backgroundColor: "#edf7f2",
     alignItems: "center",
@@ -273,34 +284,34 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 26,
+    fontSize: 28,
     letterSpacing: -0.6,
-    lineHeight: 36,
-    marginBottom: 8,
+    lineHeight: 34,
+    marginBottom: 10,
   },
   subtitle: {
     color: colors.textMuted,
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14.5,
-    lineHeight: 21,
-    marginBottom: 26,
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 24,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   inputLabel: {
     color: colors.textMuted,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12.5,
-    marginBottom: 7,
+    fontSize: 12,
+    marginBottom: 8,
   },
   inputContainer: {
     marginBottom: 0,
   },
   forgotRow: {
     alignItems: "flex-end",
-    marginBottom: spacing.xs,
-    marginTop: -4,
+    marginBottom: 4,
+    marginTop: -2,
   },
   forgotText: {
     fontFamily: "PlusJakartaSans-Regular",
@@ -312,11 +323,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.xs,
     marginTop: 4,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   checkboxText: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textMuted,
     flex: 1,
   },
@@ -325,31 +336,31 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   primaryButton: {
-    marginBottom: spacing.xs,
+    marginBottom: 4,
     backgroundColor: AUTH_GREEN,
     borderColor: AUTH_GREEN,
   },
   errorText: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
+    fontSize: 14,
     color: colors.danger,
-    marginTop: spacing.xs,
+    marginTop: 8,
     textAlign: "center",
   },
   noticeText: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
+    fontSize: 14,
     color: AUTH_GREEN,
-    marginTop: 6,
+    marginTop: 8,
     textAlign: "center",
   },
   linkButton: {
     alignItems: "center",
-    marginTop: spacing.xs,
+    marginTop: 8,
   },
   linkButtonText: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
+    fontSize: 14,
     color: AUTH_GREEN,
   },
   successOverlay: {
@@ -361,7 +372,7 @@ const styles = StyleSheet.create({
   },
   successCard: {
     backgroundColor: colors.cardBg,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
     maxWidth: 320,

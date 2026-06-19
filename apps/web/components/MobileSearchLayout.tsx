@@ -894,6 +894,7 @@ function MapBottomCard({
   const isUrl = image?.startsWith("http");
   const amenities: string[] = (listing as any).amenities ?? listing.tags ?? [];
   const features = deriveFeatureKeys(amenities, listing.title);
+  const visibleFeatures = features.slice(0, 3);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_32px_rgba(15,23,42,0.20)]">
@@ -931,9 +932,9 @@ function MapBottomCard({
               ? ` · ${listing.ratingCount} reviews`
               : " · New"}
           </span>
-          {features.length > 0 && (
+          {visibleFeatures.length > 0 && (
             <div className="flex items-center gap-1.5">
-              {features.map((f) => (
+              {visibleFeatures.map((f) => (
                 <div
                   key={f}
                   className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700"

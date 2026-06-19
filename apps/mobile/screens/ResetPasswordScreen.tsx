@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Ionicons } from "@expo/vector-icons";
+import { ArrowLeft, Lock, Mail } from "lucide-react-native";
 import { requestPasswordReset, resetPassword } from "../api";
 import { useToastOnMessage } from "../components/GlobalToast";
 import type { RootStackParamList } from "../types";
@@ -35,6 +35,7 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const launchedFromEmailLink = Boolean(route.params?.token);
+  const BadgeIcon = step === "request" ? Mail : Lock;
 
   useToastOnMessage(error, { variant: "danger" });
   useToastOnMessage(notice, { variant: "info" });
@@ -104,7 +105,7 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
       >
         <View style={styles.navBar}>
           <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8} accessibilityLabel="Go back">
-            <Ionicons name="arrow-back" size={22} color="#111827" />
+            <ArrowLeft size={22} color="#111827" strokeWidth={2.2} />
           </Pressable>
         </View>
         <ScrollView
@@ -113,11 +114,7 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.iconBadge}>
-            <Ionicons
-              name={step === "request" ? "mail-outline" : "lock-closed-outline"}
-              size={24}
-              color={AUTH_GREEN}
-            />
+            <BadgeIcon size={24} color={AUTH_GREEN} strokeWidth={2.1} />
           </View>
           <Text style={styles.title}>
             {step === "request" ? "Reset password" : "Set a new password"}

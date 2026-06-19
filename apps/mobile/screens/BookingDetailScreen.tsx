@@ -3,6 +3,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   Alert,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,7 +25,18 @@ import {
   cancelBookingReminders,
 } from "../notifications";
 import type { RootStackParamList } from "../types";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  ArrowLeft,
+  ChevronRight,
+  CircleCheck,
+  CirclePlay,
+  CircleX,
+  Clock,
+  Navigation,
+  RefreshCw,
+  Star,
+  type LucideIcon,
+} from "lucide-react-native";
 import { StatusBar } from "expo-status-bar";
 import { formatTimeLabel } from "../utils/dateFormat";
 import { formatBookingReference } from "../utils/bookingFormat";
@@ -131,25 +143,26 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   const statusConfig = (() => {
     if (isCanceled) return {
       label: "Booking canceled",
-      icon: "close-circle" as const,
+      icon: CircleX,
       cardGradient: ["#C0392B", "#000000"] as const,
     };
     if (isInProgress) return {
       label: "In progress",
-      icon: "play-circle" as const,
+      icon: CirclePlay,
       cardGradient: ["#0a8050", "#000000"] as const,
     };
     if (isUpcoming) return {
       label: "Confirmed",
-      icon: "checkmark-circle" as const,
+      icon: CircleCheck,
       cardGradient: ["#1E6E47", "#000000"] as const,
     };
     return {
       label: "Completed",
-      icon: "checkmark-circle-outline" as const,
+      icon: CircleCheck,
       cardGradient: ["#3D4D63", "#000000"] as const,
     };
   })();
+  const StatusIcon = statusConfig.icon as LucideIcon;
   const showArrivalInfo =
     (isUpcoming || isInProgress || canReview) &&
     (Boolean(booking.arrivalInstructions?.trim()) || Boolean(booking.accessCode?.trim()));
@@ -332,7 +345,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
       {/* Nav header */}
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={20} color={FG} />
+          <ArrowLeft size={20} color={FG} strokeWidth={2.2} />
         </Pressable>
         <Text style={styles.navTitle}>Booking details</Text>
         <View style={{ width: 32 }} />
@@ -351,8 +364,12 @@ export function BookingDetailScreen({ navigation, route }: Props) {
                 return (
                   <Pressable key={i} onPress={() => handleStarPress(star)}
                     style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })} hitSlop={12}>
-                    <Ionicons name={filled ? "star" : "star-outline"} size={36}
-                      color={filled ? "#F59E0B" : "rgba(255,255,255,0.45)"} />
+                    <Star
+                      size={36}
+                      color={filled ? "#F59E0B" : "rgba(255,255,255,0.45)"}
+                      fill={filled ? "#F59E0B" : "none"}
+                      strokeWidth={2}
+                    />
                   </Pressable>
                 );
               })}
@@ -363,8 +380,13 @@ export function BookingDetailScreen({ navigation, route }: Props) {
             <Text style={styles.reviewTitleDone}>Thanks for your review</Text>
             <View style={styles.reviewStars}>
               {Array.from({ length: 5 }).map((_, i) => (
-                <Ionicons key={i} name="star" size={22}
-                  color={reviewedRating != null && i < Math.round(reviewedRating) ? "#F59E0B" : "#E5E7EB"} />
+                <Star
+                  key={i}
+                  size={22}
+                  color={reviewedRating != null && i < Math.round(reviewedRating) ? "#F59E0B" : "#E5E7EB"}
+                  fill={reviewedRating != null && i < Math.round(reviewedRating) ? "#F59E0B" : "none"}
+                  strokeWidth={2}
+                />
               ))}
             </View>
           </View>
@@ -377,8 +399,11 @@ export function BookingDetailScreen({ navigation, route }: Props) {
           <View style={styles.headerCard}>
             <View style={styles.headerCardTop}>
               <View style={[styles.statusPill, isCanceled && styles.statusPillCanceled, (isInProgress || isCompleted) && styles.statusPillActive]}>
-                <Ionicons name={statusConfig.icon} size={11}
-                  color={isCanceled ? "#DC2626" : (isInProgress || isCompleted) ? ACCENT : "#374151"} />
+                <StatusIcon
+                  size={11}
+                  color={isCanceled ? "#DC2626" : (isInProgress || isCompleted) ? ACCENT : "#374151"}
+                  strokeWidth={2.4}
+                />
                 <Text style={[styles.statusPillText, isCanceled && styles.statusPillTextCanceled, (isInProgress || isCompleted) && styles.statusPillTextActive]}>
                   {statusConfig.label}
                 </Text>
@@ -417,9 +442,9 @@ export function BookingDetailScreen({ navigation, route }: Props) {
                   onPress={() => setExtendOpen(true)}
                   disabled={extendBusy}
                 >
-                  <Ionicons name="time-outline" size={14} color={ACCENT} />
+                  <Clock size={14} color={ACCENT} strokeWidth={2.2} />
                   <Text style={styles.extendText}>{extendBusy ? "Extending…" : "Extend end time"}</Text>
-                  <Ionicons name="chevron-forward" size={13} color={ACCENT} />
+                  <ChevronRight size={13} color={ACCENT} strokeWidth={2.2} />
                 </Pressable>
               ) : null}
             </View>
@@ -431,10 +456,10 @@ export function BookingDetailScreen({ navigation, route }: Props) {
               <Text style={styles.cardSectionHeader}>Location</Text>
               <View style={[styles.detailRow]}>
                 <View style={styles.directionsIconWrap}>
-                  <Ionicons name="navigate" size={16} color={ACCENT} />
+                  <Navigation size={16} color={ACCENT} strokeWidth={2.2} />
                 </View>
                 <Text style={styles.directionsAddress} numberOfLines={2}>{booking.address}</Text>
-                <Ionicons name="chevron-forward" size={16} color={MUTED} />
+                <ChevronRight size={16} color={MUTED} strokeWidth={2.2} />
               </View>
             </TouchableOpacity>
           ) : null}
@@ -502,28 +527,29 @@ export function BookingDetailScreen({ navigation, route }: Props) {
             <SquircleBtn
               label="Check in"
               onPress={handleCheckIn}
-              icon={<Ionicons name="checkmark-circle-outline" size={18} color="#fff" />}
+              icon={<CircleCheck size={18} color="#fff" strokeWidth={2.2} />}
             />
           ) : null}
 
           {canBookAgain ? (
             <TouchableOpacity style={styles.secondaryBtn} onPress={handleBookAgain}>
-              <Ionicons name="refresh-outline" size={16} color={FG} />
+              <RefreshCw size={16} color={FG} strokeWidth={2.2} />
               <Text style={styles.secondaryBtnText}>Book again</Text>
             </TouchableOpacity>
           ) : null}
 
           {extendError ? <Text style={styles.errorText}>{extendError}</Text> : null}
 
+          {isUpcoming && !isCanceled ? (
+            <Pressable style={styles.cancelRow} onPress={handleCancel} disabled={canceling}>
+              <Text style={styles.cancelText}>{canceling ? "Canceling…" : "Cancel booking"}</Text>
+            </Pressable>
+          ) : null}
+
           <View style={styles.linkRow}>
             {receiptUrl ? (
               <Pressable onPress={() => Linking.openURL(receiptUrl)}>
                 <Text style={styles.linkText}>View receipt</Text>
-              </Pressable>
-            ) : null}
-            {isUpcoming && !isCanceled ? (
-              <Pressable onPress={handleCancel} disabled={canceling}>
-                <Text style={styles.linkTextDanger}>{canceling ? "Canceling…" : "Cancel booking"}</Text>
               </Pressable>
             ) : null}
             <Pressable onPress={handleContactSupport}>
@@ -606,9 +632,9 @@ const styles = StyleSheet.create({
   // ── Header card (status + title + time) ──────────────────────
   headerCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
+    borderColor: "#E1E7ED",
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -616,25 +642,25 @@ const styles = StyleSheet.create({
     borderBottomColor: LINE,
     borderBottomWidth: 1,
     paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 14,
-    alignItems: "center",
+    paddingTop: 16,
+    paddingBottom: 16,
+    alignItems: "flex-start",
     gap: 4,
   },
   headerTitle: {
     color: FG,
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 18,
+    fontSize: 20,
     letterSpacing: -0.5,
-    lineHeight: 24,
-    textAlign: "center",
+    lineHeight: 26,
+    textAlign: "left",
   },
   headerSubtitle: {
     color: MUTED,
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: "center",
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "left",
   },
 
   // ── Status pill ──────────────────────────────────────────────
@@ -652,40 +678,40 @@ const styles = StyleSheet.create({
   // ── Card (generic) ───────────────────────────────────────────
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
+    borderColor: "#E1E7ED",
     overflow: "hidden",
     ...CARD_SHADOW,
   },
   cardSectionHeader: {
     color: FG,
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 15,
+    fontSize: 16,
     letterSpacing: -0.3,
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 12,
+    paddingBottom: 13,
     borderBottomWidth: 1,
     borderBottomColor: LINE,
   },
   cardBody: { padding: 16 },
 
   // ── Time row ─────────────────────────────────────────────────
-  timeRow: { flexDirection: "row", alignItems: "center" },
-  timeSlot: { flex: 1, alignItems: "center", paddingVertical: 6 },
+  timeRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  timeSlot: { flex: 1, alignItems: "center", paddingVertical: 8 },
   timeSlotLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 10, color: ACCENT,
-    letterSpacing: 1.2, textTransform: "uppercase" as const, marginBottom: 4,
+    letterSpacing: 1.2, textTransform: "uppercase" as const, marginBottom: 5,
   },
   timeSlotTime: {
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 26, color: FG, letterSpacing: -0.8, lineHeight: 36,
+    fontSize: 28, color: FG, letterSpacing: -0.8, lineHeight: 32,
   },
   timeSlotDate: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: MUTED, marginTop: 2 },
-  timeArrow: { alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 8 },
-  timeArrowLine: { width: 18, height: 1, backgroundColor: "#D1D5DB" },
+  timeArrow: { alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 4 },
+  timeArrowLine: { width: 16, height: 1, backgroundColor: "#CBD5E1" },
   timeArrowDuration: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: SUBTLE, letterSpacing: 0.2 },
 
   // ── Progress bar (in-progress bookings) ──────────────────────
@@ -703,7 +729,7 @@ const styles = StyleSheet.create({
   // ── Detail rows (inside Details card) ────────────────────────
   detailRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    paddingHorizontal: 16, paddingVertical: 13,
+    paddingHorizontal: 16, paddingVertical: 14,
   },
   detailRowBorder: { borderTopWidth: 1, borderTopColor: LINE },
   detailLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },
@@ -711,10 +737,10 @@ const styles = StyleSheet.create({
   detailRef: { fontFamily: "PlusJakartaSans-Bold", letterSpacing: 1.2, fontVariant: ["tabular-nums"] as const },
 
   // ── Getting in ───────────────────────────────────────────────
-  instructionsText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, lineHeight: 21 },
-  codeBox: { padding: 14, backgroundColor: "#F9FAFB", borderRadius: 12, borderWidth: 1, borderColor: LINE },
+  instructionsText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: MUTED, lineHeight: 22 },
+  codeBox: { padding: 16, backgroundColor: "#F9FAFB", borderRadius: 14, borderWidth: 1, borderColor: LINE },
   codeLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: MUTED, letterSpacing: 0.6, textTransform: "uppercase" as const, marginBottom: 6 },
-  codeValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 32, color: FG, letterSpacing: 5, fontVariant: ["tabular-nums"] as const },
+  codeValue: { fontFamily: Platform.select({ ios: "Menlo", android: "monospace" }), fontSize: 30, color: FG, letterSpacing: 6, fontVariant: ["tabular-nums"] as const },
 
   // ── Cancellation note ────────────────────────────────────────
   cancellationNote: { paddingHorizontal: 4 },
@@ -724,12 +750,18 @@ const styles = StyleSheet.create({
   // ── Actions ──────────────────────────────────────────────────
   actionsSection: { paddingHorizontal: 16, paddingTop: 14, gap: 10 },
   secondaryBtn: {
-    backgroundColor: "#fff", height: 48, borderRadius: 14,
+    backgroundColor: "#fff", minHeight: 52, borderRadius: 16,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7,
-    borderWidth: 1, borderColor: "#D1D5DB",
+    borderWidth: 1, borderColor: "#D5DCE3",
   },
   secondaryBtnText: { color: FG, fontSize: 15, fontFamily: "PlusJakartaSans-SemiBold", letterSpacing: -0.2 },
   errorText: { color: "#DC2626", fontSize: 13, textAlign: "center", fontFamily: "PlusJakartaSans-Regular" },
+  cancelRow: {
+    borderWidth: 1, borderColor: "#fca5a5", borderRadius: 14,
+    backgroundColor: "#fff5f5",
+    paddingVertical: 14, alignItems: "center",
+  },
+  cancelText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: "#DC2626" },
   linkRow: { flexDirection: "row", justifyContent: "center", gap: 24, paddingVertical: 4 },
   linkText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: MUTED },
   linkTextDanger: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: "#DC2626" },

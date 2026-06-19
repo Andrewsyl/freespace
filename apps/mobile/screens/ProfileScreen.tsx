@@ -360,19 +360,19 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 16 },
 
   // ── Page header ──────────────────────────────────────────────
-  pageHeader: { paddingBottom: 12, paddingHorizontal: 4 },
+  pageHeader: { paddingBottom: 14, paddingHorizontal: 4 },
   pageTitle: {
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 27, color: FG, letterSpacing: -0.8,
+    fontSize: 29, color: FG, letterSpacing: -0.9,
   },
 
   // ── Profile card ─────────────────────────────────────────────
   profileCard: {
     flexDirection: "row", alignItems: "center", gap: 14,
-    backgroundColor: "#ffffff", borderRadius: 18,
-    borderWidth: 1, borderColor: LINE,
-    paddingHorizontal: 16, paddingVertical: 14,
-    marginBottom: 10,
+    backgroundColor: "#ffffff", borderRadius: 20,
+    borderWidth: 1, borderColor: "#E1E7ED",
+    paddingHorizontal: 16, paddingVertical: 16,
+    marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
   },
   profileCardPressed: { opacity: 0.88 },
   avatar: {
-    width: 52, height: 52, borderRadius: 26,
+    width: 56, height: 56, borderRadius: 28,
     backgroundColor: "#EDF7F2",
     alignItems: "center", justifyContent: "center",
     flexShrink: 0,
@@ -391,69 +391,69 @@ const styles = StyleSheet.create({
   },
   profileInfo: { flex: 1, minWidth: 0 },
   profileName: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 17,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 18,
     color: FG, letterSpacing: -0.3,
   },
   profileEmail: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 14,
     color: MUTED, marginTop: 2,
   },
   verifiedPill: {
     flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: "#EDF7F2", borderRadius: 20,
-    paddingHorizontal: 10, paddingVertical: 5, flexShrink: 0,
+    backgroundColor: "#EDF7F2", borderRadius: 999,
+    paddingHorizontal: 10, paddingVertical: 6, flexShrink: 0,
   },
   verifiedText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: GREEN },
   verifyBtn: {
-    borderRadius: 20, borderWidth: 1, borderColor: LINE,
-    paddingHorizontal: 12, paddingVertical: 6, flexShrink: 0,
+    borderRadius: 999, borderWidth: 1, borderColor: LINE,
+    paddingHorizontal: 14, paddingVertical: 8, flexShrink: 0,
   },
-  verifyBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
+  verifyBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
 
   // ── Sign in card (logged out) ────────────────────────────────
   signInCard: {
     flexDirection: "row", alignItems: "center", gap: 14,
-    backgroundColor: "#ffffff", borderRadius: 16,
-    borderWidth: 1, borderColor: LINE,
+    backgroundColor: "#ffffff", borderRadius: 20,
+    borderWidth: 1, borderColor: "#E1E7ED",
     paddingHorizontal: 16, paddingVertical: 16,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   signInAvatar: {
-    width: 52, height: 52, borderRadius: 26,
+    width: 56, height: 56, borderRadius: 28,
     backgroundColor: "#EDF7F2",
     alignItems: "center", justifyContent: "center",
   },
-  signInTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: FG },
-  signInSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 2 },
+  signInTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG, letterSpacing: -0.2 },
+  signInSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, marginTop: 2 },
 
   // ── Hosting CTA ──────────────────────────────────────────────
   hostingCta: {
     flexDirection: "row", alignItems: "center", gap: 14,
-    backgroundColor: "#EDF7F2", borderRadius: 16,
+    backgroundColor: "#EDF7F2", borderRadius: 20,
     borderWidth: 1, borderColor: "#c6ead8",
-    paddingHorizontal: 16, paddingVertical: 13,
+    paddingHorizontal: 16, paddingVertical: 14,
     marginBottom: 4,
   },
   hostingCtaIcon: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 48, height: 48, borderRadius: 24,
     backgroundColor: "#ffffff",
     alignItems: "center", justifyContent: "center",
     flexShrink: 0,
   },
   hostingCtaTitle: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#0a6640", letterSpacing: -0.2,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: "#0a6640", letterSpacing: -0.2,
   },
-  hostingCtaSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: "#2d8a5e", marginTop: 1 },
+  hostingCtaSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: "#2d8a5e", marginTop: 1 },
 
   // ── Group ────────────────────────────────────────────────────
   groupLabel: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 11, color: "#888",
     letterSpacing: 0.8, textTransform: "uppercase",
-    marginBottom: 6, marginTop: 18, paddingHorizontal: 4,
+    marginBottom: 8, marginTop: 20, paddingHorizontal: 4,
   },
   group: {
-    borderRadius: 18, borderWidth: 1, borderColor: LINE,
+    borderRadius: 20, borderWidth: 1, borderColor: "#E1E7ED",
     overflow: "hidden", backgroundColor: "#ffffff",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -465,16 +465,16 @@ const styles = StyleSheet.create({
   // ── Rows ─────────────────────────────────────────────────────
   row: {
     flexDirection: "row", alignItems: "center", gap: 12,
-    paddingHorizontal: 16, paddingVertical: 11,
-    backgroundColor: "#ffffff", minHeight: 48,
+    paddingHorizontal: 16, paddingVertical: 13,
+    backgroundColor: "#ffffff", minHeight: 52,
   },
   rowBorder: { borderTopWidth: 1, borderTopColor: LINE },
   rowPressed: { backgroundColor: "#f5f5f3" },
   iconWrap: { width: 22, alignItems: "center", flexShrink: 0 },
   rowBody: { flex: 1 },
-  rowLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG },
+  rowLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG },
   rowLabelDanger: { color: "#b42318" },
-  rowSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 1 },
+  rowSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, marginTop: 1 },
   rowRight: { flexDirection: "row", alignItems: "center", gap: 6 },
 
   // ── Toggle ───────────────────────────────────────────────────
@@ -496,8 +496,8 @@ const styles = StyleSheet.create({
   signOutBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
     marginTop: 24, marginBottom: 8,
-    paddingVertical: 14,
-    borderRadius: 14,
+    paddingVertical: 15,
+    borderRadius: 16,
     backgroundColor: "#fff1f0",
     borderWidth: 1, borderColor: "#fac5c0",
   },

@@ -62,13 +62,20 @@ export function AddressAutocomplete({
   const [locating,    setLocating]    = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  // Init Google services
+  // Init Google services — retries until Maps SDK loads (deferred with afterInteractive)
   useEffect(() => {
-    if (!(window as any).google?.maps?.places) return;
-    svcRef.current = new (window as any).google.maps.places.AutocompleteService();
-    const div = document.createElement("div");
-    document.body.appendChild(div);
-    plcRef.current = new (window as any).google.maps.places.PlacesService(div);
+    const tryInit = () => {
+      if (!(window as any).google?.maps?.places) return false;
+      svcRef.current = new (window as any).google.maps.places.AutocompleteService();
+      const div = document.createElement("div");
+      document.body.appendChild(div);
+      plcRef.current = new (window as any).google.maps.places.PlacesService(div);
+      return true;
+    };
+    if (!tryInit()) {
+      const id = setInterval(() => { if (tryInit()) clearInterval(id); }, 200);
+      return () => clearInterval(id);
+    }
   }, []);
 
   // Autocomplete predictions
@@ -183,7 +190,7 @@ export function AddressAutocomplete({
         placeholder={placeholder ?? "Search address"}
         autoComplete="off"
         className={inputClassName ?? "w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none hover:border-brand-200"}
-        style={{ fontFamily: '"Plus Jakarta Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif', fontWeight: 600 }}
+        style={{ fontFamily: 'var(--font-plus-jakarta-sans), system-ui, -apple-system, sans-serif', fontWeight: 600 }}
       />
 
       {showLocationButton && (

@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { MaterialIcons } from "@expo/vector-icons";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, ChevronRight, LogOut, ShieldCheck } from "lucide-react-native";
 import { changePassword, deleteAccount, logoutAllSessions, requestPasswordReset } from "../api";
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
@@ -182,7 +181,7 @@ export function LoginSecurityScreen({ navigation }: Props) {
               <>
                 <View style={styles.providerRow}>
                   <View style={styles.providerIconWrap}>
-                    <MaterialIcons name="shield" size={18} color={colors.text} />
+                    <ShieldCheck size={18} color={colors.text} strokeWidth={2.1} />
                   </View>
                   <View style={styles.textWrap}>
                     <Text style={styles.rowTitle}>Signed in with {authProviderLabel}</Text>
@@ -206,12 +205,12 @@ export function LoginSecurityScreen({ navigation }: Props) {
           <View style={styles.group}>
             <Text style={styles.groupLabel}>Account access</Text>
             <Pressable style={styles.row} onPress={handleLogoutAll}>
-              <MaterialIcons name="logout" size={22} color={colors.danger} />
+              <LogOut size={22} color={colors.danger} strokeWidth={2.1} />
               <View style={styles.textWrap}>
                 <Text style={styles.rowTitle}>Log out of all devices</Text>
                 <Text style={styles.rowSubtitle}>Ends sessions on other phones and browsers</Text>
               </View>
-              <MaterialIcons name="chevron-right" size={20} color={colors.textSoft} />
+              <ChevronRight size={20} color={colors.textSoft} strokeWidth={2.2} />
             </Pressable>
           </View>
           <Pressable style={styles.deleteLink} onPress={handleDeleteAccount}>

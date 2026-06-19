@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Chrome, Mail } from "lucide-react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
@@ -137,7 +137,7 @@ export function WelcomeScreen({ navigation, route }: Props) {
             <ActivityIndicator size="small" color={AUTH_GREEN} />
           ) : (
             <>
-              <Ionicons name="logo-google" size={20} color={AUTH_GREEN} style={styles.authBtnIcon} />
+              <Chrome size={20} color={AUTH_GREEN} strokeWidth={2} style={styles.authBtnIcon} />
               <Text style={styles.authOutlineText}>Continue with Google</Text>
             </>
           )}
@@ -150,7 +150,7 @@ export function WelcomeScreen({ navigation, route }: Props) {
             navigation.navigate("SignIn", returnTo ? { returnTo } : undefined);
           }}
         >
-          <Ionicons name="mail" size={19} color={AUTH_GREEN} style={styles.authBtnIcon} />
+          <Mail size={19} color={AUTH_GREEN} strokeWidth={2.1} style={styles.authBtnIcon} />
           <Text style={styles.authOutlineText}>Log in with email</Text>
         </Pressable>
 
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   content: {
     width: "100%",
@@ -198,56 +198,56 @@ const styles = StyleSheet.create({
   },
   logoWrap: {
     width: "100%",
-    height: 98,
+    height: 92,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 6,
-    marginBottom: 2,
+    marginTop: 4,
+    marginBottom: 4,
     overflow: "visible",
   },
   logo: {
-    width: 220,
-    height: 126,
+    width: 200,
+    height: 112,
   },
   illustration: {
-    width: 360,
-    height: 214,
-    marginBottom: 14,
+    width: 332,
+    height: 196,
+    marginBottom: 16,
   },
   authCopyWrap: {
     width: "100%",
     maxWidth: 360,
-    marginBottom: 18,
+    marginBottom: 20,
   },
   authTitle: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 21,
-    lineHeight: 27,
+    fontSize: 22,
+    lineHeight: 28,
     letterSpacing: -0.4,
     color: "#111827",
-    marginBottom: 8,
+    marginBottom: 10,
   },
   authTitleAccent: {
     color: "#0a8050",
   },
   authBody: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 22,
     color: "#6B7280",
   },
   authOutlineBtn: {
     width: "100%",
     maxWidth: 360,
-    height: 50,
-    borderRadius: 12,
+    minHeight: 52,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: "#D9DEDE",
     backgroundColor: "#FFFFFF",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 10,
+    marginBottom: 12,
     paddingHorizontal: 16,
   },
   authOutlineBtnPressed: {
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   authOutlineText: {
     color: "#111827",
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
+    fontSize: 16,
     letterSpacing: -0.2,
   },
   authDivider: {
@@ -267,8 +267,8 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 4,
-    marginBottom: 14,
+    marginTop: 8,
+    marginBottom: 16,
   },
   authDividerLine: {
     flex: 1,
@@ -278,18 +278,18 @@ const styles = StyleSheet.create({
   authDividerText: {
     marginHorizontal: 12,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13,
+    fontSize: 12,
     color: "#6B7280",
   },
   authCreateBtn: {
     width: "100%",
     maxWidth: 360,
-    height: 50,
-    borderRadius: 12,
+    minHeight: 52,
+    borderRadius: 16,
     backgroundColor: "#0a8050",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 14,
+    marginBottom: 12,
     shadowColor: "#0a7a50",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.16,
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   authCreateText: {
     color: "#ffffff",
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
+    fontSize: 16,
     letterSpacing: -0.2,
   },
   errorText: {
@@ -317,8 +317,8 @@ const styles = StyleSheet.create({
     maxWidth: 320,
     textAlign: "center",
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 13,
+    lineHeight: 18,
     color: "#6B7280",
   },
   legalLink: {

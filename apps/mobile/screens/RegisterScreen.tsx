@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
+import { Check, ChevronDown, X } from "lucide-react-native";
 import { useAuth } from "../auth";
 import type { AuthReturnTo, RootStackParamList } from "../types";
 import { BackButton, Button, TextInput as AppTextInput } from "../components/ui";
@@ -249,7 +249,7 @@ export function RegisterScreen({ navigation, route }: Props) {
                   >
                     <Text style={styles.dialCodeFlag}>{selectedCountry.flag}</Text>
                     <Text style={styles.dialCodeText}>{selectedCountry.dialCode}</Text>
-                    <Ionicons name="chevron-down" size={13} color="#9CA3AF" />
+                    <ChevronDown size={13} color="#9CA3AF" strokeWidth={2.2} />
                   </Pressable>
                   <View style={styles.phoneDivider} />
                   <RNTextInput
@@ -275,7 +275,7 @@ export function RegisterScreen({ navigation, route }: Props) {
                     <View style={styles.pickerHeader}>
                       <Text style={styles.pickerTitle}>Select country</Text>
                       <Pressable hitSlop={8} onPress={() => setCountryPickerVisible(false)}>
-                        <Ionicons name="close" size={22} color="#111827" />
+                        <X size={22} color="#111827" strokeWidth={2.2} />
                       </Pressable>
                     </View>
                     <FlatList
@@ -303,7 +303,7 @@ export function RegisterScreen({ navigation, route }: Props) {
                 testID="terms-checkbox"
               >
                 <View style={[styles.checkbox, accepted && styles.checkboxChecked]}>
-                  {accepted ? <Ionicons name="checkmark" size={16} color="#FFFFFF" /> : null}
+                  {accepted ? <Check size={16} color="#FFFFFF" strokeWidth={2.4} /> : null}
                 </View>
                 <Text style={styles.checkboxText}>
                   I agree to{" "}
@@ -341,25 +341,25 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   header: {
     paddingHorizontal: spacing.screenX,
     paddingTop: spacing.lg,
-    paddingBottom: 4,
+    paddingBottom: 8,
   },
   card: {
     flex: 1,
     backgroundColor: colors.appBg,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
   },
   cardTitle: {
     ...textStyles.sectionTitle,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   inputGroup: {
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   inputRow: {
     flexDirection: "row",
@@ -380,8 +380,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.xs,
-    marginTop: 4,
-    marginBottom: spacing.md,
+    marginTop: 6,
+    marginBottom: spacing.lg,
   },
   checkbox: {
     width: 20,
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     color: AUTH_GREEN,
   },
   signUpButton: {
-    marginBottom: spacing.xs,
+    marginBottom: 4,
     backgroundColor: AUTH_GREEN,
     borderColor: AUTH_GREEN,
   },
@@ -425,13 +425,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    minHeight: 56,
+    minHeight: 58,
   },
   dialCodeBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    paddingVertical: 14,
+    paddingVertical: 15,
     paddingRight: 10,
   },
   dialCodeFlag: {
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 17,
-    paddingVertical: 14,
+    paddingVertical: 15,
   },
   pickerOverlay: {
     flex: 1,
@@ -462,10 +462,10 @@ const styles = StyleSheet.create({
   },
   pickerSheet: {
     backgroundColor: colors.cardBg,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     maxHeight: "70%",
-    paddingBottom: 24,
+    paddingBottom: 28,
   },
   pickerHeader: {
     flexDirection: "row",
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 13,
+    paddingVertical: 14,
     gap: 12,
   },
   countryFlag: {

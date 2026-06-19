@@ -46,7 +46,7 @@ function buildEmailShell({
   const cta = ctaLabel && ctaUrl
     ? `
       <div style="text-align:center; margin-top:28px;">
-        <a href="${esc(ctaUrl)}" style="display:inline-block; padding:14px 32px; background:#0a8050; color:#ffffff; border-radius:999px; text-decoration:none; font-size:15px; font-weight:700; letter-spacing:-0.1px;">
+        <a href="${esc(ctaUrl)}" style="display:inline-block; padding:14px 32px; background:#0a8050; color:#ffffff; border-radius:14px; text-decoration:none; font-size:15px; font-weight:600; letter-spacing:-0.015em; font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
           ${esc(ctaLabel)}
         </a>
       </div>`
@@ -62,15 +62,16 @@ function buildEmailShell({
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
   <meta name="supported-color-schemes" content="light dark" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
   <style>
     /* ── Light mode (default) ── */
-    body, .email-body   { background-color: #F8FAFC !important; color: #101414 !important; }
+    body, .email-body   { background-color: #F7F7F6 !important; color: #0f172a !important; }
     .email-card         { background-color: #ffffff !important; }
-    .email-footer       { background-color: #F8FAFC !important; }
-    .email-heading      { color: #101414 !important; }
-    .email-body-text    { color: #465050 !important; }
-    .email-muted        { color: #6B7575 !important; }
-    .icon-circle        { background-color: #ECFDF5 !important; }
+    .email-footer       { background-color: #F7F7F6 !important; }
+    .email-heading      { color: #0f172a !important; }
+    .email-body-text    { color: #374151 !important; }
+    .email-muted        { color: #6b7280 !important; }
+    .icon-circle        { background-color: #edf7f2 !important; }
 
     /* ── Dark mode — look intentional rather than broken ── */
     @media (prefers-color-scheme: dark) {
@@ -86,20 +87,20 @@ function buildEmailShell({
     }
   </style>
 </head>
-<body class="email-body" bgcolor="#F8FAFC" style="margin:0; padding:0; background-color:#F8FAFC; color:#101414; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
-  <table class="email-body" width="100%" cellpadding="0" cellspacing="0" bgcolor="#F8FAFC" style="background-color:#F8FAFC; padding:40px 16px;">
+<body class="email-body" bgcolor="#F7F7F6" style="margin:0; padding:0; background-color:#F7F7F6; color:#0f172a; font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table class="email-body" width="100%" cellpadding="0" cellspacing="0" bgcolor="#F7F7F6" style="background-color:#F7F7F6; padding:40px 16px;">
     <tr>
       <td align="center">
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
 
           <!-- Card -->
           <tr>
-            <td class="email-card" bgcolor="#ffffff" style="background-color:#ffffff; border-radius:18px; border:1px solid #D4DCE4; overflow:hidden;">
+            <td class="email-card" bgcolor="#ffffff" style="background-color:#ffffff; border-radius:16px; border:1px solid #e5e7eb; overflow:hidden;">
 
               <!-- Logo header -->
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td bgcolor="#F1F5F8" style="background-color:#F1F5F8; padding:24px 32px; text-align:center; border-bottom:1px solid #D4DCE4;">
+                  <td bgcolor="#F7F7F6" style="background-color:#F7F7F6; padding:24px 32px; text-align:center; border-bottom:1px solid #e5e7eb;">
                     <img src="${logo}" alt="FreeSpace" width="140" height="auto" style="display:inline-block; height:auto; border:0;" />
                   </td>
                 </tr>
@@ -112,7 +113,7 @@ function buildEmailShell({
 
                 ${iconBlock}
 
-                <h1 class="email-heading" style="margin:0 0 12px; font-size:26px; line-height:1.2; font-weight:800; color:#101414; text-align:center; letter-spacing:-0.4px;">
+                <h1 class="email-heading" style="margin:0 0 12px; font-size:26px; line-height:1.2; font-weight:800; color:#0f172a; text-align:center; letter-spacing:-0.04em; font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
                   ${esc(title)}
                 </h1>
 
@@ -122,8 +123,8 @@ function buildEmailShell({
               </div>
 
               <!-- Footer -->
-              <div class="email-footer" style="padding:16px 32px; background-color:#F8FAFC; border-top:1px solid #DDE5EC; text-align:center;">
-                <p class="email-muted" style="margin:0; font-size:12px; color:#6B7575;">${footer}</p>
+              <div class="email-footer" style="padding:16px 32px; background-color:#F7F7F6; border-top:1px solid #e5e7eb; text-align:center;">
+                <p class="email-muted" style="margin:0; font-size:12px; color:#6b7280;">${footer}</p>
               </div>
             </td>
           </tr>
@@ -140,11 +141,11 @@ function buildEmailShell({
 function buildDetailRow(label: string, value: string) {
   return `
     <tr>
-      <td style="padding:11px 0; border-bottom:1px solid #DDE5EC; vertical-align:top; width:36%;">
-        <span style="font-size:12px; font-weight:500; color:#465050;">${esc(label)}</span>
+      <td style="padding:11px 0; border-bottom:1px solid #e5e7eb; vertical-align:top; width:36%;">
+        <span style="font-size:12px; font-weight:500; color:#6b7280;">${esc(label)}</span>
       </td>
-      <td style="padding:11px 0 11px 16px; border-bottom:1px solid #DDE5EC; vertical-align:top;">
-        <span style="font-size:13px; font-weight:600; color:#101414;">${esc(value)}</span>
+      <td style="padding:11px 0 11px 16px; border-bottom:1px solid #e5e7eb; vertical-align:top;">
+        <span style="font-size:13px; font-weight:600; color:#0f172a;">${esc(value)}</span>
       </td>
     </tr>`;
 }
@@ -168,7 +169,7 @@ export function buildVerificationEmail(url: string) {
     eyebrow: "FreeSpace account",
     title: "Verify your email",
     bodyHtml: `
-      <p class="email-body-text" style="margin:0 0 20px; font-size:15px; line-height:1.65; color:#475569; text-align:center;">
+      <p class="email-body-text" style="margin:0 0 20px; font-size:15px; line-height:1.65; color:#374151; text-align:center;">
         Confirm your email address to finish setting up your FreeSpace account and unlock bookings, payments, and hosting features.
       </p>
       <div style="margin:20px 0 0; padding:12px 16px; background:#f8fafc; border-radius:10px; text-align:center;">
@@ -188,7 +189,7 @@ export function buildPasswordResetEmail(url: string) {
     eyebrow: "Account recovery",
     title: "Reset your password",
     bodyHtml: `
-      <p class="email-body-text" style="margin:0 0 20px; font-size:15px; line-height:1.65; color:#475569; text-align:center;">
+      <p class="email-body-text" style="margin:0 0 20px; font-size:15px; line-height:1.65; color:#374151; text-align:center;">
         We received a request to reset your FreeSpace password. Click the button below — this link expires in 1 hour.
       </p>
       <div style="margin:20px 0 0; padding:12px 16px; background:#f8fafc; border-radius:10px; text-align:center;">
@@ -236,17 +237,17 @@ function formatTimeBlock(startTime: Date, endTime: Date) {
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px; border-collapse:collapse;">
       <tr>
         <td style="text-align:left; width:42%; vertical-align:top;">
-          <div style="font-size:12px; color:#465050; margin-bottom:4px;">${startDate}</div>
-          <div style="font-size:26px; font-weight:800; color:#101414; letter-spacing:-0.8px; line-height:1.15;">${fmtTime(startTime)}</div>
+          <div style="font-size:12px; color:#6b7280; margin-bottom:4px;">${startDate}</div>
+          <div style="font-size:26px; font-weight:800; color:#0f172a; letter-spacing:-0.04em; line-height:1.15;">${fmtTime(startTime)}</div>
         </td>
-        <td style="text-align:center; width:16%; vertical-align:middle; padding-top:18px; font-size:18px; color:#D1D5DB;">&#8594;</td>
+        <td style="text-align:center; width:16%; vertical-align:middle; padding-top:18px; font-size:18px; color:#d1d5db;">&#8594;</td>
         <td style="text-align:right; width:42%; vertical-align:top;">
-          <div style="font-size:12px; color:#465050; margin-bottom:4px;">${sameDay ? "&nbsp;" : endDate}</div>
-          <div style="font-size:26px; font-weight:800; color:#101414; letter-spacing:-0.8px; line-height:1.15;">${fmtTime(endTime)}</div>
+          <div style="font-size:12px; color:#6b7280; margin-bottom:4px;">${sameDay ? "&nbsp;" : endDate}</div>
+          <div style="font-size:26px; font-weight:800; color:#0f172a; letter-spacing:-0.04em; line-height:1.15;">${fmtTime(endTime)}</div>
         </td>
       </tr>
     </table>
-    <hr style="border:none; border-top:1px solid #DDE5EC; margin:0 0 20px;" />`;
+    <hr style="border:none; border-top:1px solid #e5e7eb; margin:0 0 20px;" />`;
 }
 
 export function buildBookingConfirmationEmail({
@@ -287,7 +288,7 @@ export function buildBookingConfirmationEmail({
   const instructionsBlock = arrivalInstructions
     ? `<div style="margin:12px 0 0; padding:14px 16px; background:#f8fafc; border-radius:10px;">
         <div style="font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#94a3b8; margin-bottom:6px;">Arrival instructions</div>
-        <p style="margin:0; font-size:13px; line-height:1.6; color:#475569;">${esc(arrivalInstructions)}</p>
+        <p style="margin:0; font-size:13px; line-height:1.6; color:#374151;">${esc(arrivalInstructions)}</p>
       </div>`
     : "";
 
@@ -302,16 +303,16 @@ export function buildBookingConfirmationEmail({
   const bookingDeepLink = `https://freespace.ie/bookings/${bookingId}`;
 
   const actionLinks = `
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 0; border-top:1px solid #DDE5EC; border-collapse:collapse;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 0; border-top:1px solid #e5e7eb; border-collapse:collapse;">
       <tr>
-        <td style="padding:13px 0; border-bottom:1px solid #DDE5EC;">
+        <td style="padding:13px 0; border-bottom:1px solid #e5e7eb;">
           <a href="${esc(bookingDeepLink)}" style="text-decoration:none; display:block;">
             <table cellpadding="0" cellspacing="0" style="border-collapse:collapse; width:100%;">
               <tr>
                 <td style="width:36px; vertical-align:middle;">
                   <div style="width:32px; height:32px; border-radius:16px; background:#ECFDF5; text-align:center; line-height:32px; font-size:15px;">&#128337;</div>
                 </td>
-                <td style="padding-left:12px; vertical-align:middle; font-size:14px; font-weight:600; color:#101414;">View booking in app</td>
+                <td style="padding-left:12px; vertical-align:middle; font-size:14px; font-weight:600; color:#0f172a;">View booking in app</td>
                 <td style="text-align:right; vertical-align:middle; font-size:16px; color:#0a8050;">&#8250;</td>
               </tr>
             </table>
@@ -319,14 +320,14 @@ export function buildBookingConfirmationEmail({
         </td>
       </tr>
       <tr>
-        <td style="padding:13px 0; border-bottom:1px solid #DDE5EC;">
+        <td style="padding:13px 0; border-bottom:1px solid #e5e7eb;">
           <a href="${esc(mapsUrl)}" style="text-decoration:none; display:block;">
             <table cellpadding="0" cellspacing="0" style="border-collapse:collapse; width:100%;">
               <tr>
                 <td style="width:36px; vertical-align:middle;">
                   <div style="width:32px; height:32px; border-radius:16px; background:#ECFDF5; text-align:center; line-height:32px; font-size:15px;">&#128205;</div>
                 </td>
-                <td style="padding-left:12px; vertical-align:middle; font-size:14px; font-weight:600; color:#101414;">Get directions</td>
+                <td style="padding-left:12px; vertical-align:middle; font-size:14px; font-weight:600; color:#0f172a;">Get directions</td>
                 <td style="text-align:right; vertical-align:middle; font-size:16px; color:#0a8050;">&#8250;</td>
               </tr>
             </table>
@@ -341,7 +342,7 @@ export function buildBookingConfirmationEmail({
                 <td style="width:36px; vertical-align:middle;">
                   <div style="width:32px; height:32px; border-radius:16px; background:#ECFDF5; text-align:center; line-height:32px; font-size:15px;">&#128197;</div>
                 </td>
-                <td style="padding-left:12px; vertical-align:middle; font-size:14px; font-weight:600; color:#101414;">Add to calendar</td>
+                <td style="padding-left:12px; vertical-align:middle; font-size:14px; font-weight:600; color:#0f172a;">Add to calendar</td>
                 <td style="text-align:right; vertical-align:middle; font-size:16px; color:#0a8050;">&#8250;</td>
               </tr>
             </table>
@@ -365,15 +366,15 @@ export function buildBookingConfirmationEmail({
     ${actionLinks}`;
 
   const cancelSection = `
-    <div style="margin:24px 0 0; padding-top:20px; border-top:1px solid #DDE5EC;">
-      <p style="margin:0 0 4px; font-size:13px; font-weight:700; color:#101414;">Need to cancel?</p>
-      <p style="margin:0; font-size:13px; color:#465050; line-height:1.55;">Cancel before your session starts for a full refund. <a href="${esc(`${webBase}/dashboard/bookings`)}" style="color:#0a8050; text-decoration:none; font-weight:600;">Manage booking &#8594;</a></p>
+    <div style="margin:24px 0 0; padding-top:20px; border-top:1px solid #e5e7eb;">
+      <p style="margin:0 0 4px; font-size:13px; font-weight:700; color:#0f172a;">Need to cancel?</p>
+      <p style="margin:0; font-size:13px; color:#374151; line-height:1.55;">Cancel before your session starts for a full refund. <a href="${esc(`${webBase}/dashboard/bookings`)}" style="color:#0a8050; text-decoration:none; font-weight:600;">Manage booking &#8594;</a></p>
     </div>`;
 
   const helpSection = `
     <div style="margin:16px 0 0; text-align:center;">
-      <p style="margin:0; font-size:12px; color:#6B7575;">
-        Questions? <a href="mailto:hello@freespace.ie" style="color:#6B7575; text-decoration:underline;">hello@freespace.ie</a>
+      <p style="margin:0; font-size:12px; color:#6b7280;">
+        Questions? <a href="mailto:hello@freespace.ie" style="color:#6b7280; text-decoration:underline;">hello@freespace.ie</a>
       </p>
     </div>`;
 
@@ -413,7 +414,7 @@ export function buildBookingCancellationEmail({
     eyebrow: "Booking update",
     title: "Booking cancelled",
     bodyHtml: `
-      <p style="margin:0 0 24px; font-size:15px; line-height:1.65; color:#475569; text-align:center;">
+      <p style="margin:0 0 24px; font-size:15px; line-height:1.65; color:#374151; text-align:center;">
         Your booking for <strong style="color:#111827;">${esc(listingTitle)}</strong> has been cancelled. If you did not request this, please contact support.
       </p>
       ${detailsTable}`,

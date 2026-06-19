@@ -9,8 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, ChevronDown, Star } from "lucide-react-native";
 import { listListingReviews, type ListingReview } from "../api";
 import type { RootStackParamList } from "../types";
 import { formatReviewDate } from "../utils/dateFormat";
@@ -75,7 +74,7 @@ export function ListingReviewsScreen({ navigation, route }: Props) {
         <View style={styles.summarySection}>
           <View style={styles.summaryRow}>
             <View style={styles.summaryLeft}>
-              <Ionicons name="star" size={20} color="#111827" />
+              <Star size={20} color="#111827" fill="#111827" strokeWidth={2} />
               <View>
                 <Text style={styles.summaryRating}>{ratingValue.toFixed(2)}</Text>
                 <Text style={styles.summaryCount}>{totalReviews} Reviews</Text>
@@ -88,7 +87,7 @@ export function ListingReviewsScreen({ navigation, route }: Props) {
               }
             >
               <Text style={styles.sortText}>{sort}</Text>
-              <Ionicons name="chevron-down" size={16} color="#64748B" />
+              <ChevronDown size={16} color="#64748B" strokeWidth={2.2} />
             </Pressable>
           </View>
         </View>
@@ -108,11 +107,12 @@ export function ListingReviewsScreen({ navigation, route }: Props) {
                   <Text style={styles.reviewAuthor}>{author}</Text>
                   <View style={styles.reviewStarsRow}>
                     {[0, 1, 2, 3, 4].map((idx) => (
-                      <Ionicons
+                      <Star
                         key={`${review.id}-star-${idx}`}
-                        name="star"
                         size={12}
                         color={idx < Math.round(review.rating) ? "#F59E0B" : "#E5E7EB"}
+                        fill={idx < Math.round(review.rating) ? "#F59E0B" : "none"}
+                        strokeWidth={2}
                       />
                     ))}
                     <Text style={styles.reviewMeta}>

@@ -8,20 +8,21 @@ import {
   Text,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import {
   Accessibility,
   ArrowDownUp,
   Bike,
+  BatteryCharging,
   Cctv,
   Clock,
-  EvCharger,
   Fence,
-  Home,
+  Heart,
   IdCard,
   KeyRound,
   Lightbulb,
+  Maximize2,
   Warehouse,
+  CarFront,
 } from "lucide-react-native";
 import { colors } from "../styles/theme";
 
@@ -75,7 +76,7 @@ function getFeatureIconType(label: string) {
 
 const FEATURE_ICONS = {
   cctv: Cctv,
-  ev: EvCharger,
+  ev: BatteryCharging,
   sheltered: Warehouse,
   lit: Lightbulb,
   gated: Fence,
@@ -85,7 +86,7 @@ const FEATURE_ICONS = {
   disabled: Accessibility,
   allday: Clock,
   motorbike: Bike,
-  wide: Home,
+  wide: Maximize2,
 } as const;
 
 function FeatureChip({ label }: { label: string }) {
@@ -188,7 +189,7 @@ export function MapBottomCard({
             <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
           ) : (
             <View style={styles.imageFallback}>
-              <Ionicons name="car-outline" size={22} color="#b0bac4" />
+              <CarFront size={22} color="#b0bac4" strokeWidth={1.9} />
             </View>
           )}
         </View>
@@ -199,10 +200,11 @@ export function MapBottomCard({
             <Text style={styles.title} numberOfLines={1}>{title}</Text>
             {onToggleFavorite ? (
               <Pressable onPress={onToggleFavorite} hitSlop={10} style={styles.heartBtn}>
-                <Ionicons
-                  name={isFavorite ? "heart" : "heart-outline"}
+                <Heart
                   size={17}
                   color="#0a8050"
+                  fill={isFavorite ? "#0a8050" : "none"}
+                  strokeWidth={2.1}
                 />
               </Pressable>
             ) : null}
@@ -345,11 +347,13 @@ const styles = StyleSheet.create({
   },
   featureRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
+    flexWrap: "nowrap",
+    gap: 4,
     justifyContent: "flex-end",
     marginLeft: 8,
     flex: 1,
+    minWidth: 0,
+    overflow: "hidden",
   },
   price: {
     color: "#111827",

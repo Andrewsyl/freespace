@@ -23,8 +23,7 @@ import { useStripe } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
 import { DrumRollPicker } from "../components/DrumRollPicker";
 import { SquircleBtn } from "../components/SquircleBtn";
-import { Ionicons } from "@expo/vector-icons";
-import { ArrowLeft } from "lucide-react-native";
+import { Apple, ArrowLeft, Chrome, CircleX, Info, Lock, RefreshCw, ShieldCheck } from "lucide-react-native";
 import {
   confirmBookingPayment,
   createBookingPaymentIntent,
@@ -716,7 +715,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                           setPromoError(null);
                         }}
                       >
-                        <Ionicons name="close-circle" size={16} color={SUBTLE} />
+                        <CircleX size={16} color={SUBTLE} strokeWidth={2.1} />
                       </Pressable>
                     </View>
                     <Text style={styles.promoDiscountValue}>
@@ -767,7 +766,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                     onPress={() => setShowServiceFeeInfo((current) => !current)}
                     style={styles.serviceFeeToggle}
                   >
-                    <Ionicons name="information-circle-outline" size={16} color={SUBTLE} />
+                    <Info size={16} color={SUBTLE} strokeWidth={2.2} />
                     <Text style={styles.serviceFeeToggleText}>Includes service fee</Text>
                   </Pressable>
                 </View>
@@ -796,7 +795,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                     <VehicleBrandLogo make={vehicleMake} size={40} />
                     <View style={styles.vehicleHeaderInfo}>
                       <Text style={styles.vehicleHeaderText}>
-                        {[vehicleMake, user?.vehicleType].filter(Boolean).join(" ")}
+                        {[vehicleMake, user?.vehicleType].filter(Boolean).join(" - ")}
                       </Text>
                       {vehicleColor ? (
                         <Text style={styles.vehicleSubText}>{vehicleColor}</Text>
@@ -827,7 +826,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               <View style={styles.cardBody}>
                 <View style={styles.trustCardTop}>
                   <View style={styles.trustShieldWrap}>
-                    <Ionicons name="shield-checkmark" size={22} color={GREEN} />
+                    <ShieldCheck size={22} color={GREEN} strokeWidth={2.1} />
                   </View>
                   <View style={styles.trustCardCopy}>
                     <Text style={styles.trustCardTitle}>Secure checkout</Text>
@@ -837,7 +836,11 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 <View style={[styles.trustDivider, { marginVertical: 14 }]} />
                 <View style={styles.methodsRow}>
                   <View style={styles.methodPill}>
-                    <Ionicons name={Platform.OS === "ios" ? "logo-apple" : "logo-google"} size={13} color={FG} />
+                    {Platform.OS === "ios" ? (
+                      <Apple size={13} color={FG} strokeWidth={2.1} />
+                    ) : (
+                      <Chrome size={13} color={FG} strokeWidth={2} />
+                    )}
                     <Text style={styles.methodPillText}>{Platform.OS === "ios" ? "Pay" : "Pay"}</Text>
                   </View>
                   <View style={[styles.methodPill, styles.visaPill]}>
@@ -852,7 +855,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                   </View>
                 </View>
                 <View style={[styles.stripeRow, { marginTop: 10 }]}>
-                  <Ionicons name="lock-closed" size={10} color={SUBTLE} />
+                  <Lock size={10} color={SUBTLE} strokeWidth={2.2} />
                   <Text style={styles.stripeText}>Powered by Stripe · trusted by millions of businesses</Text>
                 </View>
               </View>
@@ -861,7 +864,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             {/* ── Reassurance ── */}
             <View style={styles.reassuranceBlock}>
               <View style={styles.reassuranceRow}>
-                <Ionicons name="refresh-outline" size={13} color={SUBTLE} />
+                <RefreshCw size={13} color={SUBTLE} strokeWidth={2.2} />
                 <Text style={styles.reassuranceText}>Free cancellation up to 2 hours before arrival</Text>
               </View>
               <Text style={styles.legalText}>
@@ -962,16 +965,16 @@ const styles = StyleSheet.create({
   // ── Scroll content ───────────────────────────────────────────
   content: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    gap: 14,
+    paddingTop: 14,
+    gap: 16,
   },
 
   // ── Header card (listing info) ───────────────────────────────
   headerCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: "#E1E7ED",
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -979,10 +982,10 @@ const styles = StyleSheet.create({
     borderBottomColor: LINE,
     borderBottomWidth: 1,
     paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 14,
-    gap: 2,
-    alignItems: "center",
+    paddingTop: 16,
+    paddingBottom: 16,
+    gap: 4,
+    alignItems: "flex-start",
   },
   headerKicker: {
     color: GREEN,
@@ -996,10 +999,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: FG,
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 18,
+    fontSize: 20,
     letterSpacing: -0.5,
-    lineHeight: 24,
-    textAlign: "center",
+    lineHeight: 26,
+    textAlign: "left",
   },
   headerCardBottom: {
     paddingHorizontal: 16,
@@ -1008,34 +1011,32 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     color: MUTED,
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: "center",
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "left",
   },
 
   // ── Cards ────────────────────────────────────────────────────
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: "#E1E7ED",
     overflow: "hidden",
     ...CARD_SHADOW,
   },
   cardSectionHeader: {
     color: FG,
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 15,
+    fontSize: 16,
     letterSpacing: -0.4,
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 12,
+    paddingBottom: 13,
     borderBottomWidth: 1,
     borderBottomColor: LINE,
   },
-  cardBody: {
-    padding: 16,
-  },
+  cardBody: { padding: 16 },
 
   // ── Vehicle flat section ──────────────────────────────────────
   vehicleSection: {
@@ -1064,28 +1065,21 @@ const styles = StyleSheet.create({
 
   // ── Time slot ────────────────────────────────────────────────
   timeRow: {
-    flexDirection: "row", alignItems: "center",
+    flexDirection: "row", alignItems: "center", gap: 8,
   },
-  timeSlot: {
-    flex: 1, alignItems: "center", paddingVertical: 6,
-  },
+  timeSlot: { flex: 1, alignItems: "center", paddingVertical: 8 },
   timeSlotLabel: {
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 10,
-    color: GREEN, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 4,
+    color: GREEN, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 5,
   },
   timeSlotTime: {
-    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 26,
-    color: FG, letterSpacing: -0.8, lineHeight: 30,
+    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 28,
+    color: FG, letterSpacing: -0.8, lineHeight: 32,
   },
-  timeSlotDate: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
-    color: MUTED, marginTop: 2,
-  },
-  timeArrow: {
-    alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 8,
-  },
+  timeSlotDate: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 2 },
+  timeArrow: { alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 4 },
   timeArrowLine: {
-    width: 18, height: 1, backgroundColor: "#C8C2BA",
+    width: 16, height: 1, backgroundColor: "#CBD5E1",
   },
   timeArrowDuration: {
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
@@ -1095,13 +1089,13 @@ const styles = StyleSheet.create({
   // ── Price rows ───────────────────────────────────────────────
   priceRows: {
     paddingHorizontal: 16,
-    paddingBottom: 4,
+    paddingBottom: 8,
   },
   priceRow: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12,
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 14,
   },
   priceRowBorder: { borderTopWidth: 1, borderTopColor: LINE },
-  priceTotalRow: { paddingTop: 13, marginTop: 2 },
+  priceTotalRow: { paddingTop: 14, marginTop: 2 },
   priceRowLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: SUBTLE, textTransform: "uppercase", letterSpacing: 0.8 },
   priceRowValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG },
   priceTotalLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: SUBTLE, textTransform: "uppercase", letterSpacing: 0.8 },
@@ -1120,9 +1114,9 @@ const styles = StyleSheet.create({
     color: SUBTLE,
   },
   serviceFeeInfoCard: {
-    marginTop: 4,
+    marginTop: 8,
     marginBottom: 8,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: "#D8D0C7",
     backgroundColor: "#F3EDE6",
@@ -1149,26 +1143,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginTop: 4,
+    marginTop: 8,
     marginBottom: 8,
   },
   promoInput: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: LINE,
     backgroundColor: "#FBF8F4",
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
     color: FG,
   },
   promoApplyBtn: {
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: FG,
+    minWidth: 74,
     paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingVertical: 12,
   },
   promoApplyBtnDisabled: {
     opacity: 0.4,
@@ -1251,15 +1246,15 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 2,
   },
   trustDivider: {
-    height: 1, backgroundColor: LINE,
+    height: 1, backgroundColor: LINE, marginVertical: 8,
   },
   methodsRow: {
-    flexDirection: "row", flexWrap: "wrap", gap: 7,
+    flexDirection: "row", flexWrap: "wrap", gap: 8,
   },
   methodPill: {
     flexDirection: "row", alignItems: "center", gap: 5,
-    borderWidth: 1, borderColor: "#C8C2BA", borderRadius: 6,
-    paddingHorizontal: 9, paddingVertical: 6,
+    borderWidth: 1, borderColor: "#D5DCE3", borderRadius: 999,
+    paddingHorizontal: 10, paddingVertical: 7,
     backgroundColor: "#ffffff",
   },
   methodPillText: {
@@ -1286,7 +1281,7 @@ const styles = StyleSheet.create({
 
   // ── Reassurance block ────────────────────────────────────────
   reassuranceBlock: {
-    paddingHorizontal: 12, paddingBottom: 4, gap: 8,
+    paddingHorizontal: 12, paddingBottom: 6, gap: 8,
   },
   reassuranceRow: {
     flexDirection: "row", alignItems: "center", gap: 7,
@@ -1300,17 +1295,17 @@ const styles = StyleSheet.create({
   // ── Sticky footer ───────────────────────────────────────────
   footerBar: {
     position: "absolute", bottom: 0, left: 0, right: 0,
-    backgroundColor: "#ffffff", paddingHorizontal: 20, paddingTop: 12,
+    backgroundColor: "#ffffff", paddingHorizontal: 16, paddingTop: 12,
     shadowColor: "#111111", shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.07, shadowRadius: 10, elevation: 12,
   },
 
   // ── Empty / auth states ─────────────────────────────────────
   centered: { alignItems: "center", flex: 1, justifyContent: "center", paddingHorizontal: 20 },
-  centeredTitle: { fontSize: 20, fontFamily: "PlusJakartaSans-Bold", color: FG, textAlign: "center" },
-  centeredSubtitle: { fontSize: 15, fontFamily: "PlusJakartaSans-Regular", color: MUTED, marginTop: 8, textAlign: "center" },
+  centeredTitle: { fontSize: 22, fontFamily: "PlusJakartaSans-Bold", color: FG, textAlign: "center", letterSpacing: -0.3 },
+  centeredSubtitle: { fontSize: 15, fontFamily: "PlusJakartaSans-Regular", color: MUTED, marginTop: 8, textAlign: "center", lineHeight: 22 },
   muted: { fontSize: 13, fontFamily: "PlusJakartaSans-Regular", color: MUTED, marginTop: 8 },
-  authButtons: { marginTop: 16, width: "100%", maxWidth: 320, gap: 10 },
+  authButtons: { marginTop: 16, width: "100%", maxWidth: 320, gap: 12 },
   authButton: { width: "100%" },
 
   // ── Date picker modal ───────────────────────────────────────

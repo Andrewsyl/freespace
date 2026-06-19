@@ -21,7 +21,7 @@ import { AnimatedSplash } from "./components/AnimatedSplash";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { enableScreens } from "react-native-screens";
-import { CalendarDays, Compass, UserRound } from "lucide-react-native";
+import { CalendarDays, Compass, Heart, UserRound } from "lucide-react-native";
 import { AuthProvider, EXPO_PUSH_TOKEN_KEY, useAuth } from "./auth";
 import { FavoritesProvider } from "./favorites";
 import { HistoryScreen } from "./screens/HistoryScreen";
@@ -532,7 +532,7 @@ function MainTabs() {
   const renderTabIcon = (
     focused: boolean,
     color: string,
-    Icon: typeof Compass | typeof CalendarDays | typeof UserRound
+    Icon: typeof Compass | typeof CalendarDays | typeof Heart | typeof UserRound
   ) => (
     <View style={[styles.navIconShell, focused && styles.navIconShellActive]}>
       <Icon
@@ -575,6 +575,14 @@ function MainTabs() {
         options={{
           tabBarLabel: "Bookings",
           tabBarIcon: ({ focused, color }) => renderTabIcon(focused, color, CalendarDays),
+        }}
+      />
+      <Tab.Screen
+        name="Favorites"
+        component={FavoritesScreen}
+        options={{
+          tabBarLabel: "Saved",
+          tabBarIcon: ({ focused, color }) => renderTabIcon(focused, color, Heart),
         }}
       />
       <Tab.Screen

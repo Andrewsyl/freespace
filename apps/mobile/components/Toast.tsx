@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { CircleCheck, Info, TriangleAlert, X, type LucideIcon } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { cardShadow, colors, radius, spacing } from "../styles/theme";
 
@@ -13,10 +13,10 @@ type ToastProps = {
 };
 
 const variantStyles = {
-  success: { accent: "#0a8050", icon: "checkmark-circle" as const },
-  info: { accent: "#2563eb", icon: "information-circle" as const },
-  danger: { accent: "#b42318", icon: "alert-circle" as const },
-} as const;
+  success: { accent: "#0a8050", icon: CircleCheck },
+  info: { accent: "#2563eb", icon: Info },
+  danger: { accent: "#b42318", icon: TriangleAlert },
+} satisfies Record<NonNullable<ToastProps["variant"]>, { accent: string; icon: LucideIcon }>;
 
 export function Toast({
   message,
@@ -50,6 +50,7 @@ export function Toast({
   if (!visible) return null;
 
   const tone = variantStyles[variant];
+  const ToneIcon = tone.icon;
 
   return (
     <Animated.View
@@ -62,11 +63,11 @@ export function Toast({
       <View
         style={[styles.container, { borderLeftColor: tone.accent }]}
       >
-        <Ionicons name={tone.icon} size={16} color={tone.accent} style={styles.icon} />
+        <ToneIcon size={16} color={tone.accent} strokeWidth={2.2} style={styles.icon} />
         <Text style={styles.text} numberOfLines={2}>{message}</Text>
         {onDismiss ? (
           <Pressable style={styles.dismissButton} onPress={onDismiss} accessibilityRole="button">
-            <Ionicons name="close" size={16} color={colors.textSoft} />
+            <X size={16} color={colors.textSoft} strokeWidth={2.2} />
           </Pressable>
         ) : null}
       </View>

@@ -29,25 +29,37 @@ import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
 import { LIGHT_MAP_STYLE } from "../components/mapStyles";
 import type { ListingDetail, RootStackParamList } from "../types";
-import { Ionicons } from "@expo/vector-icons";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { formatDateLabel, formatDateTimeLabel, formatReviewDate, formatTimeLabel } from "../utils/dateFormat";
 import { calculateListingTotal, formatPriceValue, getListingRateType } from "../utils/pricing";
 import {
   Accessibility,
+  ArrowLeft,
+  ArrowRight,
   ArrowDownUp,
+  BatteryCharging,
   Bike,
+  CarFront,
   Cctv,
+  ChevronDown,
+  ChevronRight,
+  Chrome,
+  CircleCheck,
   Clock,
-  EvCharger,
   Fence,
-  Home,
+  Heart,
   IdCard,
   KeyRound,
   Lightbulb,
+  Mail,
+  MapPin,
   type LucideIcon,
   Maximize2,
+  Share2,
+  Star,
   Warehouse,
+  X,
+  Zap,
 } from "lucide-react-native";
 import { SkeletonBlock, usePulse } from "../components/ui";
 import { SquircleBtn } from "../components/SquircleBtn";
@@ -59,7 +71,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Listing">;
 // and leaked every listing view to it.
 const FEATURE_ICONS: Record<string, LucideIcon> = {
   cctv:      Cctv,
-  ev:        EvCharger,
+  ev:        BatteryCharging,
   sheltered: Warehouse,
   lit:       Lightbulb,
   gated:     Fence,
@@ -488,16 +500,17 @@ export function ListingScreen({ navigation, route }: Props) {
 
   const handleShare = async () => {
     if (!listing) return;
+    const url = `https://www.freespace.ie/listings/${id}`;
     try {
-      await Share.share({ message: `${listing.title}${listing.address ? ` · ${listing.address}` : ""}` });
+      await Share.share({
+        message: `${listing.title}${listing.address ? ` · ${listing.address}` : ""}\n${url}`,
+        url,
+      });
     } catch { /* ignore share cancellations */ }
   };
 
   const handleOpenMaps = () => {
-    Alert.alert("Open Google Maps", "Open directions to this space?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Open", onPress: () => Linking.openURL(mapsUrl) },
-    ]);
+    void Linking.openURL(mapsUrl);
   };
 
   const handleOpenStreetView = () => {
@@ -626,7 +639,7 @@ export function ListingScreen({ navigation, route }: Props) {
                 />
               ) : (
                 <View style={[styles.heroPlaceholder, { height: heroHeight + insets.top }]}>
-                  <Ionicons name="car-outline" size={52} color="rgba(255,255,255,0.45)" />
+                  <CarFront size={52} color="rgba(255,255,255,0.45)" strokeWidth={1.7} />
                 </View>
               )}
               <LinearGradient
@@ -634,6 +647,11 @@ export function ListingScreen({ navigation, route }: Props) {
                 locations={[0, 0.38, 1]}
                 style={styles.heroGradient}
               />
+              {imageUrls.length > 1 ? (
+                <View style={[styles.photoCounter, { position: "absolute", bottom: 72, right: 16, zIndex: 2 }]}>
+                  <Text style={styles.photoCounterText}>{imageUrls.length} photos</Text>
+                </View>
+              ) : null}
               {/* Title overlay */}
               <View style={styles.heroTitleOverlay}>
                 <Text style={styles.heroSpaceTypeLabel}>{spaceTypeLabel}</Text>
@@ -644,18 +662,19 @@ export function ListingScreen({ navigation, route }: Props) {
             {/* Floating glass controls */}
             <View style={[styles.headerOverlay, { top: insets.top + 12 }]}>
               <Pressable style={styles.glassBtn} onPress={() => navigation.goBack()}>
-                <Ionicons name="arrow-back" size={19} color="#fff" />
+                <ArrowLeft size={19} color="#fff" strokeWidth={2.2} />
               </Pressable>
               <View style={styles.headerRightColumn}>
                 <View style={styles.headerRight}>
                   <Pressable style={styles.glassBtn} onPress={handleShare}>
-                    <Ionicons name="share-social-outline" size={18} color="#fff" />
+                    <Share2 size={18} color="#fff" strokeWidth={2.1} />
                   </Pressable>
                   <Pressable style={styles.glassBtn} onPress={handleToggleFavorite}>
-                    <Ionicons
-                      name={isFavorite(id) ? "heart" : "heart-outline"}
+                    <Heart
                       size={18}
                       color={isFavorite(id) ? "#FF6B6B" : "#fff"}
+                      fill={isFavorite(id) ? "#FF6B6B" : "none"}
+                      strokeWidth={2.1}
                     />
                   </Pressable>
                 </View>
@@ -694,7 +713,7 @@ export function ListingScreen({ navigation, route }: Props) {
                 <View style={styles.priceBlock}>
                   <View style={styles.factRows}>
                     <View style={styles.factRow}>
-                      <Ionicons name="star" size={17} color={FG} style={styles.factIcon} />
+                      <Star size={17} color={FG} fill={FG} strokeWidth={2} style={styles.factIcon} />
                       <Text style={styles.factText} numberOfLines={1}>
                         {hasReviews ? (
                           <>
@@ -707,14 +726,14 @@ export function ListingScreen({ navigation, route }: Props) {
                       </Text>
                     </View>
                     <View style={styles.factRow}>
-                      <Ionicons name="location-sharp" size={17} color={GREEN} style={styles.factIcon} />
+                      <MapPin size={17} color={GREEN} strokeWidth={2.2} style={styles.factIcon} />
                       <Text style={styles.factLine} numberOfLines={1}>
                         {areaLabel ? <Text style={styles.factVal}>{areaLabel}</Text> : null}
                         {distanceLabel ? <Text style={styles.factMuted}>{`  ·  ${distanceLabel}`}</Text> : null}
                       </Text>
                     </View>
                     <View style={styles.factRowSecondary}>
-                      <Ionicons name="time-outline" size={17} color={GREEN} style={styles.factIcon} />
+                      <Clock size={17} color={GREEN} strokeWidth={2.2} style={styles.factIcon} />
                       {availabilityFallbackText ? (
                         <Text style={styles.factVal} numberOfLines={1}>{availabilityFallbackText}</Text>
                       ) : (
@@ -733,18 +752,18 @@ export function ListingScreen({ navigation, route }: Props) {
                     <Pressable style={styles.timeField} onPress={() => openPicker("start")}>
                       <View style={styles.timeFieldHeader}>
                         <Text style={styles.timeFieldLabel}>Arriving</Text>
-                        <Ionicons name="chevron-down" size={14} color="#9ca3af" />
+                        <ChevronDown size={14} color="#9ca3af" strokeWidth={2.2} />
                       </View>
                       <Text style={styles.timeFieldTime}>{formatTimeLabel(startAt)}</Text>
                       <Text style={styles.timeFieldDate}>{formatDateLabel(startAt)}</Text>
                     </Pressable>
                     <View style={styles.timeArrow}>
-                      <Ionicons name="arrow-forward" size={14} color="#9ca3af" />
+                      <ArrowRight size={14} color="#9ca3af" strokeWidth={2.3} />
                     </View>
                     <Pressable style={styles.timeField} onPress={() => openPicker("end")}>
                       <View style={styles.timeFieldHeader}>
                         <Text style={styles.timeFieldLabel}>Leaving</Text>
-                        <Ionicons name="chevron-down" size={14} color="#9ca3af" />
+                        <ChevronDown size={14} color="#9ca3af" strokeWidth={2.2} />
                       </View>
                       <Text style={styles.timeFieldTime}>{formatTimeLabel(endAt)}</Text>
                       <Text style={styles.timeFieldDate}>{formatDateLabel(endAt)}</Text>
@@ -756,13 +775,13 @@ export function ListingScreen({ navigation, route }: Props) {
                       onPress={() => setEndAt(new Date(extendOffer.endOfDay))}
                     >
                       <View style={styles.offerIconWrap}>
-                        <Ionicons name="flash" size={14} color={GREEN} />
+                        <Zap size={14} color={GREEN} strokeWidth={2.3} />
                       </View>
                       <Text style={styles.offerText}>
                         Extend to end of day for only{" "}
                         <Text style={styles.offerTextBold}>€{extendOffer.extra}</Text>
                       </Text>
-                      <Ionicons name="chevron-forward" size={13} color={GREEN} />
+                      <ChevronRight size={13} color={GREEN} strokeWidth={2.3} />
                     </Pressable>
                   ) : null}
                   <View style={styles.trustNotes}>
@@ -771,7 +790,7 @@ export function ListingScreen({ navigation, route }: Props) {
                       "Arrival instructions included with your confirmation",
                     ].map((note) => (
                       <View key={note} style={styles.trustNoteRow}>
-                        <Ionicons name="checkmark-circle" size={17} color={GREEN} />
+                        <CircleCheck size={17} color={GREEN} strokeWidth={2.2} />
                         <Text style={styles.trustNoteText}>{note}</Text>
                       </View>
                     ))}
@@ -856,7 +875,7 @@ export function ListingScreen({ navigation, route }: Props) {
                         />
                       )}
                       <Pressable style={styles.mapExpandButton} onPress={() => setShowMapViewer(true)}>
-                        <Ionicons name="expand-outline" size={17} color="#151b1b" />
+                        <Maximize2 size={17} color="#151b1b" strokeWidth={2} />
                       </Pressable>
                     </View>
                   ) : null}
@@ -865,6 +884,7 @@ export function ListingScreen({ navigation, route }: Props) {
                 {/* ── Opening hours ────────────────────────── */}
                 {shouldShowAvailability ? (
                   <>
+                    <View style={styles.sectionDivider} />
                     <View style={styles.section}>
                       <Text style={styles.sectionTitle}>Opening hours</Text>
                       <View style={styles.availabilityList}>
@@ -955,7 +975,7 @@ export function ListingScreen({ navigation, route }: Props) {
                                 <Text style={styles.reviewDateText}>{reviewDate}</Text>
                               </View>
                               <View style={styles.reviewStarPill}>
-                                <Ionicons name="star" size={11} color="#F4B942" />
+                                <Star size={11} color="#F4B942" fill="#F4B942" strokeWidth={2} />
                                 <Text style={styles.reviewStarPillText}>{review.rating.toFixed(1)}</Text>
                               </View>
                             </View>
@@ -992,10 +1012,14 @@ export function ListingScreen({ navigation, route }: Props) {
                   <View style={styles.ownListingBadge}>
                     <Text style={styles.ownListingText}>This is your listing</Text>
                   </View>
+                ) : showBookingMode ? (
+                  <View style={[styles.ownListingBadge, { backgroundColor: "#edf7f2" }]}>
+                    <Text style={[styles.ownListingText, { color: "#0a8050" }]}>Already booked</Text>
+                  </View>
                 ) : (
                   <SquircleBtn
-                    label={listing.is_available === false || !!showBookingMode ? "Unavailable" : "Book Now"}
-                    disabled={listing.is_available === false || !!showBookingMode}
+                    label={listing.is_available === false ? "Unavailable" : "Book Now"}
+                    disabled={listing.is_available === false}
                     loading={navigatingToBooking}
                     onPress={() => {
                       if (!user) { setShowAuthModal(true); return; }
@@ -1071,7 +1095,7 @@ export function ListingScreen({ navigation, route }: Props) {
               accessibilityLabel="Close"
               hitSlop={10}
             >
-              <Ionicons name="close" size={22} color="#9ca3af" />
+              <X size={22} color="#9ca3af" strokeWidth={2.2} />
             </Pressable>
             <Text style={styles.authModalTitle}>
               <Text style={styles.authModalTitleAccent}>Log in </Text>
@@ -1089,7 +1113,7 @@ export function ListingScreen({ navigation, route }: Props) {
                 <ActivityIndicator size="small" color={GREEN} />
               ) : (
                 <>
-                  <Ionicons name="logo-google" size={20} color={GREEN} style={styles.authModalBtnIcon} />
+                  <Chrome size={20} color={GREEN} strokeWidth={2} style={styles.authModalBtnIcon} />
                   <Text style={styles.authModalOutlineText}>Continue with Google</Text>
                 </>
               )}
@@ -1100,7 +1124,7 @@ export function ListingScreen({ navigation, route }: Props) {
                 openAuthScreen("SignIn");
               }}
             >
-              <Ionicons name="mail" size={19} color={GREEN} style={styles.authModalBtnIcon} />
+              <Mail size={19} color={GREEN} strokeWidth={2.1} style={styles.authModalBtnIcon} />
               <Text style={styles.authModalOutlineText}>Log in with email</Text>
             </Pressable>
             <View style={styles.authModalDivider}>
@@ -1311,9 +1335,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     position: "relative",
     zIndex: 3,
-    borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
     paddingHorizontal: spacing.screenX,
-    paddingTop: 8, paddingBottom: 16,
+    paddingTop: 12, paddingBottom: 20,
     shadowColor: "#111111",
     shadowOffset: { width: 0, height: -1 },
     shadowOpacity: 0.06,
@@ -1321,19 +1345,19 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   sheetHandle: {
-    width: 36, height: 4, borderRadius: 999,
+    width: 40, height: 4, borderRadius: 999,
     backgroundColor: "#D9DCE0",
-    alignSelf: "center", marginBottom: 8,
+    alignSelf: "center", marginBottom: 12,
   },
 
   // Title block
-  titleBlock: { paddingBottom: 14 },
+  titleBlock: { paddingBottom: 16 },
   titleText: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 25, lineHeight: 30, letterSpacing: -0.5,
-    color: FG, marginBottom: 8,
+    fontSize: 26, lineHeight: 31, letterSpacing: -0.5,
+    color: FG, marginBottom: 10,
   },
-  metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6, marginBottom: 4 },
+  metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 6 },
   starPill: { flexDirection: "row", alignItems: "center", gap: 4 },
   starPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
   starPillCount: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED },
@@ -1350,9 +1374,9 @@ const styles = StyleSheet.create({
 
   // ── Price + meta block ─────────────────────────────────────────────────────
   priceBlock: {
-    paddingTop: 4,
+    paddingTop: 6,
     paddingBottom: 16,
-    gap: 3,
+    gap: 4,
   },
   dayRatePill: {
     backgroundColor: GREEN_SOFT,
@@ -1385,10 +1409,10 @@ const styles = StyleSheet.create({
   timeRow: { flexDirection: "row", alignItems: "stretch", gap: 10, marginBottom: 12 },
   timeField: {
     flex: 1,
-    backgroundColor: "#e8eaed",
-    borderRadius: 8,
+    backgroundColor: "#eef2f5",
+    borderRadius: 14,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
   },
   timeFieldHeader: {
     flexDirection: "row",
@@ -1403,7 +1427,7 @@ const styles = StyleSheet.create({
   },
   timeFieldTime: {
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 18, color: FG, letterSpacing: -0.5, lineHeight: 22,
+    fontSize: 19, color: FG, letterSpacing: -0.5, lineHeight: 23,
   },
   timeFieldDate: {
     fontFamily: "PlusJakartaSans-Regular",
@@ -1423,7 +1447,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 16,
     backgroundColor: BG_2,
-    borderRadius: 12,
+    borderRadius: 14,
     marginTop: 8,
     alignItems: "center",
   },
@@ -1441,19 +1465,19 @@ const styles = StyleSheet.create({
   statsStrip: {
     flexDirection: "row",
     backgroundColor: "#ffffff",
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E8EDF2",
+    borderColor: "#E6EBF0",
     overflow: "hidden",
     marginBottom: 4,
-    marginTop: 4,
+    marginTop: 8,
     shadowColor: "#111827",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
     shadowRadius: 18,
     elevation: 4,
   },
-  statsCell: { flex: 1, paddingVertical: 10, paddingHorizontal: 8, alignItems: "center", gap: 2 },
+  statsCell: { flex: 1, paddingVertical: 12, paddingHorizontal: 8, alignItems: "center", gap: 2 },
   statsCellLabel: {
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 9,
     color: FG_SUBTLE, letterSpacing: 1.4, textTransform: "uppercase",
@@ -1580,7 +1604,7 @@ const styles = StyleSheet.create({
   localAreaMapWrap: {
     position: "relative",
     overflow: "hidden",
-    borderRadius: 16,
+    borderRadius: 18,
     backgroundColor: BG_2,
     marginBottom: 0,
     borderWidth: 1,
@@ -1595,7 +1619,7 @@ const styles = StyleSheet.create({
   },
   localAreaButtons: { flexDirection: "row", gap: 10 },
   localAreaButtonSecondary: {
-    flex: 1, minHeight: 40, borderRadius: 8,
+    flex: 1, minHeight: 48, borderRadius: 12,
     backgroundColor: BG_2,
     alignItems: "center", justifyContent: "center", paddingHorizontal: 16,
   },
@@ -1609,7 +1633,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 8,
     backgroundColor: BG_2,
     borderRadius: 999,
-    paddingHorizontal: 14, paddingVertical: 10,
+    paddingHorizontal: 12, paddingVertical: 10,
   },
   featureChipIconWrap: {
     alignItems: "center", justifyContent: "center",
@@ -1653,14 +1677,14 @@ const styles = StyleSheet.create({
   reviewTile: {
     width: 260,
     backgroundColor: "#ffffff",
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: LINE_2,
     padding: 16,
   },
   reviewCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 12, borderWidth: 1, borderColor: LINE_2, padding: 16,
+    borderRadius: 16, borderWidth: 1, borderColor: LINE_2, padding: 16,
   },
   reviewCardTop: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   reviewAvatar: {
@@ -1684,7 +1708,7 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 10,
     backgroundColor: BG_2,
-    borderRadius: 14,
+    borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
@@ -1719,8 +1743,8 @@ const styles = StyleSheet.create({
   },
   authModalSheet: {
     backgroundColor: "#ffffff",
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    paddingHorizontal: 22, paddingTop: 12, paddingBottom: 28,
+    borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28,
     shadowColor: "#111111",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.08, shadowRadius: 20, elevation: 16,

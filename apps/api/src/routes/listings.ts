@@ -250,6 +250,13 @@ const searchSchema = z
     includeUnavailable: z.coerce.boolean().optional().default(false),
     mode: z.enum(["daily", "monthly"]).optional().default("daily"),
     spaceType: z.string().trim().min(2).max(40).optional(),
+    priceMin: z.coerce.number().min(0).max(10000).optional(),
+    priceMax: z.coerce.number().min(0).max(10000).optional(),
+    coveredParking: z.coerce.boolean().optional(),
+    evCharging: z.coerce.boolean().optional(),
+    securityLevel: z.enum(["basic", "gated", "cctv"]).optional(),
+    vehicleSize: z.enum(["motorcycle", "car", "van"]).optional(),
+    instantBook: z.coerce.boolean().optional(),
   })
   .superRefine((value, ctx) => {
     const start = Date.parse(value.from);
@@ -260,6 +267,13 @@ const searchSchema = z
         code: z.ZodIssueCode.custom,
         path: ["to"],
         message: "End time must be after start time",
+      });
+    }
+    if (value.priceMin !== undefined && value.priceMax !== undefined && value.priceMax < value.priceMin) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["priceMax"],
+        message: "Maximum price must be greater than minimum price",
       });
     }
   });

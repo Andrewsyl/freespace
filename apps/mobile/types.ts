@@ -1,7 +1,7 @@
 export type RootStackParamList = {
   Tabs:
     | {
-        screen?: "Search" | "History" | "Profile";
+        screen?: "Search" | "History" | "Favorites" | "Profile";
         params?: Record<string, unknown>;
       }
     | undefined;
@@ -50,7 +50,7 @@ export type RootStackParamList = {
   Settings: undefined;
   Listings: undefined;
   Payments: undefined;
-  Favorites: undefined;
+  Favorites: {} | undefined;
   Support:
     | {
         prefillSubject?: string;

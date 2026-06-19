@@ -13,7 +13,7 @@ import { useGlobalLoading } from "../components/GlobalLoading";
 import { BookingCard } from "../components/BookingCard";
 import { Spinner } from "../components/Spinner";
 import type { RootStackParamList } from "../types";
-import { Ionicons } from "@expo/vector-icons";
+import { CalendarDays, ChevronDown, Map } from "lucide-react-native";
 import { formatDateLabel, formatTimeLabel } from "../utils/dateFormat";
 
 type Props = NativeStackScreenProps<RootStackParamList, "History">;
@@ -479,7 +479,7 @@ export function HistoryScreen({ navigation, route }: Props) {
             }}
           >
             <Text style={styles.mapCtaButtonText}>View on map</Text>
-            <Ionicons name="map-outline" size={14} color="#ffffff" />
+            <Map size={14} color="#ffffff" strokeWidth={2.2} />
           </Pressable>
         </View>
       ) : null}
@@ -597,7 +597,7 @@ export function HistoryScreen({ navigation, route }: Props) {
                         onPress={() => setPastVisibleCount((prev) => prev + 20)}
                       >
                         <Text style={styles.loadMoreText}>Load more</Text>
-                        <Ionicons name="chevron-down" size={14} color={ACCENT} />
+                        <ChevronDown size={14} color={ACCENT} strokeWidth={2.2} />
                       </Pressable>
                     ) : null
                   }
@@ -606,7 +606,7 @@ export function HistoryScreen({ navigation, route }: Props) {
                       {!user ? (
                         <View style={styles.signInCard}>
                           <View style={styles.signInIconWrap}>
-                            <Ionicons name="calendar-outline" size={28} color={ACCENT} />
+                            <CalendarDays size={28} color={ACCENT} strokeWidth={2} />
                           </View>
                           <Text style={styles.signInTitle}>Sign in to view bookings</Text>
                           <Text style={styles.signInBody}>
@@ -726,14 +726,14 @@ const styles = StyleSheet.create({
   // ── Header ───────────────────────────────────────────────────
   header: {
     backgroundColor: BG,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 14,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
   title: {
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 26,
-    lineHeight: 32,
+    fontSize: 28,
+    lineHeight: 34,
     color: ACCENT,
     letterSpacing: -0.6,
   },
@@ -785,15 +785,15 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
     backgroundColor: BG,
-    paddingHorizontal: 20,
-    paddingTop: 4,
+    paddingHorizontal: 16,
+    paddingTop: 2,
     borderBottomWidth: 1,
     borderBottomColor: LINE,
   },
   tab: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 14,
+    paddingVertical: 12,
   },
   tabLabelRow: {
     flexDirection: "row",
@@ -845,7 +845,7 @@ const styles = StyleSheet.create({
   // ── Content ──────────────────────────────────────────────────
   content: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 14,
   },
   monthLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -922,38 +922,38 @@ const styles = StyleSheet.create({
   // ── Sign-in card ─────────────────────────────────────────────
   signInCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
-    padding: 24,
+    borderColor: "#E3E8EE",
+    padding: 20,
     alignItems: "center",
     ...CARD_SHADOW,
   },
   signInIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: "#F0FDF8",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
+    marginBottom: 14,
   },
   signInTitle: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 17,
-    lineHeight: 23,
+    fontSize: 18,
+    lineHeight: 24,
     color: FG,
-    marginBottom: 8,
+    marginBottom: 6,
     textAlign: "center",
     letterSpacing: -0.3,
   },
   signInBody: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 15,
+    lineHeight: 22,
     color: MUTED,
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: 18,
   },
 
   // ── Load more ────────────────────────────────────────────────
@@ -963,11 +963,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     backgroundColor: "#ffffff",
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
-    marginTop: 14,
-    paddingVertical: 13,
+    borderColor: "#E3E8EE",
+    marginTop: 12,
+    paddingVertical: 14,
     ...CARD_SHADOW,
   },
   loadMoreText: {
@@ -979,12 +979,12 @@ const styles = StyleSheet.create({
   // ── Empty state ──────────────────────────────────────────────
   emptyState: {
     alignItems: "center",
-    paddingTop: 64,
-    paddingHorizontal: 32,
+    paddingTop: 56,
+    paddingHorizontal: 24,
   },
   emptyImage: {
-    width: 200,
-    height: 200,
+    width: 188,
+    height: 188,
     marginBottom: 8,
   },
   emptyIconWrap: {
@@ -998,8 +998,8 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 20,
-    lineHeight: 26,
+    fontSize: 21,
+    lineHeight: 27,
     color: FG,
     marginBottom: 8,
     textAlign: "center",
@@ -1007,11 +1007,11 @@ const styles = StyleSheet.create({
   },
   emptyBody: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 23,
     color: MUTED,
     textAlign: "center",
-    marginBottom: 24,
+    marginBottom: 22,
   },
 
   // ── Success overlay ──────────────────────────────────────────

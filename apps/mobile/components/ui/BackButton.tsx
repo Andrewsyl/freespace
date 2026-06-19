@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, ViewStyle } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { ArrowLeft } from "lucide-react-native";
 import { colors } from "../../styles/theme";
 
 type BackButtonProps = {
@@ -10,7 +10,7 @@ type BackButtonProps = {
 export function BackButton({ onPress, style }: BackButtonProps) {
   return (
     <Pressable style={[styles.button, style]} onPress={onPress}>
-      <Ionicons name="arrow-back" size={20} color={colors.text} />
+      <ArrowLeft size={20} color={colors.text} strokeWidth={2.2} />
     </Pressable>
   );
 }

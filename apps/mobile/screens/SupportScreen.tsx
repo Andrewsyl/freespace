@@ -2,8 +2,7 @@ import { useRef, useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Ionicons } from "@expo/vector-icons";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, ChevronDown } from "lucide-react-native";
 import { sendSupportMessage } from "../api";
 import { useAuth } from "../auth";
 import { useToastOnMessage } from "../components/GlobalToast";
@@ -163,7 +162,7 @@ export function SupportScreen({ navigation, route }: Props) {
                   </Text>
                 </View>
                 <View style={styles.selectChevronShell}>
-                  <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
+                  <ChevronDown size={18} color={colors.textMuted} strokeWidth={2.2} />
                 </View>
               </Pressable>
             </View>
@@ -224,11 +223,11 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 14,
   },
   navBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 20, paddingVertical: 12,
+    paddingHorizontal: 16, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: "#E5E7EB",
     backgroundColor: "#ffffff",
   },
@@ -239,7 +238,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E3E8EE",
     paddingHorizontal: 18,
     paddingTop: 18,
     paddingBottom: 22,
@@ -250,7 +249,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   field: {
-    marginBottom: 18,
+    marginBottom: 20,
   },
   label: {
     color: "#888888",
@@ -269,9 +268,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBg,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 18,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 13,
+    paddingVertical: 14,
     flexDirection: "row",
     justifyContent: "space-between",
   },
@@ -316,7 +315,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     backgroundColor: colors.cardBg,
     borderColor: colors.border,
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 12,
     ...cardShadow,
@@ -331,7 +330,7 @@ const styles = StyleSheet.create({
   },
   optionRow: {
     borderRadius: 14,
-    paddingVertical: 11,
+    paddingVertical: 12,
     paddingHorizontal: 12,
   },
   optionRowPressed: {
@@ -340,18 +339,18 @@ const styles = StyleSheet.create({
   optionText: {
     color: colors.text,
     fontFamily: "PlusJakartaSans-Medium",
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "600",
   },
   textArea: {
     ...textStyles.body,
     color: colors.text,
-    minHeight: 140,
+    minHeight: 150,
     paddingHorizontal: 0,
     paddingVertical: 12,
   },
   submitButton: {
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
   },
   gatedWrap: {
     flex: 1,
@@ -363,7 +362,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E3E8EE",
     paddingHorizontal: 22,
     paddingVertical: 24,
     shadowColor: "#000",
@@ -375,15 +374,15 @@ const styles = StyleSheet.create({
   gatedTitle: {
     color: "#111827",
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 24,
+    fontSize: 25,
     letterSpacing: -0.8,
-    lineHeight: 30,
+    lineHeight: 31,
   },
   gatedBody: {
     color: "#4B5563",
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 15,
+    lineHeight: 22,
     marginTop: 10,
     marginBottom: 20,
   },

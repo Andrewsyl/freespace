@@ -12,7 +12,7 @@ const STRIPE_PK = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 // whole payment sheet. So it stays OFF until verified on a fresh native build —
 // flip this to true once a real Android build confirms Google Pay works, then
 // it ships. While false, `googlePayConfig` is undefined and the sheet ignores it.
-export const GOOGLE_PAY_ENABLED = true;
+export const GOOGLE_PAY_ENABLED = false;
 
 export const googlePayConfig = GOOGLE_PAY_ENABLED
   ? ({

@@ -2,7 +2,25 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useEffect, useRef, useState } from "react";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Cctv, CircleCheck, FileText, Hash, Info, Key, Lock, Unlock, Zap, Warehouse, Sun, ShieldCheck, ArrowUpDown, Accessibility, Clock, Bike, AlignHorizontalDistributeCenter } from "lucide-react-native";
+import {
+  Accessibility,
+  ArrowUpDown,
+  BatteryCharging,
+  Bike,
+  Cctv,
+  CircleCheck,
+  Clock,
+  Fence,
+  FileText,
+  Hash,
+  Info,
+  KeyRound,
+  Lightbulb,
+  Lock,
+  Maximize2,
+  Unlock,
+  Warehouse,
+} from "lucide-react-native";
 import { TextInput as AppTextInput } from "../../components/ui";
 import { FlowHeader } from "./FlowHeader";
 import { useListingFlow } from "./context";
@@ -33,22 +51,23 @@ function featureIcon(name: string, active: boolean) {
   const props = { size: 20, color, strokeWidth: 1.8 };
   switch (name) {
     case "CCTV":               return <Cctv {...props} />;
-    case "EV charging":        return <Zap {...props} />;
+    case "EV charging":        return <BatteryCharging {...props} />;
     case "Sheltered":          return <Warehouse {...props} />;
-    case "Well lit":           return <Sun {...props} />;
-    case "Gated access":       return <ShieldCheck {...props} />;
+    case "Well lit":           return <Lightbulb {...props} />;
+    case "Gated access":       return <Fence {...props} />;
     case "Single entry":       return <Lock {...props} />;
-    case "Height-friendly":    return <ArrowUpDown {...props} />;
+    case "Height-friendly":
+    case "Height restricted":  return <ArrowUpDown {...props} />;
     case "Disabled access":    return <Accessibility {...props} />;
     case "24/7 access":        return <Clock {...props} />;
     case "Motorbike friendly": return <Bike {...props} />;
-    case "Wide bay":           return <AlignHorizontalDistributeCenter {...props} />;
-    default:                   return <ShieldCheck {...props} />;
+    case "Wide bay":           return <Maximize2 {...props} />;
+    default:                   return <Warehouse {...props} />;
   }
 }
 
 const PRIMARY_FEATURES = ["CCTV", "EV charging", "Sheltered", "Well lit", "Gated access"];
-const EXTRA_FEATURES   = ["Single entry", "Height-friendly", "Disabled access", "24/7 access", "Motorbike friendly", "Wide bay"];
+const EXTRA_FEATURES   = ["Single entry", "Height restricted", "Disabled access", "24/7 access", "Motorbike friendly", "Wide bay"];
 
 const ACCESS_CHOICES = [
   {
@@ -56,7 +75,7 @@ const ACCESS_CHOICES = [
     label: "Key or security fob",
     description: "You'll share key collection details with drivers",
     optionValue: "Key or security fob" as const,
-    icon: (active: boolean) => <Key size={20} color={active ? ACCENT : "#6b7280"} strokeWidth={1.8} />,
+    icon: (active: boolean) => <KeyRound size={20} color={active ? ACCENT : "#6b7280"} strokeWidth={1.8} />,
   },
   {
     id: "pin_code" as const,
@@ -197,7 +216,10 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
                       <View style={[styles.chipIconWrap, active && styles.chipIconWrapActive]}>
                         {featureIcon(option, active)}
                       </View>
-                      <Text style={[styles.chipLabel, active && styles.chipLabelActive]} numberOfLines={1}>
+                      <Text
+                        style={[styles.chipLabel, active && styles.chipLabelActive]}
+                        numberOfLines={1}
+                      >
                         {option}
                       </Text>
                       {active ? (
@@ -452,16 +474,19 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    width: "48%",
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     borderWidth: 1,
     borderColor: "#E2E8ED",
     borderRadius: 12,
+    minHeight: 60,
     paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingVertical: 12,
+    paddingRight: 28,
     backgroundColor: "#F8FAFC",
+    position: "relative",
   },
   chipActive: {
     borderColor: ACCENT,
@@ -485,12 +510,15 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     letterSpacing: -0.1,
+    lineHeight: 17,
   },
   chipLabelActive: {
     color: ACCENT,
   },
   chipCheck: {
-    flexShrink: 0,
+    position: "absolute",
+    right: 8,
+    top: 8,
   },
 
   showMoreBtn: {

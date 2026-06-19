@@ -1,14 +1,21 @@
 import type { Metadata, Viewport } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../components/AuthProvider";
 import { CookieBanner } from "../components/CookieBanner";
-import { GoogleAuthProvider } from "../components/GoogleAuthProvider";
 import { AppStatusProvider } from "../components/AppStatusProvider";
 import { ClientTelemetry } from "../components/ClientTelemetry";
 import { PostHogProvider } from "../components/PostHogProvider";
 import { ToastProvider } from "../components/Toaster";
 import Script from "next/script";
 import { webEnv } from "../lib/env";
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-plus-jakarta-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "FreeSpace",
@@ -20,7 +27,6 @@ export const metadata: Metadata = {
       { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
     ],
-    shortcut: "/favicon.ico",
     apple: "/apple-touch-icon.png",
   },
 };
@@ -42,24 +48,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={plusJakartaSans.variable}>
       <body className="min-h-screen text-slate-900" data-build-sha={buildSha}>
         <Script
           src={`https://maps.googleapis.com/maps/api/js?key=${webEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
-          strategy="beforeInteractive"
+          strategy="afterInteractive"
         />
         <PostHogProvider>
-          <GoogleAuthProvider>
-            <AppStatusProvider>
-              <AuthProvider>
-                <ToastProvider>
-                  <ClientTelemetry />
-                  <main className="px-0 py-0 sm:px-0 sm:py-0 lg:px-0 lg:py-0">{children}</main>
-                  <CookieBanner />
-                </ToastProvider>
-              </AuthProvider>
-            </AppStatusProvider>
-          </GoogleAuthProvider>
+          <AppStatusProvider>
+            <AuthProvider>
+              <ToastProvider>
+                <ClientTelemetry />
+                <main className="px-0 py-0 sm:px-0 sm:py-0 lg:px-0 lg:py-0">{children}</main>
+                <CookieBanner />
+              </ToastProvider>
+            </AuthProvider>
+          </AppStatusProvider>
         </PostHogProvider>
       </body>
     </html>

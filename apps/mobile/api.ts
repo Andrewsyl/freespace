@@ -131,6 +131,7 @@ export async function searchListings(params: SearchParams) {
       space.distance_m ??
       (typeof space.distanceKm === "number" ? Math.round(space.distanceKm * 1000) : null),
     image_urls: space.image_urls ?? space.imageUrls ?? null,
+    capacity: space.capacity ?? null,
   }));
 }
 

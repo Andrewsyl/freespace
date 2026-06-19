@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -6,17 +6,20 @@ import {
   Easing,
   Image,
   KeyboardAvoidingView,
+  LayoutChangeEvent,
   Linking,
   Modal,
+  PanResponder,
   Platform,
   Pressable,
   ScrollView,
-  Switch,
   StyleSheet,
   Text,
   TextInput,
   useWindowDimensions,
   View,
+  type GestureResponderEvent,
+  type PanResponderGestureState,
 } from "react-native";
 import LottieView from "lottie-react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -37,7 +40,30 @@ import { useGlobalLoading } from "../components/GlobalLoading";
 import { getListing, searchListings } from "../api";
 import { trackEvent } from "../analytics";
 import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
-import { MapPin as MapPinIcon } from "lucide-react-native";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BatteryCharging,
+  Cctv,
+  ChevronRight,
+  CircleX,
+  Clock,
+  Heart,
+  House,
+  Info,
+  LocateFixed,
+  Lock,
+  MapPin as MapPinIcon,
+  RefreshCw,
+  Route,
+  Search,
+  SlidersHorizontal,
+  SquareParking,
+  Warehouse,
+  X,
+  Zap,
+  type LucideIcon,
+} from "lucide-react-native";
 import { logError, logInfo } from "../logger";
 import type {
   ListingSummary,
@@ -46,7 +72,6 @@ import type {
   SecurityLevel,
   VehicleSize,
 } from "../types";
-import { Ionicons } from "@expo/vector-icons";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Search">;
 
@@ -100,6 +125,315 @@ type SearchPinCoordinate = {
   latitude: number;
   longitude: number;
 };
+
+const PRICE_SLIDER_MIN = 0;
+const PRICE_SLIDER_MAX = 60;
+const PRICE_SLIDER_STEP = 5;
+const PRICE_HISTOGRAM = [4, 6, 8, 12, 18, 26, 34, 42, 48, 44, 38, 31, 28, 24, 20, 16, 13, 10];
+
+const VEHICLE_SIZE_OPTIONS: Array<{ label: string; value: VehicleSize | "" }> = [
+  { label: "Any", value: "" },
+  { label: "Motorcycle", value: "motorcycle" },
+  { label: "Car", value: "car" },
+  { label: "Van", value: "van" },
+];
+
+const SPACE_TYPE_OPTIONS: Array<{ label: string; value: string; icon: LucideIcon }> = [
+  { label: "Driveway", value: "Private Driveway", icon: House },
+  { label: "Garage", value: "Garage", icon: Warehouse },
+  { label: "Car park", value: "Car park", icon: SquareParking },
+  { label: "Private road", value: "Private road", icon: Route },
+];
+
+type FilterChipProps = {
+  label: string;
+  selected?: boolean;
+  onPress: () => void;
+  icon?: LucideIcon;
+  small?: boolean;
+};
+
+function FilterChip({ label, selected = false, onPress, icon, small = false }: FilterChipProps) {
+  const Icon = icon;
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.filterChipButton,
+        small && styles.filterChipButtonSmall,
+        selected && styles.filterChipButtonActive,
+        pressed && styles.filterChipButtonPressed,
+      ]}
+    >
+      {Icon ? (
+        <Icon
+          size={14}
+          color={selected ? "#ffffff" : "#0f172a"}
+          strokeWidth={2.1}
+          style={{ marginRight: 6 }}
+        />
+      ) : null}
+      <Text style={[styles.filterChipButtonText, selected && styles.filterChipButtonTextActive]}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function FilterSection({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+}) {
+  return (
+    <View style={styles.filterSection}>
+      <View style={styles.filterSectionHeader}>
+        <Text style={styles.filterSectionTitle}>{title}</Text>
+        {subtitle ? <Text style={styles.filterSectionSubtitle}>{subtitle}</Text> : null}
+      </View>
+      {children}
+    </View>
+  );
+}
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+function parsePriceRangeValue(value: string, fallback: number) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? clamp(parsed, PRICE_SLIDER_MIN, PRICE_SLIDER_MAX) : fallback;
+}
+
+function snapPrice(value: number) {
+  return clamp(
+    Math.round(value / PRICE_SLIDER_STEP) * PRICE_SLIDER_STEP,
+    PRICE_SLIDER_MIN,
+    PRICE_SLIDER_MAX
+  );
+}
+
+function priceValueToFilter(value: number, edge: "min" | "max") {
+  if (edge === "min" && value <= PRICE_SLIDER_MIN) return "";
+  if (edge === "max" && value >= PRICE_SLIDER_MAX) return "";
+  return String(value);
+}
+
+function listingSearchText(listing: ListingSummary) {
+  return [
+    listing.title,
+    listing.address,
+    listing.availability_text,
+    listing.vehicle_size_suitability,
+    listing.vehicleSizeSuitability,
+    ...(listing.amenities ?? []),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function matchesSpaceType(listing: ListingSummary, spaceType?: string) {
+  if (!spaceType) return true;
+  const text = listingSearchText(listing);
+  const value = spaceType.toLowerCase();
+  if (value.includes("driveway")) return text.includes("driveway");
+  if (value.includes("garage")) return text.includes("garage");
+  if (value.includes("car park") || value.includes("carpark")) {
+    return text.includes("car park") || text.includes("carpark") || text.includes("lot");
+  }
+  if (value.includes("road")) return text.includes("road") || text.includes("street");
+  return text.includes(value);
+}
+
+function matchesSearchFilters(listing: ListingSummary, params: SearchParams) {
+  const price = Number(listing.price_per_day);
+  const min = params.priceMin ? Number(params.priceMin) : null;
+  const max = params.priceMax ? Number(params.priceMax) : null;
+  const text = listingSearchText(listing);
+  const amenities = (listing.amenities ?? []).map((amenity) => amenity.toLowerCase());
+
+  if (min !== null && Number.isFinite(min) && Number.isFinite(price) && price < min) return false;
+  if (max !== null && Number.isFinite(max) && Number.isFinite(price) && price > max) return false;
+  if (!matchesSpaceType(listing, params.spaceType)) return false;
+  if (params.coveredParking && !amenities.some((amenity) => ["covered", "garage", "indoor"].includes(amenity)) && !text.includes("covered") && !text.includes("garage")) return false;
+  if (params.evCharging && !amenities.some((amenity) => ["ev_charging", "ev charging", "ev"].includes(amenity)) && !text.includes("ev charging")) return false;
+  if (params.securityLevel === "cctv" && !amenities.includes("cctv") && !text.includes("cctv")) return false;
+  if (params.securityLevel === "gated" && !amenities.some((amenity) => ["gated", "security"].includes(amenity)) && !text.includes("gated") && !text.includes("secure")) return false;
+  if (params.vehicleSize === "van") {
+    const capacity = Number(listing.capacity ?? 1);
+    if ((!Number.isFinite(capacity) || capacity < 2) && !text.includes("van")) return false;
+  }
+  if (params.vehicleSize === "motorcycle" && text.includes("van only")) return false;
+  if (params.instantBook && listing.is_available === false) return false;
+
+  return true;
+}
+
+function PriceRangeSlider({
+  minValue,
+  maxValue,
+  onMinChange,
+  onMaxChange,
+}: {
+  minValue: string;
+  maxValue: string;
+  onMinChange: (value: string) => void;
+  onMaxChange: (value: string) => void;
+}) {
+  const [trackWidth, setTrackWidth] = useState(0);
+  const latestRangeRef = useRef({ min: PRICE_SLIDER_MIN, max: PRICE_SLIDER_MAX });
+  const dragStartRef = useRef({ min: PRICE_SLIDER_MIN, max: PRICE_SLIDER_MAX });
+
+  const numericMin = parsePriceRangeValue(minValue, PRICE_SLIDER_MIN);
+  const numericMax = parsePriceRangeValue(maxValue, PRICE_SLIDER_MAX);
+  const safeMin = clamp(
+    Math.min(numericMin, numericMax - PRICE_SLIDER_STEP),
+    PRICE_SLIDER_MIN,
+    PRICE_SLIDER_MAX - PRICE_SLIDER_STEP
+  );
+  const safeMax = clamp(
+    Math.max(numericMax, safeMin + PRICE_SLIDER_STEP),
+    safeMin + PRICE_SLIDER_STEP,
+    PRICE_SLIDER_MAX
+  );
+
+  useEffect(() => {
+    latestRangeRef.current = { min: safeMin, max: safeMax };
+  }, [safeMin, safeMax]);
+
+  const valueToX = useCallback(
+    (value: number) => {
+      if (!trackWidth) return 0;
+      return ((value - PRICE_SLIDER_MIN) / (PRICE_SLIDER_MAX - PRICE_SLIDER_MIN)) * trackWidth;
+    },
+    [trackWidth]
+  );
+
+  const deltaToValue = useCallback(
+    (deltaX: number) => {
+      if (!trackWidth) return 0;
+      return (deltaX / trackWidth) * (PRICE_SLIDER_MAX - PRICE_SLIDER_MIN);
+    },
+    [trackWidth]
+  );
+
+  const updateNearestHandle = useCallback(
+    (x: number) => {
+      if (!trackWidth) return;
+      const tappedValue = snapPrice(
+        PRICE_SLIDER_MIN +
+          (clamp(x, 0, trackWidth) / trackWidth) * (PRICE_SLIDER_MAX - PRICE_SLIDER_MIN)
+      );
+      const distanceToMin = Math.abs(tappedValue - safeMin);
+      const distanceToMax = Math.abs(tappedValue - safeMax);
+
+      if (distanceToMin <= distanceToMax) {
+        const nextMin = clamp(tappedValue, PRICE_SLIDER_MIN, safeMax - PRICE_SLIDER_STEP);
+        onMinChange(priceValueToFilter(nextMin, "min"));
+        return;
+      }
+
+      const nextMax = clamp(tappedValue, safeMin + PRICE_SLIDER_STEP, PRICE_SLIDER_MAX);
+      onMaxChange(priceValueToFilter(nextMax, "max"));
+    },
+    [onMaxChange, onMinChange, safeMax, safeMin, trackWidth]
+  );
+
+  const createHandleResponder = useCallback(
+    (edge: "min" | "max") =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_event: GestureResponderEvent, gesture: PanResponderGestureState) =>
+          Math.abs(gesture.dx) > 2,
+        onPanResponderGrant: () => {
+          dragStartRef.current = latestRangeRef.current;
+        },
+        onPanResponderMove: (_event: GestureResponderEvent, gesture: PanResponderGestureState) => {
+          const start = dragStartRef.current;
+          const delta = deltaToValue(gesture.dx);
+          if (edge === "min") {
+            const next = snapPrice(clamp(start.min + delta, PRICE_SLIDER_MIN, start.max - PRICE_SLIDER_STEP));
+            onMinChange(priceValueToFilter(next, "min"));
+            return;
+          }
+          const next = snapPrice(clamp(start.max + delta, start.min + PRICE_SLIDER_STEP, PRICE_SLIDER_MAX));
+          onMaxChange(priceValueToFilter(next, "max"));
+        },
+      }),
+    [deltaToValue, onMaxChange, onMinChange]
+  );
+
+  const minResponder = useMemo(() => createHandleResponder("min"), [createHandleResponder]);
+  const maxResponder = useMemo(() => createHandleResponder("max"), [createHandleResponder]);
+
+  const minX = valueToX(safeMin);
+  const maxX = valueToX(safeMax);
+  const selectedLeft = Math.min(minX, maxX);
+  const selectedWidth = Math.max(0, maxX - minX);
+  const minLabel = safeMin <= PRICE_SLIDER_MIN ? `€${PRICE_SLIDER_MIN}` : `€${safeMin}`;
+  const maxLabel = safeMax >= PRICE_SLIDER_MAX ? `€${PRICE_SLIDER_MAX}+` : `€${safeMax}`;
+
+  return (
+    <View style={styles.priceSlider}>
+      <View
+        style={styles.priceHistogram}
+        onLayout={(event: LayoutChangeEvent) => setTrackWidth(event.nativeEvent.layout.width)}
+        onStartShouldSetResponder={() => true}
+        onResponderRelease={(event) => updateNearestHandle(event.nativeEvent.locationX)}
+      >
+        {PRICE_HISTOGRAM.map((height, index) => {
+          const barValue =
+            PRICE_SLIDER_MIN +
+            (index / Math.max(1, PRICE_HISTOGRAM.length - 1)) *
+              (PRICE_SLIDER_MAX - PRICE_SLIDER_MIN);
+          const selected = barValue >= safeMin && barValue <= safeMax;
+          return (
+            <View
+              key={`price-bar-${index}`}
+              style={[
+                styles.priceHistogramBar,
+                { height },
+                selected && styles.priceHistogramBarSelected,
+              ]}
+            />
+          );
+        })}
+        {trackWidth > 0 ? (
+          <>
+            <View style={styles.priceTrack} />
+            <View
+              style={[
+                styles.priceTrackSelected,
+                { left: selectedLeft, width: selectedWidth },
+              ]}
+            />
+            <View
+              style={[styles.priceHandle, { left: minX - 20 }]}
+              {...minResponder.panHandlers}
+            />
+            <View
+              style={[styles.priceHandle, { left: maxX - 20 }]}
+              {...maxResponder.panHandlers}
+            />
+          </>
+        ) : null}
+      </View>
+      <View style={styles.priceValueRow}>
+        <View style={styles.priceValueGroup}>
+          <Text style={styles.priceValueLabel}>Minimum</Text>
+          <Text style={styles.priceValuePill}>{minLabel}</Text>
+        </View>
+        <View style={[styles.priceValueGroup, styles.priceValueGroupRight]}>
+          <Text style={styles.priceValueLabel}>Maximum</Text>
+          <Text style={styles.priceValuePill}>{maxLabel}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
 
 const pad2 = (value: number) => value.toString().padStart(2, "0");
 const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -370,8 +704,11 @@ export function SearchScreen({ navigation }: Props) {
   // suggestions for a newer query.
   const autocompleteSeqRef = useRef(0);
   const historyLoadedRef = useRef(false);
+  const filtersLoadedRef = useRef(false);
+  const [filtersReady, setFiltersReady] = useState(false);
   const HISTORY_KEY = "searchHistory";
   const MAP_REGION_KEY = "search.mapRegion";
+  const FILTERS_KEY = "search.filters";
 
   const searchAreaVisible = showSearchArea && !!pendingSearch;
 
@@ -643,13 +980,15 @@ export function SearchScreen({ navigation }: Props) {
         const carryOver = resultsRef.current.filter(
           (listing) => !nextIds.has(listing.id) && isWithinRadius(listing, center, radiusM)
         );
-        nextResultsSnapshot = [...spaces, ...carryOver];
+        nextResultsSnapshot = [...spaces, ...carryOver].filter((listing) =>
+          matchesSearchFilters(listing, params)
+        );
         // If preserving selection, keep the selected listing in results so the card stays visible
         if (preserveSelection) {
           setSelectedId((prev) => {
             if (prev && !nextResultsSnapshot!.some((l) => l.id === prev)) {
               const kept = resultsRef.current.find((l) => l.id === prev);
-              if (kept) nextResultsSnapshot!.push(kept);
+              if (kept && matchesSearchFilters(kept, params)) nextResultsSnapshot!.push(kept);
             }
             return prev;
           });
@@ -1300,6 +1639,43 @@ export function SearchScreen({ navigation }: Props) {
     })();
   }, []);
 
+  useEffect(() => {
+    if (filtersLoadedRef.current) return;
+    filtersLoadedRef.current = true;
+    void (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(FILTERS_KEY);
+        if (raw) {
+          const saved = JSON.parse(raw) as Partial<{
+            priceMin: string; priceMax: string;
+            securityLevel: SecurityLevel | ""; vehicleSize: VehicleSize | "";
+            spaceType: string; coveredParking: boolean; evCharging: boolean; instantBook: boolean;
+          }>;
+          if (saved.priceMin) setPriceMin(saved.priceMin);
+          if (saved.priceMax) setPriceMax(saved.priceMax);
+          if (saved.securityLevel) setSecurityLevel(saved.securityLevel);
+          if (saved.vehicleSize) setVehicleSize(saved.vehicleSize);
+          if (saved.spaceType) setSpaceType(saved.spaceType);
+          if (typeof saved.coveredParking === "boolean") setCoveredParking(saved.coveredParking);
+          if (typeof saved.evCharging === "boolean") setEvCharging(saved.evCharging);
+          if (typeof saved.instantBook === "boolean") setInstantBook(saved.instantBook);
+        }
+      } catch {
+        // Ignore filter load errors.
+      } finally {
+        setFiltersReady(true);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!filtersReady) return;
+    void AsyncStorage.setItem(
+      FILTERS_KEY,
+      JSON.stringify({ priceMin, priceMax, securityLevel, vehicleSize, spaceType, coveredParking, evCharging, instantBook })
+    );
+  }, [filtersReady, priceMin, priceMax, securityLevel, vehicleSize, spaceType, coveredParking, evCharging, instantBook]);
+
   const addToHistory = (item: SearchHistoryItem) => {
     setSearchHistory((prev) => {
       const next = [
@@ -1445,7 +1821,44 @@ export function SearchScreen({ navigation }: Props) {
     setCoveredParking(false);
     setEvCharging(false);
     setInstantBook(false);
+    void AsyncStorage.removeItem(FILTERS_KEY);
   };
+
+  const clearFiltersAndSearch = () => {
+    clearFilters();
+    void runSearch({
+      priceMin: undefined,
+      priceMax: undefined,
+      securityLevel: undefined,
+      vehicleSize: undefined,
+      spaceType: undefined,
+      coveredParking: undefined,
+      evCharging: undefined,
+      instantBook: undefined,
+    });
+  };
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (priceMin.trim()) count += 1;
+    if (priceMax.trim()) count += 1;
+    if (securityLevel) count += 1;
+    if (vehicleSize) count += 1;
+    if (spaceType) count += 1;
+    if (coveredParking) count += 1;
+    if (evCharging) count += 1;
+    if (instantBook) count += 1;
+    return count;
+  }, [
+    priceMin,
+    priceMax,
+    securityLevel,
+    vehicleSize,
+    spaceType,
+    coveredParking,
+    evCharging,
+    instantBook,
+  ]);
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
@@ -1504,13 +1917,13 @@ export function SearchScreen({ navigation }: Props) {
           {/* ── Location card ───────────────────────── */}
           <View style={styles.searchCard}>
             <Pressable style={styles.searchCardLocation} onPress={() => setSearchSheetOpen(true)} testID="search-bar">
-              <Ionicons name="location-outline" size={17} color="#0a8050" />
+              <MapPinIcon size={17} color="#0a8050" strokeWidth={2.2} />
               <Text style={[styles.searchCardLocationText, !addressQuery && styles.searchCardPlaceholder]} numberOfLines={1}>
                 {addressQuery || "Where to?"}
               </Text>
               {addressQuery ? (
                 <Pressable onPress={() => { setAddressQuery(""); setAddressSuggestions([]); }} hitSlop={8}>
-                  <Ionicons name="close-circle" size={16} color="#c0c8d2" />
+                  <CircleX size={16} color="#c0c8d2" strokeWidth={2.1} />
                 </Pressable>
               ) : null}
             </Pressable>
@@ -1526,7 +1939,7 @@ export function SearchScreen({ navigation }: Props) {
                 <Text style={styles.timeStripDate}>{formatDateLabel(startAt)}</Text>
               </View>
             </Pressable>
-            <Ionicons name="arrow-forward" size={12} color="#0a8050" style={{ marginHorizontal: 8 }} />
+            <ArrowRight size={12} color="#0a8050" strokeWidth={2.4} style={{ marginHorizontal: 8 }} />
             <Pressable style={styles.timeStripBtn} onPress={() => openPicker("end")} android_ripple={null}>
               <Text style={styles.timeStripLabel}>Leave</Text>
               <View style={styles.timeStripInner}>
@@ -1540,14 +1953,25 @@ export function SearchScreen({ navigation }: Props) {
           {/* ── Filter + clear row ──────────────────── */}
           <View style={styles.searchCardRow}>
             <Pressable
-              style={[styles.filterChip, (priceMin || priceMax || securityLevel || vehicleSize || spaceType || coveredParking || evCharging || instantBook) && styles.filterChipActive]}
+              style={[styles.filterChip, activeFilterCount > 0 && styles.filterChipActive]}
               onPress={() => setShowFilters((prev) => !prev)}
             >
-              <Ionicons name="options-outline" size={13} color={(priceMin || priceMax || securityLevel || vehicleSize || spaceType || coveredParking || evCharging || instantBook) ? "#ffffff" : "#374151"} />
-              <Text style={[(priceMin || priceMax || securityLevel || vehicleSize || spaceType || coveredParking || evCharging || instantBook) ? styles.filterChipTextActive : styles.filterChipText]}>Filters</Text>
+              <SlidersHorizontal
+                size={13}
+                color={activeFilterCount > 0 ? "#ffffff" : "#374151"}
+                strokeWidth={2.2}
+              />
+              <Text style={[activeFilterCount > 0 ? styles.filterChipTextActive : styles.filterChipText]}>
+                Filters
+              </Text>
+              {activeFilterCount > 0 ? (
+                <View style={styles.filterChipBadge}>
+                  <Text style={styles.filterChipBadgeText}>{activeFilterCount}</Text>
+                </View>
+              ) : null}
             </Pressable>
-            {(priceMin || priceMax || securityLevel || vehicleSize || spaceType || coveredParking || evCharging || instantBook) ? (
-              <Pressable style={styles.clearChip} onPress={clearFilters}>
+            {activeFilterCount > 0 ? (
+              <Pressable style={styles.clearChip} onPress={clearFiltersAndSearch}>
                 <Text style={styles.clearChipText}>Clear</Text>
               </Pressable>
             ) : null}
@@ -1604,7 +2028,7 @@ export function SearchScreen({ navigation }: Props) {
                 );
               }}
             >
-              <Ionicons name="refresh" size={14} color="#0a8050" />
+              <RefreshCw size={14} color="#0a8050" strokeWidth={2.2} />
               <Text style={styles.searchAreaPillText}>Search this area</Text>
             </Pressable>
           </Animated.View>
@@ -1620,7 +2044,7 @@ export function SearchScreen({ navigation }: Props) {
             ]}
           >
             <View style={styles.emptyNoticePill}>
-              <Ionicons name="information-circle-outline" size={15} color="#6b7280" />
+              <Info size={15} color="#6b7280" strokeWidth={2.2} />
               <Text style={styles.emptyNoticeText}>{emptyNotice}</Text>
             </View>
           </Animated.View>
@@ -1653,126 +2077,145 @@ export function SearchScreen({ navigation }: Props) {
             <Animated.View style={[styles.filtersBackdrop, { opacity: backdropOpacity }]}>
               <Pressable style={StyleSheet.absoluteFillObject} onPress={closeFilters} />
             </Animated.View>
-            <Animated.View
-              style={[styles.filtersPanel, { transform: [{ translateY: slideAnim }] }]}
+            <KeyboardAvoidingView
+              style={styles.filtersSheetHost}
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
             >
-              <ScrollView
-                contentContainerStyle={styles.filtersContent}
-                showsVerticalScrollIndicator={false}
+              <Animated.View
+                style={[
+                  styles.filtersPanel,
+                  {
+                    height: Math.min(windowHeight * 0.88, 760),
+                    paddingBottom: Math.max(14, insets.bottom + 10),
+                    transform: [{ translateY: slideAnim }],
+                  },
+                ]}
               >
-              <View style={styles.filtersHeaderRow}>
-                <Text style={styles.filtersTitle}>Filters</Text>
-                <Pressable style={styles.filtersClose} onPress={closeFilters}>
-                  <Text style={styles.filtersCloseText}>Close</Text>
-                </Pressable>
-              </View>
-              <Text style={styles.filtersSubtitle}>Refine results</Text>
-              <View style={styles.filtersSection}>
-                <Text style={styles.sectionLabel}>Price</Text>
-                <View style={styles.row}>
-                  <View style={styles.field}>
-                    <Text style={styles.label}>Min € / day</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={priceMin}
-                      onChangeText={setPriceMin}
-                      keyboardType="numeric"
-                      placeholder="10"
-                      placeholderTextColor="#98a2b3"
+                <View style={styles.filtersTopBar}>
+                  <Pressable style={styles.filtersIconButton} onPress={closeFilters} hitSlop={8}>
+                    <X size={22} color="#111827" strokeWidth={2.2} />
+                  </Pressable>
+                  <Text style={styles.filtersTitle}>Filters</Text>
+                  <Pressable
+                    style={[styles.filtersClearAction, activeFilterCount === 0 && styles.filtersClearActionDisabled]}
+                    onPress={clearFiltersAndSearch}
+                    disabled={activeFilterCount === 0}
+                  >
+                    <Text style={styles.filtersHeaderActionText}>
+                      Clear
+                    </Text>
+                  </Pressable>
+                </View>
+
+                <ScrollView
+                  style={styles.filtersScroll}
+                  contentContainerStyle={styles.filtersContent}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                >
+                  <FilterSection title="Popular">
+                    <View style={styles.filterChipGrid}>
+                      <FilterChip
+                        label="Instant"
+                        icon={Zap}
+                        selected={instantBook}
+                        onPress={() => setInstantBook((prev) => !prev)}
+                      />
+                      <FilterChip
+                        label="Covered"
+                        icon={House}
+                        selected={coveredParking}
+                        onPress={() => setCoveredParking((prev) => !prev)}
+                      />
+                      <FilterChip
+                        label="EV charging"
+                        icon={BatteryCharging}
+                        selected={evCharging}
+                        onPress={() => setEvCharging((prev) => !prev)}
+                      />
+                      <FilterChip
+                        label="Gated"
+                        icon={Lock}
+                        selected={securityLevel === "gated"}
+                        onPress={() => setSecurityLevel(securityLevel === "gated" ? "" : "gated")}
+                      />
+                      <FilterChip
+                        label="CCTV"
+                        icon={Cctv}
+                        selected={securityLevel === "cctv"}
+                        onPress={() => setSecurityLevel(securityLevel === "cctv" ? "" : "cctv")}
+                      />
+                    </View>
+                  </FilterSection>
+
+                  <FilterSection title="Price per day">
+                    <PriceRangeSlider
+                      minValue={priceMin}
+                      maxValue={priceMax}
+                      onMinChange={setPriceMin}
+                      onMaxChange={setPriceMax}
                     />
-                  </View>
-                  <View style={styles.field}>
-                    <Text style={styles.label}>Max € / day</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={priceMax}
-                      onChangeText={setPriceMax}
-                      keyboardType="numeric"
-                      placeholder="40"
-                      placeholderTextColor="#98a2b3"
-                    />
-                  </View>
+                  </FilterSection>
+
+                  <FilterSection title="Parking type">
+                    <View style={styles.filterTileGrid}>
+                      {SPACE_TYPE_OPTIONS.map((type) => {
+                        const TypeIcon = type.icon;
+                        return (
+                          <Pressable
+                            key={type.value}
+                            style={({ pressed }) => [
+                              styles.filterTile,
+                              spaceType === type.value && styles.filterTileActive,
+                              pressed && styles.filterChipButtonPressed,
+                            ]}
+                            onPress={() => setSpaceType(spaceType === type.value ? "" : type.value)}
+                          >
+                            <TypeIcon
+                              size={18}
+                              color={spaceType === type.value ? "#0a8050" : "#64748b"}
+                              strokeWidth={2}
+                            />
+                            <Text
+                              style={[
+                                styles.filterTileText,
+                                spaceType === type.value && styles.filterTileTextActive,
+                              ]}
+                            >
+                              {type.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </FilterSection>
+
+                  <FilterSection title="Vehicle size">
+                    <View style={styles.filterChipGrid}>
+                      {VEHICLE_SIZE_OPTIONS.map((option) => (
+                        <FilterChip
+                          key={option.label}
+                          label={option.label}
+                          selected={vehicleSize === option.value}
+                          onPress={() => setVehicleSize(vehicleSize === option.value ? "" : option.value)}
+                        />
+                      ))}
+                    </View>
+                  </FilterSection>
+                </ScrollView>
+                <View style={styles.filterFooter}>
+                  <Pressable
+                    style={styles.applyButton}
+                    onPress={() => {
+                      closeFilters();
+                      void runSearch();
+                    }}
+                  >
+                    <Text style={styles.applyButtonText}>Show spaces</Text>
+                  </Pressable>
                 </View>
-              </View>
-              <View style={styles.filtersSection}>
-                <Text style={styles.sectionLabel}>Vehicle size</Text>
-                <View style={styles.chipRow}>
-                  {(["motorcycle", "car", "van"] as const).map((size) => (
-                    <Pressable
-                      key={size}
-                      style={[styles.chip, vehicleSize === size && styles.chipActive]}
-                      onPress={() => setVehicleSize(vehicleSize === size ? "" : size)}
-                      android_ripple={null}
-                    >
-                      <Text style={[styles.chipText, vehicleSize === size && styles.chipTextActive]}>
-                        {size}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-              <View style={styles.filtersSection}>
-                <Text style={styles.sectionLabel}>Space type</Text>
-                <View style={styles.chipRow}>
-                  {["Private Driveway", "Garage", "Car park", "Private road"].map((type) => (
-                    <Pressable
-                      key={type}
-                      style={[styles.chip, spaceType === type && styles.chipActive]}
-                      onPress={() => setSpaceType(spaceType === type ? "" : type)}
-                      android_ripple={null}
-                    >
-                      <Text style={[styles.chipText, spaceType === type && styles.chipTextActive]}>
-                        {type}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-              <View style={styles.filtersSection}>
-                <Text style={styles.sectionLabel}>Security level</Text>
-                <View style={styles.chipRow}>
-                  {(["basic", "gated", "cctv"] as const).map((level) => (
-                    <Pressable
-                      key={level}
-                      style={[styles.chip, securityLevel === level && styles.chipActive]}
-                      onPress={() => setSecurityLevel(securityLevel === level ? "" : level)}
-                      android_ripple={null}
-                    >
-                      <Text
-                        style={[styles.chipText, securityLevel === level && styles.chipTextActive]}
-                      >
-                        {level === "cctv" ? "CCTV" : level.charAt(0).toUpperCase() + level.slice(1)}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-              <View style={styles.filtersSection}>
-                <Text style={styles.sectionLabel}>Preferences</Text>
-                <View style={styles.switchRow}>
-                  <Text style={styles.switchLabel}>Instant book only</Text>
-                  <Switch value={instantBook} onValueChange={setInstantBook} />
-                </View>
-                <View style={styles.switchRow}>
-                  <Text style={styles.switchLabel}>Covered parking</Text>
-                  <Switch value={coveredParking} onValueChange={setCoveredParking} />
-                </View>
-                <View style={styles.switchRow}>
-                  <Text style={styles.switchLabel}>EV charging</Text>
-                  <Switch value={evCharging} onValueChange={setEvCharging} />
-                </View>
-              </View>
-              <Pressable
-                style={styles.applyButton}
-                onPress={() => {
-                  closeFilters();
-                  void runSearch();
-                }}
-              >
-                <Text style={styles.applyButtonText}>Apply filters</Text>
-              </Pressable>
-              </ScrollView>
-            </Animated.View>
+              </Animated.View>
+            </KeyboardAvoidingView>
           </View>
         ) : null}
         {searchSheetVisible ? (
@@ -1789,10 +2232,10 @@ export function SearchScreen({ navigation }: Props) {
               {/* ── Search bar (back + input in one row) ── */}
               <View style={[styles.searchTopBar, { paddingTop: insets.top + 10 }]}>
                 <Pressable onPress={() => setSearchSheetOpen(false)} hitSlop={10} style={styles.searchBackBtn}>
-                  <Ionicons name="arrow-back" size={22} color="#111827" />
+                  <ArrowLeft size={22} color="#111827" strokeWidth={2.2} />
                 </Pressable>
                 <View style={styles.searchInputShell}>
-                  <Ionicons name="search-outline" size={16} color="#9aa1aa" style={{ marginRight: 8 }} />
+                  <Search size={16} color="#9aa1aa" strokeWidth={2.1} style={{ marginRight: 8 }} />
                   <TextInput
                     style={styles.searchInputField}
                     value={addressQuery}
@@ -1810,7 +2253,7 @@ export function SearchScreen({ navigation }: Props) {
                       onPress={() => { setAddressQuery(""); setAddressSuggestions([]); }}
                       hitSlop={8}
                     >
-                      <Ionicons name="close-circle" size={18} color="#c0c8d2" />
+                      <CircleX size={18} color="#c0c8d2" strokeWidth={2.1} />
                     </Pressable>
                   ) : null}
                 </View>
@@ -1864,7 +2307,7 @@ export function SearchScreen({ navigation }: Props) {
                         disabled={locating}
                       >
                         <View style={[styles.searchRowIcon, styles.searchRowIconLocate]}>
-                          <Ionicons name="locate" size={17} color="#0a8050" />
+                          <LocateFixed size={17} color="#0a8050" strokeWidth={2.2} />
                         </View>
                         <View style={styles.searchRowCopy}>
                           <Text style={styles.searchLocationTitle}>
@@ -1875,7 +2318,7 @@ export function SearchScreen({ navigation }: Props) {
                             : <Text style={styles.searchRowSub}>Use GPS to find spaces near you</Text>
                           }
                         </View>
-                        {!locating && <Ionicons name="chevron-forward" size={16} color="#c0c8d2" />}
+                        {!locating && <ChevronRight size={16} color="#c0c8d2" strokeWidth={2.2} />}
                       </Pressable>
 
                       {/* ── Section header with inline tab toggle ── */}
@@ -1905,12 +2348,12 @@ export function SearchScreen({ navigation }: Props) {
                             <View key={`${item.label}-${item.lat}-${item.lng}`} style={styles.searchRow}>
                               <Pressable style={styles.searchRowPress} onPress={() => handleSelectHistoryItem(item)}>
                                 <View style={styles.searchRowIcon}>
-                                  <Ionicons name="time-outline" size={16} color="#9ca3af" />
+                                  <Clock size={16} color="#9ca3af" strokeWidth={2.1} />
                                 </View>
                                 <Text style={styles.searchRowTitle} numberOfLines={1}>{item.label}</Text>
                               </Pressable>
                               <Pressable style={styles.searchRemoveBtn} onPress={() => removeFromHistory(item)} hitSlop={6}>
-                                <Ionicons name="close" size={13} color="#c0c8d2" />
+                                <X size={13} color="#c0c8d2" strokeWidth={2.2} />
                               </Pressable>
                             </View>
                           ))
@@ -1928,13 +2371,13 @@ export function SearchScreen({ navigation }: Props) {
                               onPress={() => navigation.navigate("Listing", { id: item.id, from, to })}
                             >
                               <View style={[styles.searchRowIcon, styles.searchRowIconHeart]}>
-                                <Ionicons name="heart" size={14} color="#0a8050" />
+                                <Heart size={14} color="#0a8050" fill="#0a8050" strokeWidth={2.1} />
                               </View>
                               <View style={styles.searchRowCopy}>
                                 <Text style={styles.searchRowTitle} numberOfLines={1}>{getListingDisplayTitle(item)}</Text>
                                 <Text style={styles.searchRowSub} numberOfLines={1}>{item.address}</Text>
                               </View>
-                              <Ionicons name="chevron-forward" size={15} color="#d1d5db" />
+                              <ChevronRight size={15} color="#d1d5db" strokeWidth={2.2} />
                             </Pressable>
                           ))
                         ) : (
@@ -1994,7 +2437,7 @@ export function SearchScreen({ navigation }: Props) {
                   {/* Drum wheel */}
                   <DrumRollPicker
                     date={draftDate ?? (pickerField === "start" ? startAt : endAt)}
-                    minuteInterval={15}
+                    minuteInterval={5}
                     onChange={(date) => setDraftDate(date)}
                     drumRef={drumPickerRef}
                   />
@@ -2048,7 +2491,7 @@ export function SearchScreen({ navigation }: Props) {
               open={pickerVisible}
               date={draftDate ?? (pickerField === "start" ? startAt : endAt)}
               mode="datetime"
-              minuteInterval={15}
+              minuteInterval={5}
               onConfirm={(date) => {
                 setDraftDate(date);
                 if (pickerField === "start") {
@@ -2143,34 +2586,34 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   overlay: {
-    left: spacing.screenX,
+    left: 16,
     position: "absolute",
-    right: spacing.screenX,
-    top: 10,
+    right: 16,
+    top: 12,
   },
 
   // ── Unified search card
   searchCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 20,
+    borderRadius: 22,
     overflow: "hidden",
     shadowColor: "#111827",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
+    elevation: 8,
   },
   searchCardLocation: {
     alignItems: "center",
     flexDirection: "row",
     gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 15,
   },
   searchCardLocationText: {
     flex: 1,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
+    fontSize: 15,
     color: "#111827",
     letterSpacing: -0.1,
   },
@@ -2182,17 +2625,17 @@ const styles = StyleSheet.create({
   timeStrip: {
     alignItems: "center",
     backgroundColor: "#ffffff",
-    borderRadius: 14,
+    borderRadius: 16,
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 8,
     paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingVertical: 12,
     shadowColor: "#111827",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 6,
+    elevation: 5,
   },
   timeStripBtn: {
     alignItems: "flex-start",
@@ -2232,7 +2675,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: 8,
-    marginTop: 10,
+    marginTop: 12,
   },
   filterChip: {
     alignItems: "center",
@@ -2241,7 +2684,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 5,
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 8,
     shadowColor: "#111827",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -2266,7 +2709,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.92)",
     borderRadius: 999,
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 8,
     shadowColor: "#111827",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -2285,9 +2728,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     elevation: 6,
     flexDirection: "row",
-    marginTop: 10,
+    marginTop: 12,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 11,
     shadowColor: "#111827",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
@@ -2304,13 +2747,26 @@ const styles = StyleSheet.create({
   },
 
   filtersPanel: {
-    backgroundColor: colors.cardBg,
-    padding: spacing.screenX,
-    paddingTop: 24,
-    height: "100%",
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    elevation: 20,
+    overflow: "hidden",
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 28,
+  },
+  filtersSheetHost: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "flex-end",
+  },
+  filtersScroll: {
+    flex: 1,
   },
   filtersContent: {
-    paddingBottom: 24,
+    paddingBottom: 8,
+    paddingHorizontal: spacing.screenX,
   },
   filtersOverlay: {
     bottom: 0,
@@ -2328,102 +2784,248 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
   },
-  filtersHeaderRow: {
+  filtersTopBar: {
     alignItems: "center",
+    borderBottomColor: "#eef2f6",
+    borderBottomWidth: 1,
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 16,
+    minHeight: 58,
+    paddingHorizontal: 12,
   },
-  filtersClose: {
+  filtersIconButton: {
+    alignItems: "center",
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  filtersClearAction: {
+    alignItems: "center",
+    minHeight: 44,
+    justifyContent: "center",
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    width: 58,
   },
-  filtersCloseText: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
+  filtersClearActionDisabled: {
+    opacity: 0.25,
+  },
+  filtersHeaderActionText: {
+    color: colors.accent,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    letterSpacing: 0,
   },
   filtersTitle: {
-    ...textStyles.titleSmall,
-  },
-  filtersSubtitle: {
-    ...textStyles.bodyMedium,
-    fontSize: 13,
-    marginBottom: 16,
-  },
-  filtersSection: {
-    backgroundColor: colors.appBg,
-    borderColor: colors.border,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    marginBottom: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  row: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 12,
-  },
-  field: {
     flex: 1,
+    color: "#111827",
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 16,
+    letterSpacing: 0,
+    textAlign: "center",
   },
-  label: {
-    ...textStyles.meta,
-    marginBottom: 6,
+  filterSection: {
+    borderBottomColor: "#eef2f6",
+    borderBottomWidth: 1,
+    paddingVertical: 20,
   },
-  input: {
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    color: colors.text,
-    fontFamily: "PlusJakartaSans-Medium",
-    fontSize: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+  filterSectionHeader: {
     marginBottom: 12,
   },
-  chip: {
-    backgroundColor: colors.appBg,
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  filterSectionTitle: {
+    color: "#111827",
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 17,
+    letterSpacing: 0,
   },
-  chipActive: {
-    backgroundColor: colors.accent,
+  filterSectionSubtitle: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 4,
   },
-  chipText: {
-    ...textStyles.meta,
-    textTransform: "capitalize",
+  priceSlider: {
+    paddingTop: 10,
   },
-  chipTextActive: {
-    color: "#ffffff",
+  priceHistogram: {
+    alignItems: "flex-end",
+    flexDirection: "row",
+    height: 112,
+    justifyContent: "space-between",
+    paddingBottom: 34,
+    position: "relative",
   },
-  switchRow: {
-    alignItems: "center",
+  priceHistogramBar: {
+    backgroundColor: "#dfe3e8",
+    borderRadius: 999,
+    flex: 1,
+    marginHorizontal: 2,
+    maxWidth: 8,
+  },
+  priceHistogramBarSelected: {
+    backgroundColor: "#0f172a",
+  },
+  priceTrack: {
+    backgroundColor: "#dfe3e8",
+    bottom: 30,
+    height: 3,
+    left: 0,
+    position: "absolute",
+    right: 0,
+  },
+  priceTrackSelected: {
+    backgroundColor: "#0f172a",
+    bottom: 30,
+    height: 3,
+    position: "absolute",
+  },
+  priceHandle: {
+    backgroundColor: "#ffffff",
+    borderColor: "#d7dde4",
+    borderRadius: 999,
+    borderWidth: 1,
+    bottom: 12,
+    elevation: 5,
+    height: 40,
+    position: "absolute",
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    width: 40,
+  },
+  priceValueRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginTop: 8,
   },
-  switchLabel: {
-    ...textStyles.bodyStrong,
+  priceValueGroup: {
+    flex: 1,
+  },
+  priceValueGroupRight: {
+    alignItems: "flex-end",
+  },
+  priceValueLabel: {
+    color: "#6b7280",
+    fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
+    letterSpacing: 0,
+    marginBottom: 8,
+  },
+  priceValuePill: {
+    borderColor: "#d9e0e8",
+    borderRadius: 999,
+    borderWidth: 1,
+    color: "#111827",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 16,
+    minWidth: 96,
+    overflow: "hidden",
+    paddingHorizontal: 18,
+    paddingVertical: 13,
+    textAlign: "center",
+  },
+  filterChipGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  filterChipButton: {
+    alignItems: "center",
+    backgroundColor: "#f7f8fa",
+    borderColor: "#e6ebf0",
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: "row",
+    minHeight: 44,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  filterChipButtonSmall: {
+    minHeight: 38,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  filterChipButtonActive: {
+    backgroundColor: "#0f172a",
+    borderColor: "#0f172a",
+  },
+  filterChipButtonPressed: {
+    opacity: 0.92,
+  },
+  filterChipButtonText: {
+    color: "#0f172a",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    letterSpacing: 0,
+  },
+  filterChipButtonTextActive: {
+    color: "#ffffff",
+  },
+  filterTileGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  filterTile: {
+    alignItems: "center",
+    backgroundColor: "#f7f8fa",
+    borderColor: "#e6ebf0",
+    borderRadius: 14,
+    borderWidth: 1,
+    flexBasis: "47%",
+    flexDirection: "row",
+    gap: 9,
+    minHeight: 52,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  filterTileActive: {
+    backgroundColor: "#eefbf4",
+    borderColor: "#8fdcb3",
+  },
+  filterTileText: {
+    color: "#0f172a",
+    flexShrink: 1,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    letterSpacing: 0,
+  },
+  filterTileTextActive: {
+    color: "#0a8050",
+  },
+  filterFooter: {
+    backgroundColor: "#ffffff",
+    borderTopColor: "#eef2f6",
+    borderTopWidth: 1,
+    paddingHorizontal: spacing.screenX,
+    paddingTop: 12,
   },
   applyButton: {
     alignItems: "center",
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    minHeight: 44,
-    paddingVertical: 10,
+    backgroundColor: "#0f172a",
+    borderRadius: 14,
+    minHeight: 52,
+    paddingVertical: 13,
   },
   applyButtonText: {
     ...textStyles.button,
     fontSize: 14,
+    letterSpacing: 0,
+  },
+  filterChipBadge: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 999,
+    height: 18,
+    justifyContent: "center",
+    marginLeft: 8,
+    minWidth: 18,
+    paddingHorizontal: 5,
+  },
+  filterChipBadgeText: {
+    color: "#ffffff",
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 10,
+    lineHeight: 12,
   },
   // ── Search sheet ──────────────────────────────────────────────
   searchOverlay: {
@@ -2443,7 +3045,7 @@ const styles = StyleSheet.create({
   searchTopBar: {
     alignItems: "center",
     backgroundColor: "#ffffff",
-    borderBottomColor: "#F0F2F5",
+    borderBottomColor: "#E9EEF3",
     borderBottomWidth: 1,
     flexDirection: "row",
     gap: 8,
@@ -2453,7 +3055,7 @@ const styles = StyleSheet.create({
   searchBackBtn: {
     alignItems: "center",
     justifyContent: "center",
-    width: 36,
+    width: 40,
     height: 44,
     flexShrink: 0,
   },
@@ -2461,17 +3063,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F7F8FA",
     borderColor: "#E8EDF2",
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     flex: 1,
     flexDirection: "row",
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
   },
   searchInputField: {
     flex: 1,
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 15,
+    fontSize: 16,
     color: "#111827",
   },
 
@@ -2510,7 +3112,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   searchSectionLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -2520,15 +3122,15 @@ const styles = StyleSheet.create({
   },
   searchToggle: {
     backgroundColor: "#EAECF0",
-    borderRadius: 8,
+    borderRadius: 10,
     flexDirection: "row",
     gap: 2,
     padding: 2,
   },
   searchToggleBtn: {
-    borderRadius: 6,
+    borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
   },
   searchToggleBtnActive: {
     backgroundColor: "#ffffff",
@@ -2551,7 +3153,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     paddingHorizontal: 16,
-    paddingVertical: 13,
+    paddingVertical: 15,
   },
   searchRowPressed: {
     backgroundColor: "#F7F8FA",
@@ -2567,9 +3169,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
     borderRadius: 20,
     flexShrink: 0,
-    height: 36,
+    height: 40,
     justifyContent: "center",
-    width: 36,
+    width: 40,
   },
   searchRowIconHeart: {
     backgroundColor: "#edf7f2",
@@ -2579,12 +3181,12 @@ const styles = StyleSheet.create({
   },
   searchRowTitle: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14,
+    fontSize: 15,
     color: "#111827",
   },
   searchRowSub: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
+    fontSize: 13,
     color: "#374151",
     marginTop: 2,
   },
@@ -2599,20 +3201,20 @@ const styles = StyleSheet.create({
   // Empty
   searchEmptyRow: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 18,
   },
   searchEmptyText: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
+    fontSize: 15,
     color: "#6b7280",
   },
   searchEmptyState: {
     alignItems: "center",
-    paddingVertical: 28,
+    paddingVertical: 32,
   },
   searchEmptyStateText: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
+    fontSize: 15,
     color: "#6b7280",
     marginTop: 0,
   },
@@ -2637,8 +3239,8 @@ const styles = StyleSheet.create({
     elevation: 8,
     flexDirection: "row",
     gap: 7,
-    paddingHorizontal: 20,
-    paddingVertical: 11,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     shadowColor: "#0f172a",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22,
@@ -2658,7 +3260,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 7,
     paddingHorizontal: 18,
-    paddingVertical: 11,
+    paddingVertical: 12,
     shadowColor: "#0f172a",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22,
@@ -2680,7 +3282,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.06,
@@ -2723,9 +3325,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#ffffff",
     borderColor: "#E5E7EB",
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1.5,
-    paddingVertical: 9,
+    paddingVertical: 10,
   },
   pickerQuickPillActive: {
     backgroundColor: "#0a8050",
