@@ -121,6 +121,10 @@ fi
 # ── Build ─────────────────────────────────────────────────────────────────────
 
 echo "[prod] Building release AAB..."
+rm -rf \
+  android/app/build/generated/assets/createBundleReleaseJsAndAssets \
+  android/app/build/generated/res/createBundleReleaseJsAndAssets \
+  android/app/build/intermediates/assets/release/mergeReleaseAssets/index.android.bundle
 (
   cd android
   ./gradlew app:bundleRelease \
