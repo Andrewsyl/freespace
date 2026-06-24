@@ -57,10 +57,10 @@ export default function PersonalInfoPage() {
   };
 
   return (
-    <div className="space-y-4 px-8">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Account</p>
-        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Personal Info</h1>
+    <div className="space-y-4">
+      <div className="mb-6">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Account</p>
+        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">Personal Info</h1>
       </div>
 
       {success && <div className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] text-brand-700">{success}</div>}

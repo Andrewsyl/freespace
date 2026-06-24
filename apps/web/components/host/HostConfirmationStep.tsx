@@ -1,8 +1,10 @@
 "use client";
-import { Info } from "lucide-react";
+import { Lightbulb } from "lucide-react";
 
 import type { HostStepProps } from "./types";
-import { buildTitleFromDraft, prettySpaceType } from "./utils";
+import { prettySpaceType } from "./utils";
+import { SectionLabel, TipCallout } from "./_ui";
+import { ListingPreviewCard } from "./ListingPreviewCard";
 
 const VEHICLE_LABELS: Record<string, string> = {
   small:  "Small",
@@ -19,9 +21,9 @@ const ACCESS_TYPE_LABELS: Record<string, string> = {
 
 function Row({ label, value, missing }: { label: string; value?: string | null; missing?: boolean }) {
   return (
-    <div className="flex items-start gap-3 border-b border-slate-100 py-2.5 last:border-0">
-      <dt className="w-28 shrink-0 text-xs font-semibold uppercase tracking-wide text-brand-300">{label}</dt>
-      <dd className={`flex-1 text-sm ${missing ? "italic text-slate-600" : "font-medium text-slate-900"}`}>
+    <div className="flex items-start gap-3 border-b border-slate-100 py-3 last:border-0">
+      <dt className="w-24 shrink-0 text-[13px] font-medium text-slate-400">{label}</dt>
+      <dd className={`flex-1 text-[14px] ${missing ? "italic text-slate-400" : "font-semibold text-slate-900"}`}>
         {value || (missing ? "Not set" : "—")}
       </dd>
     </div>
@@ -30,24 +32,76 @@ function Row({ label, value, missing }: { label: string; value?: string | null; 
 
 export function HostConfirmationStep({ data }: HostStepProps) {
   const spaceCount = parseInt(data.spaceCount ?? "0", 10) || 0;
+  const photos = data.imageUrls.length;
+
+  // ── Listing quality score ──
+  const checks = [
+    { ok: !!data.locationConfirmed, tip: null as string | null },
+    { ok: !!data.spaceType && spaceCount > 0 && !!data.vehicleSize, tip: null as string | null },
+    { ok: !!(data.pricePerDay || data.pricePerHour || data.pricePerMonth), tip: null as string | null },
+    {
+      ok: data.amenities.length >= 2,
+      tip: "Highlight a few features so drivers know what to expect",
+    },
+    {
+      ok: photos >= 3,
+      tip: photos === 0
+        ? "Add at least one photo — listings with photos get far more bookings"
+        : "Add more photos (aim for 3+) to stand out in search",
+    },
+  ];
+  const passed = checks.filter((c) => c.ok).length;
+  const pct = Math.round((passed / checks.length) * 100);
+  const strength = pct >= 80 ? "Strong" : pct >= 60 ? "Good" : "Basic";
+  const strong = pct >= 80;
+  const tips = checks.filter((c) => !c.ok && c.tip).map((c) => c.tip!);
 
   return (
-    <div className="space-y-4">
-      {/* Photos strip */}
-      {data.imageUrls.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {data.imageUrls.map((url, idx) => (
-            <div key={url + idx} className="h-28 w-44 shrink-0 overflow-hidden rounded-lg border border-slate-200">
-              <img src={url} alt="Listing" className="h-full w-full object-cover" />
-            </div>
-          ))}
-        </div>
-      )}
+    <div className="space-y-10">
 
-      {/* Details */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-brand-300">Your listing</p>
-        <dl>
+      {/* Almost-done moment */}
+      <p className="text-[16px] font-semibold leading-relaxed text-slate-700">
+        {strong
+          ? "Your listing is looking great — you're one tap from going live. 🎉"
+          : "You're almost there. A couple of quick additions will help you get booked faster."}
+      </p>
+
+      {/* Live preview */}
+      <div>
+        <SectionLabel>How drivers will see it</SectionLabel>
+        <div className="mt-4">
+          <ListingPreviewCard data={data} />
+        </div>
+      </div>
+
+      {/* Listing strength */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="flex items-center justify-between">
+          <p className="text-[13px] font-semibold text-slate-700">Listing strength</p>
+          <p className={`text-[13px] font-bold ${strong ? "text-brand-700" : "text-slate-700"}`}>{strength}</p>
+        </div>
+        <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div
+            className="h-full rounded-full bg-brand-500 transition-all duration-500"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        {tips.length > 0 && (
+          <ul className="mt-4 space-y-2.5">
+            {tips.map((t) => (
+              <li key={t} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-slate-600">
+                <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" strokeWidth={2} />
+                {t}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Full details */}
+      <div>
+        <SectionLabel>Listing details</SectionLabel>
+        <dl className="mt-4 rounded-2xl border border-slate-200 bg-white px-5 py-1">
           <Row label="Address"    value={data.address}                          missing={!data.address} />
           <Row label="Space type" value={data.spaceType ? prettySpaceType(data.spaceType) : undefined} missing={!data.spaceType} />
           {spaceCount > 0 && (
@@ -73,35 +127,10 @@ export function HostConfirmationStep({ data }: HostStepProps) {
         </dl>
       </div>
 
-      {/* Amenities */}
-      {data.amenities.length > 0 && (
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-300">Features</p>
-          <div className="flex flex-wrap gap-2">
-            {data.amenities.map((item) => (
-              <span key={item} className="rounded-full bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 ring-1 ring-brand-200">
-                {item}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* No photos nudge */}
-      {data.imageUrls.length === 0 && (
-        <div className="flex items-start gap-3 rounded-lg border border-dashed border-slate-200 px-4 py-3">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-600" strokeWidth={1.8} />
-          <p className="text-xs text-slate-600">No photos added — go back to add some for better conversion.</p>
-        </div>
-      )}
-
-      {/* Publish callout */}
-      <div className="rounded-lg bg-brand-50 px-4 py-4 ring-1 ring-brand-100">
-        <p className="text-sm font-semibold text-brand-800">Ready to go live?</p>
-        <p className="mt-1 text-xs leading-relaxed text-brand-700">
-          Your listing will appear on the map immediately. You can edit details, pause, or remove it anytime from your host dashboard.
-        </p>
-      </div>
+      {/* Publish reassurance */}
+      <TipCallout title="Ready to go live?">
+        Your listing appears on the map as soon as you publish. You can edit, pause, or remove it any time from your host dashboard.
+      </TipCallout>
     </div>
   );
 }

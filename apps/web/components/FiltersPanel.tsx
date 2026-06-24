@@ -232,9 +232,8 @@ export function FiltersPanel({
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-      <p className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-        <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
+    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+      <p className="mb-3.5 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-900">
         {label}
       </p>
       {children}
@@ -278,8 +277,8 @@ function ToggleRow({
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-[28px] w-[50px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
-          checked ? "bg-brand-500" : "bg-[#D1D5DB]"
+        className={`relative inline-flex h-[28px] w-[50px] shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-200 focus:outline-none ${
+          checked ? "border-transparent bg-brand-500" : "border-slate-300 bg-slate-200"
         }`}
       >
         <span

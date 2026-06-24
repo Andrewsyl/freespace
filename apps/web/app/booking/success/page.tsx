@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, CalendarCheck, Mail } from "lucide-react";
 import { SlimNav } from "../../../components/SlimNav";
 
 export default function BookingSuccessPage() {
@@ -19,33 +19,74 @@ function BookingSuccessContent() {
   const sessionId = params.get("session_id");
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-slate-50">
       <SlimNav />
-      <div className="flex min-h-[calc(100dvh-64px)] flex-col items-center justify-center px-5 pb-10">
-        <div className="w-full max-w-sm text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-brand-50">
-            <CheckCircle className="h-8 w-8 text-brand-500" strokeWidth={1.75} />
+      <div className="flex min-h-[calc(100dvh-64px)] flex-col items-center justify-center px-5 pb-16 pt-10">
+        <div className="w-full max-w-sm">
+
+          {/* Icon */}
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-brand-500 shadow-[0_8px_32px_rgba(22,163,74,0.30)]">
+            <CheckCircle className="h-10 w-10 text-white" strokeWidth={1.75} />
           </div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Booking confirmed</p>
-          <h1 className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Payment successful</h1>
-          <p className="mt-2 text-[14px] leading-6 text-slate-600">
-            Your booking is confirmed. You&apos;ll find it in your dashboard shortly.
-          </p>
-          {sessionId && (
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[12px] text-slate-600">
-              Session: <span className="font-semibold text-slate-700">{sessionId}</span>
+
+          {/* Heading */}
+          <div className="text-center">
+            <h1 className="text-[26px] font-bold tracking-tight text-slate-900">Booking confirmed</h1>
+            <p className="mt-2 text-[15px] leading-relaxed text-slate-500">
+              Your spot is reserved. You&apos;ll get a confirmation email shortly with all the details.
+            </p>
+          </div>
+
+          {/* What's next */}
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+            <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-900">What&apos;s next</p>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50">
+                  <Mail className="h-4 w-4 text-brand-600" strokeWidth={2} />
+                </span>
+                <div>
+                  <p className="text-[13.5px] font-semibold text-slate-800">Check your email</p>
+                  <p className="mt-0.5 text-[12.5px] leading-relaxed text-slate-500">
+                    Confirmation and access instructions sent to your inbox.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50">
+                  <CalendarCheck className="h-4 w-4 text-brand-600" strokeWidth={2} />
+                </span>
+                <div>
+                  <p className="text-[13.5px] font-semibold text-slate-800">View your booking</p>
+                  <p className="mt-0.5 text-[12.5px] leading-relaxed text-slate-500">
+                    Find your QR code, access info, and host details in the dashboard.
+                  </p>
+                </div>
+              </div>
             </div>
-          )}
-          <div className="mt-6 flex flex-col gap-3">
-            <Link href="/dashboard"
-              className="flex h-12 items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white active:bg-brand-600">
-              View dashboard
+          </div>
+
+          {/* CTAs */}
+          <div className="mt-5 flex flex-col gap-3">
+            <Link
+              href="/bookings"
+              className="flex h-12 items-center justify-center rounded-xl bg-brand-500 text-[15px] font-bold text-white shadow-sm transition hover:bg-brand-600 active:scale-[0.99]"
+            >
+              View my booking
             </Link>
-            <Link href="/"
-              className="flex h-12 items-center justify-center rounded-2xl border border-slate-200 text-[15px] font-semibold text-slate-700 active:bg-slate-50">
+            <Link
+              href="/"
+              className="flex h-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-[15px] font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
               Find another space
             </Link>
           </div>
+
+          {sessionId && (
+            <p className="mt-6 text-center text-[11px] text-slate-400">
+              Ref: <span className="font-mono">{sessionId.slice(-12)}</span>
+            </p>
+          )}
         </div>
       </div>
     </div>

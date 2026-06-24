@@ -62,12 +62,6 @@ import {
   Warehouse,
   X,
   Zap,
-  Footprints,
-  Train,
-  TramFront,
-  Trophy,
-  Landmark,
-  Trees,
 } from "lucide-react-native";
 import { SkeletonBlock, usePulse } from "../components/ui";
 import { SquircleBtn } from "../components/SquircleBtn";
@@ -91,15 +85,6 @@ const FEATURE_ICONS: Record<string, LucideIcon> = {
   allday:    Clock,
   motorbike: Bike,
   wide:      Maximize2,
-};
-
-// Icons for the "Getting around" rows, keyed by the server's nearby category.
-const NEARBY_ICONS: Record<string, LucideIcon> = {
-  transit:  Train,
-  tram:     TramFront,
-  stadium:  Trophy,
-  landmark: Landmark,
-  park:     Trees,
 };
 
 const getFeatureIconType = (label: string) => {
@@ -404,11 +389,6 @@ export function ListingScreen({ navigation, route }: Props) {
     // can map to the same label, and the chips use the label as their React key.
     () => Array.from(new Set(amenities.filter(Boolean).map(humanizeAmenity))),
     [amenities]
-  );
-
-  const nearbyPlaces = useMemo(
-    () => (listing?.nearby ?? []).filter((p) => p && p.name),
-    [listing?.nearby]
   );
 
   const availabilityFallbackText = useMemo(() => {
@@ -879,26 +859,6 @@ export function ListingScreen({ navigation, route }: Props) {
                             {showFullAbout ? "Show less" : "Show more"}
                           </Text>
                         </Pressable>
-                      ) : null}
-                      {nearbyPlaces.length ? (
-                        <View style={styles.nearbyWrap}>
-                          <Text style={styles.nearbyHeading}>Getting around</Text>
-                          {nearbyPlaces.map((place) => {
-                            const Icon = NEARBY_ICONS[place.category] ?? Footprints;
-                            return (
-                              <View key={`${place.category}-${place.name}`} style={styles.nearbyRow}>
-                                <View style={styles.nearbyIconWrap}>
-                                  <Icon size={15} color={GREEN} strokeWidth={2} />
-                                </View>
-                                <Text style={styles.nearbyText} numberOfLines={1}>
-                                  <Text style={styles.nearbyWalk}>{place.walkMinutes} min walk</Text>
-                                  <Text style={styles.nearbyDot}>{"  ·  "}</Text>
-                                  {place.name}
-                                </Text>
-                              </View>
-                            );
-                          })}
-                        </View>
                       ) : null}
                     </View>
                   </>
@@ -1556,25 +1516,6 @@ const styles = StyleSheet.create({
     fontSize: 14, color: GREEN, marginTop: 10,
     textDecorationLine: "underline",
   },
-
-  // ── Getting around (nearby transit / landmarks) ────────────────────────────
-  nearbyWrap: { marginTop: 16, gap: 8 },
-  nearbyHeading: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 14, color: FG, marginBottom: 2, letterSpacing: -0.2,
-  },
-  nearbyRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  nearbyIconWrap: {
-    width: 26, height: 26, borderRadius: 13,
-    backgroundColor: GREEN_SOFT,
-    alignItems: "center", justifyContent: "center", flexShrink: 0,
-  },
-  nearbyText: {
-    flex: 1, fontFamily: "PlusJakartaSans-Medium", fontSize: 14,
-    color: "#334155", lineHeight: 20,
-  },
-  nearbyWalk: { fontFamily: "PlusJakartaSans-SemiBold", color: FG },
-  nearbyDot: { color: FG_SUBTLE },
 
   // ── Reviews: empty state ───────────────────────────────────────────────────
   reviewEmptyWrap: {

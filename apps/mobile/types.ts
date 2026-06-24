@@ -129,9 +129,6 @@ export type ListingDetail = ListingSummary & {
   permission_declared?: boolean | null;
   permissionDeclared?: boolean | null;
   description?: string | null;
-  // Cached "Getting around" data (transit, stadiums, landmarks with walk time),
-  // computed server-side from Google Places.
-  nearby?: NearbyPlace[] | null;
   access_directions?: string | null;
   accessDirections?: string | null;
   hostId?: string | null;
@@ -144,13 +141,6 @@ export type ListingDetail = ListingSummary & {
     repeatUntil?: string | null;
     createdAt: string;
   }[];
-};
-
-export type NearbyPlace = {
-  name: string;
-  category: "transit" | "tram" | "stadium" | "landmark" | "park";
-  walkMinutes: number;
-  distanceMeters: number;
 };
 
 export type SecurityLevel = "basic" | "gated" | "cctv";

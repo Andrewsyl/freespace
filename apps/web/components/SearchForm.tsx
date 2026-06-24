@@ -186,6 +186,7 @@ export function SearchForm({
       syncingFromProps.current = false;
       return;
     }
+    if (state.location.trim() && (state.latitude === undefined || state.longitude === undefined)) return;
     const timer = setTimeout(() => {
       onSearch(buildFilters());
     }, 250);
@@ -216,11 +217,15 @@ export function SearchForm({
     setLocationError(false);
     const submission = buildFilters();
 
-    if (redirectToSearch && (!submission.latitude || !submission.longitude)) {
+    if (submission.latitude === undefined || submission.longitude === undefined) {
       const geo = await geocodeAddress(submission.location);
       if (geo) {
         submission.latitude = geo.lat;
         submission.longitude = geo.lng;
+        setState((prev) => ({ ...prev, latitude: geo.lat, longitude: geo.lng }));
+      } else {
+        setLocationError(true);
+        return;
       }
     }
 
@@ -249,7 +254,7 @@ export function SearchForm({
       if (submission.vehicleSize) params.set("vehicleSize", submission.vehicleSize);
       if (submission.spaceType) params.set("spaceType", submission.spaceType);
       if (submission.instantBook) params.set("instantBook", "true");
-      router.push(`/?${params.toString()}`);
+      router.push(`/search?${params.toString()}`);
       return;
     }
   };
@@ -278,6 +283,16 @@ export function SearchForm({
     onAddressChange?.({ address: place.address, lat: place.lat, lng: place.lng });
   }, [onAddressChange]);
 
+  const addressOnInputChange = useCallback((value: string) => {
+    setLocationError(false);
+    setState((prev) => ({
+      ...prev,
+      location: value,
+      latitude: value === prev.location ? prev.latitude : undefined,
+      longitude: value === prev.location ? prev.longitude : undefined,
+    }));
+  }, []);
+
 
   const MONTHLY_OPTIONS = [
     { value: "full_week", label: "Everyday" },
@@ -300,7 +315,13 @@ export function SearchForm({
                   placeholder="Enter area or landmark"
                   inputClassName="w-full bg-transparent pl-0 pr-2 text-[16px] font-semibold text-[#202631] placeholder:text-slate-400 focus:outline-none"
                   onPlace={addressOnPlace}
+                  onInputChange={addressOnInputChange}
                 />
+                {locationError && (
+                  <p className="mt-0.5 text-[11px] font-semibold text-rose-600">
+                    Choose a suggested location or try a more specific address.
+                  </p>
+                )}
               </div>
               <button
                 type="submit"
@@ -374,6 +395,7 @@ export function SearchForm({
             placeholder="Enter area or landmark"
             inputClassName={`w-full h-12 rounded-lg border bg-white px-9 text-[15px] font-semibold text-[#0f172a] transition focus:outline-none ${locationError ? "border-brand-400 focus:border-brand-500" : "border-[#E5E7EB] focus:border-brand-500"}`}
             onPlace={addressOnPlace}
+            onInputChange={addressOnInputChange}
           />
           {locationError && (
             <p className="mt-1.5 text-[12px] font-medium text-brand-600">Please enter a location to search</p>

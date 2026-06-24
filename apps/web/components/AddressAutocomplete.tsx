@@ -36,6 +36,7 @@ export function AddressAutocomplete({
   defaultValue,
   placeholder,
   onPlace,
+  onInputChange,
   name,
   inputClassName,
   showLocationButton,
@@ -43,6 +44,7 @@ export function AddressAutocomplete({
   defaultValue?: string;
   placeholder?: string;
   onPlace: (place: PlaceResult) => void;
+  onInputChange?: (value: string) => void;
   name?: string;
   inputClassName?: string;
   showLocationButton?: boolean;
@@ -184,7 +186,10 @@ export function AddressAutocomplete({
         ref={inputRef}
         name={name}
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          onInputChange?.(e.target.value);
+        }}
         onFocus={handleFocus}
         onBlur={handleBlur}
         placeholder={placeholder ?? "Search address"}

@@ -10,7 +10,7 @@ import { FiltersPanel } from "./FiltersPanel";
 import type { SharedLayoutProps } from "./searchLayoutTypes";
 import type { Listing } from "./ListingCard";
 import { SlimNav } from "./SlimNav";
-import { SlidersHorizontal, X, ChevronLeft, ChevronRight, ChevronDown, Clock, MapPin, Cctv, Zap, Home, Lock, Accessibility, CheckCircle } from "lucide-react";
+import { SlidersHorizontal, X, ChevronLeft, ChevronRight, Clock, MapPin, Cctv, Zap, Home, Lock, Accessibility } from "lucide-react";
 import { calculateListingTotal, formatPriceValue, getListingRateType } from "../lib/pricing";
 
 export function DesktopSearchLayout({
@@ -173,22 +173,22 @@ export function DesktopSearchLayout({
                       <SlidersHorizontal className="h-3.5 w-3.5" />
                       Filters
                       {activeFilterCount > 0 && (
-                        <span className="flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold text-white">
+                        <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold text-white">
                           {activeFilterCount}
                         </span>
                       )}
                     </button>
                   </div>
-                  <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-0.5">
+                  <div className="flex items-center gap-0.5 rounded-lg bg-slate-100/80 p-0.5">
                     {SORT_TABS.map((tab) => (
                       <button
                         key={tab.key}
                         type="button"
                         onClick={() => setSortMode(tab.key)}
-                        className={`flex-1 rounded-md py-1.5 text-[12px] font-semibold transition ${
+                        className={`flex-1 rounded-md py-1.5 text-[12px] font-semibold transition-all duration-150 ${
                           sortMode === tab.key
-                            ? "bg-white text-slate-900 shadow-sm"
-                            : "text-slate-500 hover:text-slate-700"
+                            ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,0.12)]"
+                            : "text-slate-400 hover:text-slate-600"
                         }`}
                       >
                         {tab.label}
@@ -200,11 +200,21 @@ export function DesktopSearchLayout({
                 {/* Scrollable cards */}
                 <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3" style={{ scrollbarWidth: "thin" }}>
                   {error && (
-                    <div className="mb-3 flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
+                    <div className="mb-3 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3.5 shadow-sm" role="alert">
                       <svg className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" viewBox="0 0 24 24" fill="currentColor">
                         <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.72 6.97a.75.75 0 10-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 101.06 1.06L12 13.06l1.72 1.72a.75.75 0 101.06-1.06L13.06 12l1.72-1.72a.75.75 0 10-1.06-1.06L12 10.94l-1.72-1.72z" clipRule="evenodd" />
                       </svg>
-                      <p className="text-sm text-rose-700">{error}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-semibold text-rose-800">We could not load spaces.</p>
+                        <p className="mt-0.5 text-[12.5px] text-rose-700">{error}</p>
+                        <button
+                          type="button"
+                          onClick={() => onSearch(filters, true)}
+                          className="mt-2 rounded-full bg-white px-3 py-1.5 text-[12px] font-bold text-rose-700 ring-1 ring-rose-200 transition hover:bg-rose-100"
+                        >
+                          Try again
+                        </button>
+                      </div>
                     </div>
                   )}
                   <div className="grid grid-cols-1 gap-2">
@@ -248,32 +258,7 @@ export function DesktopSearchLayout({
           </AnimatePresence>
         </div>
 
-        {/* ── Col 2: listing detail panel (slides in when selected) ── */}
-        <AnimatePresence initial={false}>
-          {showListingOverlay && selectedListing && (
-            <motion.div
-              key={`panel-${selectedListing.id}`}
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 480, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ type: "spring", damping: 28, stiffness: 340, mass: 0.85 }}
-              className="h-full shrink-0 overflow-hidden border-r border-slate-200"
-            >
-              <div className="h-full w-[480px] overflow-hidden py-4 pl-4 pr-3">
-                <ListingOverlay
-                  listing={selectedListing}
-                  filters={filters}
-                  mode={filters.mode ?? "daily"}
-                  pricing={getSearchPrice(selectedListing)}
-                  onClose={() => setShowListingOverlay(false)}
-                  onOpen={() => router.push(checkoutHref(selectedListing.id) as any)}
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* ── Col 3: map ── */}
+        {/* ── Col 2: map ── */}
         <motion.div
           className="relative h-full min-w-0 flex-1"
           initial={{ opacity: 0, y: 8 }}
@@ -298,6 +283,29 @@ export function DesktopSearchLayout({
             onBoundsChanged={onBoundsChanged}
             onUnavailableChange={setMapUnavailable}
           />
+
+          {/* Listing detail overlays the map instead of resizing it. */}
+          <AnimatePresence initial={false}>
+            {showListingOverlay && selectedListing && (
+              <motion.div
+                key={`panel-${selectedListing.id}`}
+                initial={{ opacity: 0, x: -24, scale: 0.985 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -24, scale: 0.985 }}
+                transition={{ type: "spring", damping: 28, stiffness: 340, mass: 0.85 }}
+                className="absolute bottom-4 left-4 top-4 z-20 w-[480px] max-w-[calc(100%-32px)] overflow-hidden"
+              >
+                <ListingOverlay
+                  listing={selectedListing}
+                  filters={filters}
+                  mode={filters.mode ?? "daily"}
+                  pricing={getSearchPrice(selectedListing)}
+                  onClose={() => setShowListingOverlay(false)}
+                  onOpen={() => router.push(checkoutHref(selectedListing.id) as any)}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Filters button */}
           <div className="pointer-events-none absolute left-3 top-3 z-10">
@@ -347,24 +355,24 @@ function EmptyState({
   onAdjustFilters: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center px-4 py-10 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-slate-100">
-        <svg className="h-7 w-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <div className="flex flex-col items-center px-4 py-12 text-center">
+      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+        <svg className="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.4}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
         </svg>
       </div>
-      <h3 className="text-[15px] font-semibold text-slate-800">No spaces found</h3>
-      <p className="mt-1.5 max-w-[220px] text-[13px] leading-relaxed text-slate-600">
+      <h3 className="text-[16px] font-bold text-slate-900">No spaces found</h3>
+      <p className="mt-2 max-w-[250px] text-[13px] leading-relaxed text-slate-500">
         {location
           ? `We couldn't find any spaces near ${location}.`
           : "No spaces match your search."}
-        {" "}Try adjusting your dates, times or search radius.
+        {" "}Try widening your radius, changing the time, or removing a filter.
       </p>
       <button
         type="button"
         onClick={onAdjustFilters}
-        className="mt-5 rounded-full bg-slate-900 px-5 py-2.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-slate-800"
+        className="mt-6 rounded-full bg-slate-900 px-5 py-2.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-slate-800 active:scale-95"
       >
         Adjust filters
       </button>
@@ -440,28 +448,6 @@ function getRelativeDay(dateStr: string): string {
   return target.toLocaleDateString("en-IE", { weekday: "short", day: "numeric", month: "short" });
 }
 
-type SectionKey = "know" | "amenities" | "hours" | "how" | "reviews";
-
-function AccordionSection({
-  id, open, onToggle, title, children,
-}: { id: SectionKey; open: boolean; onToggle: (id: SectionKey) => void; title: string; children: React.ReactNode }) {
-  return (
-    <div className="border-t border-slate-100">
-      <button
-        type="button"
-        onClick={() => onToggle(id)}
-        className="flex w-full items-center justify-between px-4 py-3.5 text-left"
-      >
-        <span className="text-[14px] font-bold text-slate-900">{title}</span>
-        <ChevronDown
-          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
-          strokeWidth={2.5}
-        />
-      </button>
-      {open && <div className="px-4 pb-4">{children}</div>}
-    </div>
-  );
-}
 
 function ListingOverlay({
   listing,
@@ -478,11 +464,7 @@ function ListingOverlay({
   onClose: () => void;
   onOpen: () => void;
 }) {
-  const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set(["know", "amenities"]));
   const [photoIndex, setPhotoIndex] = useState(0);
-
-  const toggleSection = (id: SectionKey) =>
-    setOpenSections((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const fallbackImage = listingGradient(listing);
   const isFallbackUrl = fallbackImage?.startsWith("http");
@@ -520,25 +502,6 @@ function ListingOverlay({
 
   const displayPrice = formatPriceValue(pricing.sortValue);
 
-  // Things to know bullets derived from listing data
-  const thingsToKnow: string[] = [];
-  if (spaceType === "Garage" || feats("garage") || feats("underground")) {
-    thingsToKnow.push("Height restrictions may apply — check with the host before arrival.");
-  }
-  if (feats("no in") || feats("no re-entry")) {
-    thingsToKnow.push("No in-and-out privileges — once you exit you cannot re-enter on the same booking.");
-  }
-  if (feats("cash")) {
-    thingsToKnow.push("Payment accepted on-site in cash — bring the correct amount.");
-  }
-  if (feats("attendant") || feats("valet")) {
-    thingsToKnow.push("An attendant will park your vehicle — leave your keys with the attendant upon arrival.");
-  }
-  thingsToKnow.push("Show your booking confirmation (QR code or reference number) upon arrival.");
-  if (!isAvailable) {
-    thingsToKnow.push("This space is currently marked as unavailable — contact the host before booking.");
-  }
-
   // Duration label for daily mode
   const durationLabel = (() => {
     if (mode !== "daily") return null;
@@ -550,24 +513,10 @@ function ListingOverlay({
     return h > 0 && m > 0 ? `${h}h ${m}m` : h > 0 ? `${h} hour${h > 1 ? "s" : ""}` : `${m} min`;
   })();
 
-  // Star breakdown — approximate from average if we only have aggregate data
-  const ratingBreakdown: { stars: number; pct: number }[] | null =
-    hasRating && listing.rating && (listing.ratingCount ?? 0) >= 3
-      ? (() => {
-          const avg = listing.rating!;
-          const topStar = Math.round(avg);
-          const rows = [5, 4, 3, 2, 1].map((s) => ({
-            stars: s,
-            pct: s === topStar ? 80 : s === topStar - 1 ? 12 : s === 1 ? 5 : 2,
-          }));
-          return rows;
-        })()
-      : null;
-
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
 
-      {/* ── Large photo at top with carousel controls ── */}
+      {/* ── Photo carousel ── */}
       <div className="relative h-52 w-full shrink-0 overflow-hidden bg-slate-100">
         {currentImage ? (
           <img
@@ -579,9 +528,8 @@ function ListingOverlay({
         ) : (
           <div className="h-full w-full" style={{ background: fallbackImage }} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
-        {/* Close button — top right */}
         <button
           type="button"
           onClick={onClose}
@@ -591,259 +539,190 @@ function ListingOverlay({
           <X className="h-4 w-4" strokeWidth={2.5} />
         </button>
 
-        {/* Carousel arrows */}
         {hasMultiplePhotos && (
           <>
-            <button
-              type="button"
-              onClick={() => setPhotoIndex((i) => (i - 1 + allImages.length) % allImages.length)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
-            >
+            <button type="button" onClick={() => setPhotoIndex((i) => (i - 1 + allImages.length) % allImages.length)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70">
               <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
             </button>
-            <button
-              type="button"
-              onClick={() => setPhotoIndex((i) => (i + 1) % allImages.length)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
-            >
+            <button type="button" onClick={() => setPhotoIndex((i) => (i + 1) % allImages.length)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70">
               <ChevronRight className="h-4 w-4" strokeWidth={2.5} />
             </button>
-            {/* Dot indicators */}
             <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
               {allImages.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setPhotoIndex(i)}
-                  className={`h-1.5 rounded-full transition-all ${i === photoIndex ? "w-4 bg-white" : "w-1.5 bg-white/50"}`}
-                />
+                <button key={i} type="button" onClick={() => setPhotoIndex(i)}
+                  className={`h-1.5 rounded-full transition-all ${i === photoIndex ? "w-4 bg-white" : "w-1.5 bg-white/50"}`} />
               ))}
             </div>
+            <span className="absolute bottom-3 right-3 rounded-full bg-black/50 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+              {photoIndex + 1}/{allImages.length}
+            </span>
           </>
-        )}
-
-        {/* Photo count badge */}
-        {hasMultiplePhotos && (
-          <span className="absolute bottom-3 right-3 rounded-full bg-black/50 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
-            {photoIndex + 1}/{allImages.length}
-          </span>
         )}
       </div>
 
       {/* ── Scrollable body ── */}
       <div className="min-h-0 flex-1 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
 
-        {/* Title + meta */}
-        <div className="border-b border-slate-100 px-4 pb-4 pt-3">
-          <h2 className="text-[17px] font-bold leading-snug tracking-tight text-slate-950">
-            {listing.title}
-          </h2>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+        {/* ── Title + rating + address ── */}
+        <div className="px-4 pb-4 pt-4">
+          <div className="flex items-start justify-between gap-2">
+            <h2 className="text-[17px] font-bold leading-snug tracking-tight text-slate-950">
+              {listing.title}
+            </h2>
+            <div className="flex shrink-0 flex-wrap gap-1.5 pt-0.5">
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+              }`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${isAvailable ? "bg-emerald-500" : "bg-slate-400"}`} />
+                {isAvailable ? "Available" : "Unavailable"}
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
             {hasRating && (
               <span className="flex items-center gap-1 text-[13px] font-semibold text-slate-700">
                 <StarRating rating={listing.rating!} />
                 {listing.rating!.toFixed(1)}
-                {(listing.ratingCount ?? 0) > 0 && (
-                  <span className="font-normal text-slate-600">({listing.ratingCount})</span>
-                )}
+                <span className="font-normal text-slate-500">
+                  ({listing.ratingCount} {(listing.ratingCount ?? 0) === 1 ? "review" : "reviews"})
+                </span>
               </span>
             )}
-            {spaceType && (
-              <span className="text-[12.5px] text-slate-600">{spaceType}</span>
-            )}
+            {spaceType && <span className="text-[12px] text-slate-400">·</span>}
+            {spaceType && <span className="text-[12px] text-slate-600">{spaceType}</span>}
             {listing.distanceKm != null && (
-              <span className="text-[12.5px] text-slate-600">{listing.distanceKm.toFixed(1)} km away</span>
+              <>
+                <span className="text-[12px] text-slate-400">·</span>
+                <span className="text-[12px] text-slate-600">{listing.distanceKm.toFixed(1)} km away</span>
+              </>
             )}
           </div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-              isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
-            }`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${isAvailable ? "bg-emerald-500" : "bg-slate-400"}`} />
-              {isAvailable ? "Available" : "Unavailable"}
-            </span>
-            {isInstant && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700">
-                ⚡ Instant book
-              </span>
-            )}
-          </div>
-        </div>
 
-        {/* Booking summary — SpotHero style */}
-        <div className="border-b border-slate-100 px-4 py-4">
-          <div className="flex items-start justify-between">
-            <p className="text-[12px] font-semibold uppercase tracking-wide text-slate-600">
-              {mode === "monthly" ? "Monthly Parking" : "Parking Reservation"}
-            </p>
-            <div className="text-right">
-              <p className="text-[20px] font-extrabold leading-none text-slate-900">€{displayPrice}</p>
-              <p className="mt-0.5 text-[11px] text-slate-600">
-                {mode === "monthly" ? "per month" : "subtotal"}
-              </p>
+          <div className="mt-2 flex items-start gap-1.5">
+            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" strokeWidth={2} />
+            <div>
+              <p className="text-[12.5px] leading-relaxed text-slate-600">{listing.address}</p>
+              <a href={streetViewUrl} target="_blank" rel="noreferrer"
+                className="text-[12px] font-semibold text-brand-600 transition hover:text-brand-700">
+                View on map →
+              </a>
             </div>
           </div>
-
-          {mode === "daily" ? (
-            <>
-              <p className="mt-2 text-[14px] font-bold text-slate-800">
-                {getRelativeDay(filters.date).charAt(0).toUpperCase() + getRelativeDay(filters.date).slice(1)}{" "}
-                {formatTimeOnly(filters.startTime)} – {formatTimeOnly(filters.endTime)}
-                {filters.endDate && filters.endDate !== filters.date && (
-                  <span className="font-normal text-slate-600"> ({getRelativeDay(filters.endDate)})</span>
-                )}
-              </p>
-              <div className="mt-2 flex items-center gap-2">
-                {durationLabel && (
-                  <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11.5px] font-semibold text-slate-600">
-                    <Clock className="h-3 w-3" strokeWidth={2.1} />
-                    {durationLabel}
-                  </span>
-                )}
-                <a
-                  href={streetViewUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11.5px] font-semibold text-slate-600 transition hover:bg-slate-200"
-                >
-                  <MapPin className="h-3 w-3" strokeWidth={2.1} />
-                  Street View
-                </a>
-              </div>
-            </>
-          ) : (
-            <div className="mt-2 flex items-center gap-3 text-[13px] text-slate-700">
-              <span>From {formatOverlayDate(filters.date)}</span>
-              <span className="text-slate-300">·</span>
-              <span>{formatMonthlyPlan(filters.monthlyPlan)}</span>
-            </div>
-          )}
         </div>
 
-        {/* Book Now CTA */}
-        <div className="px-4 py-4">
-          <button
-            onClick={onOpen}
-            className="flex w-full items-center justify-center rounded-xl bg-brand-500 py-3.5 text-[15px] font-bold text-white shadow-sm transition hover:bg-brand-600 active:scale-[0.99]"
-          >
-            Book Now
-          </button>
-
-          {/* Guaranteed badge */}
-          <div className="mt-3 flex items-center gap-2.5 rounded-lg bg-emerald-50 px-3 py-2.5">
-            <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" strokeWidth={2.1} />
-            <p className="text-[12.5px] font-bold text-emerald-800">Guaranteed parking</p>
-          </div>
-
-          {/* Payment icons */}
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
-            {["Apple Pay", "Google Pay", "Visa", "Mastercard", "PayPal"].map((name) => (
-              <span key={name} className="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm">
-                {name}
-              </span>
-            ))}
-            <span className="text-[11px] text-slate-600">+ more</span>
-          </div>
-        </div>
-
-        {/* ── Accordion sections ── */}
-
-        {/* Things You Should Know */}
-        <AccordionSection id="know" open={openSections.has("know")} onToggle={toggleSection} title="Things You Should Know">
-          <ul className="space-y-2">
-            {thingsToKnow.map((tip, i) => (
-              <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-slate-600">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-                {tip}
-              </li>
-            ))}
-          </ul>
-        </AccordionSection>
-
-        {/* Amenities */}
+        {/* ── Features — always visible, no accordion ── */}
         {amenities.length > 0 && (
-          <AccordionSection id="amenities" open={openSections.has("amenities")} onToggle={toggleSection} title="Amenities">
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          <div className="border-t border-slate-100 px-4 py-4">
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-900">Features</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
               {amenities.map(({ label, icon }) => (
-                <div key={label} className="flex items-center gap-2.5 text-[13px] text-slate-700">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100">
+                <div key={label} className="flex items-center gap-2.5">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100">
                     <AmenityIcon type={icon} />
                   </span>
-                  {label}
+                  <span className="text-[13px] text-slate-700">{label}</span>
                 </div>
               ))}
+              {isInstant && (
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 text-[14px]">
+                    ⚡
+                  </span>
+                  <span className="text-[13px] text-slate-700">Instant book</span>
+                </div>
+              )}
             </div>
-          </AccordionSection>
+          </div>
         )}
 
-        {/* Access Hours */}
-        <AccordionSection id="hours" open={openSections.has("hours")} onToggle={toggleSection} title="Access Hours">
+        {/* ── Access hours ── */}
+        <div className="border-t border-slate-100 px-4 py-4">
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-900">Access hours</p>
           <AvailabilityGrid listing={listing} availabilityText={availabilityText} compact />
-        </AccordionSection>
+        </div>
 
-        {/* How to Book */}
-        <AccordionSection id="how" open={openSections.has("how")} onToggle={toggleSection} title="How to Book">
-          <ol className="space-y-4">
-            {[
-              "Complete your booking and receive a confirmation email with your booking reference.",
-              "Arrive at the space within your booked time window — show your confirmation to the host if needed.",
-              "Park up and enjoy. Your spot is guaranteed for the duration you booked.",
-            ].map((step, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-[11px] font-bold text-brand-700">
-                  {i + 1}
-                </span>
-                <p className="text-[13px] leading-relaxed text-slate-600">{step}</p>
-              </li>
-            ))}
-          </ol>
-        </AccordionSection>
-
-        {/* Reviews */}
-        <AccordionSection id="reviews" open={openSections.has("reviews")} onToggle={toggleSection} title="Reviews">
-          {hasRating ? (
-            <div>
-              <div className="flex items-center gap-4">
-                <div className="text-center">
-                  <p className="text-[38px] font-extrabold leading-none text-slate-900">{listing.rating!.toFixed(1)}</p>
-                  <StarRating rating={listing.rating!} />
-                  {(listing.ratingCount ?? 0) > 0 && (
-                    <p className="mt-1 text-[11px] text-slate-600">{listing.ratingCount} ratings</p>
-                  )}
-                </div>
-                {ratingBreakdown && (
-                  <div className="flex-1 space-y-1.5">
-                    {ratingBreakdown.map(({ stars, pct }) => (
-                      <div key={stars} className="flex items-center gap-2">
-                        <span className="w-3 text-right text-[11px] text-slate-600">{stars}</span>
-                        <div className="flex-1 overflow-hidden rounded-full bg-slate-100" style={{ height: 6 }}>
-                          <div className="h-full rounded-full bg-slate-700" style={{ width: `${pct}%` }} />
-                        </div>
-                        <span className="w-7 text-[11px] text-slate-600">{pct}%</span>
-                      </div>
-                    ))}
-                  </div>
+        {/* ── Booking summary + CTA ── */}
+        <div className="border-t border-slate-100 px-4 py-4">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5">
+            <div className="flex items-center justify-between">
+              <div>
+                {mode === "daily" ? (
+                  <>
+                    <p className="text-[13.5px] font-bold text-slate-900">
+                      {getRelativeDay(filters.date).charAt(0).toUpperCase() + getRelativeDay(filters.date).slice(1)},{" "}
+                      {formatTimeOnly(filters.startTime)}–{formatTimeOnly(filters.endTime)}
+                      {filters.endDate && filters.endDate !== filters.date && (
+                        <span className="font-normal text-slate-500"> ({getRelativeDay(filters.endDate)})</span>
+                      )}
+                    </p>
+                    {durationLabel && (
+                      <p className="mt-0.5 flex items-center gap-1 text-[12px] text-slate-500">
+                        <Clock className="h-3 w-3" strokeWidth={2} />
+                        {durationLabel}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[13.5px] font-bold text-slate-900">Monthly parking</p>
+                    <p className="mt-0.5 text-[12px] text-slate-500">
+                      From {formatOverlayDate(filters.date)} · {formatMonthlyPlan(filters.monthlyPlan)}
+                    </p>
+                  </>
                 )}
               </div>
+              <div className="text-right">
+                <p className="text-[22px] font-extrabold leading-none tracking-tight text-slate-900">€{displayPrice}</p>
+                <p className="mt-0.5 text-[11px] text-slate-500">
+                  {mode === "monthly" ? "per month" : "total"}
+                </p>
+              </div>
             </div>
-          ) : (
-            <p className="text-[13px] text-slate-600">No reviews yet for this space.</p>
-          )}
-        </AccordionSection>
+          </div>
 
-        {/* Location */}
-        <div className="border-t border-slate-100 px-4 py-4">
-          <p className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-slate-600">Location</p>
-          <p className="text-[13px] text-slate-600">{listing.address}</p>
-          <a
-            href={streetViewUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-semibold text-brand-600 transition hover:text-brand-700"
-          >
-            Open in Street View →
-          </a>
+        <button
+          onClick={() => {
+            if (isAvailable) onOpen();
+          }}
+          disabled={!isAvailable}
+          className={`mt-3 flex w-full items-center justify-center rounded-xl py-3.5 text-[15px] font-bold shadow-sm transition active:scale-[0.99] ${
+            isAvailable
+              ? "bg-brand-500 text-white hover:bg-brand-600"
+              : "cursor-not-allowed bg-slate-200 text-slate-500"
+          }`}
+        >
+          {isAvailable ? "Book this space" : "Unavailable for this time"}
+        </button>
+        <p className="mt-2.5 text-center text-[11.5px] text-slate-500">
+          {isAvailable
+            ? "Free cancellation up to 24 hours before arrival"
+            : "Change your time or search area to find available spaces."}
+        </p>
         </div>
+
+        {/* ── Reviews ── */}
+        {hasRating && (
+          <div className="border-t border-slate-100 px-4 py-4">
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-900">Reviews</p>
+            <div className="flex items-center gap-3">
+              <div className="text-center">
+                <p className="text-[36px] font-extrabold leading-none text-slate-900">{listing.rating!.toFixed(1)}</p>
+                <StarRating rating={listing.rating!} />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  {listing.ratingCount} {(listing.ratingCount ?? 0) === 1 ? "review" : "reviews"}
+                </p>
+              </div>
+              <div className="ml-2 flex-1 rounded-xl bg-slate-50 px-4 py-3">
+                <p className="text-[12.5px] leading-relaxed text-slate-600">
+                  Rated by drivers who have parked at this space.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
@@ -987,18 +866,6 @@ function formatMonthlyPlan(plan?: string) {
   return "Everyday";
 }
 
-function buildOverlaySummary(
-  listing: Listing,
-  context: { amenities: string[]; spaceType?: string; availabilityText: string },
-) {
-  const locality = listing.address.split(",").slice(0, 2).join(", ").trim() || listing.address;
-  const amenityText =
-    context.amenities.length > 0
-      ? ` Features include ${context.amenities.slice(0, 3).join(", ").toLowerCase()}.`
-      : "";
-  const typeText = context.spaceType ? `${context.spaceType.toLowerCase()} parking` : "parking";
-  return `Book ${typeText} near ${locality}. ${context.availabilityText}.${amenityText}`;
-}
 
 function getSearchWindow(filters: SharedLayoutProps["filters"]) {
   const start = new Date(`${filters.date}T${filters.startTime}:00`);

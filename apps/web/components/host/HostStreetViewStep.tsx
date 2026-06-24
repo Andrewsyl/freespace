@@ -3,14 +3,13 @@ import { MapPin } from "lucide-react";
 
 import { useEffect, useRef } from "react";
 import type { HostStepProps } from "./types";
+import { SectionLabel } from "./_ui";
 
-type StreetViewPov = {
-  heading: number;
-  pitch: number;
-};
+type StreetViewPov = { heading: number; pitch: number };
 
 type StreetViewPanoramaLike = {
   getPov(): StreetViewPov;
+  addListener(event: string, handler: () => void): { remove: () => void };
 };
 
 type StreetViewPanoramaCtor = new (
@@ -28,17 +27,21 @@ type StreetViewPanoramaCtor = new (
 ) => StreetViewPanoramaLike;
 
 type GoogleWindow = Window & {
-  google?: {
-    maps?: {
-      StreetViewPanorama?: StreetViewPanoramaCtor;
-    };
-  };
+  google?: { maps?: { StreetViewPanorama?: StreetViewPanoramaCtor } };
 };
 
-export function HostStreetViewStep({ data, onUpdate, onSkip }: HostStepProps & { onSkip?: () => void }) {
+function splitAddress(address?: string): { line1: string; line2: string } {
+  if (!address) return { line1: "", line2: "" };
+  const idx = address.indexOf(",");
+  if (idx === -1) return { line1: address, line2: "" };
+  return { line1: address.slice(0, idx).trim(), line2: address.slice(idx + 1).trim() };
+}
+
+export function HostStreetViewStep({ data, onUpdate }: HostStepProps) {
   const viewerRef = useRef<HTMLDivElement>(null);
   const panoRef = useRef<StreetViewPanoramaLike | null>(null);
   const hasCoords = typeof data.latitude === "number" && typeof data.longitude === "number";
+  const { line1, line2 } = splitAddress(data.address);
 
   useEffect(() => {
     if (!hasCoords || !viewerRef.current) return;
@@ -48,10 +51,9 @@ export function HostStreetViewStep({ data, onUpdate, onSkip }: HostStepProps & {
 
     const init = () => {
       const g = (window as GoogleWindow).google;
-      if (!g?.maps?.StreetViewPanorama || !viewerRef.current) return;
-      if (panoRef.current) return;
+      if (!g?.maps?.StreetViewPanorama || !viewerRef.current || panoRef.current) return;
 
-      panoRef.current = new g.maps.StreetViewPanorama(viewerRef.current, {
+      const pano = new g.maps.StreetViewPanorama(viewerRef.current, {
         position: { lat: latitude, lng: longitude },
         pov: { heading: data.coverHeading ?? 0, pitch: data.coverPitch ?? 0 },
         zoom: 0,
@@ -60,6 +62,14 @@ export function HostStreetViewStep({ data, onUpdate, onSkip }: HostStepProps & {
         showRoadLabels: false,
         motionTracking: false,
         motionTrackingControl: false,
+      });
+      panoRef.current = pano;
+
+      // Persist the chosen angle continuously, so the footer "Confirm" just works.
+      onUpdate({ coverHeading: data.coverHeading ?? 0, coverPitch: data.coverPitch ?? 0 });
+      pano.addListener("pov_changed", () => {
+        const pov = pano.getPov();
+        onUpdate({ coverHeading: Math.round(pov.heading), coverPitch: Math.round(pov.pitch) });
       });
     };
 
@@ -76,69 +86,39 @@ export function HostStreetViewStep({ data, onUpdate, onSkip }: HostStepProps & {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleUseView = () => {
-    const g = (window as GoogleWindow).google;
-    if (panoRef.current && g?.maps) {
-      const pov = panoRef.current.getPov();
-      onUpdate({ coverHeading: Math.round(pov.heading), coverPitch: Math.round(pov.pitch) });
-      onSkip?.();
-    }
-  };
-
-  const handleSkip = () => {
-    onUpdate({ coverHeading: null });
-    onSkip?.();
-  };
-
   if (!hasCoords) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-300">Street view</p>
-        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10 text-center">
+      <div>
+        <SectionLabel>Street view</SectionLabel>
+        <div className="mt-4 flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-white py-12 text-center">
           <MapPin className="h-8 w-8 text-slate-300" strokeWidth={1.4} />
-          <p className="text-sm font-semibold text-slate-700">No location set</p>
-          <p className="text-xs text-slate-600">Go back and confirm your address first</p>
+          <div>
+            <p className="text-[14px] font-semibold text-slate-700">No location set</p>
+            <p className="mt-0.5 text-[13px] text-slate-500">Go back and confirm your address first.</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Viewer card */}
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-300">Street view</p>
-          <button
-            type="button"
-            onClick={handleSkip}
-            className="text-[13px] font-semibold text-brand-500 hover:text-brand-600"
-          >
-            Skip →
-          </button>
-        </div>
-        <div
-          ref={viewerRef}
-          className="h-72 w-full bg-slate-100"
-        />
-        <p className="border-t border-slate-100 px-4 py-3 text-xs text-slate-600">
-          Drag to find the angle that best shows your parking entrance.
-        </p>
+    <div className="space-y-10">
+      {/* Read-only address summary */}
+      <div className="max-w-[760px] rounded-2xl border border-slate-200 bg-white px-5 py-4">
+        <p className="text-[15px] font-semibold text-slate-900">{line1 || data.address}</p>
+        {line2 && <p className="mt-0.5 text-[14px] text-slate-500">{line2}</p>}
       </div>
 
-      {/* Use this view callout */}
-      <div className="rounded-lg bg-brand-50 px-4 py-4 ring-1 ring-brand-100">
-        <p className="text-sm font-semibold text-brand-800">Happy with this angle?</p>
-        <p className="mt-1 text-xs leading-relaxed text-brand-700">
-          This view will be shown on your listing. You can add your own photos in the next step.
+      {/* Street view — mirrors the map screen's framing */}
+      <div>
+        <SectionLabel>Choose your photo angle</SectionLabel>
+        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+          <div ref={viewerRef} className="h-[360px] w-full" />
+        </div>
+        <p className="mt-3 max-w-[68ch] text-[13px] leading-relaxed text-slate-500">
+          Drag to find the angle that best shows your parking entrance, then confirm below. We only share the
+          exact location once a driver has a confirmed booking.
         </p>
-        <button
-          type="button"
-          onClick={handleUseView}
-          className="mt-3 w-full rounded-2xl bg-brand-500 py-2.5 text-[14px] font-bold text-white transition active:bg-brand-600"
-        >
-          Use this view
-        </button>
       </div>
     </div>
   );

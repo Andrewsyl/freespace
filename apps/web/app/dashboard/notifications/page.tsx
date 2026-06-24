@@ -2,10 +2,10 @@
 
 export default function NotificationsPage() {
   return (
-    <div className="space-y-4 px-8">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Settings</p>
-        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Notifications</h1>
+    <div className="space-y-4">
+      <div className="mb-6">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Settings</p>
+        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">Notifications</h1>
       </div>
       <div className="rounded-xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm">
         <p className="text-[14px] font-semibold text-slate-600">Notification preferences</p>

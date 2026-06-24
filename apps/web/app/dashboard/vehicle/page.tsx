@@ -131,10 +131,10 @@ function VehiclePageContent() {
   };
 
   return (
-    <div className="space-y-4 px-8">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Account</p>
-        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">My Vehicle</h1>
+    <div className="space-y-4">
+      <div className="mb-6">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Account</p>
+        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">My Vehicle</h1>
         <p className="mt-1 text-[13.5px] text-slate-600">Your vehicle details are shared with hosts when you make a booking.</p>
       </div>
 

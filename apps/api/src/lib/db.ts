@@ -1349,7 +1349,6 @@ export async function getListingById(listingId: string) {
         rating_count,
         capacity,
         description,
-        nearby,
         ST_X(geom) AS longitude,
         ST_Y(geom) AS latitude
       FROM listings
@@ -1405,7 +1404,6 @@ export async function getListingById(listingId: string) {
     ratingCount: Number(row.rating_count ?? 0),
     capacity: row.capacity != null ? Number(row.capacity) : 1,
     description: row.description ?? null,
-    nearby: row.nearby ?? null,
     latitude: row.latitude,
     longitude: row.longitude,
   };
@@ -1486,7 +1484,6 @@ export async function getListingByIdWithAvailability(
         rating_count,
         capacity,
         description,
-        nearby,
         (${availabilityCheck}) AS is_available,
         ST_X(geom) AS longitude,
         ST_Y(geom) AS latitude
@@ -1544,18 +1541,16 @@ export async function getListingByIdWithAvailability(
     ratingCount: Number(row.rating_count ?? 0),
     capacity: row.capacity != null ? Number(row.capacity) : 1,
     description: row.description ?? null,
-    nearby: row.nearby ?? null,
     latitude: row.latitude,
     longitude: row.longitude,
     isAvailable: row.is_available,
   };
 }
 
-// Persist the cached "Getting around" data computed from Google Places.
-export async function setListingNearby(listingId: string, nearby: unknown) {
+export async function setListingDescription(listingId: string, description: string) {
   await pool.query(
-    `UPDATE listings SET nearby = $2::jsonb, nearby_updated_at = now() WHERE id = $1`,
-    [listingId, JSON.stringify(nearby ?? [])]
+    `UPDATE listings SET description = $2 WHERE id = $1`,
+    [listingId, description]
   );
 }
 

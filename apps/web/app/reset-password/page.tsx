@@ -3,12 +3,12 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mail, CheckCircle, AlertTriangle } from "lucide-react";
+import { Mail, AlertTriangle, ArrowLeft } from "lucide-react";
 import { requestPasswordReset, resetPassword } from "../../lib/api";
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-white"><div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /></div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50"><div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /></div>}>
       <ResetPasswordPageContent />
     </Suspense>
   );
@@ -32,7 +32,7 @@ function ResetPasswordPageContent() {
     setSubmitting(true);
     setError(null);
     try {
-      const result = await requestPasswordReset(email.trim());
+      await requestPasswordReset(email.trim());
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send reset link.");
@@ -58,80 +58,116 @@ function ResetPasswordPageContent() {
   };
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-white px-5 pb-10 pt-12">
-      <div className="mx-auto w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <img src="/freespace-logo-grid-black.png" alt="FreeSpace" className="mx-auto mb-6 h-10 w-auto" />
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">
-            {step === "reset" ? "Account security" : "Account recovery"}
-          </p>
-          <h1 className="mt-2 text-[28px] font-bold tracking-[-0.03em] text-slate-900">
-            {step === "reset" ? "Set new password" : "Reset password"}
-          </h1>
-          <p className="mt-1.5 text-[15px] text-slate-600">
-            {step === "reset" ? "Choose a new password for your account." : "Enter your email and we'll send a reset link."}
-          </p>
+    <div className="flex min-h-[100dvh] flex-col bg-slate-50">
+      {/* Minimal header */}
+      <header className="flex h-14 items-center border-b border-slate-200 bg-white px-5">
+        <Link href="/login" className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-600 transition hover:text-slate-900">
+          <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+          Back to login
+        </Link>
+        <Link href="/" className="ml-auto">
+          <img src="/freespace-logo-grid-black.png" alt="FreeSpace" className="h-8 w-auto" />
+        </Link>
+      </header>
+
+      <div className="flex flex-1 flex-col items-center justify-center px-5 py-12">
+        <div className="w-full max-w-[380px] rounded-2xl border border-slate-200 bg-white px-8 py-10 shadow-sm">
+
+          {step === "request" && done ? (
+            /* ── Email sent confirmation ── */
+            <div className="text-center">
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-brand-50">
+                <Mail className="h-7 w-7 text-brand-500" strokeWidth={1.75} />
+              </div>
+              <h1 className="text-[20px] font-bold text-slate-900">Check your inbox</h1>
+              <p className="mt-2 text-[14px] leading-6 text-slate-500">
+                If an account exists for <strong className="font-medium text-slate-700">{email}</strong>, we sent a reset link.
+              </p>
+              <Link
+                href="/login"
+                className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-xl bg-brand-500 text-[14px] font-bold text-white transition hover:bg-brand-600"
+              >
+                Back to login
+              </Link>
+            </div>
+
+          ) : step === "request" ? (
+            /* ── Request reset ── */
+            <div>
+              <h1 className="text-[22px] font-bold tracking-tight text-slate-900">Reset password</h1>
+              <p className="mt-1.5 text-[14px] text-slate-500">
+                Enter your email and we&apos;ll send a reset link.
+              </p>
+              <form onSubmit={handleRequest} className="mt-6 space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[13px] font-semibold text-slate-700">Email address</label>
+                  <input
+                    required
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    autoFocus
+                    className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-[14px] transition focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex h-11 w-full items-center justify-center rounded-xl bg-brand-500 text-[14px] font-bold text-white transition hover:bg-brand-600 disabled:opacity-50"
+                >
+                  {submitting ? "Sending…" : "Send reset link"}
+                </button>
+              </form>
+            </div>
+
+          ) : (
+            /* ── Set new password ── */
+            <div>
+              <h1 className="text-[22px] font-bold tracking-tight text-slate-900">Set new password</h1>
+              <p className="mt-1.5 text-[14px] text-slate-500">Choose a new password for your account.</p>
+              <form onSubmit={handleReset} className="mt-6 space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[13px] font-semibold text-slate-700">New password</label>
+                  <input
+                    required
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    autoFocus
+                    className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-[14px] transition focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[13px] font-semibold text-slate-700">Confirm password</label>
+                  <input
+                    required
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-[14px] transition focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex h-11 w-full items-center justify-center rounded-xl bg-brand-500 text-[14px] font-bold text-white transition hover:bg-brand-600 disabled:opacity-50"
+                >
+                  {submitting ? "Updating…" : "Set new password"}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" strokeWidth={2} />
+              <p className="text-[13px] text-rose-700">{error}</p>
+            </div>
+          )}
         </div>
-
-        {step === "request" && done ? (
-          <div className="flex flex-col items-center text-center">
-            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-brand-50">
-              <Mail className="h-8 w-8 text-brand-500" strokeWidth={1.75} />
-            </div>
-            <p className="text-[17px] font-bold text-slate-900">Check your inbox</p>
-            <p className="mt-2 text-[14px] leading-6 text-slate-600">
-              If an account exists for <strong className="font-semibold text-slate-800">{email}</strong>, we sent a reset link.
-            </p>
-            <Link href="/login" className="mt-6 text-[15px] font-semibold text-brand-600">Back to login</Link>
-          </div>
-        ) : step === "request" ? (
-          <form onSubmit={handleRequest} className="space-y-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-semibold text-slate-700">Email address</label>
-              <input
-                required type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                className="h-12 rounded-2xl border border-slate-200 px-4 text-[14px] shadow-sm focus:border-brand-500 focus:outline-none"
-                placeholder="you@example.com" autoFocus
-              />
-            </div>
-            <button type="submit" disabled={submitting}
-              className="flex h-12 w-full items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white transition active:bg-brand-600 disabled:opacity-50">
-              {submitting ? "Sending…" : "Send reset link"}
-            </button>
-            <p className="text-center text-[14px] text-slate-600">
-              <Link href="/login" className="font-semibold text-brand-600">Back to login</Link>
-            </p>
-          </form>
-        ) : (
-          <form onSubmit={handleReset} className="space-y-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-semibold text-slate-700">New password</label>
-              <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                className="h-12 rounded-2xl border border-slate-200 px-4 text-[14px] shadow-sm focus:border-brand-500 focus:outline-none"
-                placeholder="••••••••" autoFocus />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-semibold text-slate-700">Confirm password</label>
-              <input required type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                className="h-12 rounded-2xl border border-slate-200 px-4 text-[14px] shadow-sm focus:border-brand-500 focus:outline-none"
-                placeholder="••••••••" />
-            </div>
-            <button type="submit" disabled={submitting}
-              className="flex h-12 w-full items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white transition active:bg-brand-600 disabled:opacity-50">
-              {submitting ? "Updating…" : "Set new password"}
-            </button>
-            <p className="text-center text-[14px] text-slate-600">
-              <Link href="/login" className="font-semibold text-brand-600">Back to login</Link>
-            </p>
-          </form>
-        )}
-
-        {error && (
-          <div className="mt-4 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" strokeWidth={2} />
-            <p className="text-[13px] text-rose-700">{error}</p>
-          </div>
-        )}
       </div>
     </div>
   );

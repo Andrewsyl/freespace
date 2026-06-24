@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { AddressAutocomplete } from "../components/AddressAutocomplete";
@@ -48,6 +49,25 @@ function addMonths(date: string, count: number) {
   const d = new Date(`${date}T00:00:00`);
   d.setMonth(d.getMonth() + count);
   return toDateString(d);
+}
+
+async function geocodeTypedLocation(address: string): Promise<{ address: string; lat: number; lng: number } | null> {
+  if (!(window as any).google?.maps?.Geocoder) return null;
+  return new Promise((resolve) => {
+    const geocoder = new (window as any).google.maps.Geocoder();
+    geocoder.geocode({ address, componentRestrictions: { country: "IE" } }, (results: any[], status: string) => {
+      const first = results?.[0];
+      if (status === "OK" && first?.geometry?.location) {
+        resolve({
+          address: first.formatted_address ?? address,
+          lat: first.geometry.location.lat(),
+          lng: first.geometry.location.lng(),
+        });
+        return;
+      }
+      resolve(null);
+    });
+  });
 }
 
 const now = roundUpToHalfHour(new Date());
@@ -138,6 +158,7 @@ export default function HomePage() {
   const [endTime, setEndTime] = useState(defaultFilters.endTime);
   const [monthlyPlan, setMonthlyPlan] = useState<NonNullable<SearchFilters["monthlyPlan"]>>("full_week");
   const [locationError, setLocationError] = useState(false);
+  const [resolvingLocation, setResolvingLocation] = useState(false);
 
   const startDateTime = useMemo(() => new Date(`${date}T${startTime}:00`), [date, startTime]);
   const endDateTime = useMemo(() => new Date(`${date}T${endTime}:00`), [date, endTime]);
@@ -158,17 +179,37 @@ export default function HomePage() {
     router.push(`/search?${params.toString()}`);
   };
 
-  const submit = () => {
-    if (!location.trim()) {
+  const submit = async () => {
+    const trimmedLocation = location.trim();
+    if (!trimmedLocation) {
       setLocationError(true);
       return;
     }
+    setResolvingLocation(true);
     setLocationError(false);
+    let nextLocation = trimmedLocation;
+    let nextLatitude = latitude;
+    let nextLongitude = longitude;
+    if (nextLatitude === undefined || nextLongitude === undefined) {
+      const resolved = await geocodeTypedLocation(trimmedLocation);
+      if (!resolved) {
+        setLocationError(true);
+        setResolvingLocation(false);
+        return;
+      }
+      nextLocation = resolved.address;
+      nextLatitude = resolved.lat;
+      nextLongitude = resolved.lng;
+      setLocation(resolved.address);
+      setLatitude(resolved.lat);
+      setLongitude(resolved.lng);
+    }
+    setResolvingLocation(false);
     handleSearch({
       ...defaultFilters,
-      location,
-      latitude: latitude ?? defaultFilters.latitude,
-      longitude: longitude ?? defaultFilters.longitude,
+      location: nextLocation,
+      latitude: nextLatitude,
+      longitude: nextLongitude,
       date,
       startTime: mode === "monthly" ? "00:00" : startTime,
       endDate: mode === "monthly" ? addMonths(date, 1) : defaultFilters.endDate,
@@ -247,8 +288,14 @@ export default function HomePage() {
                           setLatitude(place.lat);
                           setLongitude(place.lng);
                         }}
+                        onInputChange={(value) => {
+                          setLocationError(false);
+                          setLocation(value);
+                          setLatitude(undefined);
+                          setLongitude(undefined);
+                        }}
                       />
-                      {locationError && <p className="mt-0.5 text-[11px] font-medium text-brand-600">Enter a location first</p>}
+                      {locationError && <p className="mt-0.5 text-[11px] font-medium text-brand-600">Choose a suggested location or try a more specific address.</p>}
                     </div>
                   </div>
 
@@ -343,12 +390,13 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={submit}
-                  className="font-display flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-4 text-[15px] font-bold text-white transition hover:bg-brand-600"
+                  disabled={resolvingLocation}
+                  className="font-display flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-4 text-[15px] font-bold text-white transition hover:bg-brand-600 disabled:opacity-60"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
                   </svg>
-                  Search parking spaces
+                  {resolvingLocation ? "Finding location..." : "Search parking spaces"}
                 </button>
               </div>
             </div>
@@ -386,6 +434,12 @@ export default function HomePage() {
                       setLocation(place.address);
                       setLatitude(place.lat);
                       setLongitude(place.lng);
+                    }}
+                    onInputChange={(value) => {
+                      setLocationError(false);
+                      setLocation(value);
+                      setLatitude(undefined);
+                      setLongitude(undefined);
                     }}
                   />
                 </div>
@@ -437,15 +491,42 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={submit}
-                  className="font-display flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-4 text-[15px] font-bold text-white transition hover:bg-brand-600 hover:shadow-[0_8px_24px_rgba(27,138,90,0.35)]"
+                  disabled={resolvingLocation}
+                  className="font-display flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-4 text-[15px] font-bold text-white transition hover:bg-brand-600 hover:shadow-[0_8px_24px_rgba(27,138,90,0.35)] disabled:opacity-60"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                   </svg>
-                  Search parking spaces
+                  {resolvingLocation ? "Finding location..." : "Search parking spaces"}
                 </button>
               </div>
             </div>
+
+            {/* ── Quick-pick chips ── */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              {([
+                { label: "City Centre", lat: 53.3498, lng: -6.2603 },
+                { label: "Dublin Airport", lat: 53.4264, lng: -6.2499 },
+                { label: "Connolly Station", lat: 53.3534, lng: -6.2479 },
+                { label: "Aviva Stadium", lat: 53.3352, lng: -6.2285 },
+              ] as const).map((chip) => (
+                <button
+                  key={chip.label}
+                  type="button"
+                  onClick={() => launchScenario({ location: chip.label, latitude: chip.lat, longitude: chip.lng })}
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-slate-600 shadow-sm transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+
+            <p className="mt-3 text-[12.5px] text-slate-500">
+              New to FreeSpace?{" "}
+              <Link href="/signup" className="font-semibold text-brand-600 hover:text-brand-700">
+                Create a free account
+              </Link>
+            </p>
 
             <div className="mt-7 grid grid-cols-3 divide-x divide-slate-200 border-t border-slate-200 pt-6">
               {[
@@ -569,6 +650,42 @@ export default function HomePage() {
               </div>
             </button>
 
+          </div>
+        </section>
+
+        {/* ── Host value prop ── */}
+        <section className="mt-12 sm:mt-16">
+          <div className="overflow-hidden rounded-3xl bg-slate-950 px-8 py-10 sm:px-10 sm:py-12 lg:flex lg:items-center lg:justify-between lg:gap-12">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-400">List your space</p>
+              <h2 className="font-display mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                Earn from your driveway
+              </h2>
+              <p className="mt-3 max-w-md text-[15px] leading-relaxed text-slate-400">
+                Got a spare parking space? List it for free and start earning. Hosts on FreeSpace earn an average of €120/month.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2">
+                {(["Free to list", "Instant payouts", "You set the price"] as const).map((feat) => (
+                  <div key={feat} className="flex items-center gap-2">
+                    <svg className="h-4 w-4 shrink-0 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6 9 17l-5-5"/>
+                    </svg>
+                    <span className="text-[13px] font-medium text-slate-300">{feat}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mt-8 shrink-0 lg:mt-0">
+              <Link
+                href="/host"
+                className="inline-flex items-center gap-2 rounded-2xl bg-brand-500 px-7 py-4 text-[15px] font-bold text-white transition hover:bg-brand-600"
+              >
+                List your space
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+              </Link>
+            </div>
           </div>
         </section>
 

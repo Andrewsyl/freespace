@@ -102,11 +102,11 @@ export default function PaymentsPage() {
 
   if (!user) {
     return (
-      <div className="px-8 py-10">
+      <div className="py-4">
         <p className="text-[14px] text-slate-600">Sign in to manage payments.</p>
         <div className="mt-4 flex flex-col gap-3">
-          <Link href="/login" className="flex h-12 items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white">Sign in</Link>
-          <Link href="/signup" className="flex h-12 items-center justify-center rounded-2xl border border-slate-200 text-[15px] font-semibold text-slate-700">Create account</Link>
+          <Link href="/login" className="flex h-12 items-center justify-center rounded-xl bg-brand-500 text-[15px] font-bold text-white">Sign in</Link>
+          <Link href="/signup" className="flex h-12 items-center justify-center rounded-xl border border-slate-200 text-[15px] font-semibold text-slate-700">Create account</Link>
         </div>
       </div>
     );
@@ -119,21 +119,21 @@ export default function PaymentsPage() {
   );
 
   const pageContent = (
-    <div>
-      <div className="border-b border-slate-200 px-6 py-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Dashboard</p>
-        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Payments</h1>
+    <div className="space-y-4">
+      <div className="mb-6">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Dashboard</p>
+        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">Payments</h1>
       </div>
 
-      {error && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">{error}</div>}
+      {error && <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">{error}</div>}
 
-      <section className="border-b border-slate-200 px-6 py-6">
+      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
         <div className="flex items-center justify-between">
-          <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Saved cards</h2>
+          <h2 className="text-[16px] font-bold text-slate-900">Saved cards</h2>
           <div className="flex flex-col items-end gap-1">
             <button type="button" onClick={() => setShowAdd(true)} disabled={!stripePromise}
-              className="rounded-full bg-brand-500 px-4 py-1.5 text-[12px] font-semibold text-white active:bg-brand-600 disabled:opacity-50">
-              Add card
+              className="rounded-xl bg-brand-500 px-4 py-2 text-[12.5px] font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
+              + Add card
             </button>
             {!stripePromise && <span className="text-[11px] text-amber-600">Stripe not configured.</span>}
           </div>
@@ -141,7 +141,7 @@ export default function PaymentsPage() {
         {status === "loading" ? (
           <div className="mt-4 flex items-center justify-center py-8"><div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /></div>
         ) : methods.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center">
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-8 text-center">
             <p className="text-[14px] font-semibold text-slate-700">No cards saved yet</p>
             <p className="mt-1 text-[13px] text-slate-600">Add a card for faster checkout.</p>
           </div>
@@ -172,14 +172,14 @@ export default function PaymentsPage() {
             ))}
           </div>
         )}
-      </section>
+      </div>
 
-      <section className="px-6 py-6">
-        <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Payment history</h2>
+      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+        <h2 className="text-[16px] font-bold text-slate-900">Payment history</h2>
         {historyStatus === "loading" ? (
           <div className="mt-4 flex items-center justify-center py-8"><div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /></div>
         ) : history.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center">
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-8 text-center">
             <p className="text-[14px] font-semibold text-slate-700">No payments yet</p>
             <p className="mt-1 text-[13px] text-slate-600">Charges from your bookings will appear here.</p>
           </div>
@@ -213,14 +213,14 @@ export default function PaymentsPage() {
             ))}
           </div>
         )}
-      </section>
+      </div>
 
       {showAdd && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center" onClick={() => setShowAdd(false)}>
           {stripePromise ? (
             <AddCardModalStripe onClose={() => setShowAdd(false)} onAdded={loadMethods} setError={setError} token={token ?? undefined} />
           ) : (
-            <div className="w-full max-w-md overflow-hidden rounded-t-2xl bg-white sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full max-w-md overflow-hidden rounded-t-2xl bg-white sm:rounded-xl" onClick={(e) => e.stopPropagation()}>
               <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
                 <p className="text-[15px] font-bold text-slate-900">Add card</p>
                 <button onClick={() => setShowAdd(false)} className="rounded-full border border-slate-200 px-3 py-1 text-[12px] font-semibold text-slate-600">Close</button>
@@ -317,20 +317,20 @@ function AddCardModalStripe({
   };
 
   return (
-    <div className="w-full max-w-md overflow-hidden rounded-t-2xl bg-white sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="w-full max-w-md overflow-hidden rounded-t-2xl bg-white sm:rounded-xl" onClick={(e) => e.stopPropagation()}>
       <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
         <p className="text-[15px] font-bold text-slate-900">Add card</p>
         <button onClick={onClose} className="rounded-full border border-slate-200 px-3 py-1 text-[12px] font-semibold text-slate-600 active:bg-slate-50">Close</button>
       </div>
       <div className="px-6 py-5 space-y-4">
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
           <CardElement options={{ hidePostalCode: true, style: { base: { fontSize: "15px", color: "#0f172a", "::placeholder": { color: "#94a3b8" } } } }} />
         </div>
-        {message && <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">{message}</div>}
+        {message && <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">{message}</div>}
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 rounded-2xl border border-slate-200 py-3 text-[14px] font-semibold text-slate-700 active:bg-slate-50">Cancel</button>
+          <button onClick={onClose} className="flex-1 rounded-xl border border-slate-200 py-3 text-[14px] font-semibold text-slate-700 active:bg-slate-50">Cancel</button>
           <button disabled={submitting} onClick={handleSubmit}
-            className="flex-1 rounded-2xl bg-brand-500 py-3 text-[14px] font-semibold text-white active:bg-brand-600 disabled:opacity-60">
+            className="flex-1 rounded-xl bg-brand-500 py-3 text-[14px] font-semibold text-white active:bg-brand-600 disabled:opacity-60">
             {submitting ? "Saving…" : "Save card"}
           </button>
         </div>

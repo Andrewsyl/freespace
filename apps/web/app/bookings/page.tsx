@@ -86,9 +86,10 @@ export default function BookingsPage() {
     <div className="min-h-screen bg-slate-50">
       <SlimNav />
       <DashboardShell>
-        <div className="px-8">
+        <div>
           <div>
-            <h1 className="text-[22px] font-bold text-slate-900">My Bookings</h1>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Account</p>
+            <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">My Bookings</h1>
 
             {/* Tabs */}
             <div className="mt-5 flex gap-6 border-b border-slate-200">

@@ -1,67 +1,70 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import type { HostStepProps } from "./types";
-
-function ClockIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
-}
-function CalendarIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
-}
+import { SectionIntro, RadioTile } from "./_ui";
 
 const PRICING_MODES = [
-  { key: "hourly_daily", label: "Hourly / Daily" },
-  { key: "monthly",      label: "Monthly" },
-  { key: "both",         label: "Both" },
+  {
+    key:         "hourly_daily",
+    label:       "Hourly & daily",
+    description: "Drivers book by the hour or day — ideal for casual parking near busy areas.",
+  },
+  {
+    key:         "monthly",
+    label:       "Monthly only",
+    description: "One driver pays a recurring monthly rate — reliable, predictable income.",
+  },
+  {
+    key:         "both",
+    label:       "All options",
+    description: "Accept hourly, daily, and monthly bookings to maximise your earnings.",
+  },
 ] as const;
 
-const DEFAULT_HOURLY  = 1;
-const DEFAULT_DAILY   = 12;
-const DEFAULT_MONTHLY = 100;
-
 function sanitize(value: string) {
-  const normalized = value.replace(",", ".").replace(/[^\d.]/g, "");
-  const [whole, ...rest] = normalized.split(".");
-  return rest.length > 0 ? `${whole}.${rest.join("").slice(0, 2)}` : whole;
+  const n = value.replace(",", ".").replace(/[^\d.]/g, "");
+  const [whole, ...rest] = n.split(".");
+  return rest.length ? `${whole}.${rest.join("").slice(0, 2)}` : whole;
 }
 
-function parseMoney(value: string) {
-  const parsed = parseFloat(value);
-  return isFinite(parsed) && parsed > 0 ? Math.round(parsed * 100) / 100 : null;
+function parseMoney(v: string) {
+  const n = parseFloat(v);
+  return isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
 }
 
-function PricingRow({
-  icon,
+function RateField({
   label,
+  suffix,
   value,
   onChange,
+  hint,
 }: {
-  icon: React.ReactNode;
   label: string;
+  suffix: string;
   value: string;
   onChange: (v: string) => void;
+  hint?: string;
 }) {
   return (
-    <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4 last:border-0">
-      <div className="flex items-center gap-3">
-        <span className="text-slate-600">{icon}</span>
-        <span className="text-sm font-bold text-slate-900">{label}</span>
+    <div>
+      <label className="mb-1.5 block text-[14px] font-semibold text-slate-800">{label}</label>
+      <div className="flex items-center rounded-2xl border-2 border-slate-200 bg-white transition-colors focus-within:border-brand-600">
+        <span className="pl-4 text-[20px] font-bold text-slate-400">€</span>
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          step="0.01"
+          value={value}
+          onChange={(e) => onChange(sanitize(e.target.value))}
+          placeholder="0.00"
+          className="flex-1 bg-transparent py-3.5 pl-2 pr-1 text-[24px] font-extrabold tracking-tight text-slate-900 outline-none placeholder:text-slate-300 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        />
+        <span className="pr-4 text-[14px] font-medium text-slate-400">{suffix}</span>
       </div>
-      <div className="flex items-center gap-1.5">
-        <span className="text-base font-bold text-slate-700">€</span>
-        <div className="min-w-[100px] rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
-          <input
-            type="number"
-            min={0}
-            step="0.01"
-            value={value}
-            onChange={(e) => onChange(sanitize(e.target.value))}
-            placeholder="0.00"
-            className="w-full bg-transparent text-base font-bold text-slate-900 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-          />
-        </div>
-      </div>
+      {hint && <p className="mt-1.5 text-[12px] text-slate-400">{hint}</p>}
     </div>
   );
 }
@@ -69,9 +72,9 @@ function PricingRow({
 export function HostPricingStep({ data, onUpdate }: HostStepProps) {
   const pricingMode = data.pricingMode ?? "both";
 
-  const [hourly,  setHourly]  = useState(String(data.pricePerHour  ?? DEFAULT_HOURLY));
-  const [daily,   setDaily]   = useState(String(data.pricePerDay   ?? DEFAULT_DAILY));
-  const [monthly, setMonthly] = useState(String(data.pricePerMonth ?? DEFAULT_MONTHLY));
+  const [hourly,  setHourly]  = useState(String(data.pricePerHour  ?? ""));
+  const [daily,   setDaily]   = useState(String(data.pricePerDay   ?? ""));
+  const [monthly, setMonthly] = useState(String(data.pricePerMonth ?? ""));
 
   useEffect(() => {
     onUpdate({
@@ -84,70 +87,102 @@ export function HostPricingStep({ data, onUpdate }: HostStepProps) {
 
   const hourlyVal  = parseMoney(hourly)  ?? 0;
   const dailyVal   = parseMoney(daily)   ?? 0;
-  const pricingWarning =
+  const monthlyVal = parseMoney(monthly) ?? 0;
+
+  // Honest projection from the host's own rate — not a market claim.
+  const round5 = (n: number) => Math.max(5, Math.round(n / 5) * 5);
+  const estDaily = dailyVal > 0 ? dailyVal : hourlyVal > 0 ? hourlyVal * 8 : 0;
+  let estLo = 0;
+  let estHi = 0;
+  if (pricingMode === "monthly") {
+    estLo = estHi = monthlyVal;
+  } else if (estDaily > 0) {
+    estLo = round5(estDaily * 15);
+    estHi = round5(estDaily * 24);
+  }
+  const showEst = estLo > 0;
+
+  const warning =
     hourlyVal > 0 && dailyVal > 0 && dailyVal > hourlyVal * 24
-      ? `Your daily price (€${dailyVal.toFixed(2)}) is higher than 24× your hourly rate (€${(hourlyVal * 24).toFixed(2)}). Drivers would pay less booking 24 individual hours.`
+      ? `Your daily rate (€${dailyVal.toFixed(2)}) is higher than 24× your hourly rate. Drivers may find it cheaper to book hourly.`
       : null;
 
   return (
-    <div className="space-y-4">
-      {/* Pricing type card */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-300">Pricing type</p>
-        <div className="flex gap-2 rounded-xl bg-slate-100 p-1">
-          {PRICING_MODES.map(({ key, label }) => (
-            <button
+    <div className="space-y-10">
+
+      {/* Pricing model */}
+      <div>
+        <SectionIntro label="Booking type">Choose how drivers can book your space.</SectionIntro>
+        <div className="space-y-2.5">
+          {PRICING_MODES.map(({ key, label, description }) => (
+            <RadioTile
               key={key}
-              type="button"
+              active={pricingMode === key}
               onClick={() => onUpdate({ pricingMode: key })}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${
-                pricingMode === key
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-700"
-              }`}
-            >
-              {label}
-            </button>
+              title={label}
+              description={description}
+            />
           ))}
         </div>
       </div>
 
-      {/* Rates card */}
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <p className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-300">
-          Rates
-        </p>
-        {(pricingMode === "hourly_daily" || pricingMode === "both") && (
-          <PricingRow icon={<ClockIcon />} label="Hourly" value={hourly} onChange={setHourly} />
-        )}
-        {(pricingMode === "hourly_daily" || pricingMode === "both") && (
-          <PricingRow icon={<CalendarIcon />} label="Daily" value={daily} onChange={setDaily} />
-        )}
-        {(pricingMode === "monthly" || pricingMode === "both") && (
-          <PricingRow icon={<CalendarIcon />} label="Monthly" value={monthly} onChange={setMonthly} />
-        )}
+      {/* Rate inputs */}
+      <div>
+        <SectionIntro label="Your rates">You can update these any time from your dashboard.</SectionIntro>
+        <div className="space-y-5">
+          {(pricingMode === "hourly_daily" || pricingMode === "both") && (
+            <RateField
+              label="Hourly rate"
+              suffix="per hour"
+              value={hourly}
+              onChange={setHourly}
+              hint="Most casual parkers"
+            />
+          )}
+          {(pricingMode === "hourly_daily" || pricingMode === "both") && (
+            <RateField
+              label="Daily rate"
+              suffix="per day"
+              value={daily}
+              onChange={setDaily}
+              hint="Capped at daily when booking multiple hours"
+            />
+          )}
+          {(pricingMode === "monthly" || pricingMode === "both") && (
+            <RateField
+              label="Monthly rate"
+              suffix="per month"
+              value={monthly}
+              onChange={setMonthly}
+              hint="Rolling subscription for commuters"
+            />
+          )}
+        </div>
       </div>
 
-      {/* Pricing conflict warning */}
-      {pricingWarning && (
-        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3.5">
-          <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
-            <svg viewBox="0 0 24 24" className="h-4 w-4 text-amber-600" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-amber-900">Pricing conflict</p>
-            <p className="mt-0.5 text-xs text-amber-800">{pricingWarning}</p>
-          </div>
+      {/* Earning potential — the motivation moment */}
+      {showEst && (
+        <div className="rounded-2xl border border-brand-200 bg-brand-50 p-5">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-700">Your earning potential</p>
+          <p className="mt-2 text-[32px] font-extrabold tracking-tight text-slate-900">
+            {estLo === estHi ? `€${estLo}` : `€${estLo}–€${estHi}`}
+            <span className="ml-1 text-[15px] font-semibold text-slate-500">/ month</span>
+          </p>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-brand-800">
+            {pricingMode === "monthly"
+              ? "Guaranteed from one recurring monthly booking — a steady, predictable income."
+              : "Estimated from your daily rate at typical occupancy (15–24 booked days a month). Actual earnings depend on local demand."}
+          </p>
         </div>
       )}
 
-      {/* Tips callout */}
-      <div className="rounded-lg bg-brand-50 px-4 py-4 ring-1 ring-brand-100">
-        <p className="text-sm font-semibold text-brand-800">Pricing tip</p>
-        <p className="mt-1 text-xs leading-relaxed text-brand-700">
-          You can update your rates anytime from the host dashboard. Competitive pricing helps fill gaps between longer monthly bookings.
-        </p>
-      </div>
+      {/* Pricing mismatch warning */}
+      {warning && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+          <AlertTriangle className="mt-0.5 h-[18px] w-[18px] shrink-0 text-amber-500" strokeWidth={2} />
+          <p className="text-[13px] leading-relaxed text-amber-800">{warning}</p>
+        </div>
+      )}
     </div>
   );
 }

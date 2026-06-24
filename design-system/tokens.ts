@@ -117,6 +117,32 @@ export const designTokens = {
       // legacy aliases
       heading: "-0.03em",
     },
+    /**
+     * Canonical type scale — single source of truth for FreeSpace typography.
+     * Each step pairs size (px) with its correct line-height ratio and letter-spacing.
+     * Tracking tightens as size grows; loosens slightly below 12px. Never positive on body.
+     * NOTE: not wired into Tailwind's global `fontSize` on purpose (avoids shifting the
+     * whole web app). Apply via arbitrary values, e.g. text-[15px] leading-[1.6].
+     * px here is the cross-platform source of truth (React Native needs numbers);
+     * the web mirrors these as rem CSS custom properties (--text-*) in
+     * apps/web/app/globals.css for zoom / user-font-scaling accessibility.
+     */
+    scale: {
+      xs:      { size: 11, lineHeight: 1.45, letterSpacing: "0.01em",   use: "micro labels, legal" },
+      sm:      { size: 12, lineHeight: 1.5,  letterSpacing: "0.005em",  use: "captions, helper text" },
+      label:   { size: 13, lineHeight: 1.4,  letterSpacing: "0em",      use: "form labels, nav links" },
+      base:    { size: 15, lineHeight: 1.6,  letterSpacing: "0em",      use: "body default" },
+      md:      { size: 16, lineHeight: 1.6,  letterSpacing: "0em",      use: "lead paragraphs, inputs (mobile)" },
+      lg:      { size: 18, lineHeight: 1.4,  letterSpacing: "-0.01em",  use: "H4 / card titles" },
+      xl:      { size: 20, lineHeight: 1.3,  letterSpacing: "-0.015em", use: "H3 / section titles" },
+      "2xl":   { size: 24, lineHeight: 1.25, letterSpacing: "-0.02em",  use: "H2" },
+      "3xl":   { size: 28, lineHeight: 1.2,  letterSpacing: "-0.02em",  use: "H1 (mobile)" },
+      "4xl":   { size: 36, lineHeight: 1.1,  letterSpacing: "-0.03em",  use: "H1 (desktop) / hero" },
+      display: { size: 48, lineHeight: 1.05, letterSpacing: "-0.04em",  use: "marketing hero" },
+    },
+    /** Uppercase eyebrow / section label — the unified letterspaced overline.
+     *  Mirrored on web as --tracking-eyebrow in apps/web/app/globals.css. */
+    eyebrow: { size: 11, weight: 700, letterSpacing: "0.18em" },
     size: {
       xs:      11,
       sm:      12,

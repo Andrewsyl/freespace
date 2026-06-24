@@ -1,8 +1,9 @@
 "use client";
-import { ChevronRight, X, CheckCircle } from "lucide-react";
+import { X } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import type { HostStepProps } from "./types";
+import { SectionIntro, RadioTile, TipCallout } from "./_ui";
 
 type DayCode = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
 type AvailabilityPreset = "always" | "working" | "custom";
@@ -34,22 +35,9 @@ function detectPreset(text: string): AvailabilityPreset {
 }
 
 const PRESETS = [
-  {
-    key: "always" as const,
-    label: "Always available",
-    description: "Monday – Sunday, 24 hours",
-    badge: "Recommended",
-  },
-  {
-    key: "working" as const,
-    label: "Working week",
-    description: "Monday – Friday, 06:00 – 19:00",
-  },
-  {
-    key: "custom" as const,
-    label: "Custom schedule",
-    description: "Choose your own days and hours",
-  },
+  { key: "always" as const,  label: "Always available", description: "Monday – Sunday, 24 hours",       badge: "Recommended" },
+  { key: "working" as const, label: "Working week",     description: "Monday – Friday, 06:00 – 19:00" },
+  { key: "custom" as const,  label: "Custom schedule",  description: "Choose your own days and hours" },
 ];
 
 export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
@@ -63,129 +51,105 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
   });
 
   useEffect(() => {
-    if (!data.availabilityText) {
-      onUpdate({ availabilityText: "Available 24/7 — Monday to Sunday" });
-    }
+    if (!data.availabilityText) onUpdate({ availabilityText: "Available 24/7 — Monday to Sunday" });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selectPreset = (next: AvailabilityPreset) => {
     setPreset(next);
-    if (next === "always") {
-      onUpdate({ availabilityText: "Available 24/7 — Monday to Sunday" });
-    } else if (next === "working") {
-      onUpdate({ availabilityText: "Monday to Friday, 06:00 – 19:00" });
-    } else {
-      setCustomOpen(true);
-    }
+    if (next === "always") onUpdate({ availabilityText: "Available 24/7 — Monday to Sunday" });
+    else if (next === "working") onUpdate({ availabilityText: "Monday to Friday, 06:00 – 19:00" });
+    else setCustomOpen(true);
   };
 
   const toggleDay = (day: DayCode) => {
     setDays(prev => {
       if (prev.includes(day)) return prev.filter(d => d !== day);
-      const newDays = [...prev, day];
-      const sorted = newDays.sort((a, b) => ALL_DAYS.indexOf(a) - ALL_DAYS.indexOf(b));
-      const idx = sorted.indexOf(day);
-      const source = sorted[idx - 1] ?? sorted[idx + 1];
+      const newDays = [...prev, day].sort((a, b) => ALL_DAYS.indexOf(a) - ALL_DAYS.indexOf(b));
+      const idx = newDays.indexOf(day);
+      const source = newDays[idx - 1] ?? newDays[idx + 1];
       if (source) setRanges(r => ({ ...r, [day]: { ...r[source] } }));
       return newDays;
     });
   };
 
   const confirmCustom = () => {
-    const text = buildText("custom", days, ranges);
-    onUpdate({ availabilityText: text });
+    onUpdate({ availabilityText: buildText("custom", days, ranges) });
     setCustomOpen(false);
   };
 
   const customSummary = buildText("custom", days, ranges);
 
   return (
-    <div className="space-y-4">
-      {/* Options card */}
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <p className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-300">
-          Schedule
-        </p>
-        {PRESETS.map(({ key, label, description, badge }) => {
-          const active = preset === key;
-          const isCustom = key === "custom";
-          return (
-            <button
+    <div className="space-y-10">
+      <div>
+        <SectionIntro label="Availability">When can drivers book your space?</SectionIntro>
+        <div className="space-y-2">
+          {PRESETS.map(({ key, label, description, badge }) => (
+            <RadioTile
               key={key}
-              type="button"
+              active={preset === key}
               onClick={() => selectPreset(key)}
-              className={`flex w-full items-center gap-4 border-b border-slate-100 px-4 py-4 text-left transition last:border-0 ${
-                active ? "bg-brand-50" : "hover:bg-slate-50"
-              }`}
-            >
-              <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ${
-                active ? "border-brand-500 bg-brand-500" : "border-slate-300 bg-white"
-              }`}>
-                {active && <div className="h-2 w-2 rounded-full bg-white" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className={`text-sm font-semibold ${active ? "text-slate-900" : "text-slate-800"}`}>{label}</p>
-                  {badge && (
-                    <span className="text-[11px] font-semibold text-brand-500">{badge}</span>
-                  )}
-                </div>
-                <p className="mt-0.5 text-xs text-slate-600">{description}</p>
-              </div>
-              {isCustom && (
-                <ChevronRight className="h-4 w-4 shrink-0 text-slate-600" strokeWidth={2.5} />
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Custom summary */}
-      {preset === "custom" && customSummary && (
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-brand-300">Selected schedule</p>
-          <p className="text-sm font-semibold text-slate-800">{customSummary}</p>
-          <button
-            type="button"
-            onClick={() => setCustomOpen(true)}
-            className="mt-2 text-[13px] font-semibold text-brand-500 hover:text-brand-600"
-          >
-            Edit →
-          </button>
+              title={label}
+              description={description}
+              trailing={badge ? (
+                <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-700">
+                  {badge}
+                </span>
+              ) : undefined}
+            />
+          ))}
         </div>
-      )}
 
-      {/* Tip callout */}
-      <div className="rounded-lg bg-brand-50 px-4 py-4 ring-1 ring-brand-100">
-        <p className="text-sm font-semibold text-brand-800">More availability = more bookings</p>
-        <p className="mt-1 text-xs leading-relaxed text-brand-700">
-          Spaces available 24/7 receive significantly more bookings. You can always update this from your dashboard.
-        </p>
+        {/* Custom summary */}
+        {preset === "custom" && customSummary && (
+          <div className="mt-3 flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Selected schedule</p>
+              <p className="mt-1 text-[14px] font-medium text-slate-800">{customSummary}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCustomOpen(true)}
+              className="shrink-0 text-[13px] font-semibold text-brand-600 transition hover:text-brand-800"
+            >
+              Edit
+            </button>
+          </div>
+        )}
       </div>
+
+      <TipCallout title="More availability means more bookings">
+        Spaces available 24/7 are booked far more often. You can adjust this any time from your dashboard.
+      </TipCallout>
 
       {/* Custom modal */}
       {customOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center" onClick={() => setCustomOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 backdrop-blur-sm sm:items-center"
+          onClick={() => setCustomOpen(false)}
+        >
           <div
-            className="w-full max-w-md rounded-t-2xl bg-white p-6 sm:rounded-2xl"
+            className="w-full max-w-md rounded-t-2xl bg-white p-6 shadow-2xl sm:rounded-2xl"
             onClick={e => e.stopPropagation()}
           >
             <div className="mb-1 flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900">Custom availability</h3>
-              <button type="button" onClick={() => setCustomOpen(false)} className="text-slate-600 hover:text-slate-800">
+              <h3 className="text-[18px] font-bold tracking-[-0.01em] text-slate-900">Custom availability</h3>
+              <button type="button" onClick={() => setCustomOpen(false)} className="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
                 <X className="h-5 w-5" strokeWidth={2.5} />
               </button>
             </div>
-            <p className="mb-4 text-sm text-slate-600">Choose the days and times you want to make your space available.</p>
+            <p className="mb-4 text-[14px] leading-relaxed text-slate-500">
+              Toggle the days you’re available and set the hours for each.
+            </p>
 
-            <div className="max-h-[50vh] space-y-2 overflow-y-auto">
+            <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
               {ALL_DAYS.map(day => {
                 const enabled = days.includes(day);
                 return (
-                  <div key={day} className="rounded-lg border border-slate-200 p-3">
+                  <div key={day} className={`rounded-xl border p-3 transition-colors ${enabled ? "border-brand-200 bg-brand-50" : "border-slate-200"}`}>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-slate-800">{DAY_LABELS[day]}</span>
+                      <span className="text-[14px] font-semibold text-slate-800">{DAY_LABELS[day]}</span>
                       <button
                         type="button"
                         onClick={() => toggleDay(day)}
@@ -196,26 +160,18 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
                     </div>
                     {enabled && (
                       <div className="mt-3 flex gap-3">
-                        <div className="flex-1">
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-600">Start</p>
-                          <select
-                            value={ranges[day].start}
-                            onChange={e => setRanges(r => ({ ...r, [day]: { ...r[day], start: e.target.value } }))}
-                            className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm font-semibold text-slate-800 focus:outline-none"
-                          >
-                            {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-                          </select>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-600">End</p>
-                          <select
-                            value={ranges[day].end}
-                            onChange={e => setRanges(r => ({ ...r, [day]: { ...r[day], end: e.target.value } }))}
-                            className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm font-semibold text-slate-800 focus:outline-none"
-                          >
-                            {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-                          </select>
-                        </div>
+                        {(["start", "end"] as const).map((edge) => (
+                          <div key={edge} className="flex-1">
+                            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{edge}</p>
+                            <select
+                              value={ranges[day][edge]}
+                              onChange={e => setRanges(r => ({ ...r, [day]: { ...r[day], [edge]: e.target.value } }))}
+                              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-[14px] font-semibold text-slate-800 transition-colors focus:border-brand-600 focus:outline-none"
+                            >
+                              {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -227,7 +183,7 @@ export function HostAvailabilityStep({ data, onUpdate }: HostStepProps) {
               type="button"
               onClick={confirmCustom}
               disabled={days.length === 0}
-              className="mt-4 w-full rounded-2xl bg-brand-500 py-3 text-sm font-bold text-white transition active:bg-brand-600 disabled:opacity-40"
+              className="mt-5 w-full rounded-xl bg-brand-600 py-3.5 text-[15px] font-bold text-white transition hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-40"
             >
               Confirm schedule
             </button>

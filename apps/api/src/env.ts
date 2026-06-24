@@ -52,6 +52,7 @@ const envSchema = z
       .optional()
       .refine((value) => !value || value.startsWith("re_"), "RESEND_API_KEY must look like a Resend API key"),
     POSTHOG_API_KEY: z.string().optional(),
+    ANTHROPIC_API_KEY: z.string().optional(),
     STRIPE_CONNECT_ENABLED: optionalStringBool.transform((value) => value ?? false),
     ERROR_REPORT_WEBHOOK_URL: z.string().url("ERROR_REPORT_WEBHOOK_URL must be a valid URL").optional(),
     GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),

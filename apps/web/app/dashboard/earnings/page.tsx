@@ -122,11 +122,11 @@ export default function EarningsPage() {
 
   if (!user) {
     return (
-      <div className="px-8 py-10">
+      <div className="py-4">
         <p className="text-[14px] text-slate-600">Sign in to view earnings.</p>
         <div className="mt-4 flex flex-col gap-3">
-          <Link href="/login" className="flex h-12 items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white">Sign in</Link>
-          <Link href="/signup" className="flex h-12 items-center justify-center rounded-2xl border border-slate-200 text-[15px] font-semibold text-slate-700">Create account</Link>
+          <Link href="/login" className="flex h-12 items-center justify-center rounded-xl bg-brand-500 text-[15px] font-bold text-white">Sign in</Link>
+          <Link href="/signup" className="flex h-12 items-center justify-center rounded-xl border border-slate-200 text-[15px] font-semibold text-slate-700">Create account</Link>
         </div>
       </div>
     );
@@ -135,37 +135,41 @@ export default function EarningsPage() {
   const currency = summary?.currency ?? "EUR";
 
   return (
-    <div>
-      <div className="border-b border-slate-200 px-6 py-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Dashboard</p>
-        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Earnings</h1>
+    <div className="space-y-4">
+      <div className="mb-6">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Dashboard</p>
+        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">Earnings</h1>
       </div>
 
-      {error && <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}
+      {error && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}
 
-      <div className="grid grid-cols-3 divide-x divide-slate-200 border-b border-slate-200">
-        <div className="flex flex-col justify-center px-4 py-4 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Gross</p>
-          <p className="mt-1 text-[18px] font-bold tracking-[-0.03em] text-slate-900">{formatMoney(summary?.totalCents ?? 0, currency)}</p>
-        </div>
-        <div className="flex flex-col justify-center px-4 py-4 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Fees</p>
-          <p className="mt-1 text-[18px] font-bold tracking-[-0.03em] text-slate-600">{formatMoney(summary?.feeCents ?? 0, currency)}</p>
-        </div>
-        <div className="flex flex-col justify-center px-4 py-4 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">Net</p>
-          <p className="mt-1 text-[18px] font-bold tracking-[-0.03em] text-brand-600">{formatMoney(summary?.netCents ?? 0, currency)}</p>
+      {/* Stats card */}
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="grid grid-cols-3 gap-px bg-slate-200">
+          <div className="flex flex-col items-center bg-white px-4 py-5 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Gross</p>
+            <p className="mt-1 text-[20px] font-extrabold tracking-tight text-slate-900">{formatMoney(summary?.totalCents ?? 0, currency)}</p>
+          </div>
+          <div className="flex flex-col items-center bg-white px-4 py-5 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Fees</p>
+            <p className="mt-1 text-[20px] font-extrabold tracking-tight text-slate-500">{formatMoney(summary?.feeCents ?? 0, currency)}</p>
+          </div>
+          <div className="flex flex-col items-center bg-white px-4 py-5 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Net</p>
+            <p className="mt-1 text-[20px] font-extrabold tracking-tight text-brand-600">{formatMoney(summary?.netCents ?? 0, currency)}</p>
+          </div>
         </div>
       </div>
 
-      <section className="border-b border-slate-200 px-6 py-6">
+      {/* Stripe payouts card */}
+      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
         <div className="flex items-center justify-between">
-          <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Stripe payouts</h2>
+          <h2 className="text-[16px] font-bold text-slate-900">Stripe payouts</h2>
           <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
             connectStatus?.payoutsEnabled ? "bg-brand-50 text-brand-700" : "bg-amber-50 text-amber-700"
           }`}>{statusLabel(connectStatus)}</span>
         </div>
-        <p className="mt-2 text-[14px] leading-6 text-slate-600">{statusMessage(connectStatus)}</p>
+        <p className="mt-2 text-[13.5px] leading-6 text-slate-600">{statusMessage(connectStatus)}</p>
         {connectStatus?.requirementsDue?.length ? (
           <p className="mt-1 text-[12px] text-amber-600">
             Missing: {connectStatus.requirementsDue.slice(0, 3).join(", ")}{connectStatus.requirementsDue.length > 3 ? "…" : ""}
@@ -173,18 +177,19 @@ export default function EarningsPage() {
         ) : null}
         {!connectStatus?.payoutsEnabled && (
           <button onClick={handleConnect} disabled={linkLoading}
-            className="mt-4 flex h-11 items-center justify-center rounded-2xl bg-brand-500 px-6 text-[14px] font-semibold text-white active:bg-brand-600 disabled:opacity-60">
+            className="mt-4 rounded-xl bg-brand-500 px-5 py-2.5 text-[13.5px] font-semibold text-white hover:bg-brand-600 disabled:opacity-60">
             {linkLoading ? "Opening…" : connectStatus?.accountId ? "Finish onboarding" : "Connect Stripe"}
           </button>
         )}
-      </section>
+      </div>
 
-      <section className="px-6 py-6">
-        <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">How payouts work</h2>
-        <p className="mt-3 text-[14px] leading-6 text-slate-600">
+      {/* How payouts work */}
+      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+        <h2 className="text-[16px] font-bold text-slate-900">How payouts work</h2>
+        <p className="mt-2 text-[13.5px] leading-6 text-slate-600">
           Payouts are created automatically once a confirmed booking clears the payout window. Complete Stripe onboarding first so transfers can be sent to your bank account.
         </p>
-      </section>
+      </div>
     </div>
   );
 }

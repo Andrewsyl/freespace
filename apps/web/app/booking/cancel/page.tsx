@@ -29,7 +29,7 @@ function BookingCancelContent() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">Booking cancelled</p>
           <h1 className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Payment not completed</h1>
           <p className="mt-2 text-[14px] leading-6 text-slate-600">
-            Your booking was not confirmed. You can try again or choose a different time.
+            Your booking was not confirmed. You can search again, choose a different time, or check your dashboard if you already completed another booking.
           </p>
           {sessionId && (
             <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[12px] text-slate-600">
@@ -39,7 +39,7 @@ function BookingCancelContent() {
           <div className="mt-6 flex flex-col gap-3">
             <Link href="/"
               className="flex h-12 items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white active:bg-brand-600">
-              Find another slot
+              Search again
             </Link>
             <Link href="/dashboard"
               className="flex h-12 items-center justify-center rounded-2xl border border-slate-200 text-[15px] font-semibold text-slate-700 active:bg-slate-50">

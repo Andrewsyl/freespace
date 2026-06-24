@@ -47,17 +47,17 @@ export default function FavouritesPage() {
     <div className="px-5 py-10">
       <p className="text-[14px] text-slate-600">Sign in to view your saved spaces.</p>
       <div className="mt-4 flex flex-col gap-3">
-        <Link href="/login" className="flex h-12 items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white">Sign in</Link>
-        <Link href="/signup" className="flex h-12 items-center justify-center rounded-2xl border border-slate-200 text-[15px] font-semibold text-slate-700">Create account</Link>
+        <Link href="/login" className="flex h-12 items-center justify-center rounded-xl bg-brand-500 text-[15px] font-bold text-white">Sign in</Link>
+        <Link href="/signup" className="flex h-12 items-center justify-center rounded-xl border border-slate-200 text-[15px] font-semibold text-slate-700">Create account</Link>
       </div>
     </div>
   );
 
   return (
-    <div className="space-y-4 px-8">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Saved spaces</p>
-        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Favourites</h1>
+    <div className="space-y-4">
+      <div className="mb-6">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Saved spaces</p>
+        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">Favourites</h1>
       </div>
 
       {error && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}
@@ -70,7 +70,7 @@ export default function FavouritesPage() {
         )}
 
         {status === "idle" && favourites.length === 0 && (
-          <div className="flex flex-col items-center rounded-2xl border border-slate-200 bg-slate-50 px-5 py-12 text-center">
+          <div className="flex flex-col items-center rounded-xl border border-slate-200 bg-slate-50 px-5 py-12 text-center">
             <Heart className="mb-3 h-8 w-8 text-slate-300" strokeWidth={1.5} />
             <p className="text-[15px] font-semibold text-slate-700">No favourites yet</p>
             <p className="mt-1 text-[13px] text-slate-600">Tap the heart on any listing to save it here.</p>
@@ -95,7 +95,7 @@ export default function FavouritesPage() {
 function FavouriteCard({ listing, removing, onRemove }: { listing: FavouriteListing; removing: boolean; onRemove: () => void }) {
   const image = listing.imageUrls?.[0];
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
       <div className="relative h-36 bg-slate-100">
         {image ? (
           <img src={image} alt={listing.title} className="h-full w-full object-cover" />

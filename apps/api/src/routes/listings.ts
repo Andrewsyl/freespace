@@ -13,11 +13,11 @@ import {
   updateListingForHost,
   getListingHostId,
   insertEventLog,
-  setListingNearby,
 } from "../lib/db.js";
 import { getPresignedPostUpload, uploadBufferToS3, MAX_LISTING_IMAGE_BYTES, S3UploadConfigError } from "../lib/s3.js";
 import { geocodeAddress } from "../lib/geocode.js";
-import { fetchNearbyPlaces, type NearbyPlace } from "../lib/nearbyPlaces.js";
+import { generateListingDescription } from "../lib/generateDescription.js";
+import { setListingDescription } from "../lib/db.js";
 import { requireAuth, optionalAuth } from "../middleware/auth.js";
 import { enforceBlockedList, getFraudSettings, getUserRiskProfile, shouldEnforceFraud } from "../middleware/fraud.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
@@ -25,38 +25,6 @@ import { env } from "../env.js";
 
 const router = Router();
 const DEFAULT_DAILY_HOURS = 8;
-
-// First view of a listing computes its "Getting around" data from Google Places
-// and caches it on the row. Capped so a slow Places call never blocks the
-// response for long — if it overruns, it finishes and persists in the
-// background, and the next viewer gets it from cache.
-const NEARBY_COMPUTE_BUDGET_MS = 5000;
-
-async function ensureListingNearby(listing: {
-  id: string;
-  nearby?: unknown;
-  latitude?: number | null;
-  longitude?: number | null;
-}): Promise<NearbyPlace[] | null> {
-  if (listing.nearby != null) return listing.nearby as NearbyPlace[];
-  if (typeof listing.latitude !== "number" || typeof listing.longitude !== "number") return null;
-
-  const compute = fetchNearbyPlaces(listing.latitude, listing.longitude)
-    .then(async (places) => {
-      await setListingNearby(listing.id, places);
-      return places;
-    })
-    .catch((err) => {
-      console.warn("Nearby enrichment failed", listing.id, err);
-      return null;
-    });
-
-  const budget = new Promise<undefined>((resolve) =>
-    setTimeout(() => resolve(undefined), NEARBY_COMPUTE_BUDGET_MS)
-  );
-  const winner = await Promise.race([compute, budget]);
-  return winner ?? null;
-}
 
 function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
@@ -247,6 +215,7 @@ router.post("/", requireAuth, enforceBlockedList, listingWriteLimiter, async (re
 
     const created = await createListing({
       ...payload,
+      description: payload.description?.trim() || null,
       rateType: pricing.rateType,
       pricePerDay: pricing.pricePerDay,
       pricePerHour: pricing.pricePerHour,
@@ -269,6 +238,19 @@ router.post("/", requireAuth, enforceBlockedList, listingWriteLimiter, async (re
       },
     });
     res.status(201).json({ id: created.id });
+
+    if (!payload.description?.trim()) {
+      generateListingDescription({
+        address: payload.address,
+        amenities: payload.amenities,
+        capacity: payload.capacity,
+        availabilityText: payload.availabilityText,
+      })
+        .then((desc) => {
+          if (desc) return setListingDescription(created.id, desc);
+        })
+        .catch((err) => console.warn("Background description generation failed", created.id, err));
+    }
   } catch (error) {
     next(error);
   }
@@ -351,11 +333,9 @@ router.get("/:id", async (req, res, next) => {
     if (!listing) return res.status(404).json({ message: "Listing not found" });
     const availability = await listAvailability(listingId);
     const availabilitySchedule = availability.filter((entry) => entry.kind === "open");
-    const nearby = await ensureListingNearby(listing);
     res.json({
       listing: {
         ...listing,
-        nearby,
         availabilitySchedule,
       },
     });

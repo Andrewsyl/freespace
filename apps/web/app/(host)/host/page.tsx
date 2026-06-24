@@ -14,6 +14,7 @@ import { HostAvailabilityStep } from "../../../components/host/HostAvailabilityS
 import { HostPricingStep } from "../../../components/host/HostPricingStep";
 import { HostPhotosStep } from "../../../components/host/HostPhotosStep";
 import { HostConfirmationStep } from "../../../components/host/HostConfirmationStep";
+import { HostPublishedScreen } from "../../../components/host/HostPublishedScreen";
 import type { HostListingDraft } from "../../../components/host/types";
 import { buildTitleFromDraft } from "../../../components/host/utils";
 
@@ -71,6 +72,7 @@ export default function HostWizardPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [draft, setDraft] = useState<HostListingDraft>(DEFAULT_DRAFT);
   const [saving, setSaving] = useState(false);
+  const [published, setPublished] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // ── Restore draft from localStorage ─────────────────────────────────────────
@@ -201,7 +203,8 @@ export default function HostWizardPage() {
       void trackEvent("web_host_publish_succeeded", {
         pricingMode: draft.pricingMode,
       });
-      router.push("/host/dashboard?created=1");
+      setSaving(false);
+      setPublished(true);
     } catch (err) {
       void trackEvent("web_host_publish_failed", {
         pricingMode: draft.pricingMode,
@@ -230,11 +233,26 @@ export default function HostWizardPage() {
     );
   }
 
+  // ── Published — celebration ──────────────────────────────────────────────────
+  if (published) {
+    return (
+      <HostPublishedScreen
+        data={draft}
+        onDashboard={() => router.push("/host/dashboard?created=1")}
+        onAddAnother={() => {
+          setDraft(DEFAULT_DRAFT);
+          setStepIndex(0);
+          setPublished(false);
+        }}
+      />
+    );
+  }
+
   // ── Render current step ──────────────────────────────────────────────────────
   const renderStep = () => {
     switch (stepIndex) {
       case 0: return <HostAddressStep    data={draft} onUpdate={updateDraft} />;
-      case 1: return <HostStreetViewStep data={draft} onUpdate={updateDraft} onSkip={handleNext} />;
+      case 1: return <HostStreetViewStep data={draft} onUpdate={updateDraft} />;
       case 2: return <HostDetailsStep    data={draft} onUpdate={updateDraft} />;
       case 3: return <HostFeaturesStep   data={draft} onUpdate={updateDraft} />;
       case 4: return <HostAvailabilityStep data={draft} onUpdate={updateDraft} />;
@@ -245,18 +263,27 @@ export default function HostWizardPage() {
   };
 
   const isLastStep = stepIndex === STEPS.length - 1;
+  const isStreetView = stepIndex === 1;
+  const nextLabel = isLastStep ? "Publish listing" : isStreetView ? "Confirm streetview" : "Continue";
+
   return (
     <HostStepperLayout
       title={STEPS[stepIndex].title}
       description={STEPS[stepIndex].description}
       step={stepIndex + 1}
       totalSteps={STEPS.length}
+      stepTitles={STEPS.map((s) => s.title)}
       onBack={stepIndex === 0 ? () => router.push("/host/dashboard") : handleBack}
       onNext={isLastStep ? handlePublish : handleNext}
-      nextLabel={isLastStep ? "Publish listing" : "Continue"}
+      nextLabel={nextLabel}
       nextDisabled={nextDisabled}
       loading={saving}
       error={error}
+      secondaryAction={
+        isStreetView
+          ? { label: "Skip for now", onClick: () => { updateDraft({ coverHeading: null }); handleNext(); } }
+          : undefined
+      }
     >
       {renderStep()}
     </HostStepperLayout>
