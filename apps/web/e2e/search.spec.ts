@@ -53,7 +53,7 @@ test("search results render and a listing overlay can open and close", async ({ 
 
   await expect(page.getByRole("button", { name: "Close", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Mountjoy Square Parking" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Book Now" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Book this space" })).toBeVisible();
 
   await page.getByRole("button", { name: "Close", exact: true }).click();
 

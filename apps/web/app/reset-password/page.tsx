@@ -63,7 +63,7 @@ function ResetPasswordPageContent() {
       <header className="flex h-14 items-center border-b border-slate-200 bg-white px-5">
         <Link href="/login" className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-600 transition hover:text-slate-900">
           <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-          Back to login
+          Log in
         </Link>
         <Link href="/" className="ml-auto">
           <img src="/freespace-logo-grid-black.png" alt="FreeSpace" className="h-8 w-auto" />

@@ -19,7 +19,7 @@ const hostDraft = {
   locationConfirmed: true,
   coverHeading: 12,
   coverPitch: 18,
-  spaceType: "Private Driveway",
+  spaceType: "Driveway",
   spaceCount: "1",
   vehicleSize: "medium",
   title: "Private Driveway near Mountjoy Square",
@@ -88,7 +88,7 @@ test("signed-in driver can start a booking checkout", async ({ page, baseURL }) 
 
   await expect(page.getByRole("heading", { name: "Mountjoy Square Parking" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Contact Info" })).toBeVisible();
-  await expect(page.getByText("Reservation Period")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Booking details" })).toBeVisible();
 
   await page.evaluate(() => {
     const form = document.getElementById("checkout-form") as HTMLFormElement | null;
@@ -128,12 +128,17 @@ test("signed-in host can publish a space from the wizard", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "Confirm location" })).toBeVisible();
 
-  for (let step = 0; step < 7; step += 1) {
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Confirm streetview" }).click();
+
+  for (let step = 0; step < 5; step += 1) {
     await page.getByRole("button", { name: "Continue" }).click();
   }
 
   await expect(page.getByRole("button", { name: "Publish listing" })).toBeVisible();
   await page.getByRole("button", { name: "Publish listing" }).click();
 
+  await expect(page.getByRole("heading", { name: "You’re live! 🎉" })).toBeVisible();
+  await page.getByRole("button", { name: "Go to your dashboard" }).click();
   await page.waitForURL("**/host/dashboard?created=1");
 });
