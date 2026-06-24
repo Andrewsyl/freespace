@@ -22,7 +22,7 @@ jobs:
 
       - name: Check web home page
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://freespace.ie/)
+          STATUS=$(curl -L -s -o /dev/null -w "%{http_code}" --max-time 10 https://freespace.ie/)
           echo "HTTP status: $STATUS"
           if [ "$STATUS" != "200" ]; then
             echo "::error::Web home page returned HTTP $STATUS"
