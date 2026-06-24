@@ -105,6 +105,12 @@ export default function HostWizardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft.address, draft.spaceType]);
 
+  // ── Not signed in → use the polished /login page, then return here ────────────
+  useEffect(() => {
+    if (loading || user) return;
+    router.replace(`/login?next=${encodeURIComponent("/host")}`);
+  }, [loading, user, router]);
+
   // ── Step validation ──────────────────────────────────────────────────────────
   const isStepValid = (index: number): boolean => {
     switch (index) {
@@ -214,21 +220,11 @@ export default function HostWizardPage() {
     }
   };
 
-  // ── Not signed in ────────────────────────────────────────────────────────────
+  // ── Not signed in → the effect above redirects to /login; show a spinner ──────
   if (!loading && !user) {
     return (
-      <div className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center bg-white px-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">List your space</p>
-        <h1 className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Sign in to get started</h1>
-        <p className="mt-1 text-[14px] text-slate-600">You need an account to list your parking space.</p>
-        <div className="mt-6 flex flex-col gap-3">
-          <Link href="/login" className="flex items-center justify-center rounded-2xl bg-brand-500 py-3.5 text-[15px] font-bold text-white active:bg-brand-600">
-            Sign in
-          </Link>
-          <Link href="/signup" className="flex items-center justify-center rounded-2xl border border-slate-200 py-3.5 text-[15px] font-semibold text-slate-700 active:bg-slate-50">
-            Create account
-          </Link>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
       </div>
     );
   }
@@ -289,4 +285,3 @@ export default function HostWizardPage() {
     </HostStepperLayout>
   );
 }
-import Link from "next/link";

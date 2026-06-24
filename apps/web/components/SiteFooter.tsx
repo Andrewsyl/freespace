@@ -175,7 +175,7 @@ export function SiteFooter() {
         <div className="border-t border-white/[0.06]">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4 text-[12px] text-white/70">
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-              <span>© 2026 {LEGAL_CONTACT.brandName}</span>
+              <span>© {new Date().getFullYear()} {LEGAL_CONTACT.brandName}</span>
               {[
                 { label: "Cookie settings", href: "/legal/cookie-policy" },
                 { label: "Privacy", href: "/legal/privacy-policy" },

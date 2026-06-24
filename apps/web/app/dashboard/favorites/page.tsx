@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Heart, MapPin, Star } from "lucide-react";
 import { useAuth } from "../../../components/AuthProvider";
@@ -8,6 +9,11 @@ import { getFavourites, removeFavourite, type FavouriteListing } from "../../../
 
 export default function FavouritesPage() {
   const { user, token, loading } = useAuth();
+  const router = useRouter();
+  useEffect(() => {
+    if (loading || user) return;
+    router.replace(`/login?next=${encodeURIComponent("/dashboard/favorites")}`);
+  }, [loading, user, router]);
   const [favourites, setFavourites] = useState<FavouriteListing[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -44,12 +50,8 @@ export default function FavouritesPage() {
   if (loading) return <div className="flex items-center justify-center py-20"><div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /></div>;
 
   if (!user) return (
-    <div className="px-5 py-10">
-      <p className="text-[14px] text-slate-600">Sign in to view your saved spaces.</p>
-      <div className="mt-4 flex flex-col gap-3">
-        <Link href="/login" className="flex h-12 items-center justify-center rounded-xl bg-brand-500 text-[15px] font-bold text-white">Sign in</Link>
-        <Link href="/signup" className="flex h-12 items-center justify-center rounded-xl border border-slate-200 text-[15px] font-semibold text-slate-700">Create account</Link>
-      </div>
+    <div className="flex items-center justify-center py-20">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
     </div>
   );
 

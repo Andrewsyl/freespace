@@ -133,7 +133,7 @@ export function ListingCard({
   const streetViewKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? process.env.GOOGLE_MAPS_API_KEY;
   const streetViewImage =
     listing.latitude != null && listing.longitude != null && streetViewKey
-      ? `https://maps.googleapis.com/maps/api/streetview?size=800x600&location=${listing.latitude},${listing.longitude}&key=${streetViewKey}`
+      ? `https://maps.googleapis.com/maps/api/streetview?size=800x600&location=${listing.latitude},${listing.longitude}&source=outdoor&key=${streetViewKey}`
       : undefined;
 
   const imageSrc =

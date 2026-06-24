@@ -107,7 +107,7 @@ function SignupPageContent() {
             ))}
           </div>
         </div>
-        <p className="text-[12px] text-slate-600">© 2025 FreeSpace</p>
+        <p className="text-[12px] text-slate-600">© {new Date().getFullYear()} FreeSpace</p>
       </div>
 
       {/* ── Right form panel ── */}

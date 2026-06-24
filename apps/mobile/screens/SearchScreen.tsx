@@ -1422,7 +1422,7 @@ export function SearchScreen({ navigation }: Props) {
     (visibleSelectedListing?.latitude &&
     visibleSelectedListing?.longitude &&
     mapsKey
-      ? `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${visibleSelectedListing.latitude},${visibleSelectedListing.longitude}&key=${mapsKey}`
+      ? `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${visibleSelectedListing.latitude},${visibleSelectedListing.longitude}&source=outdoor&key=${mapsKey}`
       : null);
 
   useEffect(() => {

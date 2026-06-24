@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -384,6 +385,11 @@ function StatCard({
 
 export default function HostDashboardPage() {
   const { user, token, loading } = useAuth();
+  const router = useRouter();
+  useEffect(() => {
+    if (loading || user) return;
+    router.replace(`/login?next=${encodeURIComponent("/host/dashboard")}`);
+  }, [loading, user, router]);
   const [listings, setListings]             = useState<Listing[]>([]);
   const [hostBookings, setHostBookings]     = useState<BookingSummary[]>([]);
   const [earnings, setEarnings]             = useState<EarningsSummary | null>(null);
@@ -476,23 +482,8 @@ export default function HostDashboardPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-white">
-        <SlimNav />
-        <div className="mx-auto max-w-sm px-5 py-20 text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-            <LayoutGrid className="h-7 w-7 text-slate-400" strokeWidth={1.5} />
-          </div>
-          <h1 className="text-[22px] font-bold tracking-[-0.02em] text-slate-900">Sign in to continue</h1>
-          <p className="mt-2 text-[14px] leading-relaxed text-slate-500">You need an account to manage your spaces.</p>
-          <div className="mt-7 flex flex-col gap-3">
-            <Link href="/login" className="flex h-12 items-center justify-center rounded-xl bg-brand-500 text-[14.5px] font-semibold text-white hover:bg-brand-600">
-              Sign in
-            </Link>
-            <Link href="/signup" className="flex h-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-[14.5px] font-semibold text-slate-700 hover:bg-slate-50">
-              Create account
-            </Link>
-          </div>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
       </div>
     );
   }

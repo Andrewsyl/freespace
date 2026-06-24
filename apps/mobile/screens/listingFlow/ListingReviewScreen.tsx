@@ -198,7 +198,7 @@ export function ListingReviewScreen({ navigation }: Props) {
     try {
       void trackEvent("mobile_host_publish_started", { pricingMode: draft.pricingMode, hasPhotos: draft.photos.length > 0 });
       const coverUrl = draft.coverHeading != null && mapsKey
-        ? `https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=${draft.location.latitude},${draft.location.longitude}&heading=${draft.coverHeading}&pitch=${draft.coverPitch ?? 0}&fov=80&key=${mapsKey}`
+        ? `https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=${draft.location.latitude},${draft.location.longitude}&heading=${draft.coverHeading}&pitch=${draft.coverPitch ?? 0}&fov=80&source=outdoor&key=${mapsKey}`
         : null;
       const imageUrls = [...(coverUrl ? [coverUrl] : []), ...draft.photos.filter(Boolean)];
       const parsedHourly = Number.parseFloat(draft.pricePerHour);

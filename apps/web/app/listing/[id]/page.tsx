@@ -83,7 +83,7 @@ export default async function ListingDetailPage({
     listing.latitude != null &&
     listing.longitude != null &&
     process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-      ? `https://maps.googleapis.com/maps/api/streetview?size=1200x800&location=${listing.latitude},${listing.longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+      ? `https://maps.googleapis.com/maps/api/streetview?size=1200x800&location=${listing.latitude},${listing.longitude}&source=outdoor&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
       : fallbackImage(listing.title);
 
   const images = listing.imageUrls && listing.imageUrls.length ? listing.imageUrls : [fallback];

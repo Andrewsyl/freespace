@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { BookingCard, type Booking } from "../../components/BookingCard";
@@ -9,6 +10,11 @@ import { useAuth } from "../../components/AuthProvider";
 
 export default function DashboardPage() {
   const { user, token, loading } = useAuth();
+  const router = useRouter();
+  useEffect(() => {
+    if (loading || user) return;
+    router.replace(`/login?next=${encodeURIComponent("/dashboard")}`);
+  }, [loading, user, router]);
   const [driverBookings, setDriverBookings] = useState<Booking[]>([]);
   const [hostBookings, setHostBookings] = useState<Booking[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -177,12 +183,8 @@ export default function DashboardPage() {
 
   if (!user) {
     return (
-      <div className="py-10">
-        <p className="text-[14px] text-slate-600">Sign in to view your bookings.</p>
-        <div className="mt-4 flex flex-col gap-3">
-          <Link href="/login" className="flex h-12 items-center justify-center rounded-xl bg-brand-500 text-[15px] font-bold text-white">Sign in</Link>
-          <Link href="/signup" className="flex h-12 items-center justify-center rounded-xl border border-slate-200 text-[15px] font-semibold text-slate-700">Create account</Link>
-        </div>
+      <div className="flex items-center justify-center py-20">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
       </div>
     );
   }

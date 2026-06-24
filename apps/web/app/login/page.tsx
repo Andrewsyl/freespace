@@ -89,7 +89,7 @@ function LoginPageContent() {
             ))}
           </div>
         </div>
-        <p className="text-[12px] text-white/35">© 2025 FreeSpace</p>
+        <p className="text-[12px] text-white/35">© {new Date().getFullYear()} FreeSpace</p>
       </div>
 
       {/* ── Right form panel ── */}

@@ -502,32 +502,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* ── Quick-pick chips ── */}
-            <div className="mt-4 flex flex-wrap gap-2">
-              {([
-                { label: "City Centre", lat: 53.3498, lng: -6.2603 },
-                { label: "Dublin Airport", lat: 53.4264, lng: -6.2499 },
-                { label: "Connolly Station", lat: 53.3534, lng: -6.2479 },
-                { label: "Aviva Stadium", lat: 53.3352, lng: -6.2285 },
-              ] as const).map((chip) => (
-                <button
-                  key={chip.label}
-                  type="button"
-                  onClick={() => launchScenario({ location: chip.label, latitude: chip.lat, longitude: chip.lng })}
-                  className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-slate-600 shadow-sm transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-
-            <p className="mt-3 text-[12.5px] text-slate-500">
-              New to FreeSpace?{" "}
-              <Link href="/signup" className="font-semibold text-brand-600 hover:text-brand-700">
-                Create a free account
-              </Link>
-            </p>
-
             <div className="mt-7 grid grid-cols-3 divide-x divide-slate-200 border-t border-slate-200 pt-6">
               {[
                 { stat: "Instant", label: "Booking" },
@@ -655,14 +629,24 @@ export default function HomePage() {
 
         {/* ── Host value prop ── */}
         <section className="mt-12 sm:mt-16">
-          <div className="overflow-hidden rounded-3xl bg-slate-950 px-8 py-10 sm:px-10 sm:py-12 lg:flex lg:items-center lg:justify-between lg:gap-12">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-400">List your space</p>
-              <h2 className="font-display mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          <div className="group relative overflow-hidden rounded-3xl bg-slate-950 px-8 py-10 transition-colors hover:bg-slate-900 sm:px-10 sm:py-12 lg:flex lg:items-center lg:justify-between lg:gap-12">
+            {/* Depth — soft brand glow + decorative glyph, like the scenario cards */}
+            <div className="pointer-events-none absolute -right-20 -top-24 h-80 w-80 rounded-full bg-brand-500/10 blur-3xl" />
+            <svg className="pointer-events-none absolute -right-6 -top-8 h-56 w-56 text-brand-500/[0.10]" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
+              <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" />
+            </svg>
+
+            <div className="relative">
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-brand-400">Become a host</p>
+                <span className="rounded-full bg-brand-500/15 px-3 py-1 text-[11px] font-bold text-brand-300">Avg €120 / month</span>
+              </div>
+              <h2 className="font-display mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
                 Earn from your driveway
               </h2>
               <p className="mt-3 max-w-md text-[15px] leading-relaxed text-slate-400">
-                Got a spare parking space? List it for free and start earning. Hosts on FreeSpace earn an average of €120/month.
+                Got a spare parking space? List it for free, set your own price, and start earning from an empty driveway.
               </p>
               <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2">
                 {(["Free to list", "Instant payouts", "You set the price"] as const).map((feat) => (
@@ -675,13 +659,13 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-            <div className="mt-8 shrink-0 lg:mt-0">
+            <div className="relative mt-8 shrink-0 lg:mt-0">
               <Link
                 href="/host"
-                className="inline-flex items-center gap-2 rounded-2xl bg-brand-500 px-7 py-4 text-[15px] font-bold text-white transition hover:bg-brand-600"
+                className="inline-flex items-center gap-2 rounded-2xl bg-white px-7 py-4 text-[15px] font-bold text-slate-950 transition hover:bg-slate-100"
               >
                 List your space
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <svg className="h-4 w-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                   <path d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
                 </svg>
               </Link>

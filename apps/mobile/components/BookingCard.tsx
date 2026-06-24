@@ -56,7 +56,7 @@ export function BookingCard({
   const imageUrl =
     booking.imageUrls?.[0] ??
     (mapsKey && booking.latitude != null && booking.longitude != null
-      ? `https://maps.googleapis.com/maps/api/streetview?size=240x240&location=${booking.latitude},${booking.longitude}&fov=70&key=${mapsKey}`
+      ? `https://maps.googleapis.com/maps/api/streetview?size=240x240&location=${booking.latitude},${booking.longitude}&fov=70&source=outdoor&key=${mapsKey}`
       : undefined);
   const [startTime, endTime] = timeLabel.split("–").map((s) => s.trim());
 

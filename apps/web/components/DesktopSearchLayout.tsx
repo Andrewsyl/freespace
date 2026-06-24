@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { ListingCard, ListingCardSkeleton } from "./ListingCard";
 import { SearchForm } from "./SearchForm";
 import { MapView } from "./MapView";
@@ -465,6 +466,7 @@ function ListingOverlay({
   onOpen: () => void;
 }) {
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
   const fallbackImage = listingGradient(listing);
   const isFallbackUrl = fallbackImage?.startsWith("http");
@@ -502,6 +504,15 @@ function ListingOverlay({
 
   const displayPrice = formatPriceValue(pricing.sortValue);
 
+  useEffect(() => {
+    if (!fullscreenImage) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFullscreenImage(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [fullscreenImage]);
+
   // Duration label for daily mode
   const durationLabel = (() => {
     if (mode !== "daily") return null;
@@ -514,21 +525,29 @@ function ListingOverlay({
   })();
 
   return (
+    <>
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
 
       {/* ── Photo carousel ── */}
       <div className="relative h-52 w-full shrink-0 overflow-hidden bg-slate-100">
         {currentImage ? (
-          <img
-            key={currentImage}
-            src={currentImage}
-            alt={listing.title}
-            className="h-full w-full object-cover"
-          />
+          <button
+            type="button"
+            onClick={() => setFullscreenImage(currentImage)}
+            className="block h-full w-full cursor-zoom-in border-0 bg-transparent p-0"
+            aria-label="Open listing image fullscreen"
+          >
+            <img
+              key={currentImage}
+              src={currentImage}
+              alt={listing.title}
+              className="h-full w-full object-cover"
+            />
+          </button>
         ) : (
           <div className="h-full w-full" style={{ background: fallbackImage }} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
         <button
           type="button"
@@ -726,6 +745,32 @@ function ListingOverlay({
 
       </div>
     </div>
+    {fullscreenImage && typeof document !== "undefined" && createPortal(
+      <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${listing.title} image fullscreen`}
+        onClick={() => setFullscreenImage(null)}
+      >
+        <button
+          type="button"
+          onClick={() => setFullscreenImage(null)}
+          aria-label="Close fullscreen image"
+          className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/12 text-white backdrop-blur transition hover:bg-white/20"
+        >
+          <X className="h-5 w-5" strokeWidth={2.4} />
+        </button>
+        <img
+          src={fullscreenImage}
+          alt={listing.title}
+          className="max-h-[92dvh] max-w-[94vw] rounded-2xl object-contain shadow-2xl"
+          onClick={(event) => event.stopPropagation()}
+        />
+      </div>,
+      document.body
+    )}
+    </>
   );
 }
 
@@ -831,7 +876,7 @@ export function listingGradient(listing: Listing): string {
   if (url) return url;
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   if (key && typeof listing.latitude === "number" && typeof listing.longitude === "number") {
-    return `https://maps.googleapis.com/maps/api/streetview?size=800x400&location=${listing.latitude},${listing.longitude}&key=${key}`;
+    return `https://maps.googleapis.com/maps/api/streetview?size=800x400&location=${listing.latitude},${listing.longitude}&source=outdoor&key=${key}`;
   }
   const seed = listing.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   return `linear-gradient(135deg, hsl(${seed % 360},70%,55%), hsl(${(seed * 3) % 360},70%,45%))`;

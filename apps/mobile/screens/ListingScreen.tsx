@@ -379,7 +379,7 @@ export function ListingScreen({ navigation, route }: Props) {
   const imageUrls = useMemo(() => {
     if (listing?.image_urls?.length) return listing.image_urls;
     if (mapsKey)
-      return [`https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=${streetViewLocation}&fov=65&key=${mapsKey}`];
+      return [`https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=${streetViewLocation}&fov=65&source=outdoor&key=${mapsKey}`];
     return [];
   }, [listing?.image_urls, mapsKey, streetViewLocation]);
 

@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-test("host page shows onboarding guidance when signed out", async ({ page }) => {
+test("host page redirects a signed-out visitor to login", async ({ page }) => {
   await page.goto("/host");
 
-  await expect(page.getByRole("heading", { name: "Sign in to get started" })).toBeVisible();
-  await expect(page.getByText("You need an account to list your parking space.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Create account" })).toBeVisible();
+  // Signed-out users are sent to the polished /login page (with a return path)
+  // instead of a bare interstitial. Allow time for dev-mode route compilation.
+  await page.waitForURL(/\/login\?next=/, { timeout: 30000 });
+  await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
 });
