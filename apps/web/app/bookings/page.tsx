@@ -126,7 +126,7 @@ export default function BookingsPage() {
                   <p className="text-[15px] font-semibold text-slate-600">No {tab} bookings</p>
                   {tab === "upcoming" && (
                     <Link
-                      href="/search"
+                      href="/"
                       className="mt-4 rounded-lg bg-brand-500 px-4 py-2 text-[13px] font-bold text-white hover:bg-brand-600"
                     >
                       Find parking
