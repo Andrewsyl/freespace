@@ -40,6 +40,7 @@ type DateTimePickerProps = {
   popupAlign?: "left" | "right";
   renderTrigger?: (props: { open: boolean; toggle: () => void; formattedValue: string }) => React.ReactNode;
   portalPopup?: boolean;
+  flatTrigger?: boolean;
 };
 
 export function SearchDateTimePicker(props: DateTimePickerProps) {
@@ -472,6 +473,7 @@ function DateTimePicker({
   popupAlign = "left",
   renderTrigger,
   portalPopup = false,
+  flatTrigger = false,
 }: DateTimePickerProps) {
   const [open, setOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState(startOfMonth(value));
@@ -692,7 +694,7 @@ function DateTimePicker({
         <button
           type="button"
           onClick={toggleOpen}
-          className={`flex w-full min-w-[302px] flex-col justify-center rounded-md border border-[#d5dbe3] bg-white px-4 py-2 text-left shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition hover:border-[#c7d0da] ${
+          className={`flex w-full min-w-[302px] flex-col justify-center rounded-md border border-[#d5dbe3] bg-white px-4 py-2 text-left ${flatTrigger ? "" : "shadow-[0_1px_2px_rgba(15,23,42,0.08)]"} transition hover:border-[#c7d0da] ${
             open ? "border-[#b9c4cf]" : ""
           }`}
         >
@@ -719,7 +721,7 @@ function DateTimePicker({
       <button
         type="button"
         onClick={toggleOpen}
-        className={`flex w-full items-center justify-between rounded-lg border bg-white text-left shadow-sm transition ${
+        className={`flex w-full items-center justify-between rounded-lg border bg-white text-left ${flatTrigger ? "" : "shadow-sm"} transition ${
           open
             ? "border-brand-400 ring-2 ring-brand-100"
             : "border-[#E5E7EB] hover:border-slate-300"
