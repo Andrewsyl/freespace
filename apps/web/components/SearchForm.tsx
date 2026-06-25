@@ -116,6 +116,10 @@ export function SearchForm({
       const nextState = {
         ...prev,
         ...initialValues,
+        location: initialValues.location ?? prev.location ?? "",
+        mode: initialValues.mode ?? prev.mode ?? "daily",
+        monthlyPlan: initialValues.monthlyPlan ?? prev.monthlyPlan ?? "full_week",
+        radiusKm: initialValues.radiusKm ?? prev.radiusKm ?? 5,
         startAt: startFromProps,
         endAt: endFromProps,
       };
@@ -148,7 +152,7 @@ export function SearchForm({
     const startTime = toTimeString(current.startAt);
     const endTime = toTimeString(current.endAt);
     const submission: SearchFilters = {
-      location: current.location,
+      location: current.location ?? "",
       date: startDate,
       endDate,
       startTime,
@@ -187,7 +191,7 @@ export function SearchForm({
       syncingFromProps.current = false;
       return;
     }
-    if (state.location.trim() && (state.latitude === undefined || state.longitude === undefined)) return;
+    if ((state.location ?? "").trim() && (state.latitude === undefined || state.longitude === undefined)) return;
     const timer = setTimeout(() => {
       onSearch(buildFilters());
     }, 250);
@@ -211,7 +215,7 @@ export function SearchForm({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!state.location.trim()) {
+    if (!(state.location ?? "").trim()) {
       setLocationError(true);
       return;
     }

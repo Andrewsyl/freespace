@@ -234,12 +234,14 @@ function SearchPageContainer() {
     const merged: SearchFilters = {
       ...defaultFilters,
       ...initialFromUrl,
+      location: initialFromUrl.location ?? defaultFilters.location,
       latitude: initialFromUrl.latitude ?? defaultFilters.latitude,
       longitude: initialFromUrl.longitude ?? defaultFilters.longitude,
       radiusKm: initialFromUrl.radiusKm ?? defaultFilters.radiusKm,
       date: initialFromUrl.date ?? defaultFilters.date,
       startTime: initialFromUrl.startTime ?? defaultFilters.startTime,
       endTime: initialFromUrl.endTime ?? defaultFilters.endTime,
+      mode: initialFromUrl.mode ?? defaultFilters.mode,
     };
     if (!initialized.current) {
       initialized.current = true;
