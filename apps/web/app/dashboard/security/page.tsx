@@ -60,70 +60,75 @@ export default function SecurityPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="mb-6">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Account</p>
-        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">Login &amp; Security</h1>
+    <div className="space-y-6">
+      <div className="mb-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-brand-500">Account</p>
+        <h1 className="mt-2 font-display text-[24px] font-bold tracking-[-0.02em] text-slate-900">Login &amp; security</h1>
       </div>
 
-      {/* Change password */}
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
-        <h2 className="mb-4 text-[15px] font-bold text-slate-900">Change Password</h2>
-        {pwSuccess && <div className="mb-4 rounded-lg border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] text-brand-700">Password updated successfully.</div>}
-        {pwError   && <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{pwError}</div>}
-        <form onSubmit={handleChangePassword} className="space-y-3">
-          {[
-            { label: "Current password", value: current, setter: setCurrent },
-            { label: "New password",     value: next,    setter: setNext },
-            { label: "Confirm password", value: confirmPw, setter: setConfirm },
-          ].map(({ label, value, setter }) => (
-            <div key={label}>
-              <label className="mb-1 block text-[12px] font-semibold text-slate-600">{label}</label>
-              <input
-                type="password"
-                value={value}
-                onChange={(e) => setter(e.target.value)}
-                required
-                className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-              />
-            </div>
-          ))}
+      {/* Borderless sections, separated by hairlines — no boxes */}
+      <div className="space-y-8">
+        {/* Change password */}
+        <section>
+          <h2 className="text-[14px] font-semibold text-slate-900">Change password</h2>
+          {pwSuccess && <div className="mt-3 rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] text-brand-700">Password updated successfully.</div>}
+          {pwError   && <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{pwError}</div>}
+          <form onSubmit={handleChangePassword} className="mt-3 space-y-3">
+            {[
+              { label: "Current password", value: current, setter: setCurrent },
+              { label: "New password",     value: next,    setter: setNext },
+              { label: "Confirm password", value: confirmPw, setter: setConfirm },
+            ].map(({ label, value, setter }) => (
+              <div key={label}>
+                <label className="mb-1 block text-[12px] font-semibold text-slate-600">{label}</label>
+                <input
+                  type="password"
+                  value={value}
+                  onChange={(e) => setter(e.target.value)}
+                  required
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10"
+                />
+              </div>
+            ))}
+            <button
+              type="submit"
+              disabled={pwSaving}
+              className="rounded-xl bg-brand-500 px-5 py-2.5 text-[13.5px] font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+            >
+              {pwSaving ? "Saving…" : "Update password"}
+            </button>
+          </form>
+        </section>
+
+        {/* Sessions */}
+        <section className="border-t border-slate-200/70 pt-8">
+          <h2 className="text-[14px] font-semibold text-slate-900">Active sessions</h2>
+          <p className="mt-1 text-[13px] leading-[1.6] text-slate-500">Sign out of all devices including this one.</p>
+          {logoutSuccess && <p className="mt-2 text-[13px] font-semibold text-brand-600">Signed out everywhere. Redirecting…</p>}
           <button
-            type="submit"
-            disabled={pwSaving}
-            className="rounded-lg bg-brand-500 px-5 py-2 text-[13.5px] font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+            onClick={handleLogoutAll}
+            disabled={logoutBusy || logoutSuccess}
+            className="mt-4 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-[13.5px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
           >
-            {pwSaving ? "Saving…" : "Update password"}
+            {logoutBusy ? "Signing out…" : "Sign out all devices"}
           </button>
-        </form>
-      </div>
+        </section>
 
-      {/* Sessions */}
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
-        <h2 className="text-[15px] font-bold text-slate-900">Active Sessions</h2>
-        <p className="mt-1 text-[13px] text-slate-600">Sign out of all devices including this one.</p>
-        {logoutSuccess && <p className="mt-2 text-[13px] font-semibold text-brand-600">Signed out everywhere. Redirecting…</p>}
-        <button
-          onClick={handleLogoutAll}
-          disabled={logoutBusy || logoutSuccess}
-          className="mt-4 rounded-lg border border-slate-200 bg-white px-5 py-2 text-[13.5px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-        >
-          {logoutBusy ? "Signing out…" : "Sign out all devices"}
-        </button>
-      </div>
-
-      {/* Danger zone */}
-      <div className="rounded-xl border border-rose-200 bg-white px-6 py-5 shadow-sm">
-        <h2 className="text-[15px] font-bold text-rose-600">Danger Zone</h2>
-        <p className="mt-1 text-[13px] text-slate-600">Permanently removes your account, listings, and bookings.</p>
-        {deleteError && <p className="mt-2 text-[13px] text-rose-600">{deleteError}</p>}
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-5 py-2 text-[13.5px] font-semibold text-rose-600 hover:bg-rose-100 disabled:opacity-50"
-        >
-          {deleting ? "Deleting…" : "Delete my account"}
-        </button>
+        {/* Danger zone — intentionally contained as a caution surface */}
+        <section className="border-t border-slate-200/70 pt-8">
+          <div className="rounded-2xl bg-rose-50/60 px-5 py-5 ring-1 ring-rose-200/70">
+            <h2 className="text-[14px] font-semibold text-rose-700">Delete account</h2>
+            <p className="mt-1 text-[13px] leading-[1.6] text-rose-600/90">Permanently removes your account, listings, and bookings. This can&apos;t be undone.</p>
+            {deleteError && <p className="mt-2 text-[13px] text-rose-600">{deleteError}</p>}
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="mt-4 rounded-xl border border-rose-200 bg-white px-5 py-2.5 text-[13.5px] font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+            >
+              {deleting ? "Deleting…" : "Delete my account"}
+            </button>
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -1,287 +1,315 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createListing } from "../../../lib/api";
-import { trackEvent } from "../../../lib/telemetry";
-import { useAuth } from "../../../components/AuthProvider";
-import { HostStepperLayout } from "../../../components/host/HostStepperLayout";
-import { HostAddressStep } from "../../../components/host/HostAddressStep";
-import { HostStreetViewStep } from "../../../components/host/HostStreetViewStep";
-import { HostDetailsStep } from "../../../components/host/HostDetailsStep";
-import { HostFeaturesStep } from "../../../components/host/HostFeaturesStep";
-import { HostAvailabilityStep } from "../../../components/host/HostAvailabilityStep";
-import { HostPricingStep } from "../../../components/host/HostPricingStep";
-import { HostPhotosStep } from "../../../components/host/HostPhotosStep";
-import { HostConfirmationStep } from "../../../components/host/HostConfirmationStep";
-import { HostPublishedScreen } from "../../../components/host/HostPublishedScreen";
-import type { HostListingDraft } from "../../../components/host/types";
-import { buildTitleFromDraft } from "../../../components/host/utils";
+import Link from "next/link";
+import { SlimNav } from "../../../components/SlimNav";
+import { SiteFooter } from "../../../components/SiteFooter";
 
-const DRAFT_KEY = "host-listing-draft";
-
-const DEFAULT_DRAFT: HostListingDraft = {
-  address: "",
-  latitude: undefined,
-  longitude: undefined,
-  locationConfirmed: false,
-  coverHeading: undefined,
-  coverPitch: undefined,
-  spaceType: undefined,
-  spaceCount: "",
-  vehicleSize: undefined,
-  title: "",
-  availabilityText: "",
-  requiresAccessCode: null,
-  accessType: undefined,
-  accessInstructions: "",
-  pricingMode: "both",
-  pricePerHour: 1,
-  pricePerDay: 12,
-  pricePerMonth: 100,
-  amenities: [],
-  imageUrls: [],
-};
-
-//
-// Step index → description
-// 0  Address        pin your exact spot
-// 1  Street View    pick cover angle (skippable)
-// 2  Space details  type → count → vehicle (progressive)
-// 3  Features       amenities + access (progressive)
-// 4  Availability   when is it available
-// 5  Pricing        daily rate
-// 6  Photos         upload images
-// 7  Review         confirm & publish
-//
+const START = "/host/start";
 
 const STEPS = [
-  { title: "Confirm location",      description: "Drag the map to place the pin at your exact entrance." },
-  { title: "Street view",           description: "Pick the angle that best shows your parking entrance." },
-  { title: "Your space",            description: "Tell drivers what kind of spot you have." },
-  { title: "Features & access",     description: "Add the practical details that help drivers trust the space." },
-  { title: "Availability",          description: "When is your space available to book?" },
-  { title: "Set your price",        description: "You can update pricing anytime from your dashboard." },
-  { title: "Add photos",            description: "Listings with photos get significantly more bookings." },
-  { title: "Review & publish",      description: "Check everything before going live." },
+  {
+    n: "01",
+    title: "List your space",
+    body: "Add a few photos, set where it is, and describe access. Most spaces are ready in about five minutes.",
+  },
+  {
+    n: "02",
+    title: "Welcome drivers",
+    body: "Approve each request yourself, or let trusted drivers book instantly. You decide when it's available.",
+  },
+  {
+    n: "03",
+    title: "Get paid",
+    body: "Payments are handled automatically and paid to your bank via Stripe after each booking clears.",
+  },
 ];
 
-export default function HostWizardPage() {
-  const router = useRouter();
-  const { user, token, loading } = useAuth();
-  const [stepIndex, setStepIndex] = useState(0);
-  const [draft, setDraft] = useState<HostListingDraft>(DEFAULT_DRAFT);
-  const [saving, setSaving] = useState(false);
-  const [published, setPublished] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const BENEFITS = [
+  {
+    title: "Earn from space you already have",
+    body: "Your driveway or spot can make money while you're at work, away, or simply not using it.",
+    icon: (
+      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6" />
+      </svg>
+    ),
+  },
+  {
+    title: "You're in control",
+    body: "Set your own price, choose your availability, and decide who can park. Pause any time.",
+    icon: (
+      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
+      </svg>
+    ),
+  },
+  {
+    title: "Free to list",
+    body: "No upfront cost and no monthly fee. We only take a small cut when you actually earn.",
+    icon: (
+      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+      </svg>
+    ),
+  },
+  {
+    title: "Secure payments",
+    body: "Every booking is paid through Stripe. You never handle cash, and payouts land in your bank.",
+    icon: (
+      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2 4 5v6c0 5 3.5 7.5 8 9 4.5-1.5 8-4 8-9V5l-8-3z" /><path d="m9 11 2 2 4-4" />
+      </svg>
+    ),
+  },
+];
 
-  // ── Restore draft from localStorage ─────────────────────────────────────────
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem(DRAFT_KEY);
-      if (raw) setDraft({ ...DEFAULT_DRAFT, ...JSON.parse(raw) });
-    } catch {
-      /* ignore */
-    }
-  }, []);
+const TRUST = [
+  {
+    title: "You approve who parks",
+    body: "Review each booking, or switch on instant book only when you're ready.",
+    icon: (
+      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 4 5v6c0 5 3.5 7.5 8 9 4.5-1.5 8-4 8-9V5l-8-3z" /><path d="m9 11 2 2 4-4" /></svg>
+    ),
+  },
+  {
+    title: "Drivers share their details",
+    body: "You see the vehicle and driver behind every booking before they arrive.",
+    icon: (
+      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>
+    ),
+  },
+  {
+    title: "Payments through Stripe",
+    body: "Money is taken upfront and held securely — no chasing, no cash.",
+    icon: (
+      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+    ),
+  },
+  {
+    title: "We handle the awkward parts",
+    body: "Cancellations, refunds, and support are taken care of for you.",
+    icon: (
+      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5z" /></svg>
+    ),
+  },
+];
 
-  // ── Keep draft in sync ───────────────────────────────────────────────────────
-  const updateDraft = (partial: Partial<HostListingDraft>) => {
-    setDraft((prev) => {
-      const next = { ...prev, ...partial };
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(DRAFT_KEY, JSON.stringify(next));
-      }
-      return next;
-    });
-    setError(null);
-  };
-
-  // ── Auto-generate title ──────────────────────────────────────────────────────
-  useEffect(() => {
-    const generated = buildTitleFromDraft(draft);
-    if (generated !== draft.title) updateDraft({ title: generated });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft.address, draft.spaceType]);
-
-  // ── Not signed in → use the polished /login page, then return here ────────────
-  useEffect(() => {
-    if (loading || user) return;
-    router.replace(`/login?next=${encodeURIComponent("/host")}`);
-  }, [loading, user, router]);
-
-  // ── Step validation ──────────────────────────────────────────────────────────
-  const isStepValid = (index: number): boolean => {
-    switch (index) {
-      case 0: // Address
-        return Boolean(
-          draft.address &&
-          draft.latitude !== undefined &&
-          draft.longitude !== undefined &&
-          draft.locationConfirmed
-        );
-      case 1: // Street View — always skippable
-        return true;
-      case 2: // Space details — all 3 required
-        return Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boolean(draft.vehicleSize);
-      case 3: { // Features & access — must answer Yes/No; if Yes, must pick type + text
-        if (draft.requiresAccessCode === null || draft.requiresAccessCode === undefined) return false;
-        if (draft.requiresAccessCode === false) return true;
-        if (!draft.accessType) return false;
-        return (draft.accessInstructions ?? "").trim().length > 0;
-      }
-      case 4: // Availability
-        return draft.availabilityText.trim().length > 3;
-      case 5: // Pricing
-        return draft.pricingMode === "monthly"
-          ? typeof draft.pricePerMonth === "number" && draft.pricePerMonth > 0
-          : draft.pricingMode === "both"
-            ? typeof draft.pricePerHour === "number" &&
-              draft.pricePerHour > 0 &&
-              typeof draft.pricePerDay === "number" &&
-              draft.pricePerDay > 0 &&
-              typeof draft.pricePerMonth === "number" &&
-              draft.pricePerMonth > 0
-            : typeof draft.pricePerHour === "number" &&
-              draft.pricePerHour > 0 &&
-              typeof draft.pricePerDay === "number" &&
-              draft.pricePerDay > 0;
-      case 6: // Photos — optional but must have at least 1 to proceed (or skip)
-        return true;
-      default: // Review
-        return true;
-    }
-  };
-
-  const nextDisabled =
-    loading || (stepIndex === STEPS.length - 1 ? saving : !isStepValid(stepIndex));
-
-  const handleNext = () => {
-    if (!isStepValid(stepIndex)) {
-      setError("Please complete this step before continuing.");
-      return;
-    }
-    setError(null);
-    setStepIndex((i) => Math.min(i + 1, STEPS.length - 1));
-  };
-
-  const handleBack = () => {
-    setError(null);
-    setStepIndex((i) => Math.max(i - 1, 0));
-  };
-
-  // ── Publish ──────────────────────────────────────────────────────────────────
-  const handlePublish = async () => {
-    if (!token) {
-      setError("Please sign in to publish your listing.");
-      return;
-    }
-    if (!isStepValid(5)) {
-      setError("Finish pricing before publishing.");
-      setStepIndex(5);
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      void trackEvent("web_host_publish_started", {
-        pricingMode: draft.pricingMode,
-        hasPhotos: draft.imageUrls.length > 0,
-      });
-      await createListing(
-        {
-          title: buildTitleFromDraft(draft),
-          address: draft.address,
-          rateType: typeof draft.pricePerHour === "number" && draft.pricePerHour > 0 ? "hourly" : "daily",
-          pricePerDay: draft.pricePerDay ?? 0,
-          pricePerHour: draft.pricingMode === "monthly" ? null : draft.pricePerHour ?? null,
-          pricePerMonth: draft.pricingMode === "hourly_daily" ? null : draft.pricePerMonth ?? null,
-          availabilityText: draft.availabilityText,
-          latitude: draft.latitude ?? 0,
-          longitude: draft.longitude ?? 0,
-          amenities: draft.amenities,
-          imageUrls: draft.imageUrls,
-        },
-        token
-      );
-      window.localStorage.removeItem(DRAFT_KEY);
-      void trackEvent("web_host_publish_succeeded", {
-        pricingMode: draft.pricingMode,
-      });
-      setSaving(false);
-      setPublished(true);
-    } catch (err) {
-      void trackEvent("web_host_publish_failed", {
-        pricingMode: draft.pricingMode,
-      });
-      setError(err instanceof Error ? err.message : "Failed to publish listing");
-      setSaving(false);
-    }
-  };
-
-  // ── Not signed in → the effect above redirects to /login; show a spinner ──────
-  if (!loading && !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
-      </div>
-    );
-  }
-
-  // ── Published — celebration ──────────────────────────────────────────────────
-  if (published) {
-    return (
-      <HostPublishedScreen
-        data={draft}
-        onDashboard={() => router.push("/host/dashboard?created=1")}
-        onAddAnother={() => {
-          setDraft(DEFAULT_DRAFT);
-          setStepIndex(0);
-          setPublished(false);
-        }}
-      />
-    );
-  }
-
-  // ── Render current step ──────────────────────────────────────────────────────
-  const renderStep = () => {
-    switch (stepIndex) {
-      case 0: return <HostAddressStep    data={draft} onUpdate={updateDraft} />;
-      case 1: return <HostStreetViewStep data={draft} onUpdate={updateDraft} />;
-      case 2: return <HostDetailsStep    data={draft} onUpdate={updateDraft} />;
-      case 3: return <HostFeaturesStep   data={draft} onUpdate={updateDraft} />;
-      case 4: return <HostAvailabilityStep data={draft} onUpdate={updateDraft} />;
-      case 5: return <HostPricingStep    data={draft} onUpdate={updateDraft} />;
-      case 6: return <HostPhotosStep     data={draft} onUpdate={updateDraft} />;
-      default:return <HostConfirmationStep data={draft} onUpdate={updateDraft} />;
-    }
-  };
-
-  const isLastStep = stepIndex === STEPS.length - 1;
-  const isStreetView = stepIndex === 1;
-  const nextLabel = isLastStep ? "Publish listing" : isStreetView ? "Confirm streetview" : "Continue";
-
+export default function HostLandingPage() {
   return (
-    <HostStepperLayout
-      title={STEPS[stepIndex].title}
-      description={STEPS[stepIndex].description}
-      step={stepIndex + 1}
-      totalSteps={STEPS.length}
-      stepTitles={STEPS.map((s) => s.title)}
-      onBack={stepIndex === 0 ? () => router.push("/host/dashboard") : handleBack}
-      onNext={isLastStep ? handlePublish : handleNext}
-      nextLabel={nextLabel}
-      nextDisabled={nextDisabled}
-      loading={saving}
-      error={error}
-      secondaryAction={
-        isStreetView
-          ? { label: "Skip for now", onClick: () => { updateDraft({ coverHeading: null }); handleNext(); } }
-          : undefined
-      }
-    >
-      {renderStep()}
-    </HostStepperLayout>
+    <div className="min-h-[100dvh] bg-white antialiased [text-rendering:optimizeLegibility]">
+      <SlimNav />
+
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden bg-slate-950">
+        <div className="pointer-events-none absolute -right-24 -top-32 h-[28rem] w-[28rem] rounded-full bg-brand-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 -left-16 h-80 w-80 rounded-full bg-brand-400/10 blur-3xl" />
+        <div className="relative mx-auto w-full max-w-5xl px-6 py-20 sm:py-28 text-center">
+          <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-400">Become a host</p>
+          <h1 className="mx-auto mt-4 max-w-3xl font-display text-[34px] font-extrabold leading-[1.05] tracking-[-0.03em] text-white sm:text-[52px]">
+            Turn your empty space into income.
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-[16px] leading-[1.6] text-slate-300">
+            List your driveway, garage, or parking spot, set your own price, and start earning from space you&apos;re not using.
+          </p>
+          <div className="mt-9 flex flex-col items-center gap-3">
+            <Link
+              href={START}
+              className="inline-flex items-center gap-2 rounded-2xl bg-brand-500 px-8 py-4 text-[16px] font-bold text-white shadow-[0_12px_32px_-12px_rgba(15,169,104,0.6)] transition hover:bg-brand-400"
+            >
+              Get started
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+            </Link>
+            <p className="text-[13px] font-medium text-slate-400">Free to list · Takes about 5 minutes</p>
+          </div>
+        </div>
+      </section>
+
+      <main className="mx-auto w-full max-w-6xl px-6">
+
+        {/* ── How it works ── */}
+        <section className="mt-20 sm:mt-28">
+          <div className="mb-10 text-center">
+            <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500">How it works</p>
+            <h2 className="font-display mt-3 text-[26px] font-bold tracking-[-0.02em] text-slate-900 sm:text-[32px]">
+              Earning takes three steps
+            </h2>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-3">
+            {STEPS.map((s) => (
+              <div key={s.n}>
+                <span className="font-display text-[40px] font-extrabold leading-none tracking-tight text-slate-200">{s.n}</span>
+                <h3 className="font-display mt-4 text-[18px] font-bold tracking-[-0.01em] text-slate-900">{s.title}</h3>
+                <p className="mt-2 text-[14px] leading-[1.6] text-slate-600">{s.body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Benefits ── */}
+        <section className="mt-20 sm:mt-28">
+          <div className="mb-10">
+            <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500">Why host</p>
+            <h2 className="font-display mt-3 text-[26px] font-bold tracking-[-0.02em] text-slate-900 sm:text-[32px]">
+              A simple way to make your space pay
+            </h2>
+          </div>
+          <div className="grid gap-x-10 gap-y-9 sm:grid-cols-2">
+            {BENEFITS.map((b) => (
+              <div key={b.title} className="flex gap-4">
+                <div className="shrink-0 text-brand-600">{b.icon}</div>
+                <div>
+                  <h3 className="font-display text-[16px] font-bold tracking-[-0.01em] text-slate-900">{b.title}</h3>
+                  <p className="mt-1.5 text-[14px] leading-[1.6] text-slate-600">{b.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Earnings illustration + listing preview ── */}
+        <section className="mt-20 grid items-center gap-10 sm:mt-28 lg:grid-cols-[1fr_minmax(0,420px)]">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500">Your space, live</p>
+            <h2 className="font-display mt-3 text-[26px] font-bold tracking-[-0.02em] text-slate-900 sm:text-[32px]">
+              You set the price. You keep the most of it.
+            </h2>
+            <p className="mt-3 max-w-md text-[15px] leading-[1.6] text-slate-600">
+              There&apos;s no fixed rate — you choose what your space is worth, and even a few days a month adds up.
+            </p>
+            <div className="mt-6 inline-flex items-baseline gap-3 rounded-2xl bg-slate-50 px-5 py-4 ring-1 ring-slate-200/70">
+              <span className="font-display text-[32px] font-extrabold tracking-[-0.02em] text-slate-900">€144</span>
+              <span className="text-[13px] leading-snug text-slate-500">
+                Example: €12 / day<br />booked 12 days a month
+              </span>
+            </div>
+            <p className="mt-3 text-[12px] text-slate-400">Just an illustration — you decide your own price and availability.</p>
+          </div>
+
+          {/* Listing preview — what drivers will see */}
+          <div>
+            <div className="mb-4 flex items-stretch gap-2.5">
+              <div className="flex flex-1 flex-col justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Today</p>
+                <p className="mt-0.5 text-[12.5px] font-semibold text-slate-500">Sitting empty</p>
+              </div>
+              <div className="flex items-center">
+                <svg className="h-4 w-4 shrink-0 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+              </div>
+              <div className="flex flex-1 flex-col justify-center rounded-2xl bg-brand-50 px-4 py-3 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-600">Once listed</p>
+                <p className="mt-0.5 text-[12.5px] font-semibold text-brand-700">Bookable by drivers</p>
+              </div>
+            </div>
+            <p className="mb-3 text-[12px] font-semibold text-slate-500">This is how drivers will see your space</p>
+            <div className="overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-[0_24px_60px_-24px_rgba(15,23,42,0.28)]">
+              <div className="relative h-44 w-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80"
+                  alt="Example parking space"
+                  className="h-full w-full object-cover"
+                />
+                <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
+                  ⚡ Instant
+                </span>
+              </div>
+              <div className="flex items-start justify-between gap-3 px-5 py-4">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-1.5 text-[15px] font-bold text-slate-900">
+                    Secure driveway near the centre
+                  </p>
+                  <p className="mt-1 flex items-center gap-1 text-[12.5px] text-slate-500">
+                    <svg className="h-3.5 w-3.5 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" strokeLinecap="round" strokeLinejoin="round" /><circle cx="12" cy="9" r="2.5" /></svg>
+                    Dublin city centre
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">from</p>
+                  <p className="font-display text-[22px] font-extrabold leading-none tracking-tight text-slate-900">€12</p>
+                  <p className="mt-0.5 text-[11px] text-slate-500">per day</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Trust ── horizontal cards: clean homepage-style icon + text ── */}
+        <section className="mt-20 sm:mt-28">
+          <div className="mb-9 max-w-xl">
+            <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500">Hosting with peace of mind</p>
+            <h2 className="font-display mt-3 text-[26px] font-bold tracking-[-0.02em] text-slate-900 sm:text-[32px]">
+              You stay in control the whole way
+            </h2>
+          </div>
+          <div className="rounded-[28px] border border-slate-200/70 p-3 sm:p-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {TRUST.map((t) => (
+                <div key={t.title} className="flex items-start gap-4 rounded-2xl bg-slate-50/70 px-5 py-5 ring-1 ring-slate-200/50">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+                    {t.icon}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-[15px] font-bold text-slate-900">{t.title}</h3>
+                    <p className="mt-1 text-[13.5px] leading-[1.6] text-slate-600">{t.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Final CTA ── left content + meta row; dark band with brand glow ── */}
+        <section className="mb-20 mt-20 sm:mb-28 sm:mt-28">
+          <div className="relative overflow-hidden rounded-3xl bg-slate-950 px-8 py-14 sm:px-12 sm:py-16">
+            {/* Right side — real photo if /host-cta.jpg exists, otherwise a soft glow */}
+            <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[58%] lg:block">
+              <div className="absolute right-[-8%] top-1/4 h-64 w-64 rounded-full bg-brand-500/15 blur-3xl" />
+              <div className="absolute inset-0 bg-[url('/host-cta.jpg')] bg-cover bg-center" />
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-transparent" />
+            </div>
+
+            <div className="pointer-events-none absolute -left-20 -top-24 h-72 w-72 rounded-full bg-brand-500/15 blur-3xl" />
+
+            {/* Content */}
+            <div className="relative max-w-md">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-500/15 text-brand-400">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>
+              </span>
+              <h2 className="mt-5 font-display text-[30px] font-extrabold tracking-[-0.02em] text-white sm:text-[38px]">
+                Ready to start earning?
+              </h2>
+              <p className="mt-3 text-[15px] leading-[1.6] text-slate-300">
+                It&apos;s free to list and takes about five minutes.<br className="hidden sm:block" /> You can pause or change anything later.
+              </p>
+              <Link
+                href={START}
+                className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-brand-500 px-8 py-4 text-[16px] font-bold text-white shadow-[0_12px_32px_-12px_rgba(15,169,104,0.6)] transition hover:bg-brand-400"
+              >
+                Get started
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+              </Link>
+              <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12.5px] font-medium text-slate-400">
+                <span className="flex items-center gap-1.5">
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3H4a1 1 0 0 0-1 1v5.59A2 2 0 0 0 3.59 11l9.58 9.59a2 2 0 0 0 2.83 0l4.59-4.59a2 2 0 0 0 0-2.83z" /><circle cx="7.5" cy="7.5" r="1" /></svg>
+                  Free to list
+                </span>
+                <span className="text-slate-600">·</span>
+                <span className="flex items-center gap-1.5">
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                  Takes ~5 minutes
+                </span>
+                <span className="text-slate-600">·</span>
+                <span className="flex items-center gap-1.5">
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+                  Pause anytime
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <SiteFooter />
+    </div>
   );
 }

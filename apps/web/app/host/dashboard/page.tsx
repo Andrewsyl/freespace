@@ -529,7 +529,7 @@ export default function HostDashboardPage() {
             </h1>
           </div>
           <Link
-            href="/host"
+            href="/host/start"
             className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-800"
           >
             <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
@@ -595,7 +595,7 @@ export default function HostDashboardPage() {
               Got a driveway, garage, or car park?<br />Start earning in under 5 minutes.
             </p>
             <Link
-              href="/host"
+              href="/host/start"
               className="mt-6 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-[14px] font-semibold text-white hover:bg-slate-800"
             >
               <Plus className="h-4 w-4" strokeWidth={2.5} />
@@ -666,7 +666,7 @@ export default function HostDashboardPage() {
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-[18px] font-bold text-slate-900">Your spaces</h2>
                   <Link
-                    href="/host"
+                    href="/host/start"
                     className="flex items-center gap-1 text-[13px] font-semibold text-slate-400 transition hover:text-brand-600"
                   >
                     <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />

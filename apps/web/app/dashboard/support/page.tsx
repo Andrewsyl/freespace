@@ -42,8 +42,8 @@ export default function SupportPage() {
   return (
     <div className="space-y-4">
       <div className="mb-6">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Help</p>
-        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">Support</h1>
+        <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-brand-500">Help</p>
+        <h1 className="mt-1 text-[24px] font-bold tracking-[-0.02em] text-slate-900">Support</h1>
         <p className="mt-1 text-[13.5px] text-slate-600">For booking issues, refunds, and account questions.</p>
       </div>
 
@@ -59,7 +59,7 @@ export default function SupportPage() {
           </button>
         </div>
       ) : (
-        <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200/70 bg-white px-6 py-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-18px_rgba(15,23,42,0.16)]">
           {error && <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -67,7 +67,7 @@ export default function SupportPage() {
               <select
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10"
               >
                 <option value="">Select a topic…</option>
                 {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -80,7 +80,7 @@ export default function SupportPage() {
                 onChange={(e) => setMessage(e.target.value)}
                 rows={5}
                 placeholder="Describe your issue in detail…"
-                className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 resize-none"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10 resize-none"
               />
               <p className="mt-1 text-right text-[11px] text-slate-600">{message.length} characters (10 minimum)</p>
             </div>

@@ -42,7 +42,7 @@ export function TextField({
   };
 
   return (
-    <label className={clsx("flex flex-col gap-1 text-sm font-medium text-slate-700", wrapperClassName)} htmlFor={fieldId}>
+    <label className={clsx("flex flex-col gap-1.5 text-[13px] font-semibold text-slate-700", wrapperClassName)} htmlFor={fieldId}>
       {label ? <span>{label}</span> : null}
       <span className="relative block">
         <input
@@ -59,9 +59,9 @@ export function TextField({
             props.onBlur?.(event);
           }}
           className={clsx(
-            "h-11 w-full rounded-lg border border-slate-200 px-3 text-sm shadow-sm transition focus:border-brand-500 focus:outline-none",
+            "h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[14px] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition focus:border-brand-400 focus:outline-none focus:ring-4 focus:ring-brand-500/10",
             canClear && "pr-10",
-            error && "border-rose-300 focus:border-rose-400",
+            error && "border-rose-300 focus:border-rose-400 focus:ring-rose-500/10",
             inputClassName,
             className
           )}

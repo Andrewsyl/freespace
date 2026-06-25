@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthProvider";
 import { useToast } from "./Toaster";
+import { getHostListings } from "../lib/api";
 import {
   BarChart3,
   CalendarCheck,
@@ -30,15 +31,24 @@ function isHostPath(p: string | null) {
 }
 
 export function SlimNav() {
-  const { user, signOut } = useAuth();
+  const { user, token, signOut } = useAuth();
   const { showToast } = useToast();
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isHost, setIsHost] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const hostMode = isHostPath(pathname);
   const logoSrc = "/freespace-logo-grid-black.png";
+
+  // Host UI is opt-in: only surfaces once you actually have a listing.
+  useEffect(() => {
+    if (!token) { setIsHost(false); return; }
+    getHostListings(token)
+      .then((res) => setIsHost((res?.listings?.length ?? 0) > 0))
+      .catch(() => setIsHost(false));
+  }, [token]);
 
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
@@ -83,7 +93,7 @@ export function SlimNav() {
                       Earnings
                     </NavLink>
                   )}
-                  <NavLink href="/host" active={pathname === "/host"}>
+                  <NavLink href="/host/start" active={pathname === "/host/start"}>
                     Add a space
                   </NavLink>
                 </>
@@ -111,7 +121,7 @@ export function SlimNav() {
               )}
             </nav>
 
-            {/* Mode switcher */}
+            {/* Host entry — driver is the default; hosting is opt-in */}
             {user && (
               hostMode ? (
                 <Link
@@ -120,12 +130,19 @@ export function SlimNav() {
                 >
                   ← Switch to parking
                 </Link>
-              ) : (
+              ) : isHost ? (
                 <Link
                   href="/host/dashboard"
                   className="rounded-full px-3.5 py-1.5 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
                 >
                   Switch to hosting
+                </Link>
+              ) : (
+                <Link
+                  href="/host"
+                  className="rounded-full px-3.5 py-1.5 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                >
+                  List your space
                 </Link>
               )
             )}
@@ -178,17 +195,25 @@ export function SlimNav() {
                         </DropdownItem>
                       </div>
 
-                      {/* Hosting */}
+                      {/* Hosting — only for actual hosts; otherwise a single opt-in link */}
                       <div className="border-b border-slate-100 py-1.5">
-                        <DropdownItem href="/host/dashboard" icon={<LayoutGrid className="h-4 w-4" />} onClick={() => setDropdownOpen(false)}>
-                          Host dashboard
-                        </DropdownItem>
-                        <DropdownItem href="/host" icon={<PlusCircle className="h-4 w-4" />} onClick={() => setDropdownOpen(false)}>
-                          Add a space
-                        </DropdownItem>
-                        <DropdownItem href="/dashboard/earnings" icon={<BarChart3 className="h-4 w-4" />} onClick={() => setDropdownOpen(false)}>
-                          Earnings
-                        </DropdownItem>
+                        {isHost ? (
+                          <>
+                            <DropdownItem href="/host/dashboard" icon={<LayoutGrid className="h-4 w-4" />} onClick={() => setDropdownOpen(false)}>
+                              Host dashboard
+                            </DropdownItem>
+                            <DropdownItem href="/host/start" icon={<PlusCircle className="h-4 w-4" />} onClick={() => setDropdownOpen(false)}>
+                              Add a space
+                            </DropdownItem>
+                            <DropdownItem href="/dashboard/earnings" icon={<BarChart3 className="h-4 w-4" />} onClick={() => setDropdownOpen(false)}>
+                              Earnings
+                            </DropdownItem>
+                          </>
+                        ) : (
+                          <DropdownItem href="/host" icon={<PlusCircle className="h-4 w-4" />} onClick={() => setDropdownOpen(false)}>
+                            List your space
+                          </DropdownItem>
+                        )}
                       </div>
 
                       {/* Account */}
@@ -318,17 +343,21 @@ export function SlimNav() {
               </DrawerSection>
 
               <DrawerSection label="Host">
-                <DrawerLink href="/host" onClick={closeDrawer} icon={<PlusCircle className="h-5 w-5" />} active={pathname === "/host"}>
-                  Add a space
-                </DrawerLink>
-                {user && (
-                  <DrawerLink href="/host/dashboard" onClick={closeDrawer} icon={<LayoutGrid className="h-5 w-5" />} active={!!pathname?.startsWith("/host/dashboard")}>
-                    Host dashboard
-                  </DrawerLink>
-                )}
-                {user && (
-                  <DrawerLink href="/dashboard/earnings" onClick={closeDrawer} icon={<BarChart3 className="h-5 w-5" />} active={pathname === "/dashboard/earnings"}>
-                    Earnings
+                {isHost ? (
+                  <>
+                    <DrawerLink href="/host/dashboard" onClick={closeDrawer} icon={<LayoutGrid className="h-5 w-5" />} active={!!pathname?.startsWith("/host/dashboard")}>
+                      Host dashboard
+                    </DrawerLink>
+                    <DrawerLink href="/host/start" onClick={closeDrawer} icon={<PlusCircle className="h-5 w-5" />} active={pathname === "/host/start"}>
+                      Add a space
+                    </DrawerLink>
+                    <DrawerLink href="/dashboard/earnings" onClick={closeDrawer} icon={<BarChart3 className="h-5 w-5" />} active={pathname === "/dashboard/earnings"}>
+                      Earnings
+                    </DrawerLink>
+                  </>
+                ) : (
+                  <DrawerLink href="/host" onClick={closeDrawer} icon={<PlusCircle className="h-5 w-5" />} active={pathname === "/host"}>
+                    List your space
                   </DrawerLink>
                 )}
               </DrawerSection>

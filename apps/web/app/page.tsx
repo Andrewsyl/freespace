@@ -318,7 +318,7 @@ export default function HomePage() {
               <span className="block text-[31px] font-extrabold leading-[1.04] text-brand-600 sm:text-[42px] lg:text-[60px]">Book a space that&apos;s yours.</span>
             </h1>
             <p className="mt-6 max-w-[460px] text-[16px] leading-[1.6] text-slate-600">
-              A private space of your own, right where you&apos;re going. Booked in advance, so you arrive knowing exactly where to park.
+              Book a private space near your destination, reserved before you arrive.
             </p>
 
             {/* ── Mobile search card (phones only) ── */}

@@ -136,33 +136,39 @@ export default function EarningsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="mb-6">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Dashboard</p>
-        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">Earnings</h1>
+      <div className="mb-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-brand-500">Hosting</p>
+        <h1 className="mt-2 font-display text-[24px] font-bold tracking-[-0.02em] text-slate-900">Your earnings</h1>
+        <p className="mt-1.5 text-[14px] leading-[1.6] text-slate-600">What you&apos;ve earned from hosting, and where your payouts stand.</p>
       </div>
 
       {error && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}
 
-      {/* Stats card */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="grid grid-cols-3 gap-px bg-slate-200">
-          <div className="flex flex-col items-center bg-white px-4 py-5 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Gross</p>
-            <p className="mt-1 text-[20px] font-extrabold tracking-tight text-slate-900">{formatMoney(summary?.totalCents ?? 0, currency)}</p>
-          </div>
-          <div className="flex flex-col items-center bg-white px-4 py-5 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Fees</p>
-            <p className="mt-1 text-[20px] font-extrabold tracking-tight text-slate-500">{formatMoney(summary?.feeCents ?? 0, currency)}</p>
-          </div>
-          <div className="flex flex-col items-center bg-white px-4 py-5 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Net</p>
-            <p className="mt-1 text-[20px] font-extrabold tracking-tight text-brand-600">{formatMoney(summary?.netCents ?? 0, currency)}</p>
+      {/* Earnings — signature dark anchor surface (homepage slab vocabulary) */}
+      <div className="relative overflow-hidden rounded-2xl bg-slate-950 px-6 py-7 shadow-[0_20px_50px_-24px_rgba(15,23,42,0.5)] sm:px-7">
+        <div className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full bg-brand-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-brand-400/10 blur-3xl" />
+        <div className="relative">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-400">Net earnings</p>
+          <p className="mt-2 font-display text-[44px] font-extrabold leading-none tracking-[-0.03em] text-white">
+            {formatMoney(summary?.netCents ?? 0, currency)}
+          </p>
+          <p className="mt-3 text-[13px] leading-[1.6] text-slate-400">Transferred to your bank automatically via Stripe, after fees.</p>
+          <div className="mt-6 flex gap-3">
+            <div className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Gross</p>
+              <p className="mt-1 text-[17px] font-extrabold tracking-tight text-white">{formatMoney(summary?.totalCents ?? 0, currency)}</p>
+            </div>
+            <div className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Platform fees</p>
+              <p className="mt-1 text-[17px] font-extrabold tracking-tight text-slate-300">{formatMoney(summary?.feeCents ?? 0, currency)}</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Stripe payouts card */}
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+      <div className="rounded-2xl border border-slate-200/70 bg-white px-6 py-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-18px_rgba(15,23,42,0.16)]">
         <div className="flex items-center justify-between">
           <h2 className="text-[16px] font-bold text-slate-900">Stripe payouts</h2>
           <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
@@ -184,7 +190,7 @@ export default function EarningsPage() {
       </div>
 
       {/* How payouts work */}
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+      <div className="rounded-2xl border border-slate-200/70 bg-white px-6 py-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-18px_rgba(15,23,42,0.16)]">
         <h2 className="text-[16px] font-bold text-slate-900">How payouts work</h2>
         <p className="mt-2 text-[13.5px] leading-6 text-slate-600">
           Payouts are created automatically once a confirmed booking clears the payout window. Complete Stripe onboarding first so transfers can be sent to your bank account.

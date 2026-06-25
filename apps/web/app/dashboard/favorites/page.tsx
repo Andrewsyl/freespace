@@ -58,8 +58,8 @@ export default function FavouritesPage() {
   return (
     <div className="space-y-4">
       <div className="mb-6">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Saved spaces</p>
-        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">Favourites</h1>
+        <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-brand-500">Saved spaces</p>
+        <h1 className="mt-1 text-[24px] font-bold tracking-[-0.02em] text-slate-900">Favourites</h1>
       </div>
 
       {error && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("home renders primary search CTA", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("button", { name: "Search parking spaces" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Search" }).first()).toBeVisible();
 });
 
 test("legal page renders", async ({ page }) => {

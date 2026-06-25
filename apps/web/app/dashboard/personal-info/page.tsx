@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "../../../components/AuthProvider";
 import { updateMe, requestPhoneVerification, verifyPhone } from "../../../lib/api";
+import { PageHeader, TextField, Button } from "../../../components/ui";
 
 export default function PersonalInfoPage() {
   const { user, token, setUser } = useAuth();
@@ -57,89 +58,94 @@ export default function PersonalInfoPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="mb-6">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Account</p>
-        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">Personal Info</h1>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Account"
+        title="Personal info"
+        description="Manage how you appear to hosts and how we reach you."
+      />
 
-      {success && <div className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] text-brand-700">{success}</div>}
-      {error   && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}
+      {success && <div className="rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] font-medium text-brand-700">{success}</div>}
+      {error   && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] font-medium text-rose-700">{error}</div>}
 
-      {/* Name */}
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
-        <h2 className="mb-4 text-[15px] font-bold text-slate-900">Display Name</h2>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Your name"
-          className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-        />
-        <button
-          onClick={handleSaveName}
-          disabled={saving}
-          className="mt-3 rounded-lg bg-brand-500 px-5 py-2 text-[13.5px] font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
-        >
-          {saving ? "Saving…" : "Save name"}
-        </button>
-      </div>
-
-      {/* Email (read-only) */}
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
-        <h2 className="mb-1 text-[15px] font-bold text-slate-900">Email</h2>
-        <p className="mb-3 text-[12.5px] text-slate-600">Email cannot be changed. Contact support if you need help.</p>
-        <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
-          <span className="text-[14px] text-slate-700">{user?.email}</span>
-          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${user?.emailVerified ? "bg-brand-50 text-brand-700" : "bg-amber-50 text-amber-700"}`}>
-            {user?.emailVerified ? "Verified" : "Unverified"}
-          </span>
-        </div>
-      </div>
-
-      {/* Phone */}
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-[15px] font-bold text-slate-900">Phone Number</h2>
-          {user?.phoneVerified && (
-            <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold text-brand-700">Verified</span>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => { setPhone(e.target.value); setOtpSent(false); }}
-            placeholder="+353 87 123 4567"
-            className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-          />
-          <button
-            onClick={handleSendOtp}
-            disabled={sendingOtp || !phone.trim()}
-            className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-[13px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          >
-            {sendingOtp ? "Sending…" : otpSent ? "Resend" : "Verify"}
-          </button>
-        </div>
-        {otpSent && (
-          <div className="mt-3 flex gap-2">
-            <input
-              type="text"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              placeholder="Enter 6-digit code"
-              maxLength={6}
-              className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+      {/* Borderless sections, separated by hairlines — no boxes */}
+      <div className="space-y-8">
+        {/* Name */}
+        <section>
+          <h2 className="text-[14px] font-semibold text-slate-900">Display name</h2>
+          <p className="mt-0.5 text-[13px] leading-[1.6] text-slate-500">The name hosts see on your bookings.</p>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <TextField
+              wrapperClassName="flex-1"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name"
             />
-            <button
-              onClick={handleVerifyOtp}
-              disabled={verifying || otp.length < 4}
-              className="rounded-lg bg-brand-500 px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
-            >
-              {verifying ? "Verifying…" : "Confirm"}
-            </button>
+            <Button onClick={handleSaveName} loading={saving} className="h-11 sm:w-auto" fullWidth>
+              Save
+            </Button>
           </div>
-        )}
+        </section>
+
+        {/* Email */}
+        <section className="border-t border-slate-200/70 pt-8">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-[14px] font-semibold text-slate-900">Email</h2>
+              <p className="mt-0.5 text-[13px] leading-[1.6] text-slate-500">Can&apos;t be changed. Contact support if you need help.</p>
+            </div>
+            <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${user?.emailVerified ? "bg-brand-50 text-brand-700" : "bg-amber-50 text-amber-700"}`}>
+              {user?.emailVerified ? "Verified" : "Unverified"}
+            </span>
+          </div>
+          <p className="mt-3 text-[14px] font-medium text-slate-700">{user?.email}</p>
+        </section>
+
+        {/* Phone */}
+        <section className="border-t border-slate-200/70 pt-8">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-[14px] font-semibold text-slate-900">Phone number</h2>
+              <p className="mt-0.5 text-[13px] leading-[1.6] text-slate-500">Used for booking updates and host contact.</p>
+            </div>
+            {user?.phoneVerified && (
+              <span className="shrink-0 rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold text-brand-700">Verified</span>
+            )}
+          </div>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <TextField
+              wrapperClassName="flex-1"
+              type="tel"
+              value={phone}
+              onChange={(e) => { setPhone(e.target.value); setOtpSent(false); }}
+              placeholder="+353 87 123 4567"
+            />
+            <Button
+              variant="secondary"
+              onClick={handleSendOtp}
+              loading={sendingOtp}
+              disabled={!phone.trim()}
+              className="h-11 sm:w-auto"
+              fullWidth
+            >
+              {otpSent ? "Resend" : "Verify"}
+            </Button>
+          </div>
+          {otpSent && (
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
+              <TextField
+                wrapperClassName="flex-1"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                placeholder="Enter 6-digit code"
+                maxLength={6}
+              />
+              <Button onClick={handleVerifyOtp} loading={verifying} disabled={otp.length < 4} className="h-11 sm:w-auto" fullWidth>
+                Confirm
+              </Button>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

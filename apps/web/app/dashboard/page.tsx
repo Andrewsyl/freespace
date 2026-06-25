@@ -217,8 +217,8 @@ export default function DashboardPage() {
 
       {/* Page header — desktop */}
       <div className="hidden border-b border-slate-200 px-5 py-5 md:block">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600">Dashboard</p>
-        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-brand-500">Dashboard</p>
+        <h1 className="mt-1 text-[24px] font-bold tracking-[-0.02em] text-slate-900">
           Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
         </h1>
       </div>

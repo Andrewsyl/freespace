@@ -36,7 +36,7 @@ function getBookingTab(b: BookingSummary): "active" | "upcoming" | "past" {
 function statusStyle(status: string) {
   const s = status.toLowerCase();
   if (s === "cancelled") return { border: "border-l-rose-400", badge: "text-rose-600 bg-rose-50", label: "Cancelled" };
-  if (s === "confirmed" || s === "active") return { border: "border-l-emerald-400", badge: "text-emerald-700 bg-emerald-50", label: "Confirmed" };
+  if (s === "confirmed" || s === "active") return { border: "border-l-brand-400", badge: "text-brand-700 bg-brand-50", label: "Confirmed" };
   if (s === "pending") return { border: "border-l-amber-400", badge: "text-amber-700 bg-amber-50", label: "Pending" };
   if (s === "completed") return { border: "border-l-slate-300", badge: "text-slate-600 bg-slate-100", label: "Completed" };
   return { border: "border-l-slate-300", badge: "text-slate-600 bg-slate-100", label: status };
@@ -88,8 +88,8 @@ export default function BookingsPage() {
       <DashboardShell>
         <div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Account</p>
-            <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">My Bookings</h1>
+            <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-brand-500">Account</p>
+            <h1 className="mt-2 font-display text-[24px] font-bold tracking-[-0.02em] text-slate-900">My bookings</h1>
 
             {/* Tabs */}
             <div className="mt-5 flex gap-6 border-b border-slate-200">
@@ -121,13 +121,22 @@ export default function BookingsPage() {
                   <div key={i} className="h-32 animate-pulse rounded-xl border border-slate-200 bg-white" />
                 ))
               ) : tabBookings.length === 0 ? (
-                <div className="flex flex-col items-center py-16 text-center text-slate-600">
-                  <Car className="mb-3 h-10 w-10 text-slate-200" />
-                  <p className="text-[15px] font-semibold text-slate-600">No {tab} bookings</p>
+                <div className="flex flex-col items-center rounded-2xl border border-slate-200/70 bg-white px-6 py-16 text-center shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-18px_rgba(15,23,42,0.16)]">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 text-slate-300">
+                    <Car className="h-6 w-6" strokeWidth={1.75} />
+                  </div>
+                  <p className="mt-4 text-[15px] font-bold text-slate-900">No {tab} bookings</p>
+                  <p className="mt-1 max-w-xs text-[13.5px] leading-[1.6] text-slate-500">
+                    {tab === "upcoming"
+                      ? "When you book a space, it'll show up here."
+                      : tab === "active"
+                        ? "Nothing happening right now."
+                        : "Your past bookings will appear here."}
+                  </p>
                   {tab === "upcoming" && (
                     <Link
                       href="/"
-                      className="mt-4 rounded-lg bg-brand-500 px-4 py-2 text-[13px] font-bold text-white hover:bg-brand-600"
+                      className="mt-5 rounded-xl bg-brand-500 px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-brand-600"
                     >
                       Find parking
                     </Link>
@@ -147,11 +156,11 @@ export default function BookingsPage() {
 // ── Booking card ──────────────────────────────────────────────────────────────
 
 function BookingCard({ booking: b }: { booking: BookingSummary }) {
-  const { border, badge, label } = statusStyle(b.status);
+  const { badge, label } = statusStyle(b.status);
   const amount = (b.amountCents / 100).toFixed(2);
 
   return (
-    <div className={`overflow-hidden rounded-xl border border-slate-200 border-l-4 ${border} bg-white shadow-sm`}>
+    <div className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-18px_rgba(15,23,42,0.16)]">
       <div className="px-5 py-4">
         {/* Header row */}
         <div className="flex items-start justify-between gap-4">

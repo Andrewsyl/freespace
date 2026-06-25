@@ -194,6 +194,10 @@ export function MapView({
     }
     setTokenMissing(false);
     setMapUnavailable(false);
+    if (!mapboxgl.supported()) {
+      setMapUnavailable(true);
+      return;
+    }
     mapboxgl.accessToken = token;
     const defaultCenter = center ?? { lat: 53.3498, lng: -6.2603 };
     let map: mapboxgl.Map;
@@ -208,7 +212,7 @@ export function MapView({
         interactive,
       });
     } catch (error) {
-      console.error("Map initialization failed", error);
+      console.warn("Map initialization failed", error);
       setMapUnavailable(true);
       return;
     }

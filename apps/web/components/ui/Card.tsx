@@ -13,7 +13,7 @@ interface CardProps {
 export function Card({ children, className, noPad, accent }: CardProps) {
   return (
     <div className={clsx(
-      "overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm",
+      "overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-18px_rgba(15,23,42,0.16)]",
       className,
     )}>
       {accent && (

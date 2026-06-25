@@ -52,9 +52,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const initial = user?.name?.trim()?.charAt(0)?.toUpperCase()
     || user?.email?.charAt(0)?.toUpperCase()
     || "?";
-  const inHostArea = pathname?.startsWith("/host") || pathname === "/dashboard/earnings";
-  const hostHref = hasListings ? "/host/dashboard" : "/host";
-
   return (
     <div className="flex min-h-[calc(100vh-64px)]">
 
@@ -85,29 +82,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <ChevronRight className="h-3.5 w-3.5 text-slate-300 transition group-hover:text-slate-500" strokeWidth={2.5} />
             </div>
           </Link>
-
-          <div className="border-b border-slate-100 px-3 py-3">
-            <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
-              <Link
-                href="/dashboard"
-                className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-[12.5px] font-bold transition ${
-                  !inHostArea ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                <BookOpen className="h-3.5 w-3.5" strokeWidth={2.2} />
-                Driver
-              </Link>
-              <Link
-                href={hostHref as any}
-                className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-[12.5px] font-bold transition ${
-                  inHostArea ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                <Home className="h-3.5 w-3.5" strokeWidth={2.2} />
-                Host
-              </Link>
-            </div>
-          </div>
 
           {/* Nav links */}
           <nav className="flex-1 overflow-y-auto px-3 py-4">

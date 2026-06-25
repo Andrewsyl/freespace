@@ -124,7 +124,7 @@ test("signed-in host can publish a space from the wizard", async ({ page }) => {
     });
   });
 
-  await page.goto("/host");
+  await page.goto("/host/start");
 
   await expect(page.getByRole("heading", { name: "Confirm location" })).toBeVisible();
 

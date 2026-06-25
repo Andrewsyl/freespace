@@ -131,77 +131,80 @@ function VehiclePageContent() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="mb-6">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Account</p>
-        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">My Vehicle</h1>
-        <p className="mt-1 text-[13.5px] text-slate-600">Your vehicle details are shared with hosts when you make a booking.</p>
+    <div className="space-y-6">
+      <div className="mb-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-brand-500">Account</p>
+        <h1 className="mt-2 font-display text-[24px] font-bold tracking-[-0.02em] text-slate-900">Vehicle</h1>
+        <p className="mt-1.5 text-[14px] leading-[1.6] text-slate-600">Your vehicle details are shared with hosts when you make a booking.</p>
       </div>
 
       {success && <div className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-[13px] text-brand-700">Vehicle saved.</div>}
       {error   && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-700">{error}</div>}
 
-      {/* Registration plate */}
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
-        <h2 className="mb-3 text-[15px] font-bold text-slate-900">Registration Plate</h2>
-        <div className="flex overflow-hidden rounded-lg border-2 border-slate-800 shadow-sm">
-          <div className="w-8 shrink-0 bg-[#003399]" />
-          <input
-            type="text"
-            value={plate}
-            onChange={(e) => setPlate(formatIrishPlate(e.target.value))}
-            placeholder="221-D-12345"
-            className="flex-1 bg-[#FAFAF8] px-4 py-3 text-[20px] font-bold uppercase tracking-[0.1em] text-slate-900 outline-none placeholder:text-[15px] placeholder:font-normal placeholder:normal-case placeholder:tracking-normal placeholder:text-slate-400"
-            maxLength={14}
-            spellCheck={false}
-            autoComplete="off"
-          />
-        </div>
-      </div>
-
-      {/* Make & model */}
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
-        <h2 className="mb-4 text-[15px] font-bold text-slate-900">Vehicle Details</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="mb-1 block text-[12px] font-semibold text-slate-600">Make</label>
-            <select
-              value={make}
-              onChange={(e) => { setMake(e.target.value); setModel(""); }}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-            >
-              <option value="">Select make…</option>
-              {Object.keys(VEHICLE_MODELS_BY_MAKE).map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
+      {/* Borderless sections, separated by hairlines — no boxes */}
+      <div className="space-y-8">
+        {/* Registration plate */}
+        <section>
+          <h2 className="text-[14px] font-semibold text-slate-900">Registration plate</h2>
+          <div className="mt-3 flex overflow-hidden rounded-lg border-2 border-slate-800 shadow-sm">
+            <div className="w-8 shrink-0 bg-[#003399]" />
+            <input
+              type="text"
+              value={plate}
+              onChange={(e) => setPlate(formatIrishPlate(e.target.value))}
+              placeholder="221-D-12345"
+              className="flex-1 bg-[#FAFAF8] px-4 py-3 text-[20px] font-bold uppercase tracking-[0.1em] text-slate-900 outline-none placeholder:text-[15px] placeholder:font-normal placeholder:normal-case placeholder:tracking-normal placeholder:text-slate-400"
+              maxLength={14}
+              spellCheck={false}
+              autoComplete="off"
+            />
           </div>
-          <div>
-            <label className="mb-1 block text-[12px] font-semibold text-slate-600">Model</label>
-            <select
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              disabled={!make}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400"
-            >
-              <option value="">{make ? "Select model…" : "Select make first"}</option>
-              {availableModels.map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Colour */}
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
-        <h2 className="mb-4 text-[15px] font-bold text-slate-900">Colour</h2>
-        <select
-          value={color}
-          onChange={(e) => setColor(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-        >
-          <option value="">Select colour…</option>
-          {COLORS.map(({ label }) => (
-            <option key={label} value={label}>{label}</option>
-          ))}
-        </select>
+        {/* Make & model */}
+        <section className="border-t border-slate-200/70 pt-8">
+          <h2 className="text-[14px] font-semibold text-slate-900">Vehicle details</h2>
+          <div className="mt-3 grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1 block text-[12px] font-semibold text-slate-600">Make</label>
+              <select
+                value={make}
+                onChange={(e) => { setMake(e.target.value); setModel(""); }}
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10"
+              >
+                <option value="">Select make…</option>
+                {Object.keys(VEHICLE_MODELS_BY_MAKE).map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-[12px] font-semibold text-slate-600">Model</label>
+              <select
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                disabled={!make}
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10 disabled:bg-slate-50 disabled:text-slate-400"
+              >
+                <option value="">{make ? "Select model…" : "Select make first"}</option>
+                {availableModels.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+          </div>
+        </section>
+
+        {/* Colour */}
+        <section className="border-t border-slate-200/70 pt-8">
+          <h2 className="text-[14px] font-semibold text-slate-900">Colour</h2>
+          <select
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+            className="mt-3 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-[14px] text-slate-900 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10"
+          >
+            <option value="">Select colour…</option>
+            {COLORS.map(({ label }) => (
+              <option key={label} value={label}>{label}</option>
+            ))}
+          </select>
+        </section>
       </div>
 
       <button

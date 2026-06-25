@@ -120,14 +120,15 @@ export default function PaymentsPage() {
 
   const pageContent = (
     <div className="space-y-4">
-      <div className="mb-6">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">Dashboard</p>
-        <h1 className="mt-1 text-[22px] font-bold tracking-[-0.02em] text-slate-900">Payments</h1>
+      <div className="mb-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-brand-500">Account</p>
+        <h1 className="mt-2 font-display text-[24px] font-bold tracking-[-0.02em] text-slate-900">Payments</h1>
+        <p className="mt-1.5 text-[14px] leading-[1.6] text-slate-600">Your saved cards and recent parking payments.</p>
       </div>
 
       {error && <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">{error}</div>}
 
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+      <div className="rounded-2xl border border-slate-200/70 bg-white px-6 py-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-18px_rgba(15,23,42,0.16)]">
         <div className="flex items-center justify-between">
           <h2 className="text-[16px] font-bold text-slate-900">Saved cards</h2>
           <div className="flex flex-col items-end gap-1">
@@ -174,7 +175,7 @@ export default function PaymentsPage() {
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+      <div className="rounded-2xl border border-slate-200/70 bg-white px-6 py-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-18px_rgba(15,23,42,0.16)]">
         <h2 className="text-[16px] font-bold text-slate-900">Payment history</h2>
         {historyStatus === "loading" ? (
           <div className="mt-4 flex items-center justify-center py-8"><div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /></div>
