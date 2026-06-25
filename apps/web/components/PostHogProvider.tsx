@@ -29,9 +29,10 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     posthog.init(key, {
       api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://eu.i.posthog.com",
       person_profiles: "identified_only",
-      capture_pageview: false,
-      capture_pageleave: true,
-      capture_exceptions: true,
+      capture_pageview: false,   // $pageview is sent manually in <PageView /> below
+      autocapture: false,        // stop the click/input firehose — we track deliberately
+      capture_pageleave: false,  // drop pageleave noise; pageviews are enough
+      capture_exceptions: true,  // keep error capture
     });
   }, [key]);
 

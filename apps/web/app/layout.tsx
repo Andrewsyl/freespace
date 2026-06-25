@@ -20,6 +20,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "FreeSpace",
   description: "Find and book parking in minutes",
+  // Pre-launch: keep the site out of search indexes. Remove at launch.
+  robots: { index: false, follow: false },
   manifest: "/site.webmanifest",
   icons: {
     icon: [
