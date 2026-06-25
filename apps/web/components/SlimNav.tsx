@@ -69,43 +69,48 @@ export function SlimNav() {
             <img src={logoSrc} alt="FreeSpace" className="h-11 w-auto" />
           </Link>
 
-          {/* ── Centre nav — desktop ── */}
-          <nav className="hidden items-center gap-0.5 md:flex">
-            {hostMode ? (
-              <>
-                <NavLink href="/host/dashboard" active={!!pathname?.startsWith("/host/dashboard")}>
-                  Dashboard
-                </NavLink>
-                {user && (
-                  <NavLink href="/dashboard/earnings" active={pathname === "/dashboard/earnings"}>
-                    Earnings
+          {/* ── Right — desktop: nav links + auth grouped together ── */}
+          <div className="hidden items-center gap-1 md:flex">
+            {/* Contextual nav links */}
+            <nav className="flex items-center gap-0.5">
+              {hostMode ? (
+                <>
+                  <NavLink href="/host/dashboard" active={!!pathname?.startsWith("/host/dashboard")}>
+                    Dashboard
                   </NavLink>
-                )}
-                <NavLink href="/host" active={pathname === "/host"}>
-                  Add a space
-                </NavLink>
-              </>
-            ) : (
-              <>
-                <NavLink href="/" active={pathname === "/"}>
-                  Find parking
-                </NavLink>
-                {user && (
+                  {user && (
+                    <NavLink href="/dashboard/earnings" active={pathname === "/dashboard/earnings"}>
+                      Earnings
+                    </NavLink>
+                  )}
+                  <NavLink href="/host" active={pathname === "/host"}>
+                    Add a space
+                  </NavLink>
+                </>
+              ) : user ? (
+                <>
+                  <NavLink href="/" active={pathname === "/"}>
+                    Find parking
+                  </NavLink>
                   <NavLink href="/bookings" active={!!pathname?.startsWith("/bookings")}>
                     My bookings
                   </NavLink>
-                )}
-                {user && (
                   <NavLink href="/dashboard/favorites" active={pathname === "/dashboard/favorites"}>
                     Saved
                   </NavLink>
-                )}
-              </>
-            )}
-          </nav>
+                </>
+              ) : (
+                <>
+                  <NavLink href="/host" active={pathname === "/host"}>
+                    Become a host
+                  </NavLink>
+                  <NavLink href="/support" active={pathname === "/support"}>
+                    Help
+                  </NavLink>
+                </>
+              )}
+            </nav>
 
-          {/* ── Right — desktop ── */}
-          <div className="hidden items-center gap-1.5 md:flex">
             {/* Mode switcher */}
             {user && (
               hostMode ? (
@@ -124,6 +129,9 @@ export function SlimNav() {
                 </Link>
               )
             )}
+
+            {/* Divider before auth */}
+            <span className="mx-1.5 h-5 w-px bg-slate-200" aria-hidden="true" />
 
             {/* Avatar dropdown / auth buttons */}
             {user ? (
