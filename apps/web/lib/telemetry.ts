@@ -1,5 +1,7 @@
 "use client";
 
+import posthog from "posthog-js";
+
 const SESSION_KEY = "fs_web_session_id";
 
 function getApiBase() {
@@ -20,14 +22,28 @@ export function getWebSessionId() {
 
 export async function trackEvent(eventType: string, properties?: Record<string, unknown>) {
   if (typeof window === "undefined") return;
+  const props = {
+    path: window.location.pathname,
+    ...properties,
+  };
+
+  // Mirror every business event into PostHog so the web funnel is visible there
+  // (search → listing → booking, host publish, auth). The DB write below stays
+  // the source of truth for in-app features; PostHog is for product analytics.
+  // identify()/reset() are handled in AuthProvider, so capture() ties to the user.
+  if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    try {
+      posthog.capture(eventType, props);
+    } catch {
+      // Never let analytics break the app.
+    }
+  }
+
   const payload = JSON.stringify({
     eventType,
     source: "web",
     sessionId: getWebSessionId(),
-    properties: {
-      path: window.location.pathname,
-      ...properties,
-    },
+    properties: props,
   });
   try {
     await fetch(`${getApiBase()}/api/analytics/track`, {
