@@ -135,15 +135,15 @@ const homepageScenarios = [
 const howItWorks = [
   {
     title: "Search",
-    body: "Compare private spaces near your destination, each with photos, access details, and the price you'll actually pay.",
+    body: "Find private spaces near where you're headed — real photos, access details, and the exact price, all upfront.",
   },
   {
     title: "Book",
-    body: "Reserve in seconds and pay securely through Stripe. Your space is held for you, confirmed instantly.",
+    body: "Reserve in seconds and pay securely with Stripe. Your space is confirmed instantly and saved just for you.",
   },
   {
     title: "Park",
-    body: "Arrive to clear access instructions, with support on hand if anything isn't as described.",
+    body: "Pull up to clear directions and head straight in. Your space is ready and waiting.",
   },
 ] as const;
 
