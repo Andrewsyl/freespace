@@ -313,11 +313,12 @@ export default function HomePage() {
         {/* ── Hero ── */}
         <section className="grid lg:grid-cols-[1fr_460px] gap-8 lg:gap-14 items-center">
           <div>
-            <h1 className="font-display tracking-[-0.03em]">
-              <span className="block text-[31px] font-semibold leading-[1.04] text-slate-900 sm:text-[42px] lg:text-[60px]">Skip the car park.</span>
-              <span className="block text-[31px] font-extrabold leading-[1.04] text-brand-600 sm:text-[42px] lg:text-[60px]">Book a space that&apos;s yours.</span>
+            <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500">Parking, sorted</p>
+            <h1 className="font-display text-[33px] font-extrabold leading-[1.05] tracking-[-0.03em] text-slate-900 sm:text-[42px] lg:text-[46px]">
+              Skip the car park.{" "}
+              <span className="text-brand-600">Book a space that&apos;s yours.</span>
             </h1>
-            <p className="mt-6 max-w-[460px] text-[16px] leading-[1.6] text-slate-600">
+            <p className="mt-5 max-w-md text-[15px] leading-[1.6] text-slate-500">
               Book a private space near your destination, reserved before you arrive.
             </p>
 
@@ -584,16 +585,49 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="relative hidden h-[520px] overflow-hidden rounded-3xl shadow-[0_24px_60px_-24px_rgba(15,23,42,0.28)] ring-1 ring-slate-900/[0.06] lg:block">
-            <Image
-              src="/hero-photo.jpg"
-              alt="A driver, parked and relaxed, ready to get on with their day"
-              fill
-              priority
-              sizes="(min-width: 1024px) 460px, 0px"
-              className="object-cover"
+          {/* Hero visual (J) — clean photo over a soft dot-grid panel, with a floating sample listing card */}
+          <div className="relative hidden h-[540px] lg:block">
+            {/* dot-grid accent panel, offset behind to the top-right */}
+            <div
+              className="absolute right-0 top-0 h-[500px] w-[90%] rounded-3xl bg-brand-50"
+              style={{
+                backgroundImage: "radial-gradient(circle, rgba(10,128,80,0.16) 1.4px, transparent 1.4px)",
+                backgroundSize: "18px 18px",
+              }}
             />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/25 via-transparent to-transparent" />
+            {/* clean rounded photo, offset to the bottom-left */}
+            <div className="absolute bottom-0 left-0 h-[500px] w-[88%] overflow-hidden rounded-3xl shadow-[0_24px_60px_-24px_rgba(15,23,42,0.3)] ring-1 ring-slate-900/[0.06]">
+              <Image
+                src="/hero-photo.jpg"
+                alt="A driver, parked and relaxed, ready to get on with their day"
+                fill
+                priority
+                sizes="(min-width: 1024px) 410px, 0px"
+                className="object-cover"
+                style={{ objectPosition: "50% 74%" }}
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/25 via-transparent to-transparent" />
+            </div>
+            {/* floating sample listing card, breaking out of the bottom-right */}
+            <div className="absolute bottom-8 right-[-16px] w-[230px] rounded-2xl border border-slate-200/70 bg-white p-4 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.35)]">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-display text-[13px] font-bold text-slate-900">Driveway · 2 min walk</p>
+                  <p className="text-[12px] text-slate-500">Available now</p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline justify-between border-t border-slate-100 pt-3">
+                <span className="font-display text-[18px] font-extrabold text-slate-900">
+                  €12<span className="text-[12px] font-semibold text-slate-400">/day</span>
+                </span>
+              </div>
+            </div>
           </div>
         </section>
 
