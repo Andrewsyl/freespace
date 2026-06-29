@@ -205,9 +205,10 @@ export default function HostLandingPage() {
               <div className="relative h-44 w-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80"
-                  alt="Example parking space"
+                  src="/example-driveway.jpg"
+                  alt="Example driveway listing"
                   className="h-full w-full object-cover"
+                  style={{ objectPosition: "50% 62%" }}
                 />
                 <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
                   ⚡ Instant

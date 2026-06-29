@@ -666,6 +666,9 @@ export default function HomePage() {
               onClick={() => launchScenario(homepageScenarios[0].filters)}
               className="group relative col-span-2 overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-brand-600 px-6 py-6 text-left transition hover:bg-brand-700 lg:min-h-[220px] lg:px-7 lg:py-7"
             >
+              <svg className="pointer-events-none absolute -right-6 -top-6 h-44 w-44 text-white/[0.07]" viewBox="0 0 24 24" fill="currentColor">
+                <path fillRule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clipRule="evenodd" />
+              </svg>
               <div className="relative">
                 <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-brand-100/80">{homepageScenarios[0].title}</p>
               </div>
@@ -685,6 +688,9 @@ export default function HomePage() {
               onClick={() => launchScenario(homepageScenarios[1].filters)}
               className="group relative overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-[#FBF8F2] px-6 py-6 text-left transition hover:bg-[#F4EFE5] lg:min-h-[220px] lg:px-7 lg:py-7"
             >
+              <svg className="pointer-events-none absolute -right-5 -top-5 h-32 w-32 text-amber-400/20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+              </svg>
               <p className="relative text-[10px] font-bold uppercase tracking-[0.28em] text-amber-800/75">{homepageScenarios[1].title}</p>
               <div className="relative">
                 <h3 className="font-display text-xl font-bold text-slate-950">{homepageScenarios[1].title}</h3>
@@ -702,6 +708,9 @@ export default function HomePage() {
               onClick={() => launchScenario(homepageScenarios[2].filters)}
               className="group relative overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-[#F0F2FA] px-6 py-6 text-left transition hover:bg-[#E7EAF5] lg:min-h-[220px] lg:px-7 lg:py-7"
             >
+              <svg className="pointer-events-none absolute -right-5 -top-5 h-32 w-32 text-indigo-400/20" viewBox="0 0 24 24" fill="currentColor">
+                <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+              </svg>
               <p className="relative text-[10px] font-bold uppercase tracking-[0.28em] text-indigo-700/75">{homepageScenarios[2].title}</p>
               <div className="relative">
                 <h3 className="font-display text-xl font-bold text-slate-950">{homepageScenarios[2].title}</h3>
@@ -719,6 +728,9 @@ export default function HomePage() {
               onClick={() => launchScenario(homepageScenarios[3].filters)}
               className="group relative col-span-2 overflow-hidden flex min-h-[200px] flex-col justify-between rounded-3xl bg-slate-900 px-6 py-6 text-left transition hover:bg-slate-800 lg:min-h-[220px] lg:px-7 lg:py-7"
             >
+              <svg className="pointer-events-none absolute -right-4 -top-4 h-44 w-44 text-brand-500/[0.13]" viewBox="0 0 24 24" fill="currentColor">
+                <path fillRule="evenodd" d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z" clipRule="evenodd" />
+              </svg>
               <div className="relative flex items-start justify-between gap-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">{homepageScenarios[3].title}</p>
                 <span className="shrink-0 rounded-full bg-brand-500/20 px-3 py-1 text-[11px] font-bold text-brand-300">EV friendly</span>
@@ -767,6 +779,10 @@ export default function HomePage() {
           <div className="group relative overflow-hidden rounded-3xl bg-slate-950 px-8 py-10 transition-colors hover:bg-slate-900 sm:px-10 sm:py-12 lg:flex lg:items-center lg:justify-between lg:gap-12">
             {/* Depth — soft brand glow + decorative glyph, like the scenario cards */}
             <div className="pointer-events-none absolute -right-20 -top-24 h-80 w-80 rounded-full bg-brand-500/10 blur-3xl" />
+            <svg className="pointer-events-none absolute -right-6 -top-8 h-56 w-56 text-brand-500/[0.10]" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
+              <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" />
+            </svg>
 
             <div className="relative">
               <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-brand-400">Become a host</p>

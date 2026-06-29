@@ -468,26 +468,9 @@ export function ListingScreen({ navigation, route }: Props) {
     return listing?.title ?? spaceTypeLabel;
   }, [listing, spaceTypeLabel]);
 
-  const aboutText = useMemo(() => {
-    const explicitDescription = listing?.description?.trim();
-    if (explicitDescription) return explicitDescription;
-    if (!listing) return null;
-
-    const typePhrase = /parking$/i.test(spaceTypeLabel)
-      ? spaceTypeLabel
-      : `${spaceTypeLabel} parking`;
-    const locationText = areaLabel ? ` in ${areaLabel}` : "";
-    const availabilityText = availabilityFallbackText
-      ? availabilityFallbackText === "24/7"
-        ? " Available 24/7."
-        : ` Available ${availabilityFallbackText}.`
-      : "";
-    const includedText = featureLabels.length
-      ? ` Includes ${featureLabels.slice(0, 3).join(", ")}.`
-      : "";
-
-    return `${typePhrase}${locationText} with clear booking details and secure payment.${availabilityText}${includedText}`;
-  }, [areaLabel, availabilityFallbackText, featureLabels, listing, spaceTypeLabel]);
+  // Only show the host's real words. No fabricated filler — an empty About is
+  // better than template marketing copy.
+  const aboutText = useMemo(() => listing?.description?.trim() || null, [listing?.description]);
 
   const heroHeight = Math.round(width * 0.8);
   const heroTapHeight = Math.max(0, heroHeight - 40);
@@ -684,8 +667,8 @@ export function ListingScreen({ navigation, route }: Props) {
                 </View>
               )}
               <LinearGradient
-                colors={["rgba(0,0,0,0.28)", "transparent", "rgba(0,0,0,0.72)"]}
-                locations={[0, 0.38, 1]}
+                colors={["rgba(0,0,0,0.22)", "transparent", "rgba(0,0,0,0.60)"]}
+                locations={[0, 0.42, 1]}
                 style={styles.heroGradient}
               />
               {imageUrls.length > 1 ? (
@@ -693,11 +676,7 @@ export function ListingScreen({ navigation, route }: Props) {
                   <Text style={styles.photoCounterText}>{imageUrls.length} photos</Text>
                 </View>
               ) : null}
-              {/* Title overlay */}
-              <View style={styles.heroTitleOverlay}>
-                <Text style={styles.heroSpaceTypeLabel}>{spaceTypeLabel}</Text>
-                <Text style={styles.heroTitleText} numberOfLines={2}>{displayTitle}</Text>
-              </View>
+              {/* Clean photo hero — the title lives in the content sheet below */}
             </View>
 
             {/* Floating glass controls */}
@@ -750,67 +729,48 @@ export function ListingScreen({ navigation, route }: Props) {
                 <View style={styles.sheetHandle} />
 
 
-                {/* ── Price + meta ─────────────────────────── */}
-                <View style={styles.priceBlock}>
-                  <View style={styles.factRows}>
-                    <View style={styles.factRow}>
-                      <Star size={17} color={FG} fill={FG} strokeWidth={2} style={styles.factIcon} />
-                      <Text style={styles.factText} numberOfLines={1}>
-                        {hasReviews ? (
-                          <>
-                            <Text style={styles.factVal}>{listing.rating?.toFixed(1)}</Text>
-                            <Text style={styles.factMuted}>{`  ·  ${listing.rating_count ?? reviews.length} ${(listing.rating_count ?? reviews.length) === 1 ? "review" : "reviews"}`}</Text>
-                          </>
-                        ) : (
-                          <Text style={styles.factMuted}>No reviews yet</Text>
-                        )}
-                      </Text>
-                    </View>
-                    <View style={styles.factRow}>
-                      <MapPin size={17} color={GREEN} strokeWidth={2.2} style={styles.factIcon} />
-                      <Text style={styles.factLine} numberOfLines={1}>
-                        {areaLabel ? <Text style={styles.factVal}>{areaLabel}</Text> : null}
-                        {distanceLabel ? <Text style={styles.factMuted}>{`  ·  ${distanceLabel}`}</Text> : null}
-                      </Text>
-                    </View>
-                    <View style={styles.factRowSecondary}>
-                      <Clock size={17} color={GREEN} strokeWidth={2.2} style={styles.factIcon} />
-                      {availabilityFallbackText ? (
-                        <Text style={styles.factVal} numberOfLines={1}>{availabilityFallbackText}</Text>
-                      ) : (
-                        <Text style={[styles.factVal, { color: isAvailable ? GREEN : colors.danger }]} numberOfLines={1}>
-                          {isAvailable ? "Available now" : "Fully booked"}
-                        </Text>
-                      )}
-                    </View>
+                {/* ── Overview — title + meta line ── */}
+                <View style={styles.overview}>
+                  <Text style={styles.sheetTitle}>{displayTitle}</Text>
+                  <View style={styles.metaRow}>
+                    <Star
+                      size={15}
+                      color={hasReviews ? "#F4B942" : FG_SUBTLE}
+                      fill={hasReviews ? "#F4B942" : "none"}
+                      strokeWidth={2}
+                    />
+                    <Text style={styles.metaStrong}>{hasReviews ? listing.rating?.toFixed(1) : "New"}</Text>
+                    {hasReviews ? (
+                      <Text style={styles.metaMuted}>{`(${listing.rating_count ?? reviews.length})`}</Text>
+                    ) : null}
+                    <Text style={styles.metaDot}>·</Text>
+                    <MapPin size={15} color={GREEN} strokeWidth={2.2} />
+                    <Text style={styles.metaMuted} numberOfLines={1}>
+                      {`${areaLabel || "Location shared on booking"}${distanceLabel ? ` · ${distanceLabel}` : ""}`}
+                    </Text>
                   </View>
                 </View>
 
                 {/* ── Booking ──────────────────────────────── */}
                 <View style={styles.sectionDivider} />
                 <View style={styles.section}>
-                  <View style={styles.bookingHeader}>
-                    <Text style={styles.bookingHeaderTitle}>Choose your parking time</Text>
-                    <Text style={styles.bookingHeaderBody}>
-                      Check availability before you book.
-                    </Text>
-                  </View>
+                  <Text style={styles.sectionTitle}>When do you need it?</Text>
                   <View style={styles.timeRow}>
                     <Pressable style={styles.timeField} onPress={() => openPicker("start")}>
                       <View style={styles.timeFieldHeader}>
                         <Text style={styles.timeFieldLabel}>Arriving</Text>
-                        <ChevronDown size={14} color="#9ca3af" strokeWidth={2.2} />
+                        <ChevronDown size={14} color={FG_SUBTLE} strokeWidth={2.2} />
                       </View>
                       <Text style={styles.timeFieldTime}>{formatTimeLabel(startAt)}</Text>
                       <Text style={styles.timeFieldDate}>{formatDateLabel(startAt)}</Text>
                     </Pressable>
                     <View style={styles.timeArrow}>
-                      <ArrowRight size={14} color="#9ca3af" strokeWidth={2.3} />
+                      <ArrowRight size={14} color={FG_SUBTLE} strokeWidth={2.3} />
                     </View>
                     <Pressable style={styles.timeField} onPress={() => openPicker("end")}>
                       <View style={styles.timeFieldHeader}>
                         <Text style={styles.timeFieldLabel}>Leaving</Text>
-                        <ChevronDown size={14} color="#9ca3af" strokeWidth={2.2} />
+                        <ChevronDown size={14} color={FG_SUBTLE} strokeWidth={2.2} />
                       </View>
                       <Text style={styles.timeFieldTime}>{formatTimeLabel(endAt)}</Text>
                       <Text style={styles.timeFieldDate}>{formatDateLabel(endAt)}</Text>
@@ -831,16 +791,9 @@ export function ListingScreen({ navigation, route }: Props) {
                       <ChevronRight size={13} color={GREEN} strokeWidth={2.3} />
                     </Pressable>
                   ) : null}
-                  <View style={styles.trustNotes}>
-                    {[
-                      "Exact location confirmed after booking",
-                      "Arrival instructions included with your confirmation",
-                    ].map((note) => (
-                      <View key={note} style={styles.trustNoteRow}>
-                        <CircleCheck size={17} color={GREEN} strokeWidth={2.2} />
-                        <Text style={styles.trustNoteText}>{note}</Text>
-                      </View>
-                    ))}
+                  <View style={styles.reserveNote}>
+                    <CircleCheck size={16} color={GREEN} strokeWidth={2.3} />
+                    <Text style={styles.reserveNoteText}>Reserved instantly — free cancellation up to 2 hours before.</Text>
                   </View>
                 </View>
 
@@ -869,16 +822,22 @@ export function ListingScreen({ navigation, route }: Props) {
                   <>
                     <View style={styles.sectionDivider} />
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>What's included</Text>
-                      <View style={styles.chipsGrid}>
-                        {featureLabels.map((feature) => (
-                          <View key={feature} style={styles.featureChip}>
-                            <View style={styles.featureChipIconWrap}>
-                              <FeatureIcon type={getFeatureIconType(feature)} size={18} />
+                      <Text style={styles.sectionTitle}>What&apos;s included</Text>
+                      <View style={styles.amenityGrid}>
+                        {featureLabels
+                          .slice()
+                          .sort((a, b) => {
+                            const order = ["cctv", "gated", "lit", "code", "permit"];
+                            const ra = order.indexOf(getFeatureIconType(a));
+                            const rb = order.indexOf(getFeatureIconType(b));
+                            return (ra === -1 ? 99 : ra) - (rb === -1 ? 99 : rb);
+                          })
+                          .map((feature) => (
+                            <View key={feature} style={styles.amenityItem}>
+                              <FeatureIcon type={getFeatureIconType(feature)} size={20} />
+                              <Text style={styles.amenityLabel} numberOfLines={2}>{feature}</Text>
                             </View>
-                            <Text style={styles.featureChipLabel}>{feature}</Text>
-                          </View>
-                        ))}
+                          ))}
                       </View>
                     </View>
                   </>
@@ -887,9 +846,12 @@ export function ListingScreen({ navigation, route }: Props) {
                 {/* ── Location ─────────────────────────────── */}
                 <View style={styles.sectionDivider} />
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Location</Text>
+                  <Text style={styles.sectionTitle}>Getting there</Text>
+                  <Text style={styles.gettingThereLine}>
+                    {`${distanceLabel ? `${distanceLabel} away. ` : ""}Exact address & directions sent the moment you book.`}
+                  </Text>
                   {hasCoordinates ? (
-                    <View style={styles.localAreaMapWrap}>
+                    <View style={[styles.localAreaMapWrap, { marginTop: 14 }]}>
                       <MapView
                         style={styles.localAreaMap}
                         provider={PROVIDER_GOOGLE}
@@ -915,7 +877,7 @@ export function ListingScreen({ navigation, route }: Props) {
                       </MapView>
                       {!mapReady && (
                         <SkeletonBlock
-                          height={168}
+                          height={180}
                           style={StyleSheet.absoluteFillObject}
                           borderRadius={0}
                           pulse={skeletonPulse}
@@ -1015,7 +977,7 @@ export function ListingScreen({ navigation, route }: Props) {
                         return (
                           <View key={review.id} style={styles.reviewTile}>
                             <View style={styles.reviewCardTop}>
-                              <View style={styles.reviewAvatar}>
+                              <View style={[styles.reviewAvatar, { backgroundColor: avatarBg(authorName) }]}>
                                 <Text style={styles.reviewAvatarText}>{authorName.charAt(0).toUpperCase()}</Text>
                               </View>
                               <View style={styles.reviewMetaBlock}>
@@ -1064,8 +1026,8 @@ export function ListingScreen({ navigation, route }: Props) {
                     <Text style={styles.ownListingText}>This is your listing</Text>
                   </View>
                 ) : showBookingMode ? (
-                  <View style={[styles.ownListingBadge, { backgroundColor: "#edf7f2" }]}>
-                    <Text style={[styles.ownListingText, { color: "#0a8050" }]}>Already booked</Text>
+                  <View style={[styles.ownListingBadge, { backgroundColor: GREEN_SOFT }]}>
+                    <Text style={[styles.ownListingText, { color: GREEN }]}>Already booked</Text>
                   </View>
                 ) : (
                   <SquircleBtn
@@ -1282,7 +1244,10 @@ const FG_SUBTLE  = "#4b5563";
 const LINE       = "#C4CCD5";   // card / control borders
 const LINE_2     = LINE;        // alias — was a duplicate of LINE
 const DIVIDER    = "#EBEBEB";   // section + row separators
-const BG_2       = "#F7F7F6";
+const BG_2       = "#F7F7F6";   // single neutral fill (chips, fields, soft cards)
+const FG_BODY    = "#334155";   // single body-copy colour
+const GREEN_DARK = "#0a6a40";   // green text on light fills (AA contrast)
+const HANDLE     = "#D9DCE0";   // grab handles (sheets, pickers)
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "transparent" },
@@ -1294,7 +1259,7 @@ const styles = StyleSheet.create({
   errorIconWrap: {
     width: 56,
     height: 56,
-    borderRadius: 18,
+    borderRadius: 16,
     backgroundColor: "#FEF2F2",
     alignItems: "center",
     justifyContent: "center",
@@ -1317,7 +1282,7 @@ const styles = StyleSheet.create({
   },
   errorPrimaryBtn: {
     height: 50,
-    borderRadius: 14,
+    borderRadius: 16,
     backgroundColor: GREEN,
     paddingHorizontal: 22,
     flexDirection: "row",
@@ -1348,9 +1313,9 @@ const styles = StyleSheet.create({
   skeletonContent: { paddingHorizontal: spacing.screenX, paddingTop: 20 },
   skeletonStatsRow: {
     flexDirection: "row",
-    borderRadius: 18,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#E8EDF2",
+    borderColor: DIVIDER,
     overflow: "hidden",
     marginTop: 18,
     marginBottom: 4,
@@ -1391,18 +1356,24 @@ const styles = StyleSheet.create({
   heroSpaceTypeLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
-    letterSpacing: 1.8,
+    letterSpacing: 1.4,
     textTransform: "uppercase",
-    color: "rgba(255,255,255,0.88)",
-    marginBottom: 4,
+    color: "rgba(255,255,255,0.92)",
+    marginBottom: 5,
+    textShadowColor: "rgba(0,0,0,0.25)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   heroTitleText: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 26,
-    lineHeight: 28,
+    lineHeight: 32,
     letterSpacing: -0.5,
     color: "#ffffff",
     marginBottom: 6,
+    textShadowColor: "rgba(0,0,0,0.35)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 10,
   },
 
   // Floating controls
@@ -1437,7 +1408,7 @@ const styles = StyleSheet.create({
   },
   sheetHandle: {
     width: 40, height: 4, borderRadius: 999,
-    backgroundColor: "#D9DCE0",
+    backgroundColor: HANDLE,
     alignSelf: "center", marginBottom: 12,
   },
 
@@ -1461,6 +1432,26 @@ const styles = StyleSheet.create({
   factVal:  { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
   factMuted:{ fontFamily: "PlusJakartaSans-Regular",  fontSize: 13, color: FG_SUBTLE },
 
+  // ── Overview — title + meta line (rebuild) ───────────────────────────────────
+  overview: { paddingTop: 4, paddingBottom: 20, gap: 10 },
+  sheetTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 23, lineHeight: 29, letterSpacing: -0.4, color: FG },
+  metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 5 },
+  metaStrong: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13.5, color: FG },
+  metaMuted: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13.5, color: FG_SUBTLE, flexShrink: 1 },
+  metaDot: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13.5, color: FG_SUBTLE, marginHorizontal: 2 },
+  factsCard: {
+    flexDirection: "row", alignItems: "stretch",
+    borderWidth: 1, borderColor: DIVIDER, borderRadius: 16,
+    backgroundColor: "#ffffff", overflow: "hidden",
+  },
+  factCell: { flex: 1, paddingVertical: 14, paddingHorizontal: 12, gap: 4 },
+  factCellDivider: { width: 1, backgroundColor: DIVIDER },
+  factCellLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 10.5, letterSpacing: 0.6, textTransform: "uppercase", color: FG_SUBTLE,
+  },
+  factCellValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 14, color: FG, letterSpacing: -0.2 },
+
   // ── Airbnb-style time pickers ──────────────────────────────────────────────
   bookingHeader: {
     marginBottom: 12,
@@ -1482,8 +1473,8 @@ const styles = StyleSheet.create({
   timeRow: { flexDirection: "row", alignItems: "stretch", gap: 10, marginBottom: 12 },
   timeField: {
     flex: 1,
-    backgroundColor: "#eef2f5",
-    borderRadius: 14,
+    backgroundColor: BG_2,
+    borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 14,
   },
@@ -1497,7 +1488,7 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-SemiBold",
     // Darker than GREEN so the 10px uppercase label clears WCAG AA (4.5:1) on the
     // light grey field background.
-    fontSize: 10, color: "#0a6a40",
+    fontSize: 10, color: GREEN_DARK,
     textTransform: "uppercase", letterSpacing: 1,
   },
   timeFieldTime: {
@@ -1514,7 +1505,6 @@ const styles = StyleSheet.create({
   showMoreLink: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14, color: GREEN, marginTop: 10,
-    textDecorationLine: "underline",
   },
 
   // ── Reviews: empty state ───────────────────────────────────────────────────
@@ -1522,7 +1512,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 16,
     backgroundColor: BG_2,
-    borderRadius: 14,
+    borderRadius: 16,
     marginTop: 8,
     alignItems: "center",
   },
@@ -1549,7 +1539,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   offerIconWrap: {
-    width: 28, height: 28, borderRadius: 14,
+    width: 28, height: 28, borderRadius: 16,
     backgroundColor: "#ffffff",
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
@@ -1599,28 +1589,29 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 17, lineHeight: 21, color: FG, letterSpacing: -0.3, marginBottom: 8,
   },
-  sectionBody: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 22, color: "#334155" },
+  sectionBody: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 22, color: FG_BODY },
+  gettingThereLine: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 20, color: FG_2, marginBottom: 2 },
 
   // Local area map
   localAreaMap: {
     width: "100%",
-    height: 130,
+    height: 180,
     backgroundColor: BG_2,
   },
   localAreaMapWrap: {
     position: "relative",
     overflow: "hidden",
-    borderRadius: 18,
+    borderRadius: 16,
     backgroundColor: BG_2,
     marginBottom: 0,
     borderWidth: 1,
-    borderColor: "#dde3e7",
+    borderColor: LINE,
   },
   mapExpandButton: {
     position: "absolute", top: 10, right: 10,
-    width: 34, height: 34, borderRadius: 10,
+    width: 34, height: 34, borderRadius: 12,
     backgroundColor: "rgba(255,255,255,0.96)",
-    borderWidth: 1, borderColor: "#dde3e7",
+    borderWidth: 1, borderColor: LINE,
     alignItems: "center", justifyContent: "center",
   },
 
@@ -1636,8 +1627,13 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   featureChipLabel: {
-    fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: "#1e293b",
+    fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: FG_BODY,
   },
+
+  // Amenities — 2-column icon list (rebuild)
+  amenityGrid: { flexDirection: "row", flexWrap: "wrap" },
+  amenityItem: { width: "50%", flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, paddingRight: 8 },
+  amenityLabel: { flex: 1, fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 18, color: FG_2 },
 
   // Guarantee strip
 
@@ -1660,11 +1656,11 @@ const styles = StyleSheet.create({
   },
   reviewCardTop: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   reviewAvatar: {
-    width: 36, height: 36, borderRadius: 18,
+    width: 36, height: 36, borderRadius: 16,
     backgroundColor: "#EDF7F2",
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
-  reviewAvatarText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#0a8050" },
+  reviewAvatarText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG },
   reviewMetaBlock: { flex: 1, minWidth: 0 },
   reviewAuthorName: { fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: FG_SUBTLE },
   reviewDateText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: FG_SUBTLE },
@@ -1673,7 +1669,7 @@ const styles = StyleSheet.create({
     backgroundColor: BG_2, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
   },
   reviewStarPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
-  reviewComment: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 21, color: "#334155" },
+  reviewComment: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 21, color: FG_BODY },
 
   // Auth modal — bottom sheet
   authModalRoot: { flex: 1, justifyContent: "flex-end" },
@@ -1683,7 +1679,7 @@ const styles = StyleSheet.create({
   },
   authModalSheet: {
     backgroundColor: "#ffffff",
-    borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
     paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28,
     shadowColor: "#111111",
     shadowOffset: { width: 0, height: -2 },
@@ -1692,7 +1688,7 @@ const styles = StyleSheet.create({
   authModalHandle: {
     alignSelf: "center",
     width: 40, height: 5, borderRadius: 999,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: HANDLE,
     marginBottom: 16,
   },
   authModalClose: {
@@ -1776,8 +1772,8 @@ const styles = StyleSheet.create({
   bottomDuration: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, marginTop: 1 },
   bottomUnavailableHint: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: colors.danger, marginTop: 2 },
   dailyCapBadge: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: GREEN, marginTop: 2 },
-  ownListingBadge: { paddingVertical: 14, paddingHorizontal: 20, borderRadius: 14, backgroundColor: "#f0f0f0", alignItems: "center" as const, justifyContent: "center" as const },
-  ownListingText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#666", letterSpacing: -0.2 },
+  ownListingBadge: { paddingVertical: 14, paddingHorizontal: 20, borderRadius: 16, backgroundColor: BG_2, alignItems: "center" as const, justifyContent: "center" as const },
+  ownListingText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG_SUBTLE, letterSpacing: -0.2 },
 
   // Picker modal — bottom sheet
   pickerBackdropLayer: {
@@ -1785,8 +1781,8 @@ const styles = StyleSheet.create({
   },
   pickerSheet: {
     backgroundColor: "#ffffff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     paddingTop: 12,
     paddingBottom: 36,
     alignItems: "center",
@@ -1799,7 +1795,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#E0E0E0",
+    backgroundColor: HANDLE,
     marginBottom: 18,
   },
   pickerTitle: {
@@ -1814,8 +1810,8 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     marginHorizontal: 20,
     marginTop: 16,
-    backgroundColor: "#0a8050",
-    borderRadius: 14,
+    backgroundColor: GREEN,
+    borderRadius: 16,
     height: 52,
     alignItems: "center",
     justifyContent: "center",
@@ -1847,6 +1843,10 @@ const styles = StyleSheet.create({
   trustNotes: { gap: 7, marginTop: 10 },
   trustNoteRow: { flexDirection: "row", alignItems: "center", gap: 9 },
   trustNoteText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, flex: 1, lineHeight: 19 },
+
+  // Reserve note — single certainty line (rebuild)
+  reserveNote: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 },
+  reserveNoteText: { flex: 1, fontFamily: "PlusJakartaSans-Medium", fontSize: 13, lineHeight: 18, color: FG_2 },
 
   // Feature list (replaces pill chips)
 
