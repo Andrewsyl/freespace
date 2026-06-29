@@ -95,6 +95,25 @@ function calculateListingChargeCents(input: {
 
   return 0;
 }
+
+// Number of whole months covered by a booking window. Calendar months vary
+// (28–31 days), so we round against the average month length — a 1-month
+// window resolves to 1, two months to 2, etc.
+const AVG_MONTH_MS = 30.44 * 24 * 60 * 60 * 1000;
+function monthsBetween(startTime: Date, endTime: Date) {
+  return Math.max(1, Math.round((endTime.getTime() - startTime.getTime()) / AVG_MONTH_MS));
+}
+
+function calculateMonthlyChargeCents(input: {
+  pricePerMonth?: number | null;
+  startTime: Date;
+  endTime: Date;
+}) {
+  const monthly = Number(input.pricePerMonth);
+  if (!Number.isFinite(monthly) || monthly <= 0) return 0;
+  const months = monthsBetween(input.startTime, input.endTime);
+  return Math.max(1, Math.round(monthly * months * 100));
+}
 const bookingLimiter = createRateLimiter({
   windowMs: 5 * 60 * 1000,
   max: 10,
@@ -263,6 +282,7 @@ const bookingSchemaBase = z.object({
   listingId: z.string().uuid(),
   from: z.string().datetime(),
   to: z.string().datetime(),
+  mode: z.enum(["daily", "monthly"]).optional(),
   amountCents: z.number().int().positive().max(10000000),
   currency: z.string().trim().length(3).transform((value) => value.toLowerCase()).default("eur"),
   platformFeePercent: z.number().min(0).max(0.3).default(8 / 108),
@@ -594,13 +614,26 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
     if (listingWithHost.hostId === driverId) {
       return res.status(403).json({ message: "You cannot book your own listing." });
     }
-    const expectedParkingCents = calculateListingChargeCents({
-      rateType: listingWithHost.rateType,
-      pricePerDay: listingWithHost.pricePerDay,
-      pricePerHour: listingWithHost.pricePerHour,
-      startTime: new Date(payload.from),
-      endTime: new Date(payload.to),
-    });
+    // Price is always recomputed server-side from the listing — the client's
+    // amount is only accepted if it matches. Monthly uses the host's monthly
+    // rate; everything else uses the hourly/daily rate.
+    const isMonthlyBooking = payload.mode === "monthly";
+    if (isMonthlyBooking && !(Number(listingWithHost.pricePerMonth) > 0)) {
+      return res.status(400).json({ message: "This space isn't available for monthly booking." });
+    }
+    const expectedParkingCents = isMonthlyBooking
+      ? calculateMonthlyChargeCents({
+          pricePerMonth: listingWithHost.pricePerMonth,
+          startTime: new Date(payload.from),
+          endTime: new Date(payload.to),
+        })
+      : calculateListingChargeCents({
+          rateType: listingWithHost.rateType,
+          pricePerDay: listingWithHost.pricePerDay,
+          pricePerHour: listingWithHost.pricePerHour,
+          startTime: new Date(payload.from),
+          endTime: new Date(payload.to),
+        });
     const expectedAmountCents = Math.round(expectedParkingCents * 1.08);
     if (payload.amountCents !== expectedAmountCents) {
       return res.status(400).json({ message: "Booking price is out of date. Please refresh and try again." });

@@ -1,23 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
 import { CheckCircle, CalendarCheck, Mail } from "lucide-react";
 import { SlimNav } from "../../../components/SlimNav";
 
 export default function BookingSuccessPage() {
-  return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-white"><div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /></div>}>
-      <BookingSuccessContent />
-    </Suspense>
-  );
-}
-
-function BookingSuccessContent() {
-  const params = useSearchParams();
-  const sessionId = params.get("session_id");
-
   return (
     <div className="min-h-screen bg-slate-50">
       <SlimNav />
@@ -59,7 +46,7 @@ function BookingSuccessContent() {
                 <div>
                   <p className="text-[13.5px] font-semibold text-slate-800">View your booking</p>
                   <p className="mt-0.5 text-[12.5px] leading-relaxed text-slate-500">
-                    Find your QR code, access info, and host details in the dashboard.
+                    Get directions, access details, and your host&apos;s contact in My bookings.
                   </p>
                 </div>
               </div>
@@ -81,12 +68,6 @@ function BookingSuccessContent() {
               Find another space
             </Link>
           </div>
-
-          {sessionId && (
-            <p className="mt-6 text-center text-[11px] text-slate-400">
-              Ref: <span className="font-mono">{sessionId.slice(-12)}</span>
-            </p>
-          )}
         </div>
       </div>
     </div>

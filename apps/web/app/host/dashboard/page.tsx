@@ -30,6 +30,7 @@ import {
   Link2,
   CalendarDays,
   ArrowUpRight,
+  MoreHorizontal,
 } from "lucide-react";
 import type { Listing } from "../../../components/ListingCard";
 
@@ -152,6 +153,20 @@ function SpaceCard({
   const thumb = listing.imageUrls?.[0] ?? listing.image_urls?.[0] ?? null;
   const price = priceLabel(listing);
   const [copied, setCopied] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  // A space that's occupied right now or has someone booked next can't be
+  // pulled out from under a driver — deletion is gated until it's clear.
+  const hasLiveBookings = Boolean(current || next);
+
+  const requestDelete = () => {
+    setMenuOpen(false);
+    if (hasLiveBookings) {
+      setBlocked(true);
+      return;
+    }
+    onConfirmDelete(confirmDeleteId === listing.id ? null : listing.id);
+  };
 
   const handleShare = () => {
     const base = origin || (typeof window !== "undefined" ? window.location.origin : "");
@@ -287,6 +302,22 @@ function SpaceCard({
         </div>
       )}
 
+      {/* ── Can't-delete guard ── */}
+      {blocked && (
+        <div className="flex items-start justify-between gap-3 border-b border-amber-100 bg-amber-50 px-5 py-3.5">
+          <p className="text-[12.5px] leading-[1.5] text-amber-800">
+            This space {current ? "is occupied right now" : "has an upcoming booking"}, so it can&apos;t be deleted yet.
+            Wait until the booking ends, or cancel it first.
+          </p>
+          <button
+            onClick={() => setBlocked(false)}
+            className="shrink-0 text-[12px] font-semibold text-amber-700 hover:text-amber-900"
+          >
+            Got it
+          </button>
+        </div>
+      )}
+
       {/* ── Delete confirm ── */}
       {confirmDeleteId === listing.id && (
         <div className="border-b border-rose-100 bg-rose-50 px-5 py-3.5">
@@ -311,14 +342,14 @@ function SpaceCard({
         </div>
       )}
 
-      {/* ── Actions ── */}
+      {/* ── Actions — primary actions read as the obvious moves; delete is tucked away ── */}
       <div className="flex items-center divide-x divide-slate-100">
         <Link
           href={`/listing/${listing.id}` as any}
           className="flex flex-1 items-center justify-center gap-1.5 py-3.5 text-[12.5px] font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
         >
           <Eye className="h-3.5 w-3.5" strokeWidth={2} />
-          View
+          Preview
         </Link>
         <Link
           href={`/host/edit/${listing.id}` as any}
@@ -336,13 +367,31 @@ function SpaceCard({
             QR
           </a>
         )}
-        <button
-          onClick={() => onConfirmDelete(confirmDeleteId === listing.id ? null : listing.id)}
-          className="flex flex-1 items-center justify-center gap-1.5 py-3.5 text-[12.5px] font-semibold text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
-        >
-          <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-          Delete
-        </button>
+        <div className="relative">
+          <button
+            type="button"
+            aria-label="More options"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="flex items-center justify-center px-4 py-3.5 text-slate-400 transition hover:bg-slate-50 hover:text-slate-700"
+          >
+            <MoreHorizontal className="h-4 w-4" strokeWidth={2} />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+              <div className="absolute bottom-full right-2 z-20 mb-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  onClick={requestDelete}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] font-semibold text-rose-600 transition hover:bg-rose-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+                  Delete space
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

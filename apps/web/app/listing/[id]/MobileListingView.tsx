@@ -8,6 +8,7 @@ import type { Listing } from "../../../components/ListingCard";
 import { ListingMap } from "./MapSection";
 import { trackEvent } from "../../../lib/telemetry";
 import { SearchDateTimePicker } from "../../../components/SearchForm";
+import { useAuth } from "../../../components/AuthProvider";
 import { calculateListingTotal, formatPriceValue } from "../../../lib/pricing";
 
 type Review = {
@@ -49,8 +50,9 @@ export function MobileListingView({
   fallbackImage,
   distanceKm,
   initialBooking,
+  isMonthly = false,
 }: {
-  listing: Listing & { amenities?: string[]; accessCode?: string | null };
+  listing: Listing & { amenities?: string[]; accessCode?: string | null; hostId?: string; pricePerMonth?: number | null };
   listingForMap: Listing;
   areaLabel: string;
   reviews: Review[];
@@ -62,8 +64,11 @@ export function MobileListingView({
     endDate?: string;
     endTime?: string;
   };
+  isMonthly?: boolean;
 }) {
   const router = useRouter();
+  const { user } = useAuth();
+  const isOwner = !!listing.hostId && user?.id === listing.hostId;
   const defaultStart = useMemo(() => {
     if (initialBooking?.startDate && initialBooking?.startTime) {
       return new Date(`${initialBooking.startDate}T${initialBooking.startTime}:00`);
@@ -313,33 +318,76 @@ export function MobileListingView({
         className="fixed bottom-0 left-0 right-0 z-30 bg-white px-4 shadow-[0_-4px_20px_rgba(15,23,42,0.10)] lg:hidden"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)", paddingTop: "12px" }}
       >
-        <div className="flex items-center gap-3">
-          <div className="shrink-0">
-            <p className="text-[11px] font-semibold text-slate-600">{bookingTotal.durationLabel}</p>
-            <p className="text-[20px] font-extrabold tracking-tight text-slate-900">
-              €{formatPriceValue(bookingTotal.total)}
-            </p>
-            {bookingTotal.dailyCapApplied && (
-              <p className="text-[10px] font-semibold text-emerald-600">
-                Daily rate — saves €{formatPriceValue(bookingTotal.dailyCapSaving)}
+        {isMonthly && Number(listing.pricePerMonth) > 0 ? (
+          <div className="flex items-center gap-3">
+            <div className="shrink-0">
+              <p className="text-[11px] font-semibold text-slate-600">Monthly</p>
+              <p className="text-[20px] font-extrabold tracking-tight text-slate-900">
+                €{formatPriceValue(Number(listing.pricePerMonth))}
               </p>
-            )}
+            </div>
+            <Link
+              href={`/checkout/${listing.id}?mode=monthly&date=${toDateStr(startAt)}&startTime=00:00&endDate=${toDateStr(new Date(startAt.getFullYear(), startAt.getMonth() + 1, startAt.getDate()))}&endTime=00:00&months=1` as any}
+              className="flex flex-1 items-center justify-center rounded-2xl bg-brand-500 py-3.5 text-[15px] font-bold text-white shadow-sm transition active:bg-brand-600"
+            >
+              Reserve monthly
+            </Link>
           </div>
-          <Link
-            href={href as any}
-            onClick={() =>
-              void trackEvent("web_booking_started", {
-                listingId: listing.id,
-                date: toDateStr(startAt),
-                startTime: toTimeStr(startAt),
-                endTime: toTimeStr(endAt),
-              })
-            }
-            className="flex flex-1 items-center justify-center rounded-2xl bg-brand-500 py-3.5 text-[15px] font-bold text-white shadow-sm transition active:bg-brand-600"
-          >
-            Book now
-          </Link>
-        </div>
+        ) : isMonthly ? (
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 shrink">
+              <p className="text-[12px] font-bold text-slate-900">Monthly parking</p>
+              <p className="truncate text-[11px] text-slate-500">Arranged directly with the host</p>
+            </div>
+            <a
+              href={`mailto:support@freespace.ie?subject=${encodeURIComponent(`Monthly parking enquiry — ${listing.title}`)}&body=${encodeURIComponent(`Hi FreeSpace team,\n\nI'd like to enquire about monthly parking at ${listing.title}.\n\nThanks!`)}`}
+              className="flex flex-1 items-center justify-center rounded-2xl bg-slate-900 py-3.5 text-[15px] font-bold text-white shadow-sm transition active:bg-slate-800"
+            >
+              Request monthly
+            </a>
+          </div>
+        ) : isOwner ? (
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 shrink">
+              <p className="text-[12px] font-bold text-slate-900">This is your listing</p>
+              <p className="truncate text-[11px] text-slate-500">You can&apos;t book your own space</p>
+            </div>
+            <Link
+              href={`/host/edit/${listing.id}` as any}
+              className="flex flex-1 items-center justify-center rounded-2xl bg-slate-900 py-3.5 text-[15px] font-bold text-white shadow-sm transition active:bg-slate-800"
+            >
+              Manage listing
+            </Link>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="shrink-0">
+              <p className="text-[11px] font-semibold text-slate-600">{bookingTotal.durationLabel}</p>
+              <p className="text-[20px] font-extrabold tracking-tight text-slate-900">
+                €{formatPriceValue(bookingTotal.total)}
+              </p>
+              {bookingTotal.dailyCapApplied && (
+                <p className="text-[10px] font-semibold text-emerald-600">
+                  Daily rate — saves €{formatPriceValue(bookingTotal.dailyCapSaving)}
+                </p>
+              )}
+            </div>
+            <Link
+              href={href as any}
+              onClick={() =>
+                void trackEvent("web_booking_started", {
+                  listingId: listing.id,
+                  date: toDateStr(startAt),
+                  startTime: toTimeStr(startAt),
+                  endTime: toTimeStr(endAt),
+                })
+              }
+              className="flex flex-1 items-center justify-center rounded-2xl bg-brand-500 py-3.5 text-[15px] font-bold text-white shadow-sm transition active:bg-brand-600"
+            >
+              Book now
+            </Link>
+          </div>
+        )}
       </div>
 
       {isImageFullscreen && (

@@ -63,8 +63,20 @@ export default function BookingsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+      <div className="min-h-screen bg-slate-50">
+        <SlimNav />
+        <DashboardShell>
+          <div className="space-y-5">
+            <div className="h-3 w-16 animate-pulse rounded bg-slate-200" />
+            <div className="h-7 w-44 animate-pulse rounded bg-slate-200" />
+            <div className="h-9 w-full max-w-xs animate-pulse rounded bg-slate-100" />
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-32 animate-pulse rounded-2xl border border-slate-200 bg-white" />
+              ))}
+            </div>
+          </div>
+        </DashboardShell>
       </div>
     );
   }
@@ -160,7 +172,10 @@ function BookingCard({ booking: b }: { booking: BookingSummary }) {
   const amount = (b.amountCents / 100).toFixed(2);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-18px_rgba(15,23,42,0.16)]">
+    <Link
+      href={`/bookings/${b.id}` as any}
+      className="group block overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-18px_rgba(15,23,42,0.16)] transition hover:border-slate-300 hover:shadow-[0_1px_2px_rgba(15,23,42,0.04),0_16px_36px_-18px_rgba(15,23,42,0.24)]"
+    >
       <div className="px-5 py-4">
         {/* Header row */}
         <div className="flex items-start justify-between gap-4">
@@ -197,7 +212,13 @@ function BookingCard({ booking: b }: { booking: BookingSummary }) {
             </div>
           ))}
         </div>
+
+        {/* Affordance — this card is a doorway, not a dead end */}
+        <div className="mt-4 flex items-center justify-end gap-1 text-[12.5px] font-semibold text-brand-600">
+          View details
+          <span className="transition-transform group-hover:translate-x-0.5">→</span>
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }

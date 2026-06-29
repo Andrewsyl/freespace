@@ -510,6 +510,7 @@ export type ListingDetail = {
   address: string;
   pricePerDay: number;
   pricePerHour?: number | null;
+  pricePerMonth?: number | null;
   rateType?: "hourly" | "daily" | null;
   availability: string;
   amenities?: string[];
@@ -587,7 +588,15 @@ export async function getFavourites(token?: string): Promise<FavouriteListing[]>
   });
   const { data, error } = await handleResponse<{ favorites: any[] }>(res);
   if (error) throw new Error(error);
-  return (data?.favorites ?? []) as FavouriteListing[];
+  // Postgres NUMERIC columns arrive as strings — coerce so the FavouriteListing
+  // type matches reality (callers do listing.rating.toFixed(1), etc.).
+  const num = (v: unknown) => (v == null || v === "" ? undefined : Number(v));
+  return (data?.favorites ?? []).map((f) => ({
+    ...f,
+    pricePerDay: num(f.pricePerDay),
+    rating: num(f.rating),
+    ratingCount: num(f.ratingCount),
+  })) as FavouriteListing[];
 }
 
 export async function addFavourite(listingId: string, token?: string) {
@@ -616,6 +625,7 @@ export type CreateBookingInput = {
   listingId: string;
   from: string;
   to: string;
+  mode?: "daily" | "monthly";
   amountCents: number;
   currency?: string;
   platformFeePercent?: number;
@@ -658,14 +668,20 @@ export type BookingSummary = {
   refundStatus?: string | null;
   refundedAt?: string | null;
   noShowAt?: string | null;
+  checkedInAt?: string | null;
   cancellationSource?: "driver" | "host" | null;
   amountCents: number;
   currency: string;
   address: string;
   title: string;
+  imageUrls?: string[] | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  receiptUrl?: string | null;
   vehiclePlate?: string | null;
   accessCode?: string | null;
   arrivalInstructions?: string | null;
+  hostPhone?: string | null;
   driverName?: string | null;
   driverPhone?: string | null;
   driverVehicleMake?: string | null;
@@ -695,6 +711,30 @@ export async function cancelHostBooking(bookingId: string, token?: string) {
   const { data, error } = await handleResponse<{ ok: boolean; refunded?: boolean; alreadyCanceled?: boolean }>(res);
   if (error) throw new Error(error);
   return data ?? { ok: true };
+}
+
+// Driver-initiated cancellation. The API auto-refunds confirmed bookings and
+// returns whether a refund was issued, so the UI can confirm the real outcome.
+export async function cancelDriverBooking(bookingId: string, token?: string) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetchWithTimeout(`${API_BASE}/api/bookings/${bookingId}/cancel`, {
+    method: "POST",
+    headers: { ...authHeaders(token) },
+  });
+  const { data, error } = await handleResponse<{ ok: boolean; refunded?: boolean; alreadyCanceled?: boolean }>(res);
+  if (error) throw new Error(error);
+  return data ?? { ok: true };
+}
+
+export async function getBooking(bookingId: string, token?: string): Promise<BookingSummary> {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetchWithTimeout(`${API_BASE}/api/bookings/${bookingId}`, {
+    cache: "no-store",
+    headers: { ...authHeaders(token) },
+  });
+  const { data, error } = await handleResponse<BookingSummary>(res);
+  if (error) throw new Error(error);
+  return data!;
 }
 
 export async function getHostPayoutStatus(token?: string) {

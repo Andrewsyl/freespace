@@ -60,6 +60,7 @@ export default async function ListingDetailPage({
     endTime?: string;
     fromLat?: string;
     fromLng?: string;
+    mode?: string;
   }>;
 }) {
   const { id } = await params;
@@ -112,6 +113,9 @@ export default async function ListingDetailPage({
     endDate: resolvedSearchParams.endDate ?? resolvedSearchParams.date,
     endTime: resolvedSearchParams.endTime,
   };
+  // Monthly arrives from the search "Browse monthly" lane — it isn't bookable
+  // via the daily checkout, so the booking surfaces show the enquiry flow.
+  const isMonthly = resolvedSearchParams.mode === "monthly";
 
 
   return (
@@ -129,6 +133,7 @@ export default async function ListingDetailPage({
           fallbackImage={fallback}
           initialBooking={initialBooking}
           distanceKm={distanceKm ?? undefined}
+          isMonthly={isMonthly}
         />
       </div>
 
@@ -452,6 +457,10 @@ export default async function ListingDetailPage({
                 <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,0.18)]">
                   <SidebarBookingCard
                     listingId={listing.id}
+                    listingTitle={listing.title}
+                    hostId={listing.hostId}
+                    initialMonthly={isMonthly}
+                    pricePerMonth={listing.pricePerMonth}
                     pricePerDay={listing.pricePerDay}
                     pricePerHour={listing.pricePerHour}
                     rateType={listing.rateType}

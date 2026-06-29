@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, Wallet } from "lucide-react";
 import { ListingPreviewCard } from "./ListingPreviewCard";
 import type { HostListingDraft } from "./types";
 
@@ -54,12 +54,30 @@ export function HostPublishedScreen({
           <ListingPreviewCard data={data} />
         </motion.div>
 
+        {/* One thing left — frame payouts as a known step, not a surprise banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.4 }}
+          className="mt-6 flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 px-4 py-3.5 text-left"
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-100">
+            <Wallet className="h-4 w-4 text-brand-700" strokeWidth={2} />
+          </div>
+          <div>
+            <p className="text-[13.5px] font-bold text-brand-900">Get paid for bookings</p>
+            <p className="mt-0.5 text-[12.5px] leading-relaxed text-brand-700/90">
+              Connect or confirm your payout details in the dashboard so earnings reach your bank automatically.
+            </p>
+          </div>
+        </motion.div>
+
         {/* Next actions */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.45 }}
-          className="mt-8 flex flex-col gap-3"
+          className="mt-5 flex flex-col gap-3"
         >
           <button
             type="button"

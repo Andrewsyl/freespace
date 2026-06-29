@@ -21,6 +21,10 @@ const FEATURE_META: Record<FeatureKey, { label: string; Icon: typeof Home }> = {
   ev: { label: "EV charging", Icon: Zap },
 };
 
+function formatVehiclePlate(value: string) {
+  return value.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 14);
+}
+
 export default function CheckoutPage() {
   const { user, token, loading, signIn, signInWithGoogle, error: authError } = useAuth();
   const params = useParams<{ id: string }>();
@@ -70,7 +74,12 @@ export default function CheckoutPage() {
     [endAt, listing, startAt]
   );
 
-  const totalPrice = pricing?.total ?? 0;
+  // Monthly bookings price off the host's monthly rate (server-validated),
+  // not the daily calc — billing a month as ~30 daily days was the overcharge.
+  const isMonthly = searchParams?.get("mode") === "monthly";
+  const monthlyCount = Math.max(1, Math.min(12, Math.round(Number(searchParams?.get("months")) || 1)));
+  const monthlyAvailable = isMonthly && typeof listing?.pricePerMonth === "number" && (listing.pricePerMonth ?? 0) > 0;
+  const totalPrice = monthlyAvailable ? (listing!.pricePerMonth as number) * monthlyCount : (pricing?.total ?? 0);
   const serviceFee = Math.round(totalPrice * 0.08 * 100) / 100;
   const grossTotal = totalPrice + serviceFee;
   const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -110,7 +119,7 @@ export default function CheckoutPage() {
       const to = `${toDateStr(endAt)}T${toTimeStr(endAt)}:00Z`;
       const amountCents = Math.max(1, Math.round(grossTotal * 100));
       const res = await createBooking(
-        { listingId: listing.id, from, to, amountCents, currency: "eur", platformFeePercent: 8 / 108, vehiclePlate: vehiclePlate.trim() || undefined },
+        { listingId: listing.id, from, to, mode: monthlyAvailable ? "monthly" : undefined, amountCents, currency: "eur", platformFeePercent: 8 / 108, vehiclePlate: vehiclePlate.trim() || undefined },
         token
       );
       setCheckoutUrl(res.checkoutUrl);
@@ -168,8 +177,22 @@ export default function CheckoutPage() {
 
   if (loading || listingLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+      <div className="min-h-screen bg-[#f7f7f6]">
+        <CheckoutNav />
+        <div className="mx-auto max-w-[1180px] px-4 py-8 sm:px-6 sm:py-12">
+          <div className="h-3 w-24 animate-pulse rounded bg-slate-200" />
+          <div className="mt-2 h-9 w-72 max-w-full animate-pulse rounded bg-slate-200" />
+          <div className="mt-7 flex flex-col-reverse gap-6 lg:flex-row lg:items-start lg:gap-10">
+            <div className="min-w-0 flex-1 space-y-5">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-28 animate-pulse rounded-2xl border border-slate-200 bg-white" />
+              ))}
+            </div>
+            <div className="w-full lg:w-[430px] lg:shrink-0">
+              <div className="h-[420px] animate-pulse rounded-2xl border border-slate-200 bg-white" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -189,7 +212,57 @@ export default function CheckoutPage() {
     );
   }
 
+  // Monthly is bookable when the host set a monthly rate; if they haven't,
+  // fall back to the enquiry flow rather than mispricing it as daily.
+  if (isMonthly && !monthlyAvailable) {
+    const monthlyHref = (() => {
+      const url = typeof window !== "undefined"
+        ? `${window.location.origin}/listing/${listing.id}`
+        : `/listing/${listing.id}`;
+      const subject = `Monthly parking enquiry — ${listing.title}`;
+      const body = `Hi FreeSpace team,\n\nI'd like to enquire about monthly parking at ${listing.title}.\n\nListing: ${url}\n\nThanks!`;
+      return `mailto:support@freespace.ie?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    })();
+    return (
+      <div className="min-h-screen bg-[#f7f7f6]">
+        <CheckoutNav />
+        <div className="mx-auto max-w-md px-6 py-16">
+          <div className="rounded-2xl border border-slate-200 bg-white px-6 py-7 text-center shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500">Monthly parking</p>
+            <h1 className="mt-2 text-[22px] font-bold tracking-[-0.02em] text-slate-950">Arranged directly with the host</h1>
+            <p className="mt-2 text-[14px] leading-[1.6] text-slate-600">
+              Monthly spaces at <span className="font-semibold text-slate-800">{listing.title}</span> aren&apos;t booked through the standard daily checkout. Send a request and we&apos;ll connect you with the host, usually within one working day.
+            </p>
+            <a
+              href={monthlyHref}
+              className="mt-6 flex h-12 items-center justify-center rounded-xl bg-slate-900 text-[15px] font-bold text-white transition hover:bg-slate-800"
+            >
+              Request monthly parking
+            </a>
+            <Link
+              href={`/listing/${listing.id}` as any}
+              className="mt-3 flex h-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-[15px] font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Back to listing
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const nextPath = `/checkout/${params?.id}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`;
+  const vehicleProfileHref = `/dashboard/vehicle?next=${encodeURIComponent(nextPath)}`;
+  const vehicleMake = user?.vehicleMake?.trim() ?? "";
+  const vehicleModel = user?.vehicleType?.trim() ?? "";
+  const vehicleColor = user?.vehicleColor?.trim() ?? "";
+  const vehicleSummary = [vehicleMake, vehicleModel].filter(Boolean).join(" - ");
+  const durationDisplay = monthlyAvailable
+    ? `${monthlyCount} ${monthlyCount === 1 ? "month" : "months"}`
+    : (pricing?.durationLabel ?? "—");
+  const priceLineLabel = monthlyAvailable
+    ? `€${(listing.pricePerMonth as number).toFixed(2)} / month`
+    : formatListingPriceLine(listing);
   const hasRating = typeof listing.rating === "number" && listing.rating > 0;
   const features = deriveFeatureKeys(listing.amenities, listing.title);
   const directionsHref =
@@ -232,30 +305,32 @@ export default function CheckoutPage() {
               <Card>
                 <div className="flex items-center justify-between">
                   <h2 className="text-[16px] font-bold tracking-[-0.012em] text-slate-900">Booking details</h2>
-                  <button
-                    type="button"
-                    onClick={() => setShowTimePicker((s) => !s)}
-                    className="text-[13px] font-semibold text-brand-600 hover:text-brand-700"
-                  >
-                    {showTimePicker ? "Done" : "Edit"}
-                  </button>
+                  {!monthlyAvailable && (
+                    <button
+                      type="button"
+                      onClick={() => setShowTimePicker((s) => !s)}
+                      className="text-[13px] font-semibold text-brand-600 hover:text-brand-700"
+                    >
+                      {showTimePicker ? "Done" : "Edit"}
+                    </button>
+                  )}
                 </div>
 
                 <dl className="mt-4 space-y-3.5">
                   <div className="flex items-center justify-between gap-4">
                     <dt className="flex items-center gap-2.5 text-[13.5px] text-slate-500">
-                      <CalendarCheck className="h-[18px] w-[18px] text-slate-400" strokeWidth={2} /> Arriving
+                      <CalendarCheck className="h-[18px] w-[18px] text-slate-400" strokeWidth={2} /> {monthlyAvailable ? "Starts" : "Arriving"}
                     </dt>
                     <dd className="text-[14px] font-semibold tracking-[-0.011em] tabular-nums text-slate-900">
-                      {formatDateShort(startAt)} at {formatTime(startAt)}
+                      {formatDateShort(startAt)}{monthlyAvailable ? "" : ` at ${formatTime(startAt)}`}
                     </dd>
                   </div>
                   <div className="flex items-center justify-between gap-4">
                     <dt className="flex items-center gap-2.5 text-[13.5px] text-slate-500">
-                      <CalendarClock className="h-[18px] w-[18px] text-slate-400" strokeWidth={2} /> Leaving
+                      <CalendarClock className="h-[18px] w-[18px] text-slate-400" strokeWidth={2} /> {monthlyAvailable ? "Until" : "Leaving"}
                     </dt>
                     <dd className="text-[14px] font-semibold tracking-[-0.011em] tabular-nums text-slate-900">
-                      {formatDateShort(endAt)} at {formatTime(endAt)}
+                      {formatDateShort(endAt)}{monthlyAvailable ? "" : ` at ${formatTime(endAt)}`}
                     </dd>
                   </div>
                   <div className="flex items-center justify-between gap-4">
@@ -263,12 +338,12 @@ export default function CheckoutPage() {
                       <Clock className="h-[18px] w-[18px] text-slate-400" strokeWidth={2} /> Duration
                     </dt>
                     <dd className="text-[14px] font-semibold tracking-[-0.011em] text-slate-900">
-                      {pricing?.durationLabel ?? "—"}
+                      {durationDisplay}
                     </dd>
                   </div>
                 </dl>
 
-                {showTimePicker && (
+                {showTimePicker && !monthlyAvailable && (
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     <SearchDateTimePicker
                       label="From"
@@ -293,25 +368,15 @@ export default function CheckoutPage() {
               {/* Contact info (signed in) / inline sign-in (guest) */}
               {user ? (
                 <Card>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h2 className="text-[16px] font-bold tracking-[-0.012em] text-slate-900">Contact Info</h2>
-                      <p className="mt-0.5 text-[13px] text-slate-600">
-                        {user.name ?? user.email}
-                      </p>
-                      {user.name && (
-                        <p className="text-[13px] text-slate-600">{user.email}</p>
-                      )}
-                    </div>
-                    <Link
-                      href={`/dashboard/profile?next=${encodeURIComponent(nextPath)}` as any}
-                      className="text-[13px] font-semibold text-brand-600 hover:text-brand-700"
-                    >
-                      Change
-                    </Link>
-                  </div>
+                  <h2 className="text-[16px] font-bold tracking-[-0.012em] text-slate-900">Contact Info</h2>
+                  <p className="mt-0.5 text-[13px] text-slate-600">
+                    {user.name ?? user.email}
+                  </p>
+                  {user.name && (
+                    <p className="text-[13px] text-slate-600">{user.email}</p>
+                  )}
                   <p className="mt-2 text-[12.5px] text-slate-500">
-                    Confirmation and updates are sent to this email.
+                    Your confirmation and access details go to this email. Manage it anytime in your account.
                   </p>
                 </Card>
               ) : (
@@ -382,55 +447,93 @@ export default function CheckoutPage() {
 
               {/* Vehicle */}
               <Card>
-                <div className="flex items-center justify-between">
-                  <h2 className="text-[16px] font-bold tracking-[-0.012em] text-slate-900">Vehicle</h2>
-                  {vehiclePlate && (
-                    <button
-                      type="button"
-                      onClick={() => setVehiclePlate("")}
-                      className="text-[13px] font-semibold text-brand-600 hover:text-brand-700"
-                    >
-                      Change
-                    </button>
-                  )}
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-[16px] font-bold tracking-[-0.012em] text-slate-900">Vehicle</h2>
+                    <p className="mt-0.5 text-[12.5px] text-slate-500">
+                      Shared with the host so they can identify your car.
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    {vehiclePlate && (
+                      <button
+                        type="button"
+                        onClick={() => setVehiclePlate("")}
+                        className="text-[13px] font-semibold text-brand-600 hover:text-brand-700"
+                      >
+                        Change plate
+                      </button>
+                    )}
+                    {user && (
+                      <Link
+                        href={vehicleProfileHref as any}
+                        className="text-[13px] font-semibold text-slate-500 hover:text-slate-800"
+                      >
+                        Edit details
+                      </Link>
+                    )}
+                  </div>
                 </div>
-                {vehiclePlate ? (
-                  <div className="mt-3 inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
-                    <span className="font-mono text-[15px] font-semibold uppercase tracking-[0.14em] text-slate-900">
-                      {vehiclePlate}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="mt-3 space-y-2">
-                    <label className="block text-[13px] font-semibold text-slate-700">
-                      Reg plate
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="241-D-12345"
-                        maxLength={12}
-                        onChange={(e) => {
-                          const v = e.target.value.toUpperCase().replace(/[^A-Z0-9\-]/g, "");
-                          e.target.value = v;
-                        }}
-                        onBlur={(e) => {
-                          const v = e.target.value.trim();
-                          if (v) setVehiclePlate(v);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            const v = (e.target as HTMLInputElement).value.trim();
+
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5">
+                  {vehiclePlate ? (
+                    <RegistrationPlate plate={vehiclePlate} />
+                  ) : (
+                    <div className="space-y-2">
+                      <label className="block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                        Registration plate
+                      </label>
+                      <div className="flex min-h-[58px] overflow-hidden rounded-xl border-2 border-[#3D6FB6] bg-white shadow-[0_8px_22px_rgba(61,111,182,0.12)]">
+                        <div className="flex w-10 shrink-0 items-center justify-center bg-[#3D6FB6]">
+                          <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-white [writing-mode:vertical-rl]">
+                            IRL
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="241-D-12345"
+                          maxLength={14}
+                          onChange={(e) => {
+                            e.target.value = formatVehiclePlate(e.target.value);
+                          }}
+                          onBlur={(e) => {
+                            const v = formatVehiclePlate(e.target.value.trim());
                             if (v) setVehiclePlate(v);
-                          }
-                        }}
-                        className="flex-1 rounded-xl border border-slate-300 px-3.5 py-2.5 font-mono text-[14px] font-semibold uppercase tracking-widest text-slate-900 outline-none placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-                      />
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              const v = formatVehiclePlate((e.target as HTMLInputElement).value.trim());
+                              if (v) setVehiclePlate(v);
+                            }
+                          }}
+                          className="min-w-0 flex-1 bg-[#FAFAF8] px-4 py-3 text-center font-mono text-[22px] font-extrabold uppercase tracking-[0.12em] text-slate-950 outline-none placeholder:font-sans placeholder:text-[15px] placeholder:font-medium placeholder:normal-case placeholder:tracking-normal placeholder:text-slate-400"
+                        />
+                      </div>
+                      <p className="text-center text-[12px] text-slate-500">Optional now, but useful for host access.</p>
                     </div>
-                    <p className="text-[12px] text-slate-500">Optional — add any time before you arrive.</p>
+                  )}
+
+                  <div className="mt-4 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Car</p>
+                      {vehicleSummary ? (
+                        <p className="mt-1 text-[15px] font-bold tracking-[-0.012em] text-slate-900">
+                          {vehicleSummary}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-[13px] font-medium text-slate-500">
+                          Add your make and model for a smoother arrival.
+                        </p>
+                      )}
+                    </div>
+                    {vehicleColor && (
+                      <span className="inline-flex w-fit items-center rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-600">
+                        {vehicleColor}
+                      </span>
+                    )}
                   </div>
-                )}
+                </div>
               </Card>
 
               {/* Payment */}
@@ -445,9 +548,7 @@ export default function CheckoutPage() {
                     <p className="text-[12.5px] text-slate-500">Encrypted · card details never stored by us</p>
                   </div>
                 </div>
-                <p className="mt-3 text-[12px] font-medium text-slate-500">
-                  Visa · Mastercard · Amex · Apple Pay · Google Pay
-                </p>
+                <PaymentLogos />
               </Card>
 
               {/* Error / success */}
@@ -554,7 +655,7 @@ export default function CheckoutPage() {
                   <div className="space-y-2 text-[13px]">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">
-                        {formatListingPriceLine(listing)} · {pricing?.durationLabel ?? "—"}
+                        {priceLineLabel} · {durationDisplay}
                       </span>
                       <span className="font-semibold tabular-nums text-slate-800">€{totalPrice.toFixed(2)}</span>
                     </div>
@@ -628,5 +729,86 @@ function Card({ children }: { children: React.ReactNode }) {
     <div className="rounded-2xl border border-slate-200/80 bg-white px-5 py-5 shadow-[0_4px_24px_rgba(15,23,42,0.04)] sm:px-6">
       {children}
     </div>
+  );
+}
+
+function RegistrationPlate({ plate }: { plate: string }) {
+  return (
+    <div className="flex min-h-[58px] overflow-hidden rounded-xl border-2 border-[#3D6FB6] bg-white shadow-[0_8px_22px_rgba(61,111,182,0.12)]">
+      <div className="flex w-10 shrink-0 items-center justify-center bg-[#3D6FB6]">
+        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-white [writing-mode:vertical-rl]">
+          IRL
+        </span>
+      </div>
+      <div className="flex flex-1 items-center justify-center bg-[#FAFAF8] px-4 py-3">
+        <span className="font-mono text-[22px] font-extrabold uppercase tracking-[0.12em] text-slate-950">
+          {formatVehiclePlate(plate)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PaymentLogos() {
+  return (
+    <div className="mt-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <PaymentPill>
+          <AppleMark />
+          <span className="font-semibold">Pay</span>
+        </PaymentPill>
+        <PaymentPill>
+          <GoogleMark />
+          <span className="font-semibold">Pay</span>
+        </PaymentPill>
+        <PaymentPill className="px-3">
+          <span className="text-[13px] font-black italic tracking-[0.04em] text-[#1A1F71]">VISA</span>
+        </PaymentPill>
+        <PaymentPill className="px-2.5">
+          <MastercardMark />
+          <span className="text-[11px] font-semibold text-[#252525]">Mastercard</span>
+        </PaymentPill>
+      </div>
+      <p className="mt-3 flex items-center gap-1.5 text-[12px] font-medium text-slate-500">
+        <Lock className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} />
+        Powered by Stripe Checkout
+      </p>
+    </div>
+  );
+}
+
+function PaymentPill({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <span className={`inline-flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 text-[12px] text-slate-950 shadow-[0_1px_2px_rgba(15,23,42,0.04)] ${className}`}>
+      {children}
+    </span>
+  );
+}
+
+function MastercardMark() {
+  return (
+    <span className="relative inline-flex h-4 w-7 items-center">
+      <span className="absolute left-0 h-4 w-4 rounded-full bg-[#EB001B]" />
+      <span className="absolute left-3 h-4 w-4 rounded-full bg-[#F79E1B] mix-blend-multiply" />
+    </span>
+  );
+}
+
+function AppleMark() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4 fill-slate-950" viewBox="0 0 24 24">
+      <path d="M17.05 12.4c-.02-2.25 1.84-3.33 1.93-3.38-1.05-1.54-2.69-1.75-3.27-1.77-1.39-.14-2.72.82-3.43.82-.72 0-1.82-.8-2.99-.78-1.54.02-2.96.9-3.75 2.28-1.6 2.77-.41 6.87 1.15 9.12.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.96-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.27 1.23-2.5 1.25-2.57-.03-.01-2.4-.92-2.42-3.65ZM14.8 5.78c.63-.76 1.05-1.82.94-2.88-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.95 2.78 1.01.08 2.04-.52 2.67-1.27Z" />
+    </svg>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 48 48">
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5Z" />
+      <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.6 8.3 6.3 14.7Z" />
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44Z" />
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.2 5.2C36.9 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5Z" />
+    </svg>
   );
 }

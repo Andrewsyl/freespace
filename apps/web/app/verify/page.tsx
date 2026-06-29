@@ -27,7 +27,7 @@ function VerifyPageContent() {
       .then(() => {
         setStatus("success");
         setMessage("Email verified!");
-        setTimeout(() => router.push("/dashboard"), 1500);
+        setTimeout(() => router.push("/bookings"), 1500);
       })
       .catch((err) => {
         setStatus("error");
@@ -69,9 +69,9 @@ function VerifyPageContent() {
                 className="flex h-12 items-center justify-center rounded-2xl bg-brand-500 text-[15px] font-bold text-white">
                 Back to login
               </Link>
-              <Link href="/dashboard"
+              <Link href="/bookings"
                 className="flex h-12 items-center justify-center rounded-2xl border border-slate-200 text-[15px] font-semibold text-slate-700">
-                Go to dashboard
+                My bookings
               </Link>
             </div>
           </>

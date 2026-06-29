@@ -36,6 +36,22 @@ function mapListingPricing(row: {
   };
 }
 
+async function getListingTableColumns(): Promise<Set<string>> {
+  const result = await pool.query(
+    `
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'listings'
+    `
+  );
+  return new Set(result.rows.map((row) => String(row.column_name)));
+}
+
+function optionalListingSelect(columns: Set<string>, column: string, fallbackSql: string) {
+  return columns.has(column) ? column : `${fallbackSql} AS ${column}`;
+}
+
 export type UserRecord = {
   id: string;
   email: string;
@@ -1360,6 +1376,7 @@ export async function getListingById(listingId: string) {
     );
   } catch (err: any) {
     if (err?.code !== "42703") throw err;
+    const columns = await getListingTableColumns();
     result = await pool.query(
       `
       SELECT
@@ -1367,14 +1384,20 @@ export async function getListingById(listingId: string) {
         title,
         address,
         price_per_day,
+        ${optionalListingSelect(columns, "price_per_hour", "NULL::numeric")},
+        ${optionalListingSelect(columns, "price_per_month", "NULL::numeric")},
+        ${optionalListingSelect(columns, "rate_type", "'daily'::text")},
         availability_text,
         image_urls,
         amenities,
         access_code,
+        ${optionalListingSelect(columns, "arrival_instructions", "NULL::text")},
         permission_declared,
         host_id,
         rating,
         rating_count,
+        ${optionalListingSelect(columns, "capacity", "1::integer")},
+        ${optionalListingSelect(columns, "description", "NULL::text")},
         ST_X(geom) AS longitude,
         ST_Y(geom) AS latitude
       FROM listings
@@ -1496,6 +1519,7 @@ export async function getListingByIdWithAvailability(
     );
   } catch (err: any) {
     if (err?.code !== "42703") throw err;
+    const columns = await getListingTableColumns();
     result = await pool.query(
       `
       SELECT
@@ -1503,14 +1527,20 @@ export async function getListingByIdWithAvailability(
         title,
         address,
         price_per_day,
+        ${optionalListingSelect(columns, "price_per_hour", "NULL::numeric")},
+        ${optionalListingSelect(columns, "price_per_month", "NULL::numeric")},
+        ${optionalListingSelect(columns, "rate_type", "'daily'::text")},
         availability_text,
         image_urls,
         amenities,
         access_code,
+        ${optionalListingSelect(columns, "arrival_instructions", "NULL::text")},
         permission_declared,
         host_id,
         rating,
         rating_count,
+        ${optionalListingSelect(columns, "capacity", "1::integer")},
+        ${optionalListingSelect(columns, "description", "NULL::text")},
         (${availabilityCheck}) AS is_available,
         ST_X(geom) AS longitude,
         ST_Y(geom) AS latitude
@@ -1910,6 +1940,7 @@ export async function getListingWithHostAccount(listingId: string) {
       l.address,
       l.price_per_day,
       l.price_per_hour,
+      l.price_per_month,
       l.rate_type,
       l.availability_text,
       l.amenities,

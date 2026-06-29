@@ -355,6 +355,126 @@ describe("bookings routes", () => {
     );
   });
 
+  const primeBookingMocks = () => {
+    db.getFraudSettings.mockResolvedValue({
+      minAccountAgeMinutes: 0,
+      maxBookingsPerDay: 10,
+      maxAmountPerDayCents: 10000000,
+    });
+    db.getUserRiskProfile.mockResolvedValue({
+      status: "active",
+      email_verified: true,
+      phone_verified: true,
+      created_at: "2026-01-01T00:00:00.000Z",
+    });
+    db.getRecentBookingStats.mockResolvedValue({ count: 0, total_cents: 0 });
+    db.poolQuery.mockResolvedValue({ rowCount: 0, rows: [] });
+    db.createBooking.mockResolvedValue({ id: "booking-1" });
+    db.findUserById.mockResolvedValue({ id: "user-1", email: "driver@example.com" });
+    stripeMocks.createCheckoutSession.mockResolvedValue({
+      id: "cs_m",
+      url: "https://checkout.test/cs_m",
+      payment_intent: "pi_m",
+    });
+  };
+
+  it("prices a monthly booking from the host's monthly rate", async () => {
+    primeBookingMocks();
+    db.getListingWithHostAccount.mockResolvedValue({
+      hostStripeAccountId: null,
+      title: "Monthly listing",
+      rateType: "daily",
+      pricePerDay: 12,
+      pricePerHour: null,
+      pricePerMonth: 160,
+    });
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    const token = signToken({ userId: "user-m1", email: "driver@example.com", role: "driver" });
+
+    // 160/mo over a 1-month window = 16000c parking + 8% fee = 17280c.
+    const response = await request(app)
+      .post("/api/bookings")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        listingId: "11111111-1111-4111-8111-111111111111",
+        from: "2026-03-01T00:00:00.000Z",
+        to: "2026-04-01T00:00:00.000Z",
+        mode: "monthly",
+        amountCents: 17280,
+        currency: "eur",
+        platformFeePercent: 8 / 108,
+      });
+
+    expect(response.status).toBe(201);
+  });
+
+  it("rejects a monthly booking whose amount does not match the monthly rate", async () => {
+    primeBookingMocks();
+    db.getListingWithHostAccount.mockResolvedValue({
+      hostStripeAccountId: null,
+      title: "Monthly listing",
+      rateType: "daily",
+      pricePerDay: 12,
+      pricePerHour: null,
+      pricePerMonth: 160,
+    });
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    const token = signToken({ userId: "user-m2", email: "driver@example.com", role: "driver" });
+
+    const response = await request(app)
+      .post("/api/bookings")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        listingId: "11111111-1111-4111-8111-111111111111",
+        from: "2026-03-01T00:00:00.000Z",
+        to: "2026-04-01T00:00:00.000Z",
+        mode: "monthly",
+        amountCents: 16000, // missing the service fee
+        currency: "eur",
+        platformFeePercent: 8 / 108,
+      });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("rejects a monthly booking on a space without a monthly rate", async () => {
+    primeBookingMocks();
+    db.getListingWithHostAccount.mockResolvedValue({
+      hostStripeAccountId: null,
+      title: "Daily-only listing",
+      rateType: "daily",
+      pricePerDay: 12,
+      pricePerHour: null,
+      pricePerMonth: null,
+    });
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    const token = signToken({ userId: "user-m3", email: "driver@example.com", role: "driver" });
+
+    const response = await request(app)
+      .post("/api/bookings")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        listingId: "11111111-1111-4111-8111-111111111111",
+        from: "2026-03-01T00:00:00.000Z",
+        to: "2026-04-01T00:00:00.000Z",
+        mode: "monthly",
+        amountCents: 17280,
+        currency: "eur",
+        platformFeePercent: 8 / 108,
+      });
+
+    expect(response.status).toBe(400);
+  });
+
   it("does not create a second refund when canceling an already-refunded booking", async () => {
     db.getBookingForRefund.mockResolvedValue({
       id: "booking-1",

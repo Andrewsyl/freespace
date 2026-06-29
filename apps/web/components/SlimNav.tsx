@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthProvider";
@@ -30,10 +30,13 @@ function isHostPath(p: string | null) {
   return !!p?.startsWith("/host");
 }
 
+const HOST_SEEN_KEY = "fs_host_seen";
+
 export function SlimNav() {
   const { user, token, signOut } = useAuth();
   const { showToast } = useToast();
   const pathname = usePathname();
+  const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isHost, setIsHost] = useState(false);
@@ -42,13 +45,34 @@ export function SlimNav() {
   const hostMode = isHostPath(pathname);
   const logoSrc = "/freespace-logo-grid-black.png";
 
-  // Host UI is opt-in: only surfaces once you actually have a listing.
+  // Host is a role/intent, not a function of the current listing count. Once a
+  // user has a listing OR steps into the host area, the "Switch to hosting"
+  // entry should persist — even mid-onboarding or after deleting their last
+  // space — so the way back never silently disappears. Cleared on sign-out.
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.localStorage.getItem(HOST_SEEN_KEY) === "1") {
+      setIsHost(true);
+    }
+  }, []);
+
   useEffect(() => {
     if (!token) { setIsHost(false); return; }
     getHostListings(token)
-      .then((res) => setIsHost((res?.listings?.length ?? 0) > 0))
-      .catch(() => setIsHost(false));
+      .then((res) => {
+        if ((res?.listings?.length ?? 0) > 0) {
+          setIsHost(true);
+          if (typeof window !== "undefined") window.localStorage.setItem(HOST_SEEN_KEY, "1");
+        }
+      })
+      .catch(() => {});
   }, [token]);
+
+  useEffect(() => {
+    if (hostMode) {
+      setIsHost(true);
+      if (typeof window !== "undefined") window.localStorage.setItem(HOST_SEEN_KEY, "1");
+    }
+  }, [hostMode]);
 
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
@@ -62,9 +86,13 @@ export function SlimNav() {
 
   const handleSignOut = () => {
     signOut();
+    if (typeof window !== "undefined") window.localStorage.removeItem(HOST_SEEN_KEY);
+    setIsHost(false);
     showToast("You've been signed out", "info");
     setDropdownOpen(false);
     setDrawerOpen(false);
+    // Land somewhere public so the user never sits on a now-unauthorized page.
+    router.push("/");
   };
 
   const closeDrawer = () => setDrawerOpen(false);

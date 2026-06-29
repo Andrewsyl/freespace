@@ -120,7 +120,7 @@ function FavouriteCard({ listing, removing, onRemove }: { listing: FavouriteList
         <div className="mt-3 flex items-center justify-between">
           <span className="flex items-center gap-0.5 text-[12px] font-semibold text-slate-600">
             <Star className="h-3.5 w-3.5 text-amber-400" strokeWidth={2} />
-            {listing.rating ? listing.rating.toFixed(1) : "New"}
+            {Number(listing.rating) > 0 ? Number(listing.rating).toFixed(1) : "New"}
           </span>
         </div>
         <Link href={`/listing/${listing.id}` as any}
