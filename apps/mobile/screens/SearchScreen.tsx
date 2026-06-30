@@ -6,10 +6,8 @@ import {
   Easing,
   Image,
   KeyboardAvoidingView,
-  LayoutChangeEvent,
   Linking,
   Modal,
-  PanResponder,
   Platform,
   Pressable,
   ScrollView,
@@ -18,9 +16,8 @@ import {
   TextInput,
   useWindowDimensions,
   View,
-  type GestureResponderEvent,
-  type PanResponderGestureState,
 } from "react-native";
+import { Slider } from "@miblanchard/react-native-slider";
 import LottieView from "lottie-react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -126,10 +123,11 @@ type SearchPinCoordinate = {
   longitude: number;
 };
 
-const PRICE_SLIDER_MIN = 0;
-const PRICE_SLIDER_MAX = 60;
-const PRICE_SLIDER_STEP = 5;
-const PRICE_HISTOGRAM = [4, 6, 8, 12, 18, 26, 34, 42, 48, 44, 38, 31, 28, 24, 20, 16, 13, 10];
+const DEFAULT_PRICE_MIN = 0;
+const DEFAULT_PRICE_MAX = 60;
+const DEFAULT_PRICE_STEP = 5;
+const PRICE_BUCKET_COUNT = 18;
+const EMPTY_PRICE_HISTOGRAM = [4, 6, 8, 12, 18, 26, 34, 42, 48, 44, 38, 31, 28, 24, 20, 16, 13, 10];
 
 const VEHICLE_SIZE_OPTIONS: Array<{ label: string; value: VehicleSize | "" }> = [
   { label: "Any", value: "" },
@@ -202,23 +200,93 @@ function FilterSection({
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-function parsePriceRangeValue(value: string, fallback: number) {
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? clamp(parsed, PRICE_SLIDER_MIN, PRICE_SLIDER_MAX) : fallback;
+type PriceScale = {
+  min: number;
+  max: number;
+  step: number;
+  bars: number[];
+  count: number;
+  observedMin: number;
+  observedMax: number;
+};
+
+function parsePriceRangeValue(value: string, fallback: number, scale: PriceScale) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? clamp(parsed, scale.min, scale.max) : fallback;
 }
 
-function snapPrice(value: number) {
-  return clamp(
-    Math.round(value / PRICE_SLIDER_STEP) * PRICE_SLIDER_STEP,
-    PRICE_SLIDER_MIN,
-    PRICE_SLIDER_MAX
-  );
+function priceValueToFilter(value: number, edge: "min" | "max", scale: PriceScale) {
+  if (edge === "min" && value <= scale.min) return "";
+  if (edge === "max" && value >= scale.max) return "";
+  return formatPriceValueForFilter(value);
 }
 
-function priceValueToFilter(value: number, edge: "min" | "max") {
-  if (edge === "min" && value <= PRICE_SLIDER_MIN) return "";
-  if (edge === "max" && value >= PRICE_SLIDER_MAX) return "";
-  return String(value);
+function formatPriceValueForFilter(value: number) {
+  if (Number.isInteger(value)) return String(value);
+  return value.toFixed(2).replace(/\.?0+$/, "");
+}
+
+function buildPriceScale(values: number[]): PriceScale {
+  const cleanValues = values.filter((value) => Number.isFinite(value) && value > 0);
+
+  if (cleanValues.length === 0) {
+    return {
+      min: DEFAULT_PRICE_MIN,
+      max: DEFAULT_PRICE_MAX,
+      step: DEFAULT_PRICE_STEP,
+      bars: EMPTY_PRICE_HISTOGRAM,
+      count: 0,
+      observedMin: DEFAULT_PRICE_MIN,
+      observedMax: DEFAULT_PRICE_MAX,
+    };
+  }
+
+  const observedMin = Math.min(...cleanValues);
+  const observedMax = Math.max(...cleanValues);
+  const paddedMax = Math.max(observedMax + Math.max(2, observedMax * 0.25), 10);
+  const step = getPriceStep(paddedMax);
+  const max = Math.max(step, Math.ceil(paddedMax / step) * step);
+
+  return {
+    min: DEFAULT_PRICE_MIN,
+    max,
+    step,
+    bars: buildPriceHistogram(cleanValues, DEFAULT_PRICE_MIN, max),
+    count: cleanValues.length,
+    observedMin,
+    observedMax,
+  };
+}
+
+function buildPriceHistogram(values: number[], min: number, max: number) {
+  if (values.length === 0 || max <= min) return EMPTY_PRICE_HISTOGRAM;
+  const counts = Array.from({ length: PRICE_BUCKET_COUNT }, () => 0);
+
+  values.forEach((value) => {
+    const ratio = (value - min) / (max - min);
+    const bucket = Math.min(PRICE_BUCKET_COUNT - 1, Math.max(0, Math.floor(ratio * PRICE_BUCKET_COUNT)));
+    counts[bucket] += 1;
+  });
+
+  const maxCount = Math.max(...counts, 1);
+  return counts.map((count) => (count === 0 ? 8 : 16 + Math.round((count / maxCount) * 64)));
+}
+
+function getPriceStep(max: number) {
+  if (max <= 20) return 1;
+  if (max <= 80) return 5;
+  if (max <= 250) return 10;
+  if (max <= 600) return 25;
+  return 50;
+}
+
+function getSearchPriceForParams(listing: ListingSummary, params: SearchParams) {
+  const start = new Date(params.from);
+  const end = new Date(params.to);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return Number(listing.price_per_day);
+  }
+  return calculateListingTotal(listing, start, end).total;
 }
 
 function listingSearchText(listing: ListingSummary) {
@@ -249,7 +317,7 @@ function matchesSpaceType(listing: ListingSummary, spaceType?: string) {
 }
 
 function matchesSearchFilters(listing: ListingSummary, params: SearchParams) {
-  const price = Number(listing.price_per_day);
+  const price = getSearchPriceForParams(listing, params);
   const min = params.priceMin ? Number(params.priceMin) : null;
   const max = params.priceMax ? Number(params.priceMax) : null;
   const text = listingSearchText(listing);
@@ -275,160 +343,110 @@ function matchesSearchFilters(listing: ListingSummary, params: SearchParams) {
 function PriceRangeSlider({
   minValue,
   maxValue,
+  priceValues,
   onMinChange,
   onMaxChange,
 }: {
   minValue: string;
   maxValue: string;
+  priceValues: number[];
   onMinChange: (value: string) => void;
   onMaxChange: (value: string) => void;
 }) {
-  const [trackWidth, setTrackWidth] = useState(0);
-  const latestRangeRef = useRef({ min: PRICE_SLIDER_MIN, max: PRICE_SLIDER_MAX });
-  const dragStartRef = useRef({ min: PRICE_SLIDER_MIN, max: PRICE_SLIDER_MAX });
+  const scale = useMemo(
+    () => buildPriceScale(priceValues),
+    [priceValues]
+  );
 
-  const numericMin = parsePriceRangeValue(minValue, PRICE_SLIDER_MIN);
-  const numericMax = parsePriceRangeValue(maxValue, PRICE_SLIDER_MAX);
+  const numericMin = parsePriceRangeValue(minValue, scale.min, scale);
+  const numericMax = parsePriceRangeValue(maxValue, scale.max, scale);
   const safeMin = clamp(
-    Math.min(numericMin, numericMax - PRICE_SLIDER_STEP),
-    PRICE_SLIDER_MIN,
-    PRICE_SLIDER_MAX - PRICE_SLIDER_STEP
+    Math.min(numericMin, numericMax - scale.step),
+    scale.min,
+    scale.max - scale.step
   );
   const safeMax = clamp(
-    Math.max(numericMax, safeMin + PRICE_SLIDER_STEP),
-    safeMin + PRICE_SLIDER_STEP,
-    PRICE_SLIDER_MAX
+    Math.max(numericMax, safeMin + scale.step),
+    safeMin + scale.step,
+    scale.max
   );
 
-  useEffect(() => {
-    latestRangeRef.current = { min: safeMin, max: safeMax };
-  }, [safeMin, safeMax]);
+  const minLabel = `€${formatPriceValueForFilter(safeMin)}`;
+  const maxLabel = safeMax >= scale.max ? `€${formatPriceValueForFilter(scale.max)}+` : `€${formatPriceValueForFilter(safeMax)}`;
+  const rangeHint =
+    scale.count > 0
+      ? `Current spaces range from €${formatPriceValueForFilter(scale.observedMin)} to €${formatPriceValueForFilter(scale.observedMax)}.`
+      : "No current price data yet.";
 
-  const valueToX = useCallback(
-    (value: number) => {
-      if (!trackWidth) return 0;
-      return ((value - PRICE_SLIDER_MIN) / (PRICE_SLIDER_MAX - PRICE_SLIDER_MIN)) * trackWidth;
+  const handleRangeChange = useCallback(
+    (values: number[]) => {
+      const rawMin = values[0] ?? safeMin;
+      const rawMax = values[1] ?? safeMax;
+      const orderedMin = Math.min(rawMin, rawMax);
+      const orderedMax = Math.max(rawMin, rawMax);
+      const nextMin = clamp(orderedMin, scale.min, scale.max - scale.step);
+      const nextMax = clamp(orderedMax, nextMin + scale.step, scale.max);
+
+      onMinChange(priceValueToFilter(nextMin, "min", scale));
+      onMaxChange(priceValueToFilter(nextMax, "max", scale));
     },
-    [trackWidth]
+    [onMaxChange, onMinChange, safeMax, safeMin, scale]
   );
-
-  const deltaToValue = useCallback(
-    (deltaX: number) => {
-      if (!trackWidth) return 0;
-      return (deltaX / trackWidth) * (PRICE_SLIDER_MAX - PRICE_SLIDER_MIN);
-    },
-    [trackWidth]
-  );
-
-  const updateNearestHandle = useCallback(
-    (x: number) => {
-      if (!trackWidth) return;
-      const tappedValue = snapPrice(
-        PRICE_SLIDER_MIN +
-          (clamp(x, 0, trackWidth) / trackWidth) * (PRICE_SLIDER_MAX - PRICE_SLIDER_MIN)
-      );
-      const distanceToMin = Math.abs(tappedValue - safeMin);
-      const distanceToMax = Math.abs(tappedValue - safeMax);
-
-      if (distanceToMin <= distanceToMax) {
-        const nextMin = clamp(tappedValue, PRICE_SLIDER_MIN, safeMax - PRICE_SLIDER_STEP);
-        onMinChange(priceValueToFilter(nextMin, "min"));
-        return;
-      }
-
-      const nextMax = clamp(tappedValue, safeMin + PRICE_SLIDER_STEP, PRICE_SLIDER_MAX);
-      onMaxChange(priceValueToFilter(nextMax, "max"));
-    },
-    [onMaxChange, onMinChange, safeMax, safeMin, trackWidth]
-  );
-
-  const createHandleResponder = useCallback(
-    (edge: "min" | "max") =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: (_event: GestureResponderEvent, gesture: PanResponderGestureState) =>
-          Math.abs(gesture.dx) > 2,
-        onPanResponderGrant: () => {
-          dragStartRef.current = latestRangeRef.current;
-        },
-        onPanResponderMove: (_event: GestureResponderEvent, gesture: PanResponderGestureState) => {
-          const start = dragStartRef.current;
-          const delta = deltaToValue(gesture.dx);
-          if (edge === "min") {
-            const next = snapPrice(clamp(start.min + delta, PRICE_SLIDER_MIN, start.max - PRICE_SLIDER_STEP));
-            onMinChange(priceValueToFilter(next, "min"));
-            return;
-          }
-          const next = snapPrice(clamp(start.max + delta, start.min + PRICE_SLIDER_STEP, PRICE_SLIDER_MAX));
-          onMaxChange(priceValueToFilter(next, "max"));
-        },
-      }),
-    [deltaToValue, onMaxChange, onMinChange]
-  );
-
-  const minResponder = useMemo(() => createHandleResponder("min"), [createHandleResponder]);
-  const maxResponder = useMemo(() => createHandleResponder("max"), [createHandleResponder]);
-
-  const minX = valueToX(safeMin);
-  const maxX = valueToX(safeMax);
-  const selectedLeft = Math.min(minX, maxX);
-  const selectedWidth = Math.max(0, maxX - minX);
-  const minLabel = safeMin <= PRICE_SLIDER_MIN ? `€${PRICE_SLIDER_MIN}` : `€${safeMin}`;
-  const maxLabel = safeMax >= PRICE_SLIDER_MAX ? `€${PRICE_SLIDER_MAX}+` : `€${safeMax}`;
 
   return (
     <View style={styles.priceSlider}>
-      <View
-        style={styles.priceHistogram}
-        onLayout={(event: LayoutChangeEvent) => setTrackWidth(event.nativeEvent.layout.width)}
-        onStartShouldSetResponder={() => true}
-        onResponderRelease={(event) => updateNearestHandle(event.nativeEvent.locationX)}
-      >
-        {PRICE_HISTOGRAM.map((height, index) => {
-          const barValue =
-            PRICE_SLIDER_MIN +
-            (index / Math.max(1, PRICE_HISTOGRAM.length - 1)) *
-              (PRICE_SLIDER_MAX - PRICE_SLIDER_MIN);
-          const selected = barValue >= safeMin && barValue <= safeMax;
-          return (
-            <View
-              key={`price-bar-${index}`}
-              style={[
-                styles.priceHistogramBar,
-                { height },
-                selected && styles.priceHistogramBarSelected,
-              ]}
-            />
-          );
-        })}
-        {trackWidth > 0 ? (
-          <>
-            <View style={styles.priceTrack} />
-            <View
-              style={[
-                styles.priceTrackSelected,
-                { left: selectedLeft, width: selectedWidth },
-              ]}
-            />
-            <View
-              style={[styles.priceHandle, { left: minX - 20 }]}
-              {...minResponder.panHandlers}
-            />
-            <View
-              style={[styles.priceHandle, { left: maxX - 20 }]}
-              {...maxResponder.panHandlers}
-            />
-          </>
-        ) : null}
-      </View>
-      <View style={styles.priceValueRow}>
-        <View style={styles.priceValueGroup}>
-          <Text style={styles.priceValueLabel}>Minimum</Text>
-          <Text style={styles.priceValuePill}>{minLabel}</Text>
+      <Text style={styles.priceRangeHint}>{rangeHint}</Text>
+      <View style={styles.priceRangeGraph}>
+        <View pointerEvents="none" style={styles.priceHistogram}>
+          {scale.bars.map((height, index) => {
+            const barValue =
+              scale.min +
+              (index / Math.max(1, scale.bars.length - 1)) *
+                (scale.max - scale.min);
+            const selected = barValue >= safeMin && barValue <= safeMax;
+            return (
+              <View
+                key={`price-bar-${index}`}
+                style={[
+                  styles.priceHistogramBar,
+                  { height },
+                  selected && styles.priceHistogramBarSelected,
+                ]}
+              />
+            );
+          })}
         </View>
-        <View style={[styles.priceValueGroup, styles.priceValueGroupRight]}>
+        <Slider
+          animateTransitions={false}
+          containerStyle={styles.priceRangeSlider}
+          maximumTrackTintColor="#dfe3e8"
+          maximumValue={scale.max}
+          minimumTrackTintColor="#0f172a"
+          minimumValue={scale.min}
+          minimumTrackStyle={styles.priceRangeSliderSelectedTrack}
+          onSlidingComplete={handleRangeChange}
+          onValueChange={handleRangeChange}
+          renderThumbComponent={() => (
+            <View style={styles.priceRangeThumb}>
+              <View style={styles.priceRangeThumbDot} />
+            </View>
+          )}
+        step={scale.step}
+        thumbTouchSize={{ width: 54, height: 54 }}
+        trackClickable
+        trackStyle={styles.priceRangeSliderTrack}
+        value={[safeMin, safeMax]}
+      />
+      </View>
+      <View style={styles.priceRangeValueRow}>
+        <View>
+          <Text style={styles.priceValueLabel}>Minimum</Text>
+          <Text style={styles.priceRangeValue}>{minLabel}</Text>
+        </View>
+        <View style={styles.priceRangeDivider} />
+        <View style={styles.priceRangeValueRight}>
           <Text style={styles.priceValueLabel}>Maximum</Text>
-          <Text style={styles.priceValuePill}>{maxLabel}</Text>
+          <Text style={styles.priceRangeValue}>{maxLabel}</Text>
         </View>
       </View>
     </View>
@@ -1807,6 +1825,13 @@ export function SearchScreen({ navigation }: Props) {
     },
     [endAt, startAt]
   );
+  const filterPriceValues = useMemo(
+    () =>
+      results
+        .map((listing) => priceForListing(listing))
+        .filter((value) => Number.isFinite(value) && value > 0),
+    [priceForListing, results]
+  );
   const priceKey = useMemo(
     () => `${startAt.getTime()}-${endAt.getTime()}`,
     [startAt, endAt]
@@ -2148,10 +2173,11 @@ export function SearchScreen({ navigation }: Props) {
                     </View>
                   </FilterSection>
 
-                  <FilterSection title="Price per day">
+                  <FilterSection title="Price shown">
                     <PriceRangeSlider
                       minValue={priceMin}
                       maxValue={priceMax}
+                      priceValues={filterPriceValues}
                       onMinChange={setPriceMin}
                       onMaxChange={setPriceMax}
                     />
@@ -2845,12 +2871,25 @@ const styles = StyleSheet.create({
   priceSlider: {
     paddingTop: 10,
   },
+  priceRangeHint: {
+    color: colors.textMuted,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  priceRangeGraph: {
+    height: 124,
+    overflow: "visible",
+    position: "relative",
+  },
   priceHistogram: {
     alignItems: "flex-end",
     flexDirection: "row",
-    height: 112,
+    height: "100%",
     justifyContent: "space-between",
-    paddingBottom: 34,
+    marginHorizontal: 21,
+    paddingBottom: 28,
     position: "relative",
   },
   priceHistogramBar: {
@@ -2863,65 +2902,69 @@ const styles = StyleSheet.create({
   priceHistogramBarSelected: {
     backgroundColor: "#0f172a",
   },
-  priceTrack: {
-    backgroundColor: "#dfe3e8",
-    bottom: 30,
-    height: 3,
-    left: 0,
-    position: "absolute",
-    right: 0,
-  },
-  priceTrackSelected: {
-    backgroundColor: "#0f172a",
-    bottom: 30,
-    height: 3,
-    position: "absolute",
-  },
-  priceHandle: {
-    backgroundColor: "#ffffff",
-    borderColor: "#d7dde4",
-    borderRadius: 999,
-    borderWidth: 1,
-    bottom: 12,
-    elevation: 5,
-    height: 40,
-    position: "absolute",
-    shadowColor: "#111827",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
-    width: 40,
-  },
-  priceValueRow: {
+  priceRangeValueRow: {
+    alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 8,
+    marginTop: 4,
   },
-  priceValueGroup: {
-    flex: 1,
-  },
-  priceValueGroupRight: {
+  priceRangeValueRight: {
     alignItems: "flex-end",
+  },
+  priceRangeDivider: {
+    backgroundColor: "#dfe3e8",
+    flex: 1,
+    height: 1,
+    marginHorizontal: 14,
+  },
+  priceRangeValue: {
+    color: "#111827",
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 20,
+    letterSpacing: -0.6,
+    marginTop: 3,
   },
   priceValueLabel: {
     color: "#6b7280",
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     letterSpacing: 0,
-    marginBottom: 8,
   },
-  priceValuePill: {
-    borderColor: "#d9e0e8",
+  priceRangeSlider: {
+    bottom: 0,
+    height: 54,
+    left: 0,
+    position: "absolute",
+    right: 0,
+  },
+  priceRangeSliderTrack: {
+    borderRadius: 999,
+    height: 4,
+  },
+  priceRangeSliderSelectedTrack: {
+    borderRadius: 999,
+    height: 4,
+  },
+  priceRangeThumb: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderColor: "#d7dde4",
     borderRadius: 999,
     borderWidth: 1,
-    color: "#111827",
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 16,
-    minWidth: 96,
-    overflow: "hidden",
-    paddingHorizontal: 18,
-    paddingVertical: 13,
-    textAlign: "center",
+    elevation: 5,
+    height: 42,
+    justifyContent: "center",
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    width: 42,
+  },
+  priceRangeThumbDot: {
+    backgroundColor: "#0f172a",
+    borderRadius: 999,
+    height: 11,
+    width: 11,
   },
   filterChipGrid: {
     flexDirection: "row",

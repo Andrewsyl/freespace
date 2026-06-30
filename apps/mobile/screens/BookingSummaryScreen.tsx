@@ -19,12 +19,13 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Path } from "react-native-svg";
 import { useStripe } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
 import { Ionicons } from "@expo/vector-icons";
 import { DrumRollPicker } from "../components/DrumRollPicker";
 import { SquircleBtn } from "../components/SquircleBtn";
-import { Apple, ArrowLeft, CircleX, Info, Lock, RefreshCw, ShieldCheck } from "lucide-react-native";
+import { ArrowLeft, CircleX, Info, Lock, RefreshCw, ShieldCheck } from "lucide-react-native";
 import {
   confirmBookingPayment,
   createBookingPaymentIntent,
@@ -47,6 +48,17 @@ import { calculateListingTotal, formatListingPriceLine } from "../utils/pricing"
 import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingSummary">;
+
+function AppleLogo({ size = 14, color = "#101414" }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        fill={color}
+        d="M16.37 1.43c0 1.14-.44 2.17-1.16 2.97-.74.82-1.95 1.45-3.02 1.36-.14-1.1.42-2.25 1.08-2.97.72-.8 1.98-1.4 3.1-1.36ZM20.74 17.38c-.52 1.2-.77 1.74-1.44 2.8-.94 1.42-2.26 3.2-3.9 3.22-1.46.02-1.84-.95-3.82-.94-1.98.01-2.4.97-3.86.95-1.64-.02-2.9-1.62-3.84-3.05-2.64-4.02-2.92-8.74-1.29-11.25 1.16-1.78 2.98-2.82 4.7-2.82 1.76 0 2.87.97 4.33.97 1.42 0 2.28-.97 4.32-.97 1.54 0 3.18.84 4.34 2.28-3.82 2.1-3.2 7.55.46 8.81Z"
+      />
+    </Svg>
+  );
+}
 
 export function BookingSummaryScreen({ navigation, route }: Props) {
   const { id, from, to } = route.params;
@@ -934,7 +946,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 <View style={styles.methodsRow}>
                   <View style={styles.methodPill}>
                     {Platform.OS === "ios" ? (
-                      <Apple size={13} color={FG} strokeWidth={2.1} />
+                      <AppleLogo size={13} color={FG} />
                     ) : (
                       <Ionicons name="logo-google" size={13} color={GREEN} />
                     )}
