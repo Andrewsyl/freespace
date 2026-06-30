@@ -16,7 +16,9 @@ const VISIBLE = 7; // rows visible (3 above centre + selected + 3 below)
 const PAD = 3;
 const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE;
 
-const LOOP_REPEAT = 100;
+// Enough repeated rows to make hour/minute wheels feel continuous without
+// creating thousands of animated interpolation nodes every time the picker opens.
+const LOOP_REPEAT = 30;
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_NAMES = [
@@ -192,6 +194,11 @@ const DrumColumn = forwardRef<DrumColumnHandle, ColumnProps>(
           scrollEventThrottle={16}
           onMomentumScrollEnd={handleScrollEnd}
           onScrollEndDrag={handleScrollEnd}
+          initialNumToRender={VISIBLE + 4}
+          windowSize={5}
+          maxToRenderPerBatch={12}
+          updateCellsBatchingPeriod={16}
+          removeClippedSubviews
           getItemLayout={(_, index) => ({
             length: ITEM_HEIGHT,
             offset: ITEM_HEIGHT * index,

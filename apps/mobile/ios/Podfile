@@ -62,5 +62,62 @@ target 'FreeSpace' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+
+    # Xcode 26's C++20 constexpr checks reject fmt's consteval format-string
+    # path in the vendored React Native dependency. Keep this scoped to fmt so
+    # the rest of the native build keeps its default compiler behaviour.
+    installer.pods_project.targets.each do |target|
+      next unless target.name == 'fmt'
+
+      target.build_configurations.each do |config|
+        definitions = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
+        definitions = [definitions] if definitions.is_a?(String)
+        definitions << 'FMT_USE_CONSTEVAL=0'
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = definitions.uniq
+      end
+    end
+
+    fmt_base_header = File.join(__dir__, 'Pods', 'fmt', 'include', 'fmt', 'base.h')
+    if File.exist?(fmt_base_header)
+      contents = File.read(fmt_base_header)
+      xcode_26_consteval_workaround = <<~'PATCH'
+        #elif defined(__apple_build_version__)
+        #  define FMT_USE_CONSTEVAL 0  // FreeSpace: Apple clang/Xcode 26 consteval workaround.
+        #elif defined(__cpp_consteval)
+      PATCH
+      unless contents.include?('FreeSpace: Apple clang/Xcode 26 consteval workaround')
+        contents = contents.sub(
+          "#elif defined(__cpp_consteval)\n",
+          xcode_26_consteval_workaround
+        )
+        File.chmod(0644, fmt_base_header)
+        File.write(fmt_base_header, contents)
+      end
+    end
+
+    stripe_payment_blocks = File.join(
+      __dir__,
+      'Pods',
+      'StripePayments',
+      'StripePayments',
+      'StripePayments',
+      'Source',
+      'Helpers',
+      'STPBlocks.swift'
+    )
+    if File.exist?(stripe_payment_blocks)
+      contents = File.read(stripe_payment_blocks)
+      # stripe-react-native forward-declares this Obj-C enum as NSUInteger.
+      # Stripe iOS 25 emits NSInteger here under Xcode 26, which breaks the
+      # generated Swift bridge before app code is compiled.
+      patched_contents = contents.sub(
+        '@objc public enum STPPaymentStatus: Int {',
+        '@objc public enum STPPaymentStatus: UInt {'
+      )
+      if patched_contents != contents
+        File.chmod(0644, stripe_payment_blocks)
+        File.write(stripe_payment_blocks, patched_contents)
+      end
+    end
   end
 end

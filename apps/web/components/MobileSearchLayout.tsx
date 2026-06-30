@@ -171,6 +171,13 @@ export function MobileSearchLayout({
     () => (listing: Listing) => buildSearchPriceDisplay(listing, filters, searchStart, searchEnd),
     [filters, searchEnd, searchStart]
   );
+  const filterPriceValues = useMemo(
+    () =>
+      results
+        .map((listing) => getSearchPrice(listing).sortValue)
+        .filter((value) => Number.isFinite(value) && value > 0),
+    [getSearchPrice, results],
+  );
   const [searchPanelOpen, setSearchPanelOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState<"start" | "end" | null>(null);
   const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
@@ -610,6 +617,7 @@ export function MobileSearchLayout({
                 onCancel={() => setFiltersPanelOpen(false)}
                 searchAsMove={searchAsMove}
                 onSearchAsMove={onSearchAsMove}
+                priceValues={filterPriceValues}
               />
             </div>
           </motion.div>

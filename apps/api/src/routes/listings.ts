@@ -12,6 +12,7 @@ import {
   findUserById,
   updateListingForHost,
   getListingHostId,
+  countActiveBookingsForListing,
   insertEventLog,
 } from "../lib/db.js";
 import { getPresignedPostUpload, uploadBufferToS3, MAX_LISTING_IMAGE_BYTES, S3UploadConfigError } from "../lib/s3.js";
@@ -427,6 +428,23 @@ router.delete("/:id", requireAuth, listingWriteLimiter, async (req, res, next) =
     const hostId = req.user?.userId;
     if (!hostId) return res.status(401).json({ message: "Unauthorized" });
     const listingId = z.string().uuid().parse(req.params.id);
+
+    // Verify ownership first (404 covers both missing and not-owned, as before),
+    // then block deletion while a driver still has a live booking — deleting
+    // would strand them. The host can pause the listing instead to stop new
+    // bookings, or cancel the booking (refunding the driver) before deleting.
+    const ownerId = await getListingHostId(listingId);
+    if (!ownerId || ownerId !== hostId) {
+      return res.status(404).json({ message: "Listing not found or not owned by host" });
+    }
+    const activeBookings = await countActiveBookingsForListing(listingId);
+    if (activeBookings > 0) {
+      return res.status(409).json({
+        message: `This listing has ${activeBookings} active booking${activeBookings === 1 ? "" : "s"}. Pause the listing to stop new bookings, or cancel the booking before deleting.`,
+        activeBookings,
+      });
+    }
+
     const ok = await deleteListing({ listingId, hostId });
     if (!ok) return res.status(404).json({ message: "Listing not found or not owned by host" });
     res.status(204).end();

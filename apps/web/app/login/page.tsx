@@ -37,7 +37,7 @@ function LoginPageContent() {
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
 
   const redirect = (name?: string | null) => {
-    const next = searchParams.get("next");
+    const next = searchParams?.get("next");
     showToast(name ? `Welcome back, ${name.split(" ")[0]}` : "Welcome back");
     router.push((next || "/") as Route);
   };

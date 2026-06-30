@@ -102,12 +102,13 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     }
     return rawEnd;
   });
-  const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerOverlayVisible, setPickerOverlayVisible] = useState(false);
   const pickerBackdropOpacity = useRef(new Animated.Value(0)).current;
   const pickerSheetTranslateY = useRef(new Animated.Value(320)).current;
   const [pickerField, setPickerField] = useState<"start" | "end">("start");
-  const [draftDate, setDraftDate] = useState<Date | null>(null);
+  const [pickerInitialDate, setPickerInitialDate] = useState<Date | null>(null);
+  const draftDateRef = useRef<Date | null>(null);
+  const pickerClosingRef = useRef(false);
   const { reset: resetGlobalLoading } = useGlobalLoading();
 
   useToastOnMessage(error, { variant: "danger" });
@@ -215,27 +216,6 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     setVehiclePlate(user?.vehiclePlate ?? "");
   }, [user?.vehicleColor, user?.vehicleMake, user?.vehiclePlate]);
 
-  useEffect(() => {
-    if (pickerVisible) {
-      pickerBackdropOpacity.setValue(0);
-      pickerSheetTranslateY.setValue(320);
-      setPickerOverlayVisible(true);
-    } else {
-      Animated.parallel([
-        Animated.timing(pickerBackdropOpacity, { toValue: 0, duration: 120, useNativeDriver: true }),
-        Animated.timing(pickerSheetTranslateY, { toValue: 320, duration: 120, useNativeDriver: true }),
-      ]).start(({ finished }) => { if (finished) setPickerOverlayVisible(false); });
-    }
-  }, [pickerVisible, pickerBackdropOpacity, pickerSheetTranslateY]);
-
-  useEffect(() => {
-    if (!pickerOverlayVisible) return;
-    Animated.parallel([
-      Animated.timing(pickerBackdropOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.spring(pickerSheetTranslateY, { toValue: 0, tension: 65, friction: 11, useNativeDriver: true }),
-    ]).start();
-  }, [pickerOverlayVisible, pickerBackdropOpacity, pickerSheetTranslateY]);
-
   const start = useMemo(() => startAt, [startAt]);
   const end = useMemo(() => endAt, [endAt]);
   const priceSummary = useMemo(() => {
@@ -321,15 +301,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const requiresVehicleDetails = !hasVehicleProfile || !hasVehiclePlate;
   const selectedTimeUnavailable = listing?.is_available === false;
 
-  const openPicker = (field: "start" | "end") => {
-    setPickerField(field);
-    const current = field === "start" ? startAt : endAt;
-    setDraftDate(current);
-    setPickerVisible(true);
-  };
-
-  const applyPickedDate = (next: Date) => {
-    if (pickerField === "start") {
+  const applyPickedDate = useCallback((field: "start" | "end", next: Date) => {
+    if (field === "start") {
       setStartAt(next);
       // Keep the chosen "until" time unless the new "from" passes it
       // (same behaviour as the search screen).
@@ -345,7 +318,52 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     minEnd.setHours(minEnd.getHours() + 1);
     const safeEnd = next < minEnd ? minEnd : next;
     setEndAt(safeEnd);
-  };
+  }, [endAt, startAt]);
+
+  const openPicker = useCallback((field: "start" | "end") => {
+    const current = field === "start" ? startAt : endAt;
+    draftDateRef.current = current;
+    pickerClosingRef.current = false;
+    pickerBackdropOpacity.stopAnimation();
+    pickerSheetTranslateY.stopAnimation();
+    pickerBackdropOpacity.setValue(0);
+    pickerSheetTranslateY.setValue(260);
+    setPickerField(field);
+    setPickerInitialDate(current);
+    setPickerOverlayVisible(true);
+    requestAnimationFrame(() => {
+      Animated.parallel([
+        Animated.timing(pickerBackdropOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(pickerSheetTranslateY, {
+          toValue: 0,
+          tension: 95,
+          friction: 13,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  }, [endAt, pickerBackdropOpacity, pickerSheetTranslateY, startAt]);
+
+  const closePicker = useCallback((commit: boolean) => {
+    if (pickerClosingRef.current) return;
+    const next = commit ? draftDateRef.current : null;
+    const field = pickerField;
+    pickerClosingRef.current = true;
+    pickerBackdropOpacity.stopAnimation();
+    pickerSheetTranslateY.stopAnimation();
+    Animated.parallel([
+      Animated.timing(pickerBackdropOpacity, { toValue: 0, duration: 90, useNativeDriver: true }),
+      Animated.timing(pickerSheetTranslateY, { toValue: 260, duration: 90, useNativeDriver: true }),
+    ]).start(() => {
+      setPickerOverlayVisible(false);
+      setPickerInitialDate(null);
+      draftDateRef.current = null;
+      pickerClosingRef.current = false;
+      if (next) {
+        applyPickedDate(field, next);
+      }
+    });
+  }, [applyPickedDate, pickerBackdropOpacity, pickerField, pickerSheetTranslateY]);
 
   const isAmbiguousPaymentSheetResultError = (message?: string | null) =>
     typeof message === "string" &&
@@ -1011,10 +1029,10 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         </View>
       ) : null}
 
-      <Modal transparent animationType="none" visible={pickerOverlayVisible} onRequestClose={() => { setPickerVisible(false); setDraftDate(null); }}>
+      <Modal transparent animationType="none" visible={pickerOverlayVisible} onRequestClose={() => closePicker(false)}>
         <View style={{ flex: 1 }}>
           <Animated.View style={[StyleSheet.absoluteFill, styles.pickerBackdropLayer, { opacity: pickerBackdropOpacity }]}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={() => { setPickerVisible(false); setDraftDate(null); }} />
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => closePicker(false)} />
           </Animated.View>
           <Animated.View style={[styles.pickerSheet, { paddingBottom: Math.max(24, insets.bottom + 12), transform: [{ translateY: pickerSheetTranslateY }] }]}>
             <View style={styles.pickerHandle} />
@@ -1022,19 +1040,15 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               {pickerField === "start" ? "Select arrival time" : "Select departure time"}
             </Text>
             <DrumRollPicker
-              date={draftDate ?? (pickerField === "start" ? start : end)}
+              date={pickerInitialDate ?? (pickerField === "start" ? start : end)}
               minuteInterval={5}
               onChange={(d) => {
-                setDraftDate(d);
-                applyPickedDate(d);
+                draftDateRef.current = d;
               }}
             />
             <SquircleBtn
               label="Done"
-              onPress={() => {
-                setPickerVisible(false);
-                setDraftDate(null);
-              }}
+              onPress={() => closePicker(true)}
               fullWidth
               style={{ marginHorizontal: 20, marginTop: 16 }}
             />

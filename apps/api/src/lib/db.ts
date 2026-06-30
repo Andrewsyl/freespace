@@ -120,6 +120,40 @@ function recurringAvailabilityRange(alias: string) {
   return `tstzrange(d + (${alias}.starts_at::time), d + (${alias}.ends_at::time) + CASE WHEN ${alias}.ends_at::time < ${alias}.starts_at::time THEN interval '1 day' ELSE interval '0 day' END, '[)')`;
 }
 
+function searchDurationHoursSql() {
+  return `GREATEST(1, CEIL(EXTRACT(EPOCH FROM ($5::timestamptz - $4::timestamptz)) / 3600.0))`;
+}
+
+function searchPriceFilterSql(modeParam: string) {
+  const hours = searchDurationHoursSql();
+  const dailyPrice = `NULLIF(price_per_day, 0)`;
+  const hourlyPrice = `COALESCE(NULLIF(price_per_hour, 0), ${dailyPrice} / 8.0)`;
+  const remainingHours = `MOD(${hours}, 24)`;
+
+  return `
+    CASE
+      WHEN ${modeParam} = 'monthly' THEN price_per_month
+      WHEN ${hours} < 24 THEN
+        CASE
+          WHEN ${hourlyPrice} IS NOT NULL AND ${dailyPrice} IS NOT NULL THEN LEAST(${hourlyPrice} * ${hours}, ${dailyPrice})
+          WHEN ${hourlyPrice} IS NOT NULL THEN ${hourlyPrice} * ${hours}
+          ELSE ${dailyPrice}
+        END
+      ELSE
+        CASE
+          WHEN ${dailyPrice} IS NOT NULL THEN
+            (FLOOR(${hours} / 24.0) * ${dailyPrice}) +
+            CASE
+              WHEN ${remainingHours} > 0 THEN LEAST(${hourlyPrice} * ${remainingHours}, ${dailyPrice})
+              ELSE 0
+            END
+          WHEN ${hourlyPrice} IS NOT NULL THEN ${hourlyPrice} * ${hours}
+          ELSE 0
+        END
+    END
+  `;
+}
+
 export async function findAvailableSpaces(input: SpaceSearchInput) {
   const {
     lat,
@@ -139,6 +173,7 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
   } = input;
   const spaceTypeFilter = spaceTypeToFilter(spaceType);
   const minCapacity = vehicleSizeToCapacity(vehicleSize);
+  const priceFilterValue = searchPriceFilterSql("$13::text");
   const baseQuery = `
     SELECT
       id,
@@ -166,8 +201,8 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
     )
     AND status <> 'archived'
     AND ($6::text IS NULL OR lower(title) LIKE $6 OR lower(availability_text) LIKE $6 OR EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) LIKE $6))
-    AND ($7::numeric IS NULL OR price_per_day >= $7)
-    AND ($8::numeric IS NULL OR price_per_day <= $8)
+    AND ($7::numeric IS NULL OR (${priceFilterValue}) >= $7)
+    AND ($8::numeric IS NULL OR (${priceFilterValue}) <= $8)
     AND ($9::boolean IS NOT TRUE OR EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) IN ('covered', 'garage', 'indoor')))
     AND ($10::boolean IS NOT TRUE OR EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) IN ('ev_charging', 'ev charging', 'ev')))
     AND (
@@ -359,6 +394,7 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
   } = input;
   const spaceTypeFilter = spaceTypeToFilter(spaceType);
   const minCapacity = vehicleSizeToCapacity(vehicleSize);
+  const priceFilterValue = searchPriceFilterSql("$14::text");
   const availabilityCheck = `
     (
       SELECT COUNT(*) FROM bookings b
@@ -435,8 +471,8 @@ export async function findSpacesWithAvailability(input: SpaceSearchInput) {
     AND status <> 'archived'
     AND is_active = TRUE
     AND ($6::text IS NULL OR lower(title) LIKE $6 OR lower(availability_text) LIKE $6 OR EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) LIKE $6))
-    AND ($7::numeric IS NULL OR price_per_day >= $7)
-    AND ($8::numeric IS NULL OR price_per_day <= $8)
+    AND ($7::numeric IS NULL OR (${priceFilterValue}) >= $7)
+    AND ($8::numeric IS NULL OR (${priceFilterValue}) <= $8)
     AND ($9::boolean IS NOT TRUE OR EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) IN ('covered', 'garage', 'indoor')))
     AND ($10::boolean IS NOT TRUE OR EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) IN ('ev_charging', 'ev charging', 'ev')))
     AND (
@@ -694,6 +730,58 @@ export async function createBooking({
   promoCodeId?: string | null;
   discountCents?: number;
 }) {
+  const params = [
+    listingId,
+    driverId,
+    from,
+    to,
+    stripePaymentIntentId,
+    checkoutSessionId ?? null,
+    amountCents,
+    currency,
+    platformFeeCents,
+    payoutAvailableAt,
+    vehiclePlate ?? null,
+    promoCodeId ?? null,
+    discountCents ?? 0,
+  ];
+
+  // Preferred path: freeze the booking's identity (address, coords, title) onto
+  // the booking at creation time, so later host edits or an archive can't
+  // relocate a confirmed booking. Access code + arrival instructions are NOT
+  // frozen — they stay live so a corrected/rotated code reaches the driver.
+  // INSERT ... SELECT pulls the snapshot from the listing row atomically (and
+  // still trips the no-overlap exclusion constraint with 23P01, which callers
+  // handle).
+  const insertWithSnapshot = `
+    INSERT INTO bookings (
+      listing_id,
+      driver_id,
+      start_time,
+      end_time,
+      payment_intent_id,
+      checkout_session_id,
+      amount_cents,
+      currency,
+      status,
+      platform_fee_cents,
+      payout_available_at,
+      payout_status,
+      vehicle_plate,
+      promo_code_id,
+      discount_cents,
+      listing_address,
+      listing_latitude,
+      listing_longitude,
+      listing_title
+    )
+    SELECT $1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, 'pending', $11, $12, $13,
+           l.address, ST_Y(l.geom), ST_X(l.geom), l.title
+    FROM listings l
+    WHERE l.id = $1
+    RETURNING id;
+  `;
+
   const insertWithStatus = `
     INSERT INTO bookings (
       listing_id,
@@ -716,33 +804,29 @@ export async function createBooking({
     RETURNING id;
   `;
   try {
-    const result = await pool.query(insertWithStatus, [
-      listingId,
-      driverId,
-      from,
-      to,
-      stripePaymentIntentId,
-      checkoutSessionId ?? null,
-      amountCents,
-      currency,
-      platformFeeCents,
-      payoutAvailableAt,
-      vehiclePlate ?? null,
-      promoCodeId ?? null,
-      discountCents ?? 0,
-    ]);
+    const result = await pool.query(insertWithSnapshot, params);
     return result.rows[0];
   } catch (err: any) {
-    // Fallback for databases that haven't run migration 002 yet.
+    // Fallback for databases that haven't run migration 042_booking_snapshot yet.
     if (err?.code === "42703") {
-      console.warn("bookings table missing newer columns; inserting with legacy schema. Run migration 002_booking_status.sql.");
-      const legacyQuery = `
-        INSERT INTO bookings (listing_id, driver_id, start_time, end_time, payment_intent_id)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id;
-      `;
-      const result = await pool.query(legacyQuery, [listingId, driverId, from, to, stripePaymentIntentId]);
-      return result.rows[0];
+      console.warn("bookings table missing snapshot columns; inserting without snapshot. Run migration 042_booking_snapshot.sql.");
+      try {
+        const result = await pool.query(insertWithStatus, params);
+        return result.rows[0];
+      } catch (statusErr: any) {
+        // Older still: pre-migration 002 schema.
+        if (statusErr?.code === "42703") {
+          console.warn("bookings table missing newer columns; inserting with legacy schema. Run migration 002_booking_status.sql.");
+          const legacyQuery = `
+            INSERT INTO bookings (listing_id, driver_id, start_time, end_time, payment_intent_id)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id;
+          `;
+          const result = await pool.query(legacyQuery, [listingId, driverId, from, to, stripePaymentIntentId]);
+          return result.rows[0];
+        }
+        throw statusErr;
+      }
     }
     throw err;
   }
@@ -1160,6 +1244,20 @@ export async function deleteListing({ listingId, hostId }: { listingId: string; 
 export async function getListingHostId(listingId: string) {
   const res = await pool.query(`SELECT host_id FROM listings WHERE id = $1 LIMIT 1`, [listingId]);
   return res.rows[0]?.host_id as string | undefined;
+}
+
+// Confirmed bookings that haven't ended yet — a live obligation to a driver.
+// Used to block deleting/archiving a listing out from under an active booking.
+export async function countActiveBookingsForListing(listingId: string): Promise<number> {
+  const res = await pool.query(
+    `SELECT COUNT(*)::int AS count
+     FROM bookings
+     WHERE listing_id = $1
+       AND status = 'confirmed'
+       AND end_time > NOW()`,
+    [listingId]
+  );
+  return (res.rows[0]?.count as number | undefined) ?? 0;
 }
 
 export async function updateListingForHost({
@@ -1738,8 +1836,8 @@ export async function getBookingNotificationTargetsByPaymentIntent(paymentIntent
     SELECT b.id AS booking_id,
            b.driver_id,
            l.host_id,
-           l.title AS listing_title,
-           l.address AS listing_address,
+           COALESCE(b.listing_title, l.title) AS listing_title,
+           COALESCE(b.listing_address, l.address) AS listing_address,
            l.access_code,
            l.arrival_instructions,
            driver.email AS driver_email,
@@ -1779,8 +1877,8 @@ export async function getBookingNotificationTargetsByCheckoutSession(checkoutSes
     SELECT b.id AS booking_id,
            b.driver_id,
            l.host_id,
-           l.title AS listing_title,
-           l.address AS listing_address,
+           COALESCE(b.listing_title, l.title) AS listing_title,
+           COALESCE(b.listing_address, l.address) AS listing_address,
            l.access_code,
            l.arrival_instructions,
            driver.email AS driver_email,
@@ -1820,8 +1918,8 @@ export async function getBookingNotificationTargets(bookingId: string) {
     SELECT b.id AS booking_id,
            b.driver_id,
            l.host_id,
-           l.title AS listing_title,
-           l.address AS listing_address,
+           COALESCE(b.listing_title, l.title) AS listing_title,
+           COALESCE(b.listing_address, l.address) AS listing_address,
            l.access_code,
            l.arrival_instructions,
            driver.email AS driver_email,
@@ -2621,11 +2719,11 @@ export async function listUserBookings(userId: string) {
       b.vehicle_plate,
       b.amount_cents,
       b.currency,
-      l.title,
-      l.address,
+      COALESCE(b.listing_title, l.title) AS title,
+      COALESCE(b.listing_address, l.address) AS address,
       l.image_urls,
-      ST_X(l.geom) AS longitude,
-      ST_Y(l.geom) AS latitude,
+      COALESCE(b.listing_longitude, ST_X(l.geom)) AS longitude,
+      COALESCE(b.listing_latitude, ST_Y(l.geom)) AS latitude,
       l.host_id,
       l.access_code,
       l.arrival_instructions,
@@ -2657,11 +2755,11 @@ export async function listUserBookings(userId: string) {
       b.vehicle_plate,
       b.amount_cents,
       b.currency,
-      l.title,
-      l.address,
+      COALESCE(b.listing_title, l.title) AS title,
+      COALESCE(b.listing_address, l.address) AS address,
       l.image_urls,
-      ST_X(l.geom) AS longitude,
-      ST_Y(l.geom) AS latitude,
+      COALESCE(b.listing_longitude, ST_X(l.geom)) AS longitude,
+      COALESCE(b.listing_latitude, ST_Y(l.geom)) AS latitude,
       l.host_id,
       l.access_code,
       l.arrival_instructions,
@@ -2773,11 +2871,11 @@ export async function getBookingById(userId: string, bookingId: string) {
       b.vehicle_plate,
       b.amount_cents,
       b.currency,
-      l.title,
-      l.address,
+      COALESCE(b.listing_title, l.title) AS title,
+      COALESCE(b.listing_address, l.address) AS address,
       l.image_urls,
-      ST_X(l.geom) AS longitude,
-      ST_Y(l.geom) AS latitude,
+      COALESCE(b.listing_longitude, ST_X(l.geom)) AS longitude,
+      COALESCE(b.listing_latitude, ST_Y(l.geom)) AS latitude,
       l.host_id,
       l.access_code,
       l.arrival_instructions,

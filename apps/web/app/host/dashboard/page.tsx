@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   deleteListing,
+  setListingActive,
   getHostListings,
   getHostPayoutStatus,
   getHostEarningsSummary,
@@ -31,6 +32,8 @@ import {
   CalendarDays,
   ArrowUpRight,
   MoreHorizontal,
+  Pause,
+  Play,
 } from "lucide-react";
 import type { Listing } from "../../../components/ListingCard";
 
@@ -138,15 +141,17 @@ interface SpaceCardProps {
   confirmDeleteId: string | null;
   deleteError: string | null;
   deletingId: string | null;
+  togglingId: string | null;
   onConfirmDelete: (id: string | null) => void;
   onDelete: (id: string) => void;
+  onTogglePause: (id: string, nextActive: boolean) => void;
   hero?: boolean;
 }
 
 function SpaceCard({
   listing, act, now, origin,
-  confirmDeleteId, deleteError, deletingId,
-  onConfirmDelete, onDelete,
+  confirmDeleteId, deleteError, deletingId, togglingId,
+  onConfirmDelete, onDelete, onTogglePause,
   hero = false,
 }: SpaceCardProps) {
   const { current, next } = act;
@@ -155,9 +160,17 @@ function SpaceCard({
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  const isPaused = listing.isActive === false;
+  const isToggling = togglingId === listing.id;
   // A space that's occupied right now or has someone booked next can't be
   // pulled out from under a driver — deletion is gated until it's clear.
   const hasLiveBookings = Boolean(current || next);
+
+  const pauseListing = () => {
+    setMenuOpen(false);
+    setBlocked(false);
+    onTogglePause(listing.id, isPaused);
+  };
 
   const requestDelete = () => {
     setMenuOpen(false);
@@ -195,6 +208,21 @@ function SpaceCard({
           <span className="shrink-0 text-[12px] font-medium text-white/80">
             Leaves {formatWhen(new Date(current.endTime), now)}
           </span>
+        </div>
+      ) : isPaused ? (
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-slate-300" />
+            <span className="text-[12.5px] font-semibold text-slate-500">Paused · hidden from search</span>
+          </div>
+          <button
+            onClick={pauseListing}
+            disabled={isToggling}
+            className="flex items-center gap-1.5 text-[12px] font-semibold text-brand-600 transition hover:text-brand-700 disabled:opacity-50"
+          >
+            {isToggling ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-brand-300 border-t-brand-600" /> : <Play className="h-3.5 w-3.5" strokeWidth={2} />}
+            Resume
+          </button>
         </div>
       ) : (
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5">
@@ -304,17 +332,32 @@ function SpaceCard({
 
       {/* ── Can't-delete guard ── */}
       {blocked && (
-        <div className="flex items-start justify-between gap-3 border-b border-amber-100 bg-amber-50 px-5 py-3.5">
+        <div className="border-b border-amber-100 bg-amber-50 px-5 py-3.5">
           <p className="text-[12.5px] leading-[1.5] text-amber-800">
-            This space {current ? "is occupied right now" : "has an upcoming booking"}, so it can&apos;t be deleted yet.
-            Wait until the booking ends, or cancel it first.
+            {isPaused ? (
+              <>This space {current ? "is occupied right now" : "has an upcoming booking"}, so it can&apos;t be deleted yet. Wait until the booking ends, or cancel it first.</>
+            ) : (
+              <>This space {current ? "is occupied right now" : "has an upcoming booking"}, so it can&apos;t be deleted yet. Pause it to stop new bookings while you honour this one — you&apos;re still paid for it — or cancel the booking first.</>
+            )}
           </p>
-          <button
-            onClick={() => setBlocked(false)}
-            className="shrink-0 text-[12px] font-semibold text-amber-700 hover:text-amber-900"
-          >
-            Got it
-          </button>
+          <div className="mt-2.5 flex gap-2">
+            {!isPaused && (
+              <button
+                onClick={pauseListing}
+                disabled={isToggling}
+                className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-amber-700 disabled:opacity-60"
+              >
+                {isToggling ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <Pause className="h-3.5 w-3.5" strokeWidth={2} />}
+                Pause space
+              </button>
+            )}
+            <button
+              onClick={() => setBlocked(false)}
+              className="rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-amber-700 transition hover:bg-amber-50"
+            >
+              Got it
+            </button>
+          </div>
         </div>
       )}
 
@@ -379,7 +422,17 @@ function SpaceCard({
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="absolute bottom-full right-2 z-20 mb-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+              <div className="absolute bottom-full right-2 z-20 mb-1 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  onClick={pauseListing}
+                  disabled={isToggling}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {isPaused ? <Play className="h-3.5 w-3.5" strokeWidth={2} /> : <Pause className="h-3.5 w-3.5" strokeWidth={2} />}
+                  {isPaused ? "Resume space" : "Pause space"}
+                </button>
+                <div className="my-1 border-t border-slate-100" />
                 <button
                   type="button"
                   onClick={requestDelete}
@@ -449,6 +502,7 @@ export default function HostDashboardPage() {
   const [deletingId, setDeletingId]         = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleteError, setDeleteError]       = useState<string | null>(null);
+  const [togglingId, setTogglingId]         = useState<string | null>(null);
   const [origin, setOrigin]                 = useState("");
 
   const loadAll = async () => {
@@ -499,6 +553,24 @@ export default function HostDashboardPage() {
       setDeleteError(err instanceof Error ? err.message : "Could not delete");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  // Pause = stop new bookings while honouring existing ones (the host is still
+  // paid for them). The escape valve that lets a host "step back" a listing
+  // without stranding a driver — including one booked months out.
+  const handleTogglePause = async (id: string, nextActive: boolean) => {
+    if (!token) return;
+    setTogglingId(id);
+    setListings((prev) => prev.map((l) => (l.id === id ? { ...l, isActive: nextActive } : l)));
+    try {
+      await setListingActive(id, nextActive, token);
+    } catch (err) {
+      // Revert the optimistic flip and surface why (e.g. resume gated on host status).
+      setListings((prev) => prev.map((l) => (l.id === id ? { ...l, isActive: !nextActive } : l)));
+      setError(err instanceof Error ? err.message : "Could not update listing");
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -558,9 +630,10 @@ export default function HostDashboardPage() {
   );
 
   const spaceCardProps = {
-    now, origin, confirmDeleteId, deleteError, deletingId,
+    now, origin, confirmDeleteId, deleteError, deletingId, togglingId,
     onConfirmDelete: setConfirmDeleteId,
     onDelete: handleDelete,
+    onTogglePause: handleTogglePause,
   };
 
   return (

@@ -236,6 +236,20 @@ export async function deleteListing(listingId: string, token?: string) {
   return data;
 }
 
+export async function setListingActive(listingId: string, isActive: boolean, token?: string) {
+  if (!token) throw new Error("Authentication required");
+  const res = await fetchWithTimeout(`${API_BASE}/api/listings/${listingId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ isActive }),
+  });
+  const { data, error } = await handleResponse<{ listing: unknown }>(res);
+  if (error) {
+    throw new Error(error);
+  }
+  return data;
+}
+
 export async function deleteAccount(token?: string) {
   if (!token) throw new Error("Authentication required");
   const res = await fetchWithTimeout(`${API_BASE}/api/auth/me`, {

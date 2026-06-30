@@ -1,6 +1,6 @@
 import { CommonActions } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SquircleBtn } from "../../components/SquircleBtn";
 import { PhoneVerifyModal } from "../../components/PhoneVerifyModal";
@@ -14,8 +14,7 @@ import {
   Tag,
   Camera,
   KeyRound,
-  Users,
-  Lightbulb,
+  Pencil,
 } from "lucide-react-native";
 import {
   createAvailabilityEntry,
@@ -31,7 +30,7 @@ import { useListingFlow } from "./context";
 import { generateListingDescription } from "./generateDescription";
 import { FlowHeader } from "./FlowHeader";
 import { colors, spacing } from "../../styles/theme";
-import { hostFlowColors, hostFlowShadow } from "./hostFlowTheme";
+import { hostFlowColors } from "./hostFlowTheme";
 import { clearHostListingDraft } from "./draftStorage";
 
 type FlowStackParamList = {
@@ -60,6 +59,8 @@ const SOFT = hostFlowColors.textSoft;
 const BORDER = "#E2E8ED";
 const CARD = "#ffffff";
 
+type RowStatus = "ok" | "warn";
+
 export function ListingReviewScreen({ navigation }: Props) {
   const { draft, setDraft, listingId } = useListingFlow();
   const { token, user, setAuthUser } = useAuth();
@@ -70,6 +71,7 @@ export function ListingReviewScreen({ navigation }: Props) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPhoneVerify, setShowPhoneVerify] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingDescription, setEditingDescription] = useState(false);
   const rootNavigation = navigation.getParent();
   const requiresShortStay =
     draft.pricingMode === "hourly_daily" || draft.pricingMode === "both";
@@ -92,6 +94,39 @@ export function ListingReviewScreen({ navigation }: Props) {
       return `€${draft.pricePerHour}/hr`;
     return `€${draft.pricePerDay || "0"}/day`;
   })();
+
+  // The single price drivers glance at first, shown over the cover. The full
+  // multi-rate breakdown still lives in the Pricing edit row below.
+  const heroPrice = (() => {
+    if (draft.pricePerDay.trim().length > 0) return `€${draft.pricePerDay}/day`;
+    if (draft.pricePerMonth.trim().length > 0) return `€${draft.pricePerMonth}/mo`;
+    if (draft.pricePerHour.trim().length > 0) return `€${draft.pricePerHour}/hr`;
+    return null;
+  })();
+
+  const photoCount = useMemo(() => draft.photos.filter((p) => p?.trim()).length, [draft.photos]);
+
+  // The exact cover a driver will see: the framed Street View leads (matching
+  // publish), otherwise the first uploaded photo.
+  const coverPhotoUri = useMemo(() => {
+    const { latitude, longitude } = draft.location;
+    if (draft.coverHeading != null && mapsKey && Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      return `https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=${latitude},${longitude}&heading=${draft.coverHeading}&pitch=${draft.coverPitch ?? 0}&fov=80&source=outdoor&key=${mapsKey}`;
+    }
+    return draft.photos.find((p) => p?.trim()) ?? null;
+  }, [draft.coverHeading, draft.coverPitch, draft.location, draft.photos, mapsKey]);
+
+  const spaceTypeValue = draft.spaceType
+    ? draft.capacity > 1
+      ? `${draft.spaceType} · ${draft.capacity} spaces`
+      : draft.spaceType
+    : "Not set";
+
+  const pricingOk: RowStatus =
+    (!requiresShortStay || (draft.pricePerHour.trim().length > 0 && draft.pricePerDay.trim().length > 0)) &&
+    (!requiresMonthly || draft.pricePerMonth.trim().length > 0)
+      ? "ok"
+      : "warn";
 
   const buildAvailabilityPayloads = () => {
     const weekdayIndex: Record<string, number> = {
@@ -246,168 +281,154 @@ export function ListingReviewScreen({ navigation }: Props) {
       >
         {/* ── Page header ── */}
         <View style={styles.pageHeader}>
-          <Text style={styles.kicker}>{listingId ? "Review & update" : "Review & publish"}</Text>
-          <Text style={styles.title}>Double‑check your details</Text>
+          <Text style={styles.kicker}>{listingId ? "Review & update" : "Final step"}</Text>
+          <Text style={styles.title}>{listingId ? "Review your changes" : "Here's your listing"}</Text>
           <Text style={styles.subtitle}>
-            {listingId ? "Confirm everything looks right before saving." : "You can edit anything after publishing."}
+            {listingId
+              ? "Confirm everything looks right before saving."
+              : "Take a quick look. You can edit anything now — or anytime after you publish."}
           </Text>
         </View>
 
-        {/* ── Listing preview card ── */}
-        <View style={styles.card}>
-          {/* Map */}
-          <View style={styles.mapWrap}>
-            <Image
-              style={styles.map}
-              source={{
-                uri: `https://maps.googleapis.com/maps/api/staticmap?center=${draft.location.latitude},${draft.location.longitude}&zoom=15&size=640x360&scale=2&style=feature:poi|visibility:off&style=feature:transit|visibility:off&markers=color:0x0a8050%7C${draft.location.latitude},${draft.location.longitude}&key=${mapsKey}`,
-              }}
-              resizeMode="cover"
-            />
+        {/* ── Hero: exactly what drivers will see (tap to edit photos) ── */}
+        <Pressable
+          style={styles.heroCard}
+          onPress={() => navigation.navigate("ListingPhotos")}
+        >
+          <View style={styles.heroMedia}>
+            {coverPhotoUri ? (
+              <Image style={styles.heroImage} source={{ uri: coverPhotoUri }} resizeMode="cover" />
+            ) : (
+              <View style={styles.heroPlaceholder}>
+                <Camera size={26} color={SOFT} strokeWidth={1.7} />
+                <Text style={styles.heroPlaceholderText}>Add photos of your space</Text>
+              </View>
+            )}
+            <View style={styles.heroEditChip}>
+              <Pencil size={11} color={FG} strokeWidth={2.2} />
+              <Text style={styles.heroEditChipText}>
+                {photoCount > 0 ? `${photoCount} photo${photoCount !== 1 ? "s" : ""}` : "Add"}
+              </Text>
+            </View>
+            {heroPrice ? (
+              <View style={styles.heroPricePill}>
+                <Text style={styles.heroPriceText}>{heroPrice}</Text>
+              </View>
+            ) : null}
           </View>
-          {/* Title + address row */}
-          <View style={styles.listingMeta}>
-            <Text style={styles.listingTitle} numberOfLines={1}>
+          <View style={styles.heroMeta}>
+            <Text style={styles.heroTitle} numberOfLines={1}>
               {draft.spaceType ? `${draft.spaceType} parking` : "Parking space"}
             </Text>
-            <View style={styles.listingAddressRow}>
+            <View style={styles.heroAddressRow}>
               <MapPin size={12} color={SOFT} strokeWidth={2} />
-              <Text style={styles.listingAddress} numberOfLines={1}>
+              <Text style={styles.heroAddress} numberOfLines={1}>
                 {draft.location.address || "Location not set"}
               </Text>
             </View>
           </View>
-          {/* Key facts strip */}
-          <View style={styles.factsStrip}>
-            <View style={styles.factItem}>
-              <Tag size={13} color={ACCENT} strokeWidth={2} />
-              <Text style={styles.factText}>{priceLabel}</Text>
-            </View>
-            <View style={styles.factDivider} />
-            <View style={styles.factItem}>
-              <Clock size={13} color={ACCENT} strokeWidth={2} />
-              <Text style={styles.factText} numberOfLines={1}>
-                {draft.availability.detail || "Availability not set"}
-              </Text>
-            </View>
-            {draft.capacity > 1 ? (
-              <>
-                <View style={styles.factDivider} />
-                <View style={styles.factItem}>
-                  <Users size={13} color={ACCENT} strokeWidth={2} />
-                  <Text style={styles.factText}>{draft.capacity} spaces</Text>
-                </View>
-              </>
-            ) : null}
+        </Pressable>
+
+        {/* ── Description (reviewable text, lightweight edit) ── */}
+        <View style={styles.descCard}>
+          <View style={styles.descHeaderRow}>
+            <Text style={styles.cardHeader}>Description</Text>
+            <Pressable onPress={() => setEditingDescription((v) => !v)} hitSlop={10}>
+              <Text style={styles.editLink}>{editingDescription ? "Done" : "Edit"}</Text>
+            </Pressable>
           </View>
+          {editingDescription ? (
+            <TextInput
+              style={styles.descriptionInput}
+              value={draft.description ?? ""}
+              onChangeText={(text) => setDraft((prev) => ({ ...prev, description: text }))}
+              multiline
+              autoFocus
+              textAlignVertical="top"
+              placeholder="Describe your space…"
+              placeholderTextColor={MUTED}
+            />
+          ) : (
+            <Text style={styles.descriptionText}>
+              {draft.description?.trim() || "Add a short description to help drivers choose your space."}
+            </Text>
+          )}
         </View>
 
-        {/* ── Description (auto-generated, editable) ── */}
+        {/* ── Review & edit (only what isn't already shown above) ── */}
         <View style={styles.card}>
-          <Text style={styles.cardHeader}>Description</Text>
-          <Text style={styles.cardSubHeader}>We wrote this for you — edit it or keep it as is.</Text>
-          <TextInput
-            style={styles.descriptionInput}
-            value={draft.description ?? ""}
-            onChangeText={(text) => setDraft((prev) => ({ ...prev, description: text }))}
-            multiline
-            textAlignVertical="top"
-            placeholder="Describe your space…"
-            placeholderTextColor={MUTED}
-          />
-        </View>
-
-        {/* ── Details (tap any row to edit) ── */}
-        <View style={styles.card}>
-          <Text style={styles.cardHeader}>Listing details</Text>
-          <Text style={styles.cardSubHeader}>Tap any section to edit it.</Text>
-          <DetailRow
-            icon={<Tag size={15} color={ACCENT} strokeWidth={2} />}
-            label="Space type"
-            value={draft.spaceType || "Not set"}
-            onPress={() => navigation.navigate("ListingDetails")}
-          />
+          <View style={styles.reviewHeaderRow}>
+            <Text style={styles.cardHeader}>Review &amp; edit</Text>
+            <Text style={styles.reviewHeaderHint}>Tap to change</Text>
+          </View>
           <DetailRow
             icon={<MapPin size={15} color={ACCENT} strokeWidth={2} />}
             label="Location"
             value={draft.location.address || "Not set"}
+            status={draft.location.address.trim().length > 0 ? "ok" : "warn"}
             onPress={() => navigation.navigate("ListingLocation")}
           />
           <DetailRow
-            icon={<Camera size={15} color={ACCENT} strokeWidth={2} />}
-            label="Street view"
-            value={draft.coverHeading != null ? "Cover set" : "Set the cover view"}
-            onPress={() => navigation.navigate("ListingStreetView")}
-          />
-          <DetailRow
-            icon={<Clock size={15} color={ACCENT} strokeWidth={2} />}
-            label="Availability"
-            value={draft.availability.detail || "Not set"}
-            onPress={() => navigation.navigate("ListingAvailability")}
+            icon={<Tag size={15} color={ACCENT} strokeWidth={2} />}
+            label="Space"
+            value={spaceTypeValue}
+            status={draft.spaceType.trim().length > 0 ? "ok" : "warn"}
+            onPress={() => navigation.navigate("ListingDetails")}
           />
           <DetailRow
             icon={<Tag size={15} color={ACCENT} strokeWidth={2} />}
             label="Price"
             value={priceLabel}
+            status={pricingOk}
             onPress={() => navigation.navigate("ListingPrice")}
           />
           <DetailRow
-            icon={<Camera size={15} color={ACCENT} strokeWidth={2} />}
-            label="Photos"
-            value={draft.photos.length > 0 ? `${draft.photos.length} photo${draft.photos.length !== 1 ? "s" : ""}` : "No photos added"}
-            valueStyle={draft.photos.length === 0 ? styles.valueWarning : undefined}
-            onPress={() => navigation.navigate("ListingPhotos")}
+            icon={<Clock size={15} color={ACCENT} strokeWidth={2} />}
+            label="Availability"
+            value={draft.availability.detail || "Not set"}
+            status={draft.availability.detail.trim().length > 0 ? "ok" : "warn"}
+            onPress={() => navigation.navigate("ListingAvailability")}
           />
-          {draft.capacity > 1 ? (
-            <DetailRow
-              icon={<Users size={15} color={ACCENT} strokeWidth={2} />}
-              label="Spaces"
-              value={`${draft.capacity}`}
-              onPress={() => navigation.navigate("ListingDetails")}
-            />
-          ) : null}
           <DetailRow
             icon={<KeyRound size={15} color={ACCENT} strokeWidth={2} />}
-            label="Access code"
-            value={draft.accessCode.trim() || "None"}
+            label="Access"
+            value={draft.accessCode.trim() || "No code needed"}
             onPress={() => navigation.navigate("ListingFeaturesAccess")}
             isLast
           />
         </View>
 
-        {/* ── Tips ── */}
-        <View style={styles.tipsCard}>
-          <View style={styles.tipsHeader}>
-            <View style={styles.tipsIconWrap}>
-              <Lightbulb size={15} color={ACCENT} strokeWidth={2} />
-            </View>
-            <Text style={styles.tipsTitle}>What gets bookings</Text>
-          </View>
-          <View style={styles.tipsList}>
-            <TipRow text="Show exactly where the driver should park" />
-            <TipRow text="Add arrival notes and any code needed after booking" />
-            <TipRow text="Keep price and availability accurate to avoid cancellations" />
-          </View>
-        </View>
-
-        {/* ── Error ── */}
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        {/* ── Permission ── */}
-        <Pressable
-          style={[styles.permissionCard, draft.permissionDeclared && styles.permissionCardActive]}
-          onPress={() => setDraft((prev) => ({ ...prev, permissionDeclared: !prev.permissionDeclared }))}
-        >
-          <View style={[styles.checkbox, draft.permissionDeclared && styles.checkboxActive]}>
-            {draft.permissionDeclared ? <Check size={13} color="#ffffff" strokeWidth={3} /> : null}
-          </View>
-          <View style={styles.permissionText}>
-            <Text style={styles.permissionTitle}>I have permission to rent this space</Text>
-            <Text style={styles.permissionSubtitle}>
-              You confirm you own this space or have the owner's consent to list it.
+        {/* ── The conclusion: reassure, confirm, publish ── */}
+        <View style={styles.publishPanel}>
+          <Text style={styles.publishTitle}>{listingId ? "Save your changes" : "Ready to go live"}</Text>
+          <View style={styles.reassureRow}>
+            <View style={styles.reassureDot}><Check size={11} color={ACCENT} strokeWidth={3} /></View>
+            <Text style={styles.reassureText}>
+              {listingId ? "Your updates show to drivers right away." : "Your space appears on the map the moment you publish."}
             </Text>
           </View>
-        </Pressable>
+          <View style={styles.reassureRow}>
+            <View style={styles.reassureDot}><Check size={11} color={ACCENT} strokeWidth={3} /></View>
+            <Text style={styles.reassureText}>You can edit, pause or remove it anytime.</Text>
+          </View>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <Pressable
+            style={[styles.permissionCard, draft.permissionDeclared && styles.permissionCardActive]}
+            onPress={() => setDraft((prev) => ({ ...prev, permissionDeclared: !prev.permissionDeclared }))}
+          >
+            <View style={[styles.checkbox, draft.permissionDeclared && styles.checkboxActive]}>
+              {draft.permissionDeclared ? <Check size={13} color="#ffffff" strokeWidth={3} /> : null}
+            </View>
+            <View style={styles.permissionText}>
+              <Text style={styles.permissionTitle}>I have the right to list this space</Text>
+              <Text style={styles.permissionSubtitle}>
+                You own it or have the owner's permission — and you're happy with everything above.
+              </Text>
+            </View>
+          </Pressable>
+        </View>
       </ScrollView>
 
       {/* ── Footer ── */}
@@ -475,51 +496,44 @@ function DetailRow({
   label,
   value,
   isLast,
-  valueStyle,
+  status,
   onPress,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   isLast?: boolean;
-  valueStyle?: object;
+  status?: RowStatus;
   onPress?: () => void;
 }) {
-  const content = (
-    <>
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.detailRow,
+        !isLast && styles.detailRowBorder,
+        pressed && styles.editRowPressed,
+      ]}
+      onPress={onPress}
+    >
       <View style={styles.detailIconWrap}>{icon}</View>
       <View style={styles.detailBody}>
         <Text style={styles.detailLabel}>{label}</Text>
-        <Text style={[styles.detailValue, valueStyle]} numberOfLines={2}>{value}</Text>
+        <Text
+          style={[styles.detailValue, status === "warn" && styles.valueWarning]}
+          numberOfLines={2}
+        >
+          {value}
+        </Text>
       </View>
-      {onPress ? <ChevronRight size={18} color={SOFT} strokeWidth={2.2} /> : null}
-    </>
-  );
-  if (onPress) {
-    return (
-      <Pressable
-        style={({ pressed }) => [
-          styles.detailRow,
-          !isLast && styles.detailRowBorder,
-          pressed && styles.editRowPressed,
-        ]}
-        onPress={onPress}
-      >
-        {content}
-      </Pressable>
-    );
-  }
-  return (
-    <View style={[styles.detailRow, !isLast && styles.detailRowBorder]}>{content}</View>
-  );
-}
-
-function TipRow({ text }: { text: string }) {
-  return (
-    <View style={styles.tipRow}>
-      <View style={styles.tipDot} />
-      <Text style={styles.tipText}>{text}</Text>
-    </View>
+      {status === "ok" ? (
+        <View style={styles.statusOk}>
+          <Check size={11} color="#ffffff" strokeWidth={3} />
+        </View>
+      ) : status === "warn" ? (
+        <View style={styles.statusWarn} />
+      ) : null}
+      <ChevronRight size={18} color={SOFT} strokeWidth={2.2} />
+    </Pressable>
   );
 }
 
@@ -539,7 +553,7 @@ const styles = StyleSheet.create({
   scroll: { paddingTop: 4, paddingHorizontal: 16, gap: 14 },
 
   // ── Page header ──────────────────────────────────────────────
-  pageHeader: { paddingTop: 10, paddingBottom: 6 },
+  pageHeader: { paddingTop: 10, paddingBottom: 2 },
   kicker: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
@@ -563,6 +577,80 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
 
+  // ── Hero (the listing as drivers see it) ─────────────────────
+  heroCard: {
+    backgroundColor: CARD,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#D0C9C1",
+    overflow: "hidden",
+    ...CARD_SHADOW,
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+  },
+  heroMedia: { height: 200, backgroundColor: "#e8f0f4", position: "relative" },
+  heroImage: { width: "100%", height: "100%" },
+  heroPlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#EDF2F5",
+  },
+  heroPlaceholderText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    color: SOFT,
+  },
+  heroEditChip: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  heroEditChipText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: FG,
+    letterSpacing: -0.1,
+  },
+  heroPricePill: {
+    position: "absolute",
+    bottom: 12,
+    left: 12,
+    backgroundColor: "rgba(15, 23, 42, 0.86)",
+    borderRadius: 999,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+  },
+  heroPriceText: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 14,
+    color: "#ffffff",
+    letterSpacing: -0.2,
+  },
+  heroMeta: { paddingHorizontal: 16, paddingTop: 13, paddingBottom: 14 },
+  heroTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 18,
+    color: FG,
+    letterSpacing: -0.4,
+    marginBottom: 4,
+  },
+  heroAddressRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  heroAddress: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    color: MUTED,
+    flex: 1,
+  },
+
   // ── Cards ────────────────────────────────────────────────────
   card: {
     backgroundColor: CARD,
@@ -577,19 +665,37 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: FG,
     letterSpacing: -0.3,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 4,
   },
-  cardSubHeader: {
-    fontSize: 12.5,
-    color: MUTED,
+
+  // ── Description (lighter than the surrounding cards) ─────────
+  descCard: {
+    backgroundColor: CARD,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: BORDER,
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingTop: 14,
+    paddingBottom: 16,
+  },
+  descHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  editLink: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    color: ACCENT,
+    letterSpacing: -0.1,
+  },
+  descriptionText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 14,
+    lineHeight: 21,
+    color: MUTED,
   },
   descriptionInput: {
-    marginHorizontal: 16,
-    marginBottom: 16,
     minHeight: 96,
     borderWidth: 1,
     borderColor: BORDER,
@@ -601,68 +707,33 @@ const styles = StyleSheet.create({
     color: FG,
   },
 
-  // ── Map + listing meta ───────────────────────────────────────
-  mapWrap: { height: 175, backgroundColor: "#e8f0f4" },
-  map: { flex: 1 },
-  listingMeta: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2DAD2",
-  },
-  listingTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 17,
-    color: FG,
-    letterSpacing: -0.4,
-    marginBottom: 4,
-  },
-  listingAddressRow: {
+  // ── Review list header ───────────────────────────────────────
+  reviewHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 6,
   },
-  listingAddress: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    color: MUTED,
-    flex: 1,
+  reviewHeaderHint: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: SOFT,
+    letterSpacing: -0.1,
   },
-  factsStrip: {
+
+  // ── Detail rows ──────────────────────────────────────────────
+  detailRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 13,
     gap: 12,
   },
-  factItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    flex: 1,
-    minWidth: 0,
-  },
-  factText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
-    color: FG,
-    letterSpacing: -0.1,
-    flexShrink: 1,
-  },
-  factDivider: { width: 1, height: 16, backgroundColor: BORDER },
-
-  // ── Detail rows ──────────────────────────────────────────────
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-  },
   detailRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: "#EDE7E0",
   },
   detailIconWrap: {
     width: 28,
@@ -671,7 +742,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#EDF7F2",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 1,
     flexShrink: 0,
   },
   detailBody: { flex: 1 },
@@ -691,59 +761,25 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   valueWarning: { color: "#F59E0B" },
+  statusOk: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: ACCENT,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  statusWarn: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#F59E0B",
+    flexShrink: 0,
+  },
 
   // ── Edit rows ────────────────────────────────────────────────
   editRowPressed: { backgroundColor: "#F8FAFC" },
-
-  // ── Tips card ────────────────────────────────────────────────
-  tipsCard: {
-    backgroundColor: "#F0FDF8",
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#C6F0DC",
-    padding: 16,
-  },
-  tipsHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  tipsIconWrap: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
-    backgroundColor: "#D1FAE5",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tipsTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 14,
-    color: FG,
-    letterSpacing: -0.2,
-  },
-  tipsList: { gap: 8 },
-  tipRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  tipDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: ACCENT,
-    marginTop: 7,
-    flexShrink: 0,
-  },
-  tipText: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    color: MUTED,
-    lineHeight: 20,
-    flex: 1,
-  },
 
   // ── Error ────────────────────────────────────────────────────
   error: {
@@ -757,19 +793,59 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     paddingHorizontal: 14,
     paddingVertical: 11,
+    marginTop: 14,
   },
 
-  // ── Permission card ──────────────────────────────────────────
+  // ── Publish panel (the conclusion) ───────────────────────────
+  publishPanel: {
+    backgroundColor: hostFlowColors.accentSoft,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: hostFlowColors.accentSoftBorder,
+    padding: 18,
+    marginTop: 4,
+  },
+  publishTitle: {
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 17,
+    color: FG,
+    letterSpacing: -0.4,
+    marginBottom: 12,
+  },
+  reassureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 9,
+  },
+  reassureDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#D1FAE5",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  reassureText: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13.5,
+    color: MUTED,
+    lineHeight: 19,
+    flex: 1,
+  },
+
+  // ── Permission card (inside the conclusion) ──────────────────
   permissionCard: {
     backgroundColor: CARD,
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1.5,
     borderColor: BORDER,
     flexDirection: "row",
-    gap: 14,
-    padding: 16,
+    gap: 13,
+    padding: 14,
     alignItems: "flex-start",
-    ...CARD_SHADOW,
+    marginTop: 5,
   },
   permissionCardActive: {
     borderColor: ACCENT,

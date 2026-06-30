@@ -87,6 +87,17 @@ const FEATURE_ICONS: Record<string, LucideIcon> = {
   wide:      Maximize2,
 };
 
+function ListingLocationPin() {
+  return (
+    <View collapsable={false} style={styles.listingMapMarker}>
+      <View collapsable={false} style={styles.listingMapMarkerBubble}>
+        <MapPin size={18} color="#FFFFFF" strokeWidth={2.6} />
+      </View>
+      <View collapsable={false} style={styles.listingMapMarkerTip} />
+    </View>
+  );
+}
+
 const getFeatureIconType = (label: string) => {
   const n = label.toLowerCase();
   if (n.includes("low") || n.includes("clearance") || n.includes("height")) return "low";
@@ -873,7 +884,13 @@ export function ListingScreen({ navigation, route }: Props) {
                         customMapStyle={LIGHT_MAP_STYLE}
                         onMapReady={() => setMapReady(true)}
                       >
-                        <Marker coordinate={{ latitude, longitude }} tracksViewChanges={false} />
+                        <Marker
+                          coordinate={{ latitude, longitude }}
+                          anchor={{ x: 0.5, y: 0.96 }}
+                          tracksViewChanges={false}
+                        >
+                          <ListingLocationPin />
+                        </Marker>
                       </MapView>
                       {!mapReady && (
                         <SkeletonBlock
@@ -1218,7 +1235,13 @@ export function ListingScreen({ navigation, route }: Props) {
             customMapStyle={LIGHT_MAP_STYLE}
           >
             {hasCoordinates ? (
-              <Marker coordinate={{ latitude: latitude!, longitude: longitude! }} tracksViewChanges={false} />
+              <Marker
+                coordinate={{ latitude: latitude!, longitude: longitude! }}
+                anchor={{ x: 0.5, y: 0.96 }}
+                tracksViewChanges={false}
+              >
+                <ListingLocationPin />
+              </Marker>
             ) : null}
           </MapView>
           <Pressable
@@ -1606,6 +1629,34 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     borderWidth: 1,
     borderColor: LINE,
+  },
+  listingMapMarker: {
+    alignItems: "center",
+    height: 46,
+    justifyContent: "flex-start",
+    width: 40,
+  },
+  listingMapMarkerBubble: {
+    alignItems: "center",
+    backgroundColor: GREEN,
+    borderColor: "#FFFFFF",
+    borderRadius: 18,
+    borderWidth: 3,
+    height: 36,
+    justifyContent: "center",
+    shadowColor: "#0B3B29",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    width: 36,
+    elevation: 5,
+  },
+  listingMapMarkerTip: {
+    backgroundColor: GREEN,
+    height: 12,
+    marginTop: -9,
+    transform: [{ rotate: "45deg" }],
+    width: 12,
   },
   mapExpandButton: {
     position: "absolute", top: 10, right: 10,

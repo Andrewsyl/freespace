@@ -161,7 +161,12 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
     [selectedMake]
   );
 
-  const canSave = !!token && !saving && !!plate.trim();
+  const hasCompleteVehicleDetails =
+    plate.trim().length > 0 &&
+    selectedMake.trim().length > 0 &&
+    selectedModel.trim().length > 0 &&
+    selectedColour.trim().length > 0;
+  const canSave = !!token && !saving && hasCompleteVehicleDetails;
 
   const handleSave = async () => {
     if (!canSave) return;

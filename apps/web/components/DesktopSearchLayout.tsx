@@ -56,6 +56,13 @@ export function DesktopSearchLayout({
     () => (listing: Listing) => buildSearchPriceDisplay(listing, filters, searchStart, searchEnd),
     [filters, searchEnd, searchStart]
   );
+  const filterPriceValues = useMemo(
+    () =>
+      results
+        .map((listing) => getSearchPrice(listing).sortValue)
+        .filter((value) => Number.isFinite(value) && value > 0),
+    [getSearchPrice, results],
+  );
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -133,6 +140,7 @@ export function DesktopSearchLayout({
                   onLiveChange={(f) => onSearch(f)}
                   searchAsMove={searchAsMove}
                   onSearchAsMove={onSearchAsMove}
+                  priceValues={filterPriceValues}
                 />
               </motion.div>
             ) : (

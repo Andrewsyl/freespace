@@ -33,6 +33,7 @@ export type Listing = {
   image_urls?: string[];
   latitude?: number;
   longitude?: number;
+  isActive?: boolean;
   availabilitySchedule?: AvailabilityScheduleEntry[] | null;
 };
 

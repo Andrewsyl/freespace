@@ -17,7 +17,7 @@ export default function VerifyPage() {
 function VerifyPageContent() {
   const params = useSearchParams();
   const router = useRouter();
-  const token = params.get("token");
+  const token = params?.get("token");
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("Verifying your email…");
 

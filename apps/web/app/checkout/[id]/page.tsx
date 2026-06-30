@@ -251,7 +251,8 @@ export default function CheckoutPage() {
     );
   }
 
-  const nextPath = `/checkout/${params?.id}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`;
+  const checkoutQuery = searchParams?.toString() ?? "";
+  const nextPath = `/checkout/${params?.id}${checkoutQuery ? `?${checkoutQuery}` : ""}`;
   const vehicleProfileHref = `/dashboard/vehicle?next=${encodeURIComponent(nextPath)}`;
   const vehicleMake = user?.vehicleMake?.trim() ?? "";
   const vehicleModel = user?.vehicleType?.trim() ?? "";

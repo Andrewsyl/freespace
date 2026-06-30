@@ -99,12 +99,13 @@ function SearchSkeleton() {
 
 function SearchPageContainer() {
   const searchParams = useSearchParams();
+  const searchParamsString = searchParams?.toString() ?? "";
   const router = useRouter();
   const isMobile = useIsMobile();
 
   // ── URL-derived initial filters ──
   const initialFromUrl = useMemo(() => {
-    const get = (k: string) => searchParams.get(k);
+    const get = (k: string) => searchParams?.get(k);
     return {
       location: get("location") ?? undefined,
       date: get("date") ?? undefined,
@@ -135,7 +136,7 @@ function SearchPageContainer() {
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
 
   // On mobile: start on the landing form unless the URL already has search params
-  const hasUrlParams = !!(searchParams.get("lat") || searchParams.get("location"));
+  const hasUrlParams = !!(searchParams?.get("lat") || searchParams?.get("location"));
   const [mobilePhase, setMobilePhase] = useState<"landing" | "map">(
     hasUrlParams ? "map" : "landing",
   );
@@ -152,11 +153,11 @@ function SearchPageContainer() {
   const lastAppliedCenter = useRef<{ lat: number; lng: number } | null>(null);
   const ignoreInitialBounds = useRef(true);
   const initialized = useRef(false);
-  const searchParamsRef = useRef(searchParams.toString());
+  const searchParamsRef = useRef(searchParamsString);
   const filtersRef = useRef(filters);
 
   // Keep refs in sync with latest values
-  useEffect(() => { searchParamsRef.current = searchParams.toString(); });
+  useEffect(() => { searchParamsRef.current = searchParamsString; }, [searchParamsString]);
   useEffect(() => { filtersRef.current = filters; });
 
   // Reset ignoreInitialBounds when the active layout changes (MapView remounts)

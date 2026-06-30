@@ -55,6 +55,7 @@ function ListingPinMarker({
   coordinate,
   selected,
   label,
+  price,
   pinImage,
   resumeNonce,
   onPress,
@@ -63,6 +64,7 @@ function ListingPinMarker({
   coordinate: { latitude: number; longitude: number };
   selected: boolean;
   label: string;
+  price: number;
   pinImage: string;
   resumeNonce?: number;
   onPress: (event: MarkerPressEvent) => void;
@@ -70,11 +72,38 @@ function ListingPinMarker({
   const soldOut = label === "Sold out";
   const { viewBoxWidth, viewBoxHeight } = getPinDimensions(label, selected, soldOut);
   const [tracks, setTracks] = useState(true);
+  const [imageReady, setImageReady] = useState(false);
+  const stopTrackingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setTracks(true);
+    setImageReady(false);
+    return () => {
+      if (stopTrackingTimer.current) {
+        clearTimeout(stopTrackingTimer.current);
+        stopTrackingTimer.current = null;
+      }
+    };
+  }, [pinImage]);
 
   // Stop tracking shortly after the bitmap is on screen so the marker freezes.
+  const stopTrackingSoon = () => {
+    if (stopTrackingTimer.current) clearTimeout(stopTrackingTimer.current);
+    stopTrackingTimer.current = setTimeout(() => {
+      setTracks(false);
+      stopTrackingTimer.current = null;
+    }, 96);
+  };
+
   const handleLoad = () => {
-    const timer = setTimeout(() => setTracks(false), 64);
-    return () => clearTimeout(timer);
+    setImageReady(true);
+    stopTrackingSoon();
+  };
+
+  const handleError = () => {
+    // Keep the synchronous vector fallback visible if the captured PNG fails.
+    setImageReady(false);
+    stopTrackingSoon();
   };
 
   return (
@@ -89,13 +118,26 @@ function ListingPinMarker({
       tappable={true}
       stopPropagation={true}
     >
-      <Image
-        source={{ uri: pinImage }}
-        style={{ width: viewBoxWidth, height: viewBoxHeight }}
-        resizeMode="contain"
-        fadeDuration={0}
-        onLoad={handleLoad}
-      />
+      <View
+        collapsable={false}
+        style={[styles.pinMarkerShell, { width: viewBoxWidth, height: viewBoxHeight }]}
+      >
+        <View
+          collapsable={false}
+          pointerEvents="none"
+          style={[styles.pinMarkerFallback, { opacity: imageReady ? 0 : 1 }]}
+        >
+          <MapPricePin price={soldOut ? 0 : price} selected={selected} soldOut={soldOut} />
+        </View>
+        <Image
+          source={{ uri: pinImage }}
+          style={[styles.pinMarkerImage, { width: viewBoxWidth, height: viewBoxHeight, opacity: imageReady ? 1 : 0 }]}
+          resizeMode="contain"
+          fadeDuration={0}
+          onLoad={handleLoad}
+          onError={handleError}
+        />
+      </View>
     </Marker>
   );
 }
@@ -388,6 +430,7 @@ export default function MapSection({
               }}
               selected={isSelected}
               label={label}
+              price={price}
               pinImage={pinImage}
               resumeNonce={resumeNonce}
               onPress={(e) => {
@@ -446,5 +489,21 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  pinMarkerFallback: {
+    alignItems: "center",
+    bottom: 0,
+    justifyContent: "flex-start",
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0,
+  },
+  pinMarkerImage: {
+    alignSelf: "center",
+  },
+  pinMarkerShell: {
+    alignItems: "center",
+    justifyContent: "flex-start",
   },
 });

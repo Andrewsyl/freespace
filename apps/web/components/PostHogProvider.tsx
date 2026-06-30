@@ -13,7 +13,7 @@ function PageView() {
   useEffect(() => {
     if (!ph) return;
     let url = pathname;
-    const qs = searchParams.toString();
+    const qs = searchParams?.toString() ?? "";
     if (qs) url += `?${qs}`;
     ph.capture("$pageview", { $current_url: url });
   }, [pathname, searchParams, ph]);
