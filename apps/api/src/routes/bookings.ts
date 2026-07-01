@@ -55,6 +55,18 @@ import { env } from "../env.js";
 const router = Router();
 const DEFAULT_DAILY_HOURS = 8;
 
+// A booking INSERT can fail because the slot filled up between our pre-check and
+// the write. Two Postgres error codes signal this:
+//   - 23P01: the legacy `bookings_no_overlap` exclusion constraint (pre-migration
+//     036; kept here so older databases still map cleanly).
+//   - P0001: the `check_booking_capacity` trigger's `listing_at_capacity` RAISE,
+//     which is the live path once migration 036 dropped the exclusion constraint.
+// Both mean "someone else took the last space" and should surface as a clean 409
+// rather than a generic 500 + false "persistence failed" alert.
+function isSlotConflictError(error: any): boolean {
+  return error?.code === "23P01" || error?.code === "P0001";
+}
+
 
 function calculateListingChargeCents(input: {
   rateType?: string | null;
@@ -746,7 +758,7 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
 
     res.status(201).json({ checkoutUrl: session.url, sessionId: session.id });
   } catch (error: any) {
-    if (error?.code === "23P01") {
+    if (isSlotConflictError(error)) {
       return res.status(409).json({ message: "Time slot already booked" });
     }
     next(error);
@@ -960,15 +972,20 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
       } catch (cancelError) {
         console.warn("Failed to cancel payment intent after booking persistence failure", cancelError);
       }
-      await reportOperationalAlert({
-        source: "booking-create",
-        title: "Payment intent created but booking persistence failed",
-        payload: {
-          driverId,
-          listingId: payload.listingId,
-          paymentIntentId: intent.id,
-        },
-      });
+      // A slot conflict here is an expected concurrency outcome (someone grabbed
+      // the last space first), not a system failure — the outer catch turns it
+      // into a clean 409, so don't page on-call for it.
+      if (!isSlotConflictError(error)) {
+        await reportOperationalAlert({
+          source: "booking-create",
+          title: "Payment intent created but booking persistence failed",
+          payload: {
+            driverId,
+            listingId: payload.listingId,
+            paymentIntentId: intent.id,
+          },
+        });
+      }
       throw error;
     }
 
@@ -988,7 +1005,7 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
       ephemeralKeySecret: ephemeralKey.secret,
     });
   } catch (error: any) {
-    if (error?.code === "23P01") {
+    if (isSlotConflictError(error)) {
       return res.status(409).json({ message: "Time slot already booked" });
     }
     next(error);
@@ -1099,7 +1116,7 @@ router.post("/portal", enforceBlockedList, portalBookingLimiter, async (req, res
 
     res.status(201).json({ checkoutUrl: session.url, sessionId: session.id });
   } catch (error: any) {
-    if (error?.code === "23P01") {
+    if (isSlotConflictError(error)) {
       return res.status(409).json({ message: "Time slot already booked" });
     }
     next(error);
@@ -1184,7 +1201,7 @@ router.post("/:id/extend-intent", requireAuth, enforceBlockedList, bookingLimite
           newTotalCents: effectiveTotalCents,
         });
       } catch (error: any) {
-        if (error?.code === "23P01") {
+        if (isSlotConflictError(error)) {
           return res.status(409).json({ message: "Time slot already booked" });
         }
         throw error;
@@ -1320,7 +1337,7 @@ router.post("/:id/extend-confirm", requireAuth, enforceBlockedList, bookingLimit
         newTotalCents: updated.amount_cents,
       });
     } catch (error: any) {
-      if (error?.code === "23P01") {
+      if (isSlotConflictError(error)) {
         return res.status(409).json({ message: "Time slot already booked" });
       }
       throw error;
@@ -1417,7 +1434,7 @@ router.post("/:id/change-intent", requireAuth, enforceBlockedList, bookingLimite
           newTotalCents: effectiveTotalCents,
         });
       } catch (error: any) {
-        if (error?.code === "23P01") {
+        if (isSlotConflictError(error)) {
           return res.status(409).json({ message: "Time slot already booked" });
         }
         throw error;
@@ -1520,7 +1537,7 @@ router.post("/:id/change-confirm", requireAuth, enforceBlockedList, bookingLimit
         newTotalCents: updated.amount_cents,
       });
     } catch (error: any) {
-      if (error?.code === "23P01") {
+      if (isSlotConflictError(error)) {
         return res.status(409).json({ message: "Time slot already booked" });
       }
       throw error;

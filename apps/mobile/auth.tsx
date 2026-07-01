@@ -1,4 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import {
@@ -65,6 +67,38 @@ const REFRESH_TOKEN_KEY = "authRefreshToken";
 // Written by PushRegistration (App.tsx); read here so logout can unbind the device.
 export const EXPO_PUSH_TOKEN_KEY = "expoPushToken";
 
+// The access + refresh tokens are credentials, so keep them in the OS keystore
+// (iOS Keychain / Android EncryptedSharedPreferences via SecureStore) instead of
+// AsyncStorage's plaintext store. SecureStore isn't available on web, so fall
+// back to AsyncStorage there. The non-sensitive user profile stays in AsyncStorage.
+const secureCapable = Platform.OS !== "web";
+const tokenStore = {
+  getItem: (key: string) =>
+    secureCapable ? SecureStore.getItemAsync(key) : AsyncStorage.getItem(key),
+  setItem: (key: string, value: string) =>
+    secureCapable ? SecureStore.setItemAsync(key, value) : AsyncStorage.setItem(key, value),
+  removeItem: (key: string) =>
+    secureCapable ? SecureStore.deleteItemAsync(key) : AsyncStorage.removeItem(key),
+};
+
+// One-time migration for users upgrading from a build that stored tokens in
+// AsyncStorage: move any plaintext token/refresh values into SecureStore and
+// delete the plaintext copies so credentials aren't left behind in cleartext.
+async function migrateTokensToSecureStore() {
+  if (!secureCapable) return;
+  try {
+    for (const key of [TOKEN_KEY, REFRESH_TOKEN_KEY]) {
+      const legacy = await AsyncStorage.getItem(key);
+      if (legacy == null) continue;
+      const existing = await SecureStore.getItemAsync(key);
+      if (existing == null) await SecureStore.setItemAsync(key, legacy);
+      await AsyncStorage.removeItem(key);
+    }
+  } catch {
+    // Best-effort; a failed migration just means the user re-authenticates.
+  }
+}
+
 type JwtPayload = {
   exp?: number;
   iat?: number;
@@ -127,9 +161,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const restore = async () => {
-      const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
+      await migrateTokensToSecureStore();
+      const storedToken = await tokenStore.getItem(TOKEN_KEY);
       const storedUser = await AsyncStorage.getItem(USER_KEY);
-      const storedRefreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+      const storedRefreshToken = await tokenStore.getItem(REFRESH_TOKEN_KEY);
       const parsedStoredUser = await inferStoredAuthProvider(
         storedUser ? (JSON.parse(storedUser) as AuthUser) : null
       );
@@ -146,15 +181,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setLegalPromptRequired(false);
               const nextRefreshToken = refreshed.refreshToken ?? storedRefreshToken;
               setRefreshToken(nextRefreshToken);
-              await AsyncStorage.setItem(TOKEN_KEY, refreshed.token);
+              await tokenStore.setItem(TOKEN_KEY, refreshed.token);
               await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
-              await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
+              await tokenStore.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
               setLoading(false);
               return;
             } catch {
-              await AsyncStorage.removeItem(TOKEN_KEY);
+              await tokenStore.removeItem(TOKEN_KEY);
               await AsyncStorage.removeItem(USER_KEY);
-              await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+              await tokenStore.removeItem(REFRESH_TOKEN_KEY);
               setToken(null);
               setUser(null);
               setLegalPromptRequired(false);
@@ -163,9 +198,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               return;
             }
           }
-          await AsyncStorage.removeItem(TOKEN_KEY);
+          await tokenStore.removeItem(TOKEN_KEY);
           await AsyncStorage.removeItem(USER_KEY);
-          await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+          await tokenStore.removeItem(REFRESH_TOKEN_KEY);
           setToken(null);
           setUser(null);
           setLegalPromptRequired(false);
@@ -191,10 +226,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLegalPromptRequired(needsLegalAcceptance(nextUser));
     const nextRefreshToken = response.refreshToken ?? null;
     setRefreshToken(nextRefreshToken);
-    await AsyncStorage.setItem(TOKEN_KEY, response.token);
+    await tokenStore.setItem(TOKEN_KEY, response.token);
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
     if (nextRefreshToken) {
-      await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
+      await tokenStore.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
     }
     void trackEvent("mobile_login_succeeded", {
       method: "password",
@@ -223,10 +258,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLegalPromptRequired(needsLegalAcceptance(nextUser));
       const nextRefreshToken = response.refreshToken ?? null;
       setRefreshToken(nextRefreshToken);
-      await AsyncStorage.setItem(TOKEN_KEY, response.token);
+      await tokenStore.setItem(TOKEN_KEY, response.token);
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
       if (nextRefreshToken) {
-        await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
+        await tokenStore.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
       }
       void trackEvent("mobile_signup_completed", {
         method: "password",
@@ -245,9 +280,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setLegalPromptRequired(false);
     setRefreshToken(null);
-    await AsyncStorage.removeItem(TOKEN_KEY);
+    await tokenStore.removeItem(TOKEN_KEY);
     await AsyncStorage.removeItem(USER_KEY);
-    await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+    await tokenStore.removeItem(REFRESH_TOKEN_KEY);
     if (logoutTimerRef.current) {
       clearTimeout(logoutTimerRef.current);
       logoutTimerRef.current = null;
@@ -293,10 +328,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLegalPromptRequired(needsLegalAcceptance(nextUser));
     const nextRefreshToken = response.refreshToken ?? null;
     setRefreshToken(nextRefreshToken);
-    await AsyncStorage.setItem(TOKEN_KEY, response.token);
+    await tokenStore.setItem(TOKEN_KEY, response.token);
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
     if (nextRefreshToken) {
-      await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
+      await tokenStore.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
     }
     void trackEvent("mobile_login_succeeded", {
       method: provider,
@@ -333,9 +368,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setLegalPromptRequired(false);
         setRefreshToken(null);
-        await AsyncStorage.removeItem(TOKEN_KEY);
+        await tokenStore.removeItem(TOKEN_KEY);
         await AsyncStorage.removeItem(USER_KEY);
-        await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+        await tokenStore.removeItem(REFRESH_TOKEN_KEY);
         return;
       }
 
@@ -345,12 +380,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLegalPromptRequired(needsLegalAcceptance(nextUser));
       const nextRefreshToken = session.refreshToken ?? null;
       setRefreshToken(nextRefreshToken);
-      await AsyncStorage.setItem(TOKEN_KEY, session.token);
+      await tokenStore.setItem(TOKEN_KEY, session.token);
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
       if (nextRefreshToken) {
-        await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
+        await tokenStore.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
       } else {
-        await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+        await tokenStore.removeItem(REFRESH_TOKEN_KEY);
       }
     },
     []
@@ -380,9 +415,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLegalPromptRequired(false);
         const nextRefreshToken = refreshed.refreshToken ?? refreshToken;
         setRefreshToken(nextRefreshToken);
-        await AsyncStorage.setItem(TOKEN_KEY, refreshed.token);
+        await tokenStore.setItem(TOKEN_KEY, refreshed.token);
         await AsyncStorage.setItem(USER_KEY, JSON.stringify(nextUser));
-        await AsyncStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
+        await tokenStore.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
       } catch {
         void logout();
       }

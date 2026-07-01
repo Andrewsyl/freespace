@@ -57,6 +57,8 @@ import { GlobalLoadingProvider, useGlobalLoading } from "./components/GlobalLoad
 import { GlobalToastProvider } from "./components/GlobalToast";
 import { useGlobalToast } from "./components/GlobalToast";
 import { PremiumSplash } from "./components/PremiumSplash";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { initSentry, wrapWithSentry } from "./sentry";
 import {
   clearMobileE2EScenario,
   configureMobileE2EScenario,
@@ -80,10 +82,11 @@ type BookingNotificationData = {
 
 enableScreens(false);
 void SplashScreen.preventAutoHideAsync();
+initSentry();
 initPostHog();
 installGlobalErrorLogging();
 
-export default function App() {
+function App() {
   const [splashDone, setSplashDone] = useState(false);
   const [fontsLoaded] = useFonts({
     "PlusJakartaSans-Regular": require("./assets/fonts/PlusJakartaSans_400Regular.ttf"),
@@ -147,29 +150,35 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <View style={styles.app}>
-        {/* merchantIdentifier must match the in-app-payments entitlement; without
-            it the Payment Sheet silently hides Apple Pay. */}
-        <StripeProvider
-          publishableKey={stripeKey}
-          merchantIdentifier="merchant.com.andrewsyl.carparking"
-        >
-          <AuthProvider>
-            <FavoritesProvider>
-              <GlobalLoadingProvider>
-                <GlobalToastProvider>
-                  <AppShell />
-                </GlobalToastProvider>
-              </GlobalLoadingProvider>
-            </FavoritesProvider>
-          </AuthProvider>
-        </StripeProvider>
-        {!splashDone ? <PremiumSplash onFinish={() => setSplashDone(true)} /> : null}
-      </View>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <View style={styles.app}>
+          {/* merchantIdentifier must match the in-app-payments entitlement; without
+              it the Payment Sheet silently hides Apple Pay. */}
+          <StripeProvider
+            publishableKey={stripeKey}
+            merchantIdentifier="merchant.com.andrewsyl.carparking"
+          >
+            <AuthProvider>
+              <FavoritesProvider>
+                <GlobalLoadingProvider>
+                  <GlobalToastProvider>
+                    <AppShell />
+                  </GlobalToastProvider>
+                </GlobalLoadingProvider>
+              </FavoritesProvider>
+            </AuthProvider>
+          </StripeProvider>
+          {!splashDone ? <PremiumSplash onFinish={() => setSplashDone(true)} /> : null}
+        </View>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
+
+// wrapWithSentry is a passthrough when no DSN is configured; with one it adds
+// touch/navigation breadcrumb instrumentation around the root component.
+export default wrapWithSentry(App);
 
 function GlobalLoadingOverlay() {
   const { loading } = useAuth();

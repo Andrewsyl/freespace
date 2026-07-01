@@ -305,7 +305,7 @@ module.exports = ({ config }) => {
                     ...base.ios,
                     bundleIdentifier: iosBundleId,
                   },
-                  plugins: [...plugins, buildProps],
+                  plugins: [...plugins, buildProps, "expo-secure-store"],
                 })
               )
             )

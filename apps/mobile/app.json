@@ -2,7 +2,7 @@
   "expo": {
     "name": "FreeSpace",
     "slug": "carparking",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "userInterfaceStyle": "light",
     "icon": "./assets/white/png/icon-1024-rounded.png",
     "scheme": [

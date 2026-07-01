@@ -63,6 +63,8 @@ export function installGlobalErrorLogging() {
   globalErrorUtils.setGlobalHandler((error, isFatal) => {
     const { capturePostHogException } = require("./posthog") as typeof import("./posthog");
     capturePostHogException(error, { source: "global-error-handler", isFatal: String(Boolean(isFatal)) });
+    const { captureException } = require("./sentry") as typeof import("./sentry");
+    captureException(error, { source: "global-error-handler", isFatal: Boolean(isFatal) });
     logError("Unhandled JS error", {
       name: error?.name,
       message: error?.message,
