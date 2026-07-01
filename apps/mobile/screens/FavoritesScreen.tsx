@@ -1,6 +1,6 @@
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SkeletonBlock, usePulse } from "../components/ui";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
@@ -112,6 +112,11 @@ export function FavoritesScreen({ navigation }: Props) {
   const { user } = useAuth();
   const { favorites, loading, error, refresh, remove } = useFavorites();
   const skeletonPulse = usePulse();
+  const insets = useSafeAreaInsets();
+  // The tab bar floats absolutely over the screen (height 58 + safe-area inset),
+  // so the scroll content must reserve that much plus breathing room or the last
+  // card sits under the nav.
+  const listBottomPad = 58 + Math.max(8, insets.bottom) + 24;
 
   if (!user) {
     return (
@@ -143,7 +148,7 @@ export function FavoritesScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.navBar}>
         <Pressable
           style={styles.backBtn}
@@ -157,7 +162,7 @@ export function FavoritesScreen({ navigation }: Props) {
       </View>
       <View style={styles.contentWrapper}>
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: listBottomPad }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native";
 import { CircleCheck, Info, TriangleAlert, X, type LucideIcon } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,14 +28,13 @@ export function Toast({
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(-18)).current;
   const opacity = useRef(new Animated.Value(0)).current;
-  // Keep the toast mounted through its exit animation. Driven off `visible` so a
-  // hide fades/slides out instead of snapping to null, and a re-show always starts
-  // from the hidden values (set below) so it never flashes at full opacity first.
-  const [rendered, setRendered] = useState(false);
+  // Always mounted; visibility is driven purely by the animated opacity/translate so
+  // a hide fades/slides out (never snaps) and a re-show restarts from the hidden values
+  // set below. Keeping it mounted also avoids a mount-time state update that warned
+  // under act() in tests.
 
   useEffect(() => {
     if (visible) {
-      setRendered(true);
       translateY.setValue(-18);
       opacity.setValue(0);
       const anim = Animated.parallel([
@@ -69,13 +68,9 @@ export function Toast({
         useNativeDriver: true,
       }),
     ]);
-    anim.start(({ finished }) => {
-      if (finished) setRendered(false);
-    });
+    anim.start();
     return () => anim.stop();
   }, [visible, opacity, toastKey, translateY]);
-
-  if (!rendered) return null;
 
   const tone = variantStyles[variant];
   const ToneIcon = tone.icon;
@@ -86,7 +81,7 @@ export function Toast({
         styles.viewport,
         { top: Math.max(insets.top + 10, 18), opacity, transform: [{ translateY }] },
       ]}
-      pointerEvents="box-none"
+      pointerEvents={visible ? "box-none" : "none"}
     >
       <View
         style={[styles.container, { borderLeftColor: tone.accent }]}

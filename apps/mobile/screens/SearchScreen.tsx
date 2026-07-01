@@ -29,6 +29,7 @@ import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
+import { useGlobalToast } from "../components/GlobalToast";
 import MapSection from "../components/MapSection";
 import { MapBottomCard } from "../components/MapBottomCard";
 import { LIGHT_MAP_STYLE } from "../components/mapStyles";
@@ -654,6 +655,22 @@ export function SearchScreen({ navigation }: Props) {
   const isProgrammaticMoveRef = useRef(false);
   useAuth();
   const { favorites, isFavorite, toggle } = useFavorites();
+  const toast = useGlobalToast();
+  const handleToggleFavorite = useCallback(
+    (listing: ListingSummary) => {
+      const wasFavorite = isFavorite(listing.id);
+      void (async () => {
+        try {
+          await toggle(listing);
+          if (wasFavorite) toast.show("Removed from favourites");
+          else toast.showSuccess("Saved to favourites");
+        } catch {
+          // toggle surfaces its own errors; don't show a success toast on failure
+        }
+      })();
+    },
+    [isFavorite, toggle, toast]
+  );
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -2085,7 +2102,7 @@ export function SearchScreen({ navigation }: Props) {
             amenities={selectedCardAmenities ?? visibleSelectedListing.amenities ?? null}
             isAvailable={visibleSelectedListing.is_available !== false}
             isFavorite={isFavorite(visibleSelectedListing.id)}
-            onToggleFavorite={() => toggle(visibleSelectedListing)}
+            onToggleFavorite={() => handleToggleFavorite(visibleSelectedListing)}
             onPress={() => {
               // Leave the pin selected — clearing it remounts the marker
               // mid-transition and it visibly flickers behind the push.

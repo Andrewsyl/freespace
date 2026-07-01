@@ -56,6 +56,7 @@ import { LoadingOverlay } from "./components/LoadingOverlay";
 import { GlobalLoadingProvider, useGlobalLoading } from "./components/GlobalLoading";
 import { GlobalToastProvider } from "./components/GlobalToast";
 import { useGlobalToast } from "./components/GlobalToast";
+import { PremiumSplash } from "./components/PremiumSplash";
 import {
   clearMobileE2EScenario,
   configureMobileE2EScenario,
@@ -83,6 +84,7 @@ initPostHog();
 installGlobalErrorLogging();
 
 export default function App() {
+  const [splashDone, setSplashDone] = useState(false);
   const [fontsLoaded] = useFonts({
     "PlusJakartaSans-Regular": require("./assets/fonts/PlusJakartaSans_400Regular.ttf"),
     "PlusJakartaSans-Medium": require("./assets/fonts/PlusJakartaSans_500Medium.ttf"),
@@ -127,10 +129,21 @@ export default function App() {
     ]);
   }, []);
 
+  // Hand the native OS splash off to the in-app PremiumSplash the moment JS can
+  // draw, so the animated launch is what the user actually sees. The PremiumSplash
+  // overlay is already mounted in this same render, so there's no flash of app UI.
+  useEffect(() => {
+    if (!fontsLoaded) return;
+    const id = requestAnimationFrame(() => {
+      void SplashScreen.hideAsync();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [fontsLoaded]);
+
   const stripeKey = mobileEnv.stripePublishableKey;
 
   if (!fontsLoaded) {
-    return <View style={[styles.app, { backgroundColor: "#ffffff" }]} />;
+    return <View style={[styles.app, { backgroundColor: "#0A0F0D" }]} />;
   }
 
   return (
@@ -152,6 +165,7 @@ export default function App() {
             </FavoritesProvider>
           </AuthProvider>
         </StripeProvider>
+        {!splashDone ? <PremiumSplash onFinish={() => setSplashDone(true)} /> : null}
       </View>
     </SafeAreaProvider>
   );

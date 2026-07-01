@@ -125,6 +125,24 @@ export function MapBottomCard({
     [translateAnim]
   );
 
+  // Pop the heart when the card gets saved (not on unsave, and not when a card
+  // mounts already-favorited).
+  const heartScale = useRef(new Animated.Value(1)).current;
+  const prevFavorite = useRef(isFavorite);
+  useEffect(() => {
+    if (isFavorite && !prevFavorite.current) {
+      heartScale.stopAnimation();
+      heartScale.setValue(0.6);
+      Animated.spring(heartScale, {
+        toValue: 1,
+        friction: 4,
+        tension: 140,
+        useNativeDriver: true,
+      }).start();
+    }
+    prevFavorite.current = isFavorite;
+  }, [isFavorite, heartScale]);
+
   useEffect(() => {
     if (dismissing) {
       Animated.parallel([
@@ -200,12 +218,14 @@ export function MapBottomCard({
             <Text style={styles.title} numberOfLines={2}>{title}</Text>
             {onToggleFavorite ? (
               <Pressable onPress={onToggleFavorite} hitSlop={10} style={styles.heartBtn}>
-                <Heart
-                  size={17}
-                  color="#0a8050"
-                  fill={isFavorite ? "#0a8050" : "none"}
-                  strokeWidth={2.1}
-                />
+                <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+                  <Heart
+                    size={17}
+                    color="#0a8050"
+                    fill={isFavorite ? "#0a8050" : "none"}
+                    strokeWidth={2.1}
+                  />
+                </Animated.View>
               </Pressable>
             ) : null}
           </View>

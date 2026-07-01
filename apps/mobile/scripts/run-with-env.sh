@@ -65,4 +65,26 @@ if [[ "$*" == *"expo run:android"* ]]; then
   fi
 fi
 
-exec "$@"
+# The `local` flow already sources from .env.local.source, so .env.local is the
+# local env — nothing to restore. Keep exec so the long-running dev server owns
+# the process (unchanged behaviour).
+if [ "$ENV_NAME" = "local" ]; then
+  exec "$@"
+fi
+
+# For any remote env (dev/qa/production) we clobbered .env.local above. Restore it
+# to the local env when the command finishes — otherwise the working tree is left
+# pointing at a remote API/DB and the next `npm run dev:local` silently talks to it.
+restore_local_env() {
+  if [ -f .env.local.source ]; then
+    cp .env.local.source .env.local
+    echo "[env] restored .env.local -> local (from .env.local.source)"
+  fi
+}
+trap restore_local_env EXIT INT TERM
+
+set +e
+"$@"
+status=$?
+set -e
+exit "$status"
