@@ -17,7 +17,6 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Constants from "expo-constants";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import { AnimatedSplash } from "./components/AnimatedSplash";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { enableScreens } from "react-native-screens";
@@ -67,7 +66,6 @@ import { mobileEnv } from "./env";
 import { installGlobalErrorLogging, logWarn } from "./logger";
 import { initPostHog } from "./posthog";
 import { colors } from "./theme/colors";
-import { radius, spacing as appSpacing } from "./styles/theme";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -210,13 +208,6 @@ function AppShell() {
   const { user, legalPromptRequired } = useAuth();
   const requiresLegal = !!user && (!user.termsVersion || !user.privacyVersion);
   const shouldShowLegalGate = requiresLegal && legalPromptRequired;
-  const runtimeAppEnv =
-    (Constants.expoConfig as { extra?: { appEnv?: string } } | null)?.extra?.appEnv ??
-    process.env.APP_ENV ??
-    (__DEV__ ? "local" : "production");
-  const normalizedAppEnv = runtimeAppEnv.trim().toLowerCase();
-  const showEnvBadge = normalizedAppEnv !== "production";
-  const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingResolved, setOnboardingResolved] = useState(false);
 
@@ -238,28 +229,14 @@ function AppShell() {
     <>
       <SplashController />
       {onboardingResolved && !showOnboarding ? <AppNavigator /> : null}
-      {showAnimatedSplash && (
-        <AnimatedSplash onFinish={() => setShowAnimatedSplash(false)} />
-      )}
-      {showOnboarding && !showAnimatedSplash ? (
+      {showOnboarding ? (
         <OnboardingPermissions onComplete={handleOnboardingComplete} />
       ) : null}
       <AuthToastBridge />
-      {showEnvBadge ? <EnvironmentBadge env={normalizedAppEnv} /> : null}
       {shouldShowLegalGate ? <LegalGate /> : null}
       <GlobalLoadingOverlay />
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
     </>
-  );
-}
-
-function EnvironmentBadge({ env }: { env: string }) {
-  const insets = useSafeAreaInsets();
-
-  return (
-    <View style={[styles.envBadge, { top: Math.max(8, insets.top + 6) }]}>
-      <Text style={styles.envBadgeText}>{env.toUpperCase()}</Text>
-    </View>
   );
 }
 
@@ -799,22 +776,6 @@ const styles = StyleSheet.create({
   app: {
     flex: 1,
     backgroundColor: "#FCFCFB",
-  },
-  envBadge: {
-    backgroundColor: "#111827",
-    borderRadius: radius.pill,
-    opacity: 0.9,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    position: "absolute",
-    right: appSpacing.screenX,
-    zIndex: 999,
-  },
-  envBadgeText: {
-    color: colors.text.inverse,
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.5,
   },
   tabBarChrome: {
     ...StyleSheet.absoluteFillObject,

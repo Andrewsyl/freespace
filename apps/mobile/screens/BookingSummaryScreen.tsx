@@ -3,12 +3,10 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
-  Animated,
   BackHandler,
   Platform,
   KeyboardAvoidingView,
   Linking,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,8 +21,8 @@ import Svg, { Path } from "react-native-svg";
 import { useStripe } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
 import { Ionicons } from "@expo/vector-icons";
-import { DrumRollPicker } from "../components/DrumRollPicker";
 import { SquircleBtn } from "../components/SquircleBtn";
+import { ModernTimePickerSheet, addMinutes, roundUpToMinuteInterval } from "../components/ModernTimePickerSheet";
 import { ArrowLeft, CircleX, Info, Lock, RefreshCw, ShieldCheck } from "lucide-react-native";
 import {
   confirmBookingPayment,
@@ -102,13 +100,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
     }
     return rawEnd;
   });
-  const [pickerOverlayVisible, setPickerOverlayVisible] = useState(false);
-  const pickerBackdropOpacity = useRef(new Animated.Value(0)).current;
-  const pickerSheetTranslateY = useRef(new Animated.Value(320)).current;
+  const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerField, setPickerField] = useState<"start" | "end">("start");
-  const [pickerInitialDate, setPickerInitialDate] = useState<Date | null>(null);
-  const draftDateRef = useRef<Date | null>(null);
-  const pickerClosingRef = useRef(false);
   const { reset: resetGlobalLoading } = useGlobalLoading();
 
   useToastOnMessage(error, { variant: "danger" });
@@ -321,49 +314,32 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   }, [endAt, startAt]);
 
   const openPicker = useCallback((field: "start" | "end") => {
-    const current = field === "start" ? startAt : endAt;
-    draftDateRef.current = current;
-    pickerClosingRef.current = false;
-    pickerBackdropOpacity.stopAnimation();
-    pickerSheetTranslateY.stopAnimation();
-    pickerBackdropOpacity.setValue(0);
-    pickerSheetTranslateY.setValue(260);
     setPickerField(field);
-    setPickerInitialDate(current);
-    setPickerOverlayVisible(true);
-    requestAnimationFrame(() => {
-      Animated.parallel([
-        Animated.timing(pickerBackdropOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(pickerSheetTranslateY, {
-          toValue: 0,
-          tension: 95,
-          friction: 13,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    });
-  }, [endAt, pickerBackdropOpacity, pickerSheetTranslateY, startAt]);
+    setPickerVisible(true);
+  }, []);
 
-  const closePicker = useCallback((commit: boolean) => {
-    if (pickerClosingRef.current) return;
-    const next = commit ? draftDateRef.current : null;
-    const field = pickerField;
-    pickerClosingRef.current = true;
-    pickerBackdropOpacity.stopAnimation();
-    pickerSheetTranslateY.stopAnimation();
-    Animated.parallel([
-      Animated.timing(pickerBackdropOpacity, { toValue: 0, duration: 90, useNativeDriver: true }),
-      Animated.timing(pickerSheetTranslateY, { toValue: 260, duration: 90, useNativeDriver: true }),
-    ]).start(() => {
-      setPickerOverlayVisible(false);
-      setPickerInitialDate(null);
-      draftDateRef.current = null;
-      pickerClosingRef.current = false;
-      if (next) {
-        applyPickedDate(field, next);
-      }
-    });
-  }, [applyPickedDate, pickerBackdropOpacity, pickerField, pickerSheetTranslateY]);
+  const pickerMinimumDate = useMemo(
+    () =>
+      pickerField === "start"
+        ? roundUpToMinuteInterval(new Date(), 5)
+        : addMinutes(startAt, 60),
+    [pickerField, startAt]
+  );
+
+  const pickerQuickOptions = useMemo(() => {
+    if (pickerField === "end") {
+      return [1, 2, 4, 8].map((hours) => ({
+        label: `${hours}h`,
+        value: addMinutes(startAt, hours * 60),
+      }));
+    }
+    const now = roundUpToMinuteInterval(new Date(), 5);
+    return [
+      { label: "Now", value: now },
+      { label: "+30m", value: addMinutes(now, 30) },
+      { label: "+1h", value: addMinutes(now, 60) },
+    ];
+  }, [pickerField, startAt]);
 
   const isAmbiguousPaymentSheetResultError = (message?: string | null) =>
     typeof message === "string" &&
@@ -1029,32 +1005,21 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         </View>
       ) : null}
 
-      <Modal transparent animationType="none" visible={pickerOverlayVisible} onRequestClose={() => closePicker(false)}>
-        <View style={{ flex: 1 }}>
-          <Animated.View style={[StyleSheet.absoluteFill, styles.pickerBackdropLayer, { opacity: pickerBackdropOpacity }]}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={() => closePicker(false)} />
-          </Animated.View>
-          <Animated.View style={[styles.pickerSheet, { paddingBottom: Math.max(24, insets.bottom + 12), transform: [{ translateY: pickerSheetTranslateY }] }]}>
-            <View style={styles.pickerHandle} />
-            <Text style={styles.pickerTitle}>
-              {pickerField === "start" ? "Select arrival time" : "Select departure time"}
-            </Text>
-            <DrumRollPicker
-              date={pickerInitialDate ?? (pickerField === "start" ? start : end)}
-              minuteInterval={5}
-              onChange={(d) => {
-                draftDateRef.current = d;
-              }}
-            />
-            <SquircleBtn
-              label="Done"
-              onPress={() => closePicker(true)}
-              fullWidth
-              style={{ marginHorizontal: 20, marginTop: 16 }}
-            />
-          </Animated.View>
-        </View>
-      </Modal>
+      <ModernTimePickerSheet
+        visible={pickerVisible}
+        title={pickerField === "start" ? "Arrival time" : "Departure time"}
+        subtitle={pickerField === "end" ? `Arriving ${formatTimeLabel(startAt)}` : "Pick a date, hour and minute."}
+        value={pickerField === "start" ? start : end}
+        minimumDate={pickerMinimumDate}
+        minuteInterval={5}
+        quickOptions={pickerQuickOptions}
+        confirmLabel={pickerField === "start" ? "Use arrival" : "Use departure"}
+        onCancel={() => setPickerVisible(false)}
+        onConfirm={(next) => {
+          applyPickedDate(pickerField, next);
+          setPickerVisible(false);
+        }}
+      />
       {bookingConfirmed ? <View style={styles.successOverlay} pointerEvents="none" /> : null}
     </SafeAreaView>
   );

@@ -190,8 +190,26 @@ export async function listFavorites(token: string) {
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, "Favorites failed"));
   }
-  const payload = (await response.json()) as { favorites?: ListingSummary[] };
-  return payload.favorites ?? [];
+  // The favorites endpoint returns camelCase fields (imageUrls, ratingCount, …);
+  // normalize to the snake_case ListingSummary shape the app reads, like the other
+  // list endpoints do — otherwise images/ratings/prices come back empty.
+  const payload = (await response.json()) as { favorites?: any[] };
+  return (payload.favorites ?? []).map((fav: any) => ({
+    id: fav.id,
+    title: fav.title,
+    address: fav.address,
+    price_per_day: fav.price_per_day ?? fav.pricePerDay,
+    price_per_hour: fav.price_per_hour ?? fav.pricePerHour ?? null,
+    price_per_month: fav.price_per_month ?? fav.pricePerMonth ?? null,
+    rate_type: fav.rate_type ?? fav.rateType ?? null,
+    rating: fav.rating ?? null,
+    rating_count: fav.rating_count ?? fav.ratingCount ?? null,
+    availability_text: fav.availability_text ?? fav.availability ?? null,
+    amenities: fav.amenities ?? null,
+    latitude: fav.latitude ?? null,
+    longitude: fav.longitude ?? null,
+    image_urls: fav.image_urls ?? fav.imageUrls ?? null,
+  })) as ListingSummary[];
 }
 
 export async function addFavorite(token: string, listingId: string) {

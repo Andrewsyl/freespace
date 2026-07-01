@@ -10,16 +10,19 @@ APP_JSON="$MOBILE_DIR/app.json"
 # ── Keystore credentials ─────────────────────────────────────────────────────
 
 load_keystore_credentials() {
+  if [ -f "$DEFAULT_CREDENTIALS_JSON" ] && [ "${PREFER_ENV_ANDROID_UPLOAD_CREDENTIALS:-0}" != "1" ]; then
+    local creds
+    creds="$(node -e "const fs=require('fs'); const p=process.argv[1]; const data=JSON.parse(fs.readFileSync(p,'utf8')); const k=data && data.android && data.android.keystore; if (!k) process.exit(2); process.stdout.write([k.keystorePath,k.keystorePassword,k.keyAlias,k.keyPassword].join('\n'));" "$DEFAULT_CREDENTIALS_JSON")" || return 1
+    ANDROID_UPLOAD_STORE_FILE="$(printf '%s' "$creds" | sed -n '1p')"
+    ANDROID_UPLOAD_STORE_PASSWORD="$(printf '%s' "$creds" | sed -n '2p')"
+    ANDROID_UPLOAD_KEY_ALIAS="$(printf '%s' "$creds" | sed -n '3p')"
+    ANDROID_UPLOAD_KEY_PASSWORD="$(printf '%s' "$creds" | sed -n '4p')"
+    export ANDROID_UPLOAD_STORE_FILE ANDROID_UPLOAD_STORE_PASSWORD ANDROID_UPLOAD_KEY_ALIAS ANDROID_UPLOAD_KEY_PASSWORD
+    return 0
+  fi
+
   if [ -z "${ANDROID_UPLOAD_STORE_FILE:-}" ] || [ -z "${ANDROID_UPLOAD_STORE_PASSWORD:-}" ] || [ -z "${ANDROID_UPLOAD_KEY_ALIAS:-}" ] || [ -z "${ANDROID_UPLOAD_KEY_PASSWORD:-}" ]; then
-    if [ -f "$DEFAULT_CREDENTIALS_JSON" ]; then
-      local creds
-      creds="$(node -e "const fs=require('fs'); const p=process.argv[1]; const data=JSON.parse(fs.readFileSync(p,'utf8')); const k=data && data.android && data.android.keystore; if (!k) process.exit(2); process.stdout.write([k.keystorePath,k.keystorePassword,k.keyAlias,k.keyPassword].join('\n'));" "$DEFAULT_CREDENTIALS_JSON")" || return 1
-      ANDROID_UPLOAD_STORE_FILE="${ANDROID_UPLOAD_STORE_FILE:-$(printf '%s' "$creds" | sed -n '1p')}"
-      ANDROID_UPLOAD_STORE_PASSWORD="${ANDROID_UPLOAD_STORE_PASSWORD:-$(printf '%s' "$creds" | sed -n '2p')}"
-      ANDROID_UPLOAD_KEY_ALIAS="${ANDROID_UPLOAD_KEY_ALIAS:-$(printf '%s' "$creds" | sed -n '3p')}"
-      ANDROID_UPLOAD_KEY_PASSWORD="${ANDROID_UPLOAD_KEY_PASSWORD:-$(printf '%s' "$creds" | sed -n '4p')}"
-      export ANDROID_UPLOAD_STORE_FILE ANDROID_UPLOAD_STORE_PASSWORD ANDROID_UPLOAD_KEY_ALIAS ANDROID_UPLOAD_KEY_PASSWORD
-    fi
+    return 1
   fi
 }
 

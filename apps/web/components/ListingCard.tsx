@@ -161,10 +161,10 @@ export function ListingCard({
   return (
     <article
       className={clsx(
-        "group flex items-stretch overflow-hidden rounded-xl border bg-white transition-all duration-200",
+        "group flex items-stretch overflow-hidden rounded-xl border bg-white",
         selected
           ? "border-brand-400 shadow-[0_0_0_3px_rgba(22,163,74,0.12),0_4px_16px_rgba(15,23,42,0.10)] ring-0"
-          : "border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-[0_4px_20px_rgba(15,23,42,0.10)] hover:-translate-y-px"
+          : "border-slate-200 shadow-sm"
       )}
     >
       {/* ── Image — full card height ── */}
@@ -173,7 +173,7 @@ export function ListingCard({
           src={imageSrc}
           alt={listing.title}
           fill
-          className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          className="object-cover"
           sizes="160px"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />

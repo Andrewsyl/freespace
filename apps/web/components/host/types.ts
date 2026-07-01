@@ -19,6 +19,8 @@ export type HostListingDraft = {
   pricePerMonth?: number;
   amenities: string[];
   imageUrls: string[];
+  /** Set once the Street View cover has been seeded into imageUrls on the photos step. */
+  coverInjected?: boolean;
 };
 
 export type HostStepProps = {

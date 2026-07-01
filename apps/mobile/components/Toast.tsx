@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native";
 import { CircleCheck, Info, TriangleAlert, X, type LucideIcon } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { cardShadow, colors, radius, spacing } from "../styles/theme";
@@ -28,26 +28,54 @@ export function Toast({
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(-18)).current;
   const opacity = useRef(new Animated.Value(0)).current;
+  // Keep the toast mounted through its exit animation. Driven off `visible` so a
+  // hide fades/slides out instead of snapping to null, and a re-show always starts
+  // from the hidden values (set below) so it never flashes at full opacity first.
+  const [rendered, setRendered] = useState(false);
 
   useEffect(() => {
-    if (!visible) return;
-    translateY.setValue(-18);
-    opacity.setValue(0);
-    Animated.parallel([
+    if (visible) {
+      setRendered(true);
+      translateY.setValue(-18);
+      opacity.setValue(0);
+      const anim = Animated.parallel([
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 260,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 220,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]);
+      anim.start();
+      return () => anim.stop();
+    }
+    const anim = Animated.parallel([
       Animated.timing(translateY, {
-        toValue: 0,
-        duration: 220,
+        toValue: -18,
+        duration: 200,
+        easing: Easing.in(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
-        toValue: 1,
-        duration: 200,
+        toValue: 0,
+        duration: 180,
+        easing: Easing.in(Easing.quad),
         useNativeDriver: true,
       }),
-    ]).start();
+    ]);
+    anim.start(({ finished }) => {
+      if (finished) setRendered(false);
+    });
+    return () => anim.stop();
   }, [visible, opacity, toastKey, translateY]);
 
-  if (!visible) return null;
+  if (!rendered) return null;
 
   const tone = variantStyles[variant];
   const ToneIcon = tone.icon;

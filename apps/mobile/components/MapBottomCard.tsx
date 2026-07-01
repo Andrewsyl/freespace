@@ -89,7 +89,7 @@ const FEATURE_ICONS = {
   wide: Maximize2,
 } as const;
 
-function FeatureChip({ label }: { label: string }) {
+export function FeatureChip({ label }: { label: string }) {
   const iconType = getFeatureIconType(label);
   const Icon = FEATURE_ICONS[iconType];
   return (
@@ -197,7 +197,7 @@ export function MapBottomCard({
         {/* ── Content ───────────────────────────────────────── */}
         <View style={styles.content}>
           <View style={styles.titleRow}>
-            <Text style={styles.title} numberOfLines={1}>{title}</Text>
+            <Text style={styles.title} numberOfLines={2}>{title}</Text>
             {onToggleFavorite ? (
               <Pressable onPress={onToggleFavorite} hitSlop={10} style={styles.heartBtn}>
                 <Heart

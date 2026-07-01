@@ -38,11 +38,23 @@ launch_android_dev_client() {
         else
           echo "[dev-client] Could not auto-open Android dev client. If the app is not installed, run: npm run android:local"
         fi
-        exit 0
+        break
       fi
       sleep 1
     done
-    echo "[dev-client] Metro never became reachable on port 8081."
+  ) &
+
+  # adb reverse only survives until the USB/adb transport blips (screen lock, cable
+  # reseat, wifi-adb hiccup) — it is not re-applied automatically. Without this,
+  # a physical device silently loses the tcp:4000 tunnel mid-session and every
+  # request after that fails with "Network request failed" until Metro restarts.
+  # Keep re-asserting it for the life of the Metro process so a drop self-heals.
+  (
+    while true; do
+      adb reverse tcp:8081 tcp:8081 >/dev/null 2>&1 || true
+      adb reverse tcp:4000 tcp:4000 >/dev/null 2>&1 || true
+      sleep 5
+    done
   ) &
 }
 

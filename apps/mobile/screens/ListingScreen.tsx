@@ -19,15 +19,17 @@ import {
   View,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import { useMarkerTracksUntilPainted } from "../components/useMarkerTracksUntilPainted";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { trackEvent } from "../analytics";
-import { DrumRollPicker } from "../components/DrumRollPicker";
+import { ModernTimePickerSheet, addMinutes, roundUpToMinuteInterval } from "../components/ModernTimePickerSheet";
 import { colors, radius, spacing } from "../styles/theme";
 import { getListing, listListingReviews, type ListingReview } from "../api";
 import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
+import { useGlobalToast } from "../components/GlobalToast";
 import { LIGHT_MAP_STYLE } from "../components/mapStyles";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
@@ -98,6 +100,21 @@ function ListingLocationPin() {
   );
 }
 
+// Tracks until the pin view has painted, then freezes — prevents the default red
+// pin from flashing while the custom marker composites.
+function ListingLocationMarker({ latitude, longitude }: { latitude: number; longitude: number }) {
+  const tracks = useMarkerTracksUntilPainted(`${latitude},${longitude}`);
+  return (
+    <Marker
+      coordinate={{ latitude, longitude }}
+      anchor={{ x: 0.5, y: 0.96 }}
+      tracksViewChanges={tracks}
+    >
+      <ListingLocationPin />
+    </Marker>
+  );
+}
+
 const getFeatureIconType = (label: string) => {
   const n = label.toLowerCase();
   if (n.includes("low") || n.includes("clearance") || n.includes("height")) return "low";
@@ -148,6 +165,8 @@ export function ListingScreen({ navigation, route }: Props) {
   const { id, from, to, booking } = route.params;
   const { user, loginWithOAuth } = useAuth();
   const { isFavorite, toggle } = useFavorites();
+  const toast = useGlobalToast();
+  const heartScale = useRef(new Animated.Value(1)).current;
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
 
@@ -171,16 +190,11 @@ export function ListingScreen({ navigation, route }: Props) {
   const [startAt, setStartAt] = useState(() => new Date(from));
   const [endAt, setEndAt] = useState(() => new Date(to));
   const [pickerVisible, setPickerVisible] = useState(false);
-  const [pickerOverlayVisible, setPickerOverlayVisible] = useState(false);
-  const pickerBackdropOpacity = useRef(new Animated.Value(0)).current;
-  const pickerSheetTranslateY = useRef(new Animated.Value(320)).current;
-  const pickerClosingRef = useRef(false);
   const [heroTapEnabled, setHeroTapEnabled] = useState(true);
   const heroTapEnabledRef = useRef(true);
   const authBackdropOpacity = useRef(new Animated.Value(0)).current;
   const authSheetTranslateY = useRef(new Animated.Value(320)).current;
   const [pickerField, setPickerField] = useState<"start" | "end">("start");
-  const [draftDate, setDraftDate] = useState<Date | null>(null);
 
   const streetViewLocation =
     listing?.latitude && listing?.longitude
@@ -292,48 +306,6 @@ export function ListingScreen({ navigation, route }: Props) {
     });
   }, [authBackdropOpacity, authOverlayVisible, authSheetTranslateY, showAuthModal]);
 
-  const closePicker = () => {
-    if (!pickerOverlayVisible || pickerClosingRef.current) {
-      setPickerVisible(false);
-      setDraftDate(null);
-      return;
-    }
-    pickerClosingRef.current = true;
-    setPickerVisible(false);
-    Animated.parallel([
-      Animated.timing(pickerBackdropOpacity, {
-        toValue: 0,
-        duration: 90,
-        useNativeDriver: true,
-      }),
-      Animated.timing(pickerSheetTranslateY, {
-        toValue: 320,
-        duration: 105,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      pickerClosingRef.current = false;
-      setPickerOverlayVisible(false);
-      setDraftDate(null);
-    });
-  };
-
-  useEffect(() => {
-    if (!pickerVisible) return;
-    pickerClosingRef.current = false;
-    pickerBackdropOpacity.setValue(0);
-    pickerSheetTranslateY.setValue(320);
-    setPickerOverlayVisible(true);
-  }, [pickerVisible, pickerBackdropOpacity, pickerSheetTranslateY]);
-
-  useEffect(() => {
-    if (!pickerOverlayVisible) return;
-    Animated.parallel([
-      Animated.timing(pickerBackdropOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
-      Animated.spring(pickerSheetTranslateY, { toValue: 0, tension: 72, friction: 10, useNativeDriver: true }),
-    ]).start();
-  }, [pickerOverlayVisible, pickerBackdropOpacity, pickerSheetTranslateY]);
-
   useEffect(() => {
     let active = true;
     const loadReviews = async () => {
@@ -362,7 +334,6 @@ export function ListingScreen({ navigation, route }: Props) {
 
   const openPicker = (field: "start" | "end") => {
     setPickerField(field);
-    setDraftDate(field === "start" ? startAt : endAt);
     setPickerVisible(true);
   };
 
@@ -386,6 +357,14 @@ export function ListingScreen({ navigation, route }: Props) {
     setEndAt(safeEnd);
     return safeEnd;
   };
+
+  const pickerMinimumDate = useMemo(
+    () =>
+      pickerField === "start"
+        ? roundUpToMinuteInterval(new Date(), 5)
+        : addMinutes(startAt, 60),
+    [pickerField, startAt]
+  );
 
   const imageUrls = useMemo(() => {
     if (listing?.image_urls?.length) return listing.image_urls;
@@ -519,7 +498,26 @@ export function ListingScreen({ navigation, route }: Props) {
     if (!listing) return;
     if (!user) { navigation.navigate("Welcome", { returnTo: { screen: "Listing" as const, params: { id, from: startAt.toISOString(), to: endAt.toISOString() } } }); return; }
     const wasFavorite = isFavorite(id);
-    await toggle(listing);
+    if (!wasFavorite) {
+      heartScale.stopAnimation();
+      heartScale.setValue(0.6);
+      Animated.spring(heartScale, {
+        toValue: 1,
+        friction: 4,
+        tension: 140,
+        useNativeDriver: true,
+      }).start();
+    }
+    try {
+      await toggle(listing);
+      if (wasFavorite) {
+        toast.show("Removed from favourites");
+      } else {
+        toast.showSuccess("Saved to favourites");
+      }
+    } catch {
+      // toggle already surfaces its own errors; don't show a success toast on failure
+    }
   };
 
   const handleShare = async () => {
@@ -701,12 +699,14 @@ export function ListingScreen({ navigation, route }: Props) {
                     <Share2 size={18} color="#fff" strokeWidth={2.1} />
                   </Pressable>
                   <Pressable style={styles.glassBtn} onPress={handleToggleFavorite}>
-                    <Heart
-                      size={18}
-                      color={isFavorite(id) ? "#FF6B6B" : "#fff"}
-                      fill={isFavorite(id) ? "#FF6B6B" : "none"}
-                      strokeWidth={2.1}
-                    />
+                    <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+                      <Heart
+                        size={18}
+                        color={isFavorite(id) ? "#0a8050" : "#fff"}
+                        fill={isFavorite(id) ? "#0a8050" : "none"}
+                        strokeWidth={2.1}
+                      />
+                    </Animated.View>
                   </Pressable>
                 </View>
             </View>
@@ -884,13 +884,7 @@ export function ListingScreen({ navigation, route }: Props) {
                         customMapStyle={LIGHT_MAP_STYLE}
                         onMapReady={() => setMapReady(true)}
                       >
-                        <Marker
-                          coordinate={{ latitude, longitude }}
-                          anchor={{ x: 0.5, y: 0.96 }}
-                          tracksViewChanges={false}
-                        >
-                          <ListingLocationPin />
-                        </Marker>
+                        <ListingLocationMarker latitude={latitude} longitude={longitude} />
                       </MapView>
                       {!mapReady && (
                         <SkeletonBlock
@@ -1073,38 +1067,18 @@ export function ListingScreen({ navigation, route }: Props) {
         ) : null}
       </SafeAreaView>
 
-      {/* Date picker modal */}
-      <Modal transparent animationType="none" visible={pickerOverlayVisible} onRequestClose={closePicker}>
-        <View style={{ flex: 1 }}>
-          <Animated.View style={[StyleSheet.absoluteFill, styles.pickerBackdropLayer, { opacity: pickerBackdropOpacity }]}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={closePicker} />
-          </Animated.View>
-          <Animated.View style={[styles.pickerSheet, { paddingBottom: Math.max(24, insets.bottom + 12), transform: [{ translateY: pickerSheetTranslateY }] }]}>
-            <View style={styles.pickerHandle} />
-            <Text style={styles.pickerTitle}>
-              {pickerField === "start" ? "Select arrival time" : "Select departure time"}
-            </Text>
-            <DrumRollPicker
-              key={pickerField}
-              date={draftDate ?? (pickerField === "start" ? startAt : endAt)}
-              minuteInterval={5}
-              onChange={(d) => setDraftDate(d)}
-            />
-            <Pressable
-              style={styles.pickerDoneBtn}
-              hitSlop={6}
-              pressRetentionOffset={10}
-              onPress={() => {
-                const picked = draftDate ?? (pickerField === "start" ? startAt : endAt);
-                applyPickedDate(picked);
-                closePicker();
-              }}
-            >
-              <Text style={styles.pickerDoneBtnText}>Done</Text>
-            </Pressable>
-          </Animated.View>
-        </View>
-      </Modal>
+      <ModernTimePickerSheet
+        visible={pickerVisible}
+        value={pickerField === "start" ? startAt : endAt}
+        minimumDate={pickerMinimumDate}
+        minuteInterval={5}
+        confirmLabel={pickerField === "start" ? "Use arrival" : "Use departure"}
+        onCancel={() => setPickerVisible(false)}
+        onConfirm={(next) => {
+          applyPickedDate(next);
+          setPickerVisible(false);
+        }}
+      />
 
       <Modal transparent animationType="none" visible={authOverlayVisible} onRequestClose={closeAuthOverlay}>
         <View style={styles.authModalRoot} pointerEvents="box-none">
@@ -1235,13 +1209,7 @@ export function ListingScreen({ navigation, route }: Props) {
             customMapStyle={LIGHT_MAP_STYLE}
           >
             {hasCoordinates ? (
-              <Marker
-                coordinate={{ latitude: latitude!, longitude: longitude! }}
-                anchor={{ x: 0.5, y: 0.96 }}
-                tracksViewChanges={false}
-              >
-                <ListingLocationPin />
-              </Marker>
+              <ListingLocationMarker latitude={latitude!} longitude={longitude!} />
             ) : null}
           </MapView>
           <Pressable
@@ -1260,15 +1228,15 @@ export function ListingScreen({ navigation, route }: Props) {
 // Design tokens (spec)
 const GREEN      = "#0a8050";
 const GREEN_SOFT = "#edf7f2";
-const FG         = "#111827";
-const FG_2       = "#374151";
-const FG_MUTED   = FG_2;        // alias — was a duplicate of FG_2 (#374151)
-const FG_SUBTLE  = "#4b5563";
-const LINE       = "#C4CCD5";   // card / control borders
+const FG         = "#0B0F19";   // primary text — near-black
+const FG_2       = "#2C3644";   // secondary text — darker, still clearly secondary
+const FG_MUTED   = FG_2;        // alias of FG_2 (secondary text)
+const FG_SUBTLE  = "#404A57";   // labels / meta — slightly stronger
+const LINE       = "#B6C0CC";   // card / control borders — more defined, still subtle
 const LINE_2     = LINE;        // alias — was a duplicate of LINE
-const DIVIDER    = "#EBEBEB";   // section + row separators
-const BG_2       = "#F7F7F6";   // single neutral fill (chips, fields, soft cards)
-const FG_BODY    = "#334155";   // single body-copy colour
+const DIVIDER    = "#E2E4E7";   // section + row separators — a touch stronger
+const BG_2       = "#E2E6EA";   // single neutral fill (chips, fields, soft cards) — defined light grey, not washed out
+const FG_BODY    = "#2C3847";   // single body-copy colour — higher contrast
 const GREEN_DARK = "#0a6a40";   // green text on light fills (AA contrast)
 const HANDLE     = "#D9DCE0";   // grab handles (sheets, pickers)
 

@@ -314,7 +314,7 @@ export function SearchForm({
           <div className="grid grid-cols-[minmax(0,1fr)_302px_302px] gap-3">
             <div className="flex min-w-0 items-stretch rounded-md border border-[#d5dbe3] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.08)]">
               <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-2.5">
-                <p className="mb-0.5 text-[12px] font-medium text-[#2cad49]">Park at</p>
+                <p className="mb-0.5 text-[12px] font-medium text-[#2cad49]">Where</p>
                 <AddressAutocomplete
                   defaultValue={state.location}
                   placeholder="Enter area or landmark"

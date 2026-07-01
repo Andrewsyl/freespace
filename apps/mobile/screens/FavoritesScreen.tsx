@@ -1,19 +1,116 @@
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SkeletonBlock, usePulse } from "../components/ui";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
-import { colors, radius, spacing } from "../styles/theme";
-import type { RootStackParamList } from "../types";
-import { ArrowLeft, Heart, MapPin, ShieldCheck } from "lucide-react-native";
+import { colors, spacing } from "../styles/theme";
+import type { ListingSummary, RootStackParamList } from "../types";
+import { ArrowLeft, CarFront, Heart, MapPin, ShieldCheck, Star } from "lucide-react-native";
+import { FeatureChip } from "../components/MapBottomCard";
 import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Favorites">;
 
+function formatMoney(value: number | string | null | undefined): string | null {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  return Number.isInteger(n) ? `${n}` : n.toFixed(2);
+}
+
+function priceLabel(item: ListingSummary): { value: string; unit: string } | null {
+  const hour = formatMoney(item.price_per_hour);
+  const day = formatMoney(item.price_per_day);
+  const month = formatMoney(item.price_per_month);
+  if (item.rate_type === "hourly" && hour != null) return { value: `€${hour}`, unit: "/hr" };
+  if (day != null) return { value: `€${day}`, unit: "/day" };
+  if (hour != null) return { value: `€${hour}`, unit: "/hr" };
+  if (month != null) return { value: `€${month}`, unit: "/mo" };
+  return null;
+}
+
+function FavoriteCard({
+  item,
+  onOpen,
+  onUnsave,
+}: {
+  item: ListingSummary;
+  onOpen: () => void;
+  onUnsave: () => void;
+}) {
+  const ratingValue = Number(item.rating);
+  const ratingCount = Number(item.rating_count);
+  const hasRating =
+    Number.isFinite(ratingValue) && ratingValue > 0 && Number.isFinite(ratingCount) && ratingCount > 0;
+  const price = priceLabel(item);
+  const amenities = Array.from(
+    new Set((item.amenities ?? []).filter(Boolean))
+  ).slice(0, 3);
+  const image = item.image_urls?.[0];
+
+  return (
+    <Pressable style={styles.card} onPress={onOpen}>
+      <View style={styles.cardImageWrap}>
+        {image ? (
+          <Image source={{ uri: image }} style={styles.cardImage} resizeMode="cover" />
+        ) : (
+          <View style={styles.cardImageFallback}>
+            <CarFront size={30} color="#b0bac4" strokeWidth={1.7} />
+          </View>
+        )}
+        <Pressable
+          onPress={onUnsave}
+          hitSlop={10}
+          style={styles.heartBtn}
+          accessibilityLabel="Remove from favourites"
+        >
+          <Heart size={18} color="#0a8050" fill="#0a8050" strokeWidth={2} />
+        </Pressable>
+      </View>
+
+      <View style={styles.cardBody}>
+        <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+
+        {hasRating ? (
+          <View style={styles.cardRatingRow}>
+            <Star size={13} color="#F4B942" fill="#F4B942" strokeWidth={2} />
+            <Text style={styles.cardRating}>{ratingValue.toFixed(1)}</Text>
+            <Text style={styles.cardRatingCount}>
+              · {ratingCount} {ratingCount === 1 ? "review" : "reviews"}
+            </Text>
+          </View>
+        ) : null}
+
+        <View style={styles.cardAddrRow}>
+          <MapPin size={13} color="#94a3b8" strokeWidth={2} />
+          <Text style={styles.cardAddr} numberOfLines={1}>{item.address}</Text>
+        </View>
+
+        <View style={styles.cardFooter}>
+          {price ? (
+            <Text style={styles.cardPrice}>
+              {price.value}
+              <Text style={styles.cardPriceUnit}>{price.unit}</Text>
+            </Text>
+          ) : (
+            <View />
+          )}
+          {amenities.length > 0 ? (
+            <View style={styles.chipRow}>
+              {amenities.map((a) => (
+                <FeatureChip key={a} label={a} />
+              ))}
+            </View>
+          ) : null}
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 export function FavoritesScreen({ navigation }: Props) {
   const { user } = useAuth();
-  const { favorites, loading, error, refresh } = useFavorites();
+  const { favorites, loading, error, refresh, remove } = useFavorites();
   const skeletonPulse = usePulse();
 
   if (!user) {
@@ -24,8 +121,8 @@ export function FavoritesScreen({ navigation }: Props) {
             <View style={styles.gatedIconWrap}>
               <Heart size={24} color="#0a8050" strokeWidth={2.2} />
             </View>
-            <Text style={styles.title}>Favourites</Text>
-            <Text style={styles.subtitle}>Save spaces you trust and come back to them in one tap.</Text>
+            <Text style={styles.gatedTitle}>Save your favourite spaces</Text>
+            <Text style={styles.subtitle}>Sign in to keep the spaces you trust one tap away.</Text>
             <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
               <Text style={styles.primaryButtonText}>Sign in</Text>
             </Pressable>
@@ -59,7 +156,18 @@ export function FavoritesScreen({ navigation }: Props) {
         <View style={styles.navSpacer} />
       </View>
       <View style={styles.contentWrapper}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading && favorites.length > 0}
+              onRefresh={() => void refresh()}
+              tintColor="#0a8050"
+              colors={["#0a8050"]}
+            />
+          }
+        >
           {error ? (
             <View style={styles.errorRow}>
               <Text style={styles.error}>{error}</Text>
@@ -68,23 +176,31 @@ export function FavoritesScreen({ navigation }: Props) {
               </Pressable>
             </View>
           ) : null}
-          {loading ? (
-            <View style={styles.skeletonList}>
-              {[0, 1, 2, 3].map((i) => (
-                <View key={i} style={styles.skeletonRow}>
-                  <SkeletonBlock width={44} height={44} borderRadius={10} pulse={skeletonPulse} />
-                  <View style={styles.skeletonCopy}>
-                    <SkeletonBlock width="62%" height={14} pulse={skeletonPulse} />
-                    <SkeletonBlock width="45%" height={11} pulse={skeletonPulse} style={{ marginTop: 7 }} />
+
+          {loading && favorites.length === 0 ? (
+            <View style={styles.list}>
+              {[0, 1, 2].map((i) => (
+                <View key={i} style={styles.skeletonCard}>
+                  <SkeletonBlock width="100%" height={160} borderRadius={0} pulse={skeletonPulse} />
+                  <View style={styles.skeletonBody}>
+                    <SkeletonBlock width="72%" height={16} pulse={skeletonPulse} />
+                    <SkeletonBlock width="46%" height={12} pulse={skeletonPulse} style={{ marginTop: 10 }} />
+                    <SkeletonBlock width="34%" height={16} pulse={skeletonPulse} style={{ marginTop: 12 }} />
                   </View>
                 </View>
               ))}
             </View>
           ) : null}
+
           {!loading && favorites.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.subtitle}>No favourites yet.</Text>
-              <Text style={styles.helper}>Tap the heart on a listing to save it.</Text>
+              <View style={styles.emptyIconWrap}>
+                <Heart size={30} color="#0a8050" strokeWidth={2} />
+              </View>
+              <Text style={styles.emptyTitle}>No saved spaces yet</Text>
+              <Text style={styles.subtitle}>
+                Tap the heart on any space to save it here for quick access.
+              </Text>
               <Pressable
                 style={styles.primaryButton}
                 onPress={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
@@ -92,33 +208,31 @@ export function FavoritesScreen({ navigation }: Props) {
                 <Text style={styles.primaryButtonText}>Browse spaces</Text>
               </Pressable>
             </View>
-          ) : (
-            favorites.map((item) => (
-              <Pressable
-                key={item.id}
-                style={styles.row}
-                onPress={() =>
-                  navigation.navigate("Listing", {
-                    id: item.id,
-                    from: new Date().toISOString(),
-                    to: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-                  })
-                }
-              >
-                {item.image_urls?.[0] ? (
-                  <Image source={{ uri: item.image_urls[0] }} style={styles.icon} />
-                ) : (
-                  <View style={styles.iconPlaceholder}>
-                    <MapPin size={16} color={colors.textSoft} strokeWidth={1.8} />
-                  </View>
-                )}
-                <View style={styles.rowCopy}>
-                  <Text style={styles.rowTitle}>{item.title}</Text>
-                  <Text style={styles.rowSubtitle}>{item.address}</Text>
-                </View>
-              </Pressable>
-            ))
-          )}
+          ) : null}
+
+          {favorites.length > 0 ? (
+            <>
+              <Text style={styles.countLabel}>
+                {favorites.length} saved {favorites.length === 1 ? "space" : "spaces"}
+              </Text>
+              <View style={styles.list}>
+                {favorites.map((item) => (
+                  <FavoriteCard
+                    key={item.id}
+                    item={item}
+                    onOpen={() =>
+                      navigation.navigate("Listing", {
+                        id: item.id,
+                        from: new Date().toISOString(),
+                        to: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+                      })
+                    }
+                    onUnsave={() => void remove(item.id)}
+                  />
+                ))}
+              </View>
+            </>
+          ) : null}
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -135,75 +249,149 @@ const styles = StyleSheet.create({
     backgroundColor: "#F4F6F8",
   },
   navBar: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: "#E5E7EB",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
     backgroundColor: "#ffffff",
   },
   backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
   navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#111827", letterSpacing: -0.3 },
   navSpacer: { width: 38 },
-  title: {
-    color: colors.text,
-    fontSize: 17,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-  },
+
   content: {
-    padding: spacing.screenX,
-    gap: 14,
+    paddingHorizontal: spacing.screenX,
+    paddingTop: 8,
+    paddingBottom: 28,
   },
-  row: {
+  countLabel: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    color: "#64748b",
+    letterSpacing: -0.1,
+    marginTop: 6,
+    marginBottom: 12,
+  },
+  list: { gap: 14 },
+
+  // Premium listing card
+  card: {
     backgroundColor: "#ffffff",
-    borderColor: "#E3E8EE",
-    borderRadius: 20,
+    borderColor: "#E4E9EF",
     borderWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    gap: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
+    borderRadius: 22,
+    overflow: "hidden",
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 16,
+    elevation: 3,
   },
-  icon: {
-    borderRadius: 12,
-    height: 56,
-    width: 56,
-    backgroundColor: colors.cardBg,
+  cardImageWrap: {
+    width: "100%",
+    height: 160,
+    backgroundColor: "#edf1f4",
   },
-  iconPlaceholder: {
-    borderRadius: 12,
-    height: 56,
-    width: 56,
-    backgroundColor: colors.cardBg,
-    borderWidth: 1,
-    borderColor: colors.border,
+  cardImage: { width: "100%", height: "100%" },
+  cardImageFallback: { flex: 1, alignItems: "center", justifyContent: "center" },
+  cardBody: {
+    paddingHorizontal: 15,
+    paddingVertical: 13,
+    gap: 5,
+  },
+  cardTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 16,
+    color: "#0f172a",
+    letterSpacing: -0.3,
+    lineHeight: 21,
+  },
+  heartBtn: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.94)",
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.14,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  rowCopy: {
+  cardRatingRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  cardRating: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: "#0f172a" },
+  cardRatingCount: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12.5, color: "#8896a5" },
+  cardAddrRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  cardAddr: {
     flex: 1,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12.5,
+    color: "#64748b",
+    lineHeight: 17,
   },
-  rowTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
+  cardFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    marginTop: 4,
+    paddingTop: 9,
+    borderTopWidth: 1,
+    borderTopColor: "#eef1f4",
   },
-  rowSubtitle: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 2,
+  cardPrice: { fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: "#0f172a", letterSpacing: -0.4 },
+  cardPriceUnit: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: "#94a3b8" },
+  chipRow: { flexDirection: "row", gap: 5, flexShrink: 1, justifyContent: "flex-end", overflow: "hidden" },
+
+  // Skeleton
+  skeletonCard: {
+    backgroundColor: "#ffffff",
+    borderColor: "#E4E9EF",
+    borderWidth: 1,
+    borderRadius: 22,
+    overflow: "hidden",
   },
+  skeletonBody: { paddingHorizontal: 15, paddingVertical: 14 },
+
+  // Empty state
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 32,
+    paddingVertical: 48,
+    paddingHorizontal: 24,
   },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#edf7f2",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18,
+  },
+  emptyTitle: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 19,
+    color: "#0f172a",
+    letterSpacing: -0.4,
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  subtitle: {
+    color: "#64748b",
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: "center",
+  },
+
+  // Gated (signed-out)
   gatedCard: {
     alignItems: "center",
     backgroundColor: colors.cardBg,
@@ -224,22 +412,59 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     width: 60,
   },
-  subtitle: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
+  gatedTitle: {
+    color: "#0f172a",
+    fontSize: 19,
+    fontFamily: "PlusJakartaSans-Bold",
+    letterSpacing: -0.4,
+    marginBottom: 6,
     textAlign: "center",
   },
-  helper: {
-    color: colors.textSoft,
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 6,
+  gatedHintRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 14,
   },
+  gatedHintText: {
+    color: colors.textSoft,
+    fontSize: 12,
+    lineHeight: 16,
+    textAlign: "center",
+  },
+
+  // Buttons
+  primaryButton: {
+    backgroundColor: "#0a8050",
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 13,
+    marginTop: 16,
+    alignSelf: "stretch",
+    alignItems: "center",
+  },
+  primaryButtonText: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontWeight: "600",
+  },
+  secondaryButton: {
+    backgroundColor: "#ffffff",
+    borderColor: colors.border,
+    borderWidth: 1,
+    marginTop: 10,
+  },
+  secondaryButtonText: {
+    color: colors.text,
+  },
+
+  // Error
   errorRow: {
     alignItems: "center",
     gap: 8,
-    marginBottom: 8,
+    marginTop: 12,
+    marginBottom: 4,
   },
   error: {
     backgroundColor: "#fef2f2",
@@ -264,54 +489,5 @@ const styles = StyleSheet.create({
     color: "#0a8050",
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
-  },
-  muted: {
-    color: colors.textSoft,
-    fontSize: 12,
-    textAlign: "center",
-  },
-  skeletonList: { gap: 2 },
-  skeletonRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  skeletonCopy: { flex: 1 },
-  primaryButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    marginTop: 14,
-  },
-  primaryButtonText: {
-    color: "#ffffff",
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    backgroundColor: "#ffffff",
-    borderColor: colors.border,
-    borderWidth: 1,
-  },
-  secondaryButtonText: {
-    color: colors.text,
-  },
-  gatedHintRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 6,
-    marginTop: 14,
-  },
-  gatedHintText: {
-    color: colors.textSoft,
-    fontSize: 12,
-    lineHeight: 16,
-    textAlign: "center",
   },
 });

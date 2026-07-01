@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type Ref } from "react";
-import { Image, Platform, StyleSheet, Vibration, View } from "react-native";
+import { Animated, Easing, Image, InteractionManager, Platform, StyleSheet, Vibration, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import MapView, {
   type EdgePadding,
@@ -12,6 +12,7 @@ import MapView, {
 import ViewShot from "react-native-view-shot";
 import { MapPricePin, getPinDimensions } from "./MapPricePin";
 import { formatPriceValue } from "../utils/pricing";
+import { useMarkerTracksUntilPainted } from "./useMarkerTracksUntilPainted";
 
 type ListingResult = {
   id: string;
@@ -45,11 +46,34 @@ function SearchOriginPin() {
   );
 }
 
+// Wraps the origin pin so it tracks until its SVG has painted, then freezes —
+// avoids the default red pin flashing when the pin first mounts.
+function SearchOriginMarker({
+  coordinate,
+}: {
+  coordinate: { latitude: number; longitude: number };
+}) {
+  const tracks = useMarkerTracksUntilPainted(`${coordinate.latitude},${coordinate.longitude}`);
+  return (
+    <Marker
+      key={`search-pin-${coordinate.latitude.toFixed(6)}-${coordinate.longitude.toFixed(6)}`}
+      coordinate={coordinate}
+      anchor={{ x: 0.5, y: 0.94 }}
+      tracksViewChanges={tracks}
+      zIndex={5}
+    >
+      <SearchOriginPin />
+    </Marker>
+  );
+}
+
 // Renders the pre-captured pin as a CHILD <Image> rather than via the Marker
 // `image` prop. With a child view present, react-native-maps never draws the
 // default red annotation, so there's no red-pin flash while the file URI decodes.
 // tracksViewChanges stays true only until the image reports loaded, then flips
 // off to keep the map performant.
+const PIN_REVEAL_MS = 190;
+
 function ListingPinMarker({
   listingId,
   coordinate,
@@ -58,6 +82,7 @@ function ListingPinMarker({
   price,
   pinImage,
   resumeNonce,
+  entering,
   onPress,
 }: {
   listingId: string;
@@ -67,43 +92,72 @@ function ListingPinMarker({
   price: number;
   pinImage: string;
   resumeNonce?: number;
+  entering: boolean;
   onPress: (event: MarkerPressEvent) => void;
 }) {
   const soldOut = label === "Sold out";
   const { viewBoxWidth, viewBoxHeight } = getPinDimensions(label, selected, soldOut);
   const [tracks, setTracks] = useState(true);
   const [imageReady, setImageReady] = useState(false);
-  const stopTrackingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelledRef = useRef(false);
+  const freezeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Capture the entrance flag at mount. Markers that mount as part of a reveal batch
+  // start hidden and animate up together; a marker remounted by a selection change
+  // starts fully shown so it never blinks when tapped.
+  const enteringAtMount = useRef(entering).current;
+  const revealAnim = useRef(new Animated.Value(enteringAtMount ? 0 : 1)).current;
 
   useEffect(() => {
+    cancelledRef.current = false;
     setTracks(true);
     setImageReady(false);
     return () => {
-      if (stopTrackingTimer.current) {
-        clearTimeout(stopTrackingTimer.current);
-        stopTrackingTimer.current = null;
-      }
+      cancelledRef.current = true;
+      if (freezeTimerRef.current) clearTimeout(freezeTimerRef.current);
     };
   }, [pinImage]);
 
-  // Stop tracking shortly after the bitmap is on screen so the marker freezes.
-  const stopTrackingSoon = () => {
-    if (stopTrackingTimer.current) clearTimeout(stopTrackingTimer.current);
-    stopTrackingTimer.current = setTimeout(() => {
-      setTracks(false);
-      stopTrackingTimer.current = null;
-    }, 96);
+  // Coordinated entrance: all markers of a fresh result set mount in the same commit,
+  // so animating on mount lands the whole set as one premium "pins placed" beat.
+  useEffect(() => {
+    if (!enteringAtMount) return;
+    Animated.timing(revealAnim, {
+      toValue: 1,
+      duration: PIN_REVEAL_MS,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [enteringAtMount, revealAnim]);
+
+  // Freeze the marker (stop regenerating its bitmap) only after the pin is painted AND
+  // the entrance animation has finished — freezing mid-animation would snapshot a
+  // half-faded frame, and freezing before paint could strand the default red pin.
+  const freezeAfterReveal = () => {
+    if (freezeTimerRef.current) clearTimeout(freezeTimerRef.current);
+    freezeTimerRef.current = setTimeout(
+      () => {
+        InteractionManager.runAfterInteractions(() => {
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+              if (!cancelledRef.current) setTracks(false);
+            })
+          );
+        });
+      },
+      enteringAtMount ? PIN_REVEAL_MS + 40 : 0
+    );
   };
 
   const handleLoad = () => {
     setImageReady(true);
-    stopTrackingSoon();
+    freezeAfterReveal();
   };
 
   const handleError = () => {
-    // Keep the synchronous vector fallback visible if the captured PNG fails.
+    // Captured PNG failed to decode — keep the synchronous vector fallback visible
+    // and only freeze once it has painted, so we never strand the red default pin.
     setImageReady(false);
-    stopTrackingSoon();
+    freezeAfterReveal();
   };
 
   return (
@@ -118,9 +172,18 @@ function ListingPinMarker({
       tappable={true}
       stopPropagation={true}
     >
-      <View
+      <Animated.View
         collapsable={false}
-        style={[styles.pinMarkerShell, { width: viewBoxWidth, height: viewBoxHeight }]}
+        style={[
+          styles.pinMarkerShell,
+          { width: viewBoxWidth, height: viewBoxHeight },
+          {
+            opacity: revealAnim,
+            transform: [
+              { scale: revealAnim.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1] }) },
+            ],
+          },
+        ]}
       >
         <View
           collapsable={false}
@@ -137,7 +200,7 @@ function ListingPinMarker({
           onLoad={handleLoad}
           onError={handleError}
         />
-      </View>
+      </Animated.View>
     </Marker>
   );
 }
@@ -212,6 +275,8 @@ export default function MapSection({
   const [pinsReady, setPinsReady] = useState(false);
   const [pinsVisible, setPinsVisible] = useState(false);
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
+  const [pinsEntering, setPinsEntering] = useState(false);
+  const enteringTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasEverShownPins = useRef(false);
   const nextResultsRef = useRef(nextResults);
   nextResultsRef.current = nextResults;
@@ -323,7 +388,7 @@ export default function MapSection({
     });
   }, [labelKeys, pinImages]);
 
-  // Stagger markers in one by one as pinsReady flips true after each search.
+  // Reveal all markers together once pinsReady flips true after each search.
   // Also keyed on the result id set: results land after searchGeneration bumps,
   // and if their labels were already captured pinsReady never toggles — without
   // this key the new ids would never enter revealedIds and their pins never draw.
@@ -337,30 +402,21 @@ export default function MapSection({
       return;
     }
     const listings = nextResultsRef.current;
-    const STAGGER_MS = 40;
-    const MAX_STAGGERED = 12;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    // Keep markers that are still in the new result set immediately visible
-    setRevealedIds(prev => {
-      const keep = new Set<string>();
-      prev.forEach(id => { if (listings.some(l => l.id === id)) keep.add(id); });
-      return keep;
-    });
-    listings.forEach((listing, i) => {
-      timers.push(
-        setTimeout(() => {
-          setRevealedIds(prev => { const s = new Set(prev); s.add(listing.id); return s; });
-        }, i < MAX_STAGGERED ? i * STAGGER_MS : MAX_STAGGERED * STAGGER_MS)
-      );
-    });
-    // Fire after the last stagger timer so the caller can dismiss the loading indicator
-    const lastStaggerMs = listings.length === 0
-      ? 0
-      : (listings.length <= MAX_STAGGERED
-          ? (listings.length - 1) * STAGGER_MS
-          : MAX_STAGGERED * STAGGER_MS);
-    const doneTimer = setTimeout(() => { onAllPinsRevealed?.(); }, lastStaggerMs + 60);
-    return () => { timers.forEach(clearTimeout); clearTimeout(doneTimer); };
+    // Reveal the whole set together. Every pin image is already captured by the time
+    // pinsReady flips true, so dropping them simultaneously reads as a single premium
+    // "pins placed" moment — like Airbnb / JustPark — instead of a per-pin cascade
+    // that looks like uneven loading.
+    // Flag this as an entrance batch so freshly-mounted markers animate in together;
+    // clears shortly after so later selection remounts don't replay the animation.
+    setPinsEntering(true);
+    if (enteringTimerRef.current) clearTimeout(enteringTimerRef.current);
+    enteringTimerRef.current = setTimeout(() => setPinsEntering(false), PIN_REVEAL_MS + 140);
+    setRevealedIds(new Set(listings.map((listing) => listing.id)));
+    const doneTimer = setTimeout(() => { onAllPinsRevealed?.(); }, 60);
+    return () => {
+      clearTimeout(doneTimer);
+      if (enteringTimerRef.current) clearTimeout(enteringTimerRef.current);
+    };
   }, [pinsReady, searchGeneration, resultIdsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getPinKey = (label: string, selected: boolean) =>
@@ -401,15 +457,7 @@ export default function MapSection({
         mapType="standard"
       >
         {searchPinCoordinate ? (
-          <Marker
-            key={`search-pin-${searchPinCoordinate.latitude.toFixed(6)}-${searchPinCoordinate.longitude.toFixed(6)}`}
-            coordinate={searchPinCoordinate}
-            anchor={{ x: 0.5, y: 0.94 }}
-            tracksViewChanges={false}
-            zIndex={5}
-          >
-            <SearchOriginPin />
-          </Marker>
+          <SearchOriginMarker coordinate={searchPinCoordinate} />
         ) : null}
         {pinsVisible && (freezeMarkers ? renderedResultsRef.current : nextResults).map((listing) => {
           if (!revealedIds.has(listing.id)) return null;
@@ -433,6 +481,7 @@ export default function MapSection({
               price={price}
               pinImage={pinImage}
               resumeNonce={resumeNonce}
+              entering={pinsEntering}
               onPress={(e) => {
                 e?.stopPropagation?.();
                 lastMarkerPressRef.current = Date.now();

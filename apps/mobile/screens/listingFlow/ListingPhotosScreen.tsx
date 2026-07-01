@@ -1,9 +1,11 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Image,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,7 +20,11 @@ import { useListingFlow } from "./context";
 import { FlowHeader } from "./FlowHeader";
 import { FlowFooter } from "./FlowFooter";
 import { hostFlowColors } from "./hostFlowTheme";
-import { Camera, Info, Plus, Star, X } from "lucide-react-native";
+import { Camera, GripVertical, Info, Plus, Star, X } from "lucide-react-native";
+
+const GRID_COLS = 2;
+const GRID_GAP = 10;
+const PHOTO_ASPECT = 1.2;
 
 type FlowStackParamList = {
   ListingPhotos: undefined;
@@ -60,15 +66,32 @@ function uploadToS3(uploadUrl: string, formData: FormData): Promise<{ ok: boolea
   });
 }
 
+type PhotoItem = { uri: string; kind: "street-view" | "uploaded" };
+
 export function ListingPhotosScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
   const { token } = useAuth();
   const insets = useSafeAreaInsets();
+  const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const [uploading, setUploading] = useState(false);
   const [uploadLabel, setUploadLabel] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const photos = draft.photos.filter((photo) => photo?.trim());
-  const hasPhoto = photos.length > 0;
+  const streetViewCoverUrl = useMemo(() => {
+    if (draft.coverHeading == null || !mapsKey) return null;
+    const { latitude, longitude } = draft.location;
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+    return `https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=${latitude},${longitude}&heading=${draft.coverHeading}&pitch=${draft.coverPitch ?? 0}&fov=80&source=outdoor&key=${mapsKey}`;
+  }, [draft.coverHeading, draft.coverPitch, draft.location, mapsKey]);
+  const photos = useMemo(() => draft.photos.filter((photo) => photo?.trim()), [draft.photos]);
+  const photoItems = useMemo(
+    () => [
+      ...(streetViewCoverUrl ? [{ uri: streetViewCoverUrl, kind: "street-view" as const }] : []),
+      ...photos.map((uri) => ({ uri, kind: "uploaded" as const })),
+    ],
+    [photos, streetViewCoverUrl]
+  );
+  const hasPhoto = photoItems.length > 0;
+  const hasStreetView = Boolean(streetViewCoverUrl);
 
   const exitFlow = () => {
     const parent = navigation.getParent();
@@ -81,6 +104,83 @@ export function ListingPhotosScreen({ navigation }: Props) {
       photos: prev.photos.filter((photo) => photo !== url),
     }));
   };
+
+  // ── Drag-to-reorder (PanResponder + Animated, no native deps) ───────────────
+  // The Street View cover stays pinned at index 0; uploaded photos reorder.
+  const [gridWidth, setGridWidth] = useState(0);
+  const itemW = gridWidth > 0 ? (gridWidth - GRID_GAP * (GRID_COLS - 1)) / GRID_COLS : 0;
+  const itemH = itemW > 0 ? itemW / PHOTO_ASPECT : 0;
+
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [targetIndex, setTargetIndex] = useState<number | null>(null);
+  const pan = useRef(new Animated.ValueXY()).current;
+
+  // Refs keep the latest geometry/state available inside PanResponder closures.
+  const targetRef = useRef<number | null>(null);
+  const geomRef = useRef({ itemW, itemH, count: photoItems.length, firstDraggable: hasStreetView ? 1 : 0 });
+  geomRef.current = { itemW, itemH, count: photoItems.length, firstDraggable: hasStreetView ? 1 : 0 };
+
+  const commitReorder = (fromItemsIdx: number) => {
+    const to = targetRef.current;
+    const offset = hasStreetView ? 1 : 0;
+    setDraggingIndex(null);
+    setTargetIndex(null);
+    targetRef.current = null;
+    pan.setValue({ x: 0, y: 0 });
+    if (to == null || to === fromItemsIdx) return;
+    const from = fromItemsIdx - offset;
+    const dest = to - offset;
+    setDraft((prev) => {
+      const next = [...prev.photos];
+      if (from < 0 || from >= next.length) return prev;
+      const [moved] = next.splice(from, 1);
+      next.splice(Math.max(0, Math.min(next.length, dest)), 0, moved);
+      return { ...prev, photos: next };
+    });
+  };
+
+  // One PanResponder per uploaded cell; rebuilt only when the list or cell size
+  // changes. Reorder commits on release, so indices stay stable mid-drag.
+  const responders = useMemo(() => {
+    return photoItems.map((photo, idx) => {
+      if (photo.kind !== "uploaded") return null;
+      return PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onStartShouldSetPanResponderCapture: () => false,
+        // Capture the move so the enclosing ScrollView doesn't steal the drag.
+        onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 6 || Math.abs(g.dy) > 6,
+        onMoveShouldSetPanResponderCapture: (_e, g) => Math.abs(g.dx) > 8 || Math.abs(g.dy) > 8,
+        onPanResponderGrant: () => {
+          pan.setValue({ x: 0, y: 0 });
+          targetRef.current = idx;
+          setDraggingIndex(idx);
+          setTargetIndex(idx);
+        },
+        onPanResponderMove: (_e, g) => {
+          pan.setValue({ x: g.dx, y: g.dy });
+          const { itemW: w, itemH: h, count, firstDraggable } = geomRef.current;
+          if (w <= 0 || h <= 0) return;
+          const col0 = idx % GRID_COLS;
+          const row0 = Math.floor(idx / GRID_COLS);
+          const cx = col0 * (w + GRID_GAP) + w / 2 + g.dx;
+          const cy = row0 * (h + GRID_GAP) + h / 2 + g.dy;
+          let col = Math.round((cx - w / 2) / (w + GRID_GAP));
+          let row = Math.round((cy - h / 2) / (h + GRID_GAP));
+          col = Math.max(0, Math.min(GRID_COLS - 1, col));
+          row = Math.max(0, row);
+          let t = row * GRID_COLS + col;
+          t = Math.max(firstDraggable, Math.min(count - 1, t));
+          if (t !== targetRef.current) {
+            targetRef.current = t;
+            setTargetIndex(t);
+          }
+        },
+        onPanResponderRelease: () => commitReorder(idx),
+        onPanResponderTerminate: () => commitReorder(idx),
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoItems, itemW, itemH, hasStreetView]);
 
   const uploadAsset = async (asset: ImagePicker.ImagePickerAsset) => {
     if (!token) throw new Error("Sign in to upload photos.");
@@ -167,6 +267,7 @@ export function ListingPhotosScreen({ navigation }: Props) {
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: 104 + Math.max(insets.bottom, 0) }]}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={draggingIndex === null}
       >
         {/* Header card */}
         <View style={styles.headerCard}>
@@ -207,25 +308,57 @@ export function ListingPhotosScreen({ navigation }: Props) {
               </Pressable>
             ) : (
               <>
-                <View style={styles.grid}>
-                  {photos.map((uri, index) => (
-                    <View key={uri} style={styles.photoCard}>
-                      <Image source={{ uri }} style={styles.photoImage} />
-                      {index === 0 ? (
-                        <View style={styles.coverBadge}>
-                          <Star size={10} color="#ffffff" strokeWidth={2.5} fill="#ffffff" />
-                          <Text style={styles.coverBadgeText}>Cover</Text>
-                        </View>
-                      ) : null}
-                      <Pressable
-                        style={styles.removeBtn}
-                        onPress={() => removePhoto(uri)}
-                        hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                {photoItems.length > 1 ? (
+                  <Text style={styles.reorderHint}>Hold and drag a photo to reorder. The first photo is your cover.</Text>
+                ) : null}
+                <View
+                  style={styles.grid}
+                  onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}
+                >
+                  {photoItems.map((photo, index) => {
+                    const isDragging = draggingIndex === index;
+                    const isTarget = targetIndex === index && draggingIndex !== index;
+                    const sizeStyle = itemW > 0 ? { width: itemW, height: itemH } : styles.photoCardFallback;
+                    const responder = responders[index];
+                    return (
+                      <Animated.View
+                        key={`${photo.kind}:${photo.uri}`}
+                        {...(responder ? responder.panHandlers : {})}
+                        style={[
+                          styles.photoCard,
+                          sizeStyle,
+                          isTarget && styles.photoCardTarget,
+                          isDragging && {
+                            zIndex: 20,
+                            transform: [...pan.getTranslateTransform(), { scale: 1.05 }],
+                            ...styles.photoCardLifted,
+                          },
+                        ]}
                       >
-                        <X size={12} color="#ffffff" strokeWidth={2.8} />
-                      </Pressable>
-                    </View>
-                  ))}
+                        <Image source={{ uri: photo.uri }} style={styles.photoImage} />
+                        {index === 0 ? (
+                          <View style={styles.coverBadge}>
+                            <Star size={10} color="#ffffff" strokeWidth={2.5} fill="#ffffff" />
+                            <Text style={styles.coverBadgeText}>Cover</Text>
+                          </View>
+                        ) : null}
+                        {photo.kind === "uploaded" ? (
+                          <>
+                            <View style={styles.dragHandle} pointerEvents="none">
+                              <GripVertical size={13} color="#ffffff" strokeWidth={2.5} />
+                            </View>
+                            <Pressable
+                              style={styles.removeBtn}
+                              onPress={() => removePhoto(photo.uri)}
+                              hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                            >
+                              <X size={12} color="#ffffff" strokeWidth={2.8} />
+                            </Pressable>
+                          </>
+                        ) : null}
+                      </Animated.View>
+                    );
+                  })}
                 </View>
 
                 <Pressable
@@ -388,22 +521,54 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
+  reorderHint: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 10,
+  },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: GRID_GAP,
   },
   photoCard: {
-    width: "48%",
-    aspectRatio: 1.2,
     borderRadius: 12,
     overflow: "hidden",
     backgroundColor: "#EDF7F2",
     position: "relative",
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  photoCardFallback: {
+    width: "48%",
+    aspectRatio: 1.2,
+  },
+  photoCardTarget: {
+    borderColor: ACCENT,
+  },
+  photoCardLifted: {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 10,
   },
   photoImage: {
     width: "100%",
     height: "100%",
+  },
+  dragHandle: {
+    position: "absolute",
+    bottom: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   coverBadge: {
     position: "absolute",
