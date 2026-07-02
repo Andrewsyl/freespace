@@ -11,6 +11,39 @@ shift
 ENV_FILE=".env.${ENV_NAME}"
 EXPLICIT_API_BASE="${EXPO_PUBLIC_API_BASE:-}"
 
+detect_lan_ip() {
+  local candidate=""
+
+  if [ -z "$candidate" ] && command -v ifconfig >/dev/null 2>&1; then
+    local interface=""
+    for interface in $(ifconfig -l); do
+      local interface_dump=""
+      local ip=""
+      interface_dump="$(ifconfig "$interface" 2>/dev/null || true)"
+      if ! printf '%s\n' "$interface_dump" | grep -q "status: active"; then
+        continue
+      fi
+      ip="$(
+        printf '%s\n' "$interface_dump" | awk '
+          /inet / {
+            candidate_ip=$2
+            if (candidate_ip !~ /^127\./ && candidate_ip !~ /^169\.254\./) {
+              print candidate_ip
+              exit
+            }
+          }
+        '
+      )"
+      if [ -n "$ip" ]; then
+        candidate="$ip"
+        break
+      fi
+    done
+  fi
+
+  printf '%s' "$candidate"
+}
+
 if [ "$ENV_NAME" = "local" ]; then
   ENV_FILE=".env.local.source"
 fi
@@ -33,6 +66,20 @@ if [ -n "$EXPLICIT_API_BASE" ]; then
   export EXPO_PUBLIC_API_BASE="$EXPLICIT_API_BASE"
 fi
 
+if [ "$ENV_NAME" = "local" ] && [[ "$*" == *"expo start"* ]]; then
+  case "${EXPO_PUBLIC_API_BASE:-}" in
+    http://127.0.0.1:*|http://localhost:*)
+      LAN_IP="$(detect_lan_ip)"
+      if [ -n "$LAN_IP" ]; then
+        export EXPO_PUBLIC_API_BASE="http://${LAN_IP}:4000"
+        echo "[env] rewrote local API base for device access -> $EXPO_PUBLIC_API_BASE"
+      else
+        echo "[env][warn] Could not detect LAN IP; leaving EXPO_PUBLIC_API_BASE=${EXPO_PUBLIC_API_BASE:-}"
+      fi
+      ;;
+  esac
+fi
+
 # Expo loads .env.local by default and it can override shell exports in dev-client flows.
 # Force selected env file into .env.local before starting (except local -> local).
 cp "$ENV_FILE" .env.local
@@ -42,6 +89,15 @@ if [ -n "$EXPLICIT_API_BASE" ]; then
     sed -i.bak "s#^EXPO_PUBLIC_API_BASE=.*#EXPO_PUBLIC_API_BASE=$EXPLICIT_API_BASE#" .env.local
   else
     printf '\nEXPO_PUBLIC_API_BASE=%s\n' "$EXPLICIT_API_BASE" >> .env.local
+  fi
+  rm -f .env.local.bak
+fi
+
+if [ -n "${EXPO_PUBLIC_API_BASE:-}" ] && [ "${EXPO_PUBLIC_API_BASE:-}" != "${EXPLICIT_API_BASE:-}" ]; then
+  if grep -q '^EXPO_PUBLIC_API_BASE=' .env.local; then
+    sed -i.bak "s#^EXPO_PUBLIC_API_BASE=.*#EXPO_PUBLIC_API_BASE=${EXPO_PUBLIC_API_BASE}#" .env.local
+  else
+    printf '\nEXPO_PUBLIC_API_BASE=%s\n' "$EXPO_PUBLIC_API_BASE" >> .env.local
   fi
   rm -f .env.local.bak
 fi

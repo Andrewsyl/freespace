@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { NativeModules } from "react-native";
 
 const must = (value: string | undefined, name: string) => {
   if (!value) {
@@ -7,7 +8,7 @@ const must = (value: string | undefined, name: string) => {
   return value;
 };
 
-const apiBase = must(process.env.EXPO_PUBLIC_API_BASE, "EXPO_PUBLIC_API_BASE");
+const configuredApiBase = must(process.env.EXPO_PUBLIC_API_BASE, "EXPO_PUBLIC_API_BASE");
 const stripeKey = must(
   process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY,
   "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY"
@@ -18,6 +19,46 @@ const appEnv =
   (__DEV__ ? "local" : "production");
 const postHogKey = process.env.EXPO_PUBLIC_POSTHOG_KEY?.trim();
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN?.trim();
+
+function getDevBundleHost() {
+  const candidates = [
+    NativeModules.SourceCode?.scriptURL,
+    (Constants.expoConfig as { hostUri?: string } | null)?.hostUri,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    try {
+      const parsed = new URL(candidate.includes("://") ? candidate : `http://${candidate}`);
+      const host = parsed.hostname?.trim();
+      if (host && host !== "127.0.0.1" && host !== "localhost") {
+        return host;
+      }
+    } catch {
+      // Ignore malformed dev URLs and fall through to the configured host.
+    }
+  }
+
+  return null;
+}
+
+function resolveApiBase(apiBase: string) {
+  if (appEnv !== "local") return apiBase;
+  if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/i.test(apiBase)) return apiBase;
+
+  const bundleHost = getDevBundleHost();
+  if (!bundleHost) return apiBase;
+
+  try {
+    const parsed = new URL(apiBase);
+    parsed.hostname = bundleHost;
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return apiBase;
+  }
+}
+
+const apiBase = resolveApiBase(configuredApiBase);
 
 if (!/^https?:\/\//.test(apiBase)) {
   throw new Error("EXPO_PUBLIC_API_BASE must be an absolute URL");
@@ -33,6 +74,16 @@ if (appEnv === "production" && !apiBase.startsWith("https://")) {
 
 if (appEnv === "production" && /^https?:\/\/(127\.0\.0\.1|localhost)/.test(apiBase)) {
   throw new Error("Production EXPO_PUBLIC_API_BASE cannot point at localhost");
+}
+
+const isLocalApiBase =
+  /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/i.test(apiBase) ||
+  /^http:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/i.test(apiBase) ||
+  /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/i.test(apiBase) ||
+  /^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+(:\d+)?$/i.test(apiBase);
+
+if (appEnv === "local" && !isLocalApiBase) {
+  throw new Error("Local EXPO_PUBLIC_API_BASE must point at localhost or a private LAN host");
 }
 
 if (appEnv !== "production" && stripeKey.startsWith("pk_live_")) {

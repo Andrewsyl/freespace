@@ -155,34 +155,33 @@ PLIST
 # ── Archive ───────────────────────────────────────────────────────────────────
 
 echo "[prod] Archiving..."
-xcodebuild archive \
-  "${XCODEBUILD_CONTAINER[@]}" \
-  -scheme "$SCHEME" \
-  -configuration Release \
-  -archivePath "$ARCHIVE_PATH" \
-  -destination "generic/platform=iOS" \
-  -allowProvisioningUpdates \
-  -xcconfig "$IOS_DIR/release-signing.xcconfig" \
-  DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-  MARKETING_VERSION="$VERSION_NAME" \
-  CURRENT_PROJECT_VERSION="$NEW_BUILD" \
-  CODE_SIGN_ENTITLEMENTS="FreeSpace/FreeSpace.release.entitlements" \
-  | xcpretty 2>/dev/null || true
+XCODEBUILD_ARCHIVE_ARGS=(
+  archive
+  "${XCODEBUILD_CONTAINER[@]}"
+  -scheme "$SCHEME"
+  -configuration Release
+  -archivePath "$ARCHIVE_PATH"
+  -destination "generic/platform=iOS"
+  -allowProvisioningUpdates
+  -xcconfig "$IOS_DIR/release-signing.xcconfig"
+  DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
+  MARKETING_VERSION="$VERSION_NAME"
+  CURRENT_PROJECT_VERSION="$NEW_BUILD"
+  CODE_SIGN_ENTITLEMENTS="FreeSpace/FreeSpace.release.entitlements"
+)
+
+# xcpretty isn't installed on every machine — piping into a missing command
+# under `set -o pipefail` kills xcodebuild with a broken pipe, which used to
+# be masked by `|| true` and silently trigger a full second archive attempt.
+# Check first so a normal run only archives once.
+if command -v xcpretty >/dev/null 2>&1; then
+  xcodebuild "${XCODEBUILD_ARCHIVE_ARGS[@]}" | xcpretty
+else
+  xcodebuild "${XCODEBUILD_ARCHIVE_ARGS[@]}"
+fi
 
 if [ ! -d "$ARCHIVE_PATH" ]; then
-  echo "[prod] Archive failed — re-running without xcpretty for full output:"
-  xcodebuild archive \
-    "${XCODEBUILD_CONTAINER[@]}" \
-    -scheme "$SCHEME" \
-    -configuration Release \
-    -archivePath "$ARCHIVE_PATH" \
-    -destination "generic/platform=iOS" \
-    -allowProvisioningUpdates \
-    -xcconfig "$IOS_DIR/release-signing.xcconfig" \
-    DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-    MARKETING_VERSION="$VERSION_NAME" \
-    CURRENT_PROJECT_VERSION="$NEW_BUILD" \
-    CODE_SIGN_ENTITLEMENTS="FreeSpace/FreeSpace.release.entitlements"
+  echo "[prod] Archive failed."
   exit 1
 fi
 

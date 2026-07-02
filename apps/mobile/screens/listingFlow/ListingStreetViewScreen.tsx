@@ -35,6 +35,14 @@ export function ListingStreetViewScreen({ navigation }: Props) {
   const centerLng = draft.location.longitude;
   const initialHeading = draft.coverHeading ?? 0;
   const initialPitch = draft.coverPitch ?? 0;
+  const initialPanoId = draft.coverPanoId ?? null;
+
+  // Re-open at the panorama the host previously navigated to (if they moved
+  // down the road), not the listing's fixed address — otherwise every re-open
+  // discards that movement and starts back at the address's own panorama.
+  const initialPositionJs = initialPanoId
+    ? `pano: ${JSON.stringify(initialPanoId)}`
+    : `position: { lat: ${centerLat}, lng: ${centerLng} }`;
 
   const html = `
     <!doctype html>
@@ -50,7 +58,7 @@ export function ListingStreetViewScreen({ navigation }: Props) {
         <div id="pano"></div>
         <script>
           const pano = new google.maps.StreetViewPanorama(document.getElementById("pano"), {
-            position: { lat: ${centerLat}, lng: ${centerLng} },
+            ${initialPositionJs},
             pov: { heading: ${initialHeading}, pitch: ${initialPitch} },
             zoom: 0,
             motionTracking: false,
@@ -58,7 +66,10 @@ export function ListingStreetViewScreen({ navigation }: Props) {
             addressControl: false,
             showRoadLabels: false
           });
-          window.__getPov = () => pano.getPov();
+          // Capture panoId too, not just heading/pitch — moving down the road
+          // changes which panorama is showing, and heading/pitch alone can't
+          // reproduce that; the pano ID pins the exact spot the host chose.
+          window.__getPov = () => ({ ...pano.getPov(), panoId: pano.getPano() });
         </script>
       </body>
     </html>
@@ -88,7 +99,7 @@ export function ListingStreetViewScreen({ navigation }: Props) {
       <Pressable
         style={styles.skipButton}
         onPress={() => {
-          setDraft((prev) => ({ ...prev, coverHeading: null }));
+          setDraft((prev) => ({ ...prev, coverHeading: null, coverPanoId: null }));
           navigation.navigate("ListingDetails");
         }}
       >
@@ -115,7 +126,7 @@ export function ListingStreetViewScreen({ navigation }: Props) {
               try {
                 const payload = JSON.parse(event.nativeEvent.data) as {
                   type: string;
-                  pov?: { heading: number; pitch: number };
+                  pov?: { heading: number; pitch: number; panoId?: string | null };
                 };
                 if (payload.type === "pov" && payload.pov) {
                   const { pov } = payload;
@@ -123,6 +134,7 @@ export function ListingStreetViewScreen({ navigation }: Props) {
                     ...prev,
                     coverHeading: Math.round(pov.heading),
                     coverPitch: Math.round(pov.pitch),
+                    coverPanoId: pov.panoId ?? null,
                   }));
                   navigation.navigate("ListingDetails");
                 }

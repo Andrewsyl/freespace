@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  FlatList,
   Image,
   Linking,
   Modal,
@@ -20,7 +21,6 @@ import {
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useMarkerTracksUntilPainted } from "../components/useMarkerTracksUntilPainted";
-import ImageViewer from "react-native-image-zoom-viewer";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { trackEvent } from "../analytics";
@@ -90,13 +90,16 @@ const FEATURE_ICONS: Record<string, LucideIcon> = {
   wide:      Maximize2,
 };
 
+// Approximate-area halo (Airbnb-style) rather than a pointed pin — the exact
+// address is intentionally hidden until booking, so the marker should read as
+// "around here", not "exactly here".
 function ListingLocationPin() {
   return (
     <View collapsable={false} style={styles.listingMapMarker}>
+      <View collapsable={false} style={styles.listingMapMarkerHalo} />
       <View collapsable={false} style={styles.listingMapMarkerBubble}>
         <MapPin size={18} color="#FFFFFF" strokeWidth={2.6} />
       </View>
-      <View collapsable={false} style={styles.listingMapMarkerTip} />
     </View>
   );
 }
@@ -108,7 +111,7 @@ function ListingLocationMarker({ latitude, longitude }: { latitude: number; long
   return (
     <Marker
       coordinate={{ latitude, longitude }}
-      anchor={{ x: 0.5, y: 0.96 }}
+      anchor={{ x: 0.5, y: 0.5 }}
       tracksViewChanges={tracks}
     >
       <ListingLocationPin />
@@ -193,6 +196,9 @@ export function ListingScreen({ navigation, route }: Props) {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [heroTapEnabled, setHeroTapEnabled] = useState(true);
   const heroTapEnabledRef = useRef(true);
+  const [heroPhotoIndex, setHeroPhotoIndex] = useState(0);
+  const heroListRef = useRef<FlatList<string>>(null);
+  const heroSwipeRef = useRef<ScrollView>(null);
   const authBackdropOpacity = useRef(new Animated.Value(0)).current;
   const authSheetTranslateY = useRef(new Animated.Value(320)).current;
   const [pickerField, setPickerField] = useState<"start" | "end">("start");
@@ -374,6 +380,15 @@ export function ListingScreen({ navigation, route }: Props) {
     return [];
   }, [listing?.image_urls, mapsKey, streetViewLocation]);
 
+  // Closing the fullscreen viewer leaves the hero on the photo the user swiped
+  // to in fullscreen, so the two never feel out of sync.
+  const closeImageViewer = () => {
+    setShowImageViewer(false);
+    setHeroPhotoIndex(viewerIndex);
+    heroListRef.current?.scrollToOffset({ offset: viewerIndex * width, animated: false });
+    heroSwipeRef.current?.scrollTo({ x: viewerIndex * heroGestureZoneWidth, animated: false });
+  };
+
   const amenities = listing?.amenities ?? [];
   const featureLabels = useMemo(
     // Dedupe after humanizing: distinct raw values ("ev_charging", "EV charging")
@@ -465,6 +480,9 @@ export function ListingScreen({ navigation, route }: Props) {
 
   const heroHeight = Math.round(width * 0.8);
   const heroTapHeight = Math.max(0, heroHeight - 40);
+  // Left-inset so the swipe/tap layer never covers the header buttons or
+  // iOS's left-edge swipe-back gesture.
+  const heroGestureZoneWidth = width - 24;
 
   const distanceLabel = listing?.distance_m
     ? `${(listing.distance_m / 1000).toFixed(1)} km`
@@ -666,10 +684,21 @@ export function ListingScreen({ navigation, route }: Props) {
             {/* Full-bleed hero image */}
             <View style={[styles.heroFixed, { height: heroHeight + insets.top }]}>
               {imageUrls.length ? (
-                <Image
-                  source={{ uri: imageUrls[0] }}
-                  style={{ width, height: heroHeight + insets.top }}
-                  resizeMode="cover"
+                <FlatList
+                  ref={heroListRef}
+                  data={imageUrls}
+                  horizontal
+                  scrollEnabled={false}
+                  showsHorizontalScrollIndicator={false}
+                  keyExtractor={(url, index) => `${url}-${index}`}
+                  getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+                  renderItem={({ item }) => (
+                    <Image
+                      source={{ uri: item }}
+                      style={{ width, height: heroHeight + insets.top }}
+                      resizeMode="cover"
+                    />
+                  )}
                 />
               ) : (
                 <View style={[styles.heroPlaceholder, { height: heroHeight + insets.top }]}>
@@ -680,13 +709,18 @@ export function ListingScreen({ navigation, route }: Props) {
                 colors={["rgba(0,0,0,0.22)", "transparent", "rgba(0,0,0,0.60)"]}
                 locations={[0, 0.42, 1]}
                 style={styles.heroGradient}
+                pointerEvents="none"
               />
               {imageUrls.length > 1 ? (
-                <View style={[styles.photoCounter, { position: "absolute", bottom: 72, right: 16, zIndex: 2 }]}>
-                  <Text style={styles.photoCounterText}>{imageUrls.length} photos</Text>
+                <View style={styles.photoDots} pointerEvents="none">
+                  {imageUrls.map((_, index) => (
+                    <View
+                      key={index}
+                      style={[styles.photoDot, index === heroPhotoIndex && styles.photoDotActive]}
+                    />
+                  ))}
                 </View>
               ) : null}
-              {/* Clean photo hero — the title lives in the content sheet below */}
             </View>
 
             {/* Floating glass controls */}
@@ -713,11 +747,48 @@ export function ListingScreen({ navigation, route }: Props) {
             </View>
             </View>
 
-            {heroTapEnabled ? (
-              <Pressable
-                style={[styles.heroTapZone, { height: heroTapHeight, top: 0 }]}
-                onPress={() => { setViewerIndex(0); setShowImageViewer(true); }}
-              />
+            {/* Transparent gesture layer over the hero (same pattern as the old tap zone):
+                forwards horizontal swipes to the background photo list and taps to the
+                fullscreen viewer. Unmounts once the content sheet scrolls over the hero,
+                so the sheet underneath it stays fully interactive.
+                Starts below the header row and inset from the left edge so it never
+                competes with the back button or iOS's edge-swipe-to-go-back gesture. */}
+            {heroTapEnabled && imageUrls.length ? (
+              <ScrollView
+                ref={heroSwipeRef}
+                style={[
+                  styles.heroTapZone,
+                  { height: heroTapHeight - (insets.top + 56), top: insets.top + 56, left: 24 },
+                ]}
+                horizontal
+                pagingEnabled
+                bounces={false}
+                showsHorizontalScrollIndicator={false}
+                contentOffset={{ x: heroPhotoIndex * heroGestureZoneWidth, y: 0 }}
+                scrollEventThrottle={16}
+                onScroll={(event) => {
+                  // This layer is narrower than the background photo list (it leaves
+                  // room on the left for iOS's edge-swipe-back gesture), so its offset
+                  // has to be rescaled to the background list's full-width pages.
+                  heroListRef.current?.scrollToOffset({
+                    offset: (event.nativeEvent.contentOffset.x / heroGestureZoneWidth) * width,
+                    animated: false,
+                  });
+                }}
+                onMomentumScrollEnd={(event) => {
+                  const index = Math.round(event.nativeEvent.contentOffset.x / heroGestureZoneWidth);
+                  setHeroPhotoIndex(index);
+                  heroListRef.current?.scrollToOffset({ offset: index * width, animated: false });
+                }}
+              >
+                {imageUrls.map((url, index) => (
+                  <Pressable
+                    key={`${url}-${index}`}
+                    style={{ width: heroGestureZoneWidth, height: heroTapHeight }}
+                    onPress={() => { setViewerIndex(index); setShowImageViewer(true); }}
+                  />
+                ))}
+              </ScrollView>
             ) : null}
 
             <ScrollView
@@ -1178,27 +1249,41 @@ export function ListingScreen({ navigation, route }: Props) {
         visible={showImageViewer}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowImageViewer(false)}
+        onRequestClose={closeImageViewer}
       >
         <View style={styles.viewerBackdrop}>
-          <ImageViewer
-            imageUrls={imageUrls.map((url) => ({ url }))}
-            index={viewerIndex}
-            enableSwipeDown
-            onSwipeDown={() => setShowImageViewer(false)}
-            onCancel={() => setShowImageViewer(false)}
-            onClick={() => setShowImageViewer(false)}
-            onChange={(i) => setViewerIndex(i ?? 0)}
-            renderIndicator={() => <View />}
-            renderHeader={() => (
-              <Pressable
-                style={[styles.viewerClose, { top: insets.top + 12 }]}
-                onPress={() => setShowImageViewer(false)}
-              >
-                <Text style={styles.viewerCloseText}>Close</Text>
-              </Pressable>
+          <FlatList
+            data={imageUrls}
+            horizontal
+            pagingEnabled
+            bounces={false}
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(url, index) => `${url}-${index}`}
+            initialScrollIndex={viewerIndex}
+            getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+            onMomentumScrollEnd={(event) => {
+              setViewerIndex(Math.round(event.nativeEvent.contentOffset.x / width));
+            }}
+            renderItem={({ item }) => (
+              <View style={{ width, flex: 1 }}>
+                <Image source={{ uri: item }} style={StyleSheet.absoluteFill} resizeMode="contain" />
+              </View>
             )}
           />
+          <Pressable
+            style={[styles.viewerGlassClose, { top: insets.top + 12 }]}
+            onPress={closeImageViewer}
+            hitSlop={8}
+          >
+            <X size={20} color="#fff" strokeWidth={2.2} />
+          </Pressable>
+          {imageUrls.length > 1 ? (
+            <View style={[styles.viewerCounter, { top: insets.top + 20 }]} pointerEvents="none">
+              <Text style={styles.viewerCounterText}>
+                {viewerIndex + 1} / {imageUrls.length}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </Modal>
 
@@ -1343,12 +1428,18 @@ const styles = StyleSheet.create({
   heroFixed: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 0, overflow: "hidden" },
   heroPlaceholder: { alignItems: "center", justifyContent: "center", backgroundColor: "#1B3A32" },
   heroGradient: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
-  photoCounter: {
-    backgroundColor: "rgba(0,0,0,0.44)", borderRadius: 999,
-    paddingHorizontal: 10, paddingVertical: 5,
-    alignSelf: "flex-end",
+  photoDots: {
+    position: "absolute", bottom: 44, left: 0, right: 0,
+    flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6,
   },
-  photoCounterText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: "#fff", letterSpacing: 0.5 },
+  photoDot: {
+    width: 6, height: 6, borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,0.5)",
+  },
+  photoDotActive: {
+    width: 16,
+    backgroundColor: "#fff",
+  },
 
   // Hero title overlay
   heroTitleOverlay: {
@@ -1615,31 +1706,33 @@ const styles = StyleSheet.create({
   },
   listingMapMarker: {
     alignItems: "center",
-    height: 46,
-    justifyContent: "flex-start",
-    width: 40,
+    height: 110,
+    justifyContent: "center",
+    width: 110,
+  },
+  listingMapMarkerHalo: {
+    position: "absolute",
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: "rgba(10,128,80,0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(10,128,80,0.22)",
   },
   listingMapMarkerBubble: {
     alignItems: "center",
     backgroundColor: GREEN,
     borderColor: "#FFFFFF",
-    borderRadius: 18,
+    borderRadius: 19,
     borderWidth: 3,
-    height: 36,
+    height: 38,
     justifyContent: "center",
     shadowColor: "#0B3B29",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
-    width: 36,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    width: 38,
     elevation: 5,
-  },
-  listingMapMarkerTip: {
-    backgroundColor: GREEN,
-    height: 12,
-    marginTop: -9,
-    transform: [{ rotate: "45deg" }],
-    width: 12,
   },
   mapExpandButton: {
     position: "absolute", top: 10, right: 10,
@@ -1863,7 +1956,22 @@ const styles = StyleSheet.create({
   },
 
   // Image / map viewer
-  viewerBackdrop: { flex: 1, backgroundColor: "rgba(17,17,17,0.97)" },
+  viewerBackdrop: { flex: 1, backgroundColor: "#000" },
+  viewerGlassClose: {
+    position: "absolute", left: 16, zIndex: 2,
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.16)",
+    alignItems: "center", justifyContent: "center",
+  },
+  viewerCounter: {
+    position: "absolute", alignSelf: "center", zIndex: 2,
+    backgroundColor: "rgba(255,255,255,0.16)", borderRadius: 999,
+    paddingHorizontal: 12, paddingVertical: 5,
+  },
+  viewerCounterText: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: "#fff",
+    letterSpacing: 0.6, fontVariant: ["tabular-nums"],
+  },
   mapViewerScreen: { flex: 1, backgroundColor: "#fff" },
   mapViewerClose: { backgroundColor: "rgba(17,17,17,0.74)" },
   viewerClose: {

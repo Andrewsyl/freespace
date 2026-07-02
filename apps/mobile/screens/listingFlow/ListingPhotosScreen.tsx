@@ -21,6 +21,7 @@ import { FlowHeader } from "./FlowHeader";
 import { FlowFooter } from "./FlowFooter";
 import { hostFlowColors } from "./hostFlowTheme";
 import { Camera, GripVertical, Info, Plus, Star, X } from "lucide-react-native";
+import { buildStreetViewImageUrl } from "../../utils/streetView";
 
 const GRID_COLS = 2;
 const GRID_GAP = 10;
@@ -77,11 +78,17 @@ export function ListingPhotosScreen({ navigation }: Props) {
   const [uploadLabel, setUploadLabel] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const streetViewCoverUrl = useMemo(() => {
-    if (draft.coverHeading == null || !mapsKey) return null;
     const { latitude, longitude } = draft.location;
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
-    return `https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=${latitude},${longitude}&heading=${draft.coverHeading}&pitch=${draft.coverPitch ?? 0}&fov=80&source=outdoor&key=${mapsKey}`;
-  }, [draft.coverHeading, draft.coverPitch, draft.location, mapsKey]);
+    return buildStreetViewImageUrl({
+      coverPanoId: draft.coverPanoId,
+      coverHeading: draft.coverHeading,
+      coverPitch: draft.coverPitch,
+      latitude,
+      longitude,
+      mapsKey,
+    });
+  }, [draft.coverHeading, draft.coverPitch, draft.coverPanoId, draft.location, mapsKey]);
   const photos = useMemo(() => draft.photos.filter((photo) => photo?.trim()), [draft.photos]);
   const photoItems = useMemo(
     () => [

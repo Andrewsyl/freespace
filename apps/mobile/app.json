@@ -117,7 +117,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.andrewsyl.carparking",
-      "buildNumber": "31",
+      "buildNumber": "34",
       "icon": "./assets/icon-ios-1024.png",
       "jsEngine": "jsc",
       "associatedDomains": [

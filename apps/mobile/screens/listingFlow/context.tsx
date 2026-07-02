@@ -8,6 +8,11 @@ export type ListingDraft = {
   };
   coverHeading?: number | null;
   coverPitch?: number | null;
+  // The panorama the host navigated to (e.g. by moving down the road), distinct
+  // from `location` which stays fixed at the listing's address. Without this,
+  // only heading/pitch were saved and the cover image always re-rendered at the
+  // address's own panorama, discarding any movement.
+  coverPanoId?: string | null;
   spaceType: string;
   spaceCount: string;
   vehicleSize: string;

@@ -32,6 +32,7 @@ import { FlowHeader } from "./FlowHeader";
 import { colors, spacing } from "../../styles/theme";
 import { hostFlowColors } from "./hostFlowTheme";
 import { clearHostListingDraft } from "./draftStorage";
+import { buildStreetViewImageUrl } from "../../utils/streetView";
 
 type FlowStackParamList = {
   ListingReview: undefined;
@@ -110,11 +111,19 @@ export function ListingReviewScreen({ navigation }: Props) {
   // publish), otherwise the first uploaded photo.
   const coverPhotoUri = useMemo(() => {
     const { latitude, longitude } = draft.location;
-    if (draft.coverHeading != null && mapsKey && Number.isFinite(latitude) && Number.isFinite(longitude)) {
-      return `https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=${latitude},${longitude}&heading=${draft.coverHeading}&pitch=${draft.coverPitch ?? 0}&fov=80&source=outdoor&key=${mapsKey}`;
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      const url = buildStreetViewImageUrl({
+        coverPanoId: draft.coverPanoId,
+        coverHeading: draft.coverHeading,
+        coverPitch: draft.coverPitch,
+        latitude,
+        longitude,
+        mapsKey,
+      });
+      if (url) return url;
     }
     return draft.photos.find((p) => p?.trim()) ?? null;
-  }, [draft.coverHeading, draft.coverPitch, draft.location, draft.photos, mapsKey]);
+  }, [draft.coverHeading, draft.coverPitch, draft.coverPanoId, draft.location, draft.photos, mapsKey]);
 
   const spaceTypeValue = draft.spaceType
     ? draft.capacity > 1
@@ -232,9 +241,14 @@ export function ListingReviewScreen({ navigation }: Props) {
     setError(null);
     try {
       void trackEvent("mobile_host_publish_started", { pricingMode: draft.pricingMode, hasPhotos: draft.photos.length > 0 });
-      const coverUrl = draft.coverHeading != null && mapsKey
-        ? `https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=${draft.location.latitude},${draft.location.longitude}&heading=${draft.coverHeading}&pitch=${draft.coverPitch ?? 0}&fov=80&source=outdoor&key=${mapsKey}`
-        : null;
+      const coverUrl = buildStreetViewImageUrl({
+        coverPanoId: draft.coverPanoId,
+        coverHeading: draft.coverHeading,
+        coverPitch: draft.coverPitch,
+        latitude: draft.location.latitude,
+        longitude: draft.location.longitude,
+        mapsKey,
+      });
       const imageUrls = [...(coverUrl ? [coverUrl] : []), ...draft.photos.filter(Boolean)];
       const parsedHourly = Number.parseFloat(draft.pricePerHour);
       const parsedDaily = Number.parseFloat(draft.pricePerDay);

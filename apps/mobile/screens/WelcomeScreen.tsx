@@ -19,6 +19,7 @@ const AUTH_GREEN = "#0a8050";
 export function WelcomeScreen({ navigation, route }: Props) {
   const { user, loginWithOAuth } = useAuth();
   const [submitting, setSubmitting] = useState(false);
+  const [appleSubmitting, setAppleSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
@@ -131,9 +132,9 @@ export function WelcomeScreen({ navigation, route }: Props) {
           source="welcome"
           onStart={() => {
             setError(null);
-            setSubmitting(true);
+            setAppleSubmitting(true);
           }}
-          onDone={() => setSubmitting(false)}
+          onDone={() => setAppleSubmitting(false)}
           onError={setError}
         />
 
@@ -142,7 +143,7 @@ export function WelcomeScreen({ navigation, route }: Props) {
             styles.authOutlineBtn,
             (pressed || submitting) && !submitting ? styles.authOutlineBtnPressed : null,
           ]}
-          disabled={submitting}
+          disabled={submitting || appleSubmitting}
           onPress={handleGoogleSignIn}
         >
           {submitting ? (

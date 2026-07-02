@@ -9,6 +9,7 @@ import type { RootStackParamList } from "../../types";
 import { useListingFlow } from "./context";
 import { StepProgress } from "./StepProgress";
 import { cardShadow, colors, radius, spacing, textStyles } from "../../styles/theme";
+import { buildStreetViewImageUrl } from "../../utils/streetView";
 
 type FlowStackParamList = {
   ListingReview: undefined;
@@ -64,10 +65,14 @@ export function ListingReviewScreen({ navigation }: Props) {
     setSubmitting(true);
     setError(null);
     try {
-      const coverUrl =
-        draft.coverHeading != null && mapsKey
-          ? `https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=${draft.location.latitude},${draft.location.longitude}&heading=${draft.coverHeading}&pitch=${draft.coverPitch ?? 0}&fov=80&source=outdoor&key=${mapsKey}`
-          : null;
+      const coverUrl = buildStreetViewImageUrl({
+        coverPanoId: draft.coverPanoId,
+        coverHeading: draft.coverHeading,
+        coverPitch: draft.coverPitch,
+        latitude: draft.location.latitude,
+        longitude: draft.location.longitude,
+        mapsKey,
+      });
       const imageUrls = [
         ...(coverUrl ? [coverUrl] : []),
         ...draft.photos.filter(Boolean),

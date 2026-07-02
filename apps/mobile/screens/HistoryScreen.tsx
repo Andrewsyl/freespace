@@ -11,7 +11,6 @@ import { useAuth } from "../auth";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { BookingCard } from "../components/BookingCard";
-import { Spinner } from "../components/Spinner";
 import type { RootStackParamList } from "../types";
 import { CalendarDays, ChevronDown, Map } from "lucide-react-native";
 import { formatDateLabel, formatTimeLabel } from "../utils/dateFormat";
@@ -64,6 +63,7 @@ export function HistoryScreen({ navigation, route }: Props) {
   const hideSuccessCallback = useRef<(() => void) | null>(null);
   const [revealBookings, setRevealBookings] = useState(true);
   const [bookingTransitioning, setBookingTransitioning] = useState(false);
+  const [loadingSkeletonVisible, setLoadingSkeletonVisible] = useState(false);
 
   const TABS = ["upcoming", "active", "past"] as const;
   const dragOffsetAnim = useRef(new Animated.Value(0)).current;
@@ -193,6 +193,18 @@ export function HistoryScreen({ navigation, route }: Props) {
   useEffect(() => {
     void loadBookings();
   }, [loadBookings]);
+
+  // Only show the skeleton once loading has taken a beat — fast loads that
+  // turn out empty go straight to the empty state instead of flashing
+  // content-shaped placeholders right before "no bookings" appears.
+  useEffect(() => {
+    if (!loading) {
+      setLoadingSkeletonVisible(false);
+      return;
+    }
+    const timer = setTimeout(() => setLoadingSkeletonVisible(true), 200);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   useEffect(() => {
     if (user) return;
@@ -521,13 +533,6 @@ export function HistoryScreen({ navigation, route }: Props) {
       </View>
 
       <View style={styles.contentWrapper} {...panResponder.panHandlers}>
-        {loading ? (
-          <View style={styles.inlineLoading}>
-            <Spinner size="large" />
-            <Text style={styles.inlineLoadingText}>Loading bookings…</Text>
-          </View>
-        ) : null}
-
         <Animated.View
           style={{
             flex: 1,
@@ -569,7 +574,7 @@ export function HistoryScreen({ navigation, route }: Props) {
               return result;
             })();
             const showPaneSkeleton =
-              (loading || (isSwitchingTab && paneTab === tabSwitchingTo)) &&
+              ((loading && loadingSkeletonVisible) || (isSwitchingTab && paneTab === tabSwitchingTo)) &&
               !bookingTransitioning;
             const showPaneEmpty =
               !loading && !showPaneSkeleton && paneData.length === 0;
@@ -824,22 +829,6 @@ const styles = StyleSheet.create({
     backgroundColor: ACCENT,
     borderTopLeftRadius: 2,
     borderTopRightRadius: 2,
-  },
-
-  // ── Loading ──────────────────────────────────────────────────
-  inlineLoading: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  inlineLoadingText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    color: MUTED,
-    fontSize: 13,
   },
 
   // ── Content ──────────────────────────────────────────────────

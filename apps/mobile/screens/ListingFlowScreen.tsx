@@ -42,6 +42,7 @@ const defaultDraft: ListingDraft = {
   },
   coverHeading: null,
   coverPitch: null,
+  coverPanoId: null,
   spaceType: "",
   spaceCount: "",
   vehicleSize: "",
