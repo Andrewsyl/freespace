@@ -566,10 +566,16 @@ export async function refreshSession(refreshToken: string) {
   return (await response.json()) as AuthResponse;
 }
 
-export async function revokeSession(token: string) {
+export async function revokeSession(token: string, refreshToken?: string | null) {
+  // Sending this device's refresh token lets the server revoke just this
+  // device's session instead of the account-wide legacy token.
   const response = await fetchWithTimeout(`${baseUrl}/api/auth/logout`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(refreshToken ? { refreshToken } : {}),
   });
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, "Logout failed"));
@@ -698,6 +704,18 @@ export async function oauthLoginGoogle(idToken: string) {
   });
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, "Google sign-in failed"));
+  }
+  return (await response.json()) as AuthResponse;
+}
+
+export async function oauthLoginApple(identityToken: string, fullName?: string | null) {
+  const response = await fetchWithTimeout(`${baseUrl}/api/auth/oauth/apple`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ identityToken, fullName: fullName ?? undefined }),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, "Apple sign-in failed"));
   }
   return (await response.json()) as AuthResponse;
 }

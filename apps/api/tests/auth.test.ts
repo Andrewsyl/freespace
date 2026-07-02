@@ -10,6 +10,7 @@ const db = {
   createUser: vi.fn(),
   findUserByEmail: vi.fn(),
   insertEventLog: vi.fn(),
+  insertRefreshToken: vi.fn(),
   setRefreshToken: vi.fn(),
 };
 
@@ -20,6 +21,7 @@ vi.mock("../src/lib/db.js", async () => {
     createUser: db.createUser,
     findUserByEmail: db.findUserByEmail,
     insertEventLog: db.insertEventLog,
+    insertRefreshToken: db.insertRefreshToken,
     setRefreshToken: db.setRefreshToken,
   };
 });
@@ -58,7 +60,7 @@ describe("auth routes", () => {
       privacy_version: "2026-03",
       privacy_accepted_at: null,
     });
-    db.setRefreshToken.mockResolvedValueOnce(undefined);
+    db.insertRefreshToken.mockResolvedValueOnce(undefined);
 
     const { createApp } = await import("../src/app.js");
     const app = createApp();
@@ -75,7 +77,7 @@ describe("auth routes", () => {
     expect(response.body.refreshToken).toBeTruthy();
     expect(response.body.user.email).toBe("driver@example.com");
     expect(db.createUser).toHaveBeenCalled();
-    expect(db.setRefreshToken).toHaveBeenCalled();
+    expect(db.insertRefreshToken).toHaveBeenCalled();
   });
 
   it("rejects invalid login credentials", async () => {

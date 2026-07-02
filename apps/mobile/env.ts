@@ -39,6 +39,16 @@ if (appEnv !== "production" && stripeKey.startsWith("pk_live_")) {
   throw new Error("Live Stripe publishable keys are not allowed outside production");
 }
 
+// Production builds must use a live key so a forgotten test→live swap can't
+// ship. Internal production-like builds (the eas.json "preview" profile) opt
+// out explicitly via EXPO_PUBLIC_ALLOW_TEST_PAYMENTS=true.
+const allowTestPayments = process.env.EXPO_PUBLIC_ALLOW_TEST_PAYMENTS === "true";
+if (appEnv === "production" && !allowTestPayments && !stripeKey.startsWith("pk_live_")) {
+  throw new Error(
+    "Production builds require a live Stripe publishable key (or EXPO_PUBLIC_ALLOW_TEST_PAYMENTS=true for internal builds)"
+  );
+}
+
 export const mobileEnv = {
   apiBase,
   appEnv,

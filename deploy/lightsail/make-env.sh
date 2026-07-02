@@ -39,9 +39,15 @@ if [ "$STRIPE_MODE" = "test" ]; then
   : "${STRIPE_TEST_WEBHOOK_SECRET:?export STRIPE_TEST_WEBHOOK_SECRET first}"
   STRIPE_SECRET_KEY="$STRIPE_TEST_SECRET_KEY"
   STRIPE_WEBHOOK_SECRET="$STRIPE_TEST_WEBHOOK_SECRET"
+  # NODE_ENV is always "production" below regardless of STRIPE_MODE, and the
+  # API refuses to boot with a test Stripe key under NODE_ENV=production
+  # unless this is set — that's the guard working as intended everywhere
+  # except this deliberate test-mode path.
+  ALLOW_TEST_STRIPE_KEYS_IN_PRODUCTION=true
 else
   STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY:-$(get STRIPE_SECRET_KEY)}"
   STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET:-$(get STRIPE_WEBHOOK_SECRET)}"
+  ALLOW_TEST_STRIPE_KEYS_IN_PRODUCTION=false
 fi
 
 _DATABASE_URL=$(sq "$(get DATABASE_URL)")

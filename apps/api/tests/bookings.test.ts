@@ -21,8 +21,11 @@ const db = {
   getFraudSettings: vi.fn(),
   getRecentBookingStats: vi.fn(),
   getUserRiskProfile: vi.fn(),
+  insertBookingPayment: vi.fn(),
   insertEventLog: vi.fn(),
+  listUnrefundedBookingPayments: vi.fn(),
   listUserBookings: vi.fn(),
+  markBookingPaymentRefunded: vi.fn(),
   markBookingRefundedByPaymentIntent: vi.fn(),
   poolQuery: vi.fn(),
   updateBookingStatusByPaymentIntent: vi.fn(),
@@ -64,8 +67,11 @@ vi.mock("../src/lib/db.js", async () => {
     getFraudSettings: db.getFraudSettings,
     getRecentBookingStats: db.getRecentBookingStats,
     getUserRiskProfile: db.getUserRiskProfile,
+    insertBookingPayment: db.insertBookingPayment,
     insertEventLog: db.insertEventLog,
+    listUnrefundedBookingPayments: db.listUnrefundedBookingPayments,
     listUserBookings: db.listUserBookings,
+    markBookingPaymentRefunded: db.markBookingPaymentRefunded,
     markBookingRefundedByPaymentIntent: db.markBookingRefundedByPaymentIntent,
     pool: { query: db.poolQuery },
     updateBookingStatusByPaymentIntent: db.updateBookingStatusByPaymentIntent,
@@ -126,6 +132,9 @@ describe("bookings routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     db.updateBookingStatusByPaymentIntent.mockResolvedValue(true);
+    db.insertBookingPayment.mockResolvedValue(true);
+    db.listUnrefundedBookingPayments.mockResolvedValue([]);
+    db.markBookingPaymentRefunded.mockResolvedValue(undefined);
   });
 
   it("creates a payment intent for a valid authenticated booking", async () => {
@@ -560,6 +569,7 @@ describe("bookings routes", () => {
           {
             id: "booking-1",
             listing_id: "11111111-1111-4111-8111-111111111111",
+            driver_id: "user-1",
             start_time: new Date("2026-03-20T10:00:00.000Z"),
             end_time: new Date("2026-03-20T12:00:00.000Z"),
           },
@@ -662,6 +672,7 @@ describe("bookings routes", () => {
           {
             id: "booking-1",
             listing_id: "11111111-1111-4111-8111-111111111111",
+            driver_id: "user-1",
             start_time: new Date("2026-03-20T10:00:00.000Z"),
             end_time: new Date("2026-03-20T12:00:00.000Z"),
           },
@@ -674,7 +685,11 @@ describe("bookings routes", () => {
       status: "succeeded",
       charges: { data: [{ receipt_url: "https://receipt.test/1" }] },
     });
-    db.getBookingByPaymentIntent.mockResolvedValue({ id: "booking-1", status: "pending" });
+    db.getBookingByPaymentIntent.mockResolvedValue({
+      id: "booking-1",
+      driver_id: "user-1",
+      status: "pending",
+    });
 
     const { createApp } = await import("../src/app.js");
     const { signToken } = await import("../src/lib/auth.js");
@@ -725,6 +740,63 @@ describe("bookings routes", () => {
     );
     expect(db.cancelBookingWithRefund).toHaveBeenCalledWith(
       expect.objectContaining({ bookingId: "11111111-1111-4111-8111-111111111111", refundId: "re_123" })
+    );
+  });
+
+  it("refunds extension top-up payments when canceling an extended booking", async () => {
+    db.getBookingForRefund.mockResolvedValue({
+      id: "booking-1",
+      status: "confirmed",
+      payment_intent_id: "pi_original",
+      payout_status: "pending",
+      end_time: new Date("2026-03-20T12:00:00.000Z"),
+      refund_status: null,
+      refund_id: null,
+    });
+    db.listUnrefundedBookingPayments.mockResolvedValue([
+      {
+        id: "bp-1",
+        booking_id: "11111111-1111-4111-8111-111111111111",
+        payment_intent_id: "pi_extension",
+        amount_cents: 500,
+        currency: "eur",
+        kind: "extension",
+        refund_id: null,
+        refund_status: null,
+      },
+    ]);
+    stripeMocks.refundsCreate
+      .mockResolvedValueOnce({ id: "re_original" })
+      .mockResolvedValueOnce({ id: "re_extension" });
+    db.markBookingRefundedByPaymentIntent.mockResolvedValue(undefined);
+    db.cancelBookingWithRefund.mockResolvedValue(true);
+    db.getBookingNotificationTargets.mockResolvedValue(null);
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    // Distinct user so this test doesn't consume user-1's shared in-memory
+    // booking rate-limit budget for the suite.
+    const token = signToken({ userId: "user-topup", email: "driver@example.com", role: "driver" });
+
+    const response = await request(app)
+      .post("/api/bookings/11111111-1111-4111-8111-111111111111/cancel")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, refunded: true });
+    // Both the original charge and the extension top-up must be refunded.
+    expect(stripeMocks.refundsCreate).toHaveBeenCalledTimes(2);
+    expect(stripeMocks.refundsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ payment_intent: "pi_original" }),
+      expect.anything()
+    );
+    expect(stripeMocks.refundsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ payment_intent: "pi_extension" }),
+      expect.anything()
+    );
+    expect(db.markBookingPaymentRefunded).toHaveBeenCalledWith(
+      expect.objectContaining({ paymentIntentId: "pi_extension", refundId: "re_extension" })
     );
   });
 

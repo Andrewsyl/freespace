@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { createApp } from "./app.js";
 import { processScheduledNotifications } from "./lib/notifications.js";
+import { sweepStalePendingBookings } from "./lib/bookingSweeper.js";
 import { reportOperationalAlert } from "./lib/opsAlerts.js";
 import { pool } from "./lib/db.js";
 import { env } from "./env.js";
@@ -90,6 +91,16 @@ if (env.NOTIFICATION_PROCESSOR_INTERVAL_MS) {
     void processScheduledNotifications(50);
   }, env.NOTIFICATION_PROCESSOR_INTERVAL_MS);
 }
+
+// Cancel abandoned payment-sheet bookings so they stop blocking capacity.
+// Defaults on (every 5 minutes); override with BOOKING_SWEEPER_INTERVAL_MS.
+setInterval(() => {
+  void sweepStalePendingBookings(25).catch((error) => {
+    logWarn("booking-sweeper.tick_failed", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+  });
+}, env.BOOKING_SWEEPER_INTERVAL_MS ?? 5 * 60 * 1000);
 
 async function logRuntimeHealthChecks() {
   try {

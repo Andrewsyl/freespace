@@ -45,6 +45,7 @@
       },
       "env": {
         "APP_ENV": "production",
+        "EXPO_PUBLIC_ALLOW_TEST_PAYMENTS": "true",
         "EXPO_PUBLIC_API_BASE": "https://api.freespace.ie",
         "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_h54YYEIQMx4mUrtW5wIwnTuc00gA4yzLhn",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyC1h1NFLFz7SPauw85Udh0O1CBlN5bqOek",
@@ -58,6 +59,7 @@
       "yarn": "1.22.22",
       "env": {
         "APP_ENV": "production",
+        "EXPO_PUBLIC_ALLOW_TEST_PAYMENTS": "true",
         "EXPO_PUBLIC_API_BASE": "https://api.freespace.ie",
         "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_h54YYEIQMx4mUrtW5wIwnTuc00gA4yzLhn",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyC1h1NFLFz7SPauw85Udh0O1CBlN5bqOek",

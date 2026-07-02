@@ -132,7 +132,15 @@ router.put("/payment-methods/:id", requireAuth, enforceBlockedList, paymentMetho
     if (!user) return res.status(401).json({ message: "Unauthorized" });
     const customerId = await getOrCreateCustomer(user.email);
     const pmId = z.string().trim().min(5).max(200).parse(req.params.id);
-    await stripe.paymentMethods.attach(pmId, { customer: customerId });
+    // A method already attached to a different customer is not this user's to
+    // claim as their default.
+    const paymentMethod = await stripe.paymentMethods.retrieve(pmId);
+    if (paymentMethod.customer && paymentMethod.customer !== customerId) {
+      return res.status(404).json({ message: "Payment method not found" });
+    }
+    if (!paymentMethod.customer) {
+      await stripe.paymentMethods.attach(pmId, { customer: customerId });
+    }
     await stripe.customers.update(customerId, {
       invoice_settings: { default_payment_method: pmId },
     });
@@ -148,6 +156,16 @@ router.delete("/payment-methods/:id", requireAuth, enforceBlockedList, paymentMe
     const gate = await requireActiveUser(req.user?.userId);
     if (!gate.ok) return res.status(403).json({ message: gate.message });
     const pmId = z.string().trim().min(5).max(200).parse(req.params.id);
+    // Only detach methods that belong to the caller's own Stripe customer —
+    // otherwise any authenticated user who learns a pm_ id could detach it.
+    const userFromId = await findUserById(req.user!.userId);
+    const user = userFromId ?? (req.user?.email ? await findUserByEmail(req.user.email) : undefined);
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
+    const customerId = await getOrCreateCustomer(user.email);
+    const paymentMethod = await stripe.paymentMethods.retrieve(pmId);
+    if (paymentMethod.customer !== customerId) {
+      return res.status(404).json({ message: "Payment method not found" });
+    }
     await stripe.paymentMethods.detach(pmId);
     res.status(204).send();
   } catch (err) {

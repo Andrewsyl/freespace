@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import {
   comparePassword,
   generateRefreshToken,
@@ -11,11 +12,16 @@ import {
 import {
   clearRefreshToken,
   createUser,
+  deleteRefreshTokenByHash,
+  deleteRefreshTokensForUser,
   deleteUserAccount,
   findUserByEmail,
   findUserById,
   findUserByResetToken,
   findUserByRefreshTokenHash,
+  findUserByDeviceRefreshTokenHash,
+  insertRefreshToken,
+  rotateRefreshToken,
   setEmailVerified,
   setLegalAcceptance,
   setPasswordResetToken,
@@ -38,7 +44,19 @@ import { createRateLimiter } from "../middleware/rateLimit.js";
 import { enforceBlockedList } from "../middleware/fraud.js";
 
 const router = Router();
-const loginLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 5, keyPrefix: "login" });
+// Keyed by IP + email: mobile carriers put thousands of users behind one
+// CGNAT IP, so a pure-IP key would let strangers exhaust each other's login
+// attempts. Scoping to the email keeps brute-force protection per-account.
+const loginLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 5,
+  keyPrefix: "login",
+  keyGenerator: (req) => {
+    const email =
+      typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "no-email";
+    return `${req.ip ?? "unknown"}:${email}`;
+  },
+});
 const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: "register" });
 const resetLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 3, keyPrefix: "reset" });
 const verifyLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 3, keyPrefix: "verify" });
@@ -235,7 +253,7 @@ router.post("/register", enforceBlockedList, registerLimiter, async (req, res, n
     const jwt = signToken({ userId: user.id, email: user.email, role: user.role });
     const refreshToken = generateRefreshToken();
     const refreshExpires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-    await setRefreshToken(user.id, hashToken(refreshToken), refreshExpires);
+    await insertRefreshToken({ userId: user.id, tokenHash: hashToken(refreshToken), expiresAt: refreshExpires });
     // Fire and forget email; if email fails we still allow soft login.
     const verifyUrl = buildVerificationUrl(token);
     sendMail({
@@ -289,7 +307,7 @@ router.post("/login", enforceBlockedList, loginLimiter, async (req, res, next) =
     const token = signToken({ userId: user.id, email: user.email, role: user.role });
     const refreshToken = generateRefreshToken();
     const refreshExpires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-    await setRefreshToken(user.id, hashToken(refreshToken), refreshExpires);
+    await insertRefreshToken({ userId: user.id, tokenHash: hashToken(refreshToken), expiresAt: refreshExpires });
     await insertEventLog({
       eventType: "login_succeeded",
       payload: { userId: user.id },
@@ -306,6 +324,85 @@ router.post("/login", enforceBlockedList, loginLimiter, async (req, res, next) =
 
 const googleOAuthSchema = z.object({
   idToken: z.string().min(20),
+});
+
+const appleOAuthSchema = z.object({
+  identityToken: z.string().min(20),
+  // Apple only exposes the user's name on the very first authorization, and
+  // only to the client — it is never inside the identity token.
+  fullName: z.string().trim().min(1).max(120).optional(),
+});
+
+const APPLE_ISSUER = "https://appleid.apple.com";
+const appleJwks = createRemoteJWKSet(new URL("https://appleid.apple.com/auth/keys"));
+
+router.post("/oauth/apple", enforceBlockedList, oauthLimiter, async (req, res, next) => {
+  try {
+    const { identityToken, fullName } = appleOAuthSchema.parse(req.body);
+    const acceptedAudiences = (
+      process.env.APPLE_BUNDLE_IDS ?? "com.andrewsyl.carparking,com.andrewsyl.carparking.dev"
+    )
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    let payload: { email?: string; email_verified?: string | boolean; sub?: string };
+    try {
+      const verified = await jwtVerify(identityToken, appleJwks, {
+        issuer: APPLE_ISSUER,
+        audience: acceptedAudiences,
+      });
+      payload = verified.payload as typeof payload;
+    } catch {
+      return res.status(401).json({ message: "Invalid Apple token" });
+    }
+    if (!payload.email) {
+      return res.status(400).json({ message: "Apple account missing email" });
+    }
+
+    let user = await findUserByEmail(payload.email);
+    if (!user) {
+      const passwordHash = await hashPassword(generateVerificationToken());
+      user = await createUser({
+        email: payload.email,
+        fullName: fullName ?? null,
+        passwordHash,
+        verificationToken: null,
+        verificationExpires: null,
+      });
+    } else if (fullName && !user.full_name) {
+      user =
+        (await updateUserProfile({
+          userId: user.id,
+          fullName,
+        })) ?? user;
+    }
+    if (!user) {
+      return res.status(500).json({ message: "Could not create user" });
+    }
+    if (!ensureAccountActive(user)) {
+      return res.status(403).json({ message: "Account suspended. Contact support." });
+    }
+    await setEmailVerified(user.id, true);
+    const token = signToken({ userId: user.id, email: user.email, role: user.role });
+    const refreshToken = generateRefreshToken();
+    const refreshExpires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
+    await insertRefreshToken({ userId: user.id, tokenHash: hashToken(refreshToken), expiresAt: refreshExpires });
+    await insertEventLog({
+      eventType: "login_succeeded",
+      payload: { userId: user.id, provider: "apple" },
+    });
+    res.json({
+      token,
+      refreshToken,
+      user: {
+        ...toPublicUser(user),
+        emailVerified: true,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.post("/oauth/google", enforceBlockedList, oauthLimiter, async (req, res, next) => {
@@ -360,7 +457,7 @@ router.post("/oauth/google", enforceBlockedList, oauthLimiter, async (req, res, 
     const token = signToken({ userId: user.id, email: user.email, role: user.role });
     const refreshToken = generateRefreshToken();
     const refreshExpires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-    await setRefreshToken(user.id, hashToken(refreshToken), refreshExpires);
+    await insertRefreshToken({ userId: user.id, tokenHash: hashToken(refreshToken), expiresAt: refreshExpires });
     await insertEventLog({
       eventType: "login_succeeded",
       payload: { userId: user.id, provider: "google" },
@@ -442,7 +539,7 @@ router.post("/oauth/facebook", enforceBlockedList, oauthLimiter, async (req, res
     const token = signToken({ userId: user.id, email: user.email, role: user.role });
     const refreshToken = generateRefreshToken();
     const refreshExpires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-    await setRefreshToken(user.id, hashToken(refreshToken), refreshExpires);
+    await insertRefreshToken({ userId: user.id, tokenHash: hashToken(refreshToken), expiresAt: refreshExpires });
     await insertEventLog({
       eventType: "login_succeeded",
       payload: { userId: user.id, provider: "facebook" },
@@ -638,6 +735,9 @@ router.post("/reset-password", enforceBlockedList, resetLimiter, async (req, res
     if (!user) return res.status(400).json({ message: "Invalid or expired reset link" });
     const passwordHash = await hashPassword(password);
     await updateUserPassword(user.id, passwordHash);
+    // A reset often means the account was compromised — sign out every device.
+    await deleteRefreshTokensForUser(user.id);
+    await clearRefreshToken(user.id);
     res.json({ ok: true });
   } catch (error) {
     next(error);
@@ -665,6 +765,8 @@ router.post("/change-password", requireAuth, accountWriteLimiter, async (req, re
     }
     const passwordHash = await hashPassword(newPassword);
     await updateUserPassword(user.id, passwordHash);
+    // Password change invalidates every device's session.
+    await deleteRefreshTokensForUser(user.id);
     await clearRefreshToken(user.id);
     res.json({ ok: true });
   } catch (error) {
@@ -676,16 +778,38 @@ router.post("/refresh", refreshLimiter, async (req, res, next) => {
   try {
     const { refreshToken } = z.object({ refreshToken: z.string().min(20) }).parse(req.body);
     const tokenHash = hashToken(refreshToken);
-    const user = await findUserByRefreshTokenHash(tokenHash);
+    // Per-device token first; fall back to the legacy single-token column for
+    // sessions issued before migration 045 and move them into the new table.
+    let user = await findUserByDeviceRefreshTokenHash(tokenHash);
+    let isLegacyToken = false;
+    if (!user) {
+      user = await findUserByRefreshTokenHash(tokenHash);
+      isLegacyToken = Boolean(user);
+    }
     if (!user) return res.status(401).json({ message: "Invalid refresh token" });
     if (!ensureAccountActive(user)) {
+      await deleteRefreshTokensForUser(user.id);
       await clearRefreshToken(user.id);
       return res.status(403).json({ message: "Account suspended. Contact support." });
     }
     const token = signToken({ userId: user.id, email: user.email, role: user.role });
     const nextRefreshToken = generateRefreshToken();
     const refreshExpires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-    await setRefreshToken(user.id, hashToken(nextRefreshToken), refreshExpires);
+    if (isLegacyToken) {
+      await clearRefreshToken(user.id);
+      await insertRefreshToken({
+        userId: user.id,
+        tokenHash: hashToken(nextRefreshToken),
+        expiresAt: refreshExpires,
+      });
+    } else {
+      const rotated = await rotateRefreshToken({
+        oldTokenHash: tokenHash,
+        newTokenHash: hashToken(nextRefreshToken),
+        expiresAt: refreshExpires,
+      });
+      if (!rotated) return res.status(401).json({ message: "Invalid refresh token" });
+    }
     res.json({
       token,
       refreshToken: nextRefreshToken,
@@ -806,6 +930,7 @@ router.post("/logout-all", requireAuth, accountWriteLimiter, async (req, res, ne
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    await deleteRefreshTokensForUser(userId);
     await clearRefreshToken(userId);
     res.json({ ok: true });
   } catch (error) {
@@ -817,7 +942,19 @@ router.post("/logout", requireAuth, accountWriteLimiter, async (req, res, next) 
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
-    await clearRefreshToken(userId);
+    // With per-device sessions, logout should only revoke this device's
+    // refresh token (sent in the body). Clients that don't send one (older
+    // builds) fall back to the legacy behaviour of clearing the single
+    // account-wide token; per-device rows from other installs stay valid.
+    const refreshToken =
+      typeof req.body?.refreshToken === "string" && req.body.refreshToken.length >= 20
+        ? req.body.refreshToken
+        : null;
+    if (refreshToken) {
+      await deleteRefreshTokenByHash(hashToken(refreshToken));
+    } else {
+      await clearRefreshToken(userId);
+    }
     res.json({ ok: true });
   } catch (error) {
     next(error);

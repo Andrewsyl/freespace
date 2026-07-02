@@ -6,6 +6,7 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import {
   acceptLegal as apiAcceptLegal,
   login as apiLogin,
+  oauthLoginApple,
   oauthLoginFacebook,
   oauthLoginGoogle,
   refreshSession,
@@ -32,7 +33,7 @@ export type AuthUser = {
   termsAcceptedAt?: string | null;
   privacyVersion?: string | null;
   privacyAcceptedAt?: string | null;
-  authProvider?: "password" | "google" | "facebook";
+  authProvider?: "password" | "google" | "facebook" | "apple";
 };
 
 type AuthContextValue = {
@@ -52,7 +53,11 @@ type AuthContextValue = {
       privacyVersion: string;
     }
   ) => Promise<{ previewUrl: string | null; user: AuthUser }>;
-  loginWithOAuth: (provider: "google" | "facebook", token: string) => Promise<AuthUser>;
+  loginWithOAuth: (
+    provider: "google" | "facebook" | "apple",
+    token: string,
+    opts?: { fullName?: string | null }
+  ) => Promise<AuthUser>;
   acceptLegal: (payload: { termsVersion: string; privacyVersion: string }) => Promise<AuthUser>;
   setAuthUser: (user: AuthUser) => Promise<void>;
   hydrateSession: (session: { token: string; user: AuthUser; refreshToken?: string | null } | null) => Promise<void>;
@@ -158,6 +163,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   tokenRef.current = token;
   const userRef = useRef<AuthUser | null>(null);
   userRef.current = user;
+  const refreshTokenRef = useRef<string | null>(null);
+  refreshTokenRef.current = refreshToken;
 
   useEffect(() => {
     const restore = async () => {
@@ -276,6 +283,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     const currentToken = tokenRef.current;
+    const currentRefreshToken = refreshTokenRef.current;
     setToken(null);
     setUser(null);
     setLegalPromptRequired(false);
@@ -303,7 +311,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Ignore push unregister errors; logout proceeds regardless.
       }
       try {
-        await revokeSession(currentToken);
+        await revokeSession(currentToken, currentRefreshToken);
       } catch {
         // Ignore server logout errors.
       }
@@ -317,11 +325,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void resetPostHogUser();
   }, []);
 
-  const loginWithOAuth = useCallback(async (provider: "google" | "facebook", tokenValue: string) => {
+  const loginWithOAuth = useCallback(async (
+    provider: "google" | "facebook" | "apple",
+    tokenValue: string,
+    opts?: { fullName?: string | null }
+  ) => {
     const response =
       provider === "google"
         ? await oauthLoginGoogle(tokenValue)
-        : await oauthLoginFacebook(tokenValue);
+        : provider === "apple"
+          ? await oauthLoginApple(tokenValue, opts?.fullName)
+          : await oauthLoginFacebook(tokenValue);
     const nextUser = withAuthProvider(response.user, provider);
     setToken(response.token);
     setUser(nextUser);

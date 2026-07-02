@@ -1036,6 +1036,98 @@ export async function findUserByRefreshTokenHash(tokenHash: string) {
   return result.rows[0] as UserRecord | undefined;
 }
 
+// --- Per-device refresh tokens (migration 045) ---------------------------
+// One row per signed-in device so a second login no longer revokes the first
+// device's session. The legacy users.refresh_token_hash column is only read
+// as a fallback for tokens issued before the migration.
+
+const MAX_REFRESH_TOKENS_PER_USER = 10;
+
+export async function insertRefreshToken({
+  userId,
+  tokenHash,
+  expiresAt,
+}: {
+  userId: string;
+  tokenHash: string;
+  expiresAt: Date;
+}) {
+  await pool.query(
+    `
+    INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (token_hash) DO UPDATE SET expires_at = EXCLUDED.expires_at
+    `,
+    [userId, tokenHash, expiresAt]
+  );
+  // Keep at most N live device sessions per account; drop the oldest beyond
+  // that (and any already-expired rows) so the table can't grow unbounded.
+  await pool.query(
+    `
+    DELETE FROM refresh_tokens
+    WHERE user_id = $1
+      AND (
+        expires_at <= now()
+        OR id NOT IN (
+          SELECT id FROM refresh_tokens
+          WHERE user_id = $1
+          ORDER BY created_at DESC
+          LIMIT $2
+        )
+      )
+    `,
+    [userId, MAX_REFRESH_TOKENS_PER_USER]
+  );
+}
+
+export async function findUserByDeviceRefreshTokenHash(tokenHash: string) {
+  const result = await pool.query(
+    `
+    SELECT u.id, u.email, u.full_name, u.phone, u.phone_verified, u.role, u.host_stripe_account_id, u.email_verified,
+      u.vehicle_make, u.vehicle_type, u.vehicle_color, u.vehicle_plate, u.status, u.refresh_token_hash, u.refresh_expires,
+      u.terms_version, u.terms_accepted_at, u.privacy_version, u.privacy_accepted_at
+    FROM refresh_tokens rt
+    JOIN users u ON u.id = rt.user_id
+    WHERE rt.token_hash = $1
+      AND rt.expires_at > now()
+    LIMIT 1
+    `,
+    [tokenHash]
+  );
+  return result.rows[0] as UserRecord | undefined;
+}
+
+// Rotates a device's refresh token in place so rotation doesn't consume one
+// of the per-user session slots.
+export async function rotateRefreshToken({
+  oldTokenHash,
+  newTokenHash,
+  expiresAt,
+}: {
+  oldTokenHash: string;
+  newTokenHash: string;
+  expiresAt: Date;
+}) {
+  const result = await pool.query(
+    `
+    UPDATE refresh_tokens
+    SET token_hash = $2, expires_at = $3, last_used_at = now()
+    WHERE token_hash = $1
+    RETURNING id
+    `,
+    [oldTokenHash, newTokenHash, expiresAt]
+  );
+  return Boolean(result.rowCount && result.rowCount > 0);
+}
+
+export async function deleteRefreshTokenByHash(tokenHash: string) {
+  await pool.query(`DELETE FROM refresh_tokens WHERE token_hash = $1`, [tokenHash]);
+}
+
+export async function deleteRefreshTokensForUser(userId: string) {
+  await pool.query(`DELETE FROM refresh_tokens WHERE user_id = $1`, [userId]);
+}
+
 export async function setLegalAcceptance({
   userId,
   termsVersion,
@@ -2538,7 +2630,6 @@ export async function updateBookingWindow({
   newStartTime,
   newEndTime,
   newAmountCents,
-  paymentIntentId,
   receiptUrl,
 }: {
   bookingId: string;
@@ -2546,19 +2637,20 @@ export async function updateBookingWindow({
   newStartTime: string;
   newEndTime: string;
   newAmountCents: number;
-  paymentIntentId?: string | null;
   receiptUrl?: string | null;
 }) {
+  // NOTE: payment_intent_id is intentionally NOT updated here. It must keep
+  // pointing at the original booking charge — top-up payments for changes and
+  // extensions live in booking_payments so cancellation refunds cover both.
   const res = await pool.query(
     `
     UPDATE bookings
     SET start_time = $1,
         end_time = $2,
         amount_cents = $3,
-        payment_intent_id = COALESCE($4, payment_intent_id),
-        receipt_url = COALESCE($5, receipt_url)
-    WHERE id = $6
-      AND driver_id = $7
+        receipt_url = COALESCE($4, receipt_url)
+    WHERE id = $5
+      AND driver_id = $6
       AND status = 'confirmed'
       AND end_time > NOW()
     RETURNING id, start_time, end_time, amount_cents;
@@ -2567,7 +2659,6 @@ export async function updateBookingWindow({
       newStartTime,
       newEndTime,
       newAmountCents,
-      paymentIntentId ?? null,
       receiptUrl ?? null,
       bookingId,
       driverId,
@@ -2583,32 +2674,133 @@ export async function updateBookingExtension({
   driverId,
   newEndTime,
   newAmountCents,
-  paymentIntentId,
   receiptUrl,
 }: {
   bookingId: string;
   driverId: string;
   newEndTime: string;
   newAmountCents: number;
-  paymentIntentId?: string | null;
   receiptUrl?: string | null;
 }) {
+  // NOTE: payment_intent_id is intentionally NOT updated here. It must keep
+  // pointing at the original booking charge — top-up payments for extensions
+  // live in booking_payments so cancellation refunds cover both.
   const res = await pool.query(
     `
     UPDATE bookings
     SET end_time = $1,
         amount_cents = $2,
-        payment_intent_id = COALESCE($3, payment_intent_id),
-        receipt_url = COALESCE($4, receipt_url)
-    WHERE id = $5
-      AND driver_id = $6
+        receipt_url = COALESCE($3, receipt_url)
+    WHERE id = $4
+      AND driver_id = $5
       AND status = 'confirmed'
       AND end_time > NOW()
     RETURNING id, end_time, amount_cents;
     `,
-    [newEndTime, newAmountCents, paymentIntentId ?? null, receiptUrl ?? null, bookingId, driverId]
+    [newEndTime, newAmountCents, receiptUrl ?? null, bookingId, driverId]
   );
   return res.rows[0] as { id: string; end_time: Date; amount_cents: number } | undefined;
+}
+
+export type BookingTopUpPayment = {
+  id: string;
+  booking_id: string;
+  payment_intent_id: string;
+  amount_cents: number;
+  currency: string;
+  kind: "extension" | "change";
+  refund_id: string | null;
+  refund_status: string | null;
+};
+
+// Records an extension/change top-up charge. Idempotent on payment_intent_id
+// so the client confirm call and the Stripe webhook can both attempt it.
+// Returns true when a new row was inserted, false when it already existed.
+export async function insertBookingPayment({
+  bookingId,
+  paymentIntentId,
+  amountCents,
+  currency,
+  kind,
+}: {
+  bookingId: string;
+  paymentIntentId: string;
+  amountCents: number;
+  currency: string;
+  kind: "extension" | "change";
+}) {
+  const res = await pool.query(
+    `
+    INSERT INTO booking_payments (booking_id, payment_intent_id, amount_cents, currency, kind)
+    VALUES ($1, $2, $3, $4, $5)
+    ON CONFLICT (payment_intent_id) DO NOTHING
+    RETURNING id;
+    `,
+    [bookingId, paymentIntentId, amountCents, currency.toLowerCase(), kind]
+  );
+  return Boolean(res.rowCount && res.rowCount > 0);
+}
+
+export async function listUnrefundedBookingPayments(bookingId: string) {
+  const res = await pool.query(
+    `
+    SELECT id, booking_id, payment_intent_id, amount_cents, currency, kind, refund_id, refund_status
+    FROM booking_payments
+    WHERE booking_id = $1
+      AND refund_id IS NULL
+      AND (refund_status IS NULL OR refund_status <> 'succeeded')
+    ORDER BY created_at ASC;
+    `,
+    [bookingId]
+  );
+  return res.rows as BookingTopUpPayment[];
+}
+
+// Payment-sheet bookings are inserted as 'pending' before the user pays. If
+// the app dies mid-sheet the client's cleanup call never arrives and the row
+// blocks the slot's capacity forever — these are the rows the sweeper cancels.
+// Checkout-session bookings (checkout_session_id set) are excluded: Stripe
+// expires those sessions itself and the webhook cancels the booking.
+export async function listStalePendingBookings({
+  olderThanMinutes,
+  limit,
+}: {
+  olderThanMinutes: number;
+  limit: number;
+}) {
+  const res = await pool.query(
+    `
+    SELECT id, payment_intent_id
+    FROM bookings
+    WHERE COALESCE(status::text, 'pending') = 'pending'
+      AND checkout_session_id IS NULL
+      AND payment_intent_id IS NOT NULL
+      AND created_at < NOW() - ($1 || ' minutes')::interval
+    ORDER BY created_at ASC
+    LIMIT $2;
+    `,
+    [String(olderThanMinutes), limit]
+  );
+  return res.rows as { id: string; payment_intent_id: string }[];
+}
+
+export async function markBookingPaymentRefunded({
+  paymentIntentId,
+  refundId,
+}: {
+  paymentIntentId: string;
+  refundId: string | null;
+}) {
+  await pool.query(
+    `
+    UPDATE booking_payments
+    SET refund_status = 'succeeded',
+        refund_id = COALESCE($2, refund_id),
+        refunded_at = NOW()
+    WHERE payment_intent_id = $1;
+    `,
+    [paymentIntentId, refundId]
+  );
 }
 
 export async function checkInBooking({

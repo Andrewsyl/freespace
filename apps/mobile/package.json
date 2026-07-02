@@ -62,6 +62,7 @@
     "@stripe/stripe-react-native": "^0.57.2",
     "@ui-kitten/components": "^5.3.1",
     "expo": "~54.0.0",
+    "expo-apple-authentication": "~8.0.8",
     "expo-auth-session": "^7.0.10",
     "expo-build-properties": "~0.13.1",
     "expo-crypto": "^15.0.8",

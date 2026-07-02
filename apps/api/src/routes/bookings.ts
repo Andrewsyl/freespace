@@ -34,6 +34,9 @@ import {
   markPayoutTransferred,
   markPayoutPending,
   validatePromoForBooking,
+  insertBookingPayment,
+  listUnrefundedBookingPayments,
+  markBookingPaymentRefunded,
 } from "../lib/db.js";
 import { createCheckoutSession, stripe } from "../lib/stripe.js";
 import { sendBookingEmail, sendBookingStatusEmail } from "../lib/email.js";
@@ -228,6 +231,31 @@ async function refundBookingPayment({
   return { refundId: refund.id, alreadyRefunded: false };
 }
 
+// Refunds every recorded extension/change top-up for a booking that hasn't
+// been refunded yet. Refunds are idempotent (keyed on booking+intent), so
+// re-running after a partial failure is safe.
+async function refundBookingTopUpPayments({
+  bookingId,
+  reason,
+}: {
+  bookingId: string;
+  reason: string;
+}) {
+  if (!stripe) return;
+  const topUps = await listUnrefundedBookingPayments(bookingId);
+  for (const payment of topUps) {
+    const refund = await createRefundSafely({
+      paymentIntentId: payment.payment_intent_id,
+      bookingId,
+      reason,
+    });
+    await markBookingPaymentRefunded({
+      paymentIntentId: payment.payment_intent_id,
+      refundId: refund?.id ?? null,
+    });
+  }
+}
+
 async function refundOrphanPayment({
   paymentIntentId,
   referenceId,
@@ -260,6 +288,130 @@ async function refundOrphanPayment({
       paymentIntentId,
       refundId: refund?.id ?? null,
     },
+  });
+}
+
+// Handles payment_intent.succeeded for extension/change top-ups. These
+// intents never appear in bookings.payment_intent_id, so without this they'd
+// hit the orphan path and get auto-refunded. Records the charge and — when the
+// client's confirm call never arrives (app killed after paying) — applies the
+// new window from the server-set intent metadata, or refunds on conflict.
+async function handleTopUpPaymentSucceeded(intent: any) {
+  const paymentIntentId = intent.id as string;
+  const kind: "extension" | "change" = intent.metadata?.type === "change" ? "change" : "extension";
+  const bookingId = intent.metadata?.booking_id?.trim() ?? "";
+  const driverId = intent.metadata?.driver_id?.trim() ?? "";
+
+  if (!bookingId || !driverId) {
+    await refundOrphanPayment({
+      paymentIntentId,
+      referenceId: paymentIntentId,
+      source: `payment_intent.succeeded:${kind}`,
+    });
+    return;
+  }
+  const booking = await getBookingForExtension({ bookingId, driverId });
+  if (!booking) {
+    await refundOrphanPayment({
+      paymentIntentId,
+      referenceId: bookingId,
+      source: `payment_intent.succeeded:${kind}`,
+    });
+    return;
+  }
+
+  // Record the charge (idempotent on payment_intent_id). If it already
+  // exists, the client's confirm call has handled everything.
+  const isNew = await insertBookingPayment({
+    bookingId,
+    paymentIntentId,
+    amountCents: Number(intent.amount) || 0,
+    currency: intent.currency ?? "eur",
+    kind,
+  });
+  if (!isNew) return;
+
+  const refundTopUp = async (reason: string) => {
+    const refund = await createRefundSafely({ paymentIntentId, bookingId, reason });
+    await markBookingPaymentRefunded({ paymentIntentId, refundId: refund?.id ?? null });
+    await insertEventLog({
+      eventType: "booking_topup_refunded",
+      payload: { bookingId, paymentIntentId, kind, reason },
+    });
+  };
+
+  if (booking.status !== "confirmed") {
+    // Booking was canceled while the user was paying — money back.
+    await refundTopUp("booking_not_confirmed");
+    return;
+  }
+
+  const newEndRaw = intent.metadata?.new_end_time?.trim() ?? "";
+  const newStartRaw = intent.metadata?.new_start_time?.trim() ?? "";
+  const newTotalCents = Number(intent.metadata?.new_total_cents ?? 0);
+  const newEnd = newEndRaw ? new Date(newEndRaw) : null;
+  if (!newEnd || Number.isNaN(newEnd.getTime()) || newTotalCents <= 0) {
+    // Intent created before window metadata existed: the client confirm
+    // applies the change; the charge is recorded so refunds still cover it.
+    return;
+  }
+  const newStart =
+    kind === "change" && newStartRaw && !Number.isNaN(new Date(newStartRaw).getTime())
+      ? new Date(newStartRaw)
+      : new Date(booking.start_time);
+
+  const alreadyApplied =
+    new Date(booking.start_time).getTime() === newStart.getTime() &&
+    new Date(booking.end_time).getTime() === newEnd.getTime();
+  if (alreadyApplied) return;
+
+  const overlapCheck = await pool.query(
+    `SELECT 1 FROM bookings
+     WHERE listing_id = $1
+       AND id <> $2
+       AND (status IS NULL OR status <> 'canceled')
+       AND tstzrange(start_time, end_time, '[)') && tstzrange($3::timestamptz, $4::timestamptz, '[)')
+     LIMIT 1`,
+    [booking.listing_id, booking.id, newStart.toISOString(), newEnd.toISOString()]
+  );
+  if (overlapCheck.rowCount && overlapCheck.rowCount > 0) {
+    await refundTopUp("booking_conflict");
+    return;
+  }
+
+  try {
+    const receiptUrl = (intent as any).charges?.data?.[0]?.receipt_url ?? null;
+    const updated =
+      kind === "change"
+        ? await updateBookingWindow({
+            bookingId,
+            driverId,
+            newStartTime: newStart.toISOString(),
+            newEndTime: newEnd.toISOString(),
+            newAmountCents: newTotalCents,
+            receiptUrl,
+          })
+        : await updateBookingExtension({
+            bookingId,
+            driverId,
+            newEndTime: newEnd.toISOString(),
+            newAmountCents: newTotalCents,
+            receiptUrl,
+          });
+    if (!updated) {
+      await refundTopUp("booking_update_failed");
+      return;
+    }
+  } catch (error) {
+    if (isSlotConflictError(error)) {
+      await refundTopUp("booking_conflict");
+      return;
+    }
+    throw error;
+  }
+  await insertEventLog({
+    eventType: "booking_topup_applied_by_webhook",
+    payload: { bookingId, paymentIntentId, kind },
   });
 }
 
@@ -1229,6 +1381,10 @@ router.post("/:id/extend-intent", requireAuth, enforceBlockedList, bookingLimite
         amount_cents: String(additionalAmountCents),
         currency: (booking.currency ?? "eur").toLowerCase(),
         type: "extension",
+        // Lets the webhook apply the extension if the client's confirm call
+        // never arrives (app killed after paying in the sheet).
+        new_end_time: requestedEnd.toISOString(),
+        new_total_cents: String(effectiveTotalCents),
         manual_review: settings.manualReview ? "true" : "false",
         source: "extend_intent",
       },
@@ -1278,7 +1434,36 @@ router.post("/:id/extend-confirm", requireAuth, enforceBlockedList, bookingLimit
       return res.status(400).json({ message: "Invalid end time" });
     }
     if (requestedEnd.getTime() <= currentEnd.getTime()) {
+      // The payment_intent.succeeded webhook may have already applied this
+      // extension before the client's confirm call arrived. That's a success.
+      const applied = await pool.query(
+        `SELECT 1 FROM booking_payments WHERE payment_intent_id = $1 AND booking_id = $2 LIMIT 1`,
+        [paymentIntentId, bookingId]
+      );
+      if (applied.rowCount && applied.rowCount > 0) {
+        return res.json({
+          ok: true,
+          alreadyApplied: true,
+          newEndTime: currentEnd.toISOString(),
+          newTotalCents: booking.amount_cents,
+        });
+      }
       return res.status(400).json({ message: "New end time must be after current end time" });
+    }
+
+    // The slot may have been taken between extend-intent and now (the user was
+    // in the payment sheet). Re-check before extending the window.
+    const confirmOverlapCheck = await pool.query(
+      `SELECT 1 FROM bookings
+       WHERE listing_id = $1
+         AND id <> $2
+         AND (status IS NULL OR status <> 'canceled')
+         AND tstzrange(start_time, end_time, '[)') && tstzrange($3::timestamptz, $4::timestamptz, '[)')
+       LIMIT 1`,
+      [booking.listing_id, booking.id, booking.start_time, requestedEnd.toISOString()]
+    );
+    if (confirmOverlapCheck.rowCount && confirmOverlapCheck.rowCount > 0) {
+      return res.status(409).json({ message: "Time slot already booked" });
     }
 
     // Recompute the charge server-side instead of trusting the client. This
@@ -1325,12 +1510,20 @@ router.post("/:id/extend-confirm", requireAuth, enforceBlockedList, bookingLimit
         driverId,
         newEndTime: requestedEnd.toISOString(),
         newAmountCents: effectiveTotalCents,
-        paymentIntentId,
         receiptUrl: (intent as any).charges?.data?.[0]?.receipt_url ?? null,
       });
       if (!updated) {
         return res.status(400).json({ message: "Booking cannot be extended" });
       }
+      // Record the top-up so cancellation refunds cover it. The booking's own
+      // payment_intent_id stays pointed at the original charge.
+      await insertBookingPayment({
+        bookingId,
+        paymentIntentId,
+        amountCents: intent.amount,
+        currency: intent.currency ?? "eur",
+        kind: "extension",
+      });
       res.json({
         ok: true,
         newEndTime: updated.end_time.toISOString(),
@@ -1462,6 +1655,11 @@ router.post("/:id/change-intent", requireAuth, enforceBlockedList, bookingLimite
         amount_cents: String(additionalAmountCents),
         currency: (booking.currency ?? "eur").toLowerCase(),
         type: "change",
+        // Lets the webhook apply the change if the client's confirm call
+        // never arrives (app killed after paying in the sheet).
+        new_start_time: requestedStart.toISOString(),
+        new_end_time: requestedEnd.toISOString(),
+        new_total_cents: String(effectiveTotalCents),
         manual_review: settings.manualReview ? "true" : "false",
         source: "change_intent",
       },
@@ -1492,7 +1690,9 @@ router.post("/:id/change-confirm", requireAuth, enforceBlockedList, bookingLimit
       newEndTime: z.string().datetime(),
       newTotalCents: z.number().int().positive().max(10000000),
     });
-    const { paymentIntentId, newStartTime, newEndTime, newTotalCents } = schema.parse(req.body);
+    // newTotalCents is accepted for backward compatibility but never trusted —
+    // the charge is recomputed from the listing below, mirroring /extend-confirm.
+    const { paymentIntentId, newStartTime, newEndTime } = schema.parse(req.body);
     const driverId = req.user?.userId;
     if (!driverId) return res.status(401).json({ message: "Unauthorized" });
     const gate = await requireActiveDriver(driverId);
@@ -1506,15 +1706,83 @@ router.post("/:id/change-confirm", requireAuth, enforceBlockedList, bookingLimit
 
     const requestedStart = new Date(newStartTime);
     const requestedEnd = new Date(newEndTime);
+    if (Number.isNaN(requestedStart.getTime()) || Number.isNaN(requestedEnd.getTime())) {
+      return res.status(400).json({ message: "Invalid booking times" });
+    }
     if (requestedEnd.getTime() <= requestedStart.getTime()) {
       return res.status(400).json({ message: "End time must be after start time" });
     }
+    if (
+      new Date(booking.start_time).getTime() === requestedStart.getTime() &&
+      new Date(booking.end_time).getTime() === requestedEnd.getTime()
+    ) {
+      // The payment_intent.succeeded webhook may have already applied this
+      // change before the client's confirm call arrived. That's a success.
+      const applied = await pool.query(
+        `SELECT 1 FROM booking_payments WHERE payment_intent_id = $1 AND booking_id = $2 LIMIT 1`,
+        [paymentIntentId, bookingId]
+      );
+      if (applied.rowCount && applied.rowCount > 0) {
+        return res.json({
+          ok: true,
+          alreadyApplied: true,
+          newStartTime: requestedStart.toISOString(),
+          newEndTime: requestedEnd.toISOString(),
+          newTotalCents: booking.amount_cents,
+        });
+      }
+    }
+
+    // The slot may have been taken between change-intent and now (the user was
+    // in the payment sheet). Re-check before moving the window.
+    const overlapCheck = await pool.query(
+      `SELECT 1 FROM bookings
+       WHERE listing_id = $1
+         AND id <> $2
+         AND (status IS NULL OR status <> 'canceled')
+         AND tstzrange(start_time, end_time, '[)') && tstzrange($3::timestamptz, $4::timestamptz, '[)')
+       LIMIT 1`,
+      [booking.listing_id, booking.id, requestedStart.toISOString(), requestedEnd.toISOString()]
+    );
+    if (overlapCheck.rowCount && overlapCheck.rowCount > 0) {
+      return res.status(409).json({ message: "Time slot already booked" });
+    }
+
+    // Recompute the charge server-side instead of trusting the client, exactly
+    // as /change-intent priced it.
+    const recalculatedTotalCents = calculateListingChargeCents({
+      rateType: booking.rate_type,
+      pricePerDay: booking.price_per_day,
+      pricePerHour: booking.price_per_hour,
+      startTime: requestedStart,
+      endTime: requestedEnd,
+    });
+    const currentTotalCents =
+      booking.amount_cents ??
+      calculateListingChargeCents({
+        rateType: booking.rate_type,
+        pricePerDay: booking.price_per_day,
+        pricePerHour: booking.price_per_hour,
+        startTime: new Date(booking.start_time),
+        endTime: new Date(booking.end_time),
+      });
+    const effectiveTotalCents = Math.max(currentTotalCents, recalculatedTotalCents);
+    const additionalAmountCents = effectiveTotalCents - currentTotalCents;
 
     const intent = await stripe.paymentIntents.retrieve(paymentIntentId, {
       expand: ["charges.data.balance_transaction"],
     });
     if (intent.status !== "succeeded") {
       return res.status(400).json({ message: `Payment not completed (${intent.status})` });
+    }
+    // The intent must belong to this booking's change and cover the recomputed
+    // additional charge — otherwise a driver could reuse an unrelated payment,
+    // or pay for a small change and claim a bigger window.
+    if (intent.metadata?.booking_id !== bookingId || intent.metadata?.type !== "change") {
+      return res.status(400).json({ message: "Payment does not match this booking" });
+    }
+    if (intent.amount < additionalAmountCents) {
+      return res.status(400).json({ message: "Payment does not cover the requested change" });
     }
 
     try {
@@ -1523,13 +1791,21 @@ router.post("/:id/change-confirm", requireAuth, enforceBlockedList, bookingLimit
         driverId,
         newStartTime: requestedStart.toISOString(),
         newEndTime: requestedEnd.toISOString(),
-        newAmountCents: newTotalCents,
-        paymentIntentId,
+        newAmountCents: effectiveTotalCents,
         receiptUrl: (intent as any).charges?.data?.[0]?.receipt_url ?? null,
       });
       if (!updated) {
         return res.status(400).json({ message: "Booking cannot be updated" });
       }
+      // Record the top-up so cancellation refunds cover it. The booking's own
+      // payment_intent_id stays pointed at the original charge.
+      await insertBookingPayment({
+        bookingId,
+        paymentIntentId,
+        amountCents: intent.amount,
+        currency: intent.currency ?? "eur",
+        kind: "change",
+      });
       res.json({
         ok: true,
         newStartTime: updated.start_time.toISOString(),
@@ -1554,12 +1830,16 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
       status: z.enum(["confirmed", "canceled"]).optional(),
     });
     const { paymentIntentId, status = "confirmed" } = schema.parse(req.body);
+    const confirmUserId = req.user?.userId;
+    if (!confirmUserId) return res.status(401).json({ message: "Unauthorized" });
     let receiptUrl: string | null = null;
-    let booking: { id: string; listing_id: string; start_time: Date; end_time: Date } | undefined;
+    let booking:
+      | { id: string; listing_id: string; driver_id: string; start_time: Date; end_time: Date }
+      | undefined;
     if (status === "confirmed") {
       const bookingRow = await pool.query(
         `
-        SELECT id, listing_id, start_time, end_time
+        SELECT id, listing_id, driver_id, start_time, end_time
         FROM bookings
         WHERE payment_intent_id = $1
         LIMIT 1
@@ -1567,7 +1847,7 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
         [paymentIntentId]
       );
       booking = bookingRow.rows[0] as
-        | { id: string; listing_id: string; start_time: Date; end_time: Date }
+        | { id: string; listing_id: string; driver_id: string; start_time: Date; end_time: Date }
         | undefined;
       if (!booking && stripe) {
         try {
@@ -1581,7 +1861,7 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
           if (listingId && driverId && startTime && endTime && amountCents > 0 && currency) {
             const fallbackRow = await pool.query(
               `
-              SELECT id, listing_id, start_time, end_time
+              SELECT id, listing_id, driver_id, start_time, end_time
               FROM bookings
               WHERE listing_id = $1
                 AND driver_id = $2
@@ -1596,7 +1876,7 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
               [listingId, driverId, startTime, endTime, amountCents, currency]
             );
             booking = fallbackRow.rows[0] as
-              | { id: string; listing_id: string; start_time: Date; end_time: Date }
+              | { id: string; listing_id: string; driver_id: string; start_time: Date; end_time: Date }
               | undefined;
             if (booking) {
               await pool.query(
@@ -1624,6 +1904,10 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
         }
       }
       if (!booking) return res.status(404).json({ message: "Booking not found" });
+      // Only the driver who owns the booking may confirm it.
+      if (booking.driver_id !== confirmUserId) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
       const confirmCapacityCheck = await pool.query(
         `
         SELECT
@@ -1657,6 +1941,11 @@ router.post("/confirm", requireAuth, enforceBlockedList, bookingLimiter, async (
       receiptUrl = (intent as any).charges?.data?.[0]?.receipt_url ?? null;
     }
     const existingBooking = await getBookingByPaymentIntent(paymentIntentId);
+    // The cancel path never went through the ownership check above — a caller
+    // must not be able to cancel someone else's booking via its intent id.
+    if (existingBooking && existingBooking.driver_id !== confirmUserId) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
     const shouldNotifyCanceledTransition = status === "confirmed" || existingBooking?.status === "confirmed";
     const ok = await updateBookingStatusByPaymentIntent({ paymentIntentId, status, receiptUrl });
     if (!ok) {
@@ -1762,6 +2051,8 @@ router.post("/:id/cancel", requireAuth, enforceBlockedList, bookingLimiter, asyn
       });
       refundId = refundResult.refundId;
       alreadyRefunded = refundResult.alreadyRefunded;
+      // Extension/change top-ups are separate charges — refund them too.
+      await refundBookingTopUpPayments({ bookingId, reason: "driver_cancellation" });
     }
 
     const ok = refundId || alreadyRefunded
@@ -1833,6 +2124,8 @@ router.post("/:id/host-cancel", requireAuth, enforceBlockedList, bookingLimiter,
       });
       refundId = refundResult.refundId;
       alreadyRefunded = refundResult.alreadyRefunded;
+      // Extension/change top-ups are separate charges — refund them too.
+      await refundBookingTopUpPayments({ bookingId, reason: "host_cancellation" });
     }
 
     const ok = await cancelBookingWithRefundByHost({ bookingId, hostId: userId, refundId });
@@ -2095,6 +2388,13 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
     if (event.type === "payment_intent.succeeded") {
       const intent = event.data.object as any;
       const paymentIntentId = intent.id as string;
+      // Extension/change top-ups have no bookings.payment_intent_id row of
+      // their own — route them to the dedicated handler instead of the orphan
+      // path (which would refund a legitimate payment).
+      if (intent.metadata?.type === "extension" || intent.metadata?.type === "change") {
+        await handleTopUpPaymentSucceeded(intent);
+        return res.json({ received: true, topUp: true });
+      }
       const bookingRow = await pool.query(
         `
         SELECT id, listing_id, start_time, end_time

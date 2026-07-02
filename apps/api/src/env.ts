@@ -18,17 +18,20 @@ const portSchema = z
     return parsed;
   });
 
-const intervalSchema = z
-  .string()
-  .optional()
-  .transform((value) => {
-    if (!value) return undefined;
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed) || parsed <= 0) {
-      throw new Error("NOTIFICATION_PROCESSOR_INTERVAL_MS must be a positive number");
-    }
-    return parsed;
-  });
+const makeIntervalSchema = (name: string) =>
+  z
+    .string()
+    .optional()
+    .transform((value) => {
+      if (!value) return undefined;
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        throw new Error(`${name} must be a positive number`);
+      }
+      return parsed;
+    });
+
+const intervalSchema = makeIntervalSchema("NOTIFICATION_PROCESSOR_INTERVAL_MS");
 
 const envSchema = z
   .object({
@@ -60,8 +63,10 @@ const envSchema = z
     FACEBOOK_APP_ID: z.string().optional(),
     FACEBOOK_APP_SECRET: z.string().optional(),
     ENFORCE_HTTPS: optionalStringBool,
+    ALLOW_TEST_STRIPE_KEYS_IN_PRODUCTION: optionalStringBool,
     PORT: portSchema,
     NOTIFICATION_PROCESSOR_INTERVAL_MS: intervalSchema,
+    BOOKING_SWEEPER_INTERVAL_MS: makeIntervalSchema("BOOKING_SWEEPER_INTERVAL_MS"),
   })
   .superRefine((value, ctx) => {
     const stripeMode = value.STRIPE_SECRET_KEY?.startsWith("sk_live_")
@@ -92,6 +97,23 @@ const envSchema = z
         code: z.ZodIssueCode.custom,
         path: ["STRIPE_SECRET_KEY"],
         message: "Live Stripe secret keys are only allowed in production",
+      });
+    }
+
+    // The inverse guard: a production API must run live Stripe keys so a
+    // forgotten test→live swap fails loudly at boot instead of taking fake
+    // money. Pre-launch/staging boxes opt out explicitly via
+    // ALLOW_TEST_STRIPE_KEYS_IN_PRODUCTION=true.
+    if (
+      value.NODE_ENV === "production" &&
+      stripeMode === "test" &&
+      !value.ALLOW_TEST_STRIPE_KEYS_IN_PRODUCTION
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["STRIPE_SECRET_KEY"],
+        message:
+          "Production requires a live Stripe secret key (set ALLOW_TEST_STRIPE_KEYS_IN_PRODUCTION=true to override pre-launch)",
       });
     }
 

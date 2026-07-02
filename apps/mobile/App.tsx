@@ -377,11 +377,18 @@ function AppNavigator() {
 
   useEffect(() => {
     let active = true;
-    const handledUrls = new Set<string>();
+    // getInitialURL and the url listener can both deliver the same link at
+    // startup, so dedupe — but only within a short window. A permanent set
+    // would swallow a genuine re-tap of the same link (e.g. retrying a
+    // verification link after being offline).
+    const handledUrls = new Map<string, number>();
+    const DEDUPE_WINDOW_MS = 5000;
 
     const handleUrl = async (url: string | null | undefined) => {
-      if (!active || !url || handledUrls.has(url)) return;
-      handledUrls.add(url);
+      if (!active || !url) return;
+      const lastHandledAt = handledUrls.get(url);
+      if (lastHandledAt && Date.now() - lastHandledAt < DEDUPE_WINDOW_MS) return;
+      handledUrls.set(url, Date.now());
       const dispatchWhenReady = (action: ReturnType<typeof CommonActions.reset> | ReturnType<typeof CommonActions.navigate>) => {
         let attempts = 0;
         const run = () => {

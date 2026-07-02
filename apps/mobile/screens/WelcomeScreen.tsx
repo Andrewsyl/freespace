@@ -7,6 +7,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { useAuth } from "../auth";
+import { AppleSignInButton } from "../components/AppleSignInButton";
 import type { AuthReturnTo, RootStackParamList } from "../types";
 import freeSpaceLogo from "../assets/freespace-logo-grid-black.png";
 import { trackEvent } from "../analytics";
@@ -125,6 +126,16 @@ export function WelcomeScreen({ navigation, route }: Props) {
             You&apos;ll need an account to book spaces and manage your reservations.
           </Text>
         </View>
+
+        <AppleSignInButton
+          source="welcome"
+          onStart={() => {
+            setError(null);
+            setSubmitting(true);
+          }}
+          onDone={() => setSubmitting(false)}
+          onError={setError}
+        />
 
         <Pressable
           style={({ pressed }) => [

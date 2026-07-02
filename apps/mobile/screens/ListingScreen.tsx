@@ -33,6 +33,7 @@ import { useGlobalToast } from "../components/GlobalToast";
 import { LIGHT_MAP_STYLE } from "../components/mapStyles";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
+import { AppleSignInButton } from "../components/AppleSignInButton";
 import { formatDateLabel, formatDateTimeLabel, formatReviewDate, formatTimeLabel } from "../utils/dateFormat";
 import { calculateListingTotal, formatPriceValue, getListingRateType } from "../utils/pricing";
 import {
@@ -1111,6 +1112,20 @@ export function ListingScreen({ navigation, route }: Props) {
             <Text style={styles.authModalBody}>
               You&apos;ll need an account to book this space and manage your reservations.
             </Text>
+            <AppleSignInButton
+              source="listing"
+              onError={(message) => Alert.alert("Apple sign-in failed", message)}
+              onSuccess={() => {
+                closeAuthOverlay();
+                setTimeout(() => {
+                  navigation.navigate("BookingSummary", {
+                    id,
+                    from: startAt.toISOString(),
+                    to: endAt.toISOString(),
+                  });
+                }, 180);
+              }}
+            />
             <Pressable
               style={styles.authModalOutlineBtn}
               disabled={googleSubmitting}
