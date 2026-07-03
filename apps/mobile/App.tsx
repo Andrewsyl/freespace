@@ -66,6 +66,7 @@ import {
   mobileE2EEnabled,
 } from "./e2e/testMode";
 import { mobileEnv } from "./env";
+import { resolveStripePublishableKey } from "./remoteConfig";
 import { installGlobalErrorLogging, logWarn } from "./logger";
 import { initPostHog } from "./posthog";
 import { colors } from "./theme/colors";
@@ -88,6 +89,7 @@ installGlobalErrorLogging();
 
 function App() {
   const [splashDone, setSplashDone] = useState(false);
+  const [stripeKey, setStripeKey] = useState<string | null>(null);
   const [fontsLoaded] = useFonts({
     "PlusJakartaSans-Regular": require("./assets/fonts/PlusJakartaSans_400Regular.ttf"),
     "PlusJakartaSans-Medium": require("./assets/fonts/PlusJakartaSans_500Medium.ttf"),
@@ -143,9 +145,20 @@ function App() {
     return () => cancelAnimationFrame(id);
   }, [fontsLoaded]);
 
-  const stripeKey = mobileEnv.stripePublishableKey;
+  // Runs alongside font loading, not after it — resolveStripePublishableKey
+  // always resolves (it falls back to the baked-in key on any failure), so
+  // this never blocks startup longer than the timeout inside it.
+  useEffect(() => {
+    let active = true;
+    void resolveStripePublishableKey().then((key) => {
+      if (active) setStripeKey(key);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded || !stripeKey) {
     return <View style={[styles.app, { backgroundColor: "#0A0F0D" }]} />;
   }
 

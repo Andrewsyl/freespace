@@ -15,6 +15,7 @@ import adminRouter from "./routes/admin.js";
 import paymentsRouter from "./routes/payments.js";
 import supportRouter from "./routes/support.js";
 import notificationsRouter from "./routes/notifications.js";
+import configRouter from "./routes/config.js";
 import { csrfProtection } from "./middleware/csrf.js";
 import { logError, logInfo } from "./lib/logger.js";
 
@@ -142,6 +143,7 @@ export function createApp() {
   app.use("/api", paymentsRouter);
   app.use("/api/support", supportRouter);
   app.use("/api/notifications", notificationsRouter);
+  app.use("/api/config", configRouter);
 
   app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const requestId = typeof req.headers["x-request-id"] === "string" ? req.headers["x-request-id"] : "unknown";

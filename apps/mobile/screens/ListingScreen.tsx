@@ -7,6 +7,7 @@ import {
   Animated,
   FlatList,
   Image,
+  InteractionManager,
   Linking,
   Modal,
   Platform,
@@ -23,8 +24,10 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useMarkerTracksUntilPainted } from "../components/useMarkerTracksUntilPainted";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import LottieView from "lottie-react-native";
 import { trackEvent } from "../analytics";
-import { ModernTimePickerSheet, addMinutes, roundUpToMinuteInterval } from "../components/ModernTimePickerSheet";
+import { addMinutes, roundUpToMinuteInterval } from "../components/ModernTimePickerSheet";
+import { MapTimePickerSheet } from "../components/MapTimePickerSheet";
 import { colors, radius, spacing } from "../styles/theme";
 import { getListing, listListingReviews, type ListingReview } from "../api";
 import { useAuth } from "../auth";
@@ -194,6 +197,8 @@ export function ListingScreen({ navigation, route }: Props) {
   const [startAt, setStartAt] = useState(() => new Date(from));
   const [endAt, setEndAt] = useState(() => new Date(to));
   const [pickerVisible, setPickerVisible] = useState(false);
+  // True from confirming a new time until the re-fetched listing lands.
+  const [updatingTimes, setUpdatingTimes] = useState(false);
   const [heroTapEnabled, setHeroTapEnabled] = useState(true);
   const heroTapEnabledRef = useRef(true);
   const [heroPhotoIndex, setHeroPhotoIndex] = useState(0);
@@ -254,7 +259,10 @@ export function ListingScreen({ navigation, route }: Props) {
         if (!active) return;
         setError(err instanceof Error ? err.message : "Failed to load listing");
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setUpdatingTimes(false);
+        }
       }
     };
     void load();
@@ -969,6 +977,12 @@ export function ListingScreen({ navigation, route }: Props) {
                       <Pressable style={styles.mapExpandButton} onPress={() => setShowMapViewer(true)}>
                         <Maximize2 size={17} color="#151b1b" strokeWidth={2} />
                       </Pressable>
+                      {/* The native map draws on its own surface and ignores the
+                          screen-level updating overlay, so grey it out from inside
+                          its own container (same trick as the loading skeleton). */}
+                      {updatingTimes && (
+                        <View style={styles.updatingMapCover} pointerEvents="none" />
+                      )}
                     </View>
                   ) : null}
                 </View>
@@ -1139,18 +1153,42 @@ export function ListingScreen({ navigation, route }: Props) {
         ) : null}
       </SafeAreaView>
 
-      <ModernTimePickerSheet
+      <MapTimePickerSheet
         visible={pickerVisible}
+        field={pickerField}
         value={pickerField === "start" ? startAt : endAt}
+        startAt={startAt}
         minimumDate={pickerMinimumDate}
         minuteInterval={5}
-        confirmLabel={pickerField === "start" ? "Use arrival" : "Use departure"}
         onCancel={() => setPickerVisible(false)}
-        onConfirm={(next) => {
-          applyPickedDate(next);
+        onConfirm={(picked) => {
           setPickerVisible(false);
+          // Never allow a past time — snap to the next 5-minute slot from now.
+          const floor = roundUpToMinuteInterval(new Date(), 5);
+          const next = picked.getTime() < floor.getTime() ? floor : picked;
+          // If nothing actually changed, don't kick off a needless re-fetch.
+          const currentValue = pickerField === "start" ? startAt : endAt;
+          if (next.getTime() === currentValue.getTime()) return;
+          // Show the updating spinner right away, then apply once the close
+          // animation has had the frame — applyPickedDate re-renders the whole
+          // screen and re-fetches, which would otherwise stall the sheet before
+          // it starts sliding away.
+          setUpdatingTimes(true);
+          InteractionManager.runAfterInteractions(() => applyPickedDate(next));
         }}
       />
+
+      {updatingTimes ? (
+        <View style={styles.updatingOverlay}>
+          <LottieView
+            source={require("../assets/Insider-loading.json")}
+            autoPlay
+            loop
+            style={styles.updatingLottie}
+          />
+          <Text style={styles.updatingText}>Updating availability…</Text>
+        </View>
+      ) : null}
 
       <Modal transparent animationType="none" visible={authOverlayVisible} onRequestClose={closeAuthOverlay}>
         <View style={styles.authModalRoot} pointerEvents="box-none">
@@ -1342,6 +1380,28 @@ const HANDLE     = "#D9DCE0";   // grab handles (sheets, pickers)
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "transparent" },
+  updatingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E7E9E8",
+    zIndex: 90,
+    elevation: 90,
+  },
+  updatingMapCover: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#E7E9E8",
+  },
+  updatingLottie: {
+    width: 120,
+    height: 120,
+  },
+  updatingText: {
+    color: colors.textSoft,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    marginTop: 4,
+  },
   centered: {
     flex: 1, alignItems: "center", justifyContent: "center",
     backgroundColor: "#ffffff",

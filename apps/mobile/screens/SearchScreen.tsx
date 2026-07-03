@@ -25,6 +25,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import type MapView from "react-native-maps";
 import DatePicker from "../components/AdaptiveDatePicker";
 import { DrumRollPicker, type DrumRollPickerHandle } from "../components/DrumRollPicker";
+import { roundUpToMinuteInterval } from "../components/ModernTimePickerSheet";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../auth";
@@ -1160,7 +1161,10 @@ export function SearchScreen({ navigation }: Props) {
     };
   }, [navigation]);
 
-  const applyPickedDate = (next: Date) => {
+  const applyPickedDate = (picked: Date) => {
+    // Never allow a past time — snap to the next 5-minute slot from now.
+    const floor = roundUpToMinuteInterval(new Date(), 5);
+    const next = picked.getTime() < floor.getTime() ? floor : picked;
     if (pickerField === "start") {
       if (next > endAt) {
         const bumped = new Date(next);

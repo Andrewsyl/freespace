@@ -46,6 +46,17 @@ const envSchema = z
         (value) => !value || /^sk_(test|live)_/.test(value),
         "STRIPE_SECRET_KEY must look like a Stripe secret key"
       ),
+    // Served to the mobile app via GET /api/config so the publishable key (and
+    // therefore test/live mode) is a server-side switch, not a value baked into
+    // the app binary — flip this + STRIPE_SECRET_KEY together and restart, no
+    // app rebuild or store review needed.
+    STRIPE_PUBLISHABLE_KEY: z
+      .string()
+      .optional()
+      .refine(
+        (value) => !value || /^pk_(test|live)_/.test(value),
+        "STRIPE_PUBLISHABLE_KEY must look like a Stripe publishable key"
+      ),
     STRIPE_WEBHOOK_SECRET: z
       .string()
       .optional()
@@ -122,6 +133,28 @@ const envSchema = z
         code: z.ZodIssueCode.custom,
         path: ["STRIPE_WEBHOOK_SECRET"],
         message: "STRIPE_WEBHOOK_SECRET is required when Stripe is configured in production",
+      });
+    }
+
+    const publishableMode = value.STRIPE_PUBLISHABLE_KEY?.startsWith("pk_live_")
+      ? "live"
+      : value.STRIPE_PUBLISHABLE_KEY?.startsWith("pk_test_")
+        ? "test"
+        : null;
+
+    if (value.STRIPE_SECRET_KEY && value.STRIPE_PUBLISHABLE_KEY && stripeMode !== publishableMode) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["STRIPE_PUBLISHABLE_KEY"],
+        message: "STRIPE_PUBLISHABLE_KEY must be in the same mode (test/live) as STRIPE_SECRET_KEY",
+      });
+    }
+
+    if (value.NODE_ENV === "production" && value.STRIPE_SECRET_KEY && !value.STRIPE_PUBLISHABLE_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["STRIPE_PUBLISHABLE_KEY"],
+        message: "STRIPE_PUBLISHABLE_KEY is required when Stripe is configured in production",
       });
     }
   });

@@ -23,9 +23,11 @@ if (process.env.NODE_ENV !== "production") {
 // Lets prod flip between Stripe test and live without copy-pasting keys: store
 // BOTH pairs once (STRIPE_LIVE_* and STRIPE_TEST_*) and set STRIPE_MODE=live|test.
 // The selected pair is copied into the canonical STRIPE_SECRET_KEY /
-// STRIPE_WEBHOOK_SECRET / STRIPE_CONNECT_WEBHOOK_SECRET that the rest of the app
-// reads. If STRIPE_MODE is unset the canonical vars are used as-is (so existing
-// deployments keep working unchanged). Runs in every environment, after dotenv.
+// STRIPE_PUBLISHABLE_KEY / STRIPE_WEBHOOK_SECRET / STRIPE_CONNECT_WEBHOOK_SECRET
+// that the rest of the app reads — including GET /api/config, which is how the
+// mobile app picks up the matching publishable key at runtime. If STRIPE_MODE
+// is unset the canonical vars are used as-is (so existing deployments keep
+// working unchanged). Runs in every environment, after dotenv.
 const stripeMode = process.env.STRIPE_MODE?.trim().toLowerCase();
 if (stripeMode) {
   if (stripeMode !== "live" && stripeMode !== "test") {
@@ -33,21 +35,30 @@ if (stripeMode) {
   }
   const prefix = stripeMode === "live" ? "STRIPE_LIVE_" : "STRIPE_TEST_";
   const secret = process.env[`${prefix}SECRET_KEY`];
+  const publishable = process.env[`${prefix}PUBLISHABLE_KEY`];
   const webhook = process.env[`${prefix}WEBHOOK_SECRET`];
   const connectWebhook = process.env[`${prefix}CONNECT_WEBHOOK_SECRET`];
 
   if (!secret) {
     throw new Error(`STRIPE_MODE=${stripeMode} but ${prefix}SECRET_KEY is not set.`);
   }
-  const expectedKeyPrefix = stripeMode === "live" ? "sk_live_" : "sk_test_";
-  if (!secret.startsWith(expectedKeyPrefix)) {
+  const expectedSecretPrefix = stripeMode === "live" ? "sk_live_" : "sk_test_";
+  if (!secret.startsWith(expectedSecretPrefix)) {
     throw new Error(
-      `${prefix}SECRET_KEY must start with "${expectedKeyPrefix}" for STRIPE_MODE=${stripeMode} ` +
+      `${prefix}SECRET_KEY must start with "${expectedSecretPrefix}" for STRIPE_MODE=${stripeMode} ` +
+        "(the live/test keys look swapped)."
+    );
+  }
+  const expectedPublishablePrefix = stripeMode === "live" ? "pk_live_" : "pk_test_";
+  if (publishable && !publishable.startsWith(expectedPublishablePrefix)) {
+    throw new Error(
+      `${prefix}PUBLISHABLE_KEY must start with "${expectedPublishablePrefix}" for STRIPE_MODE=${stripeMode} ` +
         "(the live/test keys look swapped)."
     );
   }
 
   process.env.STRIPE_SECRET_KEY = secret;
+  if (publishable) process.env.STRIPE_PUBLISHABLE_KEY = publishable;
   if (webhook) process.env.STRIPE_WEBHOOK_SECRET = webhook;
   if (connectWebhook) process.env.STRIPE_CONNECT_WEBHOOK_SECRET = connectWebhook;
 }
