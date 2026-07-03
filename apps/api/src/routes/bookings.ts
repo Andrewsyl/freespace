@@ -2189,6 +2189,168 @@ router.post("/:id/check-in", requireAuth, enforceBlockedList, bookingLimiter, as
   }
 });
 
+type CheckoutConfirmOutcome = "orphan" | "conflict" | "skipped" | "confirmed";
+
+// Confirms a Checkout-based booking (keyed on checkout_session_id, whose
+// payment_intent_id is only known once payment completes). Shared by the
+// checkout.session.completed handler and — as a fallback — the
+// payment_intent.succeeded handler, so a booking still confirms even if only
+// one of those two events is delivered to the webhook endpoint.
+async function confirmCheckoutSessionBooking(session: any): Promise<CheckoutConfirmOutcome> {
+  const paymentIntentId = session.payment_intent as string;
+  const bookingRow = await pool.query(
+    `
+    SELECT id, listing_id, start_time, end_time
+    FROM bookings
+    WHERE checkout_session_id = $1
+    LIMIT 1
+    `,
+    [session.id]
+  );
+  const booking = bookingRow.rows[0] as
+    | { id: string; listing_id: string; start_time: Date; end_time: Date }
+    | undefined;
+  if (!booking) {
+    if (paymentIntentId) {
+      await refundOrphanPayment({
+        paymentIntentId,
+        referenceId: session.id,
+        source: "checkout.session.completed",
+      });
+    } else {
+      await reportOperationalAlert({
+        source: "stripe-webhook",
+        title: "Checkout session completed without booking or payment intent",
+        payload: { checkoutSessionId: session.id },
+      });
+    }
+    return "orphan";
+  }
+
+  const conflict = await hasBookingOverlap({
+    listingId: booking.listing_id,
+    bookingId: booking.id,
+    startTime: booking.start_time,
+    endTime: booking.end_time,
+  });
+  if (conflict) {
+    const conflictPayload = {
+      bookingId: booking.id,
+      listingId: booking.listing_id,
+      paymentIntentId,
+      source: "checkout.session.completed",
+    };
+    console.warn("Booking conflict on checkout.session.completed", conflictPayload);
+    await insertEventLog({ eventType: "booking_conflict", payload: conflictPayload });
+    if (paymentIntentId) {
+      await refundBookingPayment({
+        paymentIntentId,
+        bookingId: booking.id,
+        reason: "booking_conflict",
+      });
+    }
+    await updateBookingStatus({
+      checkoutSessionId: session.id,
+      status: "canceled",
+      paymentIntentId,
+    });
+    const conflictTargets = await getBookingNotificationTargetsByCheckoutSession(session.id);
+    if (conflictTargets) {
+      await sendBookingStatusPush({
+        bookingId: conflictTargets.booking_id,
+        driverId: conflictTargets.driver_id,
+        hostId: conflictTargets.host_id,
+        listingTitle: conflictTargets.listing_title,
+        startTime: new Date(conflictTargets.start_time),
+        endTime: new Date(conflictTargets.end_time),
+        status: "canceled",
+      });
+      await sendDriverBookingLifecycleEmail({
+        driverEmail: conflictTargets.driver_email,
+        status: "canceled",
+        bookingId: conflictTargets.booking_id,
+        listingTitle: conflictTargets.listing_title,
+        listingAddress: conflictTargets.listing_address,
+        startTime: new Date(conflictTargets.start_time),
+        endTime: new Date(conflictTargets.end_time),
+        accessCode: conflictTargets.access_code,
+        arrivalInstructions: conflictTargets.arrival_instructions,
+        amountCents: conflictTargets.amount_cents,
+        vehiclePlate: conflictTargets.vehicle_plate,
+      });
+      await deleteScheduledNotificationsByBooking(conflictTargets.booking_id);
+    }
+    return "conflict";
+  }
+
+  let receiptUrl: string | null = null;
+  if (stripe && session.payment_intent) {
+    const intent = await stripe.paymentIntents.retrieve(session.payment_intent as string, {
+      expand: ["charges.data.balance_transaction"],
+    });
+    receiptUrl = (intent as any).charges?.data?.[0]?.receipt_url ?? null;
+  }
+  const updated = await updateBookingStatus({
+    checkoutSessionId: session.id,
+    status: "confirmed",
+    paymentIntentId: session.payment_intent as string,
+    receiptUrl,
+  });
+  if (!updated) {
+    await insertEventLog({
+      eventType: "booking_status_transition_skipped",
+      payload: {
+        source: "checkout.session.completed",
+        checkoutSessionId: session.id,
+        paymentIntentId: session.payment_intent as string,
+        attemptedStatus: "confirmed",
+      },
+    });
+    return "skipped";
+  }
+  await insertEventLog({
+    eventType: "booking_confirmed",
+    payload: {
+      bookingId: booking.id,
+      paymentIntentId: session.payment_intent as string,
+      source: "checkout.session.completed",
+    },
+  });
+  const targets = await getBookingNotificationTargetsByCheckoutSession(session.id);
+  if (targets) {
+    await sendBookingStatusPush({
+      bookingId: targets.booking_id,
+      driverId: targets.driver_id,
+      hostId: targets.host_id,
+      listingTitle: targets.listing_title,
+      startTime: new Date(targets.start_time),
+      endTime: new Date(targets.end_time),
+      status: "confirmed",
+    });
+    await sendDriverBookingLifecycleEmail({
+      driverEmail: targets.driver_email,
+      status: "confirmed",
+      bookingId: targets.booking_id,
+      listingTitle: targets.listing_title,
+      listingAddress: targets.listing_address,
+      startTime: new Date(targets.start_time),
+      endTime: new Date(targets.end_time),
+      receiptUrl,
+      accessCode: targets.access_code,
+      arrivalInstructions: targets.arrival_instructions,
+      amountCents: targets.amount_cents,
+      vehiclePlate: targets.vehicle_plate,
+    });
+    await scheduleBookingNotifications({
+      bookingId: targets.booking_id,
+      driverId: targets.driver_id,
+      startTime: new Date(targets.start_time),
+      endTime: new Date(targets.end_time),
+    });
+  }
+  return "confirmed";
+}
+
 router.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   const signature = req.headers["stripe-signature"];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -2214,161 +2376,9 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as any;
-      const paymentIntentId = session.payment_intent as string;
-      const bookingRow = await pool.query(
-        `
-        SELECT id, listing_id, start_time, end_time
-        FROM bookings
-        WHERE checkout_session_id = $1
-        LIMIT 1
-        `,
-        [session.id]
-      );
-      const booking = bookingRow.rows[0] as
-        | { id: string; listing_id: string; start_time: Date; end_time: Date }
-        | undefined;
-      if (!booking) {
-        if (paymentIntentId) {
-          await refundOrphanPayment({
-            paymentIntentId,
-            referenceId: session.id,
-            source: "checkout.session.completed",
-          });
-        } else {
-          await reportOperationalAlert({
-            source: "stripe-webhook",
-            title: "Checkout session completed without booking or payment intent",
-            payload: {
-              checkoutSessionId: session.id,
-            },
-          });
-        }
-        return res.json({ received: true, orphan: true });
-      }
-      if (booking) {
-        const conflict = await hasBookingOverlap({
-          listingId: booking.listing_id,
-          bookingId: booking.id,
-          startTime: booking.start_time,
-          endTime: booking.end_time,
-        });
-        if (conflict) {
-          const conflictPayload = {
-            bookingId: booking.id,
-            listingId: booking.listing_id,
-            paymentIntentId,
-            source: "checkout.session.completed",
-          };
-          console.warn("Booking conflict on checkout.session.completed", conflictPayload);
-          await insertEventLog({
-            eventType: "booking_conflict",
-            payload: conflictPayload,
-          });
-          if (paymentIntentId) {
-            await refundBookingPayment({
-              paymentIntentId,
-              bookingId: booking.id,
-              reason: "booking_conflict",
-            });
-          }
-          await updateBookingStatus({
-            checkoutSessionId: session.id,
-            status: "canceled",
-            paymentIntentId,
-          });
-          const conflictTargets = await getBookingNotificationTargetsByCheckoutSession(session.id);
-          if (conflictTargets) {
-            await sendBookingStatusPush({
-              bookingId: conflictTargets.booking_id,
-              driverId: conflictTargets.driver_id,
-              hostId: conflictTargets.host_id,
-              listingTitle: conflictTargets.listing_title,
-              startTime: new Date(conflictTargets.start_time),
-              endTime: new Date(conflictTargets.end_time),
-              status: "canceled",
-            });
-            await sendDriverBookingLifecycleEmail({
-              driverEmail: conflictTargets.driver_email,
-              status: "canceled",
-              bookingId: conflictTargets.booking_id,
-              listingTitle: conflictTargets.listing_title,
-              listingAddress: conflictTargets.listing_address,
-              startTime: new Date(conflictTargets.start_time),
-              endTime: new Date(conflictTargets.end_time),
-              accessCode: conflictTargets.access_code,
-              arrivalInstructions: conflictTargets.arrival_instructions,
-              amountCents: conflictTargets.amount_cents,
-              vehiclePlate: conflictTargets.vehicle_plate,
-            });
-            await deleteScheduledNotificationsByBooking(conflictTargets.booking_id);
-          }
-          return res.json({ received: true, conflict: true });
-        }
-      }
-      let receiptUrl: string | null = null;
-      if (stripe && session.payment_intent) {
-        const intent = await stripe.paymentIntents.retrieve(session.payment_intent as string, {
-          expand: ["charges.data.balance_transaction"],
-        });
-        receiptUrl = (intent as any).charges?.data?.[0]?.receipt_url ?? null;
-      }
-      const updated = await updateBookingStatus({
-        checkoutSessionId: session.id,
-        status: "confirmed",
-        paymentIntentId: session.payment_intent as string,
-        receiptUrl,
-      });
-      if (!updated) {
-        await insertEventLog({
-          eventType: "booking_status_transition_skipped",
-          payload: {
-            source: "checkout.session.completed",
-            checkoutSessionId: session.id,
-            paymentIntentId: session.payment_intent as string,
-            attemptedStatus: "confirmed",
-          },
-        });
-        return res.json({ received: true, skipped: true });
-      }
-      await insertEventLog({
-        eventType: "booking_confirmed",
-        payload: {
-          bookingId: booking.id,
-          paymentIntentId: session.payment_intent as string,
-          source: "checkout.session.completed",
-        },
-      });
-      const targets = await getBookingNotificationTargetsByCheckoutSession(session.id);
-      if (targets) {
-        await sendBookingStatusPush({
-          bookingId: targets.booking_id,
-          driverId: targets.driver_id,
-          hostId: targets.host_id,
-          listingTitle: targets.listing_title,
-          startTime: new Date(targets.start_time),
-          endTime: new Date(targets.end_time),
-          status: "confirmed",
-        });
-        await sendDriverBookingLifecycleEmail({
-          driverEmail: targets.driver_email,
-          status: "confirmed",
-          bookingId: targets.booking_id,
-          listingTitle: targets.listing_title,
-          listingAddress: targets.listing_address,
-          startTime: new Date(targets.start_time),
-          endTime: new Date(targets.end_time),
-          receiptUrl,
-          accessCode: targets.access_code,
-          arrivalInstructions: targets.arrival_instructions,
-          amountCents: targets.amount_cents,
-          vehiclePlate: targets.vehicle_plate,
-        });
-        await scheduleBookingNotifications({
-          bookingId: targets.booking_id,
-          driverId: targets.driver_id,
-          startTime: new Date(targets.start_time),
-          endTime: new Date(targets.end_time),
-        });
+      const outcome = await confirmCheckoutSessionBooking(session);
+      if (outcome !== "confirmed") {
+        return res.json({ received: true, [outcome]: true });
       }
     }
 
@@ -2408,6 +2418,25 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         | { id: string; listing_id: string; start_time: Date; end_time: Date }
         | undefined;
       if (!booking) {
+        // Checkout-based bookings are keyed on checkout_session_id and only
+        // learn their payment_intent_id from checkout.session.completed. If that
+        // event is delayed or not delivered to this endpoint, this PI looks
+        // orphaned — so resolve the Checkout session for it and confirm the
+        // booking through the shared path instead of refunding a real payment.
+        let checkoutSession: any = null;
+        try {
+          const sessions = await stripe.checkout.sessions.list({
+            payment_intent: paymentIntentId,
+            limit: 1,
+          });
+          checkoutSession = sessions.data[0] ?? null;
+        } catch (err) {
+          console.warn("Failed to resolve checkout session for payment intent", paymentIntentId, err);
+        }
+        if (checkoutSession) {
+          const outcome = await confirmCheckoutSessionBooking(checkoutSession);
+          return res.json({ received: true, viaCheckoutSession: true, [outcome]: true });
+        }
         await refundOrphanPayment({
           paymentIntentId,
           referenceId: paymentIntentId,
