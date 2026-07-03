@@ -142,19 +142,16 @@ const envSchema = z
         ? "test"
         : null;
 
+    // A mode mismatch (e.g. sk_live_ + pk_test_) genuinely breaks payments, so
+    // this stays a hard boot error. A *missing* publishable key does not: the
+    // mobile app falls back to the key baked into its build, so GET /api/config
+    // just returns null and the app keeps working. We deliberately don't fail
+    // the boot for that — a blank config value must never take the API down.
     if (value.STRIPE_SECRET_KEY && value.STRIPE_PUBLISHABLE_KEY && stripeMode !== publishableMode) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["STRIPE_PUBLISHABLE_KEY"],
         message: "STRIPE_PUBLISHABLE_KEY must be in the same mode (test/live) as STRIPE_SECRET_KEY",
-      });
-    }
-
-    if (value.NODE_ENV === "production" && value.STRIPE_SECRET_KEY && !value.STRIPE_PUBLISHABLE_KEY) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["STRIPE_PUBLISHABLE_KEY"],
-        message: "STRIPE_PUBLISHABLE_KEY is required when Stripe is configured in production",
       });
     }
   });

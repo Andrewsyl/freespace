@@ -10,7 +10,7 @@ const router = Router();
 router.get("/", (_req, res) => {
   res.setHeader("Cache-Control", "public, max-age=300");
   res.json({
-    stripePublishableKey: env.STRIPE_PUBLISHABLE_KEY ?? null,
+    stripePublishableKey: env.STRIPE_PUBLISHABLE_KEY || null,
   });
 });
 
