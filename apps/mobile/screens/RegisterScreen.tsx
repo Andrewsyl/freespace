@@ -64,6 +64,11 @@ export function RegisterScreen({ navigation, route }: Props) {
   const { register } = useAuth();
   const returnTo = route.params?.returnTo;
   const scrollRef = useRef<ScrollView | null>(null);
+  const lastNameRef = useRef<RNTextInput | null>(null);
+  const emailRef = useRef<RNTextInput | null>(null);
+  const passwordRef = useRef<RNTextInput | null>(null);
+  const confirmPasswordRef = useRef<RNTextInput | null>(null);
+  const phoneRef = useRef<RNTextInput | null>(null);
   const cardOffsetY = useRef(0);
   const nameRowY = useRef(0);
   const emailFieldY = useRef(0);
@@ -185,6 +190,11 @@ export function RegisterScreen({ navigation, route }: Props) {
                     value={firstName}
                     onChangeText={setFirstName}
                     autoCapitalize="words"
+                    textContentType="givenName"
+                    autoComplete="given-name"
+                    returnKeyType="next"
+                    blurOnSubmit={false}
+                    onSubmitEditing={() => lastNameRef.current?.focus()}
                     onFocus={() => scrollToField(nameRowY.current)}
                   />
                 </View>
@@ -192,11 +202,17 @@ export function RegisterScreen({ navigation, route }: Props) {
                 <View style={[styles.inputGroup, styles.halfInput]}>
                   <Text style={styles.inputLabel}>Last name</Text>
                   <AppTextInput
+                    ref={lastNameRef}
                     containerStyle={styles.inputContainer}
                     placeholder="Smith"
                     value={lastName}
                     onChangeText={setLastName}
                     autoCapitalize="words"
+                    textContentType="familyName"
+                    autoComplete="family-name"
+                    returnKeyType="next"
+                    blurOnSubmit={false}
+                    onSubmitEditing={() => emailRef.current?.focus()}
                     onFocus={() => scrollToField(nameRowY.current)}
                   />
                 </View>
@@ -205,12 +221,19 @@ export function RegisterScreen({ navigation, route }: Props) {
               <View style={styles.inputGroup} onLayout={(e) => { emailFieldY.current = e.nativeEvent.layout.y; }}>
                 <Text style={styles.inputLabel}>Email</Text>
                 <AppTextInput
+                  ref={emailRef}
                   containerStyle={styles.inputContainer}
                   placeholder="johndoe@gmail.com"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="emailAddress"
+                  autoComplete="email"
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  onSubmitEditing={() => passwordRef.current?.focus()}
                   onFocus={() => scrollToField(emailFieldY.current)}
                 />
               </View>
@@ -218,11 +241,17 @@ export function RegisterScreen({ navigation, route }: Props) {
               <View style={styles.inputGroup} onLayout={(e) => { passwordFieldY.current = e.nativeEvent.layout.y; }}>
                 <Text style={styles.inputLabel}>Password</Text>
                 <AppTextInput
+                  ref={passwordRef}
                   containerStyle={styles.inputContainer}
                   placeholder="••••••••"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
+                  textContentType="newPassword"
+                  autoComplete="new-password"
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  onSubmitEditing={() => confirmPasswordRef.current?.focus()}
                   onFocus={() => scrollToField(passwordFieldY.current)}
                 />
               </View>
@@ -230,11 +259,17 @@ export function RegisterScreen({ navigation, route }: Props) {
               <View style={styles.inputGroup} onLayout={(e) => { confirmPasswordFieldY.current = e.nativeEvent.layout.y; }}>
                 <Text style={styles.inputLabel}>Confirm password</Text>
                 <AppTextInput
+                  ref={confirmPasswordRef}
                   containerStyle={styles.inputContainer}
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry
+                  textContentType="newPassword"
+                  autoComplete="new-password"
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  onSubmitEditing={() => phoneRef.current?.focus()}
                   onFocus={() => scrollToField(confirmPasswordFieldY.current)}
                 />
               </View>
@@ -253,10 +288,13 @@ export function RegisterScreen({ navigation, route }: Props) {
                   </Pressable>
                   <View style={styles.phoneDivider} />
                   <RNTextInput
+                    ref={phoneRef}
                     style={styles.phoneInput}
                     value={phone}
                     onChangeText={setPhone}
                     keyboardType="phone-pad"
+                    textContentType="telephoneNumber"
+                    autoComplete="tel"
                     placeholder="87 123 4567"
                     placeholderTextColor="#9CA3AF"
                     onFocus={() => scrollToField(phoneFieldY.current)}
@@ -341,7 +379,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    paddingBottom: spacing.xl,
+    // Keyboard-height worth of slack so the ScrollView can always lift the
+    // lower fields (confirm password, phone) clear of the keyboard. Without
+    // this the scroll clamps and the keyboard covers those fields.
+    paddingBottom: 320,
   },
   header: {
     paddingHorizontal: spacing.screenX,

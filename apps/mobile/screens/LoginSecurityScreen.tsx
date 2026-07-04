@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useRef, useState } from "react";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput as RNTextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { ArrowLeft, ChevronRight, LogOut, ShieldCheck } from "lucide-react-native";
@@ -21,6 +21,8 @@ export function LoginSecurityScreen({ navigation }: Props) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const newPasswordRef = useRef<RNTextInput | null>(null);
+  const confirmPasswordRef = useRef<RNTextInput | null>(null);
   const [saving, setSaving] = useState(false);
   const [sendingSetupEmail, setSendingSetupEmail] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -186,24 +188,40 @@ export function LoginSecurityScreen({ navigation }: Props) {
                   value={currentPassword}
                   onChangeText={setCurrentPassword}
                   secureTextEntry
+                  textContentType="password"
+                  autoComplete="current-password"
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  onSubmitEditing={() => newPasswordRef.current?.focus()}
                   placeholder="Enter current password"
                 />
                 <Text style={styles.fieldLabel}>New password</Text>
                 <AppTextInput
                   containerStyle={styles.editInputContainer}
                   style={styles.editInput}
+                  ref={newPasswordRef}
                   value={newPassword}
                   onChangeText={setNewPassword}
                   secureTextEntry
+                  textContentType="newPassword"
+                  autoComplete="new-password"
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  onSubmitEditing={() => confirmPasswordRef.current?.focus()}
                   placeholder="Enter new password"
                 />
                 <Text style={styles.fieldLabel}>Confirm new password</Text>
                 <AppTextInput
                   containerStyle={styles.editInputContainer}
                   style={styles.editInput}
+                  ref={confirmPasswordRef}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry
+                  textContentType="newPassword"
+                  autoComplete="new-password"
+                  returnKeyType="done"
+                  onSubmitEditing={handleChangePassword}
                   placeholder="Confirm new password"
                 />
                 {error ? <Text style={styles.error}>{error}</Text> : null}

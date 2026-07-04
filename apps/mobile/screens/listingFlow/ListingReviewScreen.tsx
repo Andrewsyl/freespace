@@ -1,7 +1,7 @@
 import { CommonActions } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SquircleBtn } from "../../components/SquircleBtn";
 import { PhoneVerifyModal } from "../../components/PhoneVerifyModal";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -289,9 +289,14 @@ export function ListingReviewScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={[]}>
       <FlowHeader current={8} total={8} onClose={exitFlow} />
 
+      <KeyboardAvoidingView
+        style={styles.kav}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: 32 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* ── Page header ── */}
         <View style={styles.pageHeader}>
@@ -462,6 +467,7 @@ export function ListingReviewScreen({ navigation }: Props) {
           <Text style={styles.saveLaterText}>Save and finish later</Text>
         </Pressable>
       </View>
+      </KeyboardAvoidingView>
 
       {/* ── Phone verification gate ── */}
       {token ? (
@@ -563,6 +569,7 @@ const CARD_SHADOW = {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8FAFC" },
+  kav: { flex: 1 },
 
   scroll: { paddingTop: 4, paddingHorizontal: 16, gap: 14 },
 

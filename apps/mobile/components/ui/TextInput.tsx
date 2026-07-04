@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { forwardRef, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -19,7 +19,7 @@ interface AppTextInputProps extends TextInputProps {
   clearable?: boolean;
 }
 
-export function TextInput({
+export const TextInput = forwardRef<RNTextInput, AppTextInputProps>(function TextInput({
   label,
   error,
   helpText,
@@ -29,7 +29,7 @@ export function TextInput({
   multiline,
   clearable = true,
   ...props
-}: AppTextInputProps) {
+}, ref) {
   const [isFocused, setIsFocused] = useState(false);
   const value = typeof props.value === "string" ? props.value : "";
   const canClear = clearable && isFocused && !!props.onChangeText && !!value && props.editable !== false;
@@ -39,6 +39,7 @@ export function TextInput({
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <View style={styles.inputWrap}>
         <RNTextInput
+          ref={ref}
           {...props}
           multiline={multiline}
           style={[
@@ -79,7 +80,7 @@ export function TextInput({
       {!error && helpText ? <Text style={styles.helpText}>{helpText}</Text> : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

@@ -6,12 +6,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput as RNTextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
-import { ArrowLeft, Square, SquareCheck, UserRound } from "lucide-react-native";
+import { ArrowLeft, UserRound } from "lucide-react-native";
 import { useAuth } from "../auth";
 import { requestEmailVerification } from "../api";
 import type { AuthReturnTo, RootStackParamList } from "../types";
@@ -40,6 +41,7 @@ export function SignInScreen({ navigation, route }: Props) {
     }
   };
   const scrollRef = useRef<ScrollView | null>(null);
+  const passwordRef = useRef<RNTextInput | null>(null);
   const emailFieldY = useRef(0);
   const passwordFieldY = useRef(0);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -50,7 +52,6 @@ export function SignInScreen({ navigation, route }: Props) {
   const [notice, setNotice] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
-  const [acceptLegalChecked, setAcceptLegalChecked] = useState(false);
   const needsLegalAcceptance = (candidate: { termsVersion?: string | null; privacyVersion?: string | null }) =>
     !candidate.termsVersion || !candidate.privacyVersion;
 
@@ -74,10 +75,6 @@ export function SignInScreen({ navigation, route }: Props) {
     }
     if (password.length < 6) {
       setError("Password must be at least 6 characters.");
-      return;
-    }
-    if (!acceptLegalChecked) {
-      setError("Please agree to the Terms & Privacy Policy to continue.");
       return;
     }
     setSubmitting(true);
@@ -158,7 +155,13 @@ export function SignInScreen({ navigation, route }: Props) {
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
+              autoCorrect={false}
               keyboardType="email-address"
+              textContentType="username"
+              autoComplete="email"
+              returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => passwordRef.current?.focus()}
               placeholder="you@example.com"
               onFocus={() => scrollToField(emailFieldY.current)}
             />
@@ -170,10 +173,15 @@ export function SignInScreen({ navigation, route }: Props) {
           >
             <Text style={styles.inputLabel}>Password</Text>
             <AppTextInput
+              ref={passwordRef}
               containerStyle={styles.inputContainer}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              textContentType="password"
+              autoComplete="current-password"
+              returnKeyType="go"
+              onSubmitEditing={handleLogin}
               placeholder="••••••••"
               onFocus={() => scrollToField(passwordFieldY.current)}
             />
@@ -181,34 +189,6 @@ export function SignInScreen({ navigation, route }: Props) {
 
           <Pressable style={styles.forgotRow} onPress={() => navigation.navigate("ResetPassword")}>
             <Text style={styles.forgotText}>Forgot password?</Text>
-          </Pressable>
-
-          <Pressable
-            style={styles.checkboxRow}
-            onPress={() => setAcceptLegalChecked((value) => !value)}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: acceptLegalChecked }}
-          >
-            {acceptLegalChecked ? (
-              <SquareCheck
-                size={20}
-                color={AUTH_GREEN}
-                strokeWidth={2.2}
-              />
-            ) : (
-              <Square
-              size={20}
-                color={colors.textSoft}
-                strokeWidth={2}
-              />
-            )}
-            <Text style={styles.checkboxText}>
-              I agree to{" "}
-              <Text style={styles.link} onPress={() => navigation.navigate("Legal")}>
-                Terms & Privacy
-              </Text>
-              .
-            </Text>
           </Pressable>
 
           <Button
@@ -219,6 +199,14 @@ export function SignInScreen({ navigation, route }: Props) {
             title={submitting ? "Signing in..." : "Sign In"}
             testID="sign-in-button"
           />
+
+          <Text style={styles.legalNote}>
+            By signing in, you agree to our{" "}
+            <Text style={styles.link} onPress={() => navigation.navigate("Legal")}>
+              Terms & Privacy
+            </Text>
+            .
+          </Text>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
           {notice ? <Text style={styles.noticeText}>{notice}</Text> : null}
@@ -318,18 +306,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: AUTH_GREEN,
   },
-  checkboxRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.xs,
-    marginTop: 4,
-    marginBottom: spacing.lg,
-  },
-  checkboxText: {
+  legalNote: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    color: colors.textMuted,
-    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.textSoft,
+    textAlign: "center",
+    marginTop: 12,
   },
   link: {
     color: AUTH_GREEN,

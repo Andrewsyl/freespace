@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput as RNTextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,6 +24,7 @@ const AUTH_GREEN = "#0a8050";
 
 export function ResetPasswordScreen({ navigation, route }: Props) {
   const scrollRef = useRef<ScrollView | null>(null);
+  const confirmPasswordRef = useRef<RNTextInput | null>(null);
   const emailFieldY = useRef(0);
   const passwordFieldY = useRef(0);
   const confirmPasswordFieldY = useRef(0);
@@ -144,7 +146,10 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
                     value={email}
                     onChangeText={setEmail}
                     autoCapitalize="none"
+                    autoCorrect={false}
                     keyboardType="email-address"
+                    textContentType="emailAddress"
+                    autoComplete="email"
                     placeholder="you@example.com"
                     onFocus={() => scrollToField(emailFieldY.current)}
                   />
@@ -169,6 +174,11 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
+                    textContentType="newPassword"
+                    autoComplete="new-password"
+                    returnKeyType="next"
+                    blurOnSubmit={false}
+                    onSubmitEditing={() => confirmPasswordRef.current?.focus()}
                     placeholder="••••••••"
                     onFocus={() => scrollToField(passwordFieldY.current)}
                   />
@@ -179,10 +189,15 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
                 >
                   <Text style={styles.label}>Confirm password</Text>
                   <AppTextInput
+                    ref={confirmPasswordRef}
                     containerStyle={styles.fieldInput}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry
+                    textContentType="newPassword"
+                    autoComplete="new-password"
+                    returnKeyType="done"
+                    onSubmitEditing={handleReset}
                     placeholder="••••••••"
                     onFocus={() => scrollToField(confirmPasswordFieldY.current)}
                   />
