@@ -1,4 +1,4 @@
-import { forwardRef, useState } from "react";
+import { forwardRef, useState, type ForwardedRef } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -19,17 +19,20 @@ interface AppTextInputProps extends TextInputProps {
   clearable?: boolean;
 }
 
-export const TextInput = forwardRef<RNTextInput, AppTextInputProps>(function TextInput({
-  label,
-  error,
-  helpText,
-  containerStyle,
-  style,
-  variant = "signup",
-  multiline,
-  clearable = true,
-  ...props
-}, ref) {
+export const TextInput = forwardRef(function TextInput(
+  {
+    label,
+    error,
+    helpText,
+    containerStyle,
+    style,
+    variant = "signup",
+    multiline,
+    clearable = true,
+    ...props
+  }: AppTextInputProps,
+  ref: ForwardedRef<RNTextInput>
+) {
   const [isFocused, setIsFocused] = useState(false);
   const value = typeof props.value === "string" ? props.value : "";
   const canClear = clearable && isFocused && !!props.onChangeText && !!value && props.editable !== false;
