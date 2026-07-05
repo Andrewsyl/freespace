@@ -47,7 +47,6 @@ export type RootStackParamList = {
   LoginSecurity: undefined;
   Legal: undefined;
   History: { showSuccess?: boolean; refreshToken?: number; showMapCTA?: boolean; initialTab?: "upcoming" | "active" | "past" } | undefined;
-  Settings: undefined;
   Listings: undefined;
   Payments: undefined;
   Favorites: {} | undefined;

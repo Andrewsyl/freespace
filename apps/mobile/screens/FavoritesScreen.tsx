@@ -6,11 +6,63 @@ import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
 import { colors, spacing } from "../styles/theme";
 import type { ListingSummary, RootStackParamList } from "../types";
-import { ArrowLeft, CarFront, Heart, MapPin, ShieldCheck, Star } from "lucide-react-native";
-import { FeatureChip } from "../components/MapBottomCard";
+import {
+  Accessibility,
+  ArrowDownUp,
+  ArrowLeft,
+  BatteryCharging,
+  Bike,
+  CarFront,
+  Cctv,
+  Clock,
+  Fence,
+  Heart,
+  IdCard,
+  KeyRound,
+  Lightbulb,
+  Maximize2,
+  Star,
+  Warehouse,
+  type LucideIcon,
+} from "lucide-react-native";
+import { SignInWall } from "../components/SignInWall";
 import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Favorites">;
+
+// Mirror of the amenity icon mapping in ListingScreen so favourite cards read
+// the same visual language (icons, not words).
+const FEATURE_ICONS: Record<string, LucideIcon> = {
+  cctv: Cctv,
+  ev: BatteryCharging,
+  sheltered: Warehouse,
+  lit: Lightbulb,
+  gated: Fence,
+  low: ArrowDownUp,
+  permit: IdCard,
+  code: KeyRound,
+  disabled: Accessibility,
+  allday: Clock,
+  motorbike: Bike,
+  wide: Maximize2,
+};
+
+const getFeatureIconType = (label: string) => {
+  const n = label.toLowerCase();
+  if (n.includes("low") || n.includes("clearance") || n.includes("height")) return "low";
+  if (n.includes("permit")) return "permit";
+  if (n.includes("ev") || n.includes("charger") || n.includes("charging")) return "ev";
+  if (n.includes("cctv") || n.includes("camera")) return "cctv";
+  if (n.includes("light") || n.includes("lit")) return "lit";
+  if (n.includes("shelter") || n.includes("covered") || n.includes("roof")) return "sheltered";
+  if (n.includes("gate") || n.includes("gated") || n.includes("barrier")) return "gated";
+  if (n.includes("code") || n.includes("keypad") || n.includes("entry")) return "code";
+  if (n.includes("disabled") || (n.includes("access") && n.includes("wheel"))) return "disabled";
+  if (n.includes("24") || n.includes("always") || n.includes("round")) return "allday";
+  if (n.includes("motorbike") || n.includes("motorcycle") || n.includes("scooter") || n.includes("bike")) return "motorbike";
+  if (n.includes("wide")) return "wide";
+  return "sheltered";
+};
 
 function formatMoney(value: number | string | null | undefined): string | null {
   const n = Number(value);
@@ -50,57 +102,53 @@ function FavoriteCard({
 
   return (
     <Pressable style={styles.card} onPress={onOpen}>
-      <View style={styles.cardImageWrap}>
+      <View style={styles.imageWrap}>
         {image ? (
-          <Image source={{ uri: image }} style={styles.cardImage} resizeMode="cover" />
+          <Image source={{ uri: image }} style={styles.image} resizeMode="cover" />
         ) : (
-          <View style={styles.cardImageFallback}>
-            <CarFront size={30} color="#b0bac4" strokeWidth={1.7} />
+          <View style={styles.imageFallback}>
+            <CarFront size={34} color="#b0bac4" strokeWidth={1.7} />
           </View>
         )}
-        <Pressable
-          onPress={onUnsave}
-          hitSlop={10}
-          style={styles.heartBtn}
-          accessibilityLabel="Remove from favourites"
-        >
-          <Heart size={18} color="#0a8050" fill="#0a8050" strokeWidth={2} />
-        </Pressable>
+        {hasRating ? (
+          <View style={styles.ratingPill}>
+            <Star size={13} color="#0a8050" fill="#0a8050" strokeWidth={2} />
+            <Text style={styles.ratingPillText}>{ratingValue.toFixed(1)}</Text>
+          </View>
+        ) : null}
       </View>
 
-      <View style={styles.cardBody}>
-        <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+      <View style={styles.body}>
+        <View style={styles.titleRow}>
+          <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+          <Pressable onPress={onUnsave} hitSlop={12} accessibilityLabel="Remove from favourites">
+            <Heart size={24} color="#0a8050" fill="#0a8050" strokeWidth={2} />
+          </Pressable>
+        </View>
 
-        {hasRating ? (
-          <View style={styles.cardRatingRow}>
-            <Star size={13} color="#F4B942" fill="#F4B942" strokeWidth={2} />
-            <Text style={styles.cardRating}>{ratingValue.toFixed(1)}</Text>
-            <Text style={styles.cardRatingCount}>
-              · {ratingCount} {ratingCount === 1 ? "review" : "reviews"}
-            </Text>
+        <Text style={styles.addr} numberOfLines={1}>{item.address}</Text>
+
+        {amenities.length > 0 ? (
+          <View style={styles.featureRow}>
+            {amenities.map((amenity) => {
+              const Icon = FEATURE_ICONS[getFeatureIconType(amenity)] ?? FEATURE_ICONS.sheltered;
+              return (
+                <View key={amenity} style={styles.featureIcon}>
+                  <Icon size={17} color="#64748b" strokeWidth={1.9} />
+                </View>
+              );
+            })}
           </View>
         ) : null}
 
-        <View style={styles.cardAddrRow}>
-          <MapPin size={13} color="#94a3b8" strokeWidth={2} />
-          <Text style={styles.cardAddr} numberOfLines={1}>{item.address}</Text>
-        </View>
+        <View style={styles.dashed} />
 
-        <View style={styles.cardFooter}>
+        <View style={styles.priceRow}>
           {price ? (
-            <Text style={styles.cardPrice}>
+            <Text style={styles.price}>
               {price.value}
-              <Text style={styles.cardPriceUnit}>{price.unit}</Text>
+              <Text style={styles.priceUnit}> {price.unit}</Text>
             </Text>
-          ) : (
-            <View />
-          )}
-          {amenities.length > 0 ? (
-            <View style={styles.chipRow}>
-              {amenities.map((a) => (
-                <FeatureChip key={a} label={a} />
-              ))}
-            </View>
           ) : null}
         </View>
       </View>
@@ -122,26 +170,14 @@ export function FavoritesScreen({ navigation }: Props) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <View style={styles.contentWrapper}>
-          <View style={styles.gatedCard}>
-            <View style={styles.gatedIconWrap}>
-              <Heart size={24} color="#0a8050" strokeWidth={2.2} />
-            </View>
-            <Text style={styles.gatedTitle}>Save your favourite spaces</Text>
-            <Text style={styles.subtitle}>Sign in to keep the spaces you trust one tap away.</Text>
-            <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
-              <Text style={styles.primaryButtonText}>Sign in</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.primaryButton, styles.secondaryButton]}
-              onPress={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
-            >
-              <Text style={[styles.primaryButtonText, styles.secondaryButtonText]}>Browse spaces</Text>
-            </Pressable>
-            <View style={styles.gatedHintRow}>
-              <ShieldCheck size={14} color={colors.textSoft} strokeWidth={2.1} />
-              <Text style={styles.gatedHintText}>Your saved spaces stay attached to your account.</Text>
-            </View>
-          </View>
+          <SignInWall
+            icon={<Heart size={26} color="#0a8050" strokeWidth={2.2} />}
+            title="Save your favourite spaces"
+            body="Sign in to keep the spaces you trust one tap away."
+            onSignIn={() => navigation.navigate("Welcome")}
+            onBrowse={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
+            reassurance="Your saved spaces stay attached to your account."
+          />
         </View>
       </SafeAreaView>
     );
@@ -186,7 +222,7 @@ export function FavoritesScreen({ navigation }: Props) {
             <View style={styles.list}>
               {[0, 1, 2].map((i) => (
                 <View key={i} style={styles.skeletonCard}>
-                  <SkeletonBlock width="100%" height={160} borderRadius={0} pulse={skeletonPulse} />
+                  <SkeletonBlock width="100%" height={178} borderRadius={0} pulse={skeletonPulse} />
                   <View style={styles.skeletonBody}>
                     <SkeletonBlock width="72%" height={16} pulse={skeletonPulse} />
                     <SkeletonBlock width="46%" height={12} pulse={skeletonPulse} style={{ marginTop: 10 }} />
@@ -247,11 +283,11 @@ export function FavoritesScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F4F6F8",
+    backgroundColor: "#FFFFFF",
   },
   contentWrapper: {
     flex: 1,
-    backgroundColor: "#F4F6F8",
+    backgroundColor: "#FFFFFF",
   },
   navBar: {
     flexDirection: "row",
@@ -280,88 +316,59 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 12,
   },
-  list: { gap: 14 },
+  list: { gap: 20 },
 
-  // Premium listing card
+  // TGTG-style favourite card — white card floating on white with a soft shadow
   card: {
     backgroundColor: "#ffffff",
-    borderColor: "#E4E9EF",
-    borderWidth: 1,
-    borderRadius: 22,
+    borderRadius: 18,
     overflow: "hidden",
-    shadowColor: "#111827",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 16,
-    elevation: 3,
+    shadowColor: "#0B1220",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.10,
+    shadowRadius: 22,
+    elevation: 5,
   },
-  cardImageWrap: {
+  imageWrap: {
     width: "100%",
-    height: 160,
+    height: 178,
     backgroundColor: "#edf1f4",
   },
-  cardImage: { width: "100%", height: "100%" },
-  cardImageFallback: { flex: 1, alignItems: "center", justifyContent: "center" },
-  cardBody: {
-    paddingHorizontal: 15,
-    paddingVertical: 13,
-    gap: 5,
+  image: { width: "100%", height: "100%" },
+  imageFallback: { flex: 1, alignItems: "center", justifyContent: "center" },
+  ratingPill: {
+    position: "absolute", top: 12, right: 12,
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: "#FFFFFF", borderRadius: 999,
+    paddingHorizontal: 10, paddingVertical: 5,
+    shadowColor: "#0B1220", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.14, shadowRadius: 5, elevation: 3,
   },
-  cardTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 16,
-    color: "#0f172a",
-    letterSpacing: -0.3,
-    lineHeight: 21,
+  ratingPillText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 13, color: "#1f2937", letterSpacing: -0.1 },
+  body: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14 },
+  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  title: { flex: 1, fontFamily: "PlusJakartaSans-Bold", fontSize: 19, color: "#111820", letterSpacing: -0.4 },
+  addr: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: "#64748b", lineHeight: 19, marginTop: 3 },
+  featureRow: { flexDirection: "row", alignItems: "center", gap: 16, marginTop: 12 },
+  featureIcon: { alignItems: "center", justifyContent: "center" },
+  dashed: {
+    borderTopWidth: 1, borderStyle: "dashed", borderTopColor: "#DCE2E8",
+    marginTop: 14, marginBottom: 12,
   },
-  heartBtn: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.94)",
-    shadowColor: "#111827",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.14,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  cardRatingRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  cardRating: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: "#0f172a" },
-  cardRatingCount: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12.5, color: "#8896a5" },
-  cardAddrRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  cardAddr: {
-    flex: 1,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12.5,
-    color: "#64748b",
-    lineHeight: 17,
-  },
-  cardFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    marginTop: 4,
-    paddingTop: 9,
-    borderTopWidth: 1,
-    borderTopColor: "#eef1f4",
-  },
-  cardPrice: { fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: "#0f172a", letterSpacing: -0.4 },
-  cardPriceUnit: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: "#94a3b8" },
-  chipRow: { flexDirection: "row", gap: 5, flexShrink: 1, justifyContent: "flex-end", overflow: "hidden" },
+  priceRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "flex-end" },
+  price: { fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 19, color: "#111820", letterSpacing: -0.5 },
+  priceUnit: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: "#94a3b8" },
 
   // Skeleton
   skeletonCard: {
     backgroundColor: "#ffffff",
-    borderColor: "#E4E9EF",
-    borderWidth: 1,
-    borderRadius: 22,
+    borderRadius: 18,
     overflow: "hidden",
+    shadowColor: "#0B1220",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.10,
+    shadowRadius: 22,
+    elevation: 5,
   },
   skeletonBody: { paddingHorizontal: 15, paddingVertical: 14 },
 
@@ -397,47 +404,6 @@ const styles = StyleSheet.create({
   },
 
   // Gated (signed-out)
-  gatedCard: {
-    alignItems: "center",
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginHorizontal: spacing.screenX,
-    marginTop: spacing.screenX,
-    paddingHorizontal: 24,
-    paddingVertical: 28,
-  },
-  gatedIconWrap: {
-    alignItems: "center",
-    backgroundColor: "#edf7f2",
-    borderRadius: 30,
-    height: 60,
-    justifyContent: "center",
-    marginBottom: 14,
-    width: 60,
-  },
-  gatedTitle: {
-    color: "#0f172a",
-    fontSize: 19,
-    fontFamily: "PlusJakartaSans-Bold",
-    letterSpacing: -0.4,
-    marginBottom: 6,
-    textAlign: "center",
-  },
-  gatedHintRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 6,
-    marginTop: 14,
-  },
-  gatedHintText: {
-    color: colors.textSoft,
-    fontSize: 12,
-    lineHeight: 16,
-    textAlign: "center",
-  },
-
   // Buttons
   primaryButton: {
     backgroundColor: "#0a8050",
@@ -453,15 +419,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
-  },
-  secondaryButton: {
-    backgroundColor: "#ffffff",
-    borderColor: colors.border,
-    borderWidth: 1,
-    marginTop: 10,
-  },
-  secondaryButtonText: {
-    color: colors.text,
   },
 
   // Error

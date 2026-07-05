@@ -3,55 +3,42 @@ import { Alert, Linking, Pressable, ScrollView, StatusBar, StyleSheet, Text, Vie
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
-import { ChevronRight } from "lucide-react-native";
+import { ArrowRight, ChevronRight } from "lucide-react-native";
 import * as Notifications from "expo-notifications";
 import { requestEmailVerification, getHostListings } from "../api";
 import { useAuth } from "../auth";
 import { useGlobalToast } from "../components/GlobalToast";
-import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import type { RootStackParamList } from "../types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Profile">;
 
-const GREEN  = "#0a8050";
-const LINE   = "#d1d5db";
-const FG     = "#111827";
-const MUTED  = "#374151";
-const SUBTLE = "#6b7280";
+const GREEN = "#0a8050";
 
 type RowProps = {
   icon: string;
   label: string;
-  sub?: string;
+  value?: string;
   onPress?: () => void;
-  right?: React.ReactNode;
   danger?: boolean;
-  first?: boolean;
 };
 
-function Row({ icon, label, sub, onPress, right, danger, first }: RowProps) {
+function Row({ icon, label, value, onPress, danger }: RowProps) {
   return (
     <Pressable
-      style={({ pressed }) => [
-        styles.row,
-        !first && styles.rowBorder,
-        pressed && !!onPress && styles.rowPressed,
-      ]}
+      style={({ pressed }) => [styles.row, pressed && !!onPress && styles.rowPressed]}
       onPress={onPress}
       disabled={!onPress}
     >
-      <View style={styles.iconWrap}>
-        <Ionicons
-          name={icon as any}
-          size={20}
-          color={danger ? "#b42318" : MUTED}
-        />
+      <View style={styles.ico}>
+        <Ionicons name={icon as any} size={21} color={danger ? "#b42318" : "#1E2732"} />
       </View>
-      <View style={styles.rowBody}>
-        <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
-        {sub ? <Text style={styles.rowSub}>{sub}</Text> : null}
-      </View>
-      {right ?? (onPress ? <ChevronRight size={15} color={SUBTLE} /> : null)}
+      <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
+      {value ? (
+        <Text style={styles.rowValue} numberOfLines={1}>
+          {value}
+        </Text>
+      ) : null}
+      {onPress ? <ChevronRight size={18} color="#9AA4AD" strokeWidth={2.2} /> : null}
     </Pressable>
   );
 }
@@ -118,6 +105,12 @@ export function ProfileScreen({ navigation }: Props) {
     }
   };
 
+  const confirmSignOut = () =>
+    Alert.alert("Sign out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign out", style: "destructive", onPress: () => logout() },
+    ]);
+
   const initial = user?.name?.trim()?.charAt(0)?.toUpperCase()
     || user?.email?.charAt(0)?.toUpperCase()
     || "U";
@@ -128,44 +121,41 @@ export function ProfileScreen({ navigation }: Props) {
       <SafeAreaView style={styles.container} edges={[]}>
         <StatusBar barStyle="dark-content" />
         <ScrollView
-          contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 28, paddingBottom: Math.max(insets.bottom + 96, 120) }]}
+          contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 24, paddingBottom: Math.max(insets.bottom + 96, 120) }]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.pageHeader}>
-            <Text style={styles.pageTitle}>Profile</Text>
-          </View>
-
           <Pressable
-            style={({ pressed }) => [styles.signInCard, pressed && { opacity: 0.85 }]}
+            style={({ pressed }) => [styles.masthead, pressed && styles.mastheadPressed]}
             onPress={() => navigation.navigate("Welcome")}
           >
-            <View style={styles.signInAvatar}>
-              <Ionicons name="person-outline" size={28} color={GREEN} />
+            <View style={styles.avatar}>
+              <Ionicons name="person-outline" size={30} color={GREEN} />
             </View>
-            <View style={styles.rowBody}>
-              <Text style={styles.signInTitle}>Sign in to FreeSpace</Text>
-              <Text style={styles.signInSub}>Access your bookings, vehicle and payments</Text>
+            <Text style={styles.name}>Sign in to FreeSpace</Text>
+            <Text style={styles.mastheadSub} numberOfLines={2}>
+              Access your bookings, vehicle and payments
+            </Text>
+            <View style={styles.signInChip}>
+              <Text style={styles.signInChipText}>Sign in or create account</Text>
+              <ArrowRight size={15} color={GREEN} strokeWidth={2.2} />
             </View>
-            <ChevronRight size={16} color={SUBTLE} />
           </Pressable>
 
-          <Text style={styles.groupLabel}>Account</Text>
-          <View style={styles.group}>
-            <Row first icon="card-outline" label="Payment methods" sub="Cards and bank accounts" onPress={() => navigation.navigate("Welcome")} />
-            <Row icon="car-outline" label="My vehicle" sub="Car brand, model and plate" onPress={() => navigation.navigate("Welcome")} />
-            <Row icon="lock-closed-outline" label="Login & security" sub="Password and devices" onPress={() => navigation.navigate("Welcome")} />
-          </View>
+          <Pressable
+            style={({ pressed }) => [styles.host, pressed && styles.hostPressed]}
+            onPress={() => navigation.navigate("Welcome")}
+          >
+            <View style={styles.hostText}>
+              <Text style={styles.hostTitle}>Earn with your space</Text>
+              <Text style={styles.hostSub}>List your driveway or garage and start earning</Text>
+            </View>
+            <ArrowRight size={19} color={GREEN} strokeWidth={2.1} />
+          </Pressable>
 
-          <Text style={styles.groupLabel}>Hosting</Text>
-          <View style={styles.group}>
-            <Row first icon="home-outline" label="List your space" sub="Earn from your driveway or garage" onPress={() => navigation.navigate("Welcome")} />
-            <Row icon="list-outline" label="Manage spaces" sub="Edit listings and availability" onPress={() => navigation.navigate("Welcome")} />
-          </View>
-
-          <Text style={styles.groupLabel}>Support</Text>
-          <View style={styles.group}>
-            <Row first icon="chatbubble-outline" label="Contact support" sub="Send a message to our team" onPress={() => navigation.navigate("Support")} />
-            <Row icon="document-text-outline" label="Terms & privacy" sub="Legal and policies" onPress={() => navigation.navigate("Legal")} />
+          <Text style={styles.secLabel}>Support</Text>
+          <View>
+            <Row icon="headset-outline" label="Contact support" onPress={() => navigation.navigate("Support")} />
+            <Row icon="document-text-outline" label="Terms & privacy" onPress={() => navigation.navigate("Legal")} />
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -177,177 +167,114 @@ export function ProfileScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={[]}>
       <StatusBar barStyle="dark-content" />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 28, paddingBottom: Math.max(insets.bottom + 96, 120) }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 24, paddingBottom: Math.max(insets.bottom + 96, 120) }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Profile header ── */}
+        {/* ── Masthead ── */}
         <Pressable
-          style={({ pressed }) => [styles.profileCard, pressed && styles.profileCardPressed]}
+          style={({ pressed }) => [styles.masthead, pressed && styles.mastheadPressed]}
           onPress={() => navigation.navigate("PersonalInfo")}
         >
           <View style={styles.avatar}>
             <Text style={styles.avatarInitial}>{initial}</Text>
           </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{user.name?.trim() || "Your account"}</Text>
-            <Text style={styles.profileEmail} numberOfLines={1}>{user.email}</Text>
+          <Text style={styles.name} numberOfLines={1}>
+            {user.name?.trim() || "Your account"}
+          </Text>
+          <View style={styles.metaRow}>
+            <Text style={styles.email} numberOfLines={1}>{user.email}</Text>
+            {user.emailVerified ? (
+              <>
+                <View style={styles.metaDot} />
+                <View style={styles.verifiedRow}>
+                  <Ionicons name="checkmark-circle" size={14} color={GREEN} />
+                  <Text style={styles.verifiedText}>Verified</Text>
+                </View>
+              </>
+            ) : null}
           </View>
-          {user.emailVerified ? (
-            <View style={styles.verifiedPill}>
-              <Ionicons name="checkmark-circle" size={13} color={GREEN} />
-              <Text style={styles.verifiedText}>Verified</Text>
-            </View>
-          ) : (
+          {!user.emailVerified ? (
             <Pressable
-              style={styles.verifyBtn}
+              style={styles.verifyChip}
               onPress={resendVerification}
               disabled={sending || resendCooldown > 0}
+              hitSlop={6}
             >
-              <Text style={styles.verifyBtnText}>
-                {sending ? "Sending…" : resendCooldown > 0 ? `${resendCooldown}s` : "Verify email"}
+              <Text style={styles.verifyChipText}>
+                {sending
+                  ? "Sending…"
+                  : resendCooldown > 0
+                    ? `Resend in ${resendCooldown}s`
+                    : "Verify your email"}
               </Text>
             </Pressable>
-          )}
+          ) : null}
         </Pressable>
 
-        {/* ── Hosting CTA — only when user has no listings ── */}
+        {/* ── Host strip — only when user has no listings ── */}
         {hasListings === false && (
           <Pressable
-            style={({ pressed }) => [styles.hostingCta, pressed && { opacity: 0.88 }]}
+            style={({ pressed }) => [styles.host, pressed && styles.hostPressed]}
             onPress={() => navigation.navigate("CreateListingFlow")}
           >
-            <View style={styles.hostingCtaIcon}>
-              <Ionicons name="home" size={22} color={GREEN} />
+            <View style={styles.hostText}>
+              <Text style={styles.hostTitle}>Earn with your space</Text>
+              <Text style={styles.hostSub}>List your driveway or garage and start earning</Text>
             </View>
-            <View style={styles.rowBody}>
-              <Text style={styles.hostingCtaTitle}>Got a parking space?</Text>
-              <Text style={styles.hostingCtaSub}>List it on FreeSpace and start earning</Text>
-            </View>
-            <ChevronRight size={15} color={GREEN} />
+            <ArrowRight size={19} color={GREEN} strokeWidth={2.1} />
           </Pressable>
         )}
 
         {/* ── Account ── */}
-        <Text style={styles.groupLabel}>Account</Text>
-        <View style={styles.group}>
-          <Row
-            first
-            icon="card-outline"
-            label="Payment methods"
-            sub="Cards and bank accounts"
-            onPress={() => navigation.navigate("Payments")}
-          />
+        <Text style={styles.secLabel}>Your account</Text>
+        <View>
+          <Row icon="card-outline" label="Payment methods" onPress={() => navigation.navigate("Payments")} />
           <Row
             icon="car-outline"
-            label="My vehicle"
-            sub={
-              user.vehicleMake && user.vehicleType
-                ? `${user.vehicleMake} · ${user.vehicleType}`
-                : "Add your car brand, model and plate"
-            }
+            label="Vehicle"
+            value={user.vehicleMake ?? "Add"}
             onPress={() => navigation.navigate("VehicleType")}
-            right={
-              <View style={styles.rowRight}>
-                {user.vehicleMake ? <VehicleBrandLogo make={user.vehicleMake} size={32} /> : null}
-                <ChevronRight size={15} color={SUBTLE} />
-              </View>
-            }
           />
           <Row
             icon="notifications-outline"
             label="Notifications"
-            sub={notificationsEnabled ? "Enabled" : "Disabled"}
+            value={notificationsEnabled ? "On" : "Off"}
             onPress={handleToggleNotifications}
-            right={
-              <View style={[styles.toggle, notificationsEnabled && styles.toggleOn]}>
-                <View style={[styles.toggleKnob, notificationsEnabled && styles.toggleKnobOn]} />
-              </View>
-            }
           />
-          <Row
-            icon="lock-closed-outline"
-            label="Login & security"
-            sub="Password and devices"
-            onPress={() => navigation.navigate("LoginSecurity")}
-          />
-          <Row
-            icon="heart-outline"
-            label="Favourites"
-            sub="Saved spaces"
-            onPress={() => navigation.navigate("Favorites")}
-          />
-          <Row
-            icon="settings-outline"
-            label="Settings"
-            sub="App preferences"
-            onPress={() => navigation.navigate("Settings")}
-          />
+          <Row icon="lock-closed-outline" label="Login & security" onPress={() => navigation.navigate("LoginSecurity")} />
+          <Row icon="heart-outline" label="Favourites" onPress={() => navigation.navigate("Favorites")} />
         </View>
 
         {/* ── Hosting — only when user has listings ── */}
         {hasListings === true && (
           <>
-            <Text style={styles.groupLabel}>Hosting</Text>
-            <View style={styles.group}>
-              <Row
-                first
-                icon="home-outline"
-                label="List your space"
-                sub="Earn from your driveway or garage"
-                onPress={() => navigation.navigate("CreateListingFlow")}
-              />
-              <Row
-                icon="list-outline"
-                label="Manage spaces"
-                sub="Edit listings and availability"
-                onPress={() => navigation.navigate("Listings")}
-              />
+            <Text style={styles.secLabel}>Hosting</Text>
+            <View>
+              <Row icon="home-outline" label="List your space" onPress={() => navigation.navigate("CreateListingFlow")} />
+              <Row icon="list-outline" label="Manage spaces" onPress={() => navigation.navigate("Listings")} />
             </View>
           </>
         )}
 
         {/* ── Support ── */}
-        <Text style={styles.groupLabel}>Support</Text>
-        <View style={styles.group}>
-          <Row
-            first
-            icon="chatbubble-outline"
-            label="Contact support"
-            sub="Send a message to our team"
-            onPress={() => navigation.navigate("Support")}
-          />
-          <Row
-            icon="document-text-outline"
-            label="Terms & privacy"
-            sub="Legal and policies"
-            onPress={() => navigation.navigate("Legal")}
-          />
+        <Text style={styles.secLabel}>Support</Text>
+        <View>
+          <Row icon="headset-outline" label="Contact support" onPress={() => navigation.navigate("Support")} />
+          <Row icon="document-text-outline" label="Terms & privacy" onPress={() => navigation.navigate("Legal")} />
         </View>
 
         {/* ── Admin ── */}
         {user.role === "admin" ? (
-          <View style={[styles.group, { marginTop: 8 }]}>
-            <Row
-              first
-              icon="shield-outline"
-              label="Admin panel"
-              sub="Moderate users and listings"
-              onPress={() => navigation.navigate("Admin")}
-            />
-          </View>
+          <>
+            <Text style={styles.secLabel}>Admin</Text>
+            <View>
+              <Row icon="shield-outline" label="Admin panel" onPress={() => navigation.navigate("Admin")} />
+            </View>
+          </>
         ) : null}
 
         {/* ── Sign out ── */}
-        <Pressable
-          style={({ pressed }) => [styles.signOutBtn, pressed && styles.signOutBtnPressed]}
-          onPress={() =>
-            Alert.alert("Sign out", "Are you sure you want to sign out?", [
-              { text: "Cancel", style: "cancel" },
-              { text: "Sign out", style: "destructive", onPress: () => logout() },
-            ])
-          }
-        >
-          <Ionicons name="log-out-outline" size={19} color="#c0392b" />
+        <Pressable style={styles.signOut} onPress={confirmSignOut} hitSlop={8}>
           <Text style={styles.signOutText}>Sign out</Text>
         </Pressable>
       </ScrollView>
@@ -356,153 +283,87 @@ export function ProfileScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4F6F8" },
-  scroll: { paddingHorizontal: 16 },
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  scroll: { paddingHorizontal: 20 },
 
-  // ── Page header ──────────────────────────────────────────────
-  pageHeader: { paddingBottom: 14, paddingHorizontal: 4 },
-  pageTitle: {
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 29, color: FG, letterSpacing: -0.9,
-  },
-
-  // ── Profile card ─────────────────────────────────────────────
-  profileCard: {
-    flexDirection: "row", alignItems: "center", gap: 14,
-    backgroundColor: "#ffffff", borderRadius: 20,
-    borderWidth: 1, borderColor: "#E1E7ED",
-    paddingHorizontal: 16, paddingVertical: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  profileCardPressed: { opacity: 0.88 },
+  // ── Masthead (open, no box) ──────────────────────────────────
+  masthead: { alignItems: "flex-start", paddingTop: 6, paddingBottom: 18 },
+  mastheadPressed: { opacity: 0.72 },
   avatar: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: "#EDF7F2",
+    width: 74, height: 74, borderRadius: 37,
+    backgroundColor: "#EEF7F1",
     alignItems: "center", justifyContent: "center",
-    flexShrink: 0,
   },
   avatarInitial: {
-    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 22, color: GREEN,
+    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 28, color: GREEN, letterSpacing: -0.5,
   },
-  profileInfo: { flex: 1, minWidth: 0 },
-  profileName: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 18,
-    color: FG, letterSpacing: -0.3,
+  name: {
+    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 27,
+    color: "#10151C", letterSpacing: -0.8, marginTop: 16, lineHeight: 31,
   },
-  profileEmail: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 14,
-    color: MUTED, marginTop: 2,
+  metaRow: {
+    flexDirection: "row", alignItems: "center", gap: 9, marginTop: 8, flexWrap: "wrap",
   },
-  verifiedPill: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: "#EDF7F2", borderRadius: 999,
-    paddingHorizontal: 10, paddingVertical: 6, flexShrink: 0,
+  email: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14.5, color: "#69727D" },
+  metaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: "#A2ABB4" },
+  verifiedRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  verifiedText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: GREEN },
+  mastheadSub: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 14.5,
+    color: "#69727D", marginTop: 8, lineHeight: 20,
   },
-  verifiedText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: GREEN },
-  verifyBtn: {
-    borderRadius: 999, borderWidth: 1, borderColor: LINE,
-    paddingHorizontal: 14, paddingVertical: 8, flexShrink: 0,
+  verifyChip: {
+    alignSelf: "flex-start", marginTop: 12,
+    backgroundColor: "#F1FAF5", borderWidth: 1, borderColor: "#D3E9DD",
+    borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5,
   },
-  verifyBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
+  verifyChipText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: GREEN },
+  signInChip: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    alignSelf: "flex-start", marginTop: 16,
+    backgroundColor: "#F1FAF5", borderWidth: 1, borderColor: "#D3E9DD",
+    borderRadius: 999, paddingHorizontal: 15, paddingVertical: 9,
+  },
+  signInChipText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: GREEN },
 
-  // ── Sign in card (logged out) ────────────────────────────────
-  signInCard: {
+  // ── Host strip (single colour moment) ────────────────────────
+  host: {
     flexDirection: "row", alignItems: "center", gap: 14,
-    backgroundColor: "#ffffff", borderRadius: 20,
-    borderWidth: 1, borderColor: "#E1E7ED",
-    paddingHorizontal: 16, paddingVertical: 16,
-    marginBottom: 14,
+    backgroundColor: "#EEF7F1", borderWidth: 1, borderColor: "#DCEBE2",
+    borderRadius: 18, paddingHorizontal: 17, paddingVertical: 15,
+    marginTop: 6, marginBottom: 8,
   },
-  signInAvatar: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: "#EDF7F2",
-    alignItems: "center", justifyContent: "center",
+  hostPressed: { opacity: 0.9 },
+  hostText: { flex: 1 },
+  hostTitle: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 15.5, color: "#0a6a43", letterSpacing: -0.2,
   },
-  signInTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG, letterSpacing: -0.2 },
-  signInSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, marginTop: 2 },
-
-  // ── Hosting CTA ──────────────────────────────────────────────
-  hostingCta: {
-    flexDirection: "row", alignItems: "center", gap: 14,
-    backgroundColor: "#EDF7F2", borderRadius: 20,
-    borderWidth: 1, borderColor: "#c6ead8",
-    paddingHorizontal: 16, paddingVertical: 14,
-    marginBottom: 4,
-  },
-  hostingCtaIcon: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: "#ffffff",
-    alignItems: "center", justifyContent: "center",
-    flexShrink: 0,
-  },
-  hostingCtaTitle: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: "#0a6640", letterSpacing: -0.2,
-  },
-  hostingCtaSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: "#2d8a5e", marginTop: 1 },
-
-  // ── Group ────────────────────────────────────────────────────
-  groupLabel: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 11, color: "#888",
-    letterSpacing: 0.8, textTransform: "uppercase",
-    marginBottom: 8, marginTop: 20, paddingHorizontal: 4,
-  },
-  group: {
-    borderRadius: 20, borderWidth: 1, borderColor: "#E1E7ED",
-    overflow: "hidden", backgroundColor: "#ffffff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
+  hostSub: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13.5, color: "#3f8c66", marginTop: 2,
   },
 
-  // ── Rows ─────────────────────────────────────────────────────
+  // ── Sections (icon list, no dividers) ────────────────────────
+  secLabel: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 11.5, color: "#8A94A0",
+    letterSpacing: 1, textTransform: "uppercase", marginTop: 24, marginBottom: 4,
+  },
   row: {
-    flexDirection: "row", alignItems: "center", gap: 12,
-    paddingHorizontal: 16, paddingVertical: 13,
-    backgroundColor: "#ffffff", minHeight: 52,
+    flexDirection: "row", alignItems: "center", gap: 15,
+    paddingVertical: 12,
   },
-  rowBorder: { borderTopWidth: 1, borderTopColor: LINE },
-  rowPressed: { backgroundColor: "#f5f5f3" },
-  iconWrap: { width: 22, alignItems: "center", flexShrink: 0 },
-  rowBody: { flex: 1 },
-  rowLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG },
+  ico: { width: 24, alignItems: "center", flexShrink: 0 },
+  rowPressed: { opacity: 0.55 },
+  rowLabel: {
+    flex: 1, fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15.5,
+    color: "#111820", letterSpacing: -0.2,
+  },
   rowLabelDanger: { color: "#b42318" },
-  rowSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, marginTop: 1 },
-  rowRight: { flexDirection: "row", alignItems: "center", gap: 6 },
+  rowValue: {
+    fontFamily: "PlusJakartaSans-Medium", fontSize: 14,
+    color: "#A2ABB4", letterSpacing: -0.1, maxWidth: 170,
+  },
 
-  // ── Toggle ───────────────────────────────────────────────────
-  toggle: {
-    width: 44, height: 26, borderRadius: 13,
-    backgroundColor: LINE, padding: 3,
-    justifyContent: "center",
-  },
-  toggleOn: { backgroundColor: GREEN },
-  toggleKnob: {
-    width: 20, height: 20, borderRadius: 10,
-    backgroundColor: "#ffffff",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15, shadowRadius: 2, elevation: 2,
-  },
-  toggleKnobOn: { alignSelf: "flex-end" },
-
-  // ── Sign out button ──────────────────────────────────────────
-  signOutBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    marginTop: 24, marginBottom: 8,
-    paddingVertical: 15,
-    borderRadius: 16,
-    backgroundColor: "#fff1f0",
-    borderWidth: 1, borderColor: "#fac5c0",
-  },
-  signOutBtnPressed: { backgroundColor: "#ffe4e1" },
-  signOutText: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#c0392b",
-  },
+  // ── Sign out (quiet text link) ───────────────────────────────
+  signOut: { alignItems: "center", paddingTop: 30, paddingBottom: 8 },
+  signOutText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#B4402E" },
 });

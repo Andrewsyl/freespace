@@ -1,21 +1,46 @@
 import { useRef, useState } from "react";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { ArrowLeft, ChevronDown } from "lucide-react-native";
+import { ChevronDown, LifeBuoy } from "lucide-react-native";
 import { sendSupportMessage } from "../api";
 import { useAuth } from "../auth";
 import { useToastOnMessage } from "../components/GlobalToast";
-import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
-import type { RootStackParamList } from "../types";
 import { Button, TextInput as AppTextInput } from "../components/ui";
+import { SignInWall } from "../components/SignInWall";
+import { DetailNavBar, SectionTitle } from "../components/profileUi";
+import type { RootStackParamList } from "../types";
 import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Support">;
 
+const SUBJECTS = [
+  "Booking issue",
+  "Payment or refund",
+  "Host canceled",
+  "Access issue",
+  "No-show or overstay",
+  "Host payout",
+  "Listing problem",
+  "Account access",
+  "App bug",
+  "Other",
+];
+
 export function SupportScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
-  const { token, user } = useAuth();
+  const { token } = useAuth();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const [subject, setSubject] = useState(route.params?.prefillSubject ?? "");
   const [message, setMessage] = useState(route.params?.prefillMessage ?? "");
@@ -23,91 +48,16 @@ export function SupportScreen({ navigation, route }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [subjectOpen, setSubjectOpen] = useState(false);
-  const [menuFrame, setMenuFrame] = useState<{ top: number; left: number; width: number } | null>(
-    null
-  );
+  const [menuFrame, setMenuFrame] = useState<{ top: number; left: number; width: number } | null>(null);
   const selectRef = useRef<View | null>(null);
 
   useToastOnMessage(error, { variant: "danger" });
   useToastOnMessage(success, { variant: "success" });
 
-  const subjectOptions = [
-    "Booking issue",
-    "Payment or refund",
-    "Host canceled",
-    "Access issue",
-    "No-show or overstay",
-    "Host payout",
-    "Listing problem",
-    "Account access",
-    "App bug",
-    "Other",
-  ];
   const canSubmit = !!token && !!subject && message.trim().length >= 10 && !submitting;
 
-  if (!token) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
-        >
-          <View style={styles.navBar}>
-            <Pressable
-              style={styles.backBtn}
-              onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}
-              accessibilityLabel="Go back"
-            >
-              <ArrowLeft size={22} color="#111827" />
-            </Pressable>
-            <Text style={styles.navTitle}>Contact us</Text>
-            <View style={styles.navSpacer} />
-          </View>
-          <View style={styles.gatedWrap}>
-            <View style={styles.gatedCard}>
-              <Text style={styles.gatedTitle}>Sign in to contact support</Text>
-              <Text style={styles.gatedBody}>
-                Log in or create an account so we can attach your message to the right booking and reply properly.
-              </Text>
-              <Button
-                title="Sign in"
-                onPress={() =>
-                  navigation.navigate("SignIn", {
-                    returnTo: {
-                      screen: "Support",
-                      params: route.params,
-                    },
-                  })
-                }
-                style={styles.gatedPrimaryButton}
-              />
-              <Button
-                title="Create account"
-                variant="secondary"
-                onPress={() =>
-                  navigation.navigate("Register", {
-                    returnTo: {
-                      screen: "Support",
-                      params: route.params,
-                    },
-                  })
-                }
-              />
-              <Button
-                title="Browse spaces"
-                variant="secondary"
-                onPress={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
-                style={{ marginTop: 12 }}
-              />
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    );
-  }
-
   const handleSubmit = async () => {
+    if (!token) return;
     if (!subject) {
       setError("Please select a subject.");
       return;
@@ -131,82 +81,88 @@ export function SupportScreen({ navigation, route }: Props) {
     }
   };
 
+  if (!token) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <StatusBar barStyle="dark-content" />
+        <DetailNavBar title="Contact us" onBack={() => goBackOrFallback(navigation, fallbackRoutes.profile)} />
+        <SignInWall
+          icon={<LifeBuoy size={26} color="#0a8050" strokeWidth={2.2} />}
+          title="Sign in to contact support"
+          body="Sign in so we can attach your message to the right booking and reply to you properly."
+          onSignIn={() => navigation.navigate("Welcome", { returnTo: { screen: "Support", params: route.params } })}
+          onBrowse={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
+        />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}>
-        <View style={styles.navBar}>
-          <Pressable style={styles.backBtn} onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}>
-            <ArrowLeft size={22} color="#111827" />
-          </Pressable>
-          <Text style={styles.navTitle}>Contact us</Text>
-          <View style={styles.navSpacer} />
-        </View>
+      <StatusBar barStyle="dark-content" />
+      <DetailNavBar title="Contact us" onBack={() => goBackOrFallback(navigation, fallbackRoutes.profile)} />
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+      >
         <ScrollView
           contentContainerStyle={[styles.content, { paddingBottom: 32 + Math.max(insets.bottom, 16) }]}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.card}>
-            <View style={styles.field}>
-              <Text style={styles.label}>Subject</Text>
-              <Pressable
-                ref={selectRef}
-                style={({ pressed }) => [styles.select, pressed && styles.selectPressed]}
-                onPress={() => {
-                  selectRef.current?.measureInWindow((x, y, width, height) => {
-                    const menuHeight = Math.min(320, subjectOptions.length * 44 + 52);
-                    const spaceBelow = windowHeight - (y + height + 12);
-                    const top =
-                      spaceBelow >= menuHeight
-                        ? y + height + 8
-                        : Math.max(12, y - menuHeight - 8);
-                    const left = Math.min(Math.max(12, x), windowWidth - width - 12);
-                    setMenuFrame({ top, left, width });
-                    setSubjectOpen(true);
-                  });
-                }}
-                accessibilityRole="button"
-              >
-                <View style={styles.selectValueWrap}>
-                  <Text style={styles.selectEyebrow}>Topic</Text>
-                  <Text style={[styles.selectText, !subject && styles.selectPlaceholder]}>
-                    {subject || "Select a topic"}
-                  </Text>
-                </View>
-                <View style={styles.selectChevronShell}>
-                  <ChevronDown size={18} color={colors.textMuted} strokeWidth={2.2} />
-                </View>
-              </Pressable>
-            </View>
-            <View style={styles.field}>
-              <Text style={styles.label}>Message</Text>
-              <AppTextInput
-                containerStyle={styles.fieldInput}
-                style={styles.textArea}
-                value={message}
-                onChangeText={setMessage}
-                placeholder="Tell us what happened and include any booking details."
-                multiline
-                textAlignVertical="top"
-              />
-            </View>
-            <Button
-              title={submitting ? "Sending..." : "Send message"}
-              onPress={handleSubmit}
-              disabled={!canSubmit}
-              loading={submitting}
-              style={styles.submitButton}
-            />
-          </View>
+          <SectionTitle style={styles.firstSection}>Send us a message</SectionTitle>
+          <Text style={styles.help}>Pick a topic and tell us what happened. We usually reply within a day.</Text>
 
+          <Text style={styles.fieldLabel}>Topic</Text>
+          <Pressable
+            ref={selectRef}
+            style={({ pressed }) => [styles.select, pressed && styles.selectPressed]}
+            onPress={() => {
+              selectRef.current?.measureInWindow((x, y, width, height) => {
+                const menuHeight = Math.min(320, SUBJECTS.length * 44 + 52);
+                const spaceBelow = windowHeight - (y + height + 12);
+                const top = spaceBelow >= menuHeight ? y + height + 8 : Math.max(12, y - menuHeight - 8);
+                const left = Math.min(Math.max(12, x), windowWidth - width - 12);
+                setMenuFrame({ top, left, width });
+                setSubjectOpen(true);
+              });
+            }}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.selectText, !subject && styles.selectPlaceholder]}>
+              {subject || "Select a topic"}
+            </Text>
+            <ChevronDown size={18} color="#69727D" strokeWidth={2.2} />
+          </Pressable>
 
+          <Text style={styles.fieldLabel}>Message</Text>
+          <AppTextInput
+            containerStyle={styles.inputWrap}
+            style={styles.textArea}
+            value={message}
+            onChangeText={setMessage}
+            placeholder="Tell us what happened and include any booking details."
+            multiline
+            textAlignVertical="top"
+          />
+
+          <Button
+            title={submitting ? "Sending..." : "Send message"}
+            onPress={handleSubmit}
+            disabled={!canSubmit}
+            loading={submitting}
+            style={styles.submitBtn}
+          />
         </ScrollView>
+
         <Modal transparent visible={subjectOpen} animationType="fade" onRequestClose={() => setSubjectOpen(false)}>
           <View style={styles.modalBackdrop}>
-            <Pressable style={styles.modalScrim} onPress={() => setSubjectOpen(false)} />
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => setSubjectOpen(false)} />
             {menuFrame ? (
               <View style={[styles.menuSheet, { top: menuFrame.top, left: menuFrame.left, width: menuFrame.width }]}>
-                <Text style={styles.modalTitle}>Choose a topic</Text>
-                {subjectOptions.map((option) => (
+                <Text style={styles.menuTitle}>Choose a topic</Text>
+                {SUBJECTS.map((option) => (
                   <Pressable
                     key={option}
                     style={({ pressed }) => [styles.optionRow, pressed && styles.optionRowPressed]}
@@ -228,176 +184,42 @@ export function SupportScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F4F6F8",
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-  },
-  navBar: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: "#E5E7EB",
-    backgroundColor: "#ffffff",
-  },
-  backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
-  navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#111827", letterSpacing: -0.3 },
-  navSpacer: { width: 38 },
-  card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#E3E8EE",
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 22,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  field: {
-    marginBottom: 20,
-  },
-  label: {
-    color: "#888888",
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 11,
-    letterSpacing: 0.8,
-    lineHeight: 16,
-    textTransform: "uppercase",
-    marginBottom: 10,
-  },
-  fieldInput: {
-    marginBottom: 0,
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  flex: { flex: 1 },
+  content: { paddingHorizontal: 20, paddingTop: 4 },
+  firstSection: { marginTop: 8 },
+  help: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: "#69727D", lineHeight: 20, marginBottom: 20 },
+  fieldLabel: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#111820",
+    letterSpacing: -0.2, marginBottom: 6,
   },
   select: {
-    alignItems: "center",
-    backgroundColor: colors.cardBg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#DFE4E9",
+    paddingHorizontal: 0, paddingVertical: 12, marginBottom: 24,
   },
-  selectPressed: {
-    backgroundColor: "#fbfbf9",
-  },
-  selectValueWrap: {
-    flex: 1,
-    gap: 2,
-  },
-  selectEyebrow: {
-    color: colors.textSoft,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    lineHeight: 14,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  selectText: {
-    ...textStyles.body,
-    color: colors.text,
-  },
-  selectPlaceholder: {
-    color: colors.textSoft,
-  },
-  selectChevronShell: {
-    alignItems: "center",
-    backgroundColor: colors.accentSoft,
-    borderRadius: 14,
-    height: 28,
-    justifyContent: "center",
-    width: 28,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.2)",
-  },
-  modalScrim: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  menuSheet: {
-    position: "absolute",
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 12,
-    ...cardShadow,
-  },
-  modalTitle: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.text,
-    marginBottom: 10,
-    paddingHorizontal: 4,
-  },
-  optionRow: {
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-  },
-  optionRowPressed: {
-    backgroundColor: colors.accentSoft,
-  },
-  optionText: {
-    color: colors.text,
-    fontFamily: "PlusJakartaSans-Medium",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  selectPressed: { opacity: 0.55 },
+  selectText: { fontFamily: "PlusJakartaSans-Medium", fontSize: 17, color: "#111820", letterSpacing: -0.2 },
+  selectPlaceholder: { color: "#98A2AD", fontFamily: "PlusJakartaSans-Regular" },
+  inputWrap: { marginBottom: 0 },
   textArea: {
-    ...textStyles.body,
-    color: colors.text,
-    minHeight: 150,
-    paddingHorizontal: 0,
-    paddingVertical: 12,
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 17, color: "#111820", letterSpacing: -0.2,
+    backgroundColor: "transparent", borderWidth: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#DFE4E9", borderRadius: 0,
+    minHeight: 130, paddingHorizontal: 0, paddingVertical: 10,
   },
-  submitButton: {
-    marginTop: spacing.xl,
+  submitBtn: { marginTop: 24 },
+  modalBackdrop: { flex: 1, backgroundColor: "rgba(15,23,42,0.2)" },
+  menuSheet: {
+    position: "absolute", backgroundColor: "#FFFFFF", borderColor: "#E6EBEF", borderWidth: 1,
+    borderRadius: 18, padding: 10,
+    shadowColor: "#0B1B33", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.14, shadowRadius: 20, elevation: 8,
   },
-  gatedWrap: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 32,
+  menuTitle: {
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: "#69727D",
+    marginBottom: 6, paddingHorizontal: 6,
   },
-  gatedCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#E3E8EE",
-    paddingHorizontal: 22,
-    paddingVertical: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  gatedTitle: {
-    color: "#111827",
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 25,
-    letterSpacing: -0.8,
-    lineHeight: 31,
-  },
-  gatedBody: {
-    color: "#4B5563",
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 15,
-    lineHeight: 22,
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  gatedPrimaryButton: {
-    marginBottom: 12,
-  },
+  optionRow: { borderRadius: 12, paddingVertical: 12, paddingHorizontal: 12 },
+  optionRowPressed: { backgroundColor: "#F1FAF5" },
+  optionText: { fontFamily: "PlusJakartaSans-Medium", fontSize: 16, color: "#111820" },
 });
