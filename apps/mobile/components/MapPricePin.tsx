@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Svg, { Ellipse, Path } from "react-native-svg";
+import Svg, { Rect } from "react-native-svg";
 
 type MapPricePinProps = {
   price: number;
@@ -8,93 +8,94 @@ type MapPricePinProps = {
   soldOut?: boolean;
 };
 
+// Soft-shadow margin around the pill. The shadow is painted inside the SVG
+// (the marker ships as a captured bitmap, so RN shadow props can't reach it).
+const SHADOW_MARGIN = 5;
+
 // Pure geometry for a pin given its rendered label. Shared with MapSection so the
 // captured-image markers can size their child <Image> to the exact pixel bounds
 // (avoids the default red marker flash that the native `image` prop produces).
 export function getPinDimensions(priceText: string, selected = false, soldOut = false) {
   const textLength = priceText.length;
-  const baseWidth   = soldOut ? 52 : 46;
-  const extraWidth  = soldOut ? 0  : Math.max(0, (textLength - 3) * 6.5);
-  const width       = Math.max(baseWidth, baseWidth + extraWidth);
-  // Selected bubble is taller — gives the "scale up on select" feel without animation
-  const bubbleHeight = soldOut ? 18 : selected ? 28 : 24;
-  const tailHeight   = soldOut ? 4  : selected ? 6  : 5;
-  const totalHeight  = bubbleHeight + tailHeight;
-  const tailWidth    = soldOut ? 7  : 9;
-  const strokeWidth  = soldOut ? 0.85 : selected ? 1.2 : 0.85;
-  const padding      = strokeWidth;
-  const viewBoxWidth  = width + padding * 2;
-  const viewBoxHeight = totalHeight + padding * 2;
-  return { width, bubbleHeight, tailHeight, totalHeight, tailWidth, strokeWidth, viewBoxWidth, viewBoxHeight };
+  // 7px/char tracks PJS ExtraBold at ~12.5pt; clipping a price is worse than a
+  // hair of slack.
+  const charWidth = soldOut ? 5.6 : 7;
+  const paddingH  = soldOut ? 9 : 11;
+  const width     = Math.max(soldOut ? 36 : 44, textLength * charWidth + paddingH * 2);
+  // Selected pill is a step larger — reads as "lifted" without animation.
+  const pillHeight = soldOut ? 22 : selected ? 30 : 26;
+  const viewBoxWidth  = width + SHADOW_MARGIN * 2;
+  const viewBoxHeight = pillHeight + SHADOW_MARGIN * 2;
+  return { width, pillHeight, viewBoxWidth, viewBoxHeight };
 }
 
-export function MapPricePin({ price, selected = false, soldOut = false }: MapPricePinProps) {
-  const priceText = soldOut ? "Sold out" : `€${price}`;
+// Airbnb-class floating price pill: no tail, no outline doing the work — a
+// tight stack of offset rounds fakes a blurred drop shadow (react-native-svg
+// has no filter support we can trust inside ViewShot captures).
+function MapPricePinBase({ price, selected = false, soldOut = false }: MapPricePinProps) {
+  // "Full" over "Sold out": parking-native, and 4 characters fit the small
+  // pill at a legible size where "Sold out" was an unreadable 9px.
+  const priceText = soldOut ? "Full" : `€${price}`;
 
-  // Unselected: white pill, whisper-grey border — shadow does the heavy lifting
-  // Selected: charcoal fill, white text, slightly taller bubble for visual prominence
-  const fill      = soldOut ? "#F4F5F6" : selected ? "#111827" : "#FFFFFF";
-  const stroke    = soldOut ? "#D7DDE2" : selected ? "#111827" : "#C6CDD6";
-  const textColor = soldOut ? "#7A8493" : selected ? "#FFFFFF"  : "#111827";
+  // Unselected: pure white, ink price — the whitest, crispest objects on the
+  // map. Selected: deep FreeSpace green owns the moment of choice.
+  // Sold out: recedes — smaller, quieter, barely shadowed.
+  const fill      = soldOut ? "#F7F8F9" : selected ? "#0A4230" : "#FFFFFF";
+  const textColor = soldOut ? "#98A2AD" : selected ? "#FFFFFF" : "#111827";
 
-  const dimensions = useMemo(
+  const { width, pillHeight, viewBoxWidth, viewBoxHeight } = useMemo(
     () => getPinDimensions(priceText, selected, soldOut),
     [priceText, soldOut, selected]
   );
 
-  const { width, bubbleHeight, tailHeight, totalHeight, tailWidth } = dimensions;
-  const strokeWidth = soldOut ? 0.85 : selected ? 1.2 : 0.85;
-  const radius  = bubbleHeight / 2;
-  const padding = strokeWidth;
-
-  const pinPath = useMemo(() => {
-    const w  = width;
-    const h  = bubbleHeight;
-    const r  = radius;
-    const tw = tailWidth / 2;
-    const th = tailHeight;
-    const cx = w / 2;
-    const p  = padding;
-    return `
-      M ${r + p} ${p}
-      L ${w - r + p} ${p}
-      A ${r} ${r} 0 0 1 ${w + p} ${r + p}
-      A ${r} ${r} 0 0 1 ${w - r + p} ${h + p}
-      L ${cx + tw + p} ${h + p}
-      L ${cx + p} ${h + th + p}
-      L ${cx - tw + p} ${h + p}
-      L ${r + p} ${h + p}
-      A ${r} ${r} 0 0 1 ${p} ${r + p}
-      A ${r} ${r} 0 0 1 ${r + p} ${p}
-      Z
-    `.trim();
-  }, [width, bubbleHeight, tailHeight, tailWidth, radius, padding]);
-
-  const viewBoxWidth  = width + padding * 2;
-  const viewBoxHeight = totalHeight + padding * 2;
-  const shadowCx = viewBoxWidth / 2;
-  const shadowCy = viewBoxHeight - 1.5;
-
-  // Shadow: two-layer ellipse gives a soft, natural drop
-  const shadowRx = Math.max(12, width * 0.28);
+  const m = SHADOW_MARGIN;
+  const r = pillHeight / 2;
+  // Three concentric passes, each a touch wider and lower — reads as one soft
+  // shadow at device scale. Sold-out pills sit nearly flat on the map.
+  const shadowLayers = soldOut
+    ? [
+        { grow: 1, drop: 1, opacity: 0.04 },
+        { grow: 0, drop: 0.5, opacity: 0.06 },
+      ]
+    : [
+        { grow: 3, drop: 2, opacity: selected ? 0.035 : 0.03 },
+        { grow: 2, drop: 1.8, opacity: selected ? 0.045 : 0.04 },
+        { grow: 1, drop: 1.4, opacity: selected ? 0.06 : 0.05 },
+        { grow: 0, drop: 1, opacity: selected ? 0.09 : 0.08 },
+      ];
 
   return (
     <View style={[styles.container, { width: viewBoxWidth, height: viewBoxHeight }]}>
       <Svg width={viewBoxWidth} height={viewBoxHeight} viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}>
-        {/* Outer soft glow */}
-        <Ellipse cx={shadowCx} cy={shadowCy} rx={shadowRx + 4} ry={3.8} fill="rgba(15,23,42,0.06)" />
-        {/* Crisp ground shadow */}
-        <Ellipse cx={shadowCx} cy={shadowCy} rx={shadowRx} ry={2.6} fill="rgba(15,23,42,0.16)" />
-        <Path
-          d={pinPath}
-          fill={fill}
-          stroke={stroke}
-          strokeWidth={strokeWidth}
-          strokeLinejoin="round"
-        />
+        {shadowLayers.map((layer, index) => (
+          <Rect
+            key={index}
+            x={m - layer.grow}
+            y={m - layer.grow + layer.drop}
+            width={width + layer.grow * 2}
+            height={pillHeight + layer.grow * 2}
+            rx={r + layer.grow}
+            fill={`rgba(15,23,42,${layer.opacity})`}
+          />
+        ))}
+        <Rect x={m} y={m} width={width} height={pillHeight} rx={r} fill={fill} />
+        {/* Hairline keeps white pills defined over pale tiles without reading
+            as a drawn border. */}
+        {!selected ? (
+          <Rect
+            x={m + 0.5}
+            y={m + 0.5}
+            width={width - 1}
+            height={pillHeight - 1}
+            rx={r - 0.5}
+            fill="none"
+            stroke={soldOut ? "rgba(17,24,39,0.08)" : "rgba(17,24,39,0.10)"}
+            strokeWidth={1}
+          />
+        ) : null}
       </Svg>
 
-      <View style={[styles.textContainer, { paddingBottom: tailHeight }]} pointerEvents="none">
+      <View style={styles.textContainer} pointerEvents="none">
         <Text
           style={[
             styles.priceText,
@@ -109,6 +110,10 @@ export function MapPricePin({ price, selected = false, soldOut = false }: MapPri
     </View>
   );
 }
+
+// Pure and rendered once per captured pin variant — memo keeps it from
+// re-rendering when the parent MapSection re-renders for unrelated reasons.
+export const MapPricePin = memo(MapPricePinBase);
 
 const styles = StyleSheet.create({
   container: {
@@ -125,17 +130,19 @@ const styles = StyleSheet.create({
     top: 0,
   },
   priceText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 12.5,
     letterSpacing: -0.2,
   },
   priceTextSelected: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 13,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 13.5,
     letterSpacing: -0.3,
-    lineHeight: 16,
+    lineHeight: 17,
   },
   priceTextSoldOut: {
-    fontSize: 8,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 10.5,
+    letterSpacing: 0,
   },
 });

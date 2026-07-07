@@ -116,6 +116,17 @@ export function createApp() {
     })
   );
 
+  // A rejected origin is an expected, high-volume occurrence (scanners, stray
+  // browser tabs) — return a clean 403 instead of letting it fall into the
+  // generic error handler below, which logs a full stack and reports it to
+  // PostHog as an application exception for every single blocked request.
+  app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err instanceof Error && err.message === "CORS blocked") {
+      return res.status(403).json({ message: "Origin not allowed" });
+    }
+    return next(err);
+  });
+
   app.use(csrfProtection);
   app.use((req, res, next) => {
     if (req.originalUrl === "/api/bookings/webhook" || req.originalUrl === "/api/bookings/connect-webhook") {

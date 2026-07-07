@@ -19,7 +19,7 @@ import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
-import { enableScreens } from "react-native-screens";
+import { enableFreeze, enableScreens } from "react-native-screens";
 import { CalendarDays, Compass, Heart, UserRound } from "lucide-react-native";
 import { AuthProvider, EXPO_PUSH_TOKEN_KEY, useAuth } from "./auth";
 import { FavoritesProvider } from "./favorites";
@@ -81,6 +81,11 @@ type BookingNotificationData = {
 };
 
 enableScreens(false);
+// Freezes off-screen screens (stops their React tree re-rendering) once
+// they're covered by another screen — e.g. the map stops rendering while the
+// listing page is on top of it, and vice versa on the way back. Paired with
+// freezeOnBlur below on both navigators.
+enableFreeze(true);
 void SplashScreen.preventAutoHideAsync();
 initSentry();
 initPostHog();
@@ -553,7 +558,7 @@ function AppNavigator() {
     <>
       <NavigationContainer ref={navigationRef} theme={TransparentTheme}>
         <Stack.Navigator
-          screenOptions={{ headerShown: false }}
+          screenOptions={{ headerShown: false, freezeOnBlur: true }}
           initialRouteName="Tabs"
         >
           <Stack.Screen name="Tabs" component={MainTabs} />
@@ -625,9 +630,10 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        freezeOnBlur: true,
         tabBarShowLabel: true,
         tabBarActiveTintColor: "#0a8050",
-        tabBarInactiveTintColor: "#98a4ab",
+        tabBarInactiveTintColor: "#98A2AD",
         tabBarStyle: baseTabBarStyle,
         tabBarBackground: () => <View style={styles.tabBarChrome} />,
         tabBarLabelStyle: styles.tabBarLabel,
@@ -840,9 +846,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
   },
   navIconShell: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
   },

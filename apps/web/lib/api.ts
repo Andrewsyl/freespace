@@ -538,6 +538,7 @@ export type ListingDetail = {
   accessCode?: string | null;
   arrivalInstructions?: string | null;
   permissionDeclared?: boolean;
+  description?: string | null;
 };
 
 export async function getListing(id: string): Promise<ListingDetail> {

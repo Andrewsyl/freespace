@@ -1,0 +1,11 @@
+-- The confirmed→completed sweep (markConfirmedBookingsCompleted, added
+-- alongside this migration) and the host earnings / payout / admin GMV
+-- queries reference a 'completed' booking status that was never added to the
+-- enum — 005 created only pending/confirmed/canceled. Without this value the
+-- sweep's UPDATE throws on every tick and every status IN (..., 'completed')
+-- query errors.
+--
+-- NOTE: ADD VALUE runs inside migrate.ts's per-file transaction, which
+-- PostgreSQL 12+ allows, but the new value must NOT be used (inserted or
+-- compared) in this same migration file — keep any backfill in a later one.
+ALTER TYPE booking_status ADD VALUE IF NOT EXISTS 'completed';

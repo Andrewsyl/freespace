@@ -346,7 +346,6 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     });
   };
 
-  const SERVICE_FEE_CENTS = 150;
   const progressPct = isInProgress
     ? Math.min(1, Math.max(0, (now - start.getTime()) / (end.getTime() - start.getTime())))
     : 0;

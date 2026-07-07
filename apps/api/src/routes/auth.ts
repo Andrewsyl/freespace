@@ -290,15 +290,19 @@ const loginSchema = z.object({
   password: z.string().min(1).max(128),
 });
 
+// A bcrypt hash of an unguessable, never-issued password. Compared against on
+// the unknown-email path so a login attempt for a nonexistent account takes
+// roughly the same time as one for a real account — otherwise an attacker can
+// tell which emails are registered purely from response latency (skipping
+// bcrypt on a miss is orders of magnitude faster than running it).
+const DUMMY_PASSWORD_HASH = "$2a$10$CwTycUXWue0Thq9StjUM0uJ8g/Kv/hnHM.jHbBUpJf7wDMdxfrIEO";
+
 router.post("/login", enforceBlockedList, loginLimiter, async (req, res, next) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
     const user = await findUserByEmail(email);
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-    const valid = await comparePassword(password, user.password_hash);
-    if (!valid) {
+    const valid = await comparePassword(password, user?.password_hash ?? DUMMY_PASSWORD_HASH);
+    if (!user || !valid) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
     if (!ensureAccountActive(user)) {

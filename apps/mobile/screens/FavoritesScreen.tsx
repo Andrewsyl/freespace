@@ -5,6 +5,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
 import { colors, spacing } from "../styles/theme";
+import { applyServiceFee } from "../utils/pricing";
 import type { ListingSummary, RootStackParamList } from "../types";
 import {
   Accessibility,
@@ -64,15 +65,18 @@ const getFeatureIconType = (label: string) => {
   return "sheltered";
 };
 
-function formatMoney(value: number | string | null | undefined): string | null {
+function formatMoney(value: number | string | null | undefined, feeInclusive = false): string | null {
   const n = Number(value);
   if (!Number.isFinite(n)) return null;
-  return Number.isInteger(n) ? `${n}` : n.toFixed(2);
+  const gross = feeInclusive ? applyServiceFee(n) : n;
+  return Number.isInteger(gross) ? `${gross}` : gross.toFixed(2);
 }
 
 function priceLabel(item: ListingSummary): { value: string; unit: string } | null {
-  const hour = formatMoney(item.price_per_hour);
-  const day = formatMoney(item.price_per_day);
+  // Hourly/daily rates are quoted fee-inclusive so they match what checkout
+  // charges. Monthly is enquiry-only — no checkout, so the listed rate stands.
+  const hour = formatMoney(item.price_per_hour, true);
+  const day = formatMoney(item.price_per_day, true);
   const month = formatMoney(item.price_per_month);
   if (item.rate_type === "hourly" && hour != null) return { value: `€${hour}`, unit: "/hr" };
   if (day != null) return { value: `€${day}`, unit: "/day" };

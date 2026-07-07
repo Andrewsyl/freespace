@@ -104,6 +104,21 @@ vi.mock("../src/lib/stripe.js", () => ({
     },
   },
   createCheckoutSession: stripeMocks.createCheckoutSession,
+  // Test double for the shared customer-id resolver: mirrors the real
+  // list-then-create fallback so existing tests can keep driving the outcome
+  // via stripeMocks.customersList/customersCreate, without depending on the
+  // DB-persistence side effect (setStripeCustomerIdIfAbsent) that isn't
+  // relevant to these route-level tests.
+  getOrCreateStripeCustomer: async (
+    _client: unknown,
+    user: { email: string; stripe_customer_id?: string | null }
+  ) => {
+    if (user.stripe_customer_id) return user.stripe_customer_id;
+    const existing = await stripeMocks.customersList({ email: user.email, limit: 1 });
+    if (existing.data.length > 0) return existing.data[0].id;
+    const created = await stripeMocks.customersCreate({ email: user.email });
+    return created.id;
+  },
 }));
 
 vi.mock("../src/lib/opsAlerts.js", () => ({
@@ -490,7 +505,8 @@ describe("bookings routes", () => {
       status: "confirmed",
       payment_intent_id: "pi_123",
       payout_status: "pending",
-      end_time: new Date("2026-03-20T12:00:00.000Z"),
+      start_time: new Date("2099-03-20T08:00:00.000Z"),
+      end_time: new Date("2099-03-20T12:00:00.000Z"),
       refund_status: "succeeded",
       refund_id: "re_123",
     });
@@ -714,7 +730,8 @@ describe("bookings routes", () => {
       status: "confirmed",
       payment_intent_id: "pi_123",
       payout_status: "pending",
-      end_time: new Date("2026-03-20T12:00:00.000Z"),
+      start_time: new Date("2099-03-20T08:00:00.000Z"),
+      end_time: new Date("2099-03-20T12:00:00.000Z"),
       refund_status: null,
       refund_id: null,
     });
@@ -749,7 +766,8 @@ describe("bookings routes", () => {
       status: "confirmed",
       payment_intent_id: "pi_original",
       payout_status: "pending",
-      end_time: new Date("2026-03-20T12:00:00.000Z"),
+      start_time: new Date("2099-03-20T08:00:00.000Z"),
+      end_time: new Date("2099-03-20T12:00:00.000Z"),
       refund_status: null,
       refund_id: null,
     });
@@ -806,7 +824,8 @@ describe("bookings routes", () => {
       status: "pending",
       payment_intent_id: null,
       payout_status: null,
-      end_time: new Date("2026-03-20T12:00:00.000Z"),
+      start_time: new Date("2099-03-20T08:00:00.000Z"),
+      end_time: new Date("2099-03-20T12:00:00.000Z"),
       refund_status: null,
       refund_id: null,
     });
@@ -817,6 +836,69 @@ describe("bookings routes", () => {
     const { signToken } = await import("../src/lib/auth.js");
     const app = createApp();
     const token = signToken({ userId: "user-1", email: "driver@example.com", role: "driver" });
+
+    const response = await request(app)
+      .post("/api/bookings/11111111-1111-4111-8111-111111111111/cancel")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, refunded: false });
+    expect(stripeMocks.refundsCreate).not.toHaveBeenCalled();
+    expect(db.cancelBookingByDriver).toHaveBeenCalledWith(
+      expect.objectContaining({ bookingId: "11111111-1111-4111-8111-111111111111" })
+    );
+  });
+
+  it("rejects canceling a booking whose window has already ended, without touching Stripe", async () => {
+    db.getBookingForRefund.mockResolvedValue({
+      id: "booking-1",
+      status: "confirmed",
+      payment_intent_id: "pi_123",
+      payout_status: "pending",
+      start_time: new Date("2020-01-01T08:00:00.000Z"),
+      end_time: new Date("2020-01-01T12:00:00.000Z"),
+      refund_status: null,
+      refund_id: null,
+    });
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    // Distinct user so this test doesn't consume user-1's shared in-memory
+    // booking rate-limit budget for the suite.
+    const token = signToken({ userId: "user-ended", email: "driver@example.com", role: "driver" });
+
+    const response = await request(app)
+      .post("/api/bookings/11111111-1111-4111-8111-111111111111/cancel")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(400);
+    expect(stripeMocks.refundsCreate).not.toHaveBeenCalled();
+    expect(db.cancelBookingWithRefund).not.toHaveBeenCalled();
+    expect(db.cancelBookingByDriver).not.toHaveBeenCalled();
+  });
+
+  it("cancels an in-progress booking (past start_time) without refunding", async () => {
+    db.getBookingForRefund.mockResolvedValue({
+      id: "booking-1",
+      status: "confirmed",
+      payment_intent_id: "pi_123",
+      payout_status: "pending",
+      // Started an hour ago, ends far in the future — mid-stay cancellation.
+      start_time: new Date(Date.now() - 60 * 60 * 1000),
+      end_time: new Date("2099-03-20T12:00:00.000Z"),
+      refund_status: null,
+      refund_id: null,
+    });
+    db.cancelBookingByDriver.mockResolvedValue(true);
+    db.getBookingNotificationTargets.mockResolvedValue(null);
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    // Distinct user so this test doesn't consume user-1's shared in-memory
+    // booking rate-limit budget for the suite.
+    const token = signToken({ userId: "user-inprogress", email: "driver@example.com", role: "driver" });
 
     const response = await request(app)
       .post("/api/bookings/11111111-1111-4111-8111-111111111111/cancel")

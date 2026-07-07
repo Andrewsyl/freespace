@@ -4,6 +4,22 @@ type ListingWithPricing = Pick<ListingSummary, "price_per_day" | "price_per_hour
 
 const DEFAULT_DAILY_HOURS = 8;
 
+// FreeSpace service fee. The API charges round(parkingCents * 1.08) at
+// booking (apps/api/src/routes/bookings.ts), so every buyer-facing price must
+// be quoted fee-inclusive — the number on the map IS the number at checkout.
+export const SERVICE_FEE_RATE = 0.08;
+
+export function getServiceFeeCents(parkingCents: number) {
+  return Math.round(parkingCents * SERVICE_FEE_RATE);
+}
+
+// Fee-inclusive price in euro for a base euro amount, matching the API's
+// cent-level rounding exactly.
+export function applyServiceFee(amount: number) {
+  const cents = Math.round(amount * 100);
+  return (cents + getServiceFeeCents(cents)) / 100;
+}
+
 function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
 }
@@ -88,13 +104,35 @@ export function calculateListingTotal(listing: ListingWithPricing, start: Date, 
     total = roundMoney(dailyPrice * billingDays);
   }
 
+  const safeTotal = Math.max(0, roundMoney(total));
+  const totalCents = Math.round(safeTotal * 100);
+  const serviceFeeCents = getServiceFeeCents(totalCents);
+  const grossTotalCents = totalCents + serviceFeeCents;
+
+  // Fee-inclusive saving from the day cap: what the same hours would cost at
+  // the hourly rate (gross) minus what the buyer actually pays (gross). This is
+  // the ONE saving figure every buyer-facing surface should show, so the price
+  // bar and the extend offer never quote two different numbers.
+  const uncappedBase = safeTotal + dailyCapSaving; // capped total + the saving == raw hourly total
+  const dailyCapSavingGross = dailyCapApplied
+    ? roundMoney(applyServiceFee(uncappedBase) - grossTotalCents / 100)
+    : 0;
+
   return {
-    total: Math.max(0, roundMoney(total)),
-    totalCents: Math.round(Math.max(0, roundMoney(total)) * 100),
+    // Base parking amount — what the host earns. Buyer-facing UI should show
+    // grossTotal, never this.
+    total: safeTotal,
+    totalCents,
+    serviceFee: serviceFeeCents / 100,
+    serviceFeeCents,
+    // What the buyer actually pays (identical to the API's charge amount).
+    grossTotal: grossTotalCents / 100,
+    grossTotalCents,
     durationHours,
     durationLabel,
     dailyCapApplied,
     dailyCapSaving,
+    dailyCapSavingGross,
   };
 }
 

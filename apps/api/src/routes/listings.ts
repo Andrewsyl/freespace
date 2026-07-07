@@ -86,6 +86,12 @@ const listingWriteLimiter = createRateLimiter({
   keyGenerator: (req) => req.user?.userId ?? req.ip ?? "unknown",
 });
 
+const listingReadLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 120,
+  keyPrefix: "listing-read",
+});
+
 async function requireActiveHost(userId?: string) {
   if (!userId) return { ok: false, message: "Unauthorized" } as const;
   const settings = await getFraudSettings();
@@ -308,7 +314,7 @@ router.get("/search", searchLimiter, optionalAuth, async (req, res, next) => {
   }
 });
 
-router.get("/:id", async (req, res, next) => {
+router.get("/:id", listingReadLimiter, async (req, res, next) => {
   try {
     const listingId = z.string().uuid().parse(req.params.id);
     const query = z

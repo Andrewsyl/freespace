@@ -66,6 +66,7 @@ export type UserRecord = {
   password_hash: string;
   role?: "driver" | "host" | "admin";
   host_stripe_account_id?: string | null;
+  stripe_customer_id?: string | null;
   email_verified?: boolean;
   verification_token?: string | null;
   verification_expires?: Date | null;
@@ -901,7 +902,7 @@ export async function createUser({
 
 export async function findUserByEmail(email: string) {
   const result = await pool.query(
-    `SELECT id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, email_verified, vehicle_make, vehicle_type, vehicle_color, vehicle_plate, status, verification_token,
+    `SELECT id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, stripe_customer_id, email_verified, vehicle_make, vehicle_type, vehicle_color, vehicle_plate, status, verification_token,
       verification_expires, phone_verification_token, phone_verification_expires, refresh_token_hash, refresh_expires, terms_version, terms_accepted_at,
       privacy_version, privacy_accepted_at
      FROM users WHERE email = $1 LIMIT 1`,
@@ -912,13 +913,27 @@ export async function findUserByEmail(email: string) {
 
 export async function findUserById(userId: string) {
   const result = await pool.query(
-    `SELECT id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, email_verified, vehicle_make, vehicle_type, vehicle_color, vehicle_plate, status, verification_token,
+    `SELECT id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, stripe_customer_id, email_verified, vehicle_make, vehicle_type, vehicle_color, vehicle_plate, status, verification_token,
       verification_expires, phone_verification_token, phone_verification_expires, refresh_token_hash, refresh_expires, terms_version, terms_accepted_at,
       privacy_version, privacy_accepted_at
      FROM users WHERE id = $1 LIMIT 1`,
     [userId]
   );
   return result.rows[0] as UserRecord | undefined;
+}
+
+// Persists the Stripe customer id the first time it's created for a user.
+// Guarded by a unique index (046_stripe_customer_id.sql) — a concurrent
+// insert for the same id (shouldn't happen, ids are Stripe-generated and
+// unique) would violate the constraint rather than silently duplicate.
+// If another request already won the race and set a different id first,
+// this is a no-op (the WHERE clause only fills a currently-null column).
+export async function setStripeCustomerIdIfAbsent(userId: string, stripeCustomerId: string) {
+  const result = await pool.query(
+    `UPDATE users SET stripe_customer_id = $2 WHERE id = $1 AND stripe_customer_id IS NULL RETURNING stripe_customer_id`,
+    [userId, stripeCustomerId]
+  );
+  return (result.rows[0]?.stripe_customer_id as string | undefined) ?? null;
 }
 
 export async function findUserByResetToken(token: string) {
@@ -2522,7 +2537,7 @@ export async function getBookingForRefund({
 }) {
   const res = await pool.query(
     `
-    SELECT id, status, payment_intent_id, payout_status, end_time, refund_status, refund_id
+    SELECT id, status, payment_intent_id, payout_status, start_time, end_time, refund_status, refund_id
     FROM bookings
     WHERE id = $1
       AND driver_id = $2
@@ -2535,6 +2550,7 @@ export async function getBookingForRefund({
         status: string | null;
         payment_intent_id: string | null;
         payout_status: string | null;
+        start_time: Date;
         end_time: Date;
         refund_status: string | null;
         refund_id: string | null;
@@ -2782,6 +2798,24 @@ export async function listStalePendingBookings({
     [String(olderThanMinutes), limit]
   );
   return res.rows as { id: string; payment_intent_id: string }[];
+}
+
+// Confirmed bookings sit at status='confirmed' forever once their window
+// passes — nothing ever marks them done. Transitioning them to 'completed'
+// once end_time has passed is a pure bulk SQL update (no external API calls
+// per row like the Stripe-touching sweepers), so no batching/pagination is
+// needed; the existing bookings_status_idx keeps it cheap.
+export async function markConfirmedBookingsCompleted(): Promise<number> {
+  const res = await pool.query(
+    `
+    UPDATE bookings
+    SET status = 'completed'
+    WHERE status = 'confirmed'
+      AND end_time <= NOW()
+    RETURNING id;
+    `
+  );
+  return res.rowCount ?? 0;
 }
 
 export async function markBookingPaymentRefunded({
@@ -3133,7 +3167,7 @@ export async function getHostEarningsSummary(hostId: string) {
       FROM bookings b
       JOIN listings l ON l.id = b.listing_id
       WHERE l.host_id = $1
-        AND b.status = 'confirmed';
+        AND b.status IN ('confirmed', 'completed');
       `,
       [hostId]
     );
@@ -3156,7 +3190,7 @@ export async function getHostEarningsSummary(hostId: string) {
         FROM bookings b
         JOIN listings l ON l.id = b.listing_id
         WHERE l.host_id = $1
-          AND b.status = 'confirmed';
+          AND b.status IN ('confirmed', 'completed');
         `,
         [hostId]
       );
@@ -3186,7 +3220,7 @@ export async function listDuePayoutsForHost(hostId: string) {
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
     WHERE l.host_id = $1
-      AND b.status = 'confirmed'
+      AND b.status IN ('confirmed', 'completed')
       AND (b.payout_status IS NULL OR b.payout_status = 'pending')
       AND b.payout_available_at IS NOT NULL
       AND b.payout_available_at <= NOW();
@@ -3216,7 +3250,7 @@ export async function listDuePayoutsForAllHosts() {
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
     JOIN users u ON u.id = l.host_id
-    WHERE b.status = 'confirmed'
+    WHERE b.status IN ('confirmed', 'completed')
       AND (b.payout_status IS NULL OR b.payout_status = 'pending')
       AND b.payout_available_at IS NOT NULL
       AND b.payout_available_at <= NOW()
@@ -3315,7 +3349,7 @@ export async function getAdminDashboardMetrics() {
         SELECT COALESCE(SUM(amount_cents), 0)
         FROM bookings
         WHERE created_at >= NOW() - interval '30 days'
-          AND status = 'confirmed'
+          AND status IN ('confirmed', 'completed')
       ) AS gmv_30d_cents,
       (
         SELECT COUNT(*)
@@ -3340,7 +3374,7 @@ export async function getAdminDashboardMetrics() {
       SELECT
         date_trunc('day', created_at)::date AS day,
         COUNT(*)::int AS count,
-        COALESCE(SUM(amount_cents) FILTER (WHERE status = 'confirmed'), 0)::int AS gmv_cents
+        COALESCE(SUM(amount_cents) FILTER (WHERE status IN ('confirmed', 'completed')), 0)::int AS gmv_cents
       FROM bookings
       WHERE created_at >= current_date - interval '29 days'
       GROUP BY 1

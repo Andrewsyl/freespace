@@ -38,7 +38,7 @@ import {
   listUnrefundedBookingPayments,
   markBookingPaymentRefunded,
 } from "../lib/db.js";
-import { createCheckoutSession, stripe } from "../lib/stripe.js";
+import { createCheckoutSession, getOrCreateStripeCustomer, stripe } from "../lib/stripe.js";
 import { sendBookingEmail, sendBookingStatusEmail } from "../lib/email.js";
 import { sendPushNotification } from "../lib/notifications.js";
 import { reportOperationalAlert } from "../lib/opsAlerts.js";
@@ -57,6 +57,10 @@ import { env } from "../env.js";
 
 const router = Router();
 const DEFAULT_DAILY_HOURS = 8;
+// The platform's cut is a server-owned constant, never taken from the client.
+// A caller could otherwise send platformFeePercent: 0 and keep the driver's
+// price identical while silently zeroing the fee (host payout = charge - fee).
+const PLATFORM_FEE_PERCENT = 8 / 108;
 
 // A booking INSERT can fail because the slot filled up between our pre-check and
 // the write. Two Postgres error codes signal this:
@@ -139,7 +143,12 @@ const portalBookingLimiter = createRateLimiter({
   windowMs: 5 * 60 * 1000,
   max: 20,
   keyPrefix: "portal-booking",
-  keyGenerator: (req) => req.ip ?? "unknown",
+  // Keyed on IP+listing, not just IP: this is an unauthenticated route that
+  // creates a pending booking (which counts against listing capacity) before
+  // any payment completes. An IP-only key still lets one attacker camp a
+  // single low-capacity listing at the full budget and lock out real
+  // walk-up customers scanning that listing's QR code.
+  keyGenerator: (req) => `${req.ip ?? "unknown"}:${(req.body as { listingId?: string })?.listingId ?? "unknown"}`,
 });
 const bookingReadLimiter = createRateLimiter({
   windowMs: 5 * 60 * 1000,
@@ -710,12 +719,9 @@ async function scheduleBookingNotifications({
   });
 }
 
-async function getOrCreateCustomer(email: string) {
+async function getOrCreateCustomer(user: { id: string; email: string; stripe_customer_id?: string | null }) {
   if (!stripe) throw new Error("Stripe not configured");
-  const existing = await stripe.customers.list({ email, limit: 1 });
-  if (existing.data.length > 0) return existing.data[0].id;
-  const customer = await stripe.customers.create({ email });
-  return customer.id;
+  return getOrCreateStripeCustomer(stripe, user);
 }
 
 async function getOrCreatePortalGuestUserId() {
@@ -837,13 +843,13 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
       new Date(payload.from).getTime() + 24 * 60 * 60 * 1000
     );
 
-    const platformFeeCents = Math.round(expectedAmountCents * payload.platformFeePercent);
+    const platformFeeCents = Math.round(expectedAmountCents * PLATFORM_FEE_PERCENT);
     const session = await createCheckoutSession({
       amount: expectedAmountCents,
       currency: payload.currency,
       listingId: payload.listingId,
       hostStripeAccountId: listingWithHost?.hostStripeAccountId ?? null,
-      platformFeePercent: payload.platformFeePercent,
+      platformFeePercent: PLATFORM_FEE_PERCENT,
       successUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
       // Dismissing Stripe Checkout isn't an error — send the user straight back
       // to the booking page instead of an alarming "cancelled" screen.
@@ -1068,7 +1074,7 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
     const payoutAvailableAt = new Date(
       new Date(payload.from).getTime() + 24 * 60 * 60 * 1000
     );
-    const customerId = await getOrCreateCustomer(user.email);
+    const customerId = await getOrCreateCustomer(user);
     const ephemeralKey = await stripe.ephemeralKeys.create(
       { customer: customerId },
       { apiVersion: "2024-06-20" }
@@ -1077,7 +1083,7 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
     // The platform funds the promo: the fee shrinks by the discount so the
     // host's payout (charge minus fee) stays based on the undiscounted price.
     const platformFeeCents =
-      Math.round(expectedAmountCents * payload.platformFeePercent) - discountCents;
+      Math.round(expectedAmountCents * PLATFORM_FEE_PERCENT) - discountCents;
     const intentParams: any = {
       amount: chargeAmountCents,
       currency: payload.currency,
@@ -1173,16 +1179,22 @@ router.post("/portal", enforceBlockedList, portalBookingLimiter, async (req, res
       return res.status(400).json({ message: "End time must be in the future" });
     }
 
+    // Scoped to the same vehicle plate — this is an unauthenticated QR-code
+    // flow, so without the plate filter any visitor requesting an overlapping
+    // window on the same listing would be handed back a DIFFERENT visitor's
+    // live Checkout session and could pay into their booking (the payment
+    // would confirm the ORIGINAL visitor's plate, not the payer's).
     const existingPortal = await pool.query(
       `SELECT checkout_session_id
        FROM bookings
        WHERE listing_id = $1
          AND (status IS NULL OR status <> 'canceled')
          AND checkout_session_id IS NOT NULL
+         AND vehicle_plate = $4
          AND tstzrange(start_time, end_time, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
        ORDER BY created_at DESC
        LIMIT 1`,
-      [payload.listingId, startAt.toISOString(), endAt.toISOString()]
+      [payload.listingId, startAt.toISOString(), endAt.toISOString(), payload.vehiclePlate.toUpperCase()]
     );
     const existingSessionId = existingPortal.rows[0]?.checkout_session_id as string | undefined;
     if (existingSessionId && stripe) {
@@ -1224,8 +1236,7 @@ router.post("/portal", enforceBlockedList, portalBookingLimiter, async (req, res
       startTime: startAt,
       endTime: endAt,
     });
-    const platformFeePercent = 8 / 108;
-    const platformFeeCents = Math.round(amountCents * platformFeePercent);
+    const platformFeeCents = Math.round(amountCents * PLATFORM_FEE_PERCENT);
     const payoutAvailableAt = new Date(startAt.getTime() + 24 * 60 * 60 * 1000);
 
     const driverId = await getOrCreatePortalGuestUserId();
@@ -1235,7 +1246,7 @@ router.post("/portal", enforceBlockedList, portalBookingLimiter, async (req, res
       currency: "eur",
       listingId: payload.listingId,
       hostStripeAccountId: listingWithHost.hostStripeAccountId ?? null,
-      platformFeePercent,
+      platformFeePercent: PLATFORM_FEE_PERCENT,
       successUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/booking/cancel?session_id={CHECKOUT_SESSION_ID}`,
       driverId,
@@ -1362,7 +1373,7 @@ router.post("/:id/extend-intent", requireAuth, enforceBlockedList, bookingLimite
 
     const user = await findUserById(driverId);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
-    const customerId = await getOrCreateCustomer(user.email);
+    const customerId = await getOrCreateCustomer(user);
     const ephemeralKey = await stripe.ephemeralKeys.create(
       { customer: customerId },
       { apiVersion: "2024-06-20" }
@@ -1636,7 +1647,7 @@ router.post("/:id/change-intent", requireAuth, enforceBlockedList, bookingLimite
 
     const user = await findUserById(driverId);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
-    const customerId = await getOrCreateCustomer(user.email);
+    const customerId = await getOrCreateCustomer(user);
     const ephemeralKey = await stripe.ephemeralKeys.create(
       { customer: customerId },
       { apiVersion: "2024-06-20" }
@@ -2038,10 +2049,27 @@ router.post("/:id/cancel", requireAuth, enforceBlockedList, bookingLimiter, asyn
     if (booking.status === "canceled") {
       return res.json({ ok: true, alreadyCanceled: true });
     }
+    // Validate eligibility BEFORE touching Stripe. A booking whose window has
+    // already ended can't be canceled at all (the DB update below also
+    // enforces end_time > now(), but checking first stops us from refunding
+    // money for a cancel that's about to be rejected anyway).
+    const now = Date.now();
+    if (now >= new Date(booking.end_time).getTime()) {
+      return res.status(400).json({ message: "This booking has already ended and can no longer be canceled." });
+    }
+    // Free cancellation only applies before the booking starts. Canceling
+    // after start_time (the driver is mid-stay) still releases the space but
+    // does not refund time already used — otherwise a driver could book a
+    // full day and cancel minutes before it ends for a full refund. A booking
+    // that already has a refund recorded still routes through
+    // refundBookingPayment (regardless of timing) so its idempotent
+    // short-circuit can carry the existing refundId forward.
+    const isBeforeStart = now < new Date(booking.start_time).getTime();
+    const hasExistingRefund = booking.refund_status === "succeeded" || Boolean(booking.refund_id);
 
     let refundId: string | null = null;
     let alreadyRefunded = false;
-    if (booking.status === "confirmed") {
+    if (booking.status === "confirmed" && (isBeforeStart || hasExistingRefund)) {
       const refundResult = await refundBookingPayment({
         paymentIntentId: booking.payment_intent_id,
         bookingId,
@@ -2110,6 +2138,11 @@ router.post("/:id/host-cancel", requireAuth, enforceBlockedList, bookingLimiter,
     if (!booking) return res.status(404).json({ message: "Booking not found" });
     if (booking.status === "canceled") {
       return res.json({ ok: true, alreadyCanceled: true });
+    }
+    // Validate before touching Stripe — a completed booking can't be canceled,
+    // full stop (see the matching guard in the driver /cancel route above).
+    if (Date.now() >= new Date(booking.end_time).getTime()) {
+      return res.status(400).json({ message: "This booking has already ended and can no longer be canceled." });
     }
 
     let refundId: string | null = null;

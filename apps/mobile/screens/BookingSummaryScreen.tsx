@@ -217,9 +217,11 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   }, [end, listing, start]);
 
   const pricing = useMemo(() => {
+    // Same fee-inclusive quote the map, list and listing screens display —
+    // the price must never change between search and checkout.
     const parkingFee = priceSummary?.total ?? 0;
-    const serviceFee = Math.round(parkingFee * 0.08 * 100) / 100;
-    const baseCents = Math.round((parkingFee + serviceFee) * 100);
+    const serviceFee = priceSummary?.serviceFee ?? 0;
+    const baseCents = priceSummary?.grossTotalCents ?? 0;
     // Same floor the API applies: Stripe can't charge less than €0.50.
     const discountCents = appliedPromo
       ? Math.min(appliedPromo.discountCents, Math.max(baseCents - 50, 0))
@@ -544,8 +546,13 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
           }
         }
         if (presentResult.error.code === "Canceled") {
-          // User dismissed the payment sheet — not an error. Stay silent; the
-          // pending booking was already cleaned up above.
+          // User dismissed the payment sheet — not an error, so no user-facing
+          // message, but it's the one abandonment point in the funnel with no
+          // visibility otherwise (no error, no confirmation, silent return).
+          void trackEvent("mobile_payment_sheet_abandoned", {
+            listingId: listing.id,
+            amountCents: pricing.finalCents,
+          });
           return;
         }
         showPaymentRecovery(
