@@ -279,7 +279,7 @@ export function ListingDetailsScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: hostFlowColors.bg,
     flex: 1,
   },
   content: {
@@ -290,15 +290,15 @@ const styles = StyleSheet.create({
 
   // ── Header card (matches location screen style) ──────────────
   headerCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: hostFlowColors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: hostFlowColors.border,
     borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
@@ -332,10 +332,10 @@ const styles = StyleSheet.create({
 
   // ── Cards ────────────────────────────────────────────────────
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: hostFlowColors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: hostFlowColors.border,
   },
   cardBody: {
     padding: 16,
@@ -368,8 +368,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   typeCard: {
-    backgroundColor: "#F8FAFC",
-    borderColor: "#E2E8ED",
+    backgroundColor: hostFlowColors.bg,
+    borderColor: hostFlowColors.border,
     borderRadius: 14,
     borderWidth: 1,
     minHeight: 100,
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   },
   typeIconWrap: {
     alignItems: "center",
-    backgroundColor: "#EDF7F2",
+    backgroundColor: hostFlowColors.accentSoft,
     borderRadius: 8,
     height: 34,
     justifyContent: "center",
@@ -438,8 +438,8 @@ const styles = StyleSheet.create({
   },
   counterButton: {
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
-    borderColor: "#E2E8ED",
+    backgroundColor: hostFlowColors.bg,
+    borderColor: hostFlowColors.border,
     borderRadius: 999,
     borderWidth: 1,
     height: 44,
@@ -451,8 +451,8 @@ const styles = StyleSheet.create({
   },
   counterValueBox: {
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
-    borderColor: "#E2E8ED",
+    backgroundColor: hostFlowColors.bg,
+    borderColor: hostFlowColors.border,
     borderRadius: 12,
     borderWidth: 1,
     height: 56,
@@ -472,8 +472,8 @@ const styles = StyleSheet.create({
   },
   vehicleCard: {
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
-    borderColor: "#E2E8ED",
+    backgroundColor: hostFlowColors.bg,
+    borderColor: hostFlowColors.border,
     borderRadius: 14,
     borderWidth: 1,
     flexDirection: "row",
@@ -527,10 +527,10 @@ const styles = StyleSheet.create({
 
   // ── Tips card ────────────────────────────────────────────────
   tipsCard: {
-    backgroundColor: "#F0FDF8",
+    backgroundColor: hostFlowColors.accentSoft,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#C6F0DC",
+    borderColor: hostFlowColors.accentSoftBorder,
     padding: 16,
   },
   tipsRow: {

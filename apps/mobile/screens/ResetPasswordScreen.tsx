@@ -20,7 +20,7 @@ import { Button, TextInput as AppTextInput } from "../components/ui";
 import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPassword">;
-const AUTH_GREEN = "#0a8050";
+const AUTH_GREEN = colors.primary;
 
 export function ResetPasswordScreen({ navigation, route }: Props) {
   const scrollRef = useRef<ScrollView | null>(null);
@@ -113,7 +113,7 @@ export function ResetPasswordScreen({ navigation, route }: Props) {
             hitSlop={8}
             accessibilityLabel="Go back"
           >
-            <ArrowLeft size={22} color="#111827" strokeWidth={2.2} />
+            <ArrowLeft size={22} color={colors.text} strokeWidth={2.2} />
           </Pressable>
         </View>
         <ScrollView
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 18,
-    backgroundColor: "#edf7f2",
+    backgroundColor: colors.tileBg,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 18,

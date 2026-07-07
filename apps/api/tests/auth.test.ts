@@ -11,8 +11,23 @@ const db = {
   findUserByEmail: vi.fn(),
   insertEventLog: vi.fn(),
   insertRefreshToken: vi.fn(),
+  setEmailVerified: vi.fn(),
   setRefreshToken: vi.fn(),
 };
+
+const jose = vi.hoisted(() => ({
+  createRemoteJWKSet: vi.fn(() => Symbol("jwks")),
+  jwtVerify: vi.fn(),
+}));
+
+vi.mock("jose", async () => {
+  const actual = await vi.importActual<typeof import("jose")>("jose");
+  return {
+    ...actual,
+    createRemoteJWKSet: jose.createRemoteJWKSet,
+    jwtVerify: jose.jwtVerify,
+  };
+});
 
 vi.mock("../src/lib/db.js", async () => {
   const actual = await vi.importActual<typeof import("../src/lib/db.js")>("../src/lib/db.js");
@@ -22,6 +37,7 @@ vi.mock("../src/lib/db.js", async () => {
     findUserByEmail: db.findUserByEmail,
     insertEventLog: db.insertEventLog,
     insertRefreshToken: db.insertRefreshToken,
+    setEmailVerified: db.setEmailVerified,
     setRefreshToken: db.setRefreshToken,
   };
 });
@@ -43,6 +59,8 @@ vi.mock("../src/middleware/fraud.js", () => ({
 describe("auth routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.GOOGLE_OAUTH_CLIENT_ID = "google-web-client-id";
+    process.env.GOOGLE_IOS_CLIENT_ID = "google-ios-client-id";
   });
 
   it("registers a new user and returns tokens", async () => {
@@ -93,5 +111,60 @@ describe("auth routes", () => {
 
     expect(response.status).toBe(401);
     expect(response.body.message).toBe("Invalid credentials");
+  });
+
+  it("logs in with a verified Google token", async () => {
+    db.findUserByEmail.mockResolvedValueOnce({
+      id: "user-1",
+      email: "driver@example.com",
+      role: "driver",
+      full_name: "Driver Example",
+      phone: null,
+      phone_verified: false,
+      email_verified: false,
+      terms_version: "2026-03",
+      terms_accepted_at: null,
+      privacy_version: "2026-03",
+      privacy_accepted_at: null,
+      status: "active",
+    });
+    db.setEmailVerified.mockResolvedValueOnce(undefined);
+    db.insertRefreshToken.mockResolvedValueOnce(undefined);
+    db.insertEventLog.mockResolvedValueOnce(undefined);
+    jose.jwtVerify.mockResolvedValueOnce({
+      payload: {
+        email: "driver@example.com",
+        name: "Driver Example",
+      },
+    });
+
+    const { createApp } = await import("../src/app.js");
+    const app = createApp();
+
+    const response = await request(app).post("/api/auth/oauth/google").send({
+      idToken: "google-id-token-value-1234567890",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.token).toBeTruthy();
+    expect(response.body.refreshToken).toBeTruthy();
+    expect(response.body.user.email).toBe("driver@example.com");
+    expect(db.setEmailVerified).toHaveBeenCalledWith("user-1", true);
+    expect(jose.jwtVerify).toHaveBeenCalled();
+  });
+
+  it("rejects an invalid Google token", async () => {
+    const { errors: joseErrors } = await import("jose");
+    jose.jwtVerify.mockRejectedValueOnce(new joseErrors.JWTInvalid("invalid"));
+
+    const { createApp } = await import("../src/app.js");
+    const app = createApp();
+
+    const response = await request(app).post("/api/auth/oauth/google").send({
+      idToken: "google-id-token-value-1234567890",
+    });
+
+    expect(response.status).toBe(401);
+    expect(response.body.message).toBe("Invalid Google token");
   });
 });

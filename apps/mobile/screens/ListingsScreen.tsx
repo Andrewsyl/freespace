@@ -30,6 +30,7 @@ import {
 } from "lucide-react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SkeletonBlock, usePulse } from "../components/ui";
+import { colors, cardShadow, radius } from "../styles/theme";
 import { SquircleBtn } from "../components/SquircleBtn";
 import {
   createHostPayoutLink,
@@ -56,13 +57,15 @@ import {
 
 type Props = NativeStackScreenProps<RootStackParamList, "Listings">;
 
-const GREEN  = "#0a8050";
-const FG     = "#111827";
-const MUTED  = "#465050";
-const SUBTLE = "#6B7575";
-const BG     = "#F8FAFC";
-const CARD   = "#ffffff";
-const LINE   = "#DDE5EC";
+// Sourced from styles/theme.ts (see docs/PARKING_DESIGN_BIBLE.md §0) — kept as
+// local aliases so the styles below don't need touching one by one.
+const GREEN  = colors.primary;
+const FG     = colors.text;
+const MUTED  = colors.textMuted;
+const SUBTLE = colors.textSoft;
+const BG     = colors.pageBg;
+const CARD   = colors.cardBg;
+const LINE   = colors.divider;
 
 const dublinDay = (d: Date) => d.toLocaleDateString("en-IE", { timeZone: "Europe/Dublin" });
 
@@ -359,7 +362,7 @@ export function ListingsScreen({ navigation }: Props) {
           ) : null}
         </View>
         <Pressable style={styles.addBtn} onPress={() => navigation.navigate("CreateListingFlow")}>
-          <Plus size={15} color="#ffffff" strokeWidth={2.5} />
+          <Plus size={15} color={colors.textInverse} strokeWidth={2.5} />
         </Pressable>
       </View>
 
@@ -402,11 +405,11 @@ export function ListingsScreen({ navigation }: Props) {
                   onPress={handlePayoutSetup}
                   disabled={payoutBusy}
                 >
-                  <AlertCircle size={15} color="#92400e" strokeWidth={2.2} />
+                  <AlertCircle size={15} color={colors.status.pending.text} strokeWidth={2.2} />
                   <Text style={styles.alertText} numberOfLines={1}>
                     {payoutBusy ? "Opening payout setup…" : payoutStatusMessage}
                   </Text>
-                  <ChevronRight size={15} color="#92400e" />
+                  <ChevronRight size={15} color={colors.status.pending.text} />
                 </Pressable>
               </View>
             ) : null}
@@ -497,7 +500,7 @@ export function ListingsScreen({ navigation }: Props) {
                     ]}>
                       <CreditCard
                         size={15}
-                        color={payoutStatus.payoutsEnabled ? GREEN : "#92400e"}
+                        color={payoutStatus.payoutsEnabled ? GREEN : colors.status.pending.text}
                         strokeWidth={2.2}
                       />
                     </View>
@@ -518,7 +521,7 @@ export function ListingsScreen({ navigation }: Props) {
                   </Pressable>
                   {payoutStatus.requirementsDue.length > 0 ? (
                     <View style={styles.requirementsRow}>
-                      <AlertCircle size={12} color="#92400e" />
+                      <AlertCircle size={12} color={colors.status.pending.text} />
                       <Text style={styles.requirementsText}>
                         Missing: {payoutStatus.requirementsDue.slice(0, 3).join(", ")}
                         {payoutStatus.requirementsDue.length > 3 ? "…" : ""}
@@ -780,7 +783,7 @@ export function ListingsScreen({ navigation }: Props) {
                             />
                           ) : (
                             <View style={styles.imagePlaceholder}>
-                              <Ionicons name="car-outline" size={28} color="#b0bac4" />
+                              <Ionicons name="car-outline" size={28} color={colors.textMuted} />
                             </View>
                           )}
                           {/* Status chip: Paused > Occupied > Free */}
@@ -858,9 +861,9 @@ export function ListingsScreen({ navigation }: Props) {
                                 disabled={deletingId === listing.id}
                               >
                                 {deletingId === listing.id ? (
-                                  <ActivityIndicator size={12} color="#b42318" />
+                                  <ActivityIndicator size={12} color={colors.danger} />
                                 ) : (
-                                  <Trash2 size={13} color="#b42318" />
+                                  <Trash2 size={13} color={colors.danger} />
                                 )}
                               </Pressable>
                             </View>
@@ -890,13 +893,7 @@ export function ListingsScreen({ navigation }: Props) {
   );
 }
 
-const SHADOW = {
-  shadowColor: "#0f172a",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.09,
-  shadowRadius: 12,
-  elevation: 4,
-};
+const SHADOW = cardShadow;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
@@ -928,7 +925,7 @@ const styles = StyleSheet.create({
   addBtn: {
     width: 34,
     height: 34,
-    borderRadius: 17,
+    borderRadius: radius.pill,
     backgroundColor: GREEN,
     alignItems: "center",
     justifyContent: "center",
@@ -943,9 +940,9 @@ const styles = StyleSheet.create({
   // ── Earnings hero ────────────────────────────────────────────
   earningsCard: {
     backgroundColor: CARD,
-    borderRadius: 18,
+    borderRadius: radius.cardSmall,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
+    borderColor: colors.border,
     padding: 20,
     ...SHADOW,
   },
@@ -958,8 +955,8 @@ const styles = StyleSheet.create({
   earningsIconWrap: {
     width: 26,
     height: 26,
-    borderRadius: 8,
-    backgroundColor: "#EDF7F2",
+    borderRadius: radius.sm,
+    backgroundColor: colors.tileBg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1027,26 +1024,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 9,
-    backgroundColor: "#FFFBEB",
+    backgroundColor: colors.status.pending.background,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#FDE68A",
+    borderColor: colors.status.pending.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   alertRowNeutral: {
-    backgroundColor: "#F0FAF6",
-    borderColor: "#B6E8D0",
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.accent,
   },
   alertText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
-    color: "#92400e",
+    color: colors.status.pending.text,
     flex: 1,
     letterSpacing: -0.1,
   },
   alertTextNeutral: {
-    color: "#065f46",
+    color: colors.headerTint,
   },
 
   // ── Segmented tabs ───────────────────────────────────────────
@@ -1056,7 +1053,7 @@ const styles = StyleSheet.create({
   },
   segment: {
     flexDirection: "row",
-    backgroundColor: "#E9EEF3",
+    backgroundColor: colors.divider,
     borderRadius: 12,
     padding: 3,
   },
@@ -1089,7 +1086,7 @@ const styles = StyleSheet.create({
   segmentLiveDot: {
     width: 7,
     height: 7,
-    borderRadius: 4,
+    borderRadius: radius.pill,
     backgroundColor: GREEN,
   },
 
@@ -1103,7 +1100,7 @@ const styles = StyleSheet.create({
     backgroundColor: CARD,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
+    borderColor: colors.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
     flexDirection: "row",
@@ -1117,8 +1114,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  infoIconGreen: { backgroundColor: "#EDF7F2" },
-  infoIconAmber: { backgroundColor: "#FEF3C7" },
+  infoIconGreen: { backgroundColor: colors.tileBg },
+  infoIconAmber: { backgroundColor: colors.status.pending.background },
   infoRowText: { flex: 1 },
   infoRowTitle: {
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -1136,15 +1133,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "#EDF7F2",
-    borderRadius: 100,
+    backgroundColor: colors.tileBg,
+    borderRadius: radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   activeDot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
+    borderRadius: radius.pill,
     backgroundColor: GREEN,
   },
   activePillText: {
@@ -1153,8 +1150,8 @@ const styles = StyleSheet.create({
     color: GREEN,
   },
   mockPill: {
-    backgroundColor: "#f3f4f6",
-    borderRadius: 100,
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
@@ -1173,7 +1170,7 @@ const styles = StyleSheet.create({
   requirementsText: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
-    color: "#92400e",
+    color: colors.status.pending.text,
     flex: 1,
   },
 
@@ -1205,9 +1202,9 @@ const styles = StyleSheet.create({
   todayList: { gap: 12, marginBottom: 14 },
   todayCard: {
     backgroundColor: CARD,
-    borderRadius: 18,
+    borderRadius: radius.cardSmall,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
+    borderColor: colors.border,
     padding: 16,
     gap: 8,
     ...SHADOW,
@@ -1220,13 +1217,13 @@ const styles = StyleSheet.create({
   todayNowDot: {
     width: 9,
     height: 9,
-    borderRadius: 5,
+    borderRadius: radius.pill,
     backgroundColor: GREEN,
   },
   todayNowLabel: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 13,
-    color: "#065f46",
+    color: colors.headerTint,
     letterSpacing: -0.2,
     flex: 1,
   },
@@ -1268,14 +1265,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   todayContactBtnSecondary: {
-    backgroundColor: "#F0FAF6",
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: "#B6E8D0",
+    borderColor: colors.accent,
   },
   todayContactBtnText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
-    color: "#ffffff",
+    color: colors.textInverse,
   },
   todayContactBtnTextSecondary: {
     color: GREEN,
@@ -1284,7 +1281,7 @@ const styles = StyleSheet.create({
     backgroundColor: CARD,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
+    borderColor: colors.border,
     paddingHorizontal: 14,
     paddingVertical: 14,
     marginBottom: 14,
@@ -1303,7 +1300,7 @@ const styles = StyleSheet.create({
   pastCanceled: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
-    color: "#b42318",
+    color: colors.danger,
   },
   showPastBtn: {
     alignItems: "center",
@@ -1323,9 +1320,9 @@ const styles = StyleSheet.create({
   skeletonList: { gap: 14 },
   skeletonCard: {
     backgroundColor: CARD,
-    borderRadius: 18,
+    borderRadius: radius.cardSmall,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
+    borderColor: colors.border,
     overflow: "hidden",
     ...SHADOW,
   },
@@ -1340,9 +1337,9 @@ const styles = StyleSheet.create({
   // ── Empty state ──────────────────────────────────────────────
   emptyCard: {
     backgroundColor: CARD,
-    borderRadius: 18,
+    borderRadius: radius.cardSmall,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
+    borderColor: colors.border,
     padding: 28,
     alignItems: "center",
     ...SHADOW,
@@ -1356,7 +1353,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: "#EDF7F2",
+    backgroundColor: colors.tileBg,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -1381,9 +1378,9 @@ const styles = StyleSheet.create({
   gatedWrap: { paddingHorizontal: 16, paddingTop: 8 },
   gatedCard: {
     backgroundColor: CARD,
-    borderRadius: 20,
+    borderRadius: radius.cardSmall,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
+    borderColor: colors.border,
     padding: 28,
     alignItems: "center",
     ...SHADOW,
@@ -1392,7 +1389,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: "#EDF7F2",
+    backgroundColor: colors.tileBg,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 18,
@@ -1431,16 +1428,16 @@ const styles = StyleSheet.create({
   listingGrid: { gap: 14 },
   listingCard: {
     backgroundColor: CARD,
-    borderRadius: 18,
+    borderRadius: radius.cardSmall,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
+    borderColor: colors.border,
     overflow: "hidden",
     ...SHADOW,
   },
   listingImageWrap: {
     width: "100%",
     height: 160,
-    backgroundColor: "#edf1f4",
+    backgroundColor: colors.cardBgMuted,
     position: "relative",
   },
   listingImage: { width: "100%", height: "100%" },
@@ -1458,19 +1455,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    borderRadius: 100,
+    borderRadius: radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   statusBadgeActive: { backgroundColor: "rgba(255,255,255,0.92)" },
   statusBadgePaused: { backgroundColor: "rgba(255,255,255,0.92)" },
-  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusDot: { width: 6, height: 6, borderRadius: radius.pill },
   statusDotActive: { backgroundColor: GREEN },
-  statusDotPaused: { backgroundColor: "#94a3b8" },
+  statusDotPaused: { backgroundColor: colors.textDisabled },
   statusDotFree: {
     backgroundColor: "transparent",
     borderWidth: 1.5,
-    borderColor: "#94a3b8",
+    borderColor: colors.textDisabled,
   },
   statusBadgeText: {
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -1500,8 +1497,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#EDF7F2",
-    borderRadius: 8,
+    backgroundColor: colors.tileBg,
+    borderRadius: radius.sm,
     paddingHorizontal: 8,
     paddingVertical: 5,
   },
@@ -1557,12 +1554,12 @@ const styles = StyleSheet.create({
     minWidth: 68,
   },
   pauseBtnActive: {
-    backgroundColor: "#f8fafc",
-    borderColor: "#d1d5db",
+    backgroundColor: colors.cardBgMuted,
+    borderColor: colors.border,
   },
   pauseBtnResume: {
-    backgroundColor: "#EDF7F2",
-    borderColor: "#a7f3d0",
+    backgroundColor: colors.tileBg,
+    borderColor: colors.accent,
   },
   pauseBtnText: {
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -1575,9 +1572,9 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: "#fff5f5",
+    backgroundColor: colors.status.canceled.background,
     borderWidth: 1,
-    borderColor: "#fcd5d5",
+    borderColor: colors.status.canceled.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1592,7 +1589,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     height: 50,
     borderWidth: 1.5,
-    borderColor: "#d1fae5",
+    borderColor: colors.accent,
     borderStyle: "dashed",
   },
   addAnotherText: {

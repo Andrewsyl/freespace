@@ -22,6 +22,7 @@ import { SignInWall } from "../components/SignInWall";
 import { DetailNavBar, SectionTitle } from "../components/profileUi";
 import type { RootStackParamList } from "../types";
 import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
+import { colors } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Support">;
 
@@ -87,7 +88,7 @@ export function SupportScreen({ navigation, route }: Props) {
         <StatusBar barStyle="dark-content" />
         <DetailNavBar title="Contact us" onBack={() => goBackOrFallback(navigation, fallbackRoutes.profile)} />
         <SignInWall
-          icon={<LifeBuoy size={26} color="#0a8050" strokeWidth={2.2} />}
+          icon={<LifeBuoy size={26} color={colors.primary} strokeWidth={2.2} />}
           title="Sign in to contact support"
           body="Sign in so we can attach your message to the right booking and reply to you properly."
           onSignIn={() => navigation.navigate("Welcome", { returnTo: { screen: "Support", params: route.params } })}
@@ -133,7 +134,7 @@ export function SupportScreen({ navigation, route }: Props) {
             <Text style={[styles.selectText, !subject && styles.selectPlaceholder]}>
               {subject || "Select a topic"}
             </Text>
-            <ChevronDown size={18} color="#69727D" strokeWidth={2.2} />
+            <ChevronDown size={18} color={colors.textSoft} strokeWidth={2.2} />
           </Pressable>
 
           <Text style={styles.fieldLabel}>Message</Text>
@@ -184,42 +185,42 @@ export function SupportScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, backgroundColor: colors.cardBg },
   flex: { flex: 1 },
   content: { paddingHorizontal: 20, paddingTop: 4 },
   firstSection: { marginTop: 8 },
-  help: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: "#69727D", lineHeight: 20, marginBottom: 20 },
+  help: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: colors.textSoft, lineHeight: 20, marginBottom: 20 },
   fieldLabel: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#111820",
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: colors.text,
     letterSpacing: -0.2, marginBottom: 6,
   },
   select: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#DFE4E9",
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider,
     paddingHorizontal: 0, paddingVertical: 12, marginBottom: 24,
   },
   selectPressed: { opacity: 0.55 },
-  selectText: { fontFamily: "PlusJakartaSans-Medium", fontSize: 17, color: "#111820", letterSpacing: -0.2 },
-  selectPlaceholder: { color: "#98A2AD", fontFamily: "PlusJakartaSans-Regular" },
+  selectText: { fontFamily: "PlusJakartaSans-Medium", fontSize: 17, color: colors.text, letterSpacing: -0.2 },
+  selectPlaceholder: { color: colors.textMuted, fontFamily: "PlusJakartaSans-Regular" },
   inputWrap: { marginBottom: 0 },
   textArea: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 17, color: "#111820", letterSpacing: -0.2,
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 17, color: colors.text, letterSpacing: -0.2,
     backgroundColor: "transparent", borderWidth: 0,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#DFE4E9", borderRadius: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider, borderRadius: 0,
     minHeight: 130, paddingHorizontal: 0, paddingVertical: 10,
   },
   submitBtn: { marginTop: 24 },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(15,23,42,0.2)" },
   menuSheet: {
-    position: "absolute", backgroundColor: "#FFFFFF", borderColor: "#E6EBEF", borderWidth: 1,
+    position: "absolute", backgroundColor: colors.cardBg, borderColor: colors.divider, borderWidth: 1,
     borderRadius: 18, padding: 10,
     shadowColor: "#0B1B33", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.14, shadowRadius: 20, elevation: 8,
   },
   menuTitle: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: "#69727D",
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: colors.textSoft,
     marginBottom: 6, paddingHorizontal: 6,
   },
   optionRow: { borderRadius: 12, paddingVertical: 12, paddingHorizontal: 12 },
-  optionRowPressed: { backgroundColor: "#F1FAF5" },
-  optionText: { fontFamily: "PlusJakartaSans-Medium", fontSize: 16, color: "#111820" },
+  optionRowPressed: { backgroundColor: colors.accentSoft },
+  optionText: { fontFamily: "PlusJakartaSans-Medium", fontSize: 16, color: colors.text },
 });

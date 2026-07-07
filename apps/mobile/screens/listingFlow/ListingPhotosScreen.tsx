@@ -20,6 +20,7 @@ import { useListingFlow } from "./context";
 import { FlowHeader } from "./FlowHeader";
 import { FlowFooter } from "./FlowFooter";
 import { hostFlowColors } from "./hostFlowTheme";
+import { colors } from "../../styles/theme";
 import { Camera, GripVertical, Info, Plus, Star, X } from "lucide-react-native";
 import { buildStreetViewImageUrl } from "../../utils/streetView";
 
@@ -345,21 +346,21 @@ export function ListingPhotosScreen({ navigation }: Props) {
                         <Image source={{ uri: photo.uri }} style={styles.photoImage} />
                         {index === 0 ? (
                           <View style={styles.coverBadge}>
-                            <Star size={10} color="#ffffff" strokeWidth={2.5} fill="#ffffff" />
+                            <Star size={10} color={colors.textInverse} strokeWidth={2.5} fill={colors.textInverse} />
                             <Text style={styles.coverBadgeText}>Cover</Text>
                           </View>
                         ) : null}
                         {photo.kind === "uploaded" ? (
                           <>
                             <View style={styles.dragHandle} pointerEvents="none">
-                              <GripVertical size={13} color="#ffffff" strokeWidth={2.5} />
+                              <GripVertical size={13} color={colors.textInverse} strokeWidth={2.5} />
                             </View>
                             <Pressable
                               style={styles.removeBtn}
                               onPress={() => removePhoto(photo.uri)}
                               hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
                             >
-                              <X size={12} color="#ffffff" strokeWidth={2.8} />
+                              <X size={12} color={colors.textInverse} strokeWidth={2.8} />
                             </Pressable>
                           </>
                         ) : null}
@@ -413,7 +414,7 @@ export function ListingPhotosScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: { flex: 1, backgroundColor: hostFlowColors.bg },
   content: {
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -422,15 +423,15 @@ const styles = StyleSheet.create({
 
   // ── Header card (matches location screen style) ──────────────
   headerCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: hostFlowColors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: hostFlowColors.border,
     borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
@@ -464,10 +465,10 @@ const styles = StyleSheet.create({
 
   // ── Photos card ──────────────────────────────────────────────
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: hostFlowColors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -480,13 +481,13 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: hostFlowColors.border,
   },
   cardBody: {
     padding: 16,
   },
   errorText: {
-    color: "#ef4444",
+    color: colors.danger,
     fontSize: 12,
     fontFamily: "PlusJakartaSans-SemiBold",
     marginBottom: 12,
@@ -543,7 +544,7 @@ const styles = StyleSheet.create({
   photoCard: {
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#EDF7F2",
+    backgroundColor: hostFlowColors.accentSoft,
     position: "relative",
     borderWidth: 2,
     borderColor: "transparent",
@@ -590,7 +591,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   coverBadgeText: {
-    color: "#ffffff",
+    color: colors.textInverse,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
     letterSpacing: 0.2,
@@ -631,10 +632,10 @@ const styles = StyleSheet.create({
 
   // ── Tips card ────────────────────────────────────────────────
   tipsCard: {
-    backgroundColor: "#F0FDF8",
+    backgroundColor: hostFlowColors.accentSoft,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#C6F0DC",
+    borderColor: hostFlowColors.accentSoftBorder,
     padding: 16,
   },
   tipsRow: {

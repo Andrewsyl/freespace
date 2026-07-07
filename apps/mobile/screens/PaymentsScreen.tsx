@@ -28,6 +28,7 @@ import {
   type PaymentMethod,
 } from "../api";
 import { useAuth } from "../auth";
+import { colors } from "../styles/theme";
 import { formatReviewDate } from "../utils/dateFormat";
 import type { RootStackParamList } from "../types";
 import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
@@ -156,7 +157,7 @@ export function PaymentsScreen() {
         <StatusBar barStyle="dark-content" />
         <DetailNavBar title="Payments" onBack={() => goBackOrFallback(navigation, fallbackRoutes.profile)} />
         <SignInWall
-          icon={<CreditCard size={26} color="#0a8050" strokeWidth={2.2} />}
+          icon={<CreditCard size={26} color={colors.primary} strokeWidth={2.2} />}
           title="Manage your payments"
           body="Sign in to add payment methods and see your booking charges."
           onSignIn={() => navigation.navigate("Welcome")}
@@ -177,7 +178,7 @@ export function PaymentsScreen() {
       >
         {loading ? (
           <View style={styles.loadingRow}>
-            <ActivityIndicator size="small" color="#0a8050" />
+            <ActivityIndicator size="small" color={colors.primary} />
             <Text style={styles.loadingText}>Loading payments…</Text>
           </View>
         ) : null}
@@ -187,7 +188,7 @@ export function PaymentsScreen() {
         {methods.map((method) => (
           <View key={method.id} style={styles.cardRow}>
             <View style={styles.cardIcon}>
-              <CreditCard size={19} color="#374151" strokeWidth={1.9} />
+              <CreditCard size={19} color={colors.text} strokeWidth={1.9} />
             </View>
             <View style={styles.cardText}>
               <Text style={styles.cardTitle}>
@@ -221,20 +222,20 @@ export function PaymentsScreen() {
         {showAdd ? (
           <View style={styles.addPanel}>
             <View style={styles.addHeader}>
-              <Lock size={14} color="#0a8050" strokeWidth={2} />
+              <Lock size={14} color={colors.primary} strokeWidth={2} />
               <Text style={styles.addTitle}>New card</Text>
               <Pressable onPress={() => setShowAdd(false)} hitSlop={8}>
-                <X size={16} color="#6b7280" strokeWidth={2} />
+                <X size={16} color={colors.textMuted} strokeWidth={2} />
               </Pressable>
             </View>
             <CardField
               postalCodeEnabled={false}
-              cardStyle={{ ...styles.cardField, placeholderColor: "#9ca3af", textColor: "#111827" }}
+              cardStyle={{ ...styles.cardField, placeholderColor: colors.textDisabled, textColor: colors.text }}
               style={styles.cardFieldContainer}
               onCardChange={(details) => setCardComplete(!!details.complete)}
             />
             <View style={styles.secureNote}>
-              <ShieldCheck size={12} color="#9ca3af" strokeWidth={2} />
+              <ShieldCheck size={12} color={colors.textDisabled} strokeWidth={2} />
               <Text style={styles.secureText}>Encrypted by Stripe · Your card number is never stored on our servers</Text>
             </View>
             <Button title={adding ? "Saving…" : "Save card"} onPress={handleSaveCard} disabled={!cardComplete || adding} loading={adding} />
@@ -248,7 +249,7 @@ export function PaymentsScreen() {
             }}
           >
             <View style={styles.addIcon}>
-              <Plus size={16} color="#0a8050" strokeWidth={2.6} />
+              <Plus size={16} color={colors.primary} strokeWidth={2.6} />
             </View>
             <Text style={styles.addRowText}>Add a card</Text>
           </Pressable>
@@ -282,55 +283,54 @@ export function PaymentsScreen() {
   );
 }
 
-const HAIR = "#EEF0F2";
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, backgroundColor: colors.cardBg },
   content: { paddingHorizontal: 20, paddingTop: 4 },
   firstSection: { marginTop: 8 },
   loadingRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingTop: 12 },
-  loadingText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: "#69727D" },
+  loadingText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: colors.textSoft },
 
-  cardRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, borderTopWidth: 1, borderTopColor: HAIR },
+  cardRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, borderTopWidth: 1, borderTopColor: colors.divider },
   cardIcon: {
-    width: 40, height: 40, borderRadius: 11, backgroundColor: "#F1F4F6",
+    width: 40, height: 40, borderRadius: 11, backgroundColor: colors.cardBgMuted,
     alignItems: "center", justifyContent: "center",
   },
   cardText: { flex: 1 },
-  cardTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15.5, color: "#111820" },
-  cardSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: "#69727D", marginTop: 2 },
+  cardTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15.5, color: colors.text },
+  cardSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: colors.textSoft, marginTop: 2 },
   cardActions: { alignItems: "flex-end", gap: 6 },
-  actionBtn: { borderWidth: 1, borderColor: "#E6EBEF", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
-  actionText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: "#111820" },
-  removeText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: "#B4402E" },
+  actionBtn: { borderWidth: 1, borderColor: colors.divider, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
+  actionText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: colors.text },
+  removeText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: colors.danger },
   defaultBadge: {
-    backgroundColor: "#F1FAF5", borderWidth: 1, borderColor: "#C6EAD8", borderRadius: 999,
+    backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent, borderRadius: 999,
     paddingHorizontal: 10, paddingVertical: 4,
   },
-  defaultBadgeText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11.5, color: "#0a8050" },
+  defaultBadgeText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11.5, color: colors.primary },
 
-  addRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 15, borderTopWidth: 1, borderTopColor: HAIR },
+  addRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 15, borderTopWidth: 1, borderTopColor: colors.divider },
   rowPressed: { opacity: 0.6 },
   addIcon: {
-    width: 40, height: 40, borderRadius: 11, backgroundColor: "#F1FAF5",
-    borderWidth: 1, borderColor: "#C6EAD8", alignItems: "center", justifyContent: "center",
+    width: 40, height: 40, borderRadius: 11, backgroundColor: colors.accentSoft,
+    borderWidth: 1, borderColor: colors.accent, alignItems: "center", justifyContent: "center",
   },
-  addRowText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15.5, color: "#0a8050" },
+  addRowText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15.5, color: colors.primary },
 
-  addPanel: { borderTopWidth: 1, borderTopColor: HAIR, paddingTop: 16, gap: 14 },
+  addPanel: { borderTopWidth: 1, borderTopColor: colors.divider, paddingTop: 16, gap: 14 },
   addHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
-  addTitle: { flex: 1, fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#111820" },
+  addTitle: { flex: 1, fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: colors.text },
   cardFieldContainer: { height: 52 },
-  cardField: { backgroundColor: "#F5F7F8", borderColor: "#E6EBEF", borderRadius: 12, borderWidth: 1, fontSize: 16 },
+  cardField: { backgroundColor: colors.cardBgMuted, borderColor: colors.divider, borderRadius: 12, borderWidth: 1, fontSize: 16 },
   secureNote: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: -4 },
-  secureText: { flex: 1, fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: "#9ca3af", lineHeight: 18 },
+  secureText: { flex: 1, fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: colors.textDisabled, lineHeight: 18 },
 
-  poweredBy: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: "#98A2AD", textAlign: "center", marginTop: 18 },
+  poweredBy: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: colors.textMuted, textAlign: "center", marginTop: 18 },
 
-  histRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, borderTopWidth: 1, borderTopColor: HAIR },
-  histTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#111820" },
-  histSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: "#69727D", marginTop: 2 },
-  histStatus: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: "#98A2AD", marginTop: 4, letterSpacing: 0.4 },
+  histRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, borderTopWidth: 1, borderTopColor: colors.divider },
+  histTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: colors.text },
+  histSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: colors.textSoft, marginTop: 2 },
+  histStatus: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: colors.textMuted, marginTop: 4, letterSpacing: 0.4 },
 
-  emptyText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: "#69727D", paddingVertical: 16 },
+  emptyText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: colors.textSoft, paddingVertical: 16 },
 });

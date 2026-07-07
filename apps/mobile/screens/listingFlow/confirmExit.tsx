@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BookmarkCheck, TriangleAlert } from "lucide-react-native";
 import { hostFlowColors, hostFlowShadow } from "./hostFlowTheme";
+import { colors } from "../../styles/theme";
 
 type ExitConfirmOptions = {
   canSave: boolean;
@@ -86,7 +87,7 @@ function ExitListingFlowConfirmModal({
               {canSave ? (
                 <BookmarkCheck size={19} color={hostFlowColors.accent} strokeWidth={2.2} />
               ) : (
-                <TriangleAlert size={18} color="#9A6700" strokeWidth={2.2} />
+                <TriangleAlert size={18} color={colors.status.pending.text} strokeWidth={2.2} />
               )}
             </View>
           </View>
@@ -114,7 +115,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(16, 20, 20, 0.42)",
   },
   sheet: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: hostFlowColors.cardBg,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderWidth: 1,
@@ -129,7 +130,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 5,
     borderRadius: 999,
-    backgroundColor: "#D5DDDD",
+    backgroundColor: hostFlowColors.border,
     marginBottom: 18,
   },
   iconRow: {
@@ -149,8 +150,8 @@ const styles = StyleSheet.create({
     borderColor: hostFlowColors.accentSoftBorder,
   },
   iconWrapWarn: {
-    backgroundColor: "#FFF8E1",
-    borderColor: "#F2D48B",
+    backgroundColor: colors.status.pending.background,
+    borderColor: colors.status.pending.border,
   },
   title: {
     color: hostFlowColors.text,
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   primaryBtnText: {
-    color: "#FFFFFF",
+    color: colors.textInverse,
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 16,
     letterSpacing: -0.2,

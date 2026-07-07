@@ -1546,13 +1546,37 @@ export async function updateListingForHost({
   }
 }
 
+// Host tenure is measured from their earliest listing, not account signup —
+// a user can sign up as a driver years before ever hosting, so account
+// created_at would overstate "hosting since" (docs/PARKING_DESIGN_BIBLE.md A10).
+const HOST_TRUST_SELECT = `
+  u.full_name AS host_name,
+  u.email_verified AS host_email_verified,
+  u.phone_verified AS host_phone_verified,
+  (SELECT MIN(l2.created_at) FROM listings l2 WHERE l2.host_id = listings.host_id) AS host_since
+`;
+const HOST_TRUST_JOIN = `LEFT JOIN users u ON u.id = listings.host_id`;
+
+function mapHostTrust(row: {
+  host_name?: string | null;
+  host_email_verified?: boolean | null;
+  host_phone_verified?: boolean | null;
+  host_since?: string | Date | null;
+}) {
+  return {
+    hostName: row.host_name ?? null,
+    hostVerified: Boolean(row.host_email_verified && row.host_phone_verified),
+    hostSince: row.host_since ? new Date(row.host_since).toISOString() : null,
+  };
+}
+
 export async function getListingById(listingId: string) {
   let result;
   try {
     result = await pool.query(
       `
       SELECT
-        id,
+        listings.id,
         title,
         address,
         price_per_day,
@@ -1571,10 +1595,12 @@ export async function getListingById(listingId: string) {
         capacity,
         description,
         ST_X(geom) AS longitude,
-        ST_Y(geom) AS latitude
+        ST_Y(geom) AS latitude,
+        ${HOST_TRUST_SELECT}
       FROM listings
-      WHERE id = $1
-        AND status <> 'archived'
+      ${HOST_TRUST_JOIN}
+      WHERE listings.id = $1
+        AND listings.status <> 'archived'
       LIMIT 1
       `,
       [listingId]
@@ -1585,7 +1611,7 @@ export async function getListingById(listingId: string) {
     result = await pool.query(
       `
       SELECT
-        id,
+        listings.id,
         title,
         address,
         price_per_day,
@@ -1604,10 +1630,12 @@ export async function getListingById(listingId: string) {
         ${optionalListingSelect(columns, "capacity", "1::integer")},
         ${optionalListingSelect(columns, "description", "NULL::text")},
         ST_X(geom) AS longitude,
-        ST_Y(geom) AS latitude
+        ST_Y(geom) AS latitude,
+        ${HOST_TRUST_SELECT}
       FROM listings
-      WHERE id = $1
-        AND status <> 'archived'
+      ${HOST_TRUST_JOIN}
+      WHERE listings.id = $1
+        AND listings.status <> 'archived'
       LIMIT 1
       `,
       [listingId]
@@ -1634,6 +1662,7 @@ export async function getListingById(listingId: string) {
     description: row.description ?? null,
     latitude: row.latitude,
     longitude: row.longitude,
+    ...mapHostTrust(row),
   };
 }
 
@@ -1642,13 +1671,20 @@ export async function getListingByIdWithAvailability(
   from: string,
   to: string
 ) {
+  // Capacity-aware, matching searchListings' already-correct check — the
+  // previous NOT EXISTS(any overlapping booking) form treated a listing with
+  // capacity > 1 as fully unavailable the moment ANY one of its spaces was
+  // booked, which would have contradicted the honest scarcity pill (E7) this
+  // field now feeds. This is a route-level fast-fail convenience only; the
+  // DB trigger (044_capacity_check_on_update.sql) remains the actual
+  // capacity safety boundary at booking time (AGENTS.md invariant 4).
   const availabilityCheck = `
-    NOT EXISTS (
-      SELECT 1 FROM bookings b
+    (
+      SELECT COUNT(*) FROM bookings b
       WHERE b.listing_id = listings.id
       AND (b.status IS NULL OR b.status <> 'canceled')
       AND tstzrange(b.start_time, b.end_time, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
-    )
+    ) < COALESCE(listings.capacity, 1)
     AND NOT EXISTS (
       SELECT 1 FROM listing_availability a
       WHERE a.listing_id = listings.id
@@ -1689,12 +1725,25 @@ export async function getListingByIdWithAvailability(
       )
     )
   `;
+  // Real overlap count for the requested window — same logic the capacity
+  // trigger (db/migrations/044_capacity_check_on_update.sql) and search
+  // (searchListings) already use. Kept separate from `is_available` above,
+  // which checks the availability *schedule*, not remaining capacity — used
+  // only for the honest scarcity pill (docs/PARKING_DESIGN_BIBLE.md E7), not
+  // for gating the booking button.
+  const bookedCountSql = `
+    (SELECT COUNT(*) FROM bookings b
+     WHERE b.listing_id = listings.id
+     AND (b.status IS NULL OR b.status <> 'canceled')
+     AND tstzrange(b.start_time, b.end_time, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+    )
+  `;
   let result;
   try {
     result = await pool.query(
       `
       SELECT
-        id,
+        listings.id,
         title,
         address,
         price_per_day,
@@ -1713,11 +1762,14 @@ export async function getListingByIdWithAvailability(
         capacity,
         description,
         (${availabilityCheck}) AS is_available,
+        ${bookedCountSql} AS booked_count,
         ST_X(geom) AS longitude,
-        ST_Y(geom) AS latitude
+        ST_Y(geom) AS latitude,
+        ${HOST_TRUST_SELECT}
       FROM listings
-      WHERE id = $1
-        AND status <> 'archived'
+      ${HOST_TRUST_JOIN}
+      WHERE listings.id = $1
+        AND listings.status <> 'archived'
       LIMIT 1
       `,
       [listingId, from, to]
@@ -1728,7 +1780,7 @@ export async function getListingByIdWithAvailability(
     result = await pool.query(
       `
       SELECT
-        id,
+        listings.id,
         title,
         address,
         price_per_day,
@@ -1747,11 +1799,14 @@ export async function getListingByIdWithAvailability(
         ${optionalListingSelect(columns, "capacity", "1::integer")},
         ${optionalListingSelect(columns, "description", "NULL::text")},
         (${availabilityCheck}) AS is_available,
+        ${bookedCountSql} AS booked_count,
         ST_X(geom) AS longitude,
-        ST_Y(geom) AS latitude
+        ST_Y(geom) AS latitude,
+        ${HOST_TRUST_SELECT}
       FROM listings
-      WHERE id = $1
-        AND status <> 'archived'
+      ${HOST_TRUST_JOIN}
+      WHERE listings.id = $1
+        AND listings.status <> 'archived'
       LIMIT 1
       `,
       [listingId, from, to]
@@ -1760,6 +1815,7 @@ export async function getListingByIdWithAvailability(
 
   if (!result.rowCount) return null;
   const row = result.rows[0];
+  const capacity = row.capacity != null ? Number(row.capacity) : 1;
   return {
     id: row.id,
     title: row.title,
@@ -1774,11 +1830,13 @@ export async function getListingByIdWithAvailability(
     hostId: row.host_id,
     rating: row.rating != null ? Number(row.rating) : null,
     ratingCount: Number(row.rating_count ?? 0),
-    capacity: row.capacity != null ? Number(row.capacity) : 1,
+    capacity,
     description: row.description ?? null,
     latitude: row.latitude,
     longitude: row.longitude,
     isAvailable: row.is_available,
+    spacesRemaining: Math.max(0, capacity - Number(row.booked_count ?? 0)),
+    ...mapHostTrust(row),
   };
 }
 

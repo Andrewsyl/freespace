@@ -300,6 +300,29 @@ async function refundOrphanPayment({
   });
 }
 
+// Refunds a top-up whose booking_payments row is already written but whose
+// window update didn't land. Must be called by whoever consumed the intent:
+// once the row exists the webhook skips the intent entirely, so nothing else
+// will ever send this money back.
+async function refundConsumedTopUp({
+  bookingId,
+  paymentIntentId,
+  kind,
+  reason,
+}: {
+  bookingId: string;
+  paymentIntentId: string;
+  kind: "extension" | "change";
+  reason: string;
+}) {
+  const refund = await createRefundSafely({ paymentIntentId, bookingId, reason });
+  await markBookingPaymentRefunded({ paymentIntentId, refundId: refund?.id ?? null });
+  await insertEventLog({
+    eventType: "booking_topup_refunded",
+    payload: { bookingId, paymentIntentId, kind, reason },
+  });
+}
+
 // Handles payment_intent.succeeded for extension/change top-ups. These
 // intents never appear in bookings.payment_intent_id, so without this they'd
 // hit the orphan path and get auto-refunded. Records the charge and — when the
@@ -340,14 +363,8 @@ async function handleTopUpPaymentSucceeded(intent: any) {
   });
   if (!isNew) return;
 
-  const refundTopUp = async (reason: string) => {
-    const refund = await createRefundSafely({ paymentIntentId, bookingId, reason });
-    await markBookingPaymentRefunded({ paymentIntentId, refundId: refund?.id ?? null });
-    await insertEventLog({
-      eventType: "booking_topup_refunded",
-      payload: { bookingId, paymentIntentId, kind, reason },
-    });
-  };
+  const refundTopUp = (reason: string) =>
+    refundConsumedTopUp({ bookingId, paymentIntentId, kind, reason });
 
   if (booking.status !== "confirmed") {
     // Booking was canceled while the user was paying — money back.
@@ -1515,6 +1532,35 @@ router.post("/:id/extend-confirm", requireAuth, enforceBlockedList, bookingLimit
       return res.status(400).json({ message: "Payment does not cover the requested extension" });
     }
 
+    // Recording the top-up doubles as consuming the intent (unique on
+    // payment_intent_id): a succeeded payment buys exactly one window update.
+    // Consume BEFORE applying — apply-then-record let the same intent be
+    // replayed with ever-later end times, each replay granting free parking up
+    // to the top-up's value. The row also keeps cancellation refunds covering
+    // the charge; the booking's own payment_intent_id stays pointed at the
+    // original charge.
+    const consumed = await insertBookingPayment({
+      bookingId,
+      paymentIntentId,
+      amountCents: intent.amount,
+      currency: intent.currency ?? "eur",
+      kind: "extension",
+    });
+    if (!consumed) {
+      // The webhook won the race and applied this extension from the intent's
+      // metadata. If the booking now covers the requested window that's a
+      // success; anything else is a replay of a spent payment.
+      const current = await getBookingForExtension({ bookingId, driverId });
+      if (current && requestedEnd.getTime() <= new Date(current.end_time).getTime()) {
+        return res.json({
+          ok: true,
+          alreadyApplied: true,
+          newEndTime: new Date(current.end_time).toISOString(),
+          newTotalCents: current.amount_cents,
+        });
+      }
+      return res.status(400).json({ message: "Payment has already been used" });
+    }
     try {
       const updated = await updateBookingExtension({
         bookingId,
@@ -1524,17 +1570,14 @@ router.post("/:id/extend-confirm", requireAuth, enforceBlockedList, bookingLimit
         receiptUrl: (intent as any).charges?.data?.[0]?.receipt_url ?? null,
       });
       if (!updated) {
+        await refundConsumedTopUp({
+          bookingId,
+          paymentIntentId,
+          kind: "extension",
+          reason: "booking_update_failed",
+        });
         return res.status(400).json({ message: "Booking cannot be extended" });
       }
-      // Record the top-up so cancellation refunds cover it. The booking's own
-      // payment_intent_id stays pointed at the original charge.
-      await insertBookingPayment({
-        bookingId,
-        paymentIntentId,
-        amountCents: intent.amount,
-        currency: intent.currency ?? "eur",
-        kind: "extension",
-      });
       res.json({
         ok: true,
         newEndTime: updated.end_time.toISOString(),
@@ -1542,6 +1585,12 @@ router.post("/:id/extend-confirm", requireAuth, enforceBlockedList, bookingLimit
       });
     } catch (error: any) {
       if (isSlotConflictError(error)) {
+        await refundConsumedTopUp({
+          bookingId,
+          paymentIntentId,
+          kind: "extension",
+          reason: "booking_conflict",
+        });
         return res.status(409).json({ message: "Time slot already booked" });
       }
       throw error;
@@ -1796,6 +1845,40 @@ router.post("/:id/change-confirm", requireAuth, enforceBlockedList, bookingLimit
       return res.status(400).json({ message: "Payment does not cover the requested change" });
     }
 
+    // Recording the top-up doubles as consuming the intent (unique on
+    // payment_intent_id): a succeeded payment buys exactly one window update.
+    // Consume BEFORE applying — apply-then-record let the same intent be
+    // replayed with ever-larger windows, each replay granting free parking up
+    // to the top-up's value. The row also keeps cancellation refunds covering
+    // the charge; the booking's own payment_intent_id stays pointed at the
+    // original charge.
+    const consumed = await insertBookingPayment({
+      bookingId,
+      paymentIntentId,
+      amountCents: intent.amount,
+      currency: intent.currency ?? "eur",
+      kind: "change",
+    });
+    if (!consumed) {
+      // The webhook won the race and applied this change from the intent's
+      // metadata. If the booking now matches the requested window that's a
+      // success; anything else is a replay of a spent payment.
+      const current = await getBookingForExtension({ bookingId, driverId });
+      if (
+        current &&
+        new Date(current.start_time).getTime() === requestedStart.getTime() &&
+        new Date(current.end_time).getTime() === requestedEnd.getTime()
+      ) {
+        return res.json({
+          ok: true,
+          alreadyApplied: true,
+          newStartTime: requestedStart.toISOString(),
+          newEndTime: requestedEnd.toISOString(),
+          newTotalCents: current.amount_cents,
+        });
+      }
+      return res.status(400).json({ message: "Payment has already been used" });
+    }
     try {
       const updated = await updateBookingWindow({
         bookingId,
@@ -1806,17 +1889,14 @@ router.post("/:id/change-confirm", requireAuth, enforceBlockedList, bookingLimit
         receiptUrl: (intent as any).charges?.data?.[0]?.receipt_url ?? null,
       });
       if (!updated) {
+        await refundConsumedTopUp({
+          bookingId,
+          paymentIntentId,
+          kind: "change",
+          reason: "booking_update_failed",
+        });
         return res.status(400).json({ message: "Booking cannot be updated" });
       }
-      // Record the top-up so cancellation refunds cover it. The booking's own
-      // payment_intent_id stays pointed at the original charge.
-      await insertBookingPayment({
-        bookingId,
-        paymentIntentId,
-        amountCents: intent.amount,
-        currency: intent.currency ?? "eur",
-        kind: "change",
-      });
       res.json({
         ok: true,
         newStartTime: updated.start_time.toISOString(),
@@ -1825,6 +1905,12 @@ router.post("/:id/change-confirm", requireAuth, enforceBlockedList, bookingLimit
       });
     } catch (error: any) {
       if (isSlotConflictError(error)) {
+        await refundConsumedTopUp({
+          bookingId,
+          paymentIntentId,
+          kind: "change",
+          reason: "booking_conflict",
+        });
         return res.status(409).json({ message: "Time slot already booked" });
       }
       throw error;

@@ -29,7 +29,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { trackEvent } from "../analytics";
 import { addMinutes, roundUpToMinuteInterval } from "../components/ModernTimePickerSheet";
 import { MapTimePickerSheet } from "../components/MapTimePickerSheet";
-import { colors, radius, spacing } from "../styles/theme";
+import { colors, primaryButtonShadow, radius, spacing } from "../styles/theme";
 import { getListing, listListingReviews, type ListingReview } from "../api";
 import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
@@ -46,6 +46,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowDownUp,
+  BadgeCheck,
   BatteryCharging,
   Bike,
   CarFront,
@@ -169,7 +170,7 @@ const getAddressWithoutHouseNumber = (address: string) => {
 
 const FeatureIcon = ({ type, size = 22 }: { type: string; size?: number }) => {
   const Icon = FEATURE_ICONS[type] ?? FEATURE_ICONS.sheltered;
-  return <Icon size={size} color="#6b7280" strokeWidth={1.75} />;
+  return <Icon size={size} color={GREEN_DARK} strokeWidth={1.75} />;
 };
 
 const AVATAR_BG = ["#CCE9E6", "#FFE4C8", "#D8E4FF", "#FFD6D6", "#D6F5E3"];
@@ -526,6 +527,25 @@ export function ListingScreen({ navigation, route }: Props) {
   const hasReviews = (listing?.rating_count ?? 0) > 0 && typeof listing?.rating === "number";
   const isAvailable = listing?.is_available !== false;
 
+  // Host trust block (docs/PARKING_DESIGN_BIBLE.md E10.1) — name + real tenure
+  // only. No response-time shown: there's no messaging/inquiry feature in
+  // this app to compute one from, and the bible's own rule is "if it isn't
+  // computed from real data, it doesn't ship."
+  const hostName = listing?.hostName?.trim() || null;
+  const hostSinceYear = listing?.hostSince ? new Date(listing.hostSince).getFullYear() : null;
+  const hostVerified = Boolean(listing?.hostVerified);
+
+  // Honest scarcity signal (E7) — only for multi-space listings where partial
+  // booking is possible; a capacity-1 listing's availability state already
+  // says everything the pill would. Silence at 5+ free spaces is deliberate
+  // (B1): plenty of supply is itself a (non-)signal, never invented urgency.
+  const spacesRemaining = listing?.spacesRemaining ?? null;
+  const showScarcityPill =
+    (listing?.capacity ?? 1) > 1 &&
+    spacesRemaining != null &&
+    spacesRemaining >= 1 &&
+    spacesRemaining < 5;
+
   const spaceTypeLabel = useMemo(() => {
     const rawType =
       (listing as { space_type?: string; spaceType?: string })?.space_type ??
@@ -817,7 +837,7 @@ export function ListingScreen({ navigation, route }: Props) {
             <Text style={styles.errorTitle}>Couldn't load this space</Text>
             <Text style={styles.errorText}>{error}</Text>
             <Pressable style={styles.errorPrimaryBtn} onPress={handleRetryListing}>
-              <RefreshCw size={16} color="#ffffff" strokeWidth={2.2} />
+              <RefreshCw size={16} color={colors.textInverse} strokeWidth={2.2} />
               <Text style={styles.errorPrimaryText}>Try again</Text>
             </Pressable>
             <Pressable style={styles.errorSecondaryBtn} onPress={() => goBackOrFallback(navigation, fallbackRoutes.search)}>
@@ -874,6 +894,13 @@ export function ListingScreen({ navigation, route }: Props) {
                   ))}
                 </View>
               ) : null}
+              {showScarcityPill ? (
+                <View style={styles.scarcityPill} pointerEvents="none">
+                  <Text style={styles.scarcityPillText}>
+                    {spacesRemaining === 1 ? "1 space left" : `${spacesRemaining} spaces left`}
+                  </Text>
+                </View>
+              ) : null}
             </Animated.View>
 
             {/* Floating controls — glass over the photo, solid over content */}
@@ -897,8 +924,8 @@ export function ListingScreen({ navigation, route }: Props) {
                     icon={(color) => (
                       <Heart
                         size={18}
-                        color={isFavorite(id) ? "#0a8050" : color}
-                        fill={isFavorite(id) ? "#0a8050" : "none"}
+                        color={isFavorite(id) ? GREEN : color}
+                        fill={isFavorite(id) ? GREEN : "none"}
                         strokeWidth={2.1}
                       />
                     )}
@@ -1009,18 +1036,18 @@ export function ListingScreen({ navigation, route }: Props) {
                     <Pressable style={styles.timeField} onPress={() => openPicker("start")}>
                       <View style={styles.timeFieldHeader}>
                         <Text style={styles.timeFieldLabel}>Arriving</Text>
-                        <ChevronDown size={14} color="#9AA4AD" strokeWidth={2.2} />
+                        <ChevronDown size={14} color={colors.textMuted} strokeWidth={2.2} />
                       </View>
                       <Text style={styles.timeFieldTime}>{formatTimeLabel(startAt)}</Text>
                       <Text style={styles.timeFieldDate}>{formatDateLabel(startAt)}</Text>
                     </Pressable>
                     <View style={styles.timeArrow}>
-                      <ArrowRight size={14} color="#9AA4AD" strokeWidth={2.3} />
+                      <ArrowRight size={14} color={colors.textMuted} strokeWidth={2.3} />
                     </View>
                     <Pressable style={styles.timeField} onPress={() => openPicker("end")}>
                       <View style={styles.timeFieldHeader}>
                         <Text style={styles.timeFieldLabel}>Leaving</Text>
-                        <ChevronDown size={14} color="#9AA4AD" strokeWidth={2.2} />
+                        <ChevronDown size={14} color={colors.textMuted} strokeWidth={2.2} />
                       </View>
                       <Text style={styles.timeFieldTime}>{formatTimeLabel(endAt)}</Text>
                       <Text style={styles.timeFieldDate}>{formatDateLabel(endAt)}</Text>
@@ -1055,6 +1082,31 @@ export function ListingScreen({ navigation, route }: Props) {
                     <Text style={styles.reserveNoteText}>Reserved instantly — free cancellation up to 2 hours before.</Text>
                   </View>
                 </View>
+
+                {/* ── Host ─────────────────────────────────── */}
+                {hostName ? (
+                  <>
+                    <View style={styles.sectionDivider} />
+                    <View style={styles.section}>
+                      <View style={styles.hostRow}>
+                        <View style={[styles.hostAvatar, { backgroundColor: avatarBg(hostName) }]}>
+                          <Text style={styles.hostAvatarText}>{hostName.charAt(0).toUpperCase()}</Text>
+                        </View>
+                        <View style={styles.hostInfo}>
+                          <View style={styles.hostNameRow}>
+                            <Text style={styles.hostName} numberOfLines={1}>{hostName}</Text>
+                            {hostVerified ? (
+                              <BadgeCheck size={15} color={GREEN} strokeWidth={2.2} />
+                            ) : null}
+                          </View>
+                          {hostSinceYear ? (
+                            <Text style={styles.hostMeta}>Hosting since {hostSinceYear}</Text>
+                          ) : null}
+                        </View>
+                      </View>
+                    </View>
+                  </>
+                ) : null}
 
                 {/* ── About ────────────────────────────────── */}
                 {aboutText ? (
@@ -1093,7 +1145,9 @@ export function ListingScreen({ navigation, route }: Props) {
                           })
                           .map((feature) => (
                             <View key={feature} style={styles.amenityItem}>
-                              <FeatureIcon type={getFeatureIconType(feature)} size={20} />
+                              <View style={styles.amenityIconWrap}>
+                                <FeatureIcon type={getFeatureIconType(feature)} size={18} />
+                              </View>
                               <Text style={styles.amenityLabel} numberOfLines={2}>{feature}</Text>
                             </View>
                           ))}
@@ -1143,7 +1197,7 @@ export function ListingScreen({ navigation, route }: Props) {
                         />
                       )}
                       <Pressable style={styles.mapExpandButton} onPress={() => setShowMapViewer(true)}>
-                        <Maximize2 size={17} color="#151b1b" strokeWidth={2} />
+                        <Maximize2 size={17} color={colors.text} strokeWidth={2} />
                       </Pressable>
                       {/* The native map draws on its own surface and ignores the
                           screen-level updating overlay, so grey it out from inside
@@ -1251,7 +1305,10 @@ export function ListingScreen({ navigation, route }: Props) {
                     </ScrollView>
                   ) : (
                     <View style={styles.reviewEmptyWrap}>
-                      <Text style={styles.reviewEmpty}>No reviews yet.</Text>
+                      <View style={styles.reviewEmptyIconWrap}>
+                        <Star size={22} color={GREEN} strokeWidth={1.8} />
+                      </View>
+                      <Text style={styles.reviewEmpty}>No reviews yet</Text>
                       <Text style={styles.reviewEmptyHint}>Be the first to park here and share your experience.</Text>
                     </View>
                   )}
@@ -1374,7 +1431,7 @@ export function ListingScreen({ navigation, route }: Props) {
               accessibilityLabel="Close"
               hitSlop={10}
             >
-              <X size={22} color="#9ca3af" strokeWidth={2.2} />
+              <X size={22} color={colors.textDisabled} strokeWidth={2.2} />
             </Pressable>
             <Text style={styles.authModalTitle}>
               <Text style={styles.authModalTitleAccent}>Log in </Text>
@@ -1475,7 +1532,7 @@ export function ListingScreen({ navigation, route }: Props) {
             onPress={closeImageViewer}
             hitSlop={8}
           >
-            <X size={20} color="#fff" strokeWidth={2.2} />
+            <X size={20} color={colors.textInverse} strokeWidth={2.2} />
           </Pressable>
           {imageUrls.length > 1 ? (
             <View style={[styles.viewerCounter, { top: insets.top + 20 }]} pointerEvents="none">
@@ -1526,37 +1583,39 @@ export function ListingScreen({ navigation, route }: Props) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design tokens (spec)
-// Same tonal system as the Discover screen — one dialect across the app.
-const GREEN      = "#0a8050";
-const GREEN_SOFT = "#edf7f2";
-const FG         = "#111827";   // primary ink
-const FG_2       = "#4A5560";   // secondary text
-const FG_MUTED   = FG_2;        // alias of FG_2 (secondary text)
-const FG_SUBTLE  = "#69727D";   // labels / meta
-const LINE       = "#DDE3E9";   // control borders (outline buttons)
-const LINE_2     = LINE;        // alias — was a duplicate of LINE
-const DIVIDER    = "#EEF1F3";   // section + row separators — hairline territory
-const BG_2       = "#F4F6F7";   // single neutral fill (chips, fields, soft cards)
-const FG_BODY    = "#4A5560";   // single body-copy colour
-const GREEN_DARK = "#0a6a40";   // green text on light fills (AA contrast)
-const HANDLE     = "#D9DCE0";   // grab handles (sheets, pickers)
+// Sourced from styles/theme.ts (see docs/PARKING_DESIGN_BIBLE.md §0) — this
+// screen already imported `colors` (line 32) but had drifted onto its own
+// parallel hex set instead of using it. Converged onto the shared tokens.
+const GREEN      = colors.primary;
+const GREEN_SOFT = colors.tileBg;
+const FG         = colors.text;       // primary ink
+const FG_2       = colors.textMuted;  // secondary text
+const FG_MUTED   = FG_2;              // alias of FG_2 (secondary text)
+const FG_SUBTLE  = colors.textSoft;   // labels / meta
+const LINE       = colors.divider;    // control borders (outline buttons)
+const LINE_2     = LINE;              // alias — was a duplicate of LINE
+const DIVIDER    = colors.divider;   // section + row separators — hairline territory
+const BG_2       = colors.cardBgMuted; // single neutral fill (chips, fields, soft cards)
+const FG_BODY    = FG_2;        // single body-copy colour
+const GREEN_DARK = colors.headerTint; // green text on light fills (AA contrast)
+const HANDLE     = colors.border;   // grab handles (sheets, pickers)
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "transparent" },
   updatingMapCover: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#F4F6F7",
+    backgroundColor: colors.cardBgMuted,
   },
   centered: {
     flex: 1, alignItems: "center", justifyContent: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     paddingHorizontal: 24,
   },
   errorIconWrap: {
     width: 56,
     height: 56,
-    borderRadius: 16,
-    backgroundColor: "#FEF2F2",
+    borderRadius: radius.cardSmall,
+    backgroundColor: colors.status.canceled.background,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -1590,7 +1649,7 @@ const styles = StyleSheet.create({
   errorPrimaryText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
-    color: "#ffffff",
+    color: colors.textInverse,
   },
   errorSecondaryBtn: {
     marginTop: 10,
@@ -1604,12 +1663,12 @@ const styles = StyleSheet.create({
   },
 
   // Skeleton
-  skeletonWrap: { flex: 1, backgroundColor: "#ffffff" },
+  skeletonWrap: { flex: 1, backgroundColor: colors.cardBg },
   skeletonBackRow: { position: "absolute", left: 16 },
   skeletonContent: { paddingHorizontal: spacing.screenX, paddingTop: 20 },
   skeletonStatsRow: {
     flexDirection: "row",
-    borderRadius: 16,
+    borderRadius: radius.cardSmall,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: DIVIDER,
     overflow: "hidden",
@@ -1638,12 +1697,33 @@ const styles = StyleSheet.create({
     flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6,
   },
   photoDot: {
-    width: 6, height: 6, borderRadius: 3,
+    width: 6, height: 6, borderRadius: radius.pill,
     backgroundColor: "rgba(255,255,255,0.5)",
   },
   photoDotActive: {
     width: 16,
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBg,
+  },
+  // Honest scarcity signal (docs/PARKING_DESIGN_BIBLE.md E7) — the one warm
+  // accent, reusing the same amber family as `colors.status.pending` so it
+  // doesn't invent a second "warning" language. Fully opaque, not a light
+  // overlay — floating chrome over a photo must hold contrast on its own (A5).
+  scarcityPill: {
+    position: "absolute",
+    bottom: 44,
+    left: 16,
+    backgroundColor: colors.status.pending.background,
+    borderColor: colors.status.pending.border,
+    borderWidth: 1,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  scarcityPillText: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 11,
+    color: colors.status.pending.text,
+    letterSpacing: 0.1,
   },
 
   // Floating controls
@@ -1654,7 +1734,7 @@ const styles = StyleSheet.create({
   headerRightColumn: { alignItems: "flex-end", gap: 10 },
   headerRight: { flexDirection: "row", gap: 10 },
   glassBtn: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 40, height: 40, borderRadius: radius.pill,
     backgroundColor: "rgba(0,0,0,0.32)",
     alignItems: "center", justifyContent: "center", position: "relative",
     // No shadow/elevation: on Android, elevation over a translucent background
@@ -1664,10 +1744,10 @@ const styles = StyleSheet.create({
   // Solid state needs its own definition — a white disc over white content
   // would otherwise dissolve into the page.
   glassBtnSolid: {
-    backgroundColor: "#ffffff",
-    borderRadius: 20,
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: "#E3E8ED",
+    borderColor: colors.divider,
   },
   glassIconTop: {
     alignItems: "center",
@@ -1679,10 +1759,10 @@ const styles = StyleSheet.create({
 
   // Sheet — floating surface, gets the sheet shadow
   sheet: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     position: "relative",
     zIndex: 3,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet,
     paddingHorizontal: spacing.screenX,
     paddingTop: 12, paddingBottom: 20,
     shadowColor: "#111111",
@@ -1692,7 +1772,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   sheetHandle: {
-    width: 40, height: 4, borderRadius: 999,
+    width: 40, height: 4, borderRadius: radius.pill,
     backgroundColor: HANDLE,
     alignSelf: "center", marginBottom: 12,
   },
@@ -1707,35 +1787,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
 
-  // kept for any remaining references
-  factRows: { gap: 8, paddingBottom: 2 },
-  factRow:   { flexDirection: "row", alignItems: "center", gap: 7 },
-  factRowSecondary: { flexDirection: "row", alignItems: "center", gap: 7 },
-  factLine: { flex: 1, minWidth: 0 },
-  factIcon: { width: 17, textAlign: "center" },
-  factText: { flex: 1, fontSize: 13 },
-  factVal:  { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
-  factMuted:{ fontFamily: "PlusJakartaSans-Regular",  fontSize: 13, color: FG_SUBTLE },
-
   // ── Overview — title + meta line (rebuild) ───────────────────────────────────
   overview: { paddingTop: 4, paddingBottom: 20, gap: 10 },
   sheetTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 23, lineHeight: 29, letterSpacing: -0.4, color: FG },
   metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 5 },
-  metaStrong: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13.5, color: FG },
-  metaMuted: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13.5, color: FG_SUBTLE, flexShrink: 1 },
-  metaDot: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13.5, color: FG_SUBTLE, marginHorizontal: 2 },
-  factsCard: {
-    flexDirection: "row", alignItems: "stretch",
-    borderWidth: 1, borderColor: DIVIDER, borderRadius: 16,
-    backgroundColor: "#ffffff", overflow: "hidden",
-  },
-  factCell: { flex: 1, paddingVertical: 14, paddingHorizontal: 12, gap: 4 },
-  factCellDivider: { width: 1, backgroundColor: DIVIDER },
-  factCellLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 10.5, letterSpacing: 0.6, textTransform: "uppercase", color: FG_SUBTLE,
-  },
-  factCellValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 14, color: FG, letterSpacing: -0.2 },
+  metaStrong: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
+  metaMuted: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, flexShrink: 1 },
+  metaDot: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, marginHorizontal: 2 },
 
   // ── Airbnb-style time pickers ──────────────────────────────────────────────
   bookingHeader: {
@@ -1773,7 +1831,7 @@ const styles = StyleSheet.create({
   // micro-labels, the time is the loudest thing in the field.
   timeFieldLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11.5, color: "#8A94A0",
+    fontSize: 12, color: colors.textMuted,
     letterSpacing: -0.1,
   },
   timeFieldTime: {
@@ -1792,14 +1850,24 @@ const styles = StyleSheet.create({
     fontSize: 14, color: GREEN, marginTop: 10,
   },
 
-  // ── Reviews: empty state ───────────────────────────────────────────────────
+  // ── Reviews: empty state (icon+title+hint, matches HistoryScreen's pattern
+  // rather than two bare centred lines) ───────────────────────────────────
   reviewEmptyWrap: {
-    paddingVertical: 20,
+    paddingVertical: 24,
     paddingHorizontal: 16,
     backgroundColor: BG_2,
-    borderRadius: 16,
+    borderRadius: radius.cardSmall,
     marginTop: 8,
     alignItems: "center",
+  },
+  reviewEmptyIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.pill,
+    backgroundColor: GREEN_SOFT,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
   },
   reviewEmpty: {
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -1819,7 +1887,7 @@ const styles = StyleSheet.create({
   // not green, so it reads as a distinct upsell and never competes with the
   // green "Book now" primary CTA.
   extendBar: {
-    backgroundColor: "#111827",
+    backgroundColor: colors.text,
     borderRadius: 16,
     paddingVertical: 15,
     paddingHorizontal: 18,
@@ -1830,25 +1898,25 @@ const styles = StyleSheet.create({
   extendBarPressed: { opacity: 0.85 },
   extendBarText: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 14.5, color: "#ffffff", letterSpacing: -0.2,
+    fontSize: 14, color: colors.textInverse, letterSpacing: -0.2,
   },
   extendBarPrice: { fontFamily: "PlusJakartaSans-ExtraBold" },
   // Quiet, factual — a helpful fact, not a flashing badge.
   extendBarSaving: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    color: "#5FD3A3",
+    color: colors.mint,
   },
 
   // Sections
   sectionDivider: {
     height: 1,
-    backgroundColor: "#E3E7EC",
+    backgroundColor: colors.divider,
     marginHorizontal: 0,
   },
   // ── Availability — grouped ranges, whitespace not dividers ──
   availCard: {
-    backgroundColor: "#F7F9FA",
-    borderRadius: 18,
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: radius.cardSmall,
     paddingVertical: 18,
     paddingHorizontal: 18,
   },
@@ -1858,27 +1926,27 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2,
   },
   availRange: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 15.5, color: FG, letterSpacing: -0.3,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG, letterSpacing: -0.3,
   },
   availRangeMuted: { color: FG_SUBTLE },
   availHours: {
-    fontFamily: "PlusJakartaSans-Medium", fontSize: 14.5, color: FG_2, letterSpacing: -0.1,
+    fontFamily: "PlusJakartaSans-Medium", fontSize: 14, color: FG_2, letterSpacing: -0.1,
   },
-  availHoursClosed: { color: "#98A2AD" },
+  availHoursClosed: { color: colors.textMuted },
   availTodayChip: {
-    backgroundColor: GREEN_SOFT, borderRadius: 999,
+    backgroundColor: GREEN_SOFT, borderRadius: radius.pill,
     paddingHorizontal: 8, paddingVertical: 2,
   },
   availTodayChipText: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 10.5, color: GREEN_DARK, letterSpacing: 0.2,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 11, color: GREEN_DARK, letterSpacing: 0.2,
   },
   section: { paddingVertical: 20 },
   sectionTitle: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 17, lineHeight: 21, color: FG, letterSpacing: -0.3, marginBottom: 8,
   },
-  sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14.5, lineHeight: 22, color: FG_BODY },
-  gettingThereLine: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14.5, lineHeight: 21, color: FG_2, marginBottom: 2 },
+  sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, lineHeight: 22, color: FG_BODY },
+  gettingThereLine: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, lineHeight: 21, color: FG_2, marginBottom: 2 },
 
   // Local area map
   localAreaMap: {
@@ -1889,7 +1957,7 @@ const styles = StyleSheet.create({
   localAreaMapWrap: {
     position: "relative",
     overflow: "hidden",
-    borderRadius: 18,
+    borderRadius: radius.cardSmall,
     backgroundColor: BG_2,
     marginBottom: 0,
     borderWidth: 1,
@@ -1905,7 +1973,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 110,
     height: 110,
-    borderRadius: 55,
+    borderRadius: radius.pill,
     backgroundColor: "rgba(10,128,80,0.14)",
     borderWidth: 1,
     borderColor: "rgba(10,128,80,0.22)",
@@ -1913,8 +1981,8 @@ const styles = StyleSheet.create({
   listingMapMarkerBubble: {
     alignItems: "center",
     backgroundColor: GREEN,
-    borderColor: "#FFFFFF",
-    borderRadius: 19,
+    borderColor: colors.cardBg,
+    borderRadius: radius.pill,
     borderWidth: 3,
     height: 38,
     justifyContent: "center",
@@ -1927,8 +1995,8 @@ const styles = StyleSheet.create({
   },
   mapExpandButton: {
     position: "absolute", top: 10, right: 10,
-    width: 34, height: 34, borderRadius: 17,
-    backgroundColor: "#ffffff",
+    width: 34, height: 34, borderRadius: radius.pill,
+    backgroundColor: colors.cardBg,
     alignItems: "center", justifyContent: "center",
     shadowColor: "#0B1220",
     shadowOffset: { width: 0, height: 4 },
@@ -1940,7 +2008,7 @@ const styles = StyleSheet.create({
   featureChip: {
     flexDirection: "row", alignItems: "center", gap: 8,
     backgroundColor: BG_2,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     paddingHorizontal: 12, paddingVertical: 10,
   },
   featureChipIconWrap: {
@@ -1953,7 +2021,17 @@ const styles = StyleSheet.create({
   // Amenities — 2-column icon list (rebuild)
   amenityGrid: { flexDirection: "row", flexWrap: "wrap" },
   amenityItem: { width: "50%", flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, paddingRight: 8 },
-  amenityLabel: { flex: 1, fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 18, color: FG_2 },
+  // Categorised content tile treatment (docs/PARKING_DESIGN_BIBLE.md E4) — a
+  // tinted icon wrap + bold label, not a bare icon next to regular text.
+  amenityIconWrap: {
+    alignItems: "center",
+    backgroundColor: GREEN_SOFT,
+    borderRadius: radius.md,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  amenityLabel: { flex: 1, fontFamily: "PlusJakartaSans-Bold", fontSize: 14, lineHeight: 18, color: FG_2 },
 
   // Guarantee strip
 
@@ -1970,14 +2048,14 @@ const styles = StyleSheet.create({
   // rest of the app never uses.
   reviewTile: {
     width: 260,
-    backgroundColor: "#F7F9FA",
-    borderRadius: 18,
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: radius.cardSmall,
     padding: 16,
   },
   reviewCardTop: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   reviewAvatar: {
     width: 36, height: 36, borderRadius: 16,
-    backgroundColor: "#EDF7F2",
+    backgroundColor: colors.tileBg,
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
   reviewAvatarText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG },
@@ -1986,7 +2064,7 @@ const styles = StyleSheet.create({
   reviewDateText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: FG_SUBTLE },
   reviewStarPill: {
     flexDirection: "row", alignItems: "center", gap: 3,
-    backgroundColor: "#ffffff", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
+    backgroundColor: colors.cardBg, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 6,
   },
   reviewStarPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
   reviewComment: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 21, color: FG_BODY },
@@ -1998,22 +2076,22 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(17, 17, 17, 0.45)",
   },
   authModalSheet: {
-    backgroundColor: "#ffffff",
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: colors.cardBg,
+    borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet,
     paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28,
     shadowColor: "#111111",
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.08, shadowRadius: 20, elevation: 16,
+    shadowOpacity: 0.08, shadowRadius: 16, elevation: 8,
   },
   authModalHandle: {
     alignSelf: "center",
-    width: 40, height: 5, borderRadius: 999,
+    width: 40, height: 5, borderRadius: radius.pill,
     backgroundColor: HANDLE,
     marginBottom: 16,
   },
   authModalClose: {
     position: "absolute", top: 14, right: 14,
-    width: 32, height: 32, borderRadius: 16,
+    width: 32, height: 32, borderRadius: radius.pill,
     alignItems: "center", justifyContent: "center",
   },
   authModalTitle: {
@@ -2028,9 +2106,9 @@ const styles = StyleSheet.create({
     color: FG_MUTED, marginBottom: 20,
   },
   authModalOutlineBtn: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderWidth: 1, borderColor: LINE,
-    height: 50, borderRadius: 12,
+    height: 50, borderRadius: 14,
     flexDirection: "row", alignItems: "center", justifyContent: "center",
     marginBottom: 10, paddingHorizontal: 16,
   },
@@ -2050,12 +2128,12 @@ const styles = StyleSheet.create({
   },
   authModalCreateBtn: {
     backgroundColor: GREEN,
-    height: 50, borderRadius: 12,
+    height: 50, borderRadius: 14,
     alignItems: "center", justifyContent: "center",
     shadowColor: "#0a7a50", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.16, shadowRadius: 10, elevation: 3,
   },
   authModalCreateText: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#ffffff", letterSpacing: -0.2,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: colors.textInverse, letterSpacing: -0.2,
   },
   authModalLegal: {
     fontFamily: "PlusJakartaSans-Regular",
@@ -2068,7 +2146,7 @@ const styles = StyleSheet.create({
   // Bottom dock — fixed, border-top separator, sheet shadow
   bottomBar: {
     position: "absolute", bottom: 0, left: 0, right: 0,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: DIVIDER,
     paddingHorizontal: 16, paddingTop: 12,
     minHeight: 80,
@@ -2086,7 +2164,7 @@ const styles = StyleSheet.create({
   },
   bottomPriceSuffix: {
     fontFamily: "PlusJakartaSans-Medium",
-    fontSize: 13, color: "#98A2AD", letterSpacing: -0.1,
+    fontSize: 13, color: colors.textMuted, letterSpacing: -0.1,
   },
   // Matches the resting height of price + duration so the bar never jumps
   // while a new quote is in flight.
@@ -2105,9 +2183,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.45)",
   },
   pickerSheet: {
-    backgroundColor: "#ffffff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: colors.cardBg,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
     paddingTop: 12,
     paddingBottom: 36,
     alignItems: "center",
@@ -2119,7 +2197,7 @@ const styles = StyleSheet.create({
   pickerHandle: {
     width: 36,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radius.pill,
     backgroundColor: HANDLE,
     marginBottom: 18,
   },
@@ -2140,44 +2218,40 @@ const styles = StyleSheet.create({
     height: 52,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#0a7a50",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
+    ...primaryButtonShadow,
   },
   pickerDoneBtnText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 16,
-    color: "#ffffff",
+    color: colors.textInverse,
     letterSpacing: -0.3,
   },
 
   // Image / map viewer
-  viewerBackdrop: { flex: 1, backgroundColor: "#000" },
+  viewerBackdrop: { flex: 1, backgroundColor: colors.text },
   viewerGlassClose: {
     position: "absolute", left: 16, zIndex: 2,
-    width: 38, height: 38, borderRadius: 19,
+    width: 38, height: 38, borderRadius: radius.pill,
     backgroundColor: "rgba(255,255,255,0.16)",
     alignItems: "center", justifyContent: "center",
   },
   viewerCounter: {
     position: "absolute", alignSelf: "center", zIndex: 2,
-    backgroundColor: "rgba(255,255,255,0.16)", borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.16)", borderRadius: radius.pill,
     paddingHorizontal: 12, paddingVertical: 5,
   },
   viewerCounterText: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: "#fff",
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: colors.textInverse,
     letterSpacing: 0.6, fontVariant: ["tabular-nums"],
   },
-  mapViewerScreen: { flex: 1, backgroundColor: "#fff" },
+  mapViewerScreen: { flex: 1, backgroundColor: colors.cardBg },
   mapViewerClose: { backgroundColor: "rgba(17,17,17,0.74)" },
   viewerClose: {
     position: "absolute", right: 16,
     paddingHorizontal: 14, paddingVertical: 8,
-    backgroundColor: "rgba(255,255,255,0.14)", borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.14)", borderRadius: radius.pill,
   },
-  viewerCloseText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: "#fff" },
+  viewerCloseText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: colors.textInverse },
 
   // Trust notes (below time picker)
   trustNotes: { gap: 7, marginTop: 10 },
@@ -2187,6 +2261,18 @@ const styles = StyleSheet.create({
   // Reserve note — single certainty line (rebuild)
   reserveNote: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 },
   reserveNoteText: { flex: 1, fontFamily: "PlusJakartaSans-Medium", fontSize: 13, lineHeight: 18, color: FG_2 },
+
+  // ── Host trust block (E10.1) — name + real tenure, no fabricated stats ──
+  hostRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  hostAvatar: {
+    width: 44, height: 44, borderRadius: radius.pill,
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  hostAvatarText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG },
+  hostInfo: { flex: 1, minWidth: 0 },
+  hostNameRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  hostName: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG, letterSpacing: -0.2, flexShrink: 1 },
+  hostMeta: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, marginTop: 2 },
 
   // Feature list (replaces pill chips)
 

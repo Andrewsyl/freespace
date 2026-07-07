@@ -12,9 +12,10 @@ import type { AuthReturnTo, RootStackParamList } from "../types";
 import freeSpaceLogo from "../assets/freespace-logo-grid-black.png";
 import { trackEvent } from "../analytics";
 import { logInfo, logWarn } from "../logger";
+import { colors } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Welcome">;
-const AUTH_GREEN = "#0a8050";
+const AUTH_GREEN = colors.primary;
 
 export function WelcomeScreen({ navigation, route }: Props) {
   const { user, loginWithOAuth } = useAuth();
@@ -200,7 +201,7 @@ export function WelcomeScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.cardBg,
     justifyContent: "center",
     paddingHorizontal: 20,
   },
@@ -237,17 +238,17 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 28,
     letterSpacing: -0.4,
-    color: "#111827",
+    color: colors.text,
     marginBottom: 10,
   },
   authTitleAccent: {
-    color: "#0a8050",
+    color: colors.primary,
   },
   authBody: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 15,
     lineHeight: 22,
-    color: "#6B7280",
+    color: colors.textMuted,
   },
   authOutlineBtn: {
     width: "100%",
@@ -255,8 +256,8 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#D9DEDE",
-    backgroundColor: "#FFFFFF",
+    borderColor: colors.border,
+    backgroundColor: colors.cardBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -270,7 +271,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   authOutlineText: {
-    color: "#111827",
+    color: colors.text,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 16,
     letterSpacing: -0.2,
@@ -286,20 +287,20 @@ const styles = StyleSheet.create({
   authDividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#D9DEDE",
+    backgroundColor: colors.border,
   },
   authDividerText: {
     marginHorizontal: 12,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
-    color: "#6B7280",
+    color: colors.textMuted,
   },
   authCreateBtn: {
     width: "100%",
     maxWidth: 360,
     minHeight: 52,
     borderRadius: 16,
-    backgroundColor: "#0a8050",
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
@@ -313,7 +314,7 @@ const styles = StyleSheet.create({
     opacity: 0.95,
   },
   authCreateText: {
-    color: "#ffffff",
+    color: colors.textInverse,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 16,
     letterSpacing: -0.2,
@@ -321,7 +322,7 @@ const styles = StyleSheet.create({
   errorText: {
     marginTop: 16,
     fontSize: 14,
-    color: "#D14343",
+    color: colors.danger,
     textAlign: "center",
     maxWidth: 360,
   },
@@ -332,10 +333,10 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     lineHeight: 18,
-    color: "#6B7280",
+    color: colors.textMuted,
   },
   legalLink: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    color: "#0a8050",
+    color: colors.primary,
   },
 });

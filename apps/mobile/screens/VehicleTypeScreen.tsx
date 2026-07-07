@@ -22,6 +22,7 @@ import { DetailNavBar, FieldRow, SectionTitle } from "../components/profileUi";
 import type { RootStackParamList } from "../types";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
+import { colors } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "VehicleType">;
 
@@ -218,7 +219,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <DetailNavBar title="Vehicle" onBack={() => goBackOrFallback(navigation, fallbackRoutes.profile)} />
         <SignInWall
-          icon={<Car size={26} color="#0a8050" strokeWidth={2.2} />}
+          icon={<Car size={26} color={GREEN} strokeWidth={2.2} />}
           title="Sign in to save your vehicle"
           body="Your vehicle details are stored securely on your account for faster checkout."
           onSignIn={() => navigation.navigate("Welcome")}
@@ -246,7 +247,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
               {selectedMake ? (
                 <VehicleBrandLogo make={selectedMake} size={54} />
               ) : (
-                <Car size={34} color="#98A2AD" strokeWidth={1.8} />
+                <Car size={34} color={colors.textMuted} strokeWidth={1.8} />
               )}
             </View>
             <Pressable style={styles.plateTap} onPress={() => plateInputRef.current?.focus()}>
@@ -261,7 +262,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
                     value={plate}
                     onChangeText={(v) => setPlate(formatIrishPlate(v))}
                     placeholder="191-D-12345"
-                    placeholderTextColor="#b0b8c8"
+                    placeholderTextColor={colors.textDisabled}
                     autoCapitalize="characters"
                     autoCorrect={false}
                     textAlign="center"
@@ -305,14 +306,14 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
             </Pressable>
           </View>
           <View style={styles.sheetSearchWrap}>
-            <Search size={16} color="#9ca3af" strokeWidth={2} />
+            <Search size={16} color={colors.textDisabled} strokeWidth={2} />
             <TextInput
               ref={makeSearchRef}
               style={styles.sheetSearchInput}
               value={makeSearch}
               onChangeText={setMakeSearch}
               placeholder="Search makes…"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={colors.textDisabled}
               autoCapitalize="words"
               autoCorrect={false}
               returnKeyType="search"
@@ -423,13 +424,15 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
   );
 }
 
-const GREEN = "#0a8050";
-const FG    = "#111820";
-const LINE  = "#EEF0F2";
-const MUTED = "#6b7280";
+// Sourced from styles/theme.ts (see docs/PARKING_DESIGN_BIBLE.md §0) — kept as
+// local aliases so the styles below don't need touching one by one.
+const GREEN = colors.primary;
+const FG    = colors.text;
+const LINE  = colors.divider;
+const MUTED = colors.textMuted;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, backgroundColor: colors.cardBg },
   flex: { flex: 1 },
 
   content: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 24 },
@@ -441,7 +444,7 @@ const styles = StyleSheet.create({
   },
   plateTap: { width: "100%", alignItems: "center" },
   plateEditHint: {
-    fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: "#98A2AD",
+    fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: colors.textMuted,
     marginTop: 12, textAlign: "center",
   },
 
@@ -450,25 +453,25 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: LINE,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.cardBg,
   },
   errorText: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
-    color: "#DC2626", textAlign: "center", marginBottom: 8,
+    color: colors.danger, textAlign: "center", marginBottom: 8,
   },
 
   // Registration plate (inline on page)
   plateWrap: {
     flexDirection: "row", width: "100%",
     borderRadius: 11, borderWidth: 2, borderColor: "#3D6FB6",
-    overflow: "hidden", backgroundColor: "#ffffff",
+    overflow: "hidden", backgroundColor: colors.cardBg,
     shadowColor: "#3D6FB6", shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12, shadowRadius: 8, elevation: 3,
   },
   plateEuStripe: { width: 44, backgroundColor: "#3D6FB6", alignItems: "center", justifyContent: "center" },
   plateEuText: {
     fontFamily: "PlusJakartaSans-Bold", fontSize: 10,
-    color: "#ffffff", letterSpacing: 1.2, textTransform: "uppercase",
+    color: colors.textInverse, letterSpacing: 1.2, textTransform: "uppercase",
   },
   plateBody: { flex: 1, paddingHorizontal: 16, paddingVertical: 16, alignItems: "center", justifyContent: "center" },
   plateInput: {
@@ -485,37 +488,37 @@ const styles = StyleSheet.create({
   colourRing: { padding: 3, borderRadius: 999, borderWidth: 2.5, borderColor: "transparent" },
   colourRingActive: { borderColor: GREEN },
   colourCircle: { width: 46, height: 46, borderRadius: 23 },
-  colourCircleBorder: { borderWidth: 1.5, borderColor: "#E5E7EB" },
+  colourCircleBorder: { borderWidth: 1.5, borderColor: colors.divider },
   colourName: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: MUTED, textAlign: "center" },
   colourNameActive: { fontFamily: "PlusJakartaSans-SemiBold", color: GREEN },
 
   // Picker sheets
-  sheetContainer: { flex: 1, backgroundColor: "#ffffff" },
+  sheetContainer: { flex: 1, backgroundColor: colors.cardBg },
   sheetHeader: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingVertical: 16,
-    borderBottomWidth: 1, borderBottomColor: "#E5E7EB",
+    borderBottomWidth: 1, borderBottomColor: colors.divider,
   },
   sheetTitle: { fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 18, color: FG, letterSpacing: -0.3 },
   sheetClose: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6",
+    width: 36, height: 36, borderRadius: 18, backgroundColor: colors.cardBgMuted,
     alignItems: "center", justifyContent: "center",
   },
   sheetSearchWrap: {
     flexDirection: "row", alignItems: "center", gap: 10,
     marginHorizontal: 16, marginVertical: 12,
-    borderWidth: 1.5, borderColor: "#E5E7EB", borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 12, backgroundColor: "#F9FAFB",
+    borderWidth: 1.5, borderColor: colors.divider, borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 12, backgroundColor: colors.cardBgMuted,
   },
   sheetSearchInput: { flex: 1, fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: FG, padding: 0 },
   sheetListContent: { paddingBottom: 24 },
   sheetRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 20, paddingVertical: 16 },
-  sheetRowActive: { backgroundColor: "#F0FAF6" },
+  sheetRowActive: { backgroundColor: colors.accentSoft },
   sheetRowLogo: {
-    width: 40, height: 40, borderRadius: 10, backgroundColor: "#F9FAFB",
-    borderWidth: 1, borderColor: "#E5E7EB", alignItems: "center", justifyContent: "center",
+    width: 40, height: 40, borderRadius: 10, backgroundColor: colors.cardBgMuted,
+    borderWidth: 1, borderColor: colors.divider, alignItems: "center", justifyContent: "center",
   },
   sheetRowText: { flex: 1, fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: FG },
   sheetRowTextActive: { color: GREEN },
-  sheetSeparator: { height: 1, backgroundColor: "#F3F4F6", marginLeft: 20 },
+  sheetSeparator: { height: 1, backgroundColor: colors.cardBgMuted, marginLeft: 20 },
 });

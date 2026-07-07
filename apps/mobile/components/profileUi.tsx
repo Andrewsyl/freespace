@@ -11,12 +11,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, ChevronRight, X } from "lucide-react-native";
+import { colors } from "../styles/theme";
 
-const INK = "#111820";
-const MUTED = "#69727D";
-const FAINT = "#98A2AD";
-const CHEV = "#9AA4AD";
-const DANGER = "#B4402E";
+const INK = colors.text;
+const MUTED = colors.textSoft;
+const FAINT = colors.textMuted;
+const CHEV = colors.textMuted;
+const DANGER = colors.danger;
 
 /** Centred bold nav bar used across every Profile sub-page. */
 export function DetailNavBar({ title, onBack }: { title: string; onBack: () => void }) {
@@ -142,7 +143,7 @@ export function FieldEditSheet({
           />
           {value.length > 0 ? (
             <Pressable onPress={() => setValue("")} hitSlop={10} style={s.clearBtn} accessibilityLabel="Clear">
-              <X size={14} color="#FFFFFF" strokeWidth={2.8} />
+              <X size={14} color={colors.textInverse} strokeWidth={2.8} />
             </Pressable>
           ) : null}
         </View>
@@ -160,7 +161,7 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.cardBg,
   },
   backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center", marginLeft: -6 },
   navTitle: {
@@ -170,7 +171,7 @@ const s = StyleSheet.create({
   navSpacer: { width: 38 },
   navSave: { minWidth: 38, height: 38, alignItems: "flex-end", justifyContent: "center" },
   navSaveText: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 15.5, color: "#0a8050", letterSpacing: -0.1,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 15.5, color: colors.primary, letterSpacing: -0.1,
   },
   navSaveDisabled: { color: FAINT },
 
@@ -193,12 +194,12 @@ const s = StyleSheet.create({
   },
   danger: { color: DANGER },
 
-  page: { flex: 1, backgroundColor: "#FFFFFF" },
+  page: { flex: 1, backgroundColor: colors.cardBg },
   editLabel: {
     fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: INK, letterSpacing: -0.3,
     paddingHorizontal: 20, paddingTop: 26, paddingBottom: 14,
   },
-  editRule: { height: StyleSheet.hairlineWidth, backgroundColor: "#DFE4E9" },
+  editRule: { height: StyleSheet.hairlineWidth, backgroundColor: colors.divider },
   editRow: {
     flexDirection: "row", alignItems: "center", gap: 12,
     paddingHorizontal: 20, paddingVertical: 16,
@@ -211,7 +212,7 @@ const s = StyleSheet.create({
   clearBtn: {
     width: 26, height: 26, borderRadius: 13,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "#B4BEC7",
+    backgroundColor: colors.textDisabled,
   },
   editHelp: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: MUTED, lineHeight: 20,

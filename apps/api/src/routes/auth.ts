@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { createRemoteJWKSet, errors as joseErrors, jwtVerify } from "jose";
 import {
   comparePassword,
   generateRefreshToken,
@@ -339,6 +339,8 @@ const appleOAuthSchema = z.object({
 
 const APPLE_ISSUER = "https://appleid.apple.com";
 const appleJwks = createRemoteJWKSet(new URL("https://appleid.apple.com/auth/keys"));
+const GOOGLE_ISSUERS = ["https://accounts.google.com", "accounts.google.com"];
+const googleJwks = createRemoteJWKSet(new URL("https://www.googleapis.com/oauth2/v3/certs"));
 
 router.post("/oauth/apple", enforceBlockedList, oauthLimiter, async (req, res, next) => {
   try {
@@ -412,27 +414,35 @@ router.post("/oauth/apple", enforceBlockedList, oauthLimiter, async (req, res, n
 router.post("/oauth/google", enforceBlockedList, oauthLimiter, async (req, res, next) => {
   try {
     const { idToken } = googleOAuthSchema.parse(req.body);
-    const response = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
-    );
-    if (!response.ok) {
-      return res.status(401).json({ message: "Invalid Google token" });
-    }
-    const payload = (await response.json()) as {
-      aud?: string;
-      email?: string;
-      email_verified?: string;
-      name?: string;
-    };
-    if (!payload.email) {
-      return res.status(400).json({ message: "Google account missing email" });
-    }
     const acceptedAudiences = [
       process.env.GOOGLE_OAUTH_CLIENT_ID,
       process.env.GOOGLE_IOS_CLIENT_ID,
     ].filter((value): value is string => Boolean(value));
-    if (acceptedAudiences.length > 0 && (!payload.aud || !acceptedAudiences.includes(payload.aud))) {
-      return res.status(401).json({ message: "Invalid Google token audience" });
+    let payload: {
+      aud?: string;
+      email?: string;
+      email_verified?: string | boolean;
+      name?: string;
+    };
+    try {
+      const verified = await jwtVerify(idToken, googleJwks, {
+        issuer: GOOGLE_ISSUERS,
+        audience: acceptedAudiences.length > 0 ? acceptedAudiences : undefined,
+      });
+      payload = verified.payload as typeof payload;
+    } catch (error) {
+      if (
+        error instanceof joseErrors.JWTInvalid ||
+        error instanceof joseErrors.JWTExpired ||
+        error instanceof joseErrors.JWSSignatureVerificationFailed ||
+        error instanceof joseErrors.JWTClaimValidationFailed
+      ) {
+        return res.status(401).json({ message: "Invalid Google token" });
+      }
+      return res.status(503).json({ message: "Google sign-in is temporarily unavailable" });
+    }
+    if (!payload.email) {
+      return res.status(400).json({ message: "Google account missing email" });
     }
     let user = await findUserByEmail(payload.email);
     if (!user) {

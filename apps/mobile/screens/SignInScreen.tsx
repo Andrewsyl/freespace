@@ -20,7 +20,7 @@ import { Button, TextInput as AppTextInput } from "../components/ui";
 import { colors, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
-const AUTH_GREEN = "#0a8050";
+const AUTH_GREEN = colors.primary;
 
 export function SignInScreen({ navigation, route }: Props) {
   const { login } = useAuth();
@@ -131,7 +131,7 @@ export function SignInScreen({ navigation, route }: Props) {
       >
         <View style={styles.navBar}>
           <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8} accessibilityLabel="Go back">
-            <ArrowLeft size={22} color="#111827" strokeWidth={2.2} />
+            <ArrowLeft size={22} color={colors.text} strokeWidth={2.2} />
           </Pressable>
         </View>
         <ScrollView
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 18,
-    backgroundColor: "#edf7f2",
+    backgroundColor: colors.tileBg,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 18,

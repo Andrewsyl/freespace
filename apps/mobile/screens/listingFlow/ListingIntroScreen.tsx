@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SquircleBtn } from "../../components/SquircleBtn";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { X, MapPin, Camera, CircleDollarSign } from "lucide-react-native";
+import { colors } from "../../styles/theme";
 import { hostFlowColors } from "./hostFlowTheme";
 import { BanknoteSvg } from "../../components/BanknoteSvg";
 import { spacing } from "../../styles/theme";
@@ -66,7 +67,7 @@ export function ListingIntroScreen({ navigation }: Props) {
               <View key={phase.label} style={styles.phaseRow}>
                 <View style={styles.phaseLeft}>
                   <View style={styles.phaseIconWrap}>
-                    <Icon size={18} color="#ffffff" strokeWidth={2} />
+                    <Icon size={18} color={colors.textInverse} strokeWidth={2} />
                   </View>
                   {i < PHASES.length - 1 ? <View style={styles.phaseLine} /> : null}
                 </View>

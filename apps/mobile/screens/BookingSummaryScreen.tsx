@@ -38,6 +38,7 @@ import { useGlobalLoading } from "../components/GlobalLoading";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import { Button, SkeletonBlock, usePulse } from "../components/ui";
+import { colors } from "../styles/theme";
 import { isMobileE2EActive } from "../e2e/testMode";
 import { trackEvent } from "../analytics";
 import type { ListingDetail, RootStackParamList } from "../types";
@@ -670,7 +671,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
       {/* Nav bar */}
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => goBackOrFallback(navigation, fallbackRoutes.search)}>
-          <ArrowLeft size={22} color="#111827" />
+          <ArrowLeft size={22} color={colors.text} />
         </Pressable>
         <Text style={styles.navTitle}>Confirm booking</Text>
         <View style={styles.headerSpacer} />
@@ -748,7 +749,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 </View>
                 {selectedTimeUnavailable ? (
                   <Pressable style={styles.timeUnavailableCard} onPress={() => openPicker("start")}>
-                    <CircleX size={16} color="#B42318" strokeWidth={2.2} />
+                    <CircleX size={16} color={colors.danger} strokeWidth={2.2} />
                     <View style={styles.timeUnavailableCopy}>
                       <Text style={styles.timeUnavailableTitle}>This time is unavailable</Text>
                       <Text style={styles.timeUnavailableBody}>Choose another arrival time to continue.</Text>
@@ -966,7 +967,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 </View>
                 <View style={[styles.stripeRow, { marginTop: 10 }]}>
                   <Lock size={10} color={SUBTLE} strokeWidth={2.2} />
-                  <Text style={styles.stripeText}>Powered by Stripe · trusted by millions of businesses</Text>
+                  <Text style={styles.stripeText}>Powered by Stripe</Text>
                 </View>
               </View>
             </View>
@@ -1032,14 +1033,18 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   );
 }
 
-const GREEN  = "#0a8050";
-const LINE   = "#E2DAD2";
-const FG     = "#101414";
-const MUTED  = "#465050";
-const SUBTLE = "#6B7575";
+// Sourced from styles/theme.ts (see docs/PARKING_DESIGN_BIBLE.md §0) — kept as
+// local aliases so the styles below don't need touching one by one. LINE and
+// CARD_SHADOW previously drifted to a warm brown/beige tone unique to this
+// screen; converged to the app's cool-neutral divider/shadow.
+const GREEN  = colors.primary;
+const LINE   = colors.divider;
+const FG     = colors.text;
+const MUTED  = colors.textMuted;
+const SUBTLE = colors.textSoft;
 
 const CARD_SHADOW = {
-  shadowColor: "#2d1a0e",
+  shadowColor: "#0f172a",
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.09,
   shadowRadius: 12,
@@ -1047,7 +1052,7 @@ const CARD_SHADOW = {
 } as const;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: { flex: 1, backgroundColor: colors.pageBg },
   flex: { flex: 1 },
 
   // ── Skeleton ─────────────────────────────────────────────────
@@ -1057,7 +1062,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center", justifyContent: "center",
     paddingHorizontal: 20, paddingVertical: 12,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.pageBg,
   },
   backButton: { padding: 6, position: "absolute", left: 14 },
   navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG, textAlign: "center" },
@@ -1072,10 +1077,10 @@ const styles = StyleSheet.create({
 
   // ── Header card (listing info) ───────────────────────────────
   headerCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E1E7ED",
+    borderColor: colors.divider,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -1091,7 +1096,7 @@ const styles = StyleSheet.create({
   headerKicker: {
     color: GREEN,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 1.4,
     marginBottom: 2,
     textTransform: "uppercase",
@@ -1119,10 +1124,10 @@ const styles = StyleSheet.create({
 
   // ── Cards ────────────────────────────────────────────────────
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E1E7ED",
+    borderColor: colors.divider,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -1164,15 +1169,15 @@ const styles = StyleSheet.create({
     gap: 12,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#B8E4D0",
-    backgroundColor: "#F0FAF6",
+    borderColor: colors.accent,
+    backgroundColor: colors.accentSoft,
     padding: 14,
   },
   recoveryIconWrap: {
     width: 34,
     height: 34,
     borderRadius: 12,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -1204,12 +1209,12 @@ const styles = StyleSheet.create({
   },
   recoveryButtonText: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
-    color: "#ffffff",
+    fontSize: 13,
+    color: colors.textInverse,
   },
   editBtn: {
     paddingVertical: 5, paddingHorizontal: 14,
-    borderRadius: 20, borderWidth: 1, borderColor: "#BEB7AF",
+    borderRadius: 20, borderWidth: 1, borderColor: colors.border,
   },
   editBtnText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
 
@@ -1219,7 +1224,7 @@ const styles = StyleSheet.create({
   },
   timeSlot: { flex: 1, alignItems: "center", paddingVertical: 8 },
   timeSlotLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 10,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
     color: GREEN, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 5,
   },
   timeSlotTime: {
@@ -1229,7 +1234,7 @@ const styles = StyleSheet.create({
   timeSlotDate: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 2 },
   timeArrow: { alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 4 },
   timeArrowLine: {
-    width: 16, height: 1, backgroundColor: "#CBD5E1",
+    width: 16, height: 1, backgroundColor: colors.divider,
   },
   timeArrowDuration: {
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11,
@@ -1242,8 +1247,8 @@ const styles = StyleSheet.create({
     marginTop: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#F5C2C7",
-    backgroundColor: "#FFF5F5",
+    borderColor: colors.status.canceled.border,
+    backgroundColor: colors.status.canceled.background,
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
@@ -1254,13 +1259,13 @@ const styles = StyleSheet.create({
   timeUnavailableTitle: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 13,
-    color: "#B42318",
+    color: colors.danger,
     letterSpacing: -0.1,
   },
   timeUnavailableBody: {
     marginTop: 2,
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 17,
     color: MUTED,
   },
@@ -1289,7 +1294,7 @@ const styles = StyleSheet.create({
   },
   serviceFeeToggleText: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
+    fontSize: 13,
     color: SUBTLE,
   },
   serviceFeeInfoCard: {
@@ -1297,14 +1302,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#D8D0C7",
-    backgroundColor: "#F3EDE6",
+    borderColor: colors.border,
+    backgroundColor: colors.cardBgMuted,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
   serviceFeeInfoText: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 18,
     color: MUTED,
   },
@@ -1330,7 +1335,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: LINE,
-    backgroundColor: "#FBF8F4",
+    backgroundColor: colors.cardBgMuted,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -1350,12 +1355,12 @@ const styles = StyleSheet.create({
   promoApplyText: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 13,
-    color: "#fff",
+    color: colors.textInverse,
   },
   promoErrorText: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
-    color: "#C03A2B",
+    fontSize: 13,
+    color: colors.danger,
     marginBottom: 8,
   },
 
@@ -1366,7 +1371,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "#3D6FB6",
     overflow: "hidden",
-    backgroundColor: "#FAFAF8",
+    backgroundColor: colors.cardBg,
     alignItems: "center",
   },
   plateMt: { marginTop: 14 },
@@ -1385,14 +1390,14 @@ const styles = StyleSheet.create({
   plateNumber: {
     fontFamily: "UKNumberPlate",
     fontSize: 24,
-    color: "#111827",
+    color: colors.text,
     letterSpacing: 1,
     textTransform: "uppercase",
     includeFontPadding: false,
     textAlign: "center",
   },
   platePlaceholder: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: SUBTLE, letterSpacing: 0, textTransform: "none" },
-  regHint: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: "#F59E0B", marginTop: 10, lineHeight: 18 },
+  regHint: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: colors.warning, marginTop: 10, lineHeight: 18 },
 
   // ── Vehicle header ───────────────────────────────────────────
   vehicleHeaderRow: {
@@ -1405,7 +1410,7 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, lineHeight: 18, color: FG,
   },
   vehicleSubText: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 12, lineHeight: 16, color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13, lineHeight: 16, color: MUTED,
   },
 
   // ── Payment / trust ──────────────────────────────────────────
@@ -1414,7 +1419,7 @@ const styles = StyleSheet.create({
   },
   trustShieldWrap: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: "#edf7f2",
+    backgroundColor: colors.tileBg,
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
   trustCardCopy: { flex: 1 },
@@ -1432,12 +1437,12 @@ const styles = StyleSheet.create({
   },
   methodPill: {
     flexDirection: "row", alignItems: "center", gap: 5,
-    borderWidth: 1, borderColor: "#D5DCE3", borderRadius: 999,
+    borderWidth: 1, borderColor: colors.divider, borderRadius: 999,
     paddingHorizontal: 10, paddingVertical: 7,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
   },
   methodPillText: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG,
   },
   visaPill: { paddingHorizontal: 10, paddingVertical: 7 },
   visaText: {
@@ -1449,7 +1454,7 @@ const styles = StyleSheet.create({
   mcCircleWrap: { flexDirection: "row", alignItems: "center" },
   mcCircle: { width: 16, height: 16, borderRadius: 8 },
   mastercardText: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: "#252525", marginLeft: 5,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: colors.text, marginLeft: 5,
   },
   stripeRow: {
     flexDirection: "row", alignItems: "center", gap: 5,
@@ -1468,13 +1473,13 @@ const styles = StyleSheet.create({
   reassuranceText: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, flex: 1, lineHeight: 18,
   },
-  legalText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: SUBTLE, lineHeight: 18 },
-  legalLink: { fontFamily: "PlusJakartaSans-SemiBold", color: "#0a8050" },
+  legalText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: SUBTLE, lineHeight: 18 },
+  legalLink: { fontFamily: "PlusJakartaSans-SemiBold", color: GREEN },
 
   // ── Sticky footer ───────────────────────────────────────────
   footerBar: {
     position: "absolute", bottom: 0, left: 0, right: 0,
-    backgroundColor: "#ffffff", paddingHorizontal: 16, paddingTop: 12,
+    backgroundColor: colors.cardBg, paddingHorizontal: 16, paddingTop: 12,
     shadowColor: "#111111", shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.07, shadowRadius: 10, elevation: 12,
   },
@@ -1491,11 +1496,11 @@ const styles = StyleSheet.create({
   pickerBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
   pickerBackdropLayer: { backgroundColor: "rgba(0,0,0,0.45)" },
   pickerSheet: {
-    backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    backgroundColor: colors.cardBg, borderTopLeftRadius: 20, borderTopRightRadius: 20,
     paddingBottom: 36, alignItems: "center", paddingTop: 12,
     position: "absolute", bottom: 0, left: 0, right: 0,
   },
-  pickerHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#E0E0E0", marginBottom: 12 },
+  pickerHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, marginBottom: 12 },
   pickerTitle: { fontSize: 18, fontFamily: "PlusJakartaSans-Bold", color: FG, marginBottom: 4, textAlign: "center" },
 
   // ── Overlay ─────────────────────────────────────────────────

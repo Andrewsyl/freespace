@@ -41,6 +41,7 @@ import { StatusBar } from "expo-status-bar";
 import { formatTimeLabel } from "../utils/dateFormat";
 import { formatBookingReference } from "../utils/bookingFormat";
 import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
+import { colors, cardShadow } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingDetail">;
 
@@ -162,7 +163,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     if (isInProgress) return {
       label: "In progress",
       icon: CirclePlay,
-      cardGradient: ["#0a8050", "#000000"] as const,
+      cardGradient: [ACCENT, "#000000"] as const,
     };
     if (isUpcoming) return {
       label: "Confirmed",
@@ -352,7 +353,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <StatusBar style="dark" translucent={false} backgroundColor="#F8FAFC" />
+      <StatusBar style="dark" translucent={false} backgroundColor={colors.pageBg} />
 
       {/* Nav header */}
       <View style={styles.header}>
@@ -413,7 +414,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
               <View style={[styles.statusPill, isCanceled && styles.statusPillCanceled, (isInProgress || isCompleted) && styles.statusPillActive]}>
                 <StatusIcon
                   size={11}
-                  color={isCanceled ? "#DC2626" : (isInProgress || isCompleted) ? ACCENT : "#374151"}
+                  color={isCanceled ? colors.danger : (isInProgress || isCompleted) ? ACCENT : colors.text}
                   strokeWidth={2.4}
                 />
                 <Text style={[styles.statusPillText, isCanceled && styles.statusPillTextCanceled, (isInProgress || isCompleted) && styles.statusPillTextActive]}>
@@ -539,7 +540,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
             <SquircleBtn
               label="Check in"
               onPress={handleCheckIn}
-              icon={<CircleCheck size={18} color="#fff" strokeWidth={2.2} />}
+              icon={<CircleCheck size={18} color={colors.cardBg} strokeWidth={2.2} />}
             />
           ) : null}
 
@@ -586,29 +587,25 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   );
 }
 
-const ACCENT = "#0a8050";
-const FG     = "#101414";
-const MUTED  = "#465050";
-const SUBTLE = "#6B7575";
-const LINE   = "#DDE5EC";
+// Sourced from styles/theme.ts (see docs/PARKING_DESIGN_BIBLE.md §0) — kept as
+// local aliases so the styles below don't need touching one by one.
+const ACCENT = colors.primary;
+const FG     = colors.text;
+const MUTED  = colors.textMuted;
+const SUBTLE = colors.textSoft;
+const LINE   = colors.divider;
 
-const CARD_SHADOW = {
-  shadowColor: "#0f172a",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.09,
-  shadowRadius: 12,
-  elevation: 4,
-} as const;
+const CARD_SHADOW = cardShadow;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: { flex: 1, backgroundColor: colors.pageBg },
 
   // ── Nav header ──────────────────────────────────────────────
   header: {
     alignItems: "center", justifyContent: "center",
     paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: "#E8EDF2",
-    backgroundColor: "#ffffff",
+    borderBottomWidth: 1, borderBottomColor: colors.divider,
+    backgroundColor: colors.cardBg,
   },
   backButton: { padding: 6, position: "absolute", left: 14 },
   navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG, textAlign: "center" },
@@ -622,14 +619,14 @@ const styles = StyleSheet.create({
     paddingVertical: 28, paddingHorizontal: 20,
     alignItems: "center", gap: 14,
   },
-  reviewSectionDone: { backgroundColor: "#F8FAFC" },
-  reviewTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 18, color: "#fff", letterSpacing: -0.3 },
+  reviewSectionDone: { backgroundColor: colors.pageBg },
+  reviewTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 18, color: colors.cardBg, letterSpacing: -0.3 },
   reviewTitleDone: { fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: FG },
   reviewStars: { flexDirection: "row", gap: 8 },
 
   directionsIconWrap: {
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: "#ECFDF5",
+    backgroundColor: colors.accentSoft,
     alignItems: "center", justifyContent: "center", flexShrink: 0, marginRight: 12,
   },
   directionsAddress: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: FG, flex: 1, lineHeight: 20 },
@@ -643,10 +640,10 @@ const styles = StyleSheet.create({
 
   // ── Header card (status + title + time) ──────────────────────
   headerCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E1E7ED",
+    borderColor: colors.divider,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -678,21 +675,21 @@ const styles = StyleSheet.create({
   // ── Status pill ──────────────────────────────────────────────
   statusPill: {
     flexDirection: "row", alignItems: "center", gap: 5,
-    backgroundColor: "#F3F4F6", borderRadius: 999,
+    backgroundColor: colors.cardBgMuted, borderRadius: 999,
     paddingHorizontal: 10, paddingVertical: 5,
   },
-  statusPillCanceled: { backgroundColor: "#FEF2F2" },
-  statusPillActive: { backgroundColor: "#ECFDF5" },
-  statusPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: "#374151" },
-  statusPillTextCanceled: { color: "#DC2626" },
+  statusPillCanceled: { backgroundColor: colors.status.canceled.background },
+  statusPillActive: { backgroundColor: colors.accentSoft },
+  statusPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: colors.text },
+  statusPillTextCanceled: { color: colors.danger },
   statusPillTextActive: { color: ACCENT },
 
   // ── Card (generic) ───────────────────────────────────────────
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E1E7ED",
+    borderColor: colors.divider,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -714,7 +711,7 @@ const styles = StyleSheet.create({
   timeSlot: { flex: 1, alignItems: "center", paddingVertical: 8 },
   timeSlotLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 10, color: ACCENT,
+    fontSize: 11, color: ACCENT,
     letterSpacing: 1.2, textTransform: "uppercase" as const, marginBottom: 5,
   },
   timeSlotTime: {
@@ -723,12 +720,12 @@ const styles = StyleSheet.create({
   },
   timeSlotDate: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: MUTED, marginTop: 2 },
   timeArrow: { alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 4 },
-  timeArrowLine: { width: 16, height: 1, backgroundColor: "#CBD5E1" },
+  timeArrowLine: { width: 16, height: 1, backgroundColor: colors.divider },
   timeArrowDuration: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: SUBTLE, letterSpacing: 0.2 },
 
   // ── Progress bar (in-progress bookings) ──────────────────────
   progressWrap: { marginTop: 14 },
-  progressTrack: { height: 4, borderRadius: 999, backgroundColor: "#E5E7EB", overflow: "hidden" },
+  progressTrack: { height: 4, borderRadius: 999, backgroundColor: colors.cardBgMuted, overflow: "hidden" },
   progressFill: { height: "100%", borderRadius: 999, backgroundColor: ACCENT },
 
   // ── Extend row ───────────────────────────────────────────────
@@ -750,7 +747,7 @@ const styles = StyleSheet.create({
 
   // ── Getting in ───────────────────────────────────────────────
   instructionsText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: MUTED, lineHeight: 22 },
-  codeBox: { padding: 16, backgroundColor: "#F9FAFB", borderRadius: 14, borderWidth: 1, borderColor: LINE },
+  codeBox: { padding: 16, backgroundColor: colors.cardBgMuted, borderRadius: 14, borderWidth: 1, borderColor: LINE },
   codeLabel: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: MUTED, letterSpacing: 0.6, textTransform: "uppercase" as const, marginBottom: 6 },
   codeValue: { fontFamily: Platform.select({ ios: "Menlo", android: "monospace" }), fontSize: 30, color: FG, letterSpacing: 6, fontVariant: ["tabular-nums"] as const },
 
@@ -762,19 +759,19 @@ const styles = StyleSheet.create({
   // ── Actions ──────────────────────────────────────────────────
   actionsSection: { paddingHorizontal: 16, paddingTop: 14, gap: 10 },
   secondaryBtn: {
-    backgroundColor: "#fff", minHeight: 52, borderRadius: 16,
+    backgroundColor: colors.cardBg, minHeight: 52, borderRadius: 16,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7,
-    borderWidth: 1, borderColor: "#D5DCE3",
+    borderWidth: 1, borderColor: colors.border,
   },
   secondaryBtnText: { color: FG, fontSize: 15, fontFamily: "PlusJakartaSans-SemiBold", letterSpacing: -0.2 },
-  errorText: { color: "#DC2626", fontSize: 13, textAlign: "center", fontFamily: "PlusJakartaSans-Regular" },
+  errorText: { color: colors.danger, fontSize: 13, textAlign: "center", fontFamily: "PlusJakartaSans-Regular" },
   cancelRow: {
-    borderWidth: 1, borderColor: "#fca5a5", borderRadius: 14,
-    backgroundColor: "#fff5f5",
+    borderWidth: 1, borderColor: colors.status.canceled.border, borderRadius: 14,
+    backgroundColor: colors.status.canceled.background,
     paddingVertical: 14, alignItems: "center",
   },
-  cancelText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: "#DC2626" },
+  cancelText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: colors.danger },
   linkRow: { flexDirection: "row", justifyContent: "center", gap: 24, paddingVertical: 4 },
   linkText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: MUTED },
-  linkTextDanger: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: "#DC2626" },
+  linkTextDanger: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: colors.danger },
 });

@@ -13,6 +13,7 @@ const db = {
   cancelBookingWithRefund: vi.fn(),
   createBooking: vi.fn(),
   findUserById: vi.fn(),
+  getBookingForExtension: vi.fn(),
   getBookingForRefund: vi.fn(),
   getBookingByPaymentIntent: vi.fn(),
   getBookingNotificationTargets: vi.fn(),
@@ -28,7 +29,9 @@ const db = {
   markBookingPaymentRefunded: vi.fn(),
   markBookingRefundedByPaymentIntent: vi.fn(),
   poolQuery: vi.fn(),
+  updateBookingExtension: vi.fn(),
   updateBookingStatusByPaymentIntent: vi.fn(),
+  updateBookingWindow: vi.fn(),
 };
 
 const stripeMocks = {
@@ -60,6 +63,7 @@ vi.mock("../src/lib/db.js", async () => {
     createBooking: db.createBooking,
     findUserById: db.findUserById,
     getBookingByPaymentIntent: db.getBookingByPaymentIntent,
+    getBookingForExtension: db.getBookingForExtension,
     getBookingForRefund: db.getBookingForRefund,
     getBookingNotificationTargets: db.getBookingNotificationTargets,
     getBookingNotificationTargetsByPaymentIntent: db.getBookingNotificationTargetsByPaymentIntent,
@@ -74,7 +78,9 @@ vi.mock("../src/lib/db.js", async () => {
     markBookingPaymentRefunded: db.markBookingPaymentRefunded,
     markBookingRefundedByPaymentIntent: db.markBookingRefundedByPaymentIntent,
     pool: { query: db.poolQuery },
+    updateBookingExtension: db.updateBookingExtension,
     updateBookingStatusByPaymentIntent: db.updateBookingStatusByPaymentIntent,
+    updateBookingWindow: db.updateBookingWindow,
   };
 });
 
@@ -945,5 +951,188 @@ describe("bookings routes", () => {
 
     expect(response.status).toBe(429);
     expect(response.body.message).toBe("Booking limit reached. Try again later.");
+  });
+
+  describe("top-up intent replay protection", () => {
+    const EXT_BOOKING_ID = "33333333-3333-4333-8333-333333333333";
+    const bookingRow = () => ({
+      id: EXT_BOOKING_ID,
+      listing_id: "44444444-4444-4444-8444-444444444444",
+      start_time: new Date("2099-03-20T08:00:00.000Z"),
+      end_time: new Date("2099-03-20T12:00:00.000Z"),
+      amount_cents: 1080,
+      currency: "eur",
+      status: "confirmed",
+      price_per_day: null,
+      price_per_hour: 2,
+      rate_type: "hourly",
+    });
+
+    const mockActiveDriver = () => {
+      db.getFraudSettings.mockResolvedValue({
+        minAccountAgeMinutes: 0,
+        maxBookingsPerDay: 10,
+        maxAmountPerDayCents: 100000,
+      });
+      db.getUserRiskProfile.mockResolvedValue({
+        status: "active",
+        email_verified: true,
+        phone_verified: true,
+        created_at: "2026-03-01T00:00:00.000Z",
+      });
+    };
+
+    const succeededIntent = (type: "extension" | "change") => ({
+      id: "pi_topup",
+      status: "succeeded",
+      amount: 1000000,
+      currency: "eur",
+      metadata: { booking_id: EXT_BOOKING_ID, type },
+      charges: { data: [{ receipt_url: "https://receipt.example" }] },
+    });
+
+    const makeApp = async (userId: string) => {
+      const { createApp } = await import("../src/app.js");
+      const { signToken } = await import("../src/lib/auth.js");
+      return {
+        app: createApp(),
+        token: signToken({ userId, email: "driver@example.com", role: "driver" }),
+      };
+    };
+
+    it("rejects an already-consumed intent replayed with a later end time", async () => {
+      mockActiveDriver();
+      db.getBookingForExtension.mockResolvedValue(bookingRow());
+      db.poolQuery.mockResolvedValue({ rowCount: 0, rows: [] });
+      stripeMocks.paymentIntentsRetrieve.mockResolvedValue(succeededIntent("extension"));
+      db.insertBookingPayment.mockResolvedValue(false);
+
+      const { app, token } = await makeApp("user-ext-replay");
+      const response = await request(app)
+        .post(`/api/bookings/${EXT_BOOKING_ID}/extend-confirm`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          paymentIntentId: "pi_topup",
+          newEndTime: "2099-03-20T14:00:00.000Z",
+          newTotalCents: 1296,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Payment has already been used");
+      expect(db.updateBookingExtension).not.toHaveBeenCalled();
+    });
+
+    it("reports success when the webhook consumed the intent and applied the extension", async () => {
+      mockActiveDriver();
+      // First read: window still old. Second read (after the failed consume):
+      // the webhook has applied the requested end time.
+      db.getBookingForExtension
+        .mockResolvedValueOnce(bookingRow())
+        .mockResolvedValueOnce({
+          ...bookingRow(),
+          end_time: new Date("2099-03-20T14:00:00.000Z"),
+          amount_cents: 1296,
+        });
+      db.poolQuery.mockResolvedValue({ rowCount: 0, rows: [] });
+      stripeMocks.paymentIntentsRetrieve.mockResolvedValue(succeededIntent("extension"));
+      db.insertBookingPayment.mockResolvedValue(false);
+
+      const { app, token } = await makeApp("user-ext-webhook");
+      const response = await request(app)
+        .post(`/api/bookings/${EXT_BOOKING_ID}/extend-confirm`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          paymentIntentId: "pi_topup",
+          newEndTime: "2099-03-20T14:00:00.000Z",
+          newTotalCents: 1296,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({ ok: true, alreadyApplied: true, newTotalCents: 1296 });
+      expect(db.updateBookingExtension).not.toHaveBeenCalled();
+    });
+
+    it("consumes the intent before applying the extension window", async () => {
+      mockActiveDriver();
+      db.getBookingForExtension.mockResolvedValue(bookingRow());
+      db.poolQuery.mockResolvedValue({ rowCount: 0, rows: [] });
+      stripeMocks.paymentIntentsRetrieve.mockResolvedValue(succeededIntent("extension"));
+      db.updateBookingExtension.mockResolvedValue({
+        end_time: new Date("2099-03-20T14:00:00.000Z"),
+        amount_cents: 1296,
+      });
+
+      const { app, token } = await makeApp("user-ext-happy");
+      const response = await request(app)
+        .post(`/api/bookings/${EXT_BOOKING_ID}/extend-confirm`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          paymentIntentId: "pi_topup",
+          newEndTime: "2099-03-20T14:00:00.000Z",
+          newTotalCents: 1296,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({ ok: true, newTotalCents: 1296 });
+      expect(db.insertBookingPayment).toHaveBeenCalledWith(
+        expect.objectContaining({ paymentIntentId: "pi_topup", kind: "extension" })
+      );
+      // The consume must land before the window moves — that ordering is the
+      // whole replay defense.
+      expect(db.insertBookingPayment.mock.invocationCallOrder[0]).toBeLessThan(
+        db.updateBookingExtension.mock.invocationCallOrder[0]
+      );
+    });
+
+    it("refunds the consumed top-up when the window update fails", async () => {
+      mockActiveDriver();
+      db.getBookingForExtension.mockResolvedValue(bookingRow());
+      db.poolQuery.mockResolvedValue({ rowCount: 0, rows: [] });
+      stripeMocks.paymentIntentsRetrieve.mockResolvedValue(succeededIntent("extension"));
+      db.updateBookingExtension.mockResolvedValue(null);
+      stripeMocks.refundsCreate.mockResolvedValue({ id: "re_topup" });
+
+      const { app, token } = await makeApp("user-ext-refund");
+      const response = await request(app)
+        .post(`/api/bookings/${EXT_BOOKING_ID}/extend-confirm`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          paymentIntentId: "pi_topup",
+          newEndTime: "2099-03-20T14:00:00.000Z",
+          newTotalCents: 1296,
+        });
+
+      expect(response.status).toBe(400);
+      expect(stripeMocks.refundsCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ payment_intent: "pi_topup" }),
+        expect.anything()
+      );
+      expect(db.markBookingPaymentRefunded).toHaveBeenCalledWith(
+        expect.objectContaining({ paymentIntentId: "pi_topup", refundId: "re_topup" })
+      );
+    });
+
+    it("rejects an already-consumed intent replayed against change-confirm", async () => {
+      mockActiveDriver();
+      db.getBookingForExtension.mockResolvedValue(bookingRow());
+      db.poolQuery.mockResolvedValue({ rowCount: 0, rows: [] });
+      stripeMocks.paymentIntentsRetrieve.mockResolvedValue(succeededIntent("change"));
+      db.insertBookingPayment.mockResolvedValue(false);
+
+      const { app, token } = await makeApp("user-chg-replay");
+      const response = await request(app)
+        .post(`/api/bookings/${EXT_BOOKING_ID}/change-confirm`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          paymentIntentId: "pi_topup",
+          newStartTime: "2099-03-20T09:00:00.000Z",
+          newEndTime: "2099-03-20T15:00:00.000Z",
+          newTotalCents: 1296,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Payment has already been used");
+      expect(db.updateBookingWindow).not.toHaveBeenCalled();
+    });
   });
 });

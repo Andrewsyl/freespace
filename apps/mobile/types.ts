@@ -131,6 +131,10 @@ export type ListingDetail = ListingSummary & {
   access_directions?: string | null;
   accessDirections?: string | null;
   hostId?: string | null;
+  hostName?: string | null;
+  hostVerified?: boolean | null;
+  hostSince?: string | null;
+  spacesRemaining?: number | null;
   availabilitySchedule?: {
     id: string;
     kind: "open" | "blocked";

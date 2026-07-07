@@ -519,8 +519,8 @@ const styles = StyleSheet.create({
     color: colors.cardBg,
   },
   error: {
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
+    backgroundColor: colors.status.canceled.background,
+    borderColor: colors.status.canceled.border,
     borderRadius: 12,
     borderWidth: 1,
     color: colors.danger,

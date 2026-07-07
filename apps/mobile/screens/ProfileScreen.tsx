@@ -9,10 +9,12 @@ import { requestEmailVerification, getHostListings } from "../api";
 import { useAuth } from "../auth";
 import { useGlobalToast } from "../components/GlobalToast";
 import type { RootStackParamList } from "../types";
+import { colors } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Profile">;
 
-const GREEN = "#0a8050";
+// Sourced from styles/theme.ts (see docs/PARKING_DESIGN_BIBLE.md §0).
+const GREEN = colors.primary;
 
 type RowProps = {
   icon: string;
@@ -30,7 +32,7 @@ function Row({ icon, label, value, onPress, danger }: RowProps) {
       disabled={!onPress}
     >
       <View style={styles.ico}>
-        <Ionicons name={icon as any} size={21} color={danger ? "#b42318" : "#1E2732"} />
+        <Ionicons name={icon as any} size={21} color={danger ? colors.danger : colors.text} />
       </View>
       <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
       {value ? (
@@ -38,7 +40,7 @@ function Row({ icon, label, value, onPress, danger }: RowProps) {
           {value}
         </Text>
       ) : null}
-      {onPress ? <ChevronRight size={18} color="#9AA4AD" strokeWidth={2.2} /> : null}
+      {onPress ? <ChevronRight size={18} color={colors.textMuted} strokeWidth={2.2} /> : null}
     </Pressable>
   );
 }
@@ -283,7 +285,7 @@ export function ProfileScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, backgroundColor: colors.cardBg },
   scroll: { paddingHorizontal: 20 },
 
   // ── Masthead (open, no box) ──────────────────────────────────
@@ -291,7 +293,7 @@ const styles = StyleSheet.create({
   mastheadPressed: { opacity: 0.72 },
   avatar: {
     width: 74, height: 74, borderRadius: 37,
-    backgroundColor: "#EEF7F1",
+    backgroundColor: colors.tileBg,
     alignItems: "center", justifyContent: "center",
   },
   avatarInitial: {
@@ -299,29 +301,29 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 27,
-    color: "#10151C", letterSpacing: -0.8, marginTop: 16, lineHeight: 31,
+    color: colors.text, letterSpacing: -0.8, marginTop: 16, lineHeight: 31,
   },
   metaRow: {
     flexDirection: "row", alignItems: "center", gap: 9, marginTop: 8, flexWrap: "wrap",
   },
-  email: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14.5, color: "#69727D" },
-  metaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: "#A2ABB4" },
+  email: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14.5, color: colors.textSoft },
+  metaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.textMuted },
   verifiedRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   verifiedText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: GREEN },
   mastheadSub: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 14.5,
-    color: "#69727D", marginTop: 8, lineHeight: 20,
+    color: colors.textSoft, marginTop: 8, lineHeight: 20,
   },
   verifyChip: {
     alignSelf: "flex-start", marginTop: 12,
-    backgroundColor: "#F1FAF5", borderWidth: 1, borderColor: "#D3E9DD",
+    backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent,
     borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5,
   },
   verifyChipText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: GREEN },
   signInChip: {
     flexDirection: "row", alignItems: "center", gap: 6,
     alignSelf: "flex-start", marginTop: 16,
-    backgroundColor: "#F1FAF5", borderWidth: 1, borderColor: "#D3E9DD",
+    backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent,
     borderRadius: 999, paddingHorizontal: 15, paddingVertical: 9,
   },
   signInChipText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: GREEN },
@@ -329,22 +331,22 @@ const styles = StyleSheet.create({
   // ── Host strip (single colour moment) ────────────────────────
   host: {
     flexDirection: "row", alignItems: "center", gap: 14,
-    backgroundColor: "#EEF7F1", borderWidth: 1, borderColor: "#DCEBE2",
+    backgroundColor: colors.tileBg, borderWidth: 1, borderColor: colors.accent,
     borderRadius: 18, paddingHorizontal: 17, paddingVertical: 15,
     marginTop: 6, marginBottom: 8,
   },
   hostPressed: { opacity: 0.9 },
   hostText: { flex: 1 },
   hostTitle: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 15.5, color: "#0a6a43", letterSpacing: -0.2,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 15.5, color: colors.status.active.text, letterSpacing: -0.2,
   },
   hostSub: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 13.5, color: "#3f8c66", marginTop: 2,
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 13.5, color: colors.accent, marginTop: 2,
   },
 
   // ── Sections (icon list, no dividers) ────────────────────────
   secLabel: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 11.5, color: "#8A94A0",
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 11.5, color: colors.textMuted,
     letterSpacing: 1, textTransform: "uppercase", marginTop: 24, marginBottom: 4,
   },
   row: {
@@ -355,15 +357,15 @@ const styles = StyleSheet.create({
   rowPressed: { opacity: 0.55 },
   rowLabel: {
     flex: 1, fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15.5,
-    color: "#111820", letterSpacing: -0.2,
+    color: colors.text, letterSpacing: -0.2,
   },
-  rowLabelDanger: { color: "#b42318" },
+  rowLabelDanger: { color: colors.danger },
   rowValue: {
     fontFamily: "PlusJakartaSans-Medium", fontSize: 14,
-    color: "#A2ABB4", letterSpacing: -0.1, maxWidth: 170,
+    color: colors.textMuted, letterSpacing: -0.1, maxWidth: 170,
   },
 
   // ── Sign out (quiet text link) ───────────────────────────────
   signOut: { alignItems: "center", paddingTop: 30, paddingBottom: 8 },
-  signOutText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#B4402E" },
+  signOutText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: colors.danger },
 });

@@ -16,6 +16,7 @@ import { useListingFlow } from "./context";
 import { FlowHeader } from "./FlowHeader";
 import { FlowFooter } from "./FlowFooter";
 import { hostFlowColors } from "./hostFlowTheme";
+import { colors } from "../../styles/theme";
 
 type FlowStackParamList = {
   ListingPrice: undefined;
@@ -83,7 +84,7 @@ function FieldRow({ label, value, onChange, helper, warning, isLast }: FieldRowP
             }}
             keyboardType={Platform.OS === "ios" ? "decimal-pad" : "numeric"}
             placeholder="0.00"
-            placeholderTextColor="#c8cdd6"
+            placeholderTextColor={colors.textDisabled}
             selectTextOnFocus
           />
         </View>
@@ -102,7 +103,7 @@ const fieldStyles = StyleSheet.create({
   },
   border: {
     borderBottomWidth: 1,
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: hostFlowColors.border,
   },
   inputGroup: {
     flexDirection: "row",
@@ -123,7 +124,7 @@ const fieldStyles = StyleSheet.create({
   euro: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 16,
-    color: "#6b7280",
+    color: hostFlowColors.textMuted,
   },
   input: {
     fontFamily: "PlusJakartaSans-Bold",
@@ -137,11 +138,11 @@ const fieldStyles = StyleSheet.create({
   helper: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
-    color: "#9ca3af",
+    color: hostFlowColors.textSoft,
     marginTop: 4,
   },
   helperWarn: {
-    color: "#d97706",
+    color: colors.warning,
   },
 });
 
@@ -283,7 +284,7 @@ export function ListingPriceScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: { flex: 1, backgroundColor: hostFlowColors.bg },
   flex: { flex: 1 },
   content: {
     paddingHorizontal: 16,
@@ -293,15 +294,15 @@ const styles = StyleSheet.create({
 
   // ── Header card (matches location screen style) ──────────────
   headerCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: hostFlowColors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: hostFlowColors.border,
     borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
@@ -335,10 +336,10 @@ const styles = StyleSheet.create({
 
   // ── Cards ────────────────────────────────────────────────────
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: hostFlowColors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -351,14 +352,14 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: hostFlowColors.border,
   },
 
   // ── Pricing type tabs ────────────────────────────────────────
   tabsWrap: {
     flexDirection: "row",
     gap: 6,
-    backgroundColor: "#EEF0F2",
+    backgroundColor: hostFlowColors.cardBgMuted,
     margin: 14,
     borderRadius: 12,
     padding: 4,
@@ -371,7 +372,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   tabActive: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.07,
@@ -381,7 +382,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
-    color: "#6b7280",
+    color: hostFlowColors.textMuted,
     textAlign: "center",
   },
   tabTextActive: {
@@ -390,10 +391,10 @@ const styles = StyleSheet.create({
 
   // ── Tips card ────────────────────────────────────────────────
   tipsCard: {
-    backgroundColor: "#F0FDF8",
+    backgroundColor: hostFlowColors.accentSoft,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#C6F0DC",
+    borderColor: hostFlowColors.accentSoftBorder,
     padding: 16,
   },
   tipsRow: {

@@ -20,6 +20,7 @@ import { Button, TextInput as AppTextInput } from "../components/ui";
 import { SignInWall } from "../components/SignInWall";
 import { DetailNavBar, FieldRow, SectionTitle } from "../components/profileUi";
 import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
+import { colors } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "LoginSecurity">;
 
@@ -128,7 +129,7 @@ export function LoginSecurityScreen({ navigation }: Props) {
         <StatusBar barStyle="dark-content" />
         <DetailNavBar title="Login & security" onBack={() => goBackOrFallback(navigation, fallbackRoutes.profile)} />
         <SignInWall
-          icon={<ShieldCheck size={26} color="#0a8050" strokeWidth={2.2} />}
+          icon={<ShieldCheck size={26} color={colors.primary} strokeWidth={2.2} />}
           title="Sign in to manage security"
           body="Your password, active sessions and account controls are available once you sign in."
           onSignIn={() => navigation.navigate("Welcome")}
@@ -215,7 +216,7 @@ export function LoginSecurityScreen({ navigation }: Props) {
               <SectionTitle style={styles.firstSection}>Sign-in method</SectionTitle>
               <View style={styles.providerRow}>
                 <View style={styles.providerIcon}>
-                  <ShieldCheck size={18} color="#111820" strokeWidth={2.1} />
+                  <ShieldCheck size={18} color={colors.text} strokeWidth={2.1} />
                 </View>
                 <View style={styles.flex}>
                   <Text style={styles.providerTitle}>Signed in with {authProviderLabel}</Text>
@@ -246,36 +247,36 @@ export function LoginSecurityScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, backgroundColor: colors.cardBg },
   flex: { flex: 1 },
   content: { paddingHorizontal: 20, paddingTop: 4 },
   firstSection: { marginTop: 8 },
-  help: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: "#69727D", lineHeight: 20, marginBottom: 14 },
+  help: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: colors.textSoft, lineHeight: 20, marginBottom: 14 },
   fieldLabel: {
-    fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#111820",
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: colors.text,
     letterSpacing: -0.2, marginBottom: 6, marginTop: 20,
   },
   inputWrap: { marginBottom: 0 },
   input: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 17, color: "#111820", letterSpacing: -0.2,
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 17, color: colors.text, letterSpacing: -0.2,
     backgroundColor: "transparent", borderWidth: 0,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#DFE4E9", borderRadius: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider, borderRadius: 0,
     paddingHorizontal: 0, paddingVertical: 10,
   },
   actionBtn: { marginTop: 6 },
   providerRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8, marginBottom: 8 },
   providerIcon: {
-    width: 36, height: 36, borderRadius: 11, backgroundColor: "#F1F4F6",
+    width: 36, height: 36, borderRadius: 11, backgroundColor: colors.cardBgMuted,
     alignItems: "center", justifyContent: "center",
   },
-  providerTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#111820" },
-  providerSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: "#69727D", marginTop: 2, lineHeight: 20 },
-  error: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: "#B4402E", marginBottom: 10 },
-  notice: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: "#0a8050", marginBottom: 10 },
+  providerTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: colors.text },
+  providerSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: colors.textSoft, marginTop: 2, lineHeight: 20 },
+  error: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: colors.danger, marginBottom: 10 },
+  notice: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: colors.primary, marginBottom: 10 },
   suspended: {
-    backgroundColor: "#FEF2F2", borderColor: "#FECACA", borderWidth: 1, borderRadius: 16,
+    backgroundColor: colors.status.canceled.background, borderColor: colors.status.canceled.border, borderWidth: 1, borderRadius: 16,
     padding: 16, marginTop: 12,
   },
-  suspendedTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: "#B4402E" },
-  suspendedBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: "#69727D", marginTop: 4, lineHeight: 19 },
+  suspendedTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: colors.danger },
+  suspendedBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: colors.textSoft, marginTop: 4, lineHeight: 19 },
 });

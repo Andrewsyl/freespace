@@ -21,7 +21,7 @@ import { BackButton, Button, TextInput as AppTextInput } from "../components/ui"
 import { colors, radius, spacing, textStyles } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Register">;
-const AUTH_GREEN = "#0a8050";
+const AUTH_GREEN = colors.primary;
 
 const COUNTRIES = [
   { flag: "🇮🇪", name: "Ireland", dialCode: "+353" },
@@ -284,7 +284,7 @@ export function RegisterScreen({ navigation, route }: Props) {
                   >
                     <Text style={styles.dialCodeFlag}>{selectedCountry.flag}</Text>
                     <Text style={styles.dialCodeText}>{selectedCountry.dialCode}</Text>
-                    <ChevronDown size={13} color="#9CA3AF" strokeWidth={2.2} />
+                    <ChevronDown size={13} color={colors.textDisabled} strokeWidth={2.2} />
                   </Pressable>
                   <View style={styles.phoneDivider} />
                   <RNTextInput
@@ -296,7 +296,7 @@ export function RegisterScreen({ navigation, route }: Props) {
                     textContentType="telephoneNumber"
                     autoComplete="tel"
                     placeholder="87 123 4567"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.textDisabled}
                     onFocus={() => scrollToField(phoneFieldY.current)}
                   />
                 </View>
@@ -313,7 +313,7 @@ export function RegisterScreen({ navigation, route }: Props) {
                     <View style={styles.pickerHeader}>
                       <Text style={styles.pickerTitle}>Select country</Text>
                       <Pressable hitSlop={8} onPress={() => setCountryPickerVisible(false)}>
-                        <X size={22} color="#111827" strokeWidth={2.2} />
+                        <X size={22} color={colors.text} strokeWidth={2.2} />
                       </Pressable>
                     </View>
                     <FlatList
@@ -341,7 +341,7 @@ export function RegisterScreen({ navigation, route }: Props) {
                 testID="terms-checkbox"
               >
                 <View style={[styles.checkbox, accepted && styles.checkboxChecked]}>
-                  {accepted ? <Check size={16} color="#FFFFFF" strokeWidth={2.4} /> : null}
+                  {accepted ? <Check size={16} color={colors.textInverse} strokeWidth={2.4} /> : null}
                 </View>
                 <Text style={styles.checkboxText}>
                   I agree to{" "}

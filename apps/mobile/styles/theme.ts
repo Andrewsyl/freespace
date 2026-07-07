@@ -11,16 +11,32 @@ export const colors = {
   overlayLight: color.surface.overlayLight,
   text: color.text.primary,
   textDisabled: color.text.disabled,
+  textInverse: color.text.inverse,
   textMuted: color.text.secondary,
   textSoft: color.text.soft,
   border: color.border.default,
   borderStrong: color.border.strong,
+  // Hairline dividers/card borders that should read as barely-there — not the
+  // stronger `border`/`borderStrong` pair used for control outlines.
+  divider: color.border.subtle,
   accent: color.brand[500],
   accentSoft: color.brand[50],
+  // Soft-green tile ground (amenity/category tiles, chip fills) — a notch
+  // more visible than `accentSoft`, distinct token per designTokens'
+  // `surface.accent`.
+  tileBg: color.surface.accent,
+  // The green actually used for primary CTAs/live-status across the app
+  // (brand[600], #0a8050) — distinct from `accent` (brand[500]), which is a
+  // lighter tone used for secondary-button outlines/spinners.
+  primary: color.brand[600],
+  // Tinted page background (screens sat on ad hoc near-white hex like
+  // #F8FAFC); `appBg` stays pure white for cards/sheets.
+  pageBg: color.surface.page,
   brandDark: color.brand[900],
   mint: color.mint[500],
   mintSoft: color.mint[100],
   danger: color.status.dangerStrong,
+  warning: color.status.warning,
   status: {
     active: { background: color.brand[50], border: color.brand[700], text: color.brand[700] },
     canceled: { background: "#FEE2E2", border: "#EF4444", text: "#991B1B" },
@@ -56,6 +72,9 @@ export const spacing = {
 export const radius = {
   sm: designTokens.radius.sm,
   md: designTokens.radius.md,
+  // Small/medium cards (list rows, map card, review tiles) — see
+  // docs/PARKING_DESIGN_BIBLE.md Part E2. `card` (24) is for hero surfaces.
+  cardSmall: designTokens.radius.cardSmall,
   card: designTokens.radius.xl,
   lg: designTokens.radius.xxl,
   pill: designTokens.radius.pill,
@@ -217,6 +236,16 @@ export const textStyles = {
     fontWeight: "900" as const,
     letterSpacing: -1.5,
   },
+  // Card/list price — deliberately louder than a card title (see
+  // docs/PARKING_DESIGN_BIBLE.md A6): price is the decision, not a peer fact.
+  priceCard: {
+    color: colors.text,
+    fontSize: 28,
+    lineHeight: 32,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontWeight: "900" as const,
+    letterSpacing: -0.8,
+  },
 };
 
 export const surfaces = {
@@ -309,7 +338,7 @@ export const fields = {
 
 export const buttons = {
   primary: {
-    backgroundColor: "#0a8050",
+    backgroundColor: colors.primary,
     borderRadius: 14,
     height: 52,
     paddingHorizontal: spacing.xl,

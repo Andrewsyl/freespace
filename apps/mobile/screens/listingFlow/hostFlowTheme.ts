@@ -1,19 +1,21 @@
+import { colors } from "../../styles/theme";
+
 export const hostFlowColors = {
-  bg: "#F8FAFC",
-  appBg: "#FFFFFF",
-  appBgDeep: "#f0fdf8",
-  cardBg: "#FFFFFF",
-  cardBgMuted: "#F3F4F6",
-  border: "#E5E7EB",
-  borderStrong: "#D1D5DB",
-  divider: "#E5E7EB",
-  text: "#101414",
-  textMuted: "#465050",
-  textSoft: "#6B7575",
-  accent: "#0a8050",
-  accentSoft: "#f0fdf8",
-  accentSoftBorder: "#d0fce8",
-  mint: "#63e8a7",
+  bg: colors.pageBg,
+  appBg: colors.appBg,
+  appBgDeep: colors.accentSoft,
+  cardBg: colors.cardBg,
+  cardBgMuted: colors.cardBgMuted,
+  border: colors.border,
+  borderStrong: colors.borderStrong,
+  divider: colors.divider,
+  text: colors.text,
+  textMuted: colors.textMuted,
+  textSoft: colors.textSoft,
+  accent: colors.primary,
+  accentSoft: colors.accentSoft,
+  accentSoftBorder: colors.accent,
+  mint: colors.mint,
 };
 
 export const hostFlowShadow = {

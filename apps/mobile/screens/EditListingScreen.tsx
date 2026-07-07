@@ -259,8 +259,8 @@ const styles = StyleSheet.create({
   },
   error: {
     ...textStyles.meta,
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
+    backgroundColor: colors.status.canceled.background,
+    borderColor: colors.status.canceled.border,
     borderRadius: 12,
     borderWidth: 1,
     color: colors.danger,

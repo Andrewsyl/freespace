@@ -57,8 +57,8 @@ const ACCENT = hostFlowColors.accent;
 const FG = hostFlowColors.text;
 const MUTED = hostFlowColors.textMuted;
 const SOFT = hostFlowColors.textSoft;
-const BORDER = "#E2E8ED";
-const CARD = "#ffffff";
+const BORDER = hostFlowColors.border;
+const CARD = hostFlowColors.cardBg;
 
 type RowStatus = "ok" | "warn";
 
@@ -438,7 +438,7 @@ export function ListingReviewScreen({ navigation }: Props) {
             onPress={() => setDraft((prev) => ({ ...prev, permissionDeclared: !prev.permissionDeclared }))}
           >
             <View style={[styles.checkbox, draft.permissionDeclared && styles.checkboxActive]}>
-              {draft.permissionDeclared ? <Check size={13} color="#ffffff" strokeWidth={3} /> : null}
+              {draft.permissionDeclared ? <Check size={13} color={colors.textInverse} strokeWidth={3} /> : null}
             </View>
             <View style={styles.permissionText}>
               <Text style={styles.permissionTitle}>I have the right to list this space</Text>
@@ -547,7 +547,7 @@ function DetailRow({
       </View>
       {status === "ok" ? (
         <View style={styles.statusOk}>
-          <Check size={11} color="#ffffff" strokeWidth={3} />
+          <Check size={11} color={colors.textInverse} strokeWidth={3} />
         </View>
       ) : status === "warn" ? (
         <View style={styles.statusWarn} />
@@ -568,7 +568,7 @@ const CARD_SHADOW = {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: { flex: 1, backgroundColor: hostFlowColors.bg },
   kav: { flex: 1 },
 
   scroll: { paddingTop: 4, paddingHorizontal: 16, gap: 14 },
@@ -603,20 +603,20 @@ const styles = StyleSheet.create({
     backgroundColor: CARD,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: hostFlowColors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
     shadowOpacity: 0.12,
     shadowRadius: 16,
   },
-  heroMedia: { height: 200, backgroundColor: "#e8f0f4", position: "relative" },
+  heroMedia: { height: 200, backgroundColor: hostFlowColors.cardBgMuted, position: "relative" },
   heroImage: { width: "100%", height: "100%" },
   heroPlaceholder: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#EDF2F5",
+    backgroundColor: hostFlowColors.cardBgMuted,
   },
   heroPlaceholderText: {
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
   heroPriceText: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 14,
-    color: "#ffffff",
+    color: colors.textInverse,
     letterSpacing: -0.2,
   },
   heroMeta: { paddingHorizontal: 16, paddingTop: 13, paddingBottom: 14 },
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
     backgroundColor: CARD,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: hostFlowColors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -754,13 +754,13 @@ const styles = StyleSheet.create({
   },
   detailRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: "#EDE7E0",
+    borderBottomColor: hostFlowColors.border,
   },
   detailIconWrap: {
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: "#EDF7F2",
+    backgroundColor: hostFlowColors.accentSoft,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -781,7 +781,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
     lineHeight: 20,
   },
-  valueWarning: { color: "#F59E0B" },
+  valueWarning: { color: colors.warning },
   statusOk: {
     width: 18,
     height: 18,
@@ -795,17 +795,17 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#F59E0B",
+    backgroundColor: colors.warning,
     flexShrink: 0,
   },
 
   // ── Edit rows ────────────────────────────────────────────────
-  editRowPressed: { backgroundColor: "#F8FAFC" },
+  editRowPressed: { backgroundColor: hostFlowColors.bg },
 
   // ── Error ────────────────────────────────────────────────────
   error: {
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
+    backgroundColor: colors.status.canceled.background,
+    borderColor: colors.status.canceled.border,
     borderRadius: 12,
     borderWidth: 1,
     color: colors.danger,
@@ -843,7 +843,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: "#D1FAE5",
+    backgroundColor: hostFlowColors.accentSoft,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -870,14 +870,14 @@ const styles = StyleSheet.create({
   },
   permissionCardActive: {
     borderColor: ACCENT,
-    backgroundColor: "#F7FDFB",
+    backgroundColor: hostFlowColors.accentSoft,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 7,
     borderWidth: 1.5,
-    borderColor: "#C5D0D8",
+    borderColor: hostFlowColors.border,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 1,
@@ -905,7 +905,7 @@ const styles = StyleSheet.create({
 
   // ── Footer ───────────────────────────────────────────────────
   footer: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     borderTopWidth: 1,
     borderTopColor: BORDER,
     paddingHorizontal: spacing.screenX,

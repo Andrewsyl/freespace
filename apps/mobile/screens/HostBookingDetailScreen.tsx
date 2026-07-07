@@ -27,22 +27,19 @@ import { useAuth } from "../auth";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import type { RootStackParamList } from "../types";
 import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
+import { colors, cardShadow } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "HostBookingDetail">;
 
-const GREEN  = "#0a8050";
-const FG     = "#111827";
-const MUTED  = "#6B7575";
-const BG     = "#F8FAFC";
-const CARD   = "#ffffff";
+// Sourced from styles/theme.ts (see docs/PARKING_DESIGN_BIBLE.md §0) — kept as
+// local aliases so the styles below don't need touching one by one.
+const GREEN  = colors.primary;
+const FG     = colors.text;
+const MUTED  = colors.textSoft;
+const BG     = colors.pageBg;
+const CARD   = colors.cardBg;
 
-const SHADOW = {
-  shadowColor: "#0f172a",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.08,
-  shadowRadius: 12,
-  elevation: 3,
-};
+const SHADOW = cardShadow;
 
 const dublinDay = (d: Date) =>
   d.toLocaleDateString("en-IE", { timeZone: "Europe/Dublin" });
@@ -110,13 +107,18 @@ export function HostBookingDetailScreen({ navigation, route }: Props) {
   const accessCode = booking.accessCode?.trim() || null;
   const arrivalInstructions = booking.arrivalInstructions?.trim() || null;
 
+  // Converged onto colors.status.* (docs/PARKING_DESIGN_BIBLE.md E12) — this
+  // screen used to run its own parallel status-color language from the
+  // driver-facing BookingDetailScreen. "Upcoming" reuses the `refunded`
+  // entry's blue values (there's no dedicated "info" status slot); the name
+  // doesn't apply here, only the palette does.
   const statusConfig = isCanceled
-    ? { label: "Canceled",  accent: "#f87171", cardBg: "#fff8f8", labelColor: "#b42318", dot: false }
+    ? { label: "Canceled",  accent: colors.status.canceled.border, cardBg: colors.status.canceled.background, labelColor: colors.status.canceled.text, dot: false }
     : isLive
-      ? { label: "Live now", accent: GREEN,    cardBg: "#f2faf6", labelColor: "#065f46", dot: true  }
+      ? { label: "Live now", accent: GREEN,    cardBg: colors.status.active.background, labelColor: colors.status.active.text, dot: true  }
       : isPast
-        ? { label: "Completed", accent: "#94a3b8", cardBg: "#f8fafc", labelColor: "#475569", dot: false }
-        : { label: "Upcoming",  accent: "#3b82f6", cardBg: "#f0f6ff", labelColor: "#1d4ed8", dot: false };
+        ? { label: "Completed", accent: colors.status.completed.border, cardBg: colors.status.completed.background, labelColor: colors.status.completed.text, dot: false }
+        : { label: "Upcoming",  accent: colors.status.refunded.border, cardBg: colors.status.refunded.background, labelColor: colors.status.refunded.text, dot: false };
 
   const handleCancel = () => {
     if (!token) return;
@@ -258,7 +260,7 @@ export function HostBookingDetailScreen({ navigation, route }: Props) {
             ) : null}
             {booking.noShowAt ? (
               <View style={styles.noShowPill}>
-                <XCircle size={12} color="#b42318" strokeWidth={2.5} />
+                <XCircle size={12} color={colors.status.canceled.text} strokeWidth={2.5} />
                 <Text style={styles.noShowPillText}>No show</Text>
               </View>
             ) : null}
@@ -314,7 +316,7 @@ export function HostBookingDetailScreen({ navigation, route }: Props) {
                 onPress={() => Linking.openURL(`tel:${phone}`)}
                 hitSlop={6}
               >
-                <Phone size={15} color="#ffffff" strokeWidth={2.2} />
+                <Phone size={15} color={colors.cardBg} strokeWidth={2.2} />
                 <Text style={styles.contactBtnText}>Call driver</Text>
               </Pressable>
               <Pressable
@@ -354,7 +356,7 @@ export function HostBookingDetailScreen({ navigation, route }: Props) {
               disabled={canceling}
             >
               {canceling ? (
-                <ActivityIndicator size={14} color="#b42318" />
+                <ActivityIndicator size={14} color={colors.status.canceled.text} />
               ) : (
                 <Text style={styles.cancelBtnText}>Cancel booking</Text>
               )}
@@ -500,10 +502,10 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
     lineHeight: 40,
   },
-  earningsAmountCanceled: { color: "#94a3b8" },
+  earningsAmountCanceled: { color: colors.textDisabled },
   earningsRight: { alignItems: "flex-end", gap: 4 },
   feePill: {
-    backgroundColor: "#F0FAF6",
+    backgroundColor: colors.accentSoft,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -544,7 +546,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#E8F5F0",
+    backgroundColor: colors.accentSoft,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -569,7 +571,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#F0FAF6",
+    backgroundColor: colors.accentSoft,
     borderRadius: 20,
     paddingHorizontal: 9,
     paddingVertical: 5,
@@ -583,7 +585,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#fff5f5",
+    backgroundColor: colors.status.canceled.background,
     borderRadius: 20,
     paddingHorizontal: 9,
     paddingVertical: 5,
@@ -591,10 +593,10 @@ const styles = StyleSheet.create({
   noShowPillText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 11,
-    color: "#b42318",
+    color: colors.status.canceled.text,
   },
   vehicleBlock: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.cardBgMuted,
     borderRadius: 14,
     padding: 14,
     gap: 12,
@@ -616,10 +618,10 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   vehicleDetailChip: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#DDE5EC",
+    borderColor: colors.divider,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
@@ -631,15 +633,15 @@ const styles = StyleSheet.create({
   },
   plateRow: {
     borderTopWidth: 1,
-    borderTopColor: "#E8EEF4",
+    borderTopColor: colors.divider,
     paddingTop: 12,
   },
   plateBadge: {
     alignSelf: "flex-start",
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: "#CBD5E1",
-    backgroundColor: "#ffffff",
+    borderColor: colors.divider,
+    backgroundColor: colors.cardBg,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
@@ -665,14 +667,14 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   contactBtnSecondary: {
-    backgroundColor: "#F0FAF6",
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
     borderColor: "#B6E8D0",
   },
   contactBtnText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
-    color: "#ffffff",
+    color: colors.cardBg,
   },
   contactBtnTextSecondary: { color: GREEN },
 
@@ -681,7 +683,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "#F0FAF6",
+    backgroundColor: colors.accentSoft,
     borderRadius: 12,
     padding: 14,
   },
@@ -703,16 +705,16 @@ const styles = StyleSheet.create({
   cancelBtn: {
     height: 50,
     borderRadius: 14,
-    backgroundColor: "#fff5f5",
+    backgroundColor: colors.status.canceled.background,
     borderWidth: 1,
-    borderColor: "#fcd5d5",
+    borderColor: colors.status.canceled.border,
     alignItems: "center",
     justifyContent: "center",
   },
   cancelBtnText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
-    color: "#b42318",
+    color: colors.status.canceled.text,
   },
   cancelHint: {
     fontFamily: "PlusJakartaSans-Regular",

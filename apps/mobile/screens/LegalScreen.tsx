@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import type { RootStackParamList } from "../types";
 import { DetailNavBar, FieldRow, SectionTitle } from "../components/profileUi";
 import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
+import { colors } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Legal">;
 
@@ -59,10 +60,10 @@ export function LegalScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, backgroundColor: colors.cardBg },
   content: { paddingHorizontal: 20, paddingTop: 4 },
   firstSection: { marginTop: 8 },
   company: { paddingVertical: 14 },
-  companyName: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: "#111820" },
-  companyLine: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14.5, color: "#69727D", marginTop: 3 },
+  companyName: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: colors.text },
+  companyLine: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14.5, color: colors.textSoft, marginTop: 3 },
 });

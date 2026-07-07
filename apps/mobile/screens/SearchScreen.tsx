@@ -37,7 +37,7 @@ import { applyServiceFee, calculateListingTotal, formatPriceValue } from "../uti
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { getListing, searchListings } from "../api";
 import { trackEvent } from "../analytics";
-import { colors, radius, spacing, textStyles } from "../styles/theme";
+import { colors, primaryButtonShadow, radius, spacing, textStyles } from "../styles/theme";
 import { motion } from "../styles/motion";
 import {
   ArrowLeft,
@@ -169,7 +169,7 @@ function FilterChip({ label, selected = false, onPress, icon, small = false }: F
       {Icon ? (
         <Icon
           size={14}
-          color={selected ? "#ffffff" : "#0f172a"}
+          color={selected ? colors.textInverse : colors.text}
           strokeWidth={2.1}
           style={{ marginRight: 6 }}
         />
@@ -424,7 +424,7 @@ function PriceRangeSlider({
           containerStyle={styles.priceRangeSlider}
           maximumTrackTintColor="#dfe3e8"
           maximumValue={scale.max}
-          minimumTrackTintColor="#0f172a"
+          minimumTrackTintColor={colors.text}
           minimumValue={scale.min}
           minimumTrackStyle={styles.priceRangeSliderSelectedTrack}
           onSlidingComplete={handleRangeChange}
@@ -2091,7 +2091,7 @@ export function SearchScreen({ navigation }: Props) {
                 }}
                 testID="search-bar"
               >
-                <MapPinIcon size={17} color="#0a8050" strokeWidth={2.2} />
+                <MapPinIcon size={17} color={colors.primary} strokeWidth={2.2} />
                 <Text style={[styles.searchCardLocationText, !addressQuery && styles.searchCardPlaceholder]} numberOfLines={1}>
                   {addressQuery || "Where to?"}
                 </Text>
@@ -2112,7 +2112,7 @@ export function SearchScreen({ navigation }: Props) {
                   </Animated.View>
                 ) : addressQuery ? (
                   <Pressable onPress={() => { setAddressQuery(""); setAddressSuggestions([]); }} hitSlop={10}>
-                    <CircleX size={16} color="#B4BEC7" strokeWidth={2.1} />
+                    <CircleX size={16} color={colors.textDisabled} strokeWidth={2.1} />
                   </Pressable>
                 ) : null}
               </Pressable>
@@ -2122,7 +2122,7 @@ export function SearchScreen({ navigation }: Props) {
                 onPress={() => setShowFilters((prev) => !prev)}
                 accessibilityLabel="Filters"
               >
-                <SlidersHorizontal size={17} color="#111827" strokeWidth={2.1} />
+                <SlidersHorizontal size={17} color={colors.primary} strokeWidth={2.1} />
                 {activeFilterCount > 0 ? (
                   <View style={styles.filterBtnBadge}>
                     <Text style={styles.filterBtnBadgeText}>{activeFilterCount}</Text>
@@ -2167,7 +2167,7 @@ export function SearchScreen({ navigation }: Props) {
                 </View>
               </Pressable>
               <View style={styles.timeStripArrow}>
-                <ArrowRight size={13} color="#0a8050" strokeWidth={2.4} />
+                <ArrowRight size={13} color={colors.primary} strokeWidth={2.4} />
               </View>
               <Pressable
                 style={({ pressed }) => [styles.timeStripBtn, pressed && styles.timeStripBtnPressed]}
@@ -2203,7 +2203,7 @@ export function SearchScreen({ navigation }: Props) {
             {resultsFlash ? (
               <>
                 <View style={styles.findingSpinner}>
-                  <Check size={13} color="#0a8050" strokeWidth={3} />
+                  <Check size={13} color={colors.primary} strokeWidth={3} />
                 </View>
                 <Text style={styles.findingText}>{resultsFlash}</Text>
               </>
@@ -2250,7 +2250,7 @@ export function SearchScreen({ navigation }: Props) {
                 );
               }}
             >
-              <RefreshCw size={14} color="#0a8050" strokeWidth={2.2} />
+              <RefreshCw size={14} color={colors.primary} strokeWidth={2.2} />
               <Text style={styles.searchAreaPillText}>Search this area</Text>
             </Pressable>
           </Animated.View>
@@ -2266,7 +2266,7 @@ export function SearchScreen({ navigation }: Props) {
             ]}
           >
             <View style={styles.emptyNoticePill}>
-              <Info size={15} color="#69727D" strokeWidth={2.2} />
+              <Info size={15} color={colors.textSoft} strokeWidth={2.2} />
               <Text style={styles.emptyNoticeText}>{emptyNotice}</Text>
             </View>
           </Animated.View>
@@ -2315,7 +2315,7 @@ export function SearchScreen({ navigation }: Props) {
               >
                 <View style={styles.filtersTopBar}>
                   <Pressable style={styles.filtersIconButton} onPress={closeFilters} hitSlop={8}>
-                    <X size={22} color="#111827" strokeWidth={2.2} />
+                    <X size={22} color={colors.text} strokeWidth={2.2} />
                   </Pressable>
                   <Text style={styles.filtersTitle}>Filters</Text>
                   <Pressable
@@ -2396,7 +2396,7 @@ export function SearchScreen({ navigation }: Props) {
                           >
                             <TypeIcon
                               size={18}
-                              color={spaceType === type.value ? "#0a8050" : "#64748b"}
+                              color={spaceType === type.value ? colors.primary : colors.textMuted}
                               strokeWidth={2}
                             />
                             <Text
@@ -2455,10 +2455,10 @@ export function SearchScreen({ navigation }: Props) {
               {/* ── Search bar (back + input in one row) ── */}
               <View style={[styles.searchTopBar, { paddingTop: insets.top + 10 }]}>
                 <Pressable onPress={() => setSearchSheetOpen(false)} hitSlop={10} style={styles.searchBackBtn}>
-                  <ArrowLeft size={22} color="#111827" strokeWidth={2.2} />
+                  <ArrowLeft size={22} color={colors.text} strokeWidth={2.2} />
                 </Pressable>
                 <View style={styles.searchInputShell}>
-                  <Search size={16} color="#98A2AD" strokeWidth={2.1} style={{ marginRight: 8 }} />
+                  <Search size={16} color={colors.textMuted} strokeWidth={2.1} style={{ marginRight: 8 }} />
                   <TextInput
                     style={styles.searchInputField}
                     value={addressQuery}
@@ -2467,7 +2467,7 @@ export function SearchScreen({ navigation }: Props) {
                       if (!value.trim()) setAddressSuggestions([]);
                     }}
                     placeholder="Area, address or landmark"
-                    placeholderTextColor="#98A2AD"
+                    placeholderTextColor={colors.textDisabled}
                     returnKeyType="search"
                     autoFocus
                   />
@@ -2476,7 +2476,7 @@ export function SearchScreen({ navigation }: Props) {
                       onPress={() => { setAddressQuery(""); setAddressSuggestions([]); }}
                       hitSlop={8}
                     >
-                      <CircleX size={16} color="#B4BEC7" strokeWidth={2.1} />
+                      <CircleX size={16} color={colors.textDisabled} strokeWidth={2.1} />
                     </Pressable>
                   ) : null}
                 </View>
@@ -2507,7 +2507,7 @@ export function SearchScreen({ navigation }: Props) {
                             onPress={() => { setSearchSheetOpen(false); void handleSelectSuggestion(suggestion); }}
                           >
                             <View style={styles.searchRowIcon}>
-                              <MapPinIcon size={16} color="#0a8050" strokeWidth={2.2} />
+                              <MapPinIcon size={16} color={colors.primary} strokeWidth={2.2} />
                             </View>
                             <View style={styles.searchRowCopy}>
                               <Text style={styles.searchRowTitle} numberOfLines={1}>{mainText}</Text>
@@ -2530,7 +2530,7 @@ export function SearchScreen({ navigation }: Props) {
                         disabled={locating}
                       >
                         <View style={[styles.searchRowIcon, styles.searchRowIconLocate]}>
-                          <LocateFixed size={17} color="#0a8050" strokeWidth={2.2} />
+                          <LocateFixed size={17} color={colors.cardBg} strokeWidth={2.2} />
                         </View>
                         <View style={styles.searchRowCopy}>
                           <Text style={styles.searchLocationTitle}>
@@ -2570,12 +2570,12 @@ export function SearchScreen({ navigation }: Props) {
                             <View key={`${item.label}-${item.lat}-${item.lng}`} style={styles.searchRow}>
                               <Pressable style={styles.searchRowPress} onPress={() => handleSelectHistoryItem(item)}>
                                 <View style={styles.searchRowIcon}>
-                                  <Clock size={16} color="#98A2AD" strokeWidth={2.1} />
+                                  <Clock size={16} color={colors.textMuted} strokeWidth={2.1} />
                                 </View>
                                 <Text style={styles.searchRowTitle} numberOfLines={1}>{item.label}</Text>
                               </Pressable>
                               <Pressable style={styles.searchRemoveBtn} onPress={() => removeFromHistory(item)} hitSlop={10}>
-                                <X size={14} color="#B4BEC7" strokeWidth={2.2} />
+                                <X size={14} color={colors.textDisabled} strokeWidth={2.2} />
                               </Pressable>
                             </View>
                           ))
@@ -2586,22 +2586,29 @@ export function SearchScreen({ navigation }: Props) {
                         )
                       ) : (
                         favorites.length > 0 ? (
-                          favorites.map((item) => (
-                            <Pressable
-                              key={`fav-${item.id}`}
-                              style={({ pressed }) => [styles.searchRow, pressed && styles.searchRowPressed]}
-                              onPress={() => navigation.navigate("Listing", { id: item.id, from, to })}
-                            >
-                              <View style={[styles.searchRowIcon, styles.searchRowIconHeart]}>
-                                <Heart size={14} color="#0a8050" fill="#0a8050" strokeWidth={2.1} />
-                              </View>
-                              <View style={styles.searchRowCopy}>
-                                <Text style={styles.searchRowTitle} numberOfLines={1}>{getListingDisplayTitle(item)}</Text>
-                                <Text style={styles.searchRowSub} numberOfLines={1}>{item.address}</Text>
-                              </View>
-                              <ChevronRight size={16} color="#9AA4AD" strokeWidth={2.2} />
-                            </Pressable>
-                          ))
+                          favorites.map((item) => {
+                            const favImage = item.image_urls?.[0];
+                            return (
+                              <Pressable
+                                key={`fav-${item.id}`}
+                                style={({ pressed }) => [styles.searchRow, pressed && styles.searchRowPressed]}
+                                onPress={() => navigation.navigate("Listing", { id: item.id, from, to })}
+                              >
+                                {favImage ? (
+                                  <Image source={{ uri: favImage }} style={styles.searchRowThumb} />
+                                ) : (
+                                  <View style={[styles.searchRowIcon, styles.searchRowIconHeart]}>
+                                    <Heart size={14} color={colors.primary} fill={colors.primary} strokeWidth={2.1} />
+                                  </View>
+                                )}
+                                <View style={styles.searchRowCopy}>
+                                  <Text style={styles.searchRowTitle} numberOfLines={1}>{getListingDisplayTitle(item)}</Text>
+                                  <Text style={styles.searchRowSub} numberOfLines={1}>{item.address}</Text>
+                                </View>
+                                <ChevronRight size={16} color={colors.textMuted} strokeWidth={2.2} />
+                              </Pressable>
+                            );
+                          })
                         ) : (
                           <View style={styles.searchEmptyState}>
                             <Text style={styles.searchEmptyStateText}>No favourites saved yet</Text>
@@ -2791,7 +2798,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FAFBFB",
+    backgroundColor: colors.pageBg,
     zIndex: 10,
   },
   mapLoadingLottie: {
@@ -2819,8 +2826,10 @@ const styles = StyleSheet.create({
   // A single hero shadow instead of two stacked cards competing: the eye
   // lands here first, then falls to the map.
   searchCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 22,
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.cardSmall,
+    borderWidth: 1,
+    borderColor: colors.border,
     overflow: "hidden",
     shadowColor: "#0B1220",
     shadowOffset: { width: 0, height: 10 },
@@ -2843,7 +2852,7 @@ const styles = StyleSheet.create({
   // Filters live inside the search surface (Airbnb pattern) — one floating
   // object instead of a card plus a trailing chip row.
   searchCardVDivider: {
-    backgroundColor: "#E9EDF0",
+    backgroundColor: colors.divider,
     marginVertical: 12,
     width: StyleSheet.hairlineWidth,
   },
@@ -2854,9 +2863,9 @@ const styles = StyleSheet.create({
   },
   filterBtnBadge: {
     alignItems: "center",
-    backgroundColor: "#0a8050",
-    borderColor: "#ffffff",
-    borderRadius: 999,
+    backgroundColor: colors.primary,
+    borderColor: colors.cardBg,
+    borderRadius: radius.pill,
     borderWidth: 1.5,
     height: 16,
     justifyContent: "center",
@@ -2867,35 +2876,35 @@ const styles = StyleSheet.create({
     top: 10,
   },
   filterBtnBadgeText: {
-    color: "#ffffff",
+    color: colors.textInverse,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 9.5,
+    fontSize: 11,
     lineHeight: 12,
   },
   searchCardLocationText: {
     flex: 1,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15.5,
-    color: "#111827",
+    fontSize: 15,
+    color: colors.text,
     letterSpacing: -0.2,
   },
   searchCardPlaceholder: {
-    color: "#98A2AD",
+    color: colors.textMuted,
     fontFamily: "PlusJakartaSans-Regular",
   },
   // Divider insets to the text edge (18 pad + 17 icon + 12 gap), iOS-style —
   // a full-bleed rule would cut the card in half; this one connects the rows.
   searchCardDivider: {
-    backgroundColor: "#E9EDF0",
+    backgroundColor: colors.divider,
     height: StyleSheet.hairlineWidth,
     marginLeft: 47,
   },
   searchCardRowPressed: {
-    backgroundColor: "#F7F9FA",
+    backgroundColor: colors.cardBgMuted,
   },
   // Collapsed pill keeps the booking window visible at a glance.
   searchCardTimesCompact: {
-    color: "#69727D",
+    color: colors.textSoft,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     letterSpacing: -0.1,
@@ -2918,7 +2927,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   timeStripBtnPressed: {
-    backgroundColor: "#F7F9FA",
+    backgroundColor: colors.cardBgMuted,
   },
   timeStripArrow: {
     alignItems: "center",
@@ -2928,9 +2937,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   timeStripLabel: {
-    color: "#8A94A0",
+    color: colors.textMuted,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11.5,
+    fontSize: 12,
     letterSpacing: -0.1,
   },
   timeStripInner: {
@@ -2940,26 +2949,26 @@ const styles = StyleSheet.create({
   timeStripTime: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 14,
-    color: "#111827",
+    color: colors.text,
     letterSpacing: -0.2,
   },
   timeStripSep: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
-    color: "#C6CDD6",
+    color: colors.textDisabled,
     paddingHorizontal: 4,
   },
   timeStripDate: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
-    color: "#69727D",
+    color: colors.textSoft,
     letterSpacing: -0.1,
   },
   findingPill: {
     alignItems: "center",
     alignSelf: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 999,
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.pill,
     elevation: 5,
     flexDirection: "row",
     marginTop: 12,
@@ -2974,22 +2983,22 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   findingText: {
-    color: "#111827",
+    color: colors.text,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     letterSpacing: -0.2,
   },
 
   filtersPanel: {
-    backgroundColor: "#ffffff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    elevation: 20,
+    backgroundColor: colors.cardBg,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
+    elevation: 8,
     overflow: "hidden",
     shadowColor: "#0f172a",
     shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.12,
-    shadowRadius: 28,
+    shadowRadius: 16,
   },
   filtersSheetHost: {
     ...StyleSheet.absoluteFillObject,
@@ -3020,7 +3029,7 @@ const styles = StyleSheet.create({
   },
   filtersTopBar: {
     alignItems: "center",
-    borderBottomColor: "#eef2f6",
+    borderBottomColor: colors.divider,
     borderBottomWidth: 1,
     flexDirection: "row",
     minHeight: 58,
@@ -3050,25 +3059,26 @@ const styles = StyleSheet.create({
   },
   filtersTitle: {
     flex: 1,
-    color: "#111827",
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 16,
-    letterSpacing: 0,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 22,
+    letterSpacing: -0.2,
     textAlign: "center",
   },
+  // Whitespace, not a drawn line, separates groups (docs/PARKING_DESIGN_BIBLE.md
+  // E1) — every section used to share an identical hairline, which read as a
+  // stacked form rather than a designed sheet.
   filterSection: {
-    borderBottomColor: "#eef2f6",
-    borderBottomWidth: 1,
-    paddingVertical: 20,
+    paddingVertical: 24,
   },
   filterSectionHeader: {
-    marginBottom: 12,
+    marginBottom: 14,
   },
   filterSectionTitle: {
-    color: "#111827",
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 17,
-    letterSpacing: 0,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 19,
+    letterSpacing: -0.3,
   },
   filterSectionSubtitle: {
     color: colors.textMuted,
@@ -3101,14 +3111,14 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   priceHistogramBar: {
-    backgroundColor: "#dfe3e8",
-    borderRadius: 999,
+    backgroundColor: colors.border,
+    borderRadius: radius.pill,
     flex: 1,
     marginHorizontal: 2,
     maxWidth: 8,
   },
   priceHistogramBarSelected: {
-    backgroundColor: "#0f172a",
+    backgroundColor: colors.text,
   },
   priceRangeValueRow: {
     alignItems: "center",
@@ -3120,20 +3130,20 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   priceRangeDivider: {
-    backgroundColor: "#dfe3e8",
+    backgroundColor: colors.border,
     flex: 1,
     height: 1,
     marginHorizontal: 14,
   },
   priceRangeValue: {
-    color: "#111827",
+    color: colors.text,
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 20,
     letterSpacing: -0.6,
     marginTop: 3,
   },
   priceValueLabel: {
-    color: "#69727D",
+    color: colors.textSoft,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     letterSpacing: 0,
@@ -3146,31 +3156,26 @@ const styles = StyleSheet.create({
     right: 0,
   },
   priceRangeSliderTrack: {
-    borderRadius: 999,
+    borderRadius: radius.pill,
     height: 4,
   },
   priceRangeSliderSelectedTrack: {
-    borderRadius: 999,
+    borderRadius: radius.pill,
     height: 4,
   },
   priceRangeThumb: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderColor: "#d7dde4",
-    borderRadius: 999,
-    borderWidth: 1,
-    elevation: 5,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
     height: 42,
     justifyContent: "center",
-    shadowColor: "#111827",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
     width: 42,
   },
   priceRangeThumbDot: {
-    backgroundColor: "#0f172a",
-    borderRadius: 999,
+    backgroundColor: colors.text,
+    borderRadius: radius.pill,
     height: 11,
     width: 11,
   },
@@ -3181,9 +3186,9 @@ const styles = StyleSheet.create({
   },
   filterChipButton: {
     alignItems: "center",
-    backgroundColor: "#f7f8fa",
-    borderColor: "#e6ebf0",
-    borderRadius: 999,
+    backgroundColor: colors.cardBgMuted,
+    borderColor: colors.divider,
+    borderRadius: radius.pill,
     borderWidth: 1,
     flexDirection: "row",
     minHeight: 44,
@@ -3196,20 +3201,20 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   filterChipButtonActive: {
-    backgroundColor: "#0f172a",
-    borderColor: "#0f172a",
+    backgroundColor: colors.text,
+    borderColor: colors.text,
   },
   filterChipButtonPressed: {
     opacity: 0.92,
   },
   filterChipButtonText: {
-    color: "#0f172a",
+    color: colors.text,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     letterSpacing: 0,
   },
   filterChipButtonTextActive: {
-    color: "#ffffff",
+    color: colors.textInverse,
   },
   filterTileGrid: {
     flexDirection: "row",
@@ -3218,8 +3223,8 @@ const styles = StyleSheet.create({
   },
   filterTile: {
     alignItems: "center",
-    backgroundColor: "#f7f8fa",
-    borderColor: "#e6ebf0",
+    backgroundColor: colors.cardBgMuted,
+    borderColor: colors.divider,
     borderRadius: 14,
     borderWidth: 1,
     flexBasis: "47%",
@@ -3230,29 +3235,29 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   filterTileActive: {
-    backgroundColor: "#eefbf4",
-    borderColor: "#8fdcb3",
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.accent,
   },
   filterTileText: {
-    color: "#0f172a",
+    color: colors.text,
     flexShrink: 1,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     letterSpacing: 0,
   },
   filterTileTextActive: {
-    color: "#0a8050",
+    color: colors.primary,
   },
   filterFooter: {
-    backgroundColor: "#ffffff",
-    borderTopColor: "#eef2f6",
+    backgroundColor: colors.cardBg,
+    borderTopColor: colors.divider,
     borderTopWidth: 1,
     paddingHorizontal: spacing.screenX,
     paddingTop: 12,
   },
   applyButton: {
     alignItems: "center",
-    backgroundColor: "#0f172a",
+    backgroundColor: colors.primary,
     borderRadius: 14,
     minHeight: 52,
     paddingVertical: 13,
@@ -3273,14 +3278,14 @@ const styles = StyleSheet.create({
   },
   searchPanel: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
   },
 
   // Top bar — back arrow + input in one row
   searchTopBar: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderBottomColor: "#E9EEF3",
+    backgroundColor: colors.cardBg,
+    borderBottomColor: colors.divider,
     borderBottomWidth: 1,
     flexDirection: "row",
     gap: 8,
@@ -3296,8 +3301,8 @@ const styles = StyleSheet.create({
   },
   searchInputShell: {
     alignItems: "center",
-    backgroundColor: "#F4F6F7",
-    borderRadius: 999,
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: radius.pill,
     flex: 1,
     flexDirection: "row",
     paddingHorizontal: 16,
@@ -3307,41 +3312,44 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 16,
-    color: "#111827",
+    color: colors.text,
   },
 
   // Body — unified list, no separate cards
   searchBody: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
   },
   searchList: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderTopWidth: 0,
   },
 
   // Location row
   searchRowLocation: {
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F2F5",
+    borderBottomColor: colors.divider,
   },
+  // Solid CTA fill, not another grey circle — "Use current location" is the
+  // fastest path through this sheet and should read as the primary action,
+  // not just another list row (docs/PARKING_DESIGN_BIBLE.md A7).
   searchRowIconLocate: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.primary,
   },
   searchLocationTitle: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
-    color: "#111827",
+    color: colors.text,
   },
 
   // Section header row with inline toggle
   searchSectionHeader: {
     alignItems: "center",
-    backgroundColor: "#F7F8FA",
+    backgroundColor: colors.cardBgMuted,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F2F5",
+    borderBottomColor: colors.divider,
     borderTopWidth: 1,
-    borderTopColor: "#F0F2F5",
+    borderTopColor: colors.divider,
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 16,
@@ -3350,38 +3358,38 @@ const styles = StyleSheet.create({
   searchSectionLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
-    color: "#69727D",
+    color: colors.textSoft,
     letterSpacing: 0.2,
   },
   searchToggle: {
-    backgroundColor: "#EAECF0",
-    borderRadius: 10,
+    backgroundColor: colors.divider,
+    borderRadius: radius.md,
     flexDirection: "row",
     gap: 2,
     padding: 2,
   },
   searchToggleBtn: {
-    borderRadius: 8,
+    borderRadius: radius.sm,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   searchToggleBtnActive: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
   },
   searchToggleText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
-    color: "#69727D",
+    color: colors.textSoft,
   },
   searchToggleTextActive: {
-    color: "#111827",
+    color: colors.text,
   },
 
   // Rows
   searchRow: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderBottomColor: "#F0F2F5",
+    backgroundColor: colors.cardBg,
+    borderBottomColor: colors.divider,
     borderBottomWidth: 1,
     flexDirection: "row",
     gap: 12,
@@ -3389,7 +3397,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   searchRowPressed: {
-    backgroundColor: "#F7F8FA",
+    backgroundColor: colors.cardBgMuted,
   },
   searchRowPress: {
     alignItems: "center",
@@ -3399,15 +3407,24 @@ const styles = StyleSheet.create({
   },
   searchRowIcon: {
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
-    borderRadius: 20,
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: radius.pill,
     flexShrink: 0,
     height: 40,
     justifyContent: "center",
     width: 40,
   },
   searchRowIconHeart: {
-    backgroundColor: "#edf7f2",
+    backgroundColor: colors.accentSoft,
+  },
+  // A saved space is recognised by its photo, not its address (A8) — same
+  // circular footprint as searchRowIcon so the row rhythm doesn't jump.
+  searchRowThumb: {
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: radius.pill,
+    flexShrink: 0,
+    height: 40,
+    width: 40,
   },
   searchRowCopy: {
     flex: 1,
@@ -3415,12 +3432,12 @@ const styles = StyleSheet.create({
   searchRowTitle: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
-    color: "#111827",
+    color: colors.text,
   },
   searchRowSub: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
-    color: "#69727D",
+    color: colors.textSoft,
     marginTop: 2,
   },
   searchRemoveBtn: {
@@ -3439,7 +3456,7 @@ const styles = StyleSheet.create({
   searchEmptyText: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 15,
-    color: "#69727D",
+    color: colors.textSoft,
   },
   searchEmptyState: {
     alignItems: "center",
@@ -3448,7 +3465,7 @@ const styles = StyleSheet.create({
   searchEmptyStateText: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 15,
-    color: "#69727D",
+    color: colors.textSoft,
     marginTop: 0,
   },
 
@@ -3467,7 +3484,7 @@ const styles = StyleSheet.create({
   },
   searchAreaPill: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderRadius: radius.pill,
     elevation: 6,
     flexDirection: "row",
@@ -3484,14 +3501,14 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.97 }],
   },
   searchAreaPillText: {
-    color: "#111827",
+    color: colors.text,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
     letterSpacing: -0.1,
   },
   emptyNoticePill: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderRadius: radius.pill,
     elevation: 6,
     flexDirection: "row",
@@ -3504,7 +3521,7 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
   },
   emptyNoticeText: {
-    color: "#69727D",
+    color: colors.textSoft,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     letterSpacing: -0.1,
@@ -3515,21 +3532,21 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   pickerSheet: {
-    backgroundColor: "#ffffff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: colors.cardBg,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
     paddingHorizontal: 16,
     paddingTop: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
-    elevation: 12,
+    elevation: 6,
   },
   pickerHandle: {
     alignSelf: "center",
-    backgroundColor: "#D1D5DB",
-    borderRadius: 99,
+    backgroundColor: colors.border,
+    borderRadius: radius.pill,
     height: 4,
     marginBottom: 12,
     width: 40,
@@ -3541,13 +3558,13 @@ const styles = StyleSheet.create({
   pickerTitle: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 16,
-    color: "#111827",
+    color: colors.text,
     letterSpacing: -0.3,
   },
   pickerSubtitle: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
-    color: "#69727D",
+    color: colors.textSoft,
     marginTop: 2,
   },
 
@@ -3560,28 +3577,23 @@ const styles = StyleSheet.create({
   pickerQuickPill: {
     flex: 1,
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.divider,
+    borderRadius: radius.md,
     borderWidth: 1.5,
     paddingVertical: 10,
   },
   pickerQuickPillActive: {
-    backgroundColor: "#0a8050",
-    borderColor: "#0a8050",
-    shadowColor: "#0a7a50",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 4,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   pickerQuickText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
-    color: "#69727D",
+    color: colors.textSoft,
   },
   pickerQuickTextActive: {
-    color: "#ffffff",
+    color: colors.textInverse,
   },
 
   pickerFooter: {
@@ -3591,7 +3603,7 @@ const styles = StyleSheet.create({
   },
   pickerBackBtn: {
     alignItems: "center",
-    borderColor: "#E5E7EB",
+    borderColor: colors.divider,
     borderRadius: 14,
     borderWidth: 1.5,
     flex: 1,
@@ -3601,26 +3613,22 @@ const styles = StyleSheet.create({
   pickerBackBtnText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
-    color: "#69727D",
+    color: colors.textSoft,
     letterSpacing: -0.2,
   },
   pickerFooterPrimary: {
     alignItems: "center",
-    backgroundColor: "#0a8050",
+    backgroundColor: colors.primary,
     borderRadius: 14,
     flex: 2,
     height: 52,
     justifyContent: "center",
-    shadowColor: "#0a7a50",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
+    ...primaryButtonShadow,
   },
   pickerFooterPrimaryText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 16,
-    color: "#ffffff",
+    color: colors.textInverse,
     letterSpacing: -0.3,
   },
   errorRow: {
@@ -3631,9 +3639,9 @@ const styles = StyleSheet.create({
   // Bare red text is illegible over map tiles — errors get a surface like
   // every other floating element.
   error: {
-    backgroundColor: "#ffffff",
-    borderRadius: 999,
-    color: "#b42318",
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.pill,
+    color: colors.danger,
     fontFamily: "PlusJakartaSans-Medium",
     fontSize: 13,
     overflow: "hidden",
@@ -3651,9 +3659,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   retryText: {
-    color: "#0a8050",
+    color: colors.primary,
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 13.5,
+    fontSize: 13,
     letterSpacing: -0.1,
   },
   overlappingBackdrop: {
@@ -3662,14 +3670,14 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   overlappingSheet: {
-    backgroundColor: "#ffffff",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    backgroundColor: colors.cardBg,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
     maxHeight: "70%",
     paddingBottom: 32,
   },
   overlappingHeader: {
-    borderBottomColor: "#EEF1F3",
+    borderBottomColor: colors.divider,
     borderBottomWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 20,
     paddingTop: 22,
@@ -3689,7 +3697,7 @@ const styles = StyleSheet.create({
   // Soft-fill rows instead of border+shadow boxes — a sheet's list should
   // read as choices, not as a stack of cards inside a card.
   overlappingItem: {
-    backgroundColor: "#F7F9FA",
+    backgroundColor: colors.cardBgMuted,
     borderRadius: 14,
     flexDirection: "row",
     alignItems: "center",

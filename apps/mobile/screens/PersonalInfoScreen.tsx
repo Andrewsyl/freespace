@@ -11,6 +11,7 @@ import { PhoneVerifyModal } from "../components/PhoneVerifyModal";
 import { DetailNavBar, FieldEditSheet, FieldRow, SectionTitle } from "../components/profileUi";
 import type { RootStackParamList } from "../types";
 import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
+import { colors } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PersonalInfo">;
 
@@ -61,7 +62,7 @@ export function PersonalInfoScreen({ navigation, route }: Props) {
         <StatusBar barStyle="dark-content" />
         <DetailNavBar title="Personal information" onBack={() => goBackOrFallback(navigation, fallbackRoutes.profile)} />
         <SignInWall
-          icon={<UserRound size={26} color="#0a8050" strokeWidth={2.2} />}
+          icon={<UserRound size={26} color={colors.primary} strokeWidth={2.2} />}
           title="Sign in to edit your profile"
           body="Your name, email and phone number are available once you sign in."
           onSignIn={() => navigation.navigate("Welcome")}
@@ -136,7 +137,7 @@ export function PersonalInfoScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, backgroundColor: colors.cardBg },
   content: { paddingHorizontal: 20, paddingTop: 4 },
   firstSection: { marginTop: 8 },
 });
