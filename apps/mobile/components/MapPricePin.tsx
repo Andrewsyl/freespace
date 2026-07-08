@@ -1,5 +1,5 @@
 import { memo, useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import Svg, { Rect } from "react-native-svg";
 
 type MapPricePinProps = {
@@ -10,7 +10,11 @@ type MapPricePinProps = {
 
 // Soft-shadow margin around the pill. The shadow is painted inside the SVG
 // (the marker ships as a captured bitmap, so RN shadow props can't reach it).
-const SHADOW_MARGIN = 5;
+const SHADOW_MARGIN = 6;
+
+// Android's marker bitmaps read a size or two larger than iOS at the same
+// viewBox — trim pins down a touch there to match the iOS footprint.
+const PIN_SCALE = Platform.OS === "android" ? 0.9 : 1;
 
 // Pure geometry for a pin given its rendered label. Shared with MapSection so the
 // captured-image markers can size their child <Image> to the exact pixel bounds
@@ -19,11 +23,12 @@ export function getPinDimensions(priceText: string, selected = false, soldOut = 
   const textLength = priceText.length;
   // 7px/char tracks PJS ExtraBold at ~12.5pt; clipping a price is worse than a
   // hair of slack.
-  const charWidth = soldOut ? 5.6 : 7;
-  const paddingH  = soldOut ? 9 : 11;
-  const width     = Math.max(soldOut ? 36 : 44, textLength * charWidth + paddingH * 2);
-  // Selected pill is a step larger — reads as "lifted" without animation.
-  const pillHeight = soldOut ? 22 : selected ? 30 : 26;
+  const charWidth = (soldOut ? 5.6 : 7) * PIN_SCALE;
+  const paddingH  = (soldOut ? 9 : 12) * PIN_SCALE;
+  const width     = Math.max((soldOut ? 36 : 46) * PIN_SCALE, textLength * charWidth + paddingH * 2);
+  // One size for every state — tapping a pin only recolors it, never resizes it
+  // (a larger selected pill reflowed the price onto two lines).
+  const pillHeight = (soldOut ? 22 : 28) * PIN_SCALE;
   const viewBoxWidth  = width + SHADOW_MARGIN * 2;
   const viewBoxHeight = pillHeight + SHADOW_MARGIN * 2;
   return { width, pillHeight, viewBoxWidth, viewBoxHeight };
@@ -38,10 +43,10 @@ function MapPricePinBase({ price, selected = false, soldOut = false }: MapPriceP
   const priceText = soldOut ? "Full" : `€${price}`;
 
   // Unselected: pure white, ink price — the whitest, crispest objects on the
-  // map. Selected: deep FreeSpace green owns the moment of choice.
-  // Sold out: recedes — smaller, quieter, barely shadowed.
-  const fill      = soldOut ? "#F7F8F9" : selected ? "#0A4230" : "#FFFFFF";
-  const textColor = soldOut ? "#98A2AD" : selected ? "#FFFFFF" : "#111827";
+  // map. Selected: near-black owns the moment of choice — Airbnb's exact map
+  // marker treatment. Sold out: recedes — smaller, quieter, barely shadowed.
+  const fill      = soldOut ? "#F7F8F9" : selected ? "#222222" : "#FFFFFF";
+  const textColor = soldOut ? "#98A2AD" : selected ? "#FFFFFF" : "#222222";
 
   const { width, pillHeight, viewBoxWidth, viewBoxHeight } = useMemo(
     () => getPinDimensions(priceText, selected, soldOut),
@@ -50,18 +55,20 @@ function MapPricePinBase({ price, selected = false, soldOut = false }: MapPriceP
 
   const m = SHADOW_MARGIN;
   const r = pillHeight / 2;
-  // Three concentric passes, each a touch wider and lower — reads as one soft
-  // shadow at device scale. Sold-out pills sit nearly flat on the map.
+  // Concentric passes, each a touch wider and lower — reads as one soft Airbnb
+  // lift at device scale. With no border (removed below), the darkest core pass
+  // also carries the pill's edge definition over pale tiles. Sold-out pills sit
+  // nearly flat on the map.
   const shadowLayers = soldOut
     ? [
-        { grow: 1, drop: 1, opacity: 0.04 },
-        { grow: 0, drop: 0.5, opacity: 0.06 },
+        { grow: 1, drop: 1, opacity: 0.05 },
+        { grow: 0, drop: 0.5, opacity: 0.07 },
       ]
     : [
-        { grow: 3, drop: 2, opacity: selected ? 0.035 : 0.03 },
-        { grow: 2, drop: 1.8, opacity: selected ? 0.045 : 0.04 },
-        { grow: 1, drop: 1.4, opacity: selected ? 0.06 : 0.05 },
-        { grow: 0, drop: 1, opacity: selected ? 0.09 : 0.08 },
+        { grow: 3, drop: 3, opacity: 0.05 },
+        { grow: 2, drop: 2.5, opacity: 0.06 },
+        { grow: 1, drop: 2, opacity: 0.08 },
+        { grow: 0, drop: 1.5, opacity: 0.12 },
       ];
 
   return (
@@ -79,8 +86,8 @@ function MapPricePinBase({ price, selected = false, soldOut = false }: MapPriceP
           />
         ))}
         <Rect x={m} y={m} width={width} height={pillHeight} rx={r} fill={fill} />
-        {/* Hairline keeps white pills defined over pale tiles without reading
-            as a drawn border. */}
+        {/* Subtle hairline on the white pills — Airbnb's markers keep it, and it
+            defines them over pale map tiles. The black selected pill needs none. */}
         {!selected ? (
           <Rect
             x={m + 0.5}
@@ -99,7 +106,6 @@ function MapPricePinBase({ price, selected = false, soldOut = false }: MapPriceP
         <Text
           style={[
             styles.priceText,
-            selected && !soldOut && styles.priceTextSelected,
             soldOut && styles.priceTextSoldOut,
             { color: textColor },
           ]}
@@ -130,19 +136,13 @@ const styles = StyleSheet.create({
     top: 0,
   },
   priceText: {
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 12.5,
-    letterSpacing: -0.2,
-  },
-  priceTextSelected: {
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 13.5,
-    letterSpacing: -0.3,
-    lineHeight: 17,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 13 * PIN_SCALE,
+    letterSpacing: -0.1,
   },
   priceTextSoldOut: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 10.5,
+    fontSize: 10.5 * PIN_SCALE,
     letterSpacing: 0,
   },
 });

@@ -577,7 +577,6 @@ export function SearchScreen({ navigation }: Props) {
   const pickerSheetAnim = useRef(new Animated.Value(400)).current;
   const mapOverlayOpacity = useRef(new Animated.Value(1)).current;
   const [mapOverlayVisible, setMapOverlayVisible] = useState(true);
-  const mapFrozenOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (pickerVisible) {
@@ -633,20 +632,12 @@ export function SearchScreen({ navigation }: Props) {
   }, []);
 
   const setCardCollapsedAnimated = useCallback(
-    (next: boolean) => {
-      setCardCollapsed((prev) => {
-        if (prev === next) return prev;
-        Animated.timing(cardAnim, {
-          toValue: next ? 0 : 1,
-          duration: motion.duration.standard,
-          easing: motion.easing.out,
-          // Drives layout height, so it can't ride the native driver.
-          useNativeDriver: false,
-        }).start();
-        return next;
-      });
+    (_next: boolean) => {
+      // The search card stays fully expanded at all times (user preference: no
+      // collapsing search bar). Collapse requests are intentionally ignored so
+      // the destination + time strip are always visible.
     },
-    [cardAnim]
+    []
   );
 
   const [emptyNotice, setEmptyNotice] = useState<string | null>(null);
@@ -693,6 +684,8 @@ export function SearchScreen({ navigation }: Props) {
   const timeSearchPendingRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  // Bumped on screen focus to force a marker remount so pins repaint after
+  // react-native-screens blanks the map's native views on a stack push (listing).
   const [mapResumeNonce, setMapResumeNonce] = useState(0);
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
@@ -772,8 +765,6 @@ export function SearchScreen({ navigation }: Props) {
   const cardDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialRegionHandledRef = useRef(false);
   const cardHeightRef = useRef(0);
-  const [mapFrozenUri, setMapFrozenUri] = useState<string | null>(null);
-  const mapFreezeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suppressRegionSearchRef = useRef(false);
   const suppressRegionSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requireUserPanForRegionSearchRef = useRef(false);
@@ -1239,35 +1230,21 @@ export function SearchScreen({ navigation }: Props) {
     if (typeof navigation.addListener !== "function") {
       return;
     }
-    const unsubscribeBlur = navigation.addListener("blur", async () => {
-      if (!mapRef.current) return;
-      try {
-        const uri = await (mapRef.current as any).takeSnapshot({ format: "jpg", quality: 0.85, result: "file" });
-        if (uri) {
-          mapFrozenOpacity.setValue(1);
-          setMapFrozenUri(uri);
-        }
-      } catch {
-        // snapshot failed — map will redraw normally
-      }
-    });
+    // We dropped the old on-blur JPEG snapshot overlay (150–620ms of UI-thread
+    // work per exit, measured) — the synchronous vector pin fallback covers the
+    // repaint gap well enough without it.
+    //
+    // We must still bump the resume nonce on focus, though: a listing is a
+    // native-stack push over the whole tab navigator, so react-native-screens
+    // detaches the Tabs screen (and its Google map) on push and blanks the frozen
+    // marker native views. On pop-back the markers are frozen bitmaps
+    // (tracksViewChanges=false) and don't repaint on their own — they come back
+    // gone or as the default red pin. Bumping the nonce folds into each marker's
+    // key so they remount and repaint from scratch. (This also fires on plain tab
+    // switches, where the map stayed attached and a remount is redundant; the cost
+    // is a cheap remount on tab-return, which we accept to keep pins reliable.)
     const unsubscribeFocus = navigation.addListener("focus", () => {
       setMapResumeNonce((prev) => prev + 1);
-      if (mapFreezeTimerRef.current) clearTimeout(mapFreezeTimerRef.current);
-      mapFreezeTimerRef.current = setTimeout(() => {
-        mapFreezeTimerRef.current = null;
-        Animated.timing(mapFrozenOpacity, {
-          toValue: 0,
-          duration: motion.duration.standard,
-          useNativeDriver: true,
-        }).start(({ finished }) => {
-          if (finished) {
-            setMapFrozenUri(null);
-            mapFrozenOpacity.setValue(1);
-          }
-        });
-      }, 600);
-      // Suppress region-change searches while the map settles after returning
       suppressRegionSearchRef.current = true;
       requireUserPanForRegionSearchRef.current = true;
       if (suppressRegionSearchTimerRef.current) clearTimeout(suppressRegionSearchTimerRef.current);
@@ -1277,9 +1254,7 @@ export function SearchScreen({ navigation }: Props) {
       }, 1200);
     });
     return () => {
-      unsubscribeBlur();
       unsubscribeFocus();
-      if (mapFreezeTimerRef.current) clearTimeout(mapFreezeTimerRef.current);
       if (suppressRegionSearchTimerRef.current) clearTimeout(suppressRegionSearchTimerRef.current);
     };
   }, [navigation]);
@@ -2053,13 +2028,6 @@ export function SearchScreen({ navigation }: Props) {
             searchGeneration={searchGeneration}
             onAllPinsRevealed={onAllPinsRevealed}
           />
-        {mapFrozenUri ? (
-          <Animated.Image
-            source={{ uri: mapFrozenUri }}
-            style={[StyleSheet.absoluteFillObject, { opacity: mapFrozenOpacity }]}
-            resizeMode="cover"
-          />
-        ) : null}
         {mapOverlayVisible ? (
           <Animated.View style={[styles.mapLoadingOverlay, { opacity: mapOverlayOpacity }]}>
             <LottieView

@@ -176,12 +176,13 @@ const trustSignals = [
   },
 ];
 
-// Differentiation vs commercial car parks — structural truths about the product,
-// not statistics.
+// Structural truths about the product — benefit-led, not statistics. Framed
+// around what FreeSpace gives the driver, not against car parks (car parks are
+// a listable space type, so the copy must not disparage them).
 const whyFreespace = [
   {
     title: "Reserved just for you",
-    body: "Your spot is booked and waiting — no circling a full car park, no luck involved.",
+    body: "Your spot is booked and waiting — no circling, no luck involved.",
     icon: (
       <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2 4 5v6c0 5 3.5 7.5 8 9 4.5-1.5 8-4 8-9V5l-8-3z" /><path d="m9 11 2 2 4-4" />
@@ -189,8 +190,8 @@ const whyFreespace = [
     ),
   },
   {
-    title: "Closer than the car park",
-    body: "Private driveways and spaces in spots big car parks don't reach — often right where you're headed.",
+    title: "Right where you're headed",
+    body: "Private driveways and spaces tucked into the streets you're actually going to — often steps from the door.",
     icon: (
       <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" /><circle cx="12" cy="9" r="2.5" />
@@ -315,7 +316,7 @@ export default function HomePage() {
           <div>
             <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500">Parking, sorted</p>
             <h1 className="font-display text-[33px] font-extrabold leading-[1.05] tracking-[-0.03em] text-slate-900 sm:text-[42px] lg:text-[46px]">
-              Skip the car park.{" "}
+              Skip the search.{" "}
               <span className="text-brand-600">Book a space that&apos;s yours.</span>
             </h1>
             <p className="mt-5 max-w-md text-[15px] leading-[1.6] text-slate-500">
@@ -631,7 +632,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── Why FreeSpace — differentiation vs car parks ── */}
+        {/* ── Why FreeSpace — product benefits ── */}
         <section className="mt-16 sm:mt-24">
           <div className="mb-9">
             <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-brand-500">Why FreeSpace</p>

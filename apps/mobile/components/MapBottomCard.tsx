@@ -10,8 +10,9 @@ import {
 import {
   Accessibility,
   ArrowDownUp,
-  Bike,
   BatteryCharging,
+  Bike,
+  CarFront,
   Cctv,
   Clock,
   Fence,
@@ -22,9 +23,8 @@ import {
   Maximize2,
   Star,
   Warehouse,
-  CarFront,
 } from "lucide-react-native";
-import { colors } from "../styles/theme";
+import { colors, radius } from "../styles/theme";
 import { motion } from "../styles/motion";
 
 type MapBottomCardProps = {
@@ -95,9 +95,7 @@ export function FeatureChip({ label }: { label: string }) {
   const Icon = FEATURE_ICONS[iconType];
   return (
     <View style={styles.featureChip} accessibilityLabel={label}>
-      <View style={styles.featureChipIconWrap}>
-        <Icon size={15} color="#55606B" strokeWidth={1.9} />
-      </View>
+      <Icon size={15} color="#55606B" strokeWidth={1.9} />
     </View>
   );
 }
@@ -215,52 +213,62 @@ export function MapBottomCard({
               <CarFront size={22} color="#b0bac4" strokeWidth={1.9} />
             </View>
           )}
+          {onToggleFavorite ? (
+            <Pressable onPress={onToggleFavorite} hitSlop={8} style={styles.heartBtn}>
+              <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+                <Heart
+                  size={16}
+                  color={colors.primary}
+                  fill={isFavorite ? colors.primary : "none"}
+                  strokeWidth={2.1}
+                />
+              </Animated.View>
+            </Pressable>
+          ) : null}
         </View>
 
         {/* ── Content ───────────────────────────────────────── */}
-        <View style={styles.content}>
-          <View style={styles.titleRow}>
-            <Text style={styles.title} numberOfLines={2}>{title}</Text>
-            {onToggleFavorite ? (
-              <Pressable onPress={onToggleFavorite} hitSlop={10} style={styles.heartBtn}>
-                <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-                  <Heart
-                    size={17}
-                    color="#0a8050"
-                    fill={isFavorite ? "#0a8050" : "none"}
-                    strokeWidth={2.1}
-                  />
-                </Animated.View>
-              </Pressable>
+        {/* Title/rating hug the top; amenity icons sit on the same
+            bottom line as the price (pinned bottom-right) so the row's
+            full height is used instead of leaving a void. */}
+        <View style={[styles.content, !hasRating && styles.contentCompact]}>
+          <View style={styles.topGroup}>
+            {/* No rating row → let the title breathe onto a second line so a
+                review-less card doesn't leave a big empty gap. */}
+            <Text style={styles.title} numberOfLines={hasRating ? 1 : 2}>{title}</Text>
+
+            {hasRating ? (
+              <View style={styles.ratingRow}>
+                <Star size={11} color={colors.primary} fill={colors.primary} strokeWidth={1.5} />
+                <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+                <Text style={styles.ratingCount}>
+                  {reviewCount} {reviewCount === 1 ? "review" : "reviews"}
+                </Text>
+              </View>
             ) : null}
           </View>
 
-          {hasRating ? (
-            <View style={styles.ratingRow}>
-              <Star size={11.5} color="#111827" fill="#111827" strokeWidth={1.5} />
-              <Text style={styles.rating}>
-                {rating.toFixed(1)}
-                <Text style={styles.ratingCount}> · {reviewCount} {reviewCount === 1 ? "review" : "reviews"}</Text>
-              </Text>
+          {/* Amenity icons (left) and price (right) share the bottom line. */}
+          <View style={styles.bottomRow}>
+            <View style={styles.featureRow}>
+              {features.slice(0, 3).map((feature) => (
+                <FeatureChip key={feature} label={feature} />
+              ))}
+              {features.length > 3 ? (
+                <Text style={styles.featureMore}>+{features.length - 3}</Text>
+              ) : null}
             </View>
-          ) : null}
 
-          <View style={styles.priceRow}>
             {isAvailable ? (
               <Text style={styles.price}>
                 {priceAmount}
                 {priceSuffix ? <Text style={styles.priceSuffix}> {priceSuffix}</Text> : null}
               </Text>
             ) : (
-              <Text style={styles.soldOut}>SOLD OUT</Text>
-            )}
-            {features.length > 0 ? (
-              <View style={styles.featureRow}>
-                {features.slice(0, 3).map((feature) => (
-                  <FeatureChip key={feature} label={feature} />
-                ))}
+              <View style={styles.soldOutPill}>
+                <Text style={styles.soldOut}>Sold out</Text>
               </View>
-            ) : null}
+            )}
           </View>
         </View>
       </Pressable>
@@ -271,23 +279,28 @@ export function MapBottomCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.cardBg,
-    borderRadius: 18,
-    elevation: 7,
-    overflow: "hidden",
+    borderRadius: radius.cardSmall,
+    borderWidth: 1,
+    borderColor: colors.border,
+    elevation: 2,
     position: "absolute",
     shadowColor: "#0B1220",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    overflow: "hidden",
   },
   row: {
     flexDirection: "row",
     minHeight: 108,
   },
   imageWrap: {
-    backgroundColor: "#edf1f4",
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: radius.cardSmall - 6,
     overflow: "hidden",
-    width: 112,
+    margin: 4,
+    marginRight: 0,
+    width: 124,
   },
   image: {
     flex: 1,
@@ -305,42 +318,50 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 12,
   },
-  titleRow: {
-    alignItems: "center",
-    flexDirection: "row",
+  topGroup: {
     gap: 6,
-    marginBottom: 3,
+  },
+  // No rating → center the title + icon/price cluster so a review-less
+  // card doesn't stretch into a big empty gap.
+  contentCompact: {
+    gap: 10,
+    justifyContent: "center",
   },
   title: {
-    color: "#111827",
-    flex: 1,
+    color: colors.text,
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 15,
     letterSpacing: -0.3,
-    lineHeight: 20,
+    lineHeight: 18,
   },
+  // Circular white button floating over the top-left of the photo.
   heartBtn: {
     alignItems: "center",
-    height: 30,
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.pill,
+    height: 28,
     justifyContent: "center",
-    width: 30,
+    left: 6,
+    position: "absolute",
+    top: 6,
+    width: 28,
   },
   ratingRow: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 4,
-    marginBottom: 3,
+    gap: 5,
   },
-  rating: {
-    color: "#111827",
-    fontFamily: "PlusJakartaSans-SemiBold",
+  ratingText: {
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 12,
     letterSpacing: -0.1,
   },
   ratingCount: {
-    color: "#98A2AD",
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: "PlusJakartaSans-Medium",
+    fontSize: 11.5,
+    letterSpacing: -0.1,
   },
   featureBadge: {
     alignItems: "center",
@@ -355,54 +376,54 @@ const styles = StyleSheet.create({
   },
   featureChip: {
     alignItems: "center",
-    backgroundColor: "#F2F5F7",
-    borderRadius: 999,
-    height: 26,
-    justifyContent: "center",
-    minWidth: 26,
-    paddingHorizontal: 4,
-  },
-  featureChipIconWrap: {
-    alignItems: "center",
     justifyContent: "center",
   },
-  priceRow: {
-    borderTopColor: "#EEF1F3",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-    justifyContent: "space-between",
-    paddingTop: 9,
+  // Overflow count when a space has more amenities than fit — tells the
+  // driver there's more without listing every one.
+  featureMore: {
+    color: colors.textMuted,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 11,
+    marginLeft: 2,
   },
   featureRow: {
+    alignItems: "center",
     flexDirection: "row",
     flexWrap: "nowrap",
     gap: 4,
-    justifyContent: "flex-end",
-    marginLeft: 8,
-    flex: 1,
-    minWidth: 0,
-    overflow: "hidden",
+    minHeight: 22,
+  },
+  // Amenity icons and price share one line: icons left, price right.
+  bottomRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 24,
   },
   price: {
-    color: "#111827",
+    color: colors.text,
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 16.5,
+    fontSize: 19,
     letterSpacing: -0.4,
-    lineHeight: 21,
+    lineHeight: 23,
+    textAlign: "right",
   },
   priceSuffix: {
-    color: "#98A2AD",
+    color: colors.textMuted,
     fontFamily: "PlusJakartaSans-Medium",
-    fontSize: 12.5,
+    fontSize: 11,
     letterSpacing: -0.1,
   },
+  soldOutPill: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
   soldOut: {
-    color: "#98A2AD",
+    color: colors.textMuted,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
   },
 });

@@ -1,6 +1,6 @@
-import { ReactNode, useEffect, useRef } from "react";
+import type { ReactNode } from "react";
 import type { GestureResponderEvent } from "react-native";
-import { Animated, Pressable, StyleSheet } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { radius } from "../styles/theme";
 
 type Props = {
@@ -10,68 +10,16 @@ type Props = {
 };
 
 export function BottomTabButton({ children, onPress, accessibilityState }: Props) {
-  const focused = accessibilityState?.selected;
-  const scale = useRef(new Animated.Value(1)).current;
-  const opacity = useRef(new Animated.Value(focused ? 1 : 0.9)).current;
-  const lift = useRef(new Animated.Value(focused ? -0.5 : 0)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.spring(scale, {
-        toValue: focused ? 1.01 : 1,
-        useNativeDriver: false,
-        friction: 7,
-        tension: 40,
-      }),
-      Animated.timing(opacity, {
-        toValue: focused ? 1 : 0.9,
-        duration: 200,
-        useNativeDriver: false,
-      }),
-      Animated.timing(lift, {
-        toValue: focused ? -0.5 : 0,
-        duration: 180,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }, [focused, scale, opacity, lift]);
-
-  const handlePressIn = () => {
-    Animated.spring(scale, {
-      toValue: 0.96,
-      useNativeDriver: false,
-      friction: 8,
-      tension: 200,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scale, {
-      toValue: focused ? 1.02 : 1,
-      useNativeDriver: false,
-      friction: 7,
-      tension: 40,
-    }).start();
-  };
-
   return (
     <Pressable
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      style={styles.pressable}
+      // Fire on touch-down, not release: the switch starts the moment the finger
+      // lands, saving the press-out delay on every tab change.
+      onPressIn={(e) => {
+        onPress?.(e);
+      }}
+      style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}
     >
-      <Animated.View
-        style={[
-          styles.item,
-          {
-            transform: [{ scale }, { translateY: lift }],
-            opacity,
-          },
-        ]}
-      >
-        {children}
-      </Animated.View>
+      <View style={styles.item}>{children}</View>
     </Pressable>
   );
 }
@@ -90,5 +38,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
+  },
+  pressed: {
+    opacity: 0.6,
   },
 });

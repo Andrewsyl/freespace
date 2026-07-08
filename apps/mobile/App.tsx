@@ -80,7 +80,7 @@ type BookingNotificationData = {
   bookingId?: string;
 };
 
-enableScreens(false);
+enableScreens(true);
 // Freezes off-screen screens (stops their React tree re-rendering) once
 // they're covered by another screen — e.g. the map stops rendering while the
 // listing page is on top of it, and vice versa on the way back. Paired with
@@ -628,9 +628,24 @@ function MainTabs() {
 
   return (
     <Tab.Navigator
+      // Keep inactive tabs' native views ATTACHED (detach=false) so the Google
+      // map never re-initializes on return, but FREEZE their JS trees off-screen
+      // (freezeOnBlur=true) so the map's render churn doesn't compete with the
+      // screen you switched to. Perf log proved detach=false + freeze off left
+      // the map re-rendering while on Bookings — this pairing stops that while
+      // still avoiding a native map rebuild on the way back.
+      detachInactiveScreens={false}
       screenOptions={{
         headerShown: false,
-        freezeOnBlur: true,
+        // Pre-mount every tab at startup (behind the splash) instead of on first
+        // visit. The first tap on Bookings used to pay a cold mount (~260ms shell
+        // + content fill) — with lazy:false + each screen's own deferred-content
+        // pattern, no tab is ever cold when the user reaches it.
+        lazy: false,
+        // Light screens (Bookings/Saved/Profile) stay warm so switching to them
+        // is instant — no thaw. Only the heavy map screen sets freezeOnBlur below,
+        // because it's the one whose background render churn needs stopping.
+        freezeOnBlur: false,
         tabBarShowLabel: true,
         tabBarActiveTintColor: "#0a8050",
         tabBarInactiveTintColor: "#98A2AD",
@@ -645,6 +660,9 @@ function MainTabs() {
         name="Search"
         component={SearchScreen}
         options={({ route }) => ({
+          // Only the map screen freezes off-screen: its render churn is heavy and
+          // must not compete with the tab you switch to. The other tabs stay warm.
+          freezeOnBlur: true,
           tabBarStyle: {
             ...baseTabBarStyle,
             display: (route.params as { hideTabBar?: boolean } | undefined)?.hideTabBar ? "none" : "flex",

@@ -10,7 +10,6 @@ import type { ListingSummary, RootStackParamList } from "../types";
 import {
   Accessibility,
   ArrowDownUp,
-  ArrowLeft,
   BatteryCharging,
   Bike,
   CarFront,
@@ -27,7 +26,7 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 import { SignInWall } from "../components/SignInWall";
-import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
+import { fallbackRoutes, resetToSafeRoute } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Favorites">;
 
@@ -192,15 +191,7 @@ export function FavoritesScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.navBar}>
-        <Pressable
-          style={styles.backBtn}
-          onPress={() => goBackOrFallback(navigation, fallbackRoutes.saved)}
-          accessibilityLabel="Go back"
-        >
-          <ArrowLeft size={22} color={colors.text} />
-        </Pressable>
         <Text style={styles.navTitle}>Favourites</Text>
-        <View style={styles.navSpacer} />
       </View>
       <View style={styles.contentWrapper}>
         <ScrollView
@@ -305,9 +296,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.divider,
     backgroundColor: colors.cardBg,
   },
-  backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
-  navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: colors.text, letterSpacing: -0.3 },
-  navSpacer: { width: 38 },
+  navTitle: { fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 28, lineHeight: 34, color: colors.primary, letterSpacing: -0.6 },
 
   content: {
     paddingHorizontal: spacing.md,
@@ -324,25 +313,25 @@ const styles = StyleSheet.create({
   },
   list: { gap: 14 },
 
-  // TGTG-style favourite card — a visible hairline border keeps the card
-  // defined against light backgrounds (iOS renders the shadow alone far too
-  // softly to read as a card edge, especially over the map/list bg).
+  // Favourite card edge matches the map search bar: colors.border keeps the
+  // card defined against light backgrounds, where on iOS the shadow alone
+  // reads too softly to register as a card edge.
   card: {
     backgroundColor: colors.cardBg,
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: "#0B1220",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    borderColor: colors.divider,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
   // Image sits inset within the card (not edge-to-edge) so the white card
   // frame reads clearly all the way around, per the reference card style.
   imageWrap: {
-    height: 150,
-    borderRadius: 12,
+    height: 120,
+    borderRadius: 14,
     margin: 8,
     marginBottom: 0,
     overflow: "hidden",
@@ -358,12 +347,12 @@ const styles = StyleSheet.create({
     shadowColor: "#0B1220", shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.14, shadowRadius: 5, elevation: 3,
   },
-  ratingPillText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 13, color: colors.text, letterSpacing: -0.1 },
-  body: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 10 },
-  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  title: { flex: 1, fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 19, color: colors.text, letterSpacing: -0.4 },
-  addr: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: colors.textMuted, lineHeight: 18, marginTop: 2 },
-  meta: { fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: colors.textSoft, marginTop: 1 },
+  ratingPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: colors.text, letterSpacing: -0.1 },
+  body: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12, gap: 6 },
+  titleRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
+  title: { flex: 1, fontSize: 16, fontFamily: "PlusJakartaSans-Bold", color: colors.text, letterSpacing: -0.3 },
+  addr: { fontSize: 12.5, fontFamily: "PlusJakartaSans-Regular", color: colors.textMuted },
+  meta: { fontSize: 12.5, fontFamily: "PlusJakartaSans-Regular", color: colors.textMuted },
   featureRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   featureIcon: { alignItems: "center", justifyContent: "center" },
   divider: {
@@ -371,15 +360,15 @@ const styles = StyleSheet.create({
     marginTop: 8, marginBottom: 6,
   },
   priceRow: { flexDirection: "row", alignItems: "center" },
-  price: { fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 18, color: colors.text, letterSpacing: -0.4, marginLeft: "auto" },
-  priceUnit: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: colors.textMuted },
+  price: { fontFamily: "PlusJakartaSans-Bold", fontSize: 18, color: colors.primary, letterSpacing: -0.3, marginLeft: "auto" },
+  priceUnit: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: colors.textMuted },
 
   // Skeleton
   skeletonCard: {
     backgroundColor: colors.cardBg,
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.divider,
     shadowColor: "#0B1220",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,

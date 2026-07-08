@@ -49,16 +49,22 @@ function SearchOriginPin() {
 }
 
 // Wraps the origin pin so it tracks until its SVG has painted, then freezes —
-// avoids the default red pin flashing when the pin first mounts.
+// avoids the default red pin flashing when the pin first mounts. resumeNonce
+// remounts it on screen focus for the same reason the listing pins remount:
+// a frozen marker blanked by a native-stack push never repaints on its own.
 function SearchOriginMarker({
   coordinate,
+  resumeNonce,
 }: {
   coordinate: { latitude: number; longitude: number };
+  resumeNonce?: number;
 }) {
-  const tracks = useMarkerTracksUntilPainted(`${coordinate.latitude},${coordinate.longitude}`);
+  const tracks = useMarkerTracksUntilPainted(
+    `${coordinate.latitude},${coordinate.longitude}|${resumeNonce ?? 0}`
+  );
   return (
     <Marker
-      key={`search-pin-${coordinate.latitude.toFixed(6)}-${coordinate.longitude.toFixed(6)}`}
+      key={`search-pin-${coordinate.latitude.toFixed(6)}-${coordinate.longitude.toFixed(6)}-${resumeNonce ?? 0}`}
       coordinate={coordinate}
       anchor={{ x: 0.5, y: 0.94 }}
       tracksViewChanges={tracks}
@@ -69,23 +75,9 @@ function SearchOriginMarker({
   );
 }
 
-// Renders the pre-captured pin as a CHILD <Image> rather than via the Marker
-// `image` prop. With a child view present, react-native-maps never draws the
-// default red annotation, so there's no red-pin flash while the file URI decodes.
-// tracksViewChanges stays true only until the image reports loaded, then flips
-// off to keep the map performant.
 const PIN_REVEAL_MS = motion.duration.fast;
 
-function ListingPinMarker({
-  listingId,
-  coordinate,
-  selected,
-  label,
-  price,
-  pinImage,
-  entering,
-  onPress,
-}: {
+type ListingPinMarkerProps = {
   listingId: string;
   coordinate: { latitude: number; longitude: number };
   selected: boolean;
@@ -94,7 +86,57 @@ function ListingPinMarker({
   pinImage: string;
   entering: boolean;
   onPress: (event: MarkerPressEvent) => void;
-}) {
+};
+
+// Android: hand the captured PNG straight to Google Maps as the marker's native
+// icon (BitmapDescriptor) — no child views. The child-view path kept stranding
+// the default red pin: Android rasterizes marker children once when
+// tracksViewChanges flips false, Image.onLoad reports decode (not marker paint),
+// and native-stack transitions don't register with InteractionManager, so every
+// freeze heuristic could snapshot a blank frame — permanently red until remount.
+// With a native icon there is no rasterization, no freeze, and nothing for
+// react-native-screens to blank on a stack push. Costs accepted: no per-pin
+// entrance fade here (pins land as one batch), and the first-ever load of each
+// distinct label file may flash briefly — react-native-maps' shared-icon cache
+// makes every later use synchronous. ViewShot captures at device pixelRatio and
+// BitmapDescriptors draw 1:1 in physical pixels, so the dp size matches iOS.
+function ListingPinMarkerAndroid({
+  coordinate,
+  selected,
+  pinImage,
+  onPress,
+}: ListingPinMarkerProps) {
+  return (
+    <Marker
+      coordinate={coordinate}
+      image={{ uri: pinImage }}
+      tracksViewChanges={false}
+      anchor={{ x: 0.5, y: 0.5 }}
+      centerOffset={{ x: 0, y: 0 }}
+      onPress={onPress}
+      zIndex={selected ? 1000000 : Math.round((90 - coordinate.latitude) * 10000)}
+      tappable={true}
+      stopPropagation={true}
+    />
+  );
+}
+
+// iOS: renders the pre-captured pin as a CHILD <Image> rather than via the Marker
+// `image` prop. With a child view present, react-native-maps never draws the
+// default red annotation, so there's no red-pin flash while the file URI decodes.
+// tracksViewChanges stays true only until the image reports loaded, then flips
+// off to keep the map performant. (iOS never suffered the Android stranded-red
+// rasterization race, so it keeps the child path and the entrance animation.)
+function ListingPinMarkerCaptured({
+  listingId,
+  coordinate,
+  selected,
+  label,
+  price,
+  pinImage,
+  entering,
+  onPress,
+}: ListingPinMarkerProps) {
   const soldOut = label === "Full";
   const { viewBoxWidth, viewBoxHeight } = getPinDimensions(label, selected, soldOut);
   const [tracks, setTracks] = useState(true);
@@ -106,35 +148,14 @@ function ListingPinMarker({
   // starts fully shown so it never blinks when tapped.
   const enteringAtMount = useRef(entering).current;
   const revealAnim = useRef(new Animated.Value(enteringAtMount ? 0 : 1)).current;
-  // Selection no longer remounts the marker (that caused a default-red-pin flash
-  // on Android and needless churn); it updates in place. Spring the pin whenever
-  // it becomes selected — on mount if it mounts already-selected, and on the
-  // tap that selects it.
-  const popAtMount = useRef(selected && !entering).current;
-  const popAnim = useRef(new Animated.Value(popAtMount ? 0.85 : 1)).current;
-  const prevSelectedRef = useRef(selected);
-
-  useEffect(() => {
-    if (!popAtMount) return;
-    Animated.spring(popAnim, {
-      toValue: 1,
-      ...motion.springPop,
-      useNativeDriver: true,
-    }).start();
-  }, [popAtMount, popAnim]);
-
-  useEffect(() => {
-    if (selected === prevSelectedRef.current) return;
-    prevSelectedRef.current = selected;
-    if (!selected) return;
-    popAnim.stopAnimation();
-    popAnim.setValue(0.85);
-    Animated.spring(popAnim, {
-      toValue: 1,
-      ...motion.springPop,
-      useNativeDriver: true,
-    }).start();
-  }, [selected, popAnim]);
+  // Selection remounts the marker (its state is folded into the marker key
+  // upstream). We previously updated in place to dodge a default-red-pin flash on
+  // Android, but in-place re-tracking of a frozen marker doesn't reliably repaint
+  // there — a deselected pin stayed green while the tapped one turned green too,
+  // so pins accumulated as "selected". A clean remount is the dependable fix.
+  // Tapping a pin only recolors it — no pop/scale on selection (user-approved).
+  // popAnim is pinned to 1 so the entrance-reveal transform below is unaffected.
+  const popAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     cancelledRef.current = false;
@@ -173,19 +194,22 @@ function ListingPinMarker({
           );
         });
       },
-      // Freezing rasterizes the marker, so it must outlast whichever entrance
-      // is running: the batch reveal or the selection pop-spring.
-      enteringAtMount ? PIN_REVEAL_MS + 40 : popAtMount ? 380 : 0
+      // Freezing rasterizes the marker, so it must outlast the batch entrance
+      // reveal; a selection remount has no animation, so it can freeze at once.
+      enteringAtMount ? PIN_REVEAL_MS + 40 : 0
     );
   };
 
-  // Returning from another screen bumps resumeNonce, which is folded into the
-  // marker key upstream — so each pin remounts fresh on resume and repaints from
-  // scratch (tracks=true → paint → freeze). In-place re-tracking of a frozen
-  // marker doesn't reliably repaint on Android after the OS blanks its native
-  // view, so a clean remount is the dependable fix; the cost is a small hit to
-  // back-navigation smoothness. Selection still updates in place (it's not in
-  // the key), so tapping a pin never triggers the default-red-pin flash.
+  // Both a selection change AND a screen resume (resumeNonce) are folded into the
+  // marker key upstream, so each pin remounts fresh and repaints from scratch
+  // (tracks=true → paint → freeze). In-place re-tracking of a frozen marker
+  // doesn't reliably repaint on Android after the OS blanks its native view, so a
+  // clean remount is the dependable fix. Resume remount matters because a listing
+  // is a native-stack push over the whole tab navigator: react-native-screens
+  // detaches the Tabs screen (and its map) on push, blanking the frozen marker
+  // views — without the resume remount they come back gone or as the default red
+  // pin. The cost is a possible one-frame default pin on remount; the synchronous
+  // vector fallback below keeps that minimal.
 
   const handleLoad = () => {
     setImageReady(true);
@@ -247,6 +271,13 @@ function ListingPinMarker({
       </Animated.View>
     </Marker>
   );
+}
+
+// Platform dispatch kept outside the two implementations so neither branch
+// violates the rules of hooks (the captured path holds all the hook state).
+function ListingPinMarker(props: ListingPinMarkerProps) {
+  if (Platform.OS === "android") return <ListingPinMarkerAndroid {...props} />;
+  return <ListingPinMarkerCaptured {...props} />;
 }
 
 function MapSection({
@@ -501,7 +532,7 @@ function MapSection({
         mapType="standard"
       >
         {searchPinCoordinate ? (
-          <SearchOriginMarker coordinate={searchPinCoordinate} />
+          <SearchOriginMarker coordinate={searchPinCoordinate} resumeNonce={resumeNonce} />
         ) : null}
         {pinsVisible && (freezeMarkers ? renderedResultsRef.current : nextResults).map((listing) => {
           if (!revealedIds.has(listing.id)) return null;
@@ -514,7 +545,7 @@ function MapSection({
           if (!pinImage) return null;
           return (
             <ListingPinMarker
-              key={`marker-${listing.id}-${PIN_STYLE_VERSION}-${resumeNonce ?? 0}`}
+              key={`marker-${listing.id}-${PIN_STYLE_VERSION}-${isSelected ? "sel" : "def"}-${resumeNonce ?? 0}`}
               listingId={listing.id}
               coordinate={{
                 latitude: listing.latitude as number,

@@ -26,13 +26,25 @@ const LOGO         = require("../assets/freespace-logo-grid-black.png");
 const IMG_LOCATION = require("../assets/illustrations/city-driver.gif");
 const MAP_REGION_KEY = "search.mapRegion";
 
-const STEPS = [
+type Step = {
+  image:    number;
+  headline: string;
+  body:     string;
+  cta:      string;
+  skip?:    string;
+};
+
+const STEPS: Step[] = [
   {
     image:    IMG_LOCATION,
     headline: "Find parking,\nnear you.",
-    body:     "Allow location to instantly see parking near you — no need to type your address every time you open the app.",
-    cta:      "Allow location",
-    skip:     "Skip for now",
+    body:     "See parking near you without typing your address every time you open the app.",
+    cta:      "Continue",
+    // No exit button and a neutral CTA on the location step: Apple 5.1.1(iv)
+    // requires the pre-permission message to always proceed to the OS prompt
+    // with a non-directive button label (rejection 2026-07-08, submission
+    // 33f8fb38-80dd-464c-955c-31ab357a5a13). Notifications below keep an opt-out —
+    // that permission was not cited and a "Not now" soft-prompt is standard.
   },
   {
     image:    require("../assets/illustrations/push-notifications.png"),
@@ -41,7 +53,7 @@ const STEPS = [
     cta:      "Turn on notifications",
     skip:     "Not now",
   },
-] as const;
+];
 
 type Props = { onComplete: () => void };
 
@@ -166,10 +178,13 @@ export function OnboardingPermissions({ onComplete }: Props) {
         style={{ marginBottom: 14 }}
       />
 
-      {/* Skip — underlined text only */}
-      <Pressable style={S.skipBtn} onPress={advance}>
-        <Text style={S.skipLabel}>{current.skip}</Text>
-      </Pressable>
+      {/* Skip — underlined text only. Omitted on steps without an opt-out
+          (the location step must always proceed to the OS prompt; see STEPS). */}
+      {current.skip ? (
+        <Pressable style={S.skipBtn} onPress={advance}>
+          <Text style={S.skipLabel}>{current.skip}</Text>
+        </Pressable>
+      ) : null}
 
     </Animated.View>
   );

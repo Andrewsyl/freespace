@@ -8,6 +8,7 @@ import * as Notifications from "expo-notifications";
 import { requestEmailVerification, getHostListings } from "../api";
 import { useAuth } from "../auth";
 import { useGlobalToast } from "../components/GlobalToast";
+import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
 import type { RootStackParamList } from "../types";
 import { colors } from "../styles/theme";
 
@@ -20,11 +21,12 @@ type RowProps = {
   icon: string;
   label: string;
   value?: string;
+  valueNode?: React.ReactNode;
   onPress?: () => void;
   danger?: boolean;
 };
 
-function Row({ icon, label, value, onPress, danger }: RowProps) {
+function Row({ icon, label, value, valueNode, onPress, danger }: RowProps) {
   return (
     <Pressable
       style={({ pressed }) => [styles.row, pressed && !!onPress && styles.rowPressed]}
@@ -35,7 +37,9 @@ function Row({ icon, label, value, onPress, danger }: RowProps) {
         <Ionicons name={icon as any} size={21} color={danger ? colors.danger : colors.text} />
       </View>
       <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
-      {value ? (
+      {valueNode ? (
+        valueNode
+      ) : value ? (
         <Text style={styles.rowValue} numberOfLines={1}>
           {value}
         </Text>
@@ -234,7 +238,8 @@ export function ProfileScreen({ navigation }: Props) {
           <Row
             icon="car-outline"
             label="Vehicle"
-            value={user.vehicleMake ?? "Add"}
+            value={user.vehicleMake ? undefined : "Add"}
+            valueNode={user.vehicleMake ? <VehicleBrandLogo make={user.vehicleMake} size={22} /> : undefined}
             onPress={() => navigation.navigate("VehicleType")}
           />
           <Row
@@ -289,7 +294,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20 },
 
   // ── Masthead (open, no box) ──────────────────────────────────
-  masthead: { alignItems: "flex-start", paddingTop: 6, paddingBottom: 18 },
+  masthead: { alignItems: "center", paddingTop: 6, paddingBottom: 18 },
   mastheadPressed: { opacity: 0.72 },
   avatar: {
     width: 74, height: 74, borderRadius: 37,
@@ -302,9 +307,10 @@ const styles = StyleSheet.create({
   name: {
     fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 27,
     color: colors.text, letterSpacing: -0.8, marginTop: 16, lineHeight: 31,
+    textAlign: "center",
   },
   metaRow: {
-    flexDirection: "row", alignItems: "center", gap: 9, marginTop: 8, flexWrap: "wrap",
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, marginTop: 8, flexWrap: "wrap",
   },
   email: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14.5, color: colors.textSoft },
   metaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.textMuted },
@@ -313,16 +319,17 @@ const styles = StyleSheet.create({
   mastheadSub: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 14.5,
     color: colors.textSoft, marginTop: 8, lineHeight: 20,
+    textAlign: "center",
   },
   verifyChip: {
-    alignSelf: "flex-start", marginTop: 12,
+    alignSelf: "center", marginTop: 12,
     backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent,
     borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5,
   },
   verifyChipText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: GREEN },
   signInChip: {
     flexDirection: "row", alignItems: "center", gap: 6,
-    alignSelf: "flex-start", marginTop: 16,
+    alignSelf: "center", marginTop: 16,
     backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent,
     borderRadius: 999, paddingHorizontal: 15, paddingVertical: 9,
   },

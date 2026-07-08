@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { SquircleBtn } from "../components/SquircleBtn";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
@@ -45,6 +45,165 @@ function SparkDoodle({ size = 30, color = "#FFFFFF", opacity = 1 }: { size?: num
   );
 }
 
+// Stale-while-revalidate cache for the driver's bookings, held for the app
+// session and keyed by user id. Re-entering the tab paints the last list
+// instantly while a silent fetch refreshes in the background, so there's no
+// cold-load blank on every visit. Keyed by user so a different account never
+// sees the previous one's cached bookings.
+let cachedBookings: BookingSummary[] | null = null;
+let cachedBookingsUserId: string | null = null;
+let lastBookingsFetch = 0;
+
+type PaneTab = "upcoming" | "active" | "past";
+
+type PaneItem =
+  | { type: "header"; id: string; label: string }
+  | { type: "booking"; id: string; booking: BookingSummary };
+
+// Stable identity for the signed-out/unrevealed case so memoized panes don't
+// see a fresh [] every render.
+const EMPTY_PANE_ITEMS: PaneItem[] = [];
+
+function PaneSkeletonList() {
+  return (
+    <View style={styles.skeletonList}>
+      {[0, 1, 2].map((i) => (
+        <View key={i} style={styles.skeletonCard}>
+          <View style={styles.skeletonTop}>
+            <View style={styles.skeletonImage} />
+            <View style={styles.skeletonInfo}>
+              <View style={styles.skeletonTitleRow}>
+                <View style={styles.skeletonTitle} />
+                <View style={styles.skeletonPrice} />
+              </View>
+              <View style={styles.skeletonAddress} />
+              <View style={styles.skeletonMeta} />
+            </View>
+          </View>
+          <View style={styles.skeletonStrip} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// One pager pane (FlatList + header states), memoized so the tab-switch-time
+// re-renders of HistoryScreen (focus effects, silent revalidation, clock tick)
+// skip reconciling all three lists when their props are unchanged. This is what
+// keeps switching to this tab cheap — measured, the triple-list re-render was
+// the bulk of the switch cost.
+const HistoryPane = memo(function HistoryPane({
+  paneTab,
+  data,
+  width,
+  bottomPad,
+  signedIn,
+  showSkeleton,
+  showEmpty,
+  hasMorePast,
+  onLoadMore,
+  onSignIn,
+  onFindParking,
+  renderBooking,
+}: {
+  paneTab: PaneTab;
+  data: PaneItem[];
+  width: number;
+  bottomPad: number;
+  signedIn: boolean;
+  showSkeleton: boolean;
+  showEmpty: boolean;
+  hasMorePast: boolean;
+  onLoadMore: () => void;
+  onSignIn: () => void;
+  onFindParking: () => void;
+  renderBooking: (booking: BookingSummary, paneTab: PaneTab) => ReactElement;
+}) {
+  return (
+    <View style={{ width }}>
+      <FlatList
+        data={data}
+        renderItem={({ item }) => {
+          if (item.type === "header") {
+            return <Text style={styles.monthLabel}>{item.label}</Text>;
+          }
+          return renderBooking(item.booking, paneTab);
+        }}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={[styles.content, { paddingBottom: bottomPad }]}
+        ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+        ListFooterComponent={
+          paneTab === "past" && hasMorePast ? (
+            <Pressable style={styles.loadMoreButton} onPress={onLoadMore}>
+              <Text style={styles.loadMoreText}>Load more</Text>
+              <ChevronDown size={14} color={ACCENT} strokeWidth={2.2} />
+            </Pressable>
+          ) : null
+        }
+        ListHeaderComponent={
+          <>
+            {!signedIn ? (
+              <View style={styles.signInCard}>
+                <View style={styles.signInIconWrap}>
+                  <CalendarDays size={28} color={ACCENT} strokeWidth={2} />
+                </View>
+                <Text style={styles.signInTitle}>Sign in to view bookings</Text>
+                <Text style={styles.signInBody}>
+                  Log in to see your upcoming reservations and past stays.
+                </Text>
+                <SquircleBtn label="Sign in" onPress={onSignIn} fullWidth />
+              </View>
+            ) : (
+              <>
+                {showSkeleton ? (
+                  <PaneSkeletonList />
+                ) : showEmpty ? (
+                  <View style={styles.emptyState}>
+                    <Image
+                      source={
+                        paneTab === "active"
+                          ? require("../assets/illustrations/calendar-bro.png")
+                          : paneTab === "upcoming"
+                          ? require("../assets/illustrations/calendar-amico.png")
+                          : require("../assets/illustrations/calendar-pana.png")
+                      }
+                      style={styles.emptyImage}
+                      resizeMode="contain"
+                      fadeDuration={0}
+                    />
+                    <Text style={styles.emptyTitle}>
+                      {paneTab === "upcoming"
+                        ? "no bookings yet."
+                        : paneTab === "active"
+                        ? "nothing active right now."
+                        : "no history yet."}
+                    </Text>
+                    <Text style={styles.emptyBody}>
+                      {paneTab === "upcoming"
+                        ? "Find a parking space and your next trip will show up here."
+                        : paneTab === "active"
+                        ? "Bookings in progress will appear here."
+                        : "Completed reservations will appear here after your stay."}
+                    </Text>
+                    {paneTab === "upcoming" ? (
+                      <SquircleBtn label="Find parking" onPress={onFindParking} fullWidth />
+                    ) : null}
+                  </View>
+                ) : null}
+              </>
+            )}
+          </>
+        }
+        removeClippedSubviews={false}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={15}
+        windowSize={10}
+      />
+    </View>
+  );
+});
+
 export function HistoryScreen({ navigation, route }: Props) {
   const { token, user } = useAuth();
   const { reset: resetGlobalLoading } = useGlobalLoading();
@@ -54,11 +213,12 @@ export function HistoryScreen({ navigation, route }: Props) {
   useEffect(() => { screenWidthRef.current = screenWidth; }, [screenWidth]);
   const [tab, setTab] = useState<"upcoming" | "active" | "past">("upcoming");
   const [displayTab, setDisplayTab] = useState<"upcoming" | "active" | "past">("upcoming");
-  const [bookings, setBookings] = useState<BookingSummary[]>([]);
+  const cacheValid = cachedBookings !== null && cachedBookingsUserId === (user?.id ?? null);
+  const [bookings, setBookings] = useState<BookingSummary[]>(cacheValid ? cachedBookings! : []);
   const [isSwitchingTab, setIsSwitchingTab] = useState(false);
   const [tabSwitchingTo, setTabSwitchingTo] = useState<"upcoming" | "active" | "past">("upcoming");
   const [pastVisibleCount, setPastVisibleCount] = useState(20);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cacheValid);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successTab, setSuccessTab] = useState<"upcoming" | "active" | "past">("upcoming");
@@ -77,6 +237,11 @@ export function HistoryScreen({ navigation, route }: Props) {
   const [revealBookings, setRevealBookings] = useState(true);
   const [bookingTransitioning, setBookingTransitioning] = useState(false);
   const [loadingSkeletonVisible, setLoadingSkeletonVisible] = useState(false);
+  // Paint a lightweight skeleton on first mount and defer the heavy 3-pane
+  // FlatList pager until after the tab transition settles. Measured: mounting
+  // the pager synchronously cost ~260ms before the switch showed. Once ready it
+  // stays ready (the tab is kept warm), so return visits render content directly.
+  const [heavyReady, setHeavyReady] = useState(false);
 
   const TABS = ["upcoming", "active", "past"] as const;
   const dragOffsetAnim = useRef(new Animated.Value(0)).current;
@@ -154,25 +319,40 @@ export function HistoryScreen({ navigation, route }: Props) {
   const loadBookings = useCallback(async (options?: { silent?: boolean }): Promise<BookingSummary[]> => {
     if (!token || !user) {
       setBookings([]);
+      cachedBookings = null;
+      cachedBookingsUserId = null;
       setError(null);
       if (!options?.silent) {
         setLoading(false);
       }
       return [];
     }
-    if (!options?.silent) {
+    // When the cache already holds this user's bookings, revalidate silently so
+    // the cached list stays on screen instead of flashing a skeleton on re-entry.
+    const silent = options?.silent ?? (cachedBookings !== null && cachedBookingsUserId === user.id);
+    if (!silent) {
       setLoading(true);
       setError(null);
     }
     try {
       const data = await listMyBookings(token);
-      setBookings(data.driverBookings ?? []);
-      return data.driverBookings ?? [];
+      const list = data.driverBookings ?? [];
+      // Skip the state update when the refetch returns identical data — the
+      // common case for the silent focus revalidation. Keeping the old array
+      // identity lets the memoized panes skip re-rendering on tab entry.
+      const prev = cachedBookingsUserId === user.id ? cachedBookings : null;
+      const unchanged =
+        prev !== null && prev.length === list.length && JSON.stringify(prev) === JSON.stringify(list);
+      cachedBookingsUserId = user.id;
+      if (unchanged) return prev;
+      cachedBookings = list;
+      setBookings(list);
+      return list;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load bookings");
       return [];
     } finally {
-      if (!options?.silent) {
+      if (!silent) {
         setLoading(false);
       }
     }
@@ -211,16 +391,20 @@ export function HistoryScreen({ navigation, route }: Props) {
     void loadBookings();
   }, [loadBookings]);
 
-  // Only show the skeleton once loading has taken a beat — fast loads that
-  // turn out empty go straight to the empty state instead of flashing
-  // content-shaped placeholders right before "no bookings" appears.
+  // Mount the heavy pager only after the tab-switch interaction finishes, so the
+  // first paint (skeleton) is instant. runAfterInteractions fires right after the
+  // transition, not on a timer, so there's no artificial delay.
   useEffect(() => {
-    if (!loading) {
-      setLoadingSkeletonVisible(false);
-      return;
-    }
-    const timer = setTimeout(() => setLoadingSkeletonVisible(true), 200);
-    return () => clearTimeout(timer);
+    if (heavyReady) return;
+    const handle = InteractionManager.runAfterInteractions(() => setHeavyReady(true));
+    return () => handle.cancel();
+  }, [heavyReady]);
+
+  // Show the skeleton immediately while loading. A layout-mirroring placeholder
+  // is honest feedback; the previous 200ms delay left the screen blank on entry
+  // and read as a hang before content (or the empty state) appeared.
+  useEffect(() => {
+    setLoadingSkeletonVisible(loading);
   }, [loading]);
 
   useEffect(() => {
@@ -236,6 +420,9 @@ export function HistoryScreen({ navigation, route }: Props) {
         skipNextFocusReload.current = false;
         return;
       }
+      const now = Date.now();
+      if (now - lastBookingsFetch < 15_000) return;
+      lastBookingsFetch = now;
       void loadBookings();
     }, [loadBookings])
   );
@@ -411,23 +598,59 @@ export function HistoryScreen({ navigation, route }: Props) {
   // firing on a backgrounded tab.
   useFocusEffect(
     useCallback(() => {
-      setNowMs(Date.now());
+      // Bail when the clock barely moved: an unconditional setNowMs re-rendered
+      // the whole screen (all three panes) on every tab entry.
+      setNowMs((prev) => (Date.now() - prev > 30_000 ? Date.now() : prev));
       const interval = setInterval(() => setNowMs(Date.now()), 60_000);
       return () => clearInterval(interval);
     }, [])
   );
-  const now = new Date(nowMs);
-  const upcoming = bookings.filter(
-    (booking) => new Date(booking.startTime) > now && booking.status !== "canceled"
-  );
-  const active = bookings.filter(
-    (booking) => new Date(booking.startTime) <= now && new Date(booking.endTime) >= now && booking.status !== "canceled"
-  );
-  const past = bookings.filter(
-    (booking) => booking.status === "canceled" || new Date(booking.endTime) < now
-  );
-  const visiblePast = past.slice(0, pastVisibleCount);
+  // Bucket at minute resolution so re-renders reuse the same arrays — stable
+  // identities are what let the memoized panes skip re-rendering.
+  const nowMinute = Math.floor(nowMs / 60_000);
+  const { upcoming, active, past } = useMemo(() => {
+    const now = new Date(nowMinute * 60_000);
+    return {
+      upcoming: bookings.filter(
+        (booking) => new Date(booking.startTime) > now && booking.status !== "canceled"
+      ),
+      active: bookings.filter(
+        (booking) =>
+          new Date(booking.startTime) <= now && new Date(booking.endTime) >= now && booking.status !== "canceled"
+      ),
+      past: bookings.filter(
+        (booking) => booking.status === "canceled" || new Date(booking.endTime) < now
+      ),
+    };
+  }, [bookings, nowMinute]);
+  const visiblePast = useMemo(() => past.slice(0, pastVisibleCount), [past, pastVisibleCount]);
   const hasMorePast = past.length > pastVisibleCount;
+
+  const paneItemsByTab = useMemo(() => {
+    const build = (data: BookingSummary[]): PaneItem[] => {
+      const result: PaneItem[] = [];
+      let lastLabel = "";
+      const formatMonth = (value: string) =>
+        new Date(value).toLocaleString("en-US", { month: "long", year: "numeric" }).toUpperCase();
+      data.forEach((booking) => {
+        const label = formatMonth(booking.startTime);
+        if (label !== lastLabel) {
+          result.push({ type: "header", id: `header-${label}`, label });
+          lastLabel = label;
+        }
+        result.push({ type: "booking", id: booking.id, booking });
+      });
+      return result;
+    };
+    return { upcoming: build(upcoming), active: build(active), past: build(visiblePast) };
+  }, [upcoming, active, visiblePast]);
+
+  const handleLoadMorePast = useCallback(() => setPastVisibleCount((prev) => prev + 20), []);
+  const handleSignIn = useCallback(() => navigation.navigate("Welcome"), [navigation]);
+  const handleFindParking = useCallback(
+    () => navigation.navigate("Tabs", { screen: "Search" }),
+    [navigation]
+  );
 
   useEffect(() => {
     if (displayTab !== "past") return;
@@ -437,7 +660,7 @@ export function HistoryScreen({ navigation, route }: Props) {
   }, [displayTab, pastVisibleCount]);
 
   const renderBookingCard = useCallback((
-    { item: booking, paneTab }: { item: BookingSummary; paneTab: "upcoming" | "active" | "past" }
+    booking: BookingSummary, paneTab: PaneTab
   ) => {
     const start = new Date(booking.startTime);
     const end = new Date(booking.endTime);
@@ -497,7 +720,7 @@ export function HistoryScreen({ navigation, route }: Props) {
     }
 
     return cardContent;
-  }, [navigation, newBookingId, newBookingOpacityAnim, newBookingSlideAnim]);
+  }, [navigation, newBookingId, newBookingOpacityAnim, newBookingSlideAnim, ratingByBookingId]);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -561,6 +784,11 @@ export function HistoryScreen({ navigation, route }: Props) {
       </View>
 
       <View style={styles.contentWrapper} {...panResponder.panHandlers}>
+        {!heavyReady ? (
+          <View style={styles.content}>
+            <PaneSkeletonList />
+          </View>
+        ) : (
         <Animated.View
           style={{
             flex: 1,
@@ -579,28 +807,9 @@ export function HistoryScreen({ navigation, route }: Props) {
             ],
           }}
         >
-          {["upcoming", "active", "past"].map((pane) => {
-            const paneTab = pane as "upcoming" | "active" | "past";
+          {(["upcoming", "active", "past"] as const).map((paneTab) => {
             const paneData =
               paneTab === "upcoming" ? upcoming : paneTab === "active" ? active : visiblePast;
-            const paneItems = (() => {
-              const result: Array<
-                | { type: "header"; id: string; label: string }
-                | { type: "booking"; id: string; booking: BookingSummary }
-              > = [];
-              let lastLabel = "";
-              const formatMonth = (value: string) =>
-                new Date(value).toLocaleString("en-US", { month: "long", year: "numeric" }).toUpperCase();
-              paneData.forEach((booking) => {
-                const label = formatMonth(booking.startTime);
-                if (label !== lastLabel) {
-                  result.push({ type: "header", id: `header-${label}`, label });
-                  lastLabel = label;
-                }
-                result.push({ type: "booking", id: booking.id, booking });
-              });
-              return result;
-            })();
             const showPaneSkeleton =
               ((loading && loadingSkeletonVisible) || (isSwitchingTab && paneTab === tabSwitchingTo)) &&
               !bookingTransitioning;
@@ -608,120 +817,25 @@ export function HistoryScreen({ navigation, route }: Props) {
               !loading && !showPaneSkeleton && paneData.length === 0;
 
             return (
-              <View key={pane} style={{ width: screenWidth }}>
-                <FlatList
-                  data={!user || !revealBookings ? [] : paneItems}
-                  renderItem={({ item }) => {
-                    if (item.type === "header") {
-                      return <Text style={styles.monthLabel}>{item.label}</Text>;
-                    }
-                    return renderBookingCard({ item: item.booking, paneTab });
-                  }}
-                  keyExtractor={(item) => item.id}
-                  contentContainerStyle={[
-                    styles.content,
-                    { paddingBottom: Math.max(insets.bottom + 96, 120) },
-                  ]}
-                  ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
-                  ListFooterComponent={
-                    paneTab === "past" && hasMorePast ? (
-                      <Pressable
-                        style={styles.loadMoreButton}
-                        onPress={() => setPastVisibleCount((prev) => prev + 20)}
-                      >
-                        <Text style={styles.loadMoreText}>Load more</Text>
-                        <ChevronDown size={14} color={ACCENT} strokeWidth={2.2} />
-                      </Pressable>
-                    ) : null
-                  }
-                  ListHeaderComponent={
-                    <>
-                      {!user ? (
-                        <View style={styles.signInCard}>
-                          <View style={styles.signInIconWrap}>
-                            <CalendarDays size={28} color={ACCENT} strokeWidth={2} />
-                          </View>
-                          <Text style={styles.signInTitle}>Sign in to view bookings</Text>
-                          <Text style={styles.signInBody}>
-                            Log in to see your upcoming reservations and past stays.
-                          </Text>
-                          <SquircleBtn
-                            label="Sign in"
-                            onPress={() => navigation.navigate("Welcome")}
-                            fullWidth
-                          />
-                        </View>
-                      ) : (
-                        <>
-                          {showPaneSkeleton ? (
-                            <View style={styles.skeletonList}>
-                              {[0, 1, 2].map((i) => (
-                                <View key={i} style={styles.skeletonCard}>
-                                  <View style={styles.skeletonTop}>
-                                    <View style={styles.skeletonImage} />
-                                    <View style={styles.skeletonInfo}>
-                                      <View style={styles.skeletonTitleRow}>
-                                        <View style={styles.skeletonTitle} />
-                                        <View style={styles.skeletonPrice} />
-                                      </View>
-                                      <View style={styles.skeletonAddress} />
-                                      <View style={styles.skeletonMeta} />
-                                    </View>
-                                  </View>
-                                  <View style={styles.skeletonStrip} />
-                                </View>
-                              ))}
-                            </View>
-                          ) : showPaneEmpty ? (
-                            <View style={styles.emptyState}>
-                              <Image
-                                source={
-                                  paneTab === "active"
-                                    ? require("../assets/illustrations/calendar-bro.png")
-                                    : paneTab === "upcoming"
-                                    ? require("../assets/illustrations/calendar-amico.png")
-                                    : require("../assets/illustrations/calendar-pana.png")
-                                }
-                                style={styles.emptyImage}
-                                resizeMode="contain"
-                              />
-                              <Text style={styles.emptyTitle}>
-                                {paneTab === "upcoming"
-                                  ? "no bookings yet."
-                                  : paneTab === "active"
-                                  ? "nothing active right now."
-                                  : "no history yet."}
-                              </Text>
-                              <Text style={styles.emptyBody}>
-                                {paneTab === "upcoming"
-                                  ? "Find a parking space and your next trip will show up here."
-                                  : paneTab === "active"
-                                  ? "Bookings in progress will appear here."
-                                  : "Completed reservations will appear here after your stay."}
-                              </Text>
-                              {paneTab === "upcoming" ? (
-                                <SquircleBtn
-                                  label="Find parking"
-                                  onPress={() => navigation.navigate("Tabs", { screen: "Search" })}
-                                  fullWidth
-                                />
-                              ) : null}
-                            </View>
-                          ) : null}
-                        </>
-                      )}
-                    </>
-                  }
-                  removeClippedSubviews={false}
-                  maxToRenderPerBatch={10}
-                  updateCellsBatchingPeriod={50}
-                  initialNumToRender={15}
-                  windowSize={10}
-                />
-              </View>
+              <HistoryPane
+                key={paneTab}
+                paneTab={paneTab}
+                data={!user || !revealBookings ? EMPTY_PANE_ITEMS : paneItemsByTab[paneTab]}
+                width={screenWidth}
+                bottomPad={Math.max(insets.bottom + 96, 120)}
+                signedIn={!!user}
+                showSkeleton={showPaneSkeleton}
+                showEmpty={showPaneEmpty}
+                hasMorePast={hasMorePast}
+                onLoadMore={handleLoadMorePast}
+                onSignIn={handleSignIn}
+                onFindParking={handleFindParking}
+                renderBooking={renderBookingCard}
+              />
             );
           })}
         </Animated.View>
+        )}
       </View>
 
       {showSuccess ? (
