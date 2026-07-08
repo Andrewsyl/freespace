@@ -619,6 +619,7 @@ export type NewListing = {
   permissionDeclared?: boolean;
   capacity?: number | null;
   description?: string | null;
+  vehicleSizeSuitability?: string | null;
 };
 
 export async function createListing(listing: NewListing) {
@@ -639,9 +640,10 @@ export async function createListing(listing: NewListing) {
       arrival_instructions,
       permission_declared,
       capacity,
-      description
+      description,
+      vehicle_size_suitability
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, ST_SetSRID(ST_MakePoint($10, $11), 4326), $12, $13, $14, $15, $16, $17)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, ST_SetSRID(ST_MakePoint($10, $11), 4326), $12, $13, $14, $15, $16, $17, $18)
     RETURNING id;
   `;
   const params = [
@@ -662,6 +664,7 @@ export async function createListing(listing: NewListing) {
     listing.permissionDeclared ?? false,
     listing.capacity ?? 1,
     listing.description ?? null,
+    listing.vehicleSizeSuitability ?? null,
   ];
   try {
     const result = await pool.query(query, params);
@@ -1387,6 +1390,7 @@ export async function updateListingForHost({
   capacity,
   isActive,
   description,
+  vehicleSizeSuitability,
 }: {
   listingId: string;
   hostId: string;
@@ -1407,6 +1411,7 @@ export async function updateListingForHost({
   capacity?: number | null;
   isActive?: boolean;
   description?: string | null;
+  vehicleSizeSuitability?: string | null;
 }) {
   const fields: string[] = [];
   const values: any[] = [];
@@ -1471,6 +1476,10 @@ export async function updateListingForHost({
   if (description !== undefined) {
     fields.push(`description = $${idx++}`);
     values.push(description ? description.trim() : null);
+  }
+  if (vehicleSizeSuitability !== undefined) {
+    fields.push(`vehicle_size_suitability = $${idx++}`);
+    values.push(vehicleSizeSuitability ?? null);
   }
   if (typeof latitude === "number" && typeof longitude === "number") {
     fields.push(`geom = ST_SetSRID(ST_MakePoint($${idx++}, $${idx++}), 4326)`);
@@ -1594,6 +1603,7 @@ export async function getListingById(listingId: string) {
         rating_count,
         capacity,
         description,
+        vehicle_size_suitability,
         ST_X(geom) AS longitude,
         ST_Y(geom) AS latitude,
         ${HOST_TRUST_SELECT}
@@ -1629,6 +1639,7 @@ export async function getListingById(listingId: string) {
         rating_count,
         ${optionalListingSelect(columns, "capacity", "1::integer")},
         ${optionalListingSelect(columns, "description", "NULL::text")},
+        ${optionalListingSelect(columns, "vehicle_size_suitability", "NULL::text")},
         ST_X(geom) AS longitude,
         ST_Y(geom) AS latitude,
         ${HOST_TRUST_SELECT}
@@ -1660,6 +1671,7 @@ export async function getListingById(listingId: string) {
     ratingCount: Number(row.rating_count ?? 0),
     capacity: row.capacity != null ? Number(row.capacity) : 1,
     description: row.description ?? null,
+    vehicleSizeSuitability: row.vehicle_size_suitability ?? null,
     latitude: row.latitude,
     longitude: row.longitude,
     ...mapHostTrust(row),
@@ -1761,6 +1773,7 @@ export async function getListingByIdWithAvailability(
         rating_count,
         capacity,
         description,
+        vehicle_size_suitability,
         (${availabilityCheck}) AS is_available,
         ${bookedCountSql} AS booked_count,
         ST_X(geom) AS longitude,
@@ -1798,6 +1811,7 @@ export async function getListingByIdWithAvailability(
         rating_count,
         ${optionalListingSelect(columns, "capacity", "1::integer")},
         ${optionalListingSelect(columns, "description", "NULL::text")},
+        ${optionalListingSelect(columns, "vehicle_size_suitability", "NULL::text")},
         (${availabilityCheck}) AS is_available,
         ${bookedCountSql} AS booked_count,
         ST_X(geom) AS longitude,
@@ -1832,6 +1846,7 @@ export async function getListingByIdWithAvailability(
     ratingCount: Number(row.rating_count ?? 0),
     capacity,
     description: row.description ?? null,
+    vehicleSizeSuitability: row.vehicle_size_suitability ?? null,
     latitude: row.latitude,
     longitude: row.longitude,
     isAvailable: row.is_available,

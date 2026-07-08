@@ -47,6 +47,10 @@ export type ListingFlowValue = {
   draft: ListingDraft;
   setDraft: React.Dispatch<React.SetStateAction<ListingDraft>>;
   listingId: string | null;
+  // Set (to the draft's saved timestamp) when the flow resumed a previously saved
+  // draft, so the first screen can offer to resume or start fresh. Null otherwise.
+  savedDraftUpdatedAt: string | null;
+  discardSavedDraft: () => void;
 };
 
 export const ListingFlowContext = createContext<ListingFlowValue | null>(null);

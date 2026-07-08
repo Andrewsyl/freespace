@@ -1,25 +1,14 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  Accessibility,
-  ArrowUpDown,
-  BatteryCharging,
-  Bike,
-  Cctv,
   CircleCheck,
-  Clock,
-  Fence,
   FileText,
   Hash,
-  Info,
   KeyRound,
-  Lightbulb,
   Lock,
-  Maximize2,
   Unlock,
-  Warehouse,
 } from "lucide-react-native";
 import { TextInput as AppTextInput } from "../../components/ui";
 import { FlowHeader } from "./FlowHeader";
@@ -28,11 +17,12 @@ import { hostFlowColors } from "./hostFlowTheme";
 import { FlowFooter } from "./FlowFooter";
 
 type FlowStackParamList = {
-  ListingFeaturesAccess: undefined;
+  ListingAccess: { fromReview?: boolean } | undefined;
   ListingAvailability: undefined;
+  ListingReview: undefined;
 };
 
-type Props = NativeStackScreenProps<FlowStackParamList, "ListingFeaturesAccess">;
+type Props = NativeStackScreenProps<FlowStackParamList, "ListingAccess">;
 
 const ACCENT = hostFlowColors.accent;
 const FG = hostFlowColors.text;
@@ -46,29 +36,6 @@ const CARD_SHADOW = {
   elevation: 4,
 } as const;
 
-function featureIcon(name: string, active: boolean) {
-  const color = active ? ACCENT : hostFlowColors.textMuted;
-  const props = { size: 20, color, strokeWidth: 1.8 };
-  switch (name) {
-    case "CCTV":               return <Cctv {...props} />;
-    case "EV charging":        return <BatteryCharging {...props} />;
-    case "Sheltered":          return <Warehouse {...props} />;
-    case "Well lit":           return <Lightbulb {...props} />;
-    case "Gated access":       return <Fence {...props} />;
-    case "Single entry":       return <Lock {...props} />;
-    case "Height-friendly":
-    case "Height restricted":  return <ArrowUpDown {...props} />;
-    case "Disabled access":    return <Accessibility {...props} />;
-    case "24/7 access":        return <Clock {...props} />;
-    case "Motorbike friendly": return <Bike {...props} />;
-    case "Wide bay":           return <Maximize2 {...props} />;
-    default:                   return <Warehouse {...props} />;
-  }
-}
-
-const PRIMARY_FEATURES = ["CCTV", "EV charging", "Sheltered", "Well lit", "Gated access"];
-const EXTRA_FEATURES   = ["Single entry", "Height restricted", "Disabled access", "24/7 access", "Motorbike friendly", "Wide bay"];
-
 const ACCESS_CHOICES = [
   {
     id: "key_fob" as const,
@@ -80,7 +47,7 @@ const ACCESS_CHOICES = [
   {
     id: "pin_code" as const,
     label: "Pin code",
-    description: "A code that unlocks the entrance or barrier (pin removed after booking completes)",
+    description: "A code that unlocks the entrance or barrier — only shared with confirmed bookings",
     optionValue: "Pin code" as const,
     icon: (active: boolean) => <Hash size={20} color={active ? ACCENT : hostFlowColors.textMuted} strokeWidth={1.8} />,
   },
@@ -95,12 +62,11 @@ const ACCESS_CHOICES = [
 
 type AccessChoiceValue = typeof ACCESS_CHOICES[number]["optionValue"];
 
-export function ListingFeaturesAccessScreen({ navigation }: Props) {
+export function ListingAccessScreen({ navigation, route }: Props) {
   const { draft, setDraft } = useListingFlow();
+  const fromReview = route.params?.fromReview ?? false;
   const insets = useSafeAreaInsets();
-  const [showAllFeatures, setShowAllFeatures] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     const show = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -123,34 +89,21 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
     (draft.requiresAccessCode === false || selectedAccessChoice !== null) &&
     hasAccessDetails;
 
-  const visibleFeatures = showAllFeatures
-    ? [...PRIMARY_FEATURES, ...EXTRA_FEATURES]
-    : PRIMARY_FEATURES;
-
-  const toggleFeature = (option: string) => {
-    setDraft((prev) => {
-      const exists = prev.accessOptions.includes(option);
-      return {
-        ...prev,
-        accessOptions: exists
-          ? prev.accessOptions.filter((item) => item !== option)
-          : [...prev.accessOptions, option],
-      };
-    });
-  };
-
   const selectAccessChoice = (optionValue: AccessChoiceValue) => {
     setDraft((prev) => {
       const current = ACCESS_CHOICES.find((c) => prev.accessOptions.includes(c.optionValue));
+      // Deselect: drop the access option but KEEP whatever the host typed. The
+      // code/instructions inputs are only shown for the active choice, so hiding
+      // them is enough — toggling a choice off and back on must never lose text.
+      // (Publish reads the buffers through the selected option, so an orphaned
+      // value can't leak into the live listing — see doPublish in the review screen.)
       if (current?.optionValue === optionValue) {
         return {
           ...prev,
           accessOptions: prev.accessOptions.filter(
             (item) => !ACCESS_CHOICES.some((c) => c.optionValue === item)
           ),
-          accessCode: "",
           requiresArrivalInstructions: false,
-          arrivalInstructions: "",
         };
       }
       const withoutAccess = prev.accessOptions.filter(
@@ -158,11 +111,11 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
       );
       const next = ACCESS_CHOICES.find((c) => c.optionValue === optionValue)!;
       const isSpec = next.id === "special_instructions";
+      // Switching choices only changes which buffer is shown/published — both the
+      // code and the instructions text are preserved so comparing options is safe.
       return {
         ...prev,
         accessOptions: [...withoutAccess, next.optionValue],
-        accessCode: isSpec ? "" : prev.accessCode,
-        arrivalInstructions: isSpec ? prev.arrivalInstructions : "",
         requiresArrivalInstructions: isSpec,
       };
     });
@@ -175,66 +128,28 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <FlowHeader current={4} total={8} onClose={exitFlow} />
+      <FlowHeader current={5} total={9} onClose={exitFlow} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior="padding"
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         <ScrollView
-          ref={scrollRef}
           contentContainerStyle={[styles.content, { paddingBottom: 104 + Math.max(insets.bottom, 0) }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           {/* Header card */}
           <View style={styles.headerCard}>
             <View style={styles.headerCardTop}>
-              <Text style={styles.headerKicker}>Step 4 · Features & access</Text>
-              <Text style={styles.headerTitle}>What else should drivers know?</Text>
+              <Text style={styles.headerKicker}>Step 5 · Access</Text>
+              <Text style={styles.headerTitle}>How do drivers get in?</Text>
             </View>
             <View style={styles.headerCardBottom}>
               <Text style={styles.headerSubtitle}>
-                Select everything that applies — drivers use this to decide if your space suits them.
+                Any details you add here are only ever shared with confirmed bookings.
               </Text>
-            </View>
-          </View>
-
-          {/* ── Features card ── */}
-          <View style={styles.card}>
-            <Text style={styles.cardHeader}>Features</Text>
-            <View style={styles.cardBody}>
-              <View style={styles.chipGrid}>
-                {visibleFeatures.map((option) => {
-                  const active = draft.accessOptions.includes(option);
-                  return (
-                    <Pressable
-                      key={option}
-                      style={[styles.chip, active && styles.chipActive]}
-                      onPress={() => toggleFeature(option)}
-                    >
-                      <View style={[styles.chipIconWrap, active && styles.chipIconWrapActive]}>
-                        {featureIcon(option, active)}
-                      </View>
-                      <Text
-                        style={[styles.chipLabel, active && styles.chipLabelActive]}
-                        numberOfLines={1}
-                      >
-                        {option}
-                      </Text>
-                      {active ? (
-                        <CircleCheck size={16} color={ACCENT} strokeWidth={2.2} style={styles.chipCheck} />
-                      ) : null}
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              <Pressable style={styles.showMoreBtn} onPress={() => setShowAllFeatures((v) => !v)}>
-                <Text style={styles.showMoreText}>
-                  {showAllFeatures ? "Show fewer features ↑" : `More features (${EXTRA_FEATURES.length}) ↓`}
-                </Text>
-              </Pressable>
             </View>
           </View>
 
@@ -254,12 +169,13 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
                     setDraft((prev) => ({
                       ...prev,
                       requiresAccessCode: false,
+                      // Keep any typed code/instructions in case the host flips back
+                      // to Restricted; publish only sends them when an access option
+                      // is actually selected, so "Open access" stays code-free.
                       accessOptions: prev.accessOptions.filter(
                         (item) => !ACCESS_CHOICES.some((c) => c.optionValue === item)
                       ),
-                      accessCode: "",
                       requiresArrivalInstructions: false,
-                      arrivalInstructions: "",
                     }))
                   }
                 >
@@ -330,7 +246,7 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
                               {isSpec
                                 ? "What should drivers do when they arrive?"
                                 : choice.id === "pin_code"
-                                ? "What is the pin code, or how will drivers receive it?"
+                                ? "Enter the code drivers will use"
                                 : "How do drivers collect the key or fob?"}
                             </Text>
                             <AppTextInput
@@ -340,7 +256,7 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
                                 isSpec
                                   ? "E.g. Ring unit 4, wait for the shutter, then use bay 2 on the right."
                                   : choice.id === "pin_code"
-                                  ? "E.g. The code will be sent after booking confirmation."
+                                  ? "E.g. 4471#"
                                   : "E.g. Collect from the property owner on arrival."
                               }
                               value={isSpec ? draft.arrivalInstructions : draft.accessCode}
@@ -366,25 +282,14 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
               ) : null}
             </View>
           </View>
-
-          {/* Tips card */}
-          <View style={styles.tipsCard}>
-            <View style={styles.tipsRow}>
-              <Info size={15} color={ACCENT} strokeWidth={2.2} />
-              <Text style={styles.tipsTitle}>Stand out with great features</Text>
-            </View>
-            <Text style={styles.tipsBody}>
-              Spaces with EV charging, CCTV, and clear access info receive significantly more bookings. Complete access details build driver confidence.
-            </Text>
-          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
       {!keyboardVisible && (
         <FlowFooter
-          onBack={() => navigation.goBack()}
-          primaryLabel="Continue"
-          onPrimary={() => navigation.navigate("ListingAvailability")}
+          onBack={() => (fromReview ? navigation.navigate("ListingReview") : navigation.goBack())}
+          primaryLabel={fromReview ? "Save changes" : "Continue"}
+          onPrimary={() => navigation.navigate(fromReview ? "ListingReview" : "ListingAvailability")}
           primaryDisabled={!canContinue}
         />
       )}
@@ -401,7 +306,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
 
-  // ── Header card (matches location screen style) ──────────────
+  // ── Header card ──────────────────────────────────────────────
   headerCard: {
     backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
@@ -443,7 +348,7 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
 
-  // ── Cards ────────────────────────────────────────────────────
+  // ── Card ─────────────────────────────────────────────────────
   card: {
     backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
@@ -465,76 +370,6 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     padding: 16,
-  },
-
-  // ── Feature chips ────────────────────────────────────────────
-  chipGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  chip: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderWidth: 1,
-    borderColor: hostFlowColors.border,
-    borderRadius: 12,
-    minHeight: 60,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    paddingRight: 28,
-    backgroundColor: hostFlowColors.bg,
-    position: "relative",
-  },
-  chipActive: {
-    borderColor: ACCENT,
-    backgroundColor: hostFlowColors.accentSoft,
-  },
-  chipIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: hostFlowColors.accentSoft,
-    flexShrink: 0,
-  },
-  chipIconWrapActive: {
-    backgroundColor: hostFlowColors.accentSoftBorder,
-  },
-  chipLabel: {
-    flex: 1,
-    color: FG,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13,
-    letterSpacing: -0.1,
-    lineHeight: 17,
-  },
-  chipLabelActive: {
-    color: ACCENT,
-  },
-  chipCheck: {
-    position: "absolute",
-    right: 8,
-    top: 8,
-  },
-
-  showMoreBtn: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: hostFlowColors.border,
-    backgroundColor: hostFlowColors.bg,
-  },
-  showMoreText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13,
-    color: MUTED,
   },
 
   // ── Access ───────────────────────────────────────────────────

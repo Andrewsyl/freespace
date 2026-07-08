@@ -11,7 +11,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Info } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { FlowHeader } from "./FlowHeader";
 import { FlowFooter } from "./FlowFooter";
@@ -19,7 +18,7 @@ import { hostFlowColors } from "./hostFlowTheme";
 import { colors } from "../../styles/theme";
 
 type FlowStackParamList = {
-  ListingPrice: undefined;
+  ListingPrice: { fromReview?: boolean } | undefined;
   ListingReview: undefined;
 };
 
@@ -64,14 +63,22 @@ type FieldRowProps = {
   onChange: (v: string) => void;
   helper?: string | null;
   warning?: boolean;
+  suggested?: boolean;
   isLast?: boolean;
 };
 
-function FieldRow({ label, value, onChange, helper, warning, isLast }: FieldRowProps) {
+function FieldRow({ label, value, onChange, helper, warning, suggested, isLast }: FieldRowProps) {
   return (
     <View style={[fieldStyles.wrap, !isLast && fieldStyles.border]}>
       <View style={fieldStyles.inputGroup}>
-        <Text style={fieldStyles.label}>{label}</Text>
+        <View style={fieldStyles.labelWrap}>
+          <Text style={fieldStyles.label}>{label}</Text>
+          {suggested ? (
+            <View style={fieldStyles.suggestedPill}>
+              <Text style={fieldStyles.suggestedPillText}>Suggested</Text>
+            </View>
+          ) : null}
+        </View>
         <View style={fieldStyles.inputRow}>
           <Text style={fieldStyles.euro}>€</Text>
           <TextInput
@@ -110,11 +117,29 @@ const fieldStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  labelWrap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   label: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
     color: FG,
-    flex: 1,
+    flexShrink: 1,
+  },
+  suggestedPill: {
+    backgroundColor: hostFlowColors.accentSoft,
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  suggestedPillText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 10,
+    color: hostFlowColors.accent,
+    letterSpacing: 0.3,
   },
   inputRow: {
     flexDirection: "row",
@@ -142,18 +167,33 @@ const fieldStyles = StyleSheet.create({
     marginTop: 4,
   },
   helperWarn: {
-    color: colors.warning,
+    // Dark amber for text (amber #f59e0b on white is only ~2.2:1 and fails AA at
+    // this 12px size); the amber token stays for dots/borders elsewhere.
+    color: colors.status.pending.text,
   },
 });
 
-export function ListingPriceScreen({ navigation }: Props) {
-  const { draft, setDraft } = useListingFlow();
+export function ListingPriceScreen({ navigation, route }: Props) {
+  const { draft, setDraft, listingId } = useListingFlow();
+  const fromReview = route.params?.fromReview ?? false;
   const insets = useSafeAreaInsets();
   const pricingMode = draft.pricingMode ?? "both";
 
   const [hourly,  setHourly]  = useState(fmt(parse(draft.pricePerHour)  ?? DEFAULT_HOURLY));
   const [daily,   setDaily]   = useState(fmt(parse(draft.pricePerDay)   ?? DEFAULT_DAILY));
   const [monthly, setMonthly] = useState(fmt(parse(draft.pricePerMonth) ?? DEFAULT_MONTHLY));
+
+  // Mark a rate as only a starting suggestion until the host edits it — a nudge
+  // that they can (and should) set their own price, without adding a hard gate.
+  // New listings only; an existing listing's saved prices are real choices.
+  const [touched, setTouched] = useState<{ hourly?: boolean; daily?: boolean; monthly?: boolean }>({});
+  const isSuggested = (field: "hourly" | "daily" | "monthly", value: string, def: number) =>
+    !listingId && !touched[field] && parse(value) === def;
+  const withTouch =
+    (field: "hourly" | "daily" | "monthly", setter: (v: string) => void) => (v: string) => {
+      if (!touched[field]) setTouched((t) => ({ ...t, [field]: true }));
+      setter(v);
+    };
 
   const hourlyVal = parse(hourly) ?? 0;
   const dailyVal  = parse(daily)  ?? 0;
@@ -185,7 +225,7 @@ export function ListingPriceScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <FlowHeader current={7} total={8} onClose={exitFlow} />
+      <FlowHeader current={8} total={9} onClose={exitFlow} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -194,6 +234,7 @@ export function ListingPriceScreen({ navigation }: Props) {
         <ScrollView
           contentContainerStyle={[styles.content, { paddingBottom: 104 + Math.max(insets.bottom, 0) }]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
           {/* Header card */}
@@ -236,15 +277,17 @@ export function ListingPriceScreen({ navigation }: Props) {
                 <FieldRow
                   label="Hourly"
                   value={hourly}
-                  onChange={setHourly}
+                  onChange={withTouch("hourly", setHourly)}
+                  suggested={isSuggested("hourly", hourly, DEFAULT_HOURLY)}
                   isLast={!showHourlyDaily || lastField === "hourly"}
                 />
                 <FieldRow
                   label="Daily"
                   value={daily}
-                  onChange={setDaily}
+                  onChange={withTouch("daily", setDaily)}
                   helper={dailyHelper}
                   warning={!!dailyRatio && dailyRatio > 24}
+                  suggested={isSuggested("daily", daily, DEFAULT_DAILY)}
                   isLast={lastField === "daily"}
                 />
               </>
@@ -253,30 +296,19 @@ export function ListingPriceScreen({ navigation }: Props) {
               <FieldRow
                 label="Monthly"
                 value={monthly}
-                onChange={setMonthly}
+                onChange={withTouch("monthly", setMonthly)}
+                helper="Monthly requests arrive as enquiries — you confirm the arrangement with the driver."
+                suggested={isSuggested("monthly", monthly, DEFAULT_MONTHLY)}
                 isLast
               />
             ) : null}
-          </View>
-
-          {/* Tips card */}
-          <View style={styles.tipsCard}>
-            <View style={styles.tipsRow}>
-              <Info size={15} color={ACCENT} strokeWidth={2.2} />
-              <Text style={styles.tipsTitle}>Pricing tip</Text>
-            </View>
-            <Text style={styles.tipsBody}>
-              Nearby spaces charge{" "}
-              <Text style={styles.tipsBold}>€1–3/hr</Text> and{" "}
-              <Text style={styles.tipsBold}>€8–15/day</Text>. Competitive pricing helps fill short-stay gaps between monthly bookings. Drivers pay an 8% service fee on top — you keep 100%.
-            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
       <FlowFooter
-        onBack={() => navigation.goBack()}
-        primaryLabel="Continue"
+        onBack={() => (fromReview ? navigation.navigate("ListingReview") : navigation.goBack())}
+        primaryLabel={fromReview ? "Save changes" : "Continue"}
         onPrimary={() => navigation.navigate("ListingReview")}
       />
     </SafeAreaView>

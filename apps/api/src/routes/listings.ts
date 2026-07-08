@@ -194,6 +194,7 @@ const createListingSchema = z.object({
   permissionDeclared: z.boolean().optional(),
   capacity: z.coerce.number().int().min(1).max(20).optional(),
   description: z.string().trim().max(2000).nullable().optional(),
+  vehicleSizeSuitability: z.enum(["small", "medium", "large", "van"]).nullable().optional(),
 });
 
 router.post("/", requireAuth, enforceBlockedList, listingWriteLimiter, async (req, res, next) => {
@@ -223,6 +224,7 @@ router.post("/", requireAuth, enforceBlockedList, listingWriteLimiter, async (re
     const created = await createListing({
       ...payload,
       description: payload.description?.trim() || null,
+      vehicleSizeSuitability: payload.vehicleSizeSuitability ?? null,
       rateType: pricing.rateType,
       pricePerDay: pricing.pricePerDay,
       pricePerHour: pricing.pricePerHour,
@@ -369,6 +371,7 @@ const updateListingSchema = z.object({
   capacity: z.coerce.number().int().min(1).max(20).optional(),
   isActive: z.boolean().optional(),
   description: z.string().trim().max(2000).nullable().optional(),
+  vehicleSizeSuitability: z.enum(["small", "medium", "large", "van"]).nullable().optional(),
 });
 
 router.patch("/:id", requireAuth, listingWriteLimiter, async (req, res, next) => {
@@ -410,6 +413,7 @@ router.patch("/:id", requireAuth, listingWriteLimiter, async (req, res, next) =>
       capacity: payload.capacity,
       isActive: payload.isActive,
       description: payload.description ?? undefined,
+      vehicleSizeSuitability: payload.vehicleSizeSuitability ?? undefined,
     });
     if (!updated) return res.status(404).json({ message: "Listing not found" });
     res.json({ listing: updated });

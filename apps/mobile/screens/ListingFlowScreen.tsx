@@ -1,10 +1,11 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { ListingAvailabilityScreen } from "./listingFlow/ListingAvailabilityScreen";
 import { ListingDetailsScreen } from "./listingFlow/ListingDetailsScreen";
-import { ListingFeaturesAccessScreen } from "./listingFlow/ListingFeaturesAccessScreen";
+import { ListingFeaturesScreen } from "./listingFlow/ListingFeaturesScreen";
+import { ListingAccessScreen } from "./listingFlow/ListingAccessScreen";
 import { ListingIntroScreen } from "./listingFlow/ListingIntroScreen";
 import { ListingLocationScreen } from "./listingFlow/ListingLocationScreen";
 import { ListingPhotosScreen } from "./listingFlow/ListingPhotosScreen";
@@ -13,7 +14,7 @@ import { ListingReviewScreen } from "./listingFlow/ListingReviewScreen";
 import { ListingStreetViewScreen } from "./listingFlow/ListingStreetViewScreen";
 import { ListingFlowContext, type ListingDraft } from "./listingFlow/context";
 import { hostFlowColors } from "./listingFlow/hostFlowTheme";
-import { loadHostListingDraft } from "./listingFlow/draftStorage";
+import { clearHostListingDraft, loadHostListingDraft } from "./listingFlow/draftStorage";
 import { getListing, listAvailability } from "../api";
 import { useAuth } from "../auth";
 import { getMobileE2EState, isMobileE2EActive } from "../e2e/testMode";
@@ -25,7 +26,8 @@ type FlowStackParamList = {
   ListingLocation: undefined;
   ListingStreetView: undefined;
   ListingDetails: undefined;
-  ListingFeaturesAccess: undefined;
+  ListingFeatures: undefined;
+  ListingAccess: undefined;
   ListingAvailability: undefined;
   ListingPhotos: undefined;
   ListingPrice: undefined;
@@ -62,10 +64,10 @@ const defaultDraft: ListingDraft = {
     weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     dayTimeRanges: {},
   },
-  pricingMode: "both",
+  pricingMode: "hourly_daily",
   rateType: "daily",
   pricePerDay: "12.00",
-  pricePerHour: "1.00",
+  pricePerHour: "2.00",
   pricePerMonth: "100.00",
   photos: [],
   capacity: 1,
@@ -82,16 +84,26 @@ export function ListingFlowScreen({ route }: Props) {
   const { token } = useAuth();
   const [draft, setDraft] = useState<ListingDraft>(e2eDraft ?? defaultDraft);
   const [restoredSavedDraft, setRestoredSavedDraft] = useState(false);
+  const [savedDraftUpdatedAt, setSavedDraftUpdatedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(!!listingId);
   const [error, setError] = useState<string | null>(null);
+
+  const discardSavedDraft = useCallback(() => {
+    setDraft(defaultDraft);
+    setRestoredSavedDraft(false);
+    setSavedDraftUpdatedAt(null);
+    void clearHostListingDraft();
+  }, []);
 
   const value = useMemo(
     () => ({
       draft,
       setDraft,
       listingId,
+      savedDraftUpdatedAt,
+      discardSavedDraft,
     }),
-    [draft, listingId]
+    [draft, listingId, savedDraftUpdatedAt, discardSavedDraft]
   );
 
   useEffect(() => {
@@ -111,8 +123,10 @@ export function ListingFlowScreen({ route }: Props) {
         if (savedDraft?.draft) {
           setDraft(savedDraft.draft);
           setRestoredSavedDraft(true);
+          setSavedDraftUpdatedAt(savedDraft.updatedAt ?? null);
         } else {
           setRestoredSavedDraft(false);
+          setSavedDraftUpdatedAt(null);
         }
         setLoading(false);
         setError(null);
@@ -298,11 +312,19 @@ export function ListingFlowScreen({ route }: Props) {
           <Stack.Screen name="ListingLocation" component={ListingLocationScreen} />
           <Stack.Screen name="ListingStreetView" component={ListingStreetViewScreen} />
           <Stack.Screen name="ListingDetails" component={ListingDetailsScreen} />
-          <Stack.Screen name="ListingFeaturesAccess" component={ListingFeaturesAccessScreen} />
+          <Stack.Screen name="ListingFeatures" component={ListingFeaturesScreen} />
+          <Stack.Screen name="ListingAccess" component={ListingAccessScreen} />
           <Stack.Screen name="ListingAvailability" component={ListingAvailabilityScreen} />
           <Stack.Screen name="ListingPhotos" component={ListingPhotosScreen} />
           <Stack.Screen name="ListingPrice" component={ListingPriceScreen} />
-          <Stack.Screen name="ListingReview" component={ListingReviewScreen} />
+          {/* Edit mode opens straight to Review, so a swipe/gesture back would exit
+              the flow and silently discard edits — disable the gesture there; the
+              header X (and Android hardware back) route through the exit confirm. */}
+          <Stack.Screen
+            name="ListingReview"
+            component={ListingReviewScreen}
+            options={{ gestureEnabled: !listingId }}
+          />
         </Stack.Navigator>
       )}
     </ListingFlowContext.Provider>

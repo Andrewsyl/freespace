@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import DatePicker from "../../components/AdaptiveDatePicker";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Briefcase, Check, ChevronRight, Clock, Info, SlidersHorizontal, X } from "lucide-react-native";
+import { Briefcase, Check, ChevronRight, Clock, SlidersHorizontal, X } from "lucide-react-native";
 import { Button } from "../../components/ui";
 import { useListingFlow } from "./context";
 import { FlowHeader } from "./FlowHeader";
@@ -21,8 +21,9 @@ import { FlowFooter } from "./FlowFooter";
 import { colors, radius, spacing } from "../../styles/theme";
 
 type FlowStackParamList = {
-  ListingAvailability: undefined;
+  ListingAvailability: { fromReview?: boolean } | undefined;
   ListingPhotos: undefined;
+  ListingReview: undefined;
 };
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingAvailability">;
@@ -76,8 +77,9 @@ function DayTimeReveal({ visible, children }: { visible: boolean; children: Reac
   );
 }
 
-export function ListingAvailabilityScreen({ navigation }: Props) {
+export function ListingAvailabilityScreen({ navigation, route }: Props) {
   const { draft, setDraft } = useListingFlow();
+  const fromReview = route.params?.fromReview ?? false;
   const insets = useSafeAreaInsets();
   const allDays: DayCode[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const [timeStart, setTimeStart] = useState(() =>
@@ -137,6 +139,8 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
   const formatTime = (value: Date) =>
     value.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const formatDays = (days: string[]) => (days.length ? days.join(", ") : "");
+  const isOvernight = (start: Date, end: Date) =>
+    end.getHours() * 60 + end.getMinutes() <= start.getHours() * 60 + start.getMinutes();
 
   const availabilitySummary = useMemo(() => {
     if (preset === "always") return "Monday - Sunday (24 hours)";
@@ -147,17 +151,19 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
         const code = day as DayCode;
         const range = dayTimeRanges[code];
         if (!range) return null;
-        return `${day} ${formatTime(new Date(range.start))}-${formatTime(new Date(range.end))}`;
+        const start = new Date(range.start);
+        const end = new Date(range.end);
+        return `${day} ${formatTime(start)}-${formatTime(end)}${isOvernight(start, end) ? " +1" : ""}`;
       })
       .filter(Boolean)
       .join(" • ");
-    return details || `${formatDays(weekdays)} (${formatTime(timeStart)} - ${formatTime(timeEnd)})`;
+    return details || `${formatDays(weekdays)} (${formatTime(timeStart)} - ${formatTime(timeEnd)}${isOvernight(timeStart, timeEnd) ? " +1" : ""})`;
   }, [dayTimeRanges, preset, timeEnd, timeStart, weekdays]);
 
   const timeWindowValid = useMemo(() => {
     const startMinutes = timeStart.getHours() * 60 + timeStart.getMinutes();
     const endMinutes = timeEnd.getHours() * 60 + timeEnd.getMinutes();
-    return endMinutes > startMinutes;
+    return endMinutes !== startMinutes;
   }, [timeEnd, timeStart]);
   const customWindowsValid = useMemo(() => {
     if (preset !== "custom") return true;
@@ -169,7 +175,7 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
       const end = new Date(range.end);
       const startMinutes = start.getHours() * 60 + start.getMinutes();
       const endMinutes = end.getHours() * 60 + end.getMinutes();
-      return endMinutes > startMinutes;
+      return endMinutes !== startMinutes;
     });
   }, [dayTimeRanges, preset, weekdays]);
 
@@ -250,8 +256,20 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
     });
   };
 
+  // Preserve a hand-built custom schedule when the host taps a preset to peek at
+  // it. Without this, tapping "Always" then "Custom" wiped their days and times
+  // with no way back — exploration shouldn't be destructive.
+  const customScheduleRef = useRef<{ weekdays: string[]; dayTimeRanges: DayTimeRanges } | null>(null);
+  // Snapshot taken when the host opens the custom editor via "Edit" so the X can
+  // cancel back to it. Confirm commits; a fresh entry from a preset has nothing
+  // to revert to (snapshot cleared), so its X just closes.
+  const modalSnapshotRef = useRef<{ weekdays: string[]; dayTimeRanges: DayTimeRanges } | null>(null);
+
   const selectPreset = (next: AvailabilityPreset) => {
     const previousPreset = preset;
+    if (previousPreset === "custom" && next !== "custom" && weekdays.length > 0) {
+      customScheduleRef.current = { weekdays, dayTimeRanges };
+    }
     setPreset(next);
     if (next === "always") {
       const start = new Date(timeStart);
@@ -291,10 +309,36 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
       });
       return;
     }
-    if (previousPreset !== "custom") {
+    if (customScheduleRef.current) {
+      // Returning to Custom after visiting a preset: restore what the host built.
+      setWeekdays(customScheduleRef.current.weekdays);
+      setDayTimeRanges(customScheduleRef.current.dayTimeRanges);
+    } else if (previousPreset !== "custom") {
       setWeekdays([]);
     }
+    modalSnapshotRef.current = null;
     setCustomVisible(true);
+  };
+
+  // "Edit" on the summary card: snapshot the committed schedule so X can revert.
+  const openCustomEditor = () => {
+    modalSnapshotRef.current = { weekdays, dayTimeRanges };
+    setCustomVisible(true);
+  };
+  const cancelCustomModal = () => {
+    const snap = modalSnapshotRef.current;
+    if (snap) {
+      setWeekdays(snap.weekdays);
+      setDayTimeRanges(snap.dayTimeRanges);
+    }
+    setCustomVisible(false);
+  };
+  const dayRangeInvalid = (day: DayCode) => {
+    const range = dayTimeRanges[day];
+    if (!range) return false;
+    const start = new Date(range.start);
+    const end = new Date(range.end);
+    return start.getHours() * 60 + start.getMinutes() === end.getHours() * 60 + end.getMinutes();
   };
 
   const exitFlow = () => {
@@ -325,7 +369,7 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <FlowHeader current={5} total={8} onClose={exitFlow} />
+      <FlowHeader current={6} total={9} onClose={exitFlow} />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -376,32 +420,21 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
           <View style={styles.customSummaryCard}>
             <Text style={styles.customSummaryLabel}>Selected schedule</Text>
             <Text style={styles.customSummary}>{availabilitySummary}</Text>
-            <Pressable onPress={() => setCustomVisible(true)}>
+            <Pressable onPress={openCustomEditor}>
               <Text style={styles.customEditLink}>Edit →</Text>
             </Pressable>
           </View>
         ) : null}
 
         {!timeWindowValid || !customWindowsValid ? (
-          <Text style={styles.warningText}>End time must be after start time.</Text>
+          <Text style={styles.warningText}>Start and end times can't be the same.</Text>
         ) : null}
-
-        {/* Tips card */}
-        <View style={styles.tipsCard}>
-          <View style={styles.tipsRow}>
-            <Info size={15} color={ACCENT} strokeWidth={2.2} />
-            <Text style={styles.tipsTitle}>More availability = more bookings</Text>
-          </View>
-          <Text style={styles.tipsBody}>
-            Spaces available 24/7 receive significantly more bookings. You can always update this from your dashboard whenever your schedule changes.
-          </Text>
-        </View>
       </ScrollView>
 
       <FlowFooter
-        onBack={() => navigation.goBack()}
-        primaryLabel="Continue"
-        onPrimary={() => navigation.navigate("ListingPhotos")}
+        onBack={() => (fromReview ? navigation.navigate("ListingReview") : navigation.goBack())}
+        primaryLabel={fromReview ? "Save changes" : "Continue"}
+        onPrimary={() => navigation.navigate(fromReview ? "ListingReview" : "ListingPhotos")}
         primaryDisabled={!canSave}
       />
 
@@ -410,7 +443,7 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
           <View style={styles.modalBackdrop}>
             <View style={[styles.modalCard, { paddingBottom: Math.max(18, insets.bottom + 12) }]}>
               <View style={styles.modalHeader}>
-                <Pressable onPress={() => setCustomVisible(false)} style={styles.iconButton}>
+                <Pressable onPress={cancelCustomModal} style={styles.iconButton}>
                   <X size={20} color={colors.text} strokeWidth={2.2} />
                 </Pressable>
                 <Text style={styles.modalTitle}>Set your custom availability</Text>
@@ -424,19 +457,19 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
                   const enabled = weekdays.includes(day);
                   return (
                     <View key={day} style={styles.dayBlock}>
-                      <View style={styles.dayRow}>
+                      <Pressable
+                        accessibilityRole="switch"
+                        accessibilityState={{ checked: enabled }}
+                        onPress={() => toggleWeekday(day)}
+                        style={styles.dayRow}
+                      >
                         <Text style={styles.dayLabel}>
                           {{ Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday" }[day]}
                         </Text>
-                        <Pressable
-                          accessibilityRole="switch"
-                          accessibilityState={{ checked: enabled }}
-                          onPress={() => toggleWeekday(day)}
-                          style={[styles.dayToggleTrack, enabled && styles.dayToggleTrackActive]}
-                        >
+                        <View style={[styles.dayToggleTrack, enabled && styles.dayToggleTrackActive]}>
                           <View style={[styles.dayToggleKnob, enabled && styles.dayToggleKnobActive]} />
-                        </Pressable>
-                      </View>
+                        </View>
+                      </Pressable>
                       <DayTimeReveal visible={enabled}>
                         <View style={styles.dayTimeRow}>
                           <Pressable style={styles.timePill} onPress={() => openPicker("timeStart", day)}>
@@ -445,17 +478,24 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
                           </Pressable>
                           <Pressable style={styles.timePill} onPress={() => openPicker("timeEnd", day)}>
                             <Text style={styles.timePillLabel}>End</Text>
-                            <Text style={styles.timePillValue}>{formatTime(new Date(dayTimeRanges[day].end))}</Text>
+                            <Text style={styles.timePillValue}>
+                              {isOvernight(new Date(dayTimeRanges[day].start), new Date(dayTimeRanges[day].end))
+                                ? `${formatTime(new Date(dayTimeRanges[day].end))} +1`
+                                : formatTime(new Date(dayTimeRanges[day].end))}
+                            </Text>
                           </Pressable>
                         </View>
                       </DayTimeReveal>
+                      {enabled && dayRangeInvalid(day) ? (
+                        <Text style={styles.dayWarning}>Start and end times can't be the same</Text>
+                      ) : null}
                     </View>
                   );
                 })}
               </ScrollView>
               <Button
                 title="Confirm"
-                onPress={() => { setPreset("custom"); setCustomVisible(false); }}
+                onPress={() => { setPreset("custom"); modalSnapshotRef.current = null; setCustomVisible(false); }}
                 disabled={weekdays.length === 0}
               />
             </View>
@@ -748,6 +788,13 @@ const styles = StyleSheet.create({
   },
   dayToggleKnobActive: {
     marginLeft: 18,
+  },
+  dayWarning: {
+    color: colors.status.pending.text,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    marginTop: 8,
+    paddingHorizontal: 2,
   },
   dayTimeRow: {
     flexDirection: "row",

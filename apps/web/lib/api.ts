@@ -161,6 +161,7 @@ export type CreateListingInput = {
   longitude: number;
   amenities?: string[];
   imageUrls?: string[];
+  vehicleSizeSuitability?: string | null;
 };
 
 export async function createListing(input: CreateListingInput, token?: string) {

@@ -1,11 +1,12 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import { FlowHeader } from "./FlowHeader";
 import { useListingFlow } from "./context";
 import { hostFlowColors } from "./hostFlowTheme";
+import { colors } from "../../styles/theme";
 import { FlowFooter } from "./FlowFooter";
 
 type FlowStackParamList = {
@@ -30,6 +31,7 @@ export function ListingStreetViewScreen({ navigation }: Props) {
   const { draft, setDraft } = useListingFlow();
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const webViewRef = useRef<WebView>(null);
+  const [panoAvailable, setPanoAvailable] = useState(true);
   const canUseView = Platform.OS !== "web" && !!mapsKey;
   const centerLat = draft.location.latitude;
   const centerLng = draft.location.longitude;
@@ -70,6 +72,12 @@ export function ListingStreetViewScreen({ navigation }: Props) {
           // changes which panorama is showing, and heading/pitch alone can't
           // reproduce that; the pano ID pins the exact spot the host chose.
           window.__getPov = () => ({ ...pano.getPov(), panoId: pano.getPano() });
+          function reportStatus() {
+            var ok = pano.getStatus ? pano.getStatus() === "OK" : true;
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: "status", ok: ok }));
+          }
+          google.maps.event.addListener(pano, "status_changed", reportStatus);
+          setTimeout(reportStatus, 1500);
         </script>
       </body>
     </html>
@@ -82,7 +90,7 @@ export function ListingStreetViewScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <FlowHeader current={2} total={8} onClose={exitFlow} />
+      <FlowHeader current={2} total={9} onClose={exitFlow} />
 
       {/* Header card */}
       <View style={styles.headerCard}>
@@ -92,14 +100,14 @@ export function ListingStreetViewScreen({ navigation }: Props) {
         </View>
         <View style={styles.headerCardBottom}>
           <Text style={styles.headerSubtitle}>
-            Drag to find the best angle. If the view isn't clear, add your own photos in the next step.
+            Drag to find the best angle. If the view isn't clear, you can add your own photos later.
           </Text>
         </View>
       </View>
       <Pressable
         style={styles.skipButton}
         onPress={() => {
-          setDraft((prev) => ({ ...prev, coverHeading: null, coverPanoId: null }));
+          setDraft((prev) => ({ ...prev, coverHeading: null, coverPitch: null, coverPanoId: null }));
           navigation.navigate("ListingDetails");
         }}
       >
@@ -126,8 +134,13 @@ export function ListingStreetViewScreen({ navigation }: Props) {
               try {
                 const payload = JSON.parse(event.nativeEvent.data) as {
                   type: string;
+                  ok?: boolean;
                   pov?: { heading: number; pitch: number; panoId?: string | null };
                 };
+                if (payload.type === "status") {
+                  setPanoAvailable((payload as { ok?: boolean }).ok !== false);
+                  return;
+                }
                 if (payload.type === "pov" && payload.pov) {
                   const { pov } = payload;
                   setDraft((prev) => ({
@@ -144,12 +157,32 @@ export function ListingStreetViewScreen({ navigation }: Props) {
             }}
           />
         )}
+        {!panoAvailable ? (
+          <View style={styles.noPanoOverlay}>
+            <Text style={styles.webFallbackText}>
+              No Street View coverage here. Skip this step — you can add your own photos later.
+            </Text>
+          </View>
+        ) : Platform.OS !== "web" ? (
+          <View style={styles.hintWrap} pointerEvents="none">
+            <View style={styles.hintPill}>
+              <Text style={styles.hintText}>Drag until your space is in view, then tap Use this view</Text>
+            </View>
+          </View>
+        ) : null}
       </View>
 
       <FlowFooter
         onBack={() => navigation.goBack()}
-        primaryLabel="Use this view"
+        primaryLabel={canUseView && !panoAvailable ? "Continue without Street View" : "Use this view"}
         onPrimary={() => {
+          // No panorama at this address: don't strand the host on a dead button —
+          // clear any cover fields and move on so they add their own photos next.
+          if (canUseView && !panoAvailable) {
+            setDraft((prev) => ({ ...prev, coverHeading: null, coverPitch: null, coverPanoId: null }));
+            navigation.navigate("ListingDetails");
+            return;
+          }
           if (Platform.OS === "web") {
             navigation.navigate("ListingDetails");
             return;
@@ -241,6 +274,34 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
+  },
+  noPanoOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: hostFlowColors.bg,
+    padding: 24,
+  },
+  hintWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 16,
+    alignItems: "center",
+    paddingHorizontal: 16,
+  },
+  hintPill: {
+    backgroundColor: "rgba(15, 23, 42, 0.68)",
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+  },
+  hintText: {
+    color: colors.textInverse,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    letterSpacing: 0.1,
+    textAlign: "center",
   },
   webFallbackText: {
     color: MUTED,

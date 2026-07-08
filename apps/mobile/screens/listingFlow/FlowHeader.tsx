@@ -1,7 +1,7 @@
-import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native";
 import { useEffect, useRef } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft } from "lucide-react-native";
+import { X } from "lucide-react-native";
 import { hostFlowColors } from "./hostFlowTheme";
 import { useExitListingFlowConfirm } from "./confirmExit";
 import { useListingFlow } from "./context";
@@ -33,7 +33,7 @@ export function FlowHeader({ current, total, onClose }: Props) {
   const { showSuccess } = useGlobalToast();
   const { presentExitConfirm, exitConfirmModal } = useExitListingFlowConfirm();
   const hasDraftToSave = !listingId && hasMeaningfulHostListingDraft(draft);
-  const canPromptToSave = current > 2;
+  const canPromptToSave = current > 2 || hasDraftToSave;
 
   const handleClose = () => {
     if (!canPromptToSave) {
@@ -58,14 +58,15 @@ export function FlowHeader({ current, total, onClose }: Props) {
   return (
     <>
       <View style={[styles.wrap, { paddingTop: insets.top + 10 }]}>
-        <Pressable style={styles.closeBtn} onPress={handleClose} hitSlop={8} accessibilityLabel="Close">
-          <ArrowLeft size={17} color={hostFlowColors.text} strokeWidth={2.2} />
+        <Pressable style={styles.closeBtn} onPress={handleClose} hitSlop={14} accessibilityLabel="Close">
+          <X size={17} color={hostFlowColors.text} strokeWidth={2.2} />
         </Pressable>
         <View style={styles.barWrap}>
           <View style={styles.bar}>
             <Animated.View style={[styles.fill, { width: fillAnim.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"] }) }]} />
           </View>
         </View>
+        <Text style={styles.stepCount}>{current}/{total}</Text>
       </View>
       {exitConfirmModal}
     </>
@@ -92,10 +93,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bar: {
-    height: 4,
+    height: 6,
     backgroundColor: hostFlowColors.border,
     borderRadius: 999,
     overflow: "hidden",
+  },
+  stepCount: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    color: hostFlowColors.textMuted,
+    flexShrink: 0,
+    minWidth: 28,
+    textAlign: "right",
   },
   fill: {
     height: "100%",

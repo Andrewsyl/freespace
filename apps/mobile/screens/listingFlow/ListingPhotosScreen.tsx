@@ -21,7 +21,7 @@ import { FlowHeader } from "./FlowHeader";
 import { FlowFooter } from "./FlowFooter";
 import { hostFlowColors } from "./hostFlowTheme";
 import { colors } from "../../styles/theme";
-import { Camera, GripVertical, Info, Plus, Star, X } from "lucide-react-native";
+import { Camera, GripVertical, Plus, Star, X } from "lucide-react-native";
 import { buildStreetViewImageUrl } from "../../utils/streetView";
 
 const GRID_COLS = 2;
@@ -29,8 +29,9 @@ const GRID_GAP = 10;
 const PHOTO_ASPECT = 1.2;
 
 type FlowStackParamList = {
-  ListingPhotos: undefined;
+  ListingPhotos: { fromReview?: boolean } | undefined;
   ListingPrice: undefined;
+  ListingReview: undefined;
 };
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingPhotos">;
@@ -70,8 +71,9 @@ function uploadToS3(uploadUrl: string, formData: FormData): Promise<{ ok: boolea
 
 type PhotoItem = { uri: string; kind: "street-view" | "uploaded" };
 
-export function ListingPhotosScreen({ navigation }: Props) {
+export function ListingPhotosScreen({ navigation, route }: Props) {
   const { draft, setDraft } = useListingFlow();
+  const fromReview = route.params?.fromReview ?? false;
   const { token } = useAuth();
   const insets = useSafeAreaInsets();
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
@@ -271,7 +273,7 @@ export function ListingPhotosScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <FlowHeader current={6} total={8} onClose={exitFlow} />
+      <FlowHeader current={7} total={9} onClose={exitFlow} />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: 104 + Math.max(insets.bottom, 0) }]}
         showsVerticalScrollIndicator={false}
@@ -285,7 +287,7 @@ export function ListingPhotosScreen({ navigation }: Props) {
           </View>
           <View style={styles.headerCardBottom}>
             <Text style={styles.headerSubtitle}>
-              Add at least one photo. Better photos improve trust and booking conversion.
+              Photos are optional but strongly recommended. If you chose a Street View image, it's already your cover.
             </Text>
           </View>
         </View>
@@ -351,19 +353,21 @@ export function ListingPhotosScreen({ navigation }: Props) {
                           </View>
                         ) : null}
                         {photo.kind === "uploaded" ? (
-                          <>
-                            <View style={styles.dragHandle} pointerEvents="none">
-                              <GripVertical size={13} color={colors.textInverse} strokeWidth={2.5} />
-                            </View>
-                            <Pressable
-                              style={styles.removeBtn}
-                              onPress={() => removePhoto(photo.uri)}
-                              hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-                            >
-                              <X size={12} color={colors.textInverse} strokeWidth={2.8} />
-                            </Pressable>
-                          </>
+                          <View style={styles.dragHandle} pointerEvents="none">
+                            <GripVertical size={13} color={colors.textInverse} strokeWidth={2.5} />
+                          </View>
                         ) : null}
+                        <Pressable
+                          style={styles.removeBtn}
+                          onPress={() =>
+                            photo.kind === "street-view"
+                              ? setDraft((prev) => ({ ...prev, coverHeading: null, coverPitch: null, coverPanoId: null }))
+                              : removePhoto(photo.uri)
+                          }
+                          hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                        >
+                          <X size={12} color={colors.textInverse} strokeWidth={2.8} />
+                        </Pressable>
                       </Animated.View>
                     );
                   })}
@@ -390,23 +394,12 @@ export function ListingPhotosScreen({ navigation }: Props) {
             )}
           </View>
         </View>
-
-        {/* Tips card */}
-        <View style={styles.tipsCard}>
-          <View style={styles.tipsRow}>
-            <Info size={15} color={ACCENT} strokeWidth={2.2} />
-            <Text style={styles.tipsTitle}>Photos matter</Text>
-          </View>
-          <Text style={styles.tipsBody}>
-            Listings with 3+ photos get significantly more bookings. Show the entrance, the bay, and any nearby street landmarks that help drivers find you.
-          </Text>
-        </View>
       </ScrollView>
 
       <FlowFooter
-        onBack={() => navigation.goBack()}
-        primaryLabel={hasPhoto ? "Continue" : "Skip for now"}
-        onPrimary={() => navigation.navigate("ListingPrice")}
+        onBack={() => (fromReview ? navigation.navigate("ListingReview") : navigation.goBack())}
+        primaryLabel={fromReview ? "Save changes" : hasPhoto ? "Continue" : "Skip for now"}
+        onPrimary={() => navigation.navigate(fromReview ? "ListingReview" : "ListingPrice")}
         primaryDisabled={uploading}
       />
     </SafeAreaView>

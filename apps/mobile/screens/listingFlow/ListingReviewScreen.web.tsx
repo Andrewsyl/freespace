@@ -148,7 +148,7 @@ export function ListingReviewScreen({ navigation }: Props) {
         <Text style={styles.kicker}>
           {listingId ? "Review & update" : "Review & publish"}
         </Text>
-        <StepProgress current={8} total={8} />
+        <StepProgress current={9} total={9} />
         <Text style={styles.title}>Double-check your details</Text>
         <Text style={styles.subtitle}>
           {listingId ? "Confirm everything looks right." : "You can edit anything after publishing."}

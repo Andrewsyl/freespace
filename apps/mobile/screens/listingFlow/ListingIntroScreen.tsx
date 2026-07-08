@@ -1,12 +1,15 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SquircleBtn } from "../../components/SquircleBtn";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { X, MapPin, Camera, CircleDollarSign } from "lucide-react-native";
+import { X, MapPin, Camera, CircleDollarSign, MailWarning } from "lucide-react-native";
 import { colors } from "../../styles/theme";
 import { hostFlowColors } from "./hostFlowTheme";
 import { BanknoteSvg } from "../../components/BanknoteSvg";
 import { spacing } from "../../styles/theme";
+import { useAuth } from "../../auth";
+import { requestEmailVerification } from "../../api";
 
 type FlowStackParamList = {
   ListingIntro: undefined;
@@ -34,6 +37,8 @@ const PHASES = [
 ] as const;
 
 export function ListingIntroScreen({ navigation }: Props) {
+  const { user } = useAuth();
+  const [verifyState, setVerifyState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.topBar}>
@@ -79,6 +84,45 @@ export function ListingIntroScreen({ navigation }: Props) {
             );
           })}
         </View>
+
+        <Text style={styles.reassure}>
+          It only takes a few minutes, and your progress saves automatically — you can stop and finish anytime.
+        </Text>
+
+        {user && user.emailVerified === false ? (
+          <View style={styles.verifyCard}>
+            <View style={styles.verifyRow}>
+              <MailWarning size={15} color={hostFlowColors.accent} strokeWidth={2.2} />
+              <Text style={styles.verifyTitle}>Verify your email to publish</Text>
+            </View>
+            <Text style={styles.verifyBody}>
+              You can build your listing now, but you'll need to verify your email before it goes live. We can resend the link.
+            </Text>
+            <Pressable
+              disabled={verifyState === "sending" || verifyState === "sent"}
+              onPress={async () => {
+                if (!user?.email) return;
+                setVerifyState("sending");
+                try {
+                  await requestEmailVerification(user.email);
+                  setVerifyState("sent");
+                } catch {
+                  setVerifyState("error");
+                }
+              }}
+            >
+              <Text style={styles.verifyLink}>
+                {verifyState === "sending"
+                  ? "Sending…"
+                  : verifyState === "sent"
+                  ? "Sent — check your inbox"
+                  : verifyState === "error"
+                  ? "Couldn't send — tap to retry"
+                  : "Resend verification email"}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         <Text style={styles.permissionNote}>
           By listing, you confirm you have the right to rent this space to others.
@@ -199,6 +243,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     marginTop: 3,
+  },
+  reassure: {
+    color: hostFlowColors.textMuted,
+    fontFamily: "PlusJakartaSans-Medium",
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  verifyCard: {
+    backgroundColor: hostFlowColors.accentSoft,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: hostFlowColors.accentSoftBorder,
+    padding: 16,
+    marginBottom: 20,
+  },
+  verifyRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 6,
+  },
+  verifyTitle: {
+    color: hostFlowColors.accent,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    letterSpacing: -0.1,
+  },
+  verifyBody: {
+    color: hostFlowColors.textMuted,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  verifyLink: {
+    color: hostFlowColors.accent,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    marginTop: 10,
   },
   permissionNote: {
     color: hostFlowColors.textSoft,

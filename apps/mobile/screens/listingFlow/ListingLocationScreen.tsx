@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useRef, useState } from "react";
 import { Keyboard, Pressable, StyleSheet, Text, View } from "react-native";
+import type { TextInput as RNTextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import { MapPinned, Search } from "lucide-react-native";
@@ -14,8 +15,9 @@ import { TextInput as AppTextInput } from "../../components/ui";
 import { FlowFooter } from "./FlowFooter";
 
 type FlowStackParamList = {
-  ListingLocation: undefined;
+  ListingLocation: { fromReview?: boolean } | undefined;
   ListingStreetView: undefined;
+  ListingReview: undefined;
 };
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingLocation">;
@@ -35,14 +37,25 @@ type PlaceDetailsResponse = {
 const ACCENT = hostFlowColors.accent;
 const FG = hostFlowColors.text;
 const MUTED = hostFlowColors.textMuted;
+const CARD_SHADOW = {
+  shadowColor: "#2d1a0e",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.09,
+  shadowRadius: 12,
+  elevation: 4,
+} as const;
 
-export function ListingLocationScreen({ navigation }: Props) {
-  const { draft, setDraft } = useListingFlow();
+export function ListingLocationScreen({ navigation, route }: Props) {
+  const { draft, setDraft, savedDraftUpdatedAt, discardSavedDraft } = useListingFlow();
+  // When the host jumped here from the review screen to fix one thing, the
+  // primary action returns them straight to review instead of re-walking the flow.
+  const fromReview = route.params?.fromReview ?? false;
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const [query, setQuery] = useState(draft.location.address);
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const mapRef = useRef<MapView>(null);
+  const searchInputRef = useRef<RNTextInput>(null);
   const isTypingRef = useRef(false);
   const skipAutocompleteRef = useRef(0);
 
@@ -55,6 +68,15 @@ export function ListingLocationScreen({ navigation }: Props) {
 
   const [mapVisible, setMapVisible] = useState(draft.location.address.trim().length > 0);
   const hasLocation = draft.location.address.trim().length > 0;
+
+  // If the draft is reset (e.g. "Start fresh" from the resume banner), clear the
+  // local search state so the field and map don't keep showing the old address.
+  useEffect(() => {
+    if (!draft.location.address) {
+      setQuery("");
+      setMapVisible(false);
+    }
+  }, [draft.location.address]);
 
   useEffect(() => {
     if (!mapsKey) return;
@@ -120,10 +142,77 @@ export function ListingLocationScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <FlowHeader current={1} total={8} onClose={exitFlow} />
+      <FlowHeader current={1} total={9} onClose={exitFlow} />
 
-      {/* Map fills all remaining space below the header */}
-      <View style={styles.mapShell}>
+      {savedDraftUpdatedAt ? (
+        <View style={styles.resumeBanner}>
+          <Text style={styles.resumeText} numberOfLines={1}>
+            Resuming your saved draft — pick up where you left off.
+          </Text>
+          <Pressable onPress={discardSavedDraft} hitSlop={8}>
+            <Text style={styles.resumeAction}>Start fresh</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {/* Search card (header) — its own section above the map, like Street View */}
+      <View style={styles.searchSection}>
+        <View style={styles.searchCard}>
+          <View style={styles.searchCardHeader}>
+            <Text style={styles.searchCardKicker}>Step 1 · Location</Text>
+            <Text style={styles.searchCardTitle}>Confirm your parking spot</Text>
+          </View>
+          <View style={styles.searchInputRow}>
+            <Search size={18} color={ACCENT} strokeWidth={2.2} />
+            <AppTextInput
+              ref={searchInputRef}
+              containerStyle={styles.searchInputContainer}
+              variant="embedded"
+              style={styles.searchInput}
+              value={query}
+              onChangeText={(text) => {
+                isTypingRef.current = true;
+                setQuery(text);
+                if (!text) setSuggestions([]);
+              }}
+              onBlur={() => { isTypingRef.current = false; }}
+              placeholder="Search address…"
+            />
+          </View>
+        </View>
+
+        {/* Suggestions dropdown — floats below the search card, over the map */}
+        {suggestions.length > 0 && (
+          <View style={styles.suggestions}>
+            {suggestions.slice(0, 4).map((suggestion, index) => {
+              const commaIdx = suggestion.description.indexOf(",");
+              const mainText = commaIdx > -1 ? suggestion.description.slice(0, commaIdx) : suggestion.description;
+              const secondaryText = commaIdx > -1 ? suggestion.description.slice(commaIdx + 1).trim() : "";
+              return (
+                <Pressable
+                  key={suggestion.place_id}
+                  style={[
+                    styles.suggestionItem,
+                    index === suggestions.slice(0, 4).length - 1 && styles.suggestionItemLast,
+                  ]}
+                  onPress={() => void handleSelectSuggestion(suggestion)}
+                >
+                  <View style={styles.suggestionIconCircle}>
+                    <MapPinned size={15} color={ACCENT} strokeWidth={2.2} />
+                  </View>
+                  <View style={styles.suggestionCopy}>
+                    <Text style={styles.suggestionText}>{mainText}</Text>
+                    {secondaryText ? <Text style={styles.suggestionSubText}>{secondaryText}</Text> : null}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+      </View>
+
+      {/* Map card — contained, same section treatment as the Street View viewer */}
+      <View style={styles.mapCard}>
         {mapVisible ? (
           <>
             <MapView
@@ -140,83 +229,27 @@ export function ListingLocationScreen({ navigation }: Props) {
             </View>
             <View style={styles.dragHintWrap} pointerEvents="none">
               <View style={styles.dragHint}>
-                <Text style={styles.dragHintText}>Drag map to position pin</Text>
+                <Text style={styles.dragHintText}>Drag the map to place the pin on your space</Text>
               </View>
             </View>
           </>
         ) : (
-          <View style={styles.mapPlaceholder} pointerEvents="none">
+          <Pressable style={styles.mapPlaceholder} onPress={() => searchInputRef.current?.focus()}>
             <View style={styles.mapPlaceholderIconCircle}>
               <MapPinned size={38} color={ACCENT} strokeWidth={2} />
             </View>
             <Text style={styles.mapPlaceholderTitle}>Search for your address</Text>
             <Text style={styles.mapPlaceholderText}>
-              Type your street address above and select it from the results
+              Tap here to search, then pick your address from the results
             </Text>
-          </View>
+          </Pressable>
         )}
-
-        {/* Floating overlay: search card + suggestions */}
-        <View style={styles.searchOverlay} pointerEvents="box-none">
-          {/* Search card */}
-          <View style={styles.searchCard}>
-            <View style={styles.searchCardHeader}>
-              <Text style={styles.searchCardKicker}>Step 1 · Location</Text>
-              <Text style={styles.searchCardTitle}>Confirm your parking spot</Text>
-            </View>
-            <View style={styles.searchInputRow}>
-              <Search size={18} color={ACCENT} strokeWidth={2.2} />
-              <AppTextInput
-                containerStyle={styles.searchInputContainer}
-                variant="embedded"
-                style={styles.searchInput}
-                value={query}
-                onChangeText={(text) => {
-                  isTypingRef.current = true;
-                  setQuery(text);
-                  if (!text) setSuggestions([]);
-                }}
-                onBlur={() => { isTypingRef.current = false; }}
-                placeholder="Search address…"
-              />
-            </View>
-          </View>
-
-          {/* Suggestions dropdown */}
-          {suggestions.length > 0 && (
-            <View style={styles.suggestions}>
-              {suggestions.slice(0, 4).map((suggestion, index) => {
-                const commaIdx = suggestion.description.indexOf(",");
-                const mainText = commaIdx > -1 ? suggestion.description.slice(0, commaIdx) : suggestion.description;
-                const secondaryText = commaIdx > -1 ? suggestion.description.slice(commaIdx + 1).trim() : "";
-                return (
-                  <Pressable
-                    key={suggestion.place_id}
-                    style={[
-                      styles.suggestionItem,
-                      index === suggestions.slice(0, 4).length - 1 && styles.suggestionItemLast,
-                    ]}
-                    onPress={() => void handleSelectSuggestion(suggestion)}
-                  >
-                    <View style={styles.suggestionIconCircle}>
-                      <MapPinned size={15} color={ACCENT} strokeWidth={2.2} />
-                    </View>
-                    <View style={styles.suggestionCopy}>
-                      <Text style={styles.suggestionText}>{mainText}</Text>
-                      {secondaryText ? <Text style={styles.suggestionSubText}>{secondaryText}</Text> : null}
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
-        </View>
       </View>
 
       <FlowFooter
-        onBack={() => navigation.goBack()}
-        primaryLabel={loading ? "Loading…" : "Confirm location"}
-        onPrimary={() => navigation.navigate("ListingStreetView")}
+        onBack={() => (fromReview ? navigation.navigate("ListingReview") : navigation.goBack())}
+        primaryLabel={loading ? "Loading…" : fromReview ? "Save changes" : "Confirm location"}
+        onPrimary={() => navigation.navigate(fromReview ? "ListingReview" : "ListingStreetView")}
         primaryDisabled={loading || !hasLocation}
       />
     </SafeAreaView>
@@ -229,9 +262,47 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  mapShell: {
+  resumeBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: hostFlowColors.accentSoft,
+    borderBottomWidth: 1,
+    borderBottomColor: hostFlowColors.accentSoftBorder,
+  },
+  resumeText: {
+    flex: 1,
+    color: FG,
+    fontFamily: "PlusJakartaSans-Medium",
+    fontSize: 13,
+  },
+  resumeAction: {
+    color: ACCENT,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    flexShrink: 0,
+  },
+  // Its own section above the map; the suggestions dropdown hangs off its bottom.
+  searchSection: {
+    position: "relative",
+    zIndex: 20,
+    marginHorizontal: 16,
+    marginTop: 12,
+  },
+  mapCard: {
+    // Contained rounded card matching the Street View viewer, rather than a
+    // full-bleed edge-to-edge map.
     flex: 1,
     position: "relative",
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    borderRadius: 18,
+    overflow: "hidden",
+    ...CARD_SHADOW,
   },
 
   centerPin: {
@@ -293,24 +364,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
 
-  searchOverlay: {
-    left: 16,
-    position: "absolute",
-    right: 16,
-    top: 12,
-    zIndex: 10,
-  },
-
-  // Search card: header (kicker+title) + input row
+  // Search card: header (kicker+title) + input row — matches the Street View
+  // header card (1px border + soft card shadow).
   searchCard: {
     backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: hostFlowColors.border,
     overflow: "hidden",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 14,
-    elevation: 6,
+    ...CARD_SHADOW,
   },
   searchCardHeader: {
     paddingHorizontal: 16,
@@ -358,6 +420,12 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   suggestions: {
+    // Hang off the bottom of the search card so it overlays the map without
+    // pushing it down.
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    right: 0,
     backgroundColor: hostFlowColors.cardBg,
     borderRadius: 14,
     marginTop: 8,

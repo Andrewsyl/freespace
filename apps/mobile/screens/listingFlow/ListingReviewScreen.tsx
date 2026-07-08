@@ -1,7 +1,7 @@
 import { CommonActions } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useMemo, useState } from "react";
-import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BackHandler, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SquircleBtn } from "../../components/SquircleBtn";
 import { PhoneVerifyModal } from "../../components/PhoneVerifyModal";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,6 +14,7 @@ import {
   Tag,
   Camera,
   KeyRound,
+  ListChecks,
   Pencil,
 } from "lucide-react-native";
 import {
@@ -31,18 +32,21 @@ import { generateListingDescription } from "./generateDescription";
 import { FlowHeader } from "./FlowHeader";
 import { colors, spacing } from "../../styles/theme";
 import { hostFlowColors } from "./hostFlowTheme";
-import { clearHostListingDraft } from "./draftStorage";
+import { clearHostListingDraft, saveHostListingDraft } from "./draftStorage";
+import { useGlobalToast } from "../../components/GlobalToast";
+import { useExitListingFlowConfirm } from "./confirmExit";
 import { buildStreetViewImageUrl } from "../../utils/streetView";
 
 type FlowStackParamList = {
   ListingReview: undefined;
-  ListingLocation: undefined;
+  ListingLocation: { fromReview?: boolean } | undefined;
   ListingStreetView: undefined;
-  ListingDetails: undefined;
-  ListingFeaturesAccess: undefined;
-  ListingAvailability: undefined;
-  ListingPrice: undefined;
-  ListingPhotos: undefined;
+  ListingDetails: { fromReview?: boolean } | undefined;
+  ListingFeatures: { fromReview?: boolean } | undefined;
+  ListingAccess: { fromReview?: boolean } | undefined;
+  ListingAvailability: { fromReview?: boolean } | undefined;
+  ListingPrice: { fromReview?: boolean } | undefined;
+  ListingPhotos: { fromReview?: boolean } | undefined;
 };
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingReview">;
@@ -65,6 +69,13 @@ type RowStatus = "ok" | "warn";
 export function ListingReviewScreen({ navigation }: Props) {
   const { draft, setDraft, listingId } = useListingFlow();
   const { token, user, setAuthUser } = useAuth();
+  // Aliased: this component already has a boolean `showSuccess` state for the
+  // success overlay, so the toast helper is bound under a distinct name.
+  const { showSuccess: showSuccessToast } = useGlobalToast();
+  // If createListing succeeded but a later step (availability sync) failed, remember the id so
+  // a retry updates that listing instead of creating a duplicate.
+  const createdListingIdRef = useRef<string | null>(null);
+  const { presentExitConfirm, exitConfirmModal } = useExitListingFlowConfirm();
   const insets = useSafeAreaInsets();
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const [submitting, setSubmitting] = useState(false);
@@ -99,9 +110,14 @@ export function ListingReviewScreen({ navigation }: Props) {
   // The single price drivers glance at first, shown over the cover. The full
   // multi-rate breakdown still lives in the Pricing edit row below.
   const heroPrice = (() => {
-    if (draft.pricePerDay.trim().length > 0) return `€${draft.pricePerDay}/day`;
-    if (draft.pricePerMonth.trim().length > 0) return `€${draft.pricePerMonth}/mo`;
-    if (draft.pricePerHour.trim().length > 0) return `€${draft.pricePerHour}/hr`;
+    // Mirror the listing's pricing mode — a monthly-only space carries a default
+    // daily value in the draft, so keying off pricePerDay first would show a
+    // "/day" rate the host never set.
+    if (requiresShortStay) {
+      if (draft.pricePerDay.trim().length > 0) return `€${draft.pricePerDay}/day`;
+      if (draft.pricePerHour.trim().length > 0) return `€${draft.pricePerHour}/hr`;
+    }
+    if (requiresMonthly && draft.pricePerMonth.trim().length > 0) return `€${draft.pricePerMonth}/mo`;
     return null;
   })();
 
@@ -125,17 +141,63 @@ export function ListingReviewScreen({ navigation }: Props) {
     return draft.photos.find((p) => p?.trim()) ?? null;
   }, [draft.coverHeading, draft.coverPitch, draft.coverPanoId, draft.location, draft.photos, mapsKey]);
 
-  const spaceTypeValue = draft.spaceType
-    ? draft.capacity > 1
-      ? `${draft.spaceType} · ${draft.capacity} spaces`
-      : draft.spaceType
-    : "Not set";
+  // Labels mirror the vehicle options on the Details screen so the fit the host
+  // selected (and which is now persisted) is visible on the review summary.
+  const VEHICLE_FIT_LABELS: Record<string, string> = {
+    small: "Hatchback",
+    medium: "Saloon",
+    large: "SUV / Jeep",
+    van: "Van",
+  };
+  const spaceTypeValue = (() => {
+    if (!draft.spaceType) return "Not set";
+    const parts = [draft.spaceType];
+    if (draft.capacity > 1) parts.push(`${draft.capacity} spaces`);
+    const fit = VEHICLE_FIT_LABELS[draft.vehicleSize];
+    if (fit) parts.push(`Fits ${fit}`);
+    return parts.join(" · ");
+  })();
+
+  const accessSummary = (() => {
+    if (draft.accessOptions.includes("Pin code")) {
+      return draft.accessCode.trim() ? `Pin code · ${draft.accessCode.trim()}` : "Pin code";
+    }
+    if (draft.accessOptions.includes("Key or security fob")) {
+      return draft.accessCode.trim()
+        ? `Key collection · ${draft.accessCode.trim()}`
+        : "Key or security fob";
+    }
+    if (draft.accessOptions.includes("Special instructions")) {
+      return draft.arrivalInstructions.trim()
+        ? `Arrival instructions · ${draft.arrivalInstructions.trim()}`
+        : "Special instructions";
+    }
+    return "Open access";
+  })();
+
+  const ACCESS_OPTION_VALUES = ["Key or security fob", "Pin code", "Special instructions"];
+  const featureSummary = (() => {
+    const features = draft.accessOptions.filter((o) => !ACCESS_OPTION_VALUES.includes(o));
+    return features.length ? features.join(", ") : "None selected";
+  })();
 
   const pricingOk: RowStatus =
     (!requiresShortStay || (draft.pricePerHour.trim().length > 0 && draft.pricePerDay.trim().length > 0)) &&
     (!requiresMonthly || draft.pricePerMonth.trim().length > 0)
       ? "ok"
       : "warn";
+
+  // Tell the host exactly what's blocking publish. The permission checkbox is the
+  // usual culprit and lives inside the scrollable panel, so surfacing it on the
+  // fixed footer points them back up rather than leaving a dead button.
+  const publishHint = (() => {
+    if (canPublish) return null;
+    if (!draft.location.address.trim()) return "Add your location to publish";
+    if (!draft.spaceType.trim()) return "Add your space details to publish";
+    if (pricingOk === "warn") return "Set your pricing to publish";
+    if (!draft.permissionDeclared) return "Tick the box above to confirm you can list this space";
+    return "Complete the highlighted steps to publish";
+  })();
 
   const buildAvailabilityPayloads = () => {
     const weekdayIndex: Record<string, number> = {
@@ -216,6 +278,13 @@ export function ListingReviewScreen({ navigation }: Props) {
       setError(listingId ? "Sign in to update your space." : "Sign in to publish your space.");
       return;
     }
+    if (user && user.emailVerified === false) {
+      await saveHostListingDraft(draft);
+      setError(
+        "Verify your email to publish — check your inbox for the link. Your listing is saved to Listings in the meantime."
+      );
+      return;
+    }
     const hasHourlyPrice = draft.pricePerHour.trim().length > 0;
     const hasDailyPrice = draft.pricePerDay.trim().length > 0;
     const hasMonthlyPrice = draft.pricePerMonth.trim().length > 0;
@@ -254,11 +323,28 @@ export function ListingReviewScreen({ navigation }: Props) {
       const parsedDaily = Number.parseFloat(draft.pricePerDay);
       const parsedMonthly = Number.parseFloat(draft.pricePerMonth);
       const inferredRateType = requiresShortStay && Number.isFinite(parsedHourly) && parsedHourly > 0 ? "hourly" : "daily";
-      if (listingId) {
-        await updateListing({ token, listingId, title: draft.spaceType ? `${draft.spaceType} parking` : "Parking space", address: draft.location.address || "Dublin", rateType: inferredRateType, pricePerDay: parsedDaily, pricePerHour: requiresShortStay ? parsedHourly : null, pricePerMonth: requiresMonthly ? parsedMonthly : null, availabilityText: draft.availability.detail, imageUrls, amenities: draft.accessOptions, accessCode: draft.accessCode.trim() || null, arrivalInstructions: draft.arrivalInstructions.trim() || null, permissionDeclared: draft.permissionDeclared, capacity: draft.capacity, description: (draft.description ?? "").trim() || null });
-        await syncAvailability(listingId);
+      // The Features & access screen keeps typed code/instructions even after the
+      // host changes their access choice (so switching never loses data), so gate
+      // what we publish on the final selection — a buffer left over from a
+      // since-changed choice must not reach the live listing.
+      const accessSelected = draft.requiresAccessCode === true;
+      const wantsCode =
+        accessSelected &&
+        (draft.accessOptions.includes("Pin code") ||
+          draft.accessOptions.includes("Key or security fob"));
+      const wantsInstructions =
+        accessSelected && draft.accessOptions.includes("Special instructions");
+      const publishAccessCode = wantsCode ? draft.accessCode.trim() || null : null;
+      const publishArrivalInstructions = wantsInstructions
+        ? draft.arrivalInstructions.trim() || null
+        : null;
+      const effectiveListingId = listingId ?? createdListingIdRef.current;
+      if (effectiveListingId) {
+        await updateListing({ token, listingId: effectiveListingId, title: draft.spaceType ? `${draft.spaceType} parking` : "Parking space", address: draft.location.address || "Dublin", rateType: inferredRateType, pricePerDay: parsedDaily, pricePerHour: requiresShortStay ? parsedHourly : null, pricePerMonth: requiresMonthly ? parsedMonthly : null, availabilityText: draft.availability.detail, imageUrls, amenities: draft.accessOptions, accessCode: publishAccessCode, arrivalInstructions: publishArrivalInstructions, permissionDeclared: draft.permissionDeclared, capacity: draft.capacity, description: (draft.description ?? "").trim() || null, vehicleSizeSuitability: draft.vehicleSize.trim() || null });
+        await syncAvailability(effectiveListingId);
       } else {
-        const newListingId = await createListing({ token, title: draft.spaceType ? `${draft.spaceType} parking` : "Parking space", address: draft.location.address || "Dublin", rateType: inferredRateType, pricePerDay: parsedDaily, pricePerHour: requiresShortStay ? parsedHourly : null, pricePerMonth: requiresMonthly ? parsedMonthly : null, availabilityText: draft.availability.detail, latitude: draft.location.latitude, longitude: draft.location.longitude, imageUrls, amenities: draft.accessOptions, accessCode: draft.accessCode.trim() || null, arrivalInstructions: draft.arrivalInstructions.trim() || null, permissionDeclared: draft.permissionDeclared, capacity: draft.capacity, description: (draft.description ?? "").trim() || null });
+        const newListingId = await createListing({ token, title: draft.spaceType ? `${draft.spaceType} parking` : "Parking space", address: draft.location.address || "Dublin", rateType: inferredRateType, pricePerDay: parsedDaily, pricePerHour: requiresShortStay ? parsedHourly : null, pricePerMonth: requiresMonthly ? parsedMonthly : null, availabilityText: draft.availability.detail, latitude: draft.location.latitude, longitude: draft.location.longitude, imageUrls, amenities: draft.accessOptions, accessCode: publishAccessCode, arrivalInstructions: publishArrivalInstructions, permissionDeclared: draft.permissionDeclared, capacity: draft.capacity, description: (draft.description ?? "").trim() || null, vehicleSizeSuitability: draft.vehicleSize.trim() || null });
+        createdListingIdRef.current = newListingId;
         await syncAvailability(newListingId);
       }
       await clearHostListingDraft();
@@ -272,6 +358,9 @@ export function ListingReviewScreen({ navigation }: Props) {
       }, 1800);
     } catch (err) {
       void trackEvent("mobile_host_publish_failed", { pricingMode: draft.pricingMode, listingId: listingId ?? "new" });
+      if (!listingId) {
+        await saveHostListingDraft(draft);
+      }
       setError(err instanceof Error ? err.message : "Could not publish");
       setPublished(false);
       setShowSuccess(false);
@@ -285,9 +374,30 @@ export function ListingReviewScreen({ navigation }: Props) {
     if (parent?.canGoBack()) parent.goBack();
   };
 
+  // Edit mode opens straight to Review (it's the flow's root screen there), so
+  // Android hardware back would pop the whole flow and silently discard edits.
+  // Intercept it and route through the same save/leave confirm as the header X.
+  // (iOS swipe-back is disabled for this screen in the navigator.) Create mode
+  // isn't guarded here — back just steps to the previous screen, which is safe.
+  useEffect(() => {
+    if (!listingId) return;
+    const onHardwareBack = () => {
+      if (published) return true;
+      presentExitConfirm({
+        canSave: false,
+        message: "Leave without saving your changes? Your edits won't be applied to the live listing.",
+        onConfirm: exitFlow,
+      });
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onHardwareBack);
+    return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listingId, published]);
+
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <FlowHeader current={8} total={8} onClose={exitFlow} />
+      <FlowHeader current={9} total={9} onClose={exitFlow} />
 
       <KeyboardAvoidingView
         style={styles.kav}
@@ -312,7 +422,7 @@ export function ListingReviewScreen({ navigation }: Props) {
         {/* ── Hero: exactly what drivers will see (tap to edit photos) ── */}
         <Pressable
           style={styles.heroCard}
-          onPress={() => navigation.navigate("ListingPhotos")}
+          onPress={() => navigation.navigate("ListingPhotos", { fromReview: true })}
         >
           <View style={styles.heroMedia}>
             {coverPhotoUri ? (
@@ -385,34 +495,40 @@ export function ListingReviewScreen({ navigation }: Props) {
             label="Location"
             value={draft.location.address || "Not set"}
             status={draft.location.address.trim().length > 0 ? "ok" : "warn"}
-            onPress={() => navigation.navigate("ListingLocation")}
+            onPress={() => navigation.navigate("ListingLocation", { fromReview: true })}
           />
           <DetailRow
             icon={<Tag size={15} color={ACCENT} strokeWidth={2} />}
             label="Space"
             value={spaceTypeValue}
             status={draft.spaceType.trim().length > 0 ? "ok" : "warn"}
-            onPress={() => navigation.navigate("ListingDetails")}
+            onPress={() => navigation.navigate("ListingDetails", { fromReview: true })}
           />
           <DetailRow
             icon={<Tag size={15} color={ACCENT} strokeWidth={2} />}
             label="Price"
             value={priceLabel}
             status={pricingOk}
-            onPress={() => navigation.navigate("ListingPrice")}
+            onPress={() => navigation.navigate("ListingPrice", { fromReview: true })}
           />
           <DetailRow
             icon={<Clock size={15} color={ACCENT} strokeWidth={2} />}
             label="Availability"
             value={draft.availability.detail || "Not set"}
             status={draft.availability.detail.trim().length > 0 ? "ok" : "warn"}
-            onPress={() => navigation.navigate("ListingAvailability")}
+            onPress={() => navigation.navigate("ListingAvailability", { fromReview: true })}
+          />
+          <DetailRow
+            icon={<ListChecks size={15} color={ACCENT} strokeWidth={2} />}
+            label="Features"
+            value={featureSummary}
+            onPress={() => navigation.navigate("ListingFeatures", { fromReview: true })}
           />
           <DetailRow
             icon={<KeyRound size={15} color={ACCENT} strokeWidth={2} />}
             label="Access"
-            value={draft.accessCode.trim() || "No code needed"}
-            onPress={() => navigation.navigate("ListingFeaturesAccess")}
+            value={accessSummary}
+            onPress={() => navigation.navigate("ListingAccess", { fromReview: true })}
             isLast
           />
         </View>
@@ -430,6 +546,14 @@ export function ListingReviewScreen({ navigation }: Props) {
             <View style={styles.reassureDot}><Check size={11} color={ACCENT} strokeWidth={3} /></View>
             <Text style={styles.reassureText}>You can edit, pause or remove it anytime.</Text>
           </View>
+          {!listingId ? (
+            <View style={styles.reassureRow}>
+              <View style={styles.reassureDot}><Check size={11} color={ACCENT} strokeWidth={3} /></View>
+              <Text style={styles.reassureText}>
+                After publishing, connect Stripe payouts from your dashboard to receive your earnings.
+              </Text>
+            </View>
+          ) : null}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -452,6 +576,9 @@ export function ListingReviewScreen({ navigation }: Props) {
 
       {/* ── Footer ── */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        {publishHint && !submitting ? (
+          <Text style={styles.publishHint}>{publishHint}</Text>
+        ) : null}
         <SquircleBtn
           label={submitting ? "Saving…" : listingId ? "Update listing" : "Publish space"}
           onPress={handlePublish}
@@ -459,13 +586,19 @@ export function ListingReviewScreen({ navigation }: Props) {
           loading={submitting}
           fullWidth
         />
-        <Pressable
-          style={styles.saveLaterBtn}
-          onPress={() => navigation.goBack()}
-          disabled={submitting || published}
-        >
-          <Text style={styles.saveLaterText}>Save and finish later</Text>
-        </Pressable>
+        {!listingId ? (
+          <Pressable
+            style={styles.saveLaterBtn}
+            onPress={async () => {
+              await saveHostListingDraft(draft);
+              showSuccessToast("Saved to Listings. Finish it anytime.");
+              exitFlow();
+            }}
+            disabled={submitting || published}
+          >
+            <Text style={styles.saveLaterText}>Save and finish later</Text>
+          </Pressable>
+        ) : null}
       </View>
       </KeyboardAvoidingView>
 
@@ -500,11 +633,13 @@ export function ListingReviewScreen({ navigation }: Props) {
               {listingId ? "Updated" : "Published"}
             </Text>
             <Text style={styles.successBody}>
-              {listingId ? "Your listing has been saved." : "Your space is now live."}
+              {listingId ? "Your listing has been saved." : "Your space is live. Next: set up payouts from your dashboard."}
             </Text>
           </View>
         </View>
       ) : null}
+
+      {exitConfirmModal}
     </SafeAreaView>
   );
 }
@@ -781,7 +916,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
     lineHeight: 20,
   },
-  valueWarning: { color: colors.warning },
+  valueWarning: { color: colors.status.pending.text },
   statusOk: {
     width: 18,
     height: 18,
@@ -911,6 +1046,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screenX,
     paddingTop: 12,
     gap: 8,
+  },
+  publishHint: {
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12.5,
+    color: MUTED,
+    textAlign: "center",
+    lineHeight: 17,
+    marginBottom: 10,
   },
   saveLaterBtn: {
     alignItems: "center",

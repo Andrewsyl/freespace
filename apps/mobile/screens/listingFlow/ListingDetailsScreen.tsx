@@ -10,7 +10,6 @@ import {
   Plus,
   Signpost,
   Warehouse,
-  Info,
 } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { FlowHeader } from "./FlowHeader";
@@ -18,8 +17,9 @@ import { hostFlowColors } from "./hostFlowTheme";
 import { FlowFooter } from "./FlowFooter";
 
 type FlowStackParamList = {
-  ListingDetails: undefined;
-  ListingFeaturesAccess: undefined;
+  ListingDetails: { fromReview?: boolean } | undefined;
+  ListingFeatures: undefined;
+  ListingReview: undefined;
 };
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingDetails">;
@@ -46,7 +46,7 @@ const vehicleSizeOptions = [
 
 type DetailStep = "type" | "count" | "vehicle";
 
-const MIN_SPACE_COUNT = 0;
+const MIN_SPACE_COUNT = 1;
 const MAX_SPACE_COUNT = 99;
 
 function parseSpaceCount(value: string) {
@@ -67,8 +67,9 @@ function SpaceTypeIcon({ type, active }: { type: string; active: boolean }) {
   }
 }
 
-export function ListingDetailsScreen({ navigation }: Props) {
+export function ListingDetailsScreen({ navigation, route }: Props) {
   const { draft, setDraft } = useListingFlow();
+  const fromReview = route.params?.fromReview ?? false;
   const insets = useSafeAreaInsets();
   const [openStep, setOpenStep] = useState<DetailStep>(() => {
     if (!draft.spaceType) return "type";
@@ -115,7 +116,7 @@ export function ListingDetailsScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <FlowHeader current={3} total={8} onClose={exitFlow} />
+      <FlowHeader current={3} total={9} onClose={exitFlow} />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: 104 + Math.max(insets.bottom, 0) }]}
         showsVerticalScrollIndicator={false}
@@ -146,7 +147,11 @@ export function ListingDetailsScreen({ navigation }: Props) {
                         key={type}
                         style={[styles.typeCard, active && styles.typeCardActive]}
                         onPress={() => {
-                          setDraft((prev) => ({ ...prev, spaceType: type }));
+                          setDraft((prev) => ({
+                            ...prev,
+                            spaceType: type,
+                            ...(prev.spaceCount ? {} : { spaceCount: "1", capacity: 1 }),
+                          }));
                           setOpenStep("count");
                         }}
                       >
@@ -254,23 +259,12 @@ export function ListingDetailsScreen({ navigation }: Props) {
             </View>
           </View>
         )}
-
-        {/* Tips card — only shown once all three sections are complete */}
-        {canContinue && <View style={styles.tipsCard}>
-          <View style={styles.tipsRow}>
-            <Info size={15} color={ACCENT} strokeWidth={2.2} />
-            <Text style={styles.tipsTitle}>Accuracy matters</Text>
-          </View>
-          <Text style={styles.tipsBody}>
-            Accurate space details help drivers know if your spot is right for their vehicle — reducing cancellations and improving your rating.
-          </Text>
-        </View>}
       </ScrollView>
 
       <FlowFooter
-        onBack={() => navigation.goBack()}
-        primaryLabel="Continue"
-        onPrimary={() => navigation.navigate("ListingFeaturesAccess")}
+        onBack={() => (fromReview ? navigation.navigate("ListingReview") : navigation.goBack())}
+        primaryLabel={fromReview ? "Save changes" : "Continue"}
+        onPrimary={() => navigation.navigate(fromReview ? "ListingReview" : "ListingFeatures")}
         primaryDisabled={!canContinue}
       />
     </SafeAreaView>
