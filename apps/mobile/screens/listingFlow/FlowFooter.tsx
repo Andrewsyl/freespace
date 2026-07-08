@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft } from "lucide-react-native";
 import { hostFlowColors } from "./hostFlowTheme";
-import { spacing } from "../../styles/theme";
+import { colors, spacing } from "../../styles/theme";
 
 type Props = {
   onBack: () => void;
@@ -70,12 +70,12 @@ const styles = StyleSheet.create({
     backgroundColor: hostFlowColors.accent,
   },
   primaryButtonDisabled: {
-    backgroundColor: "#d1d5db",
+    backgroundColor: hostFlowColors.border,
   },
   primaryButtonText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
-    color: "#ffffff",
+    color: colors.textInverse,
     letterSpacing: -0.2,
   },
   skipButton: {

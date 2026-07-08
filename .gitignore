@@ -40,3 +40,8 @@ apps/mobile/*.jks
 apps/mobile/credentials.json
 apps/mobile/credentials/
 docs/plans/
+
+# Native build output at repo root (expo run:*): android/ is intentionally tracked,
+# ios/ contains Pods/build products (~1GB) and is generated on demand
+/ios/
+/.expo/

@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 import type { BookingSummary } from "../api";
+import { colors } from "../styles/theme";
 
 type Props = {
   booking: BookingSummary;
@@ -22,23 +23,23 @@ type Props = {
   onPress: () => void;
 };
 
-const ACCENT = "#0a8050";
-const FG     = "#101414";
-const MUTED  = "#465050";
-const SUBTLE = "#6B7575";
-const LINE   = "#DDE5EC";
-const BG     = "#F8FAFC";
+const ACCENT = colors.primary;
+const FG     = colors.text;
+const MUTED  = colors.textMuted;
+const SUBTLE = colors.textSoft;
+const LINE   = colors.divider;
+const BG     = colors.cardBgMuted;
 
 const STATUS: Record<
   Props["statusTone"],
   { icon: LucideIcon; pillBg: string; pillText: string }
 > = {
   confirmed: { icon: CircleCheck, pillBg: "rgba(255,255,255,0.93)", pillText: ACCENT      },
-  active:    { icon: CirclePlay,  pillBg: ACCENT,                  pillText: "#ffffff"    },
+  active:    { icon: CirclePlay,  pillBg: ACCENT,                  pillText: colors.textInverse },
   completed: { icon: CircleCheck, pillBg: "rgba(255,255,255,0.93)", pillText: MUTED       },
-  pending:   { icon: Clock,       pillBg: "rgba(255,255,255,0.93)", pillText: "#B6691A"   },
-  canceled:  { icon: CircleX,     pillBg: "rgba(255,255,255,0.93)", pillText: "#DC2626"   },
-  refunded:  { icon: Undo2,       pillBg: "rgba(255,255,255,0.93)", pillText: "#2563EB"   },
+  pending:   { icon: Clock,       pillBg: "rgba(255,255,255,0.93)", pillText: colors.status.pending.text },
+  canceled:  { icon: CircleX,     pillBg: "rgba(255,255,255,0.93)", pillText: colors.danger },
+  refunded:  { icon: Undo2,       pillBg: "rgba(255,255,255,0.93)", pillText: colors.status.refunded.text },
 };
 
 export function BookingCard({
@@ -139,10 +140,10 @@ export function BookingCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E3E8EE",
+    borderColor: colors.divider,
     overflow: "hidden",
     shadowColor: "#0f172a",
     shadowOffset: { width: 0, height: 4 },
@@ -276,7 +277,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#0f172a",
@@ -295,7 +296,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: LINE,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
   },
   footerText: {
     fontSize: 12.5,

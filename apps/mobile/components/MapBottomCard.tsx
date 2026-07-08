@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import {
   Animated,
-  Easing,
   Image,
   Pressable,
   StyleSheet,
@@ -21,10 +20,12 @@ import {
   KeyRound,
   Lightbulb,
   Maximize2,
+  Star,
   Warehouse,
   CarFront,
 } from "lucide-react-native";
 import { colors } from "../styles/theme";
+import { motion } from "../styles/motion";
 
 type MapBottomCardProps = {
   title: string;
@@ -95,7 +96,7 @@ export function FeatureChip({ label }: { label: string }) {
   return (
     <View style={styles.featureChip} accessibilityLabel={label}>
       <View style={styles.featureChipIconWrap}>
-        <Icon size={16} color="#475569" strokeWidth={1.9} />
+        <Icon size={15} color="#55606B" strokeWidth={1.9} />
       </View>
     </View>
   );
@@ -135,8 +136,7 @@ export function MapBottomCard({
       heartScale.setValue(0.6);
       Animated.spring(heartScale, {
         toValue: 1,
-        friction: 4,
-        tension: 140,
+        ...motion.springPop,
         useNativeDriver: true,
       }).start();
     }
@@ -148,14 +148,14 @@ export function MapBottomCard({
       Animated.parallel([
         Animated.timing(translateAnim, {
           toValue: 1,
-          duration: 240,
-          easing: Easing.in(Easing.cubic),
+          duration: motion.duration.standard,
+          easing: motion.easing.in,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
           toValue: 0,
-          duration: 180,
-          easing: Easing.in(Easing.ease),
+          duration: motion.duration.fast,
+          easing: motion.easing.in,
           useNativeDriver: true,
         }),
       ]).start();
@@ -165,15 +165,13 @@ export function MapBottomCard({
       Animated.parallel([
         Animated.spring(translateAnim, {
           toValue: 0,
-          damping: 22,
-          stiffness: 280,
-          mass: 0.9,
+          ...motion.spring,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
-          duration: 180,
-          easing: Easing.out(Easing.ease),
+          duration: motion.duration.fast,
+          easing: motion.easing.out,
           useNativeDriver: true,
         }),
       ]).start();
@@ -185,6 +183,13 @@ export function MapBottomCard({
     () => Array.from(new Set((amenities ?? []).filter(Boolean).map(humanizeAmenity))),
     [amenities]
   );
+
+  // "€12.50 total" → bold amount, quiet suffix. The number is the decision;
+  // the word is just context.
+  const [priceAmount, priceSuffix] = useMemo(() => {
+    const m = price.match(/^(\S+)\s+(.+)$/);
+    return m ? [m[1], m[2]] : [price, ""];
+  }, [price]);
 
   return (
     <Animated.View
@@ -231,15 +236,21 @@ export function MapBottomCard({
           </View>
 
           {hasRating ? (
-            <Text style={styles.rating}>
-              ★ {rating.toFixed(1)}
-              <Text style={styles.ratingCount}> · {reviewCount} {reviewCount === 1 ? "review" : "reviews"}</Text>
-            </Text>
+            <View style={styles.ratingRow}>
+              <Star size={11.5} color="#111827" fill="#111827" strokeWidth={1.5} />
+              <Text style={styles.rating}>
+                {rating.toFixed(1)}
+                <Text style={styles.ratingCount}> · {reviewCount} {reviewCount === 1 ? "review" : "reviews"}</Text>
+              </Text>
+            </View>
           ) : null}
 
           <View style={styles.priceRow}>
             {isAvailable ? (
-              <Text style={styles.price}>{price}</Text>
+              <Text style={styles.price}>
+                {priceAmount}
+                {priceSuffix ? <Text style={styles.priceSuffix}> {priceSuffix}</Text> : null}
+              </Text>
             ) : (
               <Text style={styles.soldOut}>SOLD OUT</Text>
             )}
@@ -260,16 +271,14 @@ export function MapBottomCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.cardBg,
-    borderColor: "#dde3e7",
-    borderRadius: 20,
-    borderWidth: 1,
-    elevation: 8,
+    borderRadius: 18,
+    elevation: 7,
     overflow: "hidden",
     position: "absolute",
-    shadowColor: "#111827",
+    shadowColor: "#0B1220",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
+    shadowOpacity: 0.12,
+    shadowRadius: 28,
   },
   row: {
     flexDirection: "row",
@@ -277,8 +286,6 @@ const styles = StyleSheet.create({
   },
   imageWrap: {
     backgroundColor: "#edf1f4",
-    borderRightColor: "#e4e9ed",
-    borderRightWidth: 1,
     overflow: "hidden",
     width: 112,
   },
@@ -314,19 +321,24 @@ const styles = StyleSheet.create({
   },
   heartBtn: {
     alignItems: "center",
-    height: 26,
+    height: 30,
     justifyContent: "center",
-    width: 26,
+    width: 30,
+  },
+  ratingRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 4,
+    marginBottom: 3,
   },
   rating: {
     color: "#111827",
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
     letterSpacing: -0.1,
-    marginBottom: 3,
   },
   ratingCount: {
-    color: "#8896a5",
+    color: "#98A2AD",
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
   },
@@ -343,13 +355,11 @@ const styles = StyleSheet.create({
   },
   featureChip: {
     alignItems: "center",
-    backgroundColor: "#f3f4f6",
-    borderColor: "#e5e7eb",
+    backgroundColor: "#F2F5F7",
     borderRadius: 999,
-    borderWidth: 1,
-    height: 24,
+    height: 26,
     justifyContent: "center",
-    minWidth: 24,
+    minWidth: 26,
     paddingHorizontal: 4,
   },
   featureChipIconWrap: {
@@ -357,13 +367,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   priceRow: {
-    borderTopColor: "#eaeff3",
-    borderTopWidth: 1,
+    borderTopColor: "#EEF1F3",
+    borderTopWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     flexDirection: "row",
     gap: 8,
     justifyContent: "space-between",
-    paddingTop: 8,
+    paddingTop: 9,
   },
   featureRow: {
     flexDirection: "row",
@@ -377,13 +387,19 @@ const styles = StyleSheet.create({
   },
   price: {
     color: "#111827",
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 16,
-    letterSpacing: -0.5,
-    lineHeight: 20,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 16.5,
+    letterSpacing: -0.4,
+    lineHeight: 21,
+  },
+  priceSuffix: {
+    color: "#98A2AD",
+    fontFamily: "PlusJakartaSans-Medium",
+    fontSize: 12.5,
+    letterSpacing: -0.1,
   },
   soldOut: {
-    color: "#94a3b8",
+    color: "#98A2AD",
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
     letterSpacing: 0.5,

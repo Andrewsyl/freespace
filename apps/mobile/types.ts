@@ -47,7 +47,6 @@ export type RootStackParamList = {
   LoginSecurity: undefined;
   Legal: undefined;
   History: { showSuccess?: boolean; refreshToken?: number; showMapCTA?: boolean; initialTab?: "upcoming" | "active" | "past" } | undefined;
-  Settings: undefined;
   Listings: undefined;
   Payments: undefined;
   Favorites: {} | undefined;
@@ -132,6 +131,10 @@ export type ListingDetail = ListingSummary & {
   access_directions?: string | null;
   accessDirections?: string | null;
   hostId?: string | null;
+  hostName?: string | null;
+  hostVerified?: boolean | null;
+  hostSince?: string | null;
+  spacesRemaining?: number | null;
   availabilitySchedule?: {
     id: string;
     kind: "open" | "blocked";

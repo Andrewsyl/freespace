@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Animated,
-  Easing,
   Image,
   KeyboardAvoidingView,
   Linking,
@@ -33,17 +31,20 @@ import { useFavorites } from "../favorites";
 import { useGlobalToast } from "../components/GlobalToast";
 import MapSection from "../components/MapSection";
 import { MapBottomCard } from "../components/MapBottomCard";
+import { PulseDots } from "../components/PulseDots";
 import { LIGHT_MAP_STYLE } from "../components/mapStyles";
-import { calculateListingTotal, formatPriceValue } from "../utils/pricing";
+import { applyServiceFee, calculateListingTotal, formatPriceValue } from "../utils/pricing";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { getListing, searchListings } from "../api";
 import { trackEvent } from "../analytics";
-import { cardShadow, colors, radius, spacing, textStyles } from "../styles/theme";
+import { colors, primaryButtonShadow, radius, spacing, textStyles } from "../styles/theme";
+import { motion } from "../styles/motion";
 import {
   ArrowLeft,
   ArrowRight,
   BatteryCharging,
   Cctv,
+  Check,
   ChevronRight,
   CircleX,
   Clock,
@@ -168,7 +169,7 @@ function FilterChip({ label, selected = false, onPress, icon, small = false }: F
       {Icon ? (
         <Icon
           size={14}
-          color={selected ? "#ffffff" : "#0f172a"}
+          color={selected ? colors.textInverse : colors.text}
           strokeWidth={2.1}
           style={{ marginRight: 6 }}
         />
@@ -286,9 +287,9 @@ function getSearchPriceForParams(listing: ListingSummary, params: SearchParams) 
   const start = new Date(params.from);
   const end = new Date(params.to);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return Number(listing.price_per_day);
+    return applyServiceFee(Number(listing.price_per_day));
   }
-  return calculateListingTotal(listing, start, end).total;
+  return calculateListingTotal(listing, start, end).grossTotal;
 }
 
 function listingSearchText(listing: ListingSummary) {
@@ -423,7 +424,7 @@ function PriceRangeSlider({
           containerStyle={styles.priceRangeSlider}
           maximumTrackTintColor="#dfe3e8"
           maximumValue={scale.max}
-          minimumTrackTintColor="#0f172a"
+          minimumTrackTintColor={colors.text}
           minimumValue={scale.min}
           minimumTrackStyle={styles.priceRangeSliderSelectedTrack}
           onSlidingComplete={handleRangeChange}
@@ -542,6 +543,16 @@ export function SearchScreen({ navigation }: Props) {
   const [isStaggerPending, setIsStaggerPending] = useState(false);
   const [searchGeneration, setSearchGeneration] = useState(0);
   const pillOpacity = useRef(new Animated.Value(0)).current;
+  // "Finding spaces" resolves into a brief "12 spaces here" beat — the one
+  // moment the app gets to say the search paid off — before fading out.
+  const [resultsFlash, setResultsFlash] = useState<string | null>(null);
+  const prevPillBusyRef = useRef(false);
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Search card breathes: full two-row card while composing a search, a
+  // single-row pill once attention moves to the map. 1 = expanded.
+  const [cardCollapsed, setCardCollapsed] = useState(false);
+  const cardAnim = useRef(new Animated.Value(1)).current;
+  const [timeStripHeight, setTimeStripHeight] = useState(0);
   const { show: showGlobalLoading, hide: hideGlobalLoading } = useGlobalLoading();
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<ListingSummary[]>([]);
@@ -574,19 +585,69 @@ export function SearchScreen({ navigation }: Props) {
       Animated.spring(pickerSheetAnim, {
         toValue: 0,
         useNativeDriver: true,
-        tension: 68,
-        friction: 12,
+        ...motion.spring,
       }).start();
     }
   }, [pickerVisible, pickerSheetAnim]);
   useEffect(() => {
-    const visible = loading || isStaggerPending;
-    Animated.timing(pillOpacity, {
-      toValue: visible ? 1 : 0,
-      duration: visible ? 150 : 350,
-      useNativeDriver: true,
-    }).start();
-  }, [loading, isStaggerPending, pillOpacity]);
+    const busy = loading || isStaggerPending;
+    if (busy) {
+      if (flashTimerRef.current) {
+        clearTimeout(flashTimerRef.current);
+        flashTimerRef.current = null;
+      }
+      setResultsFlash(null);
+      Animated.timing(pillOpacity, {
+        toValue: 1,
+        duration: motion.duration.standard,
+        useNativeDriver: true,
+      }).start();
+    } else if (prevPillBusyRef.current && !error && resultsRef.current.length > 0) {
+      // Search just finished and the pins are down — land the payoff, hold a
+      // beat, get out of the way.
+      const count = resultsRef.current.length;
+      setResultsFlash(`${count} ${count === 1 ? "space" : "spaces"} here`);
+      flashTimerRef.current = setTimeout(() => {
+        flashTimerRef.current = null;
+        Animated.timing(pillOpacity, {
+          toValue: 0,
+          duration: motion.duration.standard,
+          useNativeDriver: true,
+        }).start(({ finished }) => {
+          if (finished) setResultsFlash(null);
+        });
+      }, 1600);
+    } else {
+      Animated.timing(pillOpacity, {
+        toValue: 0,
+        duration: motion.duration.fast,
+        useNativeDriver: true,
+      }).start();
+    }
+    prevPillBusyRef.current = busy;
+  }, [loading, isStaggerPending, error, pillOpacity]);
+  useEffect(() => {
+    return () => {
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    };
+  }, []);
+
+  const setCardCollapsedAnimated = useCallback(
+    (next: boolean) => {
+      setCardCollapsed((prev) => {
+        if (prev === next) return prev;
+        Animated.timing(cardAnim, {
+          toValue: next ? 0 : 1,
+          duration: motion.duration.standard,
+          easing: motion.easing.out,
+          // Drives layout height, so it can't ride the native driver.
+          useNativeDriver: false,
+        }).start();
+        return next;
+      });
+    },
+    [cardAnim]
+  );
 
   const [emptyNotice, setEmptyNotice] = useState<string | null>(null);
   const emptyNoticeOpacity = useRef(new Animated.Value(0)).current;
@@ -599,7 +660,7 @@ export function SearchScreen({ navigation }: Props) {
     }
     Animated.timing(emptyNoticeOpacity, {
       toValue: 0,
-      duration: 200,
+      duration: motion.duration.fast,
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (finished) setEmptyNotice(null);
@@ -612,7 +673,7 @@ export function SearchScreen({ navigation }: Props) {
       setEmptyNotice(message);
       Animated.timing(emptyNoticeOpacity, {
         toValue: 1,
-        duration: 200,
+        duration: motion.duration.standard,
         useNativeDriver: true,
       }).start();
       emptyNoticeTimerRef.current = setTimeout(() => {
@@ -645,6 +706,11 @@ export function SearchScreen({ navigation }: Props) {
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [searchSheetVisible, setSearchSheetVisible] = useState(false);
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
+  // Composing a new search — bring the full card back so the booking window
+  // is editable the moment the sheet closes.
+  useEffect(() => {
+    if (searchSheetOpen) setCardCollapsedAnimated(false);
+  }, [searchSheetOpen, setCardCollapsedAnimated]);
   const [activeSearchTab, setActiveSearchTab] = useState<"recents" | "favourites">("recents");
   const [pendingSearch, setPendingSearch] = useState<{
     lat: string;
@@ -744,6 +810,7 @@ export function SearchScreen({ navigation }: Props) {
   const [filtersReady, setFiltersReady] = useState(false);
   const HISTORY_KEY = "searchHistory";
   const MAP_REGION_KEY = "search.mapRegion";
+  const MAP_RESULTS_KEY = "search.lastResults";
   const FILTERS_KEY = "search.filters";
 
   const searchAreaVisible = showSearchArea && !!pendingSearch;
@@ -757,15 +824,13 @@ export function SearchScreen({ navigation }: Props) {
       Animated.parallel([
         Animated.timing(searchAreaOpacity, {
           toValue: 1,
-          duration: 180,
-          easing: Easing.out(Easing.cubic),
+          duration: motion.duration.standard,
+          easing: motion.easing.out,
           useNativeDriver: true,
         }),
         Animated.spring(searchAreaTranslateY, {
           toValue: 0,
-          damping: 18,
-          stiffness: 300,
-          mass: 0.75,
+          ...motion.spring,
           useNativeDriver: true,
         }),
       ]).start();
@@ -775,14 +840,14 @@ export function SearchScreen({ navigation }: Props) {
     Animated.parallel([
       Animated.timing(searchAreaOpacity, {
         toValue: 0,
-        duration: 150,
-        easing: Easing.in(Easing.cubic),
+        duration: motion.duration.fast,
+        easing: motion.easing.in,
         useNativeDriver: true,
       }),
       Animated.timing(searchAreaTranslateY, {
         toValue: 20,
-        duration: 150,
-        easing: Easing.in(Easing.quad),
+        duration: motion.duration.fast,
+        easing: motion.easing.in,
         useNativeDriver: true,
       }),
     ]).start(({ finished }) => {
@@ -791,6 +856,36 @@ export function SearchScreen({ navigation }: Props) {
       }
     });
   }, [searchAreaVisible, searchAreaOpacity, searchAreaTranslateY]);
+
+  // Instant-open: hydrate the last session's results so the map is never a
+  // bare basemap. Pins reprice client-side for the current times, and a
+  // silent refresh replaces them as soon as the live search lands.
+  useEffect(() => {
+    let active = true;
+    const loadCachedResults = async () => {
+      try {
+        const cached = await AsyncStorage.getItem(MAP_RESULTS_KEY);
+        if (!active || !cached) return;
+        const parsed = JSON.parse(cached) as { savedAt?: number; listings?: ListingSummary[] };
+        const fresh =
+          Array.isArray(parsed?.listings) &&
+          parsed.listings.length > 0 &&
+          typeof parsed.savedAt === "number" &&
+          Date.now() - parsed.savedAt < 7 * 24 * 60 * 60 * 1000;
+        // Only hydrate if a live search hasn't already beaten us to it.
+        if (fresh && resultsRef.current.length === 0) {
+          resultsRef.current = parsed.listings!;
+          setResults(parsed.listings!);
+        }
+      } catch {
+        // Corrupt cache — first-launch experience is the fallback.
+      }
+    };
+    void loadCachedResults();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -968,7 +1063,7 @@ export function SearchScreen({ navigation }: Props) {
   const runSearch = useCallback(
     async (
       paramsOverride?: Partial<SearchParams>,
-      options?: { showGlobal?: boolean; preserveSelection?: boolean }
+      options?: { showGlobal?: boolean; preserveSelection?: boolean; silent?: boolean }
     ) => {
       if (showAreaTimerRef.current) {
         clearTimeout(showAreaTimerRef.current);
@@ -982,10 +1077,15 @@ export function SearchScreen({ navigation }: Props) {
       searchRequestIdRef.current = requestId;
       searchStartedAtRef.current = Date.now();
       const preserveSelection = options?.preserveSelection ?? false;
+      // Silent refreshes swap results in place under pins the user is already
+      // looking at — no stagger re-reveal, no artificial minimum wait.
+      const silent = options?.silent ?? false;
       setLoading(true);
-      setIsStaggerPending(true);
-      setSearchGeneration(prev => prev + 1);
-      setIsRefreshingPins(true);
+      if (!silent) {
+        setIsStaggerPending(true);
+        setSearchGeneration(prev => prev + 1);
+        setIsRefreshingPins(true);
+      }
       setError(null);
       const params = buildSearchParams(paramsOverride);
       logInfo("Search started", params);
@@ -1051,13 +1151,19 @@ export function SearchScreen({ navigation }: Props) {
         }
       } finally {
         const elapsed = Date.now() - searchStartedAtRef.current;
-        const remaining = Math.max(0, 1000 - elapsed);
+        const remaining = silent ? 0 : Math.max(0, 1000 - elapsed);
         setTimeout(() => {
           if (searchRequestIdRef.current !== requestId) return;
           setLoading(false);
           if (nextResultsSnapshot) {
             setResults(nextResultsSnapshot);
             setPendingResults(null);
+            // Instant-open cache: next session opens on these results instead
+            // of a loading screen.
+            void AsyncStorage.setItem(
+              MAP_RESULTS_KEY,
+              JSON.stringify({ savedAt: Date.now(), listings: nextResultsSnapshot.slice(0, 50) })
+            ).catch(() => undefined);
             if (nextResultsSnapshot.length === 0) {
               showEmptyNotice("No spaces in this area — try zooming out");
             } else if (nextResultsSnapshot.every((l) => l.is_available === false)) {
@@ -1088,12 +1194,29 @@ export function SearchScreen({ navigation }: Props) {
     if (!currentRegionRef.current) {
       currentRegionRef.current = mapInitialRegion ?? mapRegion;
     }
-    if (!results.length && !loading && type === "ready") {
+    if (!loading && type === "ready" && !initialSearchTriggeredRef.current) {
       initialSearchTriggeredRef.current = true;
       isProgrammaticMoveRef.current = true;
-      void runSearch();
+      // Cached results are already visible — refresh under them silently
+      // instead of re-staggering pins the user is looking at.
+      void runSearch(
+        undefined,
+        results.length ? { silent: true, preserveSelection: true } : undefined
+      );
     }
   };
+  // Stable callbacks for MapSection so memo() actually holds. A latest-ref keeps
+  // the identity fixed while still running the newest logic (handleMapReady
+  // closes over results/loading, which change often).
+  const handleMapReadyRef = useRef(handleMapReady);
+  handleMapReadyRef.current = handleMapReady;
+  const onMapLoaded = useCallback(() => handleMapReadyRef.current("loaded"), []);
+  const onMapReadyEvent = useCallback(() => handleMapReadyRef.current("ready"), []);
+  const onAllPinsRevealed = useCallback(() => setIsStaggerPending(false), []);
+  const mapPaddingValue = useMemo(
+    () => ({ top: insets.top + 120, bottom: 180 + insets.bottom + 16, left: 16, right: 16 }),
+    [insets.top, insets.bottom]
+  );
 
   useEffect(() => {
     setFrom(startAt.toISOString());
@@ -1135,7 +1258,7 @@ export function SearchScreen({ navigation }: Props) {
         mapFreezeTimerRef.current = null;
         Animated.timing(mapFrozenOpacity, {
           toValue: 0,
-          duration: 300,
+          duration: motion.duration.standard,
           useNativeDriver: true,
         }).start(({ finished }) => {
           if (finished) {
@@ -1188,8 +1311,8 @@ export function SearchScreen({ navigation }: Props) {
     } else {
       Animated.timing(mapOverlayOpacity, {
         toValue: 0,
-        duration: 280,
-        easing: Easing.out(Easing.quad),
+        duration: motion.duration.standard,
+        easing: motion.easing.out,
         useNativeDriver: true,
       }).start(({ finished }) => {
         if (finished) setMapOverlayVisible(false);
@@ -1208,8 +1331,8 @@ export function SearchScreen({ navigation }: Props) {
   const closePicker = useCallback(() => {
     Animated.timing(pickerSheetAnim, {
       toValue: 400,
-      duration: 220,
-      easing: Easing.in(Easing.quad),
+      duration: motion.duration.standard,
+      easing: motion.easing.in,
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (finished) {
@@ -1295,8 +1418,6 @@ export function SearchScreen({ navigation }: Props) {
         });
         lastSearchCenterRef.current = { lat: location.lat, lng: location.lng };
         setSelectedId(null);
-        setShowSearchArea(false);
-        setPendingSearch(null);
         isProgrammaticMoveRef.current = true;
         const destinationRegion = {
           latitude: location.lat,
@@ -1390,8 +1511,6 @@ export function SearchScreen({ navigation }: Props) {
         lng: position.coords.longitude,
       };
       setSelectedId(null);
-      setShowSearchArea(false);
-      setPendingSearch(null);
       isProgrammaticMoveRef.current = true;
       const destinationRegion = {
         latitude: position.coords.latitude,
@@ -1435,8 +1554,6 @@ export function SearchScreen({ navigation }: Props) {
       lng: Number.parseFloat(nextLng),
     };
     setSelectedId(null);
-    setShowSearchArea(false);
-    setPendingSearch(null);
     isProgrammaticMoveRef.current = true;
     const destinationRegion = {
       latitude: Number.parseFloat(nextLat),
@@ -1494,6 +1611,7 @@ export function SearchScreen({ navigation }: Props) {
 
   const handleSelectListing = useCallback((id: string | null) => {
     ignoreNextRegionChangeRef.current = true;
+    if (id !== null) setCardCollapsedAnimated(true);
     if (cardDismissTimerRef.current) {
       clearTimeout(cardDismissTimerRef.current);
       cardDismissTimerRef.current = null;
@@ -1551,7 +1669,7 @@ export function SearchScreen({ navigation }: Props) {
       );
     }
     // Pin is already visible above the card zone — no pan needed
-  }, [selectedId, results, windowHeight, windowWidth, insets.bottom]);
+  }, [selectedId, results, windowHeight, windowWidth, insets.bottom, setCardCollapsedAnimated]);
 
   useFocusEffect(
     useCallback(() => {
@@ -1574,8 +1692,6 @@ export function SearchScreen({ navigation }: Props) {
         const refreshToken = await AsyncStorage.getItem("searchRefreshToken");
         if (!refreshToken) return;
         await AsyncStorage.removeItem("searchRefreshToken");
-        setShowSearchArea(false);
-        setPendingSearch(null);
         setSelectedId(null);
         setShowSelectedCard(false);
         void runSearch(undefined, { showGlobal: false, preserveSelection: false });
@@ -1622,13 +1738,15 @@ export function SearchScreen({ navigation }: Props) {
       slideAnim.setValue(windowHeight);
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 260,
+        duration: motion.duration.standard,
+        easing: motion.easing.out,
         useNativeDriver: true,
       }).start();
     } else if (filtersVisible) {
       Animated.timing(slideAnim, {
         toValue: windowHeight,
-        duration: 220,
+        duration: motion.duration.standard,
+        easing: motion.easing.in,
         useNativeDriver: true,
       }).start(({ finished }) => {
         if (finished) setFiltersVisible(false);
@@ -1646,16 +1764,16 @@ export function SearchScreen({ navigation }: Props) {
       Animated.parallel([
         Animated.timing(searchAnim, {
           toValue: 0,
-          duration: 240,
-          easing: Easing.out(Easing.cubic),
+          duration: motion.duration.standard,
+          easing: motion.easing.out,
           useNativeDriver: true,
         }),
       ]).start();
     } else if (searchSheetVisible) {
       Animated.timing(searchAnim, {
         toValue: 40,
-        duration: 200,
-        easing: Easing.in(Easing.cubic),
+        duration: motion.duration.fast,
+        easing: motion.easing.in,
         useNativeDriver: true,
       }).start(({ finished }) => {
         if (finished) setSearchSheetVisible(false);
@@ -1761,9 +1879,11 @@ export function SearchScreen({ navigation }: Props) {
   const handleMapPanDrag = useCallback(() => {
     requireUserPanForRegionSearchRef.current = false;
     hideEmptyNotice();
-  }, [hideEmptyNotice]);
+    // Attention has moved to the map — the chrome recedes.
+    setCardCollapsedAnimated(true);
+  }, [hideEmptyNotice, setCardCollapsedAnimated]);
 
-  const handleRegionChange = (nextRegion: typeof mapRegion) => {
+  const handleRegionChange = useCallback((nextRegion: typeof mapRegion) => {
     currentRegionRef.current = nextRegion;
     if (ignoreNextRegionChangeRef.current) {
       ignoreNextRegionChangeRef.current = false;
@@ -1826,7 +1946,7 @@ export function SearchScreen({ navigation }: Props) {
     if (suppressRegionSearchRef.current) return;
     if (requireUserPanForRegionSearchRef.current) return;
 
-    // Show "Search this location" button — search only fires when the user taps it.
+    // Show "Search this area" button — search only fires when the user taps it.
     if (showAreaTimerRef.current) {
       clearTimeout(showAreaTimerRef.current);
     }
@@ -1838,11 +1958,11 @@ export function SearchScreen({ navigation }: Props) {
       setPendingSearch({ lat: nextLat, lng: nextLng, radiusKm: nextRadius });
       setShowSearchArea(true);
     }, 350);
-  };
+  }, [mapRegion, showSearchArea, pendingSearch]);
 
   const priceForListing = useCallback(
     (listing: ListingSummary) => {
-      return calculateListingTotal(listing, startAt, endAt).total;
+      return calculateListingTotal(listing, startAt, endAt).grossTotal;
     },
     [endAt, startAt]
   );
@@ -1914,12 +2034,7 @@ export function SearchScreen({ navigation }: Props) {
             results={results}
             style={styles.map}
             searchPinCoordinate={searchPinCoordinate}
-            mapPadding={{
-              top: insets.top + 120,
-              bottom: 180 + insets.bottom + 16,
-              left: 16,
-              right: 16,
-            }}
+            mapPadding={mapPaddingValue}
             provider="google"
             customMapStyle={LIGHT_MAP_STYLE}
             onSelect={handleSelectListing}
@@ -1929,14 +2044,14 @@ export function SearchScreen({ navigation }: Props) {
             selectedId={selectedId}
             mapRef={mapRef}
             freezeMarkers={loading || isRefreshingPins}
-            onMapLoaded={() => handleMapReady("loaded")}
-            onMapReady={() => handleMapReady("ready")}
+            onMapLoaded={onMapLoaded}
+            onMapReady={onMapReadyEvent}
             onOverlappingPins={setOverlappingPins}
             priceForListing={priceForListing}
             priceKey={priceKey}
             resumeNonce={mapResumeNonce}
             searchGeneration={searchGeneration}
-            onAllPinsRevealed={() => setIsStaggerPending(false)}
+            onAllPinsRevealed={onAllPinsRevealed}
           />
         {mapFrozenUri ? (
           <Animated.Image
@@ -1954,73 +2069,121 @@ export function SearchScreen({ navigation }: Props) {
               style={styles.mapLoadingLottie}
             />
             <Text style={styles.mapLoadingText}>
-              {mapReady ? "Searching for spaces…" : "Loading map…"}
+              {mapReady ? "Finding spaces…" : "Loading map…"}
             </Text>
           </Animated.View>
         ) : null}
         <View style={[styles.overlay, { top: insets.top + 12 }]}>
 
-          {/* ── Location card ───────────────────────── */}
+          {/* ── Search card — destination + filters + times, one surface ── */}
           <View style={styles.searchCard}>
-            <Pressable style={styles.searchCardLocation} onPress={() => setSearchSheetOpen(true)} testID="search-bar">
-              <MapPinIcon size={17} color="#0a8050" strokeWidth={2.2} />
-              <Text style={[styles.searchCardLocationText, !addressQuery && styles.searchCardPlaceholder]} numberOfLines={1}>
-                {addressQuery || "Where to?"}
-              </Text>
-              {addressQuery ? (
-                <Pressable onPress={() => { setAddressQuery(""); setAddressSuggestions([]); }} hitSlop={8}>
-                  <CircleX size={16} color="#c0c8d2" strokeWidth={2.1} />
-                </Pressable>
-              ) : null}
-            </Pressable>
-          </View>
-
-          {/* ── Time strip ──────────────────────────── */}
-          <View style={styles.timeStrip}>
-            <Pressable style={styles.timeStripBtn} onPress={() => openPicker("start")} android_ripple={null}>
-              <Text style={styles.timeStripLabel}>Arrive</Text>
-              <View style={styles.timeStripInner}>
-                <Text style={styles.timeStripTime}>{formatTimeLabel(startAt)}</Text>
-                <Text style={styles.timeStripSep}> · </Text>
-                <Text style={styles.timeStripDate}>{formatDateLabel(startAt)}</Text>
-              </View>
-            </Pressable>
-            <ArrowRight size={12} color="#0a8050" strokeWidth={2.4} style={{ marginHorizontal: 8 }} />
-            <Pressable style={styles.timeStripBtn} onPress={() => openPicker("end")} android_ripple={null}>
-              <Text style={styles.timeStripLabel}>Leave</Text>
-              <View style={styles.timeStripInner}>
-                <Text style={styles.timeStripTime}>{formatTimeLabel(endAt)}</Text>
-                <Text style={styles.timeStripSep}> · </Text>
-                <Text style={styles.timeStripDate}>{formatDateLabel(endAt)}</Text>
-              </View>
-            </Pressable>
-          </View>
-
-          {/* ── Filter + clear row ──────────────────── */}
-          <View style={styles.searchCardRow}>
-            <Pressable
-              style={[styles.filterChip, activeFilterCount > 0 && styles.filterChipActive]}
-              onPress={() => setShowFilters((prev) => !prev)}
-            >
-              <SlidersHorizontal
-                size={13}
-                color={activeFilterCount > 0 ? "#ffffff" : "#374151"}
-                strokeWidth={2.2}
-              />
-              <Text style={[activeFilterCount > 0 ? styles.filterChipTextActive : styles.filterChipText]}>
-                Filters
-              </Text>
-              {activeFilterCount > 0 ? (
-                <View style={styles.filterChipBadge}>
-                  <Text style={styles.filterChipBadgeText}>{activeFilterCount}</Text>
-                </View>
-              ) : null}
-            </Pressable>
-            {activeFilterCount > 0 ? (
-              <Pressable style={styles.clearChip} onPress={clearFiltersAndSearch}>
-                <Text style={styles.clearChipText}>Clear</Text>
+            <View style={styles.searchCardTopRow}>
+              <Pressable
+                style={({ pressed }) => [styles.searchCardLocation, pressed && styles.searchCardRowPressed]}
+                onPress={() => {
+                  // Collapsed pill: first tap restores the full card; editing
+                  // comes on the next tap.
+                  if (cardCollapsed) {
+                    setCardCollapsedAnimated(false);
+                    return;
+                  }
+                  setSearchSheetOpen(true);
+                }}
+                testID="search-bar"
+              >
+                <MapPinIcon size={17} color={colors.primary} strokeWidth={2.2} />
+                <Text style={[styles.searchCardLocationText, !addressQuery && styles.searchCardPlaceholder]} numberOfLines={1}>
+                  {addressQuery || "Where to?"}
+                </Text>
+                {cardCollapsed ? (
+                  <Animated.View
+                    pointerEvents="none"
+                    style={{
+                      opacity: cardAnim.interpolate({
+                        inputRange: [0, 0.35],
+                        outputRange: [1, 0],
+                        extrapolate: "clamp",
+                      }),
+                    }}
+                  >
+                    <Text style={styles.searchCardTimesCompact}>
+                      {formatTimeLabel(startAt)}–{formatTimeLabel(endAt)}
+                    </Text>
+                  </Animated.View>
+                ) : addressQuery ? (
+                  <Pressable onPress={() => { setAddressQuery(""); setAddressSuggestions([]); }} hitSlop={10}>
+                    <CircleX size={16} color={colors.textDisabled} strokeWidth={2.1} />
+                  </Pressable>
+                ) : null}
               </Pressable>
-            ) : null}
+              <View style={styles.searchCardVDivider} />
+              <Pressable
+                style={({ pressed }) => [styles.filterBtn, pressed && styles.searchCardRowPressed]}
+                onPress={() => setShowFilters((prev) => !prev)}
+                accessibilityLabel="Filters"
+              >
+                <SlidersHorizontal size={17} color={colors.primary} strokeWidth={2.1} />
+                {activeFilterCount > 0 ? (
+                  <View style={styles.filterBtnBadge}>
+                    <Text style={styles.filterBtnBadgeText}>{activeFilterCount}</Text>
+                  </View>
+                ) : null}
+              </Pressable>
+            </View>
+
+            <Animated.View
+              style={[
+                styles.timeStripCollapse,
+                timeStripHeight > 0
+                  ? {
+                      height: cardAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, timeStripHeight],
+                      }),
+                      opacity: cardAnim,
+                    }
+                  : null,
+              ]}
+            >
+              <View
+                onLayout={(e) => {
+                  const h = e.nativeEvent.layout.height;
+                  if (h > 0 && Math.abs(h - timeStripHeight) > 1) setTimeStripHeight(h);
+                }}
+              >
+            <View style={styles.searchCardDivider} />
+
+            <View style={styles.timeStrip}>
+              <Pressable
+                style={({ pressed }) => [styles.timeStripBtn, pressed && styles.timeStripBtnPressed]}
+                onPress={() => openPicker("start")}
+                android_ripple={null}
+              >
+                <Text style={styles.timeStripLabel}>Arrive</Text>
+                <View style={styles.timeStripInner}>
+                  <Text style={styles.timeStripTime}>{formatTimeLabel(startAt)}</Text>
+                  <Text style={styles.timeStripSep}>·</Text>
+                  <Text style={styles.timeStripDate}>{formatDateLabel(startAt)}</Text>
+                </View>
+              </Pressable>
+              <View style={styles.timeStripArrow}>
+                <ArrowRight size={13} color={colors.primary} strokeWidth={2.4} />
+              </View>
+              <Pressable
+                style={({ pressed }) => [styles.timeStripBtn, pressed && styles.timeStripBtnPressed]}
+                onPress={() => openPicker("end")}
+                android_ripple={null}
+              >
+                <Text style={styles.timeStripLabel}>Leave</Text>
+                <View style={styles.timeStripInner}>
+                  <Text style={styles.timeStripTime}>{formatTimeLabel(endAt)}</Text>
+                  <Text style={styles.timeStripSep}>·</Text>
+                  <Text style={styles.timeStripDate}>{formatDateLabel(endAt)}</Text>
+                </View>
+              </Pressable>
+            </View>
+              </View>
+            </Animated.View>
           </View>
 
           {error ? (
@@ -2037,8 +2200,21 @@ export function SearchScreen({ navigation }: Props) {
             pointerEvents="none"
             style={[styles.findingPill, { opacity: pillOpacity }]}
           >
-            <ActivityIndicator size="small" color="#0a8050" style={styles.findingSpinner} />
-            <Text style={styles.findingText}>Finding spaces</Text>
+            {resultsFlash ? (
+              <>
+                <View style={styles.findingSpinner}>
+                  <Check size={13} color={colors.primary} strokeWidth={3} />
+                </View>
+                <Text style={styles.findingText}>{resultsFlash}</Text>
+              </>
+            ) : (
+              <>
+                <View style={styles.findingSpinner}>
+                  <PulseDots />
+                </View>
+                <Text style={styles.findingText}>Finding spaces</Text>
+              </>
+            )}
           </Animated.View>
         </View>
 
@@ -2052,7 +2228,7 @@ export function SearchScreen({ navigation }: Props) {
             ]}
           >
             <Pressable
-              style={styles.searchAreaPill}
+              style={({ pressed }) => [styles.searchAreaPill, pressed && styles.searchAreaPillPressed]}
               onPress={() => {
                 // Cancel any pending debounce — coordinates come from the
                 // current map position at tap time, not the stale debounce snapshot.
@@ -2074,7 +2250,7 @@ export function SearchScreen({ navigation }: Props) {
                 );
               }}
             >
-              <RefreshCw size={14} color="#0a8050" strokeWidth={2.2} />
+              <RefreshCw size={14} color={colors.primary} strokeWidth={2.2} />
               <Text style={styles.searchAreaPillText}>Search this area</Text>
             </Pressable>
           </Animated.View>
@@ -2090,7 +2266,7 @@ export function SearchScreen({ navigation }: Props) {
             ]}
           >
             <View style={styles.emptyNoticePill}>
-              <Info size={15} color="#6b7280" strokeWidth={2.2} />
+              <Info size={15} color={colors.textSoft} strokeWidth={2.2} />
               <Text style={styles.emptyNoticeText}>{emptyNotice}</Text>
             </View>
           </Animated.View>
@@ -2139,7 +2315,7 @@ export function SearchScreen({ navigation }: Props) {
               >
                 <View style={styles.filtersTopBar}>
                   <Pressable style={styles.filtersIconButton} onPress={closeFilters} hitSlop={8}>
-                    <X size={22} color="#111827" strokeWidth={2.2} />
+                    <X size={22} color={colors.text} strokeWidth={2.2} />
                   </Pressable>
                   <Text style={styles.filtersTitle}>Filters</Text>
                   <Pressable
@@ -2220,7 +2396,7 @@ export function SearchScreen({ navigation }: Props) {
                           >
                             <TypeIcon
                               size={18}
-                              color={spaceType === type.value ? "#0a8050" : "#64748b"}
+                              color={spaceType === type.value ? colors.primary : colors.textMuted}
                               strokeWidth={2}
                             />
                             <Text
@@ -2279,10 +2455,10 @@ export function SearchScreen({ navigation }: Props) {
               {/* ── Search bar (back + input in one row) ── */}
               <View style={[styles.searchTopBar, { paddingTop: insets.top + 10 }]}>
                 <Pressable onPress={() => setSearchSheetOpen(false)} hitSlop={10} style={styles.searchBackBtn}>
-                  <ArrowLeft size={22} color="#111827" strokeWidth={2.2} />
+                  <ArrowLeft size={22} color={colors.text} strokeWidth={2.2} />
                 </Pressable>
                 <View style={styles.searchInputShell}>
-                  <Search size={16} color="#9aa1aa" strokeWidth={2.1} style={{ marginRight: 8 }} />
+                  <Search size={16} color={colors.textMuted} strokeWidth={2.1} style={{ marginRight: 8 }} />
                   <TextInput
                     style={styles.searchInputField}
                     value={addressQuery}
@@ -2291,7 +2467,7 @@ export function SearchScreen({ navigation }: Props) {
                       if (!value.trim()) setAddressSuggestions([]);
                     }}
                     placeholder="Area, address or landmark"
-                    placeholderTextColor="#9aa1aa"
+                    placeholderTextColor={colors.textDisabled}
                     returnKeyType="search"
                     autoFocus
                   />
@@ -2300,7 +2476,7 @@ export function SearchScreen({ navigation }: Props) {
                       onPress={() => { setAddressQuery(""); setAddressSuggestions([]); }}
                       hitSlop={8}
                     >
-                      <CircleX size={18} color="#c0c8d2" strokeWidth={2.1} />
+                      <CircleX size={16} color={colors.textDisabled} strokeWidth={2.1} />
                     </Pressable>
                   ) : null}
                 </View>
@@ -2331,7 +2507,7 @@ export function SearchScreen({ navigation }: Props) {
                             onPress={() => { setSearchSheetOpen(false); void handleSelectSuggestion(suggestion); }}
                           >
                             <View style={styles.searchRowIcon}>
-                              <MapPinIcon size={16} color="#0a8050" strokeWidth={2.2} />
+                              <MapPinIcon size={16} color={colors.primary} strokeWidth={2.2} />
                             </View>
                             <View style={styles.searchRowCopy}>
                               <Text style={styles.searchRowTitle} numberOfLines={1}>{mainText}</Text>
@@ -2354,7 +2530,7 @@ export function SearchScreen({ navigation }: Props) {
                         disabled={locating}
                       >
                         <View style={[styles.searchRowIcon, styles.searchRowIconLocate]}>
-                          <LocateFixed size={17} color="#0a8050" strokeWidth={2.2} />
+                          <LocateFixed size={17} color={colors.cardBg} strokeWidth={2.2} />
                         </View>
                         <View style={styles.searchRowCopy}>
                           <Text style={styles.searchLocationTitle}>
@@ -2365,7 +2541,6 @@ export function SearchScreen({ navigation }: Props) {
                             : <Text style={styles.searchRowSub}>Use GPS to find spaces near you</Text>
                           }
                         </View>
-                        {!locating && <ChevronRight size={16} color="#c0c8d2" strokeWidth={2.2} />}
                       </Pressable>
 
                       {/* ── Section header with inline tab toggle ── */}
@@ -2395,12 +2570,12 @@ export function SearchScreen({ navigation }: Props) {
                             <View key={`${item.label}-${item.lat}-${item.lng}`} style={styles.searchRow}>
                               <Pressable style={styles.searchRowPress} onPress={() => handleSelectHistoryItem(item)}>
                                 <View style={styles.searchRowIcon}>
-                                  <Clock size={16} color="#9ca3af" strokeWidth={2.1} />
+                                  <Clock size={16} color={colors.textMuted} strokeWidth={2.1} />
                                 </View>
                                 <Text style={styles.searchRowTitle} numberOfLines={1}>{item.label}</Text>
                               </Pressable>
-                              <Pressable style={styles.searchRemoveBtn} onPress={() => removeFromHistory(item)} hitSlop={6}>
-                                <X size={13} color="#c0c8d2" strokeWidth={2.2} />
+                              <Pressable style={styles.searchRemoveBtn} onPress={() => removeFromHistory(item)} hitSlop={10}>
+                                <X size={14} color={colors.textDisabled} strokeWidth={2.2} />
                               </Pressable>
                             </View>
                           ))
@@ -2411,22 +2586,29 @@ export function SearchScreen({ navigation }: Props) {
                         )
                       ) : (
                         favorites.length > 0 ? (
-                          favorites.map((item) => (
-                            <Pressable
-                              key={`fav-${item.id}`}
-                              style={({ pressed }) => [styles.searchRow, pressed && styles.searchRowPressed]}
-                              onPress={() => navigation.navigate("Listing", { id: item.id, from, to })}
-                            >
-                              <View style={[styles.searchRowIcon, styles.searchRowIconHeart]}>
-                                <Heart size={14} color="#0a8050" fill="#0a8050" strokeWidth={2.1} />
-                              </View>
-                              <View style={styles.searchRowCopy}>
-                                <Text style={styles.searchRowTitle} numberOfLines={1}>{getListingDisplayTitle(item)}</Text>
-                                <Text style={styles.searchRowSub} numberOfLines={1}>{item.address}</Text>
-                              </View>
-                              <ChevronRight size={15} color="#d1d5db" strokeWidth={2.2} />
-                            </Pressable>
-                          ))
+                          favorites.map((item) => {
+                            const favImage = item.image_urls?.[0];
+                            return (
+                              <Pressable
+                                key={`fav-${item.id}`}
+                                style={({ pressed }) => [styles.searchRow, pressed && styles.searchRowPressed]}
+                                onPress={() => navigation.navigate("Listing", { id: item.id, from, to })}
+                              >
+                                {favImage ? (
+                                  <Image source={{ uri: favImage }} style={styles.searchRowThumb} />
+                                ) : (
+                                  <View style={[styles.searchRowIcon, styles.searchRowIconHeart]}>
+                                    <Heart size={14} color={colors.primary} fill={colors.primary} strokeWidth={2.1} />
+                                  </View>
+                                )}
+                                <View style={styles.searchRowCopy}>
+                                  <Text style={styles.searchRowTitle} numberOfLines={1}>{getListingDisplayTitle(item)}</Text>
+                                  <Text style={styles.searchRowSub} numberOfLines={1}>{item.address}</Text>
+                                </View>
+                                <ChevronRight size={16} color={colors.textMuted} strokeWidth={2.2} />
+                              </Pressable>
+                            );
+                          })
                         ) : (
                           <View style={styles.searchEmptyState}>
                             <Text style={styles.searchEmptyStateText}>No favourites saved yet</Text>
@@ -2616,7 +2798,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.appBg,
+    backgroundColor: colors.pageBg,
     zIndex: 10,
   },
   mapLoadingLottie: {
@@ -2627,7 +2809,8 @@ const styles = StyleSheet.create({
     color: colors.textSoft,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
-    marginTop: 4,
+    letterSpacing: -0.1,
+    marginTop: 10,
   },
   map: {
     ...StyleSheet.absoluteFillObject,
@@ -2639,170 +2822,183 @@ const styles = StyleSheet.create({
     top: 12,
   },
 
-  // ── Unified search card
+  // ── Search card — one floating surface for destination + times.
+  // A single hero shadow instead of two stacked cards competing: the eye
+  // lands here first, then falls to the map.
   searchCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 22,
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.cardSmall,
+    borderWidth: 1,
+    borderColor: colors.border,
     overflow: "hidden",
-    shadowColor: "#111827",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.10,
-    shadowRadius: 18,
-    elevation: 8,
+    shadowColor: "#0B1220",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.09,
+    shadowRadius: 28,
+    elevation: 9,
+  },
+  searchCardTopRow: {
+    alignItems: "stretch",
+    flexDirection: "row",
   },
   searchCardLocation: {
     alignItems: "center",
+    flex: 1,
     flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
+    gap: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  // Filters live inside the search surface (Airbnb pattern) — one floating
+  // object instead of a card plus a trailing chip row.
+  searchCardVDivider: {
+    backgroundColor: colors.divider,
+    marginVertical: 12,
+    width: StyleSheet.hairlineWidth,
+  },
+  filterBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 17,
+  },
+  filterBtnBadge: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderColor: colors.cardBg,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    height: 16,
+    justifyContent: "center",
+    minWidth: 16,
+    paddingHorizontal: 3,
+    position: "absolute",
+    right: 9,
+    top: 10,
+  },
+  filterBtnBadgeText: {
+    color: colors.textInverse,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 11,
+    lineHeight: 12,
   },
   searchCardLocationText: {
     flex: 1,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
-    color: "#111827",
-    letterSpacing: -0.1,
+    color: colors.text,
+    letterSpacing: -0.2,
   },
   searchCardPlaceholder: {
-    color: "#9ca3af",
+    color: colors.textMuted,
     fontFamily: "PlusJakartaSans-Regular",
   },
-  // ── Time strip
+  // Divider insets to the text edge (18 pad + 17 icon + 12 gap), iOS-style —
+  // a full-bleed rule would cut the card in half; this one connects the rows.
+  searchCardDivider: {
+    backgroundColor: colors.divider,
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 47,
+  },
+  searchCardRowPressed: {
+    backgroundColor: colors.cardBgMuted,
+  },
+  // Collapsed pill keeps the booking window visible at a glance.
+  searchCardTimesCompact: {
+    color: colors.textSoft,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    letterSpacing: -0.1,
+  },
+  timeStripCollapse: {
+    overflow: "hidden",
+  },
+  // ── Time row (lives inside the search card)
   timeStrip: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    shadowColor: "#111827",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
   timeStripBtn: {
-    alignItems: "flex-start",
-    flexDirection: "column",
-    gap: 2,
+    borderRadius: 14,
+    flex: 1,
+    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+  },
+  timeStripBtnPressed: {
+    backgroundColor: colors.cardBgMuted,
+  },
+  timeStripArrow: {
+    alignItems: "center",
+    justifyContent: "center",
+    // Optically centre the arrow on the time line, not the label+time block
+    marginTop: 7,
+    paddingHorizontal: 6,
   },
   timeStripLabel: {
-    color: "#0a8050",
+    color: colors.textMuted,
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 9,
-    letterSpacing: 0.7,
-    textTransform: "uppercase",
+    fontSize: 12,
+    letterSpacing: -0.1,
   },
   timeStripInner: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 4,
   },
   timeStripTime: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 13,
-    color: "#111827",
+    fontSize: 14,
+    color: colors.text,
     letterSpacing: -0.2,
   },
   timeStripSep: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
-    color: "#d1d5db",
+    color: colors.textDisabled,
+    paddingHorizontal: 4,
   },
   timeStripDate: {
     fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
-    color: "#6b7280",
-  },
-  // ── Filter / clear / loading row below card
-  searchCardRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 12,
-  },
-  filterChip: {
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.92)",
-    borderRadius: 999,
-    flexDirection: "row",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    shadowColor: "#111827",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  filterChipActive: {
-    backgroundColor: "#0a8050",
-  },
-  filterChipText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
-    color: "#374151",
-  },
-  filterChipTextActive: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
-    color: "#ffffff",
-  },
-  clearChip: {
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.92)",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    shadowColor: "#111827",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  clearChipText: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
-    color: "#374151",
+    fontSize: 13,
+    color: colors.textSoft,
+    letterSpacing: -0.1,
   },
   findingPill: {
     alignItems: "center",
     alignSelf: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 999,
-    elevation: 6,
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.pill,
+    elevation: 5,
     flexDirection: "row",
     marginTop: 12,
     paddingHorizontal: 16,
-    paddingVertical: 11,
-    shadowColor: "#111827",
+    paddingVertical: 10,
+    shadowColor: "#0B1220",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
+    shadowOpacity: 0.10,
+    shadowRadius: 14,
   },
   findingSpinner: {
     marginRight: 8,
   },
   findingText: {
-    color: "#111827",
+    color: colors.text,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     letterSpacing: -0.2,
   },
 
   filtersPanel: {
-    backgroundColor: "#ffffff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    elevation: 20,
+    backgroundColor: colors.cardBg,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
+    elevation: 8,
     overflow: "hidden",
     shadowColor: "#0f172a",
     shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.12,
-    shadowRadius: 28,
+    shadowRadius: 16,
   },
   filtersSheetHost: {
     ...StyleSheet.absoluteFillObject,
@@ -2833,7 +3029,7 @@ const styles = StyleSheet.create({
   },
   filtersTopBar: {
     alignItems: "center",
-    borderBottomColor: "#eef2f6",
+    borderBottomColor: colors.divider,
     borderBottomWidth: 1,
     flexDirection: "row",
     minHeight: 58,
@@ -2863,25 +3059,26 @@ const styles = StyleSheet.create({
   },
   filtersTitle: {
     flex: 1,
-    color: "#111827",
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 16,
-    letterSpacing: 0,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 22,
+    letterSpacing: -0.2,
     textAlign: "center",
   },
+  // Whitespace, not a drawn line, separates groups (docs/PARKING_DESIGN_BIBLE.md
+  // E1) — every section used to share an identical hairline, which read as a
+  // stacked form rather than a designed sheet.
   filterSection: {
-    borderBottomColor: "#eef2f6",
-    borderBottomWidth: 1,
-    paddingVertical: 20,
+    paddingVertical: 24,
   },
   filterSectionHeader: {
-    marginBottom: 12,
+    marginBottom: 14,
   },
   filterSectionTitle: {
-    color: "#111827",
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 17,
-    letterSpacing: 0,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 19,
+    letterSpacing: -0.3,
   },
   filterSectionSubtitle: {
     color: colors.textMuted,
@@ -2914,14 +3111,14 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   priceHistogramBar: {
-    backgroundColor: "#dfe3e8",
-    borderRadius: 999,
+    backgroundColor: colors.border,
+    borderRadius: radius.pill,
     flex: 1,
     marginHorizontal: 2,
     maxWidth: 8,
   },
   priceHistogramBarSelected: {
-    backgroundColor: "#0f172a",
+    backgroundColor: colors.text,
   },
   priceRangeValueRow: {
     alignItems: "center",
@@ -2933,20 +3130,20 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   priceRangeDivider: {
-    backgroundColor: "#dfe3e8",
+    backgroundColor: colors.border,
     flex: 1,
     height: 1,
     marginHorizontal: 14,
   },
   priceRangeValue: {
-    color: "#111827",
+    color: colors.text,
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 20,
     letterSpacing: -0.6,
     marginTop: 3,
   },
   priceValueLabel: {
-    color: "#6b7280",
+    color: colors.textSoft,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     letterSpacing: 0,
@@ -2959,31 +3156,26 @@ const styles = StyleSheet.create({
     right: 0,
   },
   priceRangeSliderTrack: {
-    borderRadius: 999,
+    borderRadius: radius.pill,
     height: 4,
   },
   priceRangeSliderSelectedTrack: {
-    borderRadius: 999,
+    borderRadius: radius.pill,
     height: 4,
   },
   priceRangeThumb: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderColor: "#d7dde4",
-    borderRadius: 999,
-    borderWidth: 1,
-    elevation: 5,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
     height: 42,
     justifyContent: "center",
-    shadowColor: "#111827",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
     width: 42,
   },
   priceRangeThumbDot: {
-    backgroundColor: "#0f172a",
-    borderRadius: 999,
+    backgroundColor: colors.text,
+    borderRadius: radius.pill,
     height: 11,
     width: 11,
   },
@@ -2994,9 +3186,9 @@ const styles = StyleSheet.create({
   },
   filterChipButton: {
     alignItems: "center",
-    backgroundColor: "#f7f8fa",
-    borderColor: "#e6ebf0",
-    borderRadius: 999,
+    backgroundColor: colors.cardBgMuted,
+    borderColor: colors.divider,
+    borderRadius: radius.pill,
     borderWidth: 1,
     flexDirection: "row",
     minHeight: 44,
@@ -3009,20 +3201,20 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   filterChipButtonActive: {
-    backgroundColor: "#0f172a",
-    borderColor: "#0f172a",
+    backgroundColor: colors.text,
+    borderColor: colors.text,
   },
   filterChipButtonPressed: {
     opacity: 0.92,
   },
   filterChipButtonText: {
-    color: "#0f172a",
+    color: colors.text,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     letterSpacing: 0,
   },
   filterChipButtonTextActive: {
-    color: "#ffffff",
+    color: colors.textInverse,
   },
   filterTileGrid: {
     flexDirection: "row",
@@ -3031,8 +3223,8 @@ const styles = StyleSheet.create({
   },
   filterTile: {
     alignItems: "center",
-    backgroundColor: "#f7f8fa",
-    borderColor: "#e6ebf0",
+    backgroundColor: colors.cardBgMuted,
+    borderColor: colors.divider,
     borderRadius: 14,
     borderWidth: 1,
     flexBasis: "47%",
@@ -3043,29 +3235,29 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   filterTileActive: {
-    backgroundColor: "#eefbf4",
-    borderColor: "#8fdcb3",
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.accent,
   },
   filterTileText: {
-    color: "#0f172a",
+    color: colors.text,
     flexShrink: 1,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     letterSpacing: 0,
   },
   filterTileTextActive: {
-    color: "#0a8050",
+    color: colors.primary,
   },
   filterFooter: {
-    backgroundColor: "#ffffff",
-    borderTopColor: "#eef2f6",
+    backgroundColor: colors.cardBg,
+    borderTopColor: colors.divider,
     borderTopWidth: 1,
     paddingHorizontal: spacing.screenX,
     paddingTop: 12,
   },
   applyButton: {
     alignItems: "center",
-    backgroundColor: "#0f172a",
+    backgroundColor: colors.primary,
     borderRadius: 14,
     minHeight: 52,
     paddingVertical: 13,
@@ -3074,22 +3266,6 @@ const styles = StyleSheet.create({
     ...textStyles.button,
     fontSize: 14,
     letterSpacing: 0,
-  },
-  filterChipBadge: {
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 999,
-    height: 18,
-    justifyContent: "center",
-    marginLeft: 8,
-    minWidth: 18,
-    paddingHorizontal: 5,
-  },
-  filterChipBadgeText: {
-    color: "#ffffff",
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 10,
-    lineHeight: 12,
   },
   // ── Search sheet ──────────────────────────────────────────────
   searchOverlay: {
@@ -3102,14 +3278,14 @@ const styles = StyleSheet.create({
   },
   searchPanel: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
   },
 
   // Top bar — back arrow + input in one row
   searchTopBar: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderBottomColor: "#E9EEF3",
+    backgroundColor: colors.cardBg,
+    borderBottomColor: colors.divider,
     borderBottomWidth: 1,
     flexDirection: "row",
     gap: 8,
@@ -3125,54 +3301,55 @@ const styles = StyleSheet.create({
   },
   searchInputShell: {
     alignItems: "center",
-    backgroundColor: "#F7F8FA",
-    borderColor: "#E8EDF2",
-    borderRadius: 16,
-    borderWidth: 1,
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: radius.pill,
     flex: 1,
     flexDirection: "row",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
   },
   searchInputField: {
     flex: 1,
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 16,
-    color: "#111827",
+    color: colors.text,
   },
 
   // Body — unified list, no separate cards
   searchBody: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
   },
   searchList: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderTopWidth: 0,
   },
 
   // Location row
   searchRowLocation: {
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F2F5",
+    borderBottomColor: colors.divider,
   },
+  // Solid CTA fill, not another grey circle — "Use current location" is the
+  // fastest path through this sheet and should read as the primary action,
+  // not just another list row (docs/PARKING_DESIGN_BIBLE.md A7).
   searchRowIconLocate: {
-    backgroundColor: "#edf7f2",
+    backgroundColor: colors.primary,
   },
   searchLocationTitle: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
-    color: "#111827",
+    color: colors.text,
   },
 
   // Section header row with inline toggle
   searchSectionHeader: {
     alignItems: "center",
-    backgroundColor: "#F7F8FA",
+    backgroundColor: colors.cardBgMuted,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F2F5",
+    borderBottomColor: colors.divider,
     borderTopWidth: 1,
-    borderTopColor: "#F0F2F5",
+    borderTopColor: colors.divider,
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 16,
@@ -3181,38 +3358,38 @@ const styles = StyleSheet.create({
   searchSectionLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
-    color: "#6b7280",
+    color: colors.textSoft,
     letterSpacing: 0.2,
   },
   searchToggle: {
-    backgroundColor: "#EAECF0",
-    borderRadius: 10,
+    backgroundColor: colors.divider,
+    borderRadius: radius.md,
     flexDirection: "row",
     gap: 2,
     padding: 2,
   },
   searchToggleBtn: {
-    borderRadius: 8,
+    borderRadius: radius.sm,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   searchToggleBtnActive: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
   },
   searchToggleText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
-    color: "#6b7280",
+    color: colors.textSoft,
   },
   searchToggleTextActive: {
-    color: "#111827",
+    color: colors.text,
   },
 
   // Rows
   searchRow: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderBottomColor: "#F0F2F5",
+    backgroundColor: colors.cardBg,
+    borderBottomColor: colors.divider,
     borderBottomWidth: 1,
     flexDirection: "row",
     gap: 12,
@@ -3220,7 +3397,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   searchRowPressed: {
-    backgroundColor: "#F7F8FA",
+    backgroundColor: colors.cardBgMuted,
   },
   searchRowPress: {
     alignItems: "center",
@@ -3230,15 +3407,24 @@ const styles = StyleSheet.create({
   },
   searchRowIcon: {
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
-    borderRadius: 20,
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: radius.pill,
     flexShrink: 0,
     height: 40,
     justifyContent: "center",
     width: 40,
   },
   searchRowIconHeart: {
-    backgroundColor: "#edf7f2",
+    backgroundColor: colors.accentSoft,
+  },
+  // A saved space is recognised by its photo, not its address (A8) — same
+  // circular footprint as searchRowIcon so the row rhythm doesn't jump.
+  searchRowThumb: {
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: radius.pill,
+    flexShrink: 0,
+    height: 40,
+    width: 40,
   },
   searchRowCopy: {
     flex: 1,
@@ -3246,12 +3432,12 @@ const styles = StyleSheet.create({
   searchRowTitle: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
-    color: "#111827",
+    color: colors.text,
   },
   searchRowSub: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
-    color: "#374151",
+    color: colors.textSoft,
     marginTop: 2,
   },
   searchRemoveBtn: {
@@ -3270,16 +3456,16 @@ const styles = StyleSheet.create({
   searchEmptyText: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 15,
-    color: "#6b7280",
+    color: colors.textSoft,
   },
   searchEmptyState: {
     alignItems: "center",
-    paddingVertical: 32,
+    paddingVertical: 48,
   },
   searchEmptyStateText: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 15,
-    color: "#6b7280",
+    color: colors.textSoft,
     marginTop: 0,
   },
 
@@ -3298,65 +3484,69 @@ const styles = StyleSheet.create({
   },
   searchAreaPill: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderRadius: radius.pill,
-    elevation: 8,
+    elevation: 6,
     flexDirection: "row",
     gap: 7,
     paddingHorizontal: 18,
     paddingVertical: 12,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.22,
-    shadowRadius: 16,
+    shadowColor: "#0B1220",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+  },
+  searchAreaPillPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.97 }],
   },
   searchAreaPillText: {
-    color: "#111827",
+    color: colors.text,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
-    letterSpacing: 0.1,
+    letterSpacing: -0.1,
   },
   emptyNoticePill: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderRadius: radius.pill,
-    elevation: 8,
+    elevation: 6,
     flexDirection: "row",
     gap: 7,
     paddingHorizontal: 18,
     paddingVertical: 12,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.22,
-    shadowRadius: 16,
+    shadowColor: "#0B1220",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
   },
   emptyNoticeText: {
-    color: "#374151",
+    color: colors.textSoft,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
-    letterSpacing: 0.1,
+    letterSpacing: -0.1,
   },
   pickerBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(15,23,42,0.45)",
     justifyContent: "flex-end",
   },
   pickerSheet: {
-    backgroundColor: "#ffffff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: colors.cardBg,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
     paddingHorizontal: 16,
     paddingTop: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
-    elevation: 12,
+    elevation: 6,
   },
   pickerHandle: {
     alignSelf: "center",
-    backgroundColor: "#D1D5DB",
-    borderRadius: 99,
+    backgroundColor: colors.border,
+    borderRadius: radius.pill,
     height: 4,
     marginBottom: 12,
     width: 40,
@@ -3368,13 +3558,13 @@ const styles = StyleSheet.create({
   pickerTitle: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 16,
-    color: "#111827",
+    color: colors.text,
     letterSpacing: -0.3,
   },
   pickerSubtitle: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
-    color: "#6b7280",
+    color: colors.textSoft,
     marginTop: 2,
   },
 
@@ -3387,28 +3577,23 @@ const styles = StyleSheet.create({
   pickerQuickPill: {
     flex: 1,
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
+    backgroundColor: colors.cardBg,
+    borderColor: colors.divider,
+    borderRadius: radius.md,
     borderWidth: 1.5,
     paddingVertical: 10,
   },
   pickerQuickPillActive: {
-    backgroundColor: "#0a8050",
-    borderColor: "#0a8050",
-    shadowColor: "#0a7a50",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 4,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   pickerQuickText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
-    color: "#374151",
+    color: colors.textSoft,
   },
   pickerQuickTextActive: {
-    color: "#ffffff",
+    color: colors.textInverse,
   },
 
   pickerFooter: {
@@ -3418,7 +3603,7 @@ const styles = StyleSheet.create({
   },
   pickerBackBtn: {
     alignItems: "center",
-    borderColor: "#E5E7EB",
+    borderColor: colors.divider,
     borderRadius: 14,
     borderWidth: 1.5,
     flex: 1,
@@ -3428,68 +3613,74 @@ const styles = StyleSheet.create({
   pickerBackBtnText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
-    color: "#374151",
+    color: colors.textSoft,
     letterSpacing: -0.2,
   },
   pickerFooterPrimary: {
     alignItems: "center",
-    backgroundColor: "#0a8050",
+    backgroundColor: colors.primary,
     borderRadius: 14,
     flex: 2,
     height: 52,
     justifyContent: "center",
-    shadowColor: "#0a7a50",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
+    ...primaryButtonShadow,
   },
   pickerFooterPrimaryText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 16,
-    color: "#ffffff",
+    color: colors.textInverse,
     letterSpacing: -0.3,
   },
   errorRow: {
     alignItems: "center",
-    gap: 6,
-    marginTop: 8,
+    gap: 2,
+    marginTop: 10,
   },
+  // Bare red text is illegible over map tiles — errors get a surface like
+  // every other floating element.
   error: {
-    color: "#b42318",
-    fontFamily: "PlusJakartaSans-Regular",
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.pill,
+    color: colors.danger,
+    fontFamily: "PlusJakartaSans-Medium",
     fontSize: 13,
+    overflow: "hidden",
+    paddingHorizontal: 16,
+    paddingVertical: 9,
     textAlign: "center",
+    shadowColor: "#0B1220",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 14,
+    elevation: 4,
   },
   retryBtn: {
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#0a8050",
   },
   retryText: {
-    color: "#0a8050",
-    fontFamily: "PlusJakartaSans-SemiBold",
+    color: colors.primary,
+    fontFamily: "PlusJakartaSans-Bold",
     fontSize: 13,
+    letterSpacing: -0.1,
   },
   overlappingBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(15,23,42,0.35)",
     justifyContent: "flex-end",
   },
   overlappingSheet: {
-    backgroundColor: "#ffffff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: colors.cardBg,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
     maxHeight: "70%",
     paddingBottom: 32,
   },
   overlappingHeader: {
-    borderBottomColor: "#e2e8f0",
-    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 22,
     paddingBottom: 16,
   },
   overlappingTitle: {
@@ -3503,18 +3694,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 8,
   },
+  // Soft-fill rows instead of border+shadow boxes — a sheet's list should
+  // read as choices, not as a stack of cards inside a card.
   overlappingItem: {
-    backgroundColor: "#ffffff",
-    borderColor: "#e2e8f0",
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginVertical: 6,
+    marginVertical: 5,
     marginHorizontal: 8,
     padding: 16,
-    ...cardShadow,
   },
   overlappingItemContent: {
     flex: 1,

@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { colors } from "../styles/theme";
 
 type QuickTimeOption = {
   label: string;
@@ -438,7 +439,7 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    backgroundColor: "#F8FAF9",
+    backgroundColor: colors.cardBgMuted,
     paddingHorizontal: 18,
     paddingTop: 10,
   },
@@ -447,7 +448,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 5,
     borderRadius: 999,
-    backgroundColor: "#D7DED9",
+    backgroundColor: colors.border,
     marginBottom: 14,
   },
   header: {
@@ -459,7 +460,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.35,
     textTransform: "uppercase",
-    color: "#0a8050",
+    color: colors.primary,
     marginBottom: 4,
   },
   title: {
@@ -467,7 +468,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 28,
     letterSpacing: -0.7,
-    color: "#101414",
+    color: colors.text,
     textAlign: "center",
   },
   subtitle: {
@@ -475,19 +476,19 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     lineHeight: 18,
-    color: "#63706c",
+    color: colors.textSoft,
     textAlign: "center",
   },
   summary: {
     marginTop: 9,
     borderRadius: 999,
     overflow: "hidden",
-    backgroundColor: "#101414",
+    backgroundColor: colors.text,
     paddingHorizontal: 14,
     paddingVertical: 7,
     fontFamily: "PlusJakartaSans-ExtraBold",
     fontSize: 14,
-    color: "#FFFFFF",
+    color: colors.textInverse,
   },
   quickRow: {
     flexDirection: "row",
@@ -499,22 +500,22 @@ const styles = StyleSheet.create({
     minHeight: 42,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#DCE4DF",
-    backgroundColor: "#FFFFFF",
+    borderColor: colors.divider,
+    backgroundColor: colors.cardBg,
     alignItems: "center",
     justifyContent: "center",
   },
   quickPillActive: {
-    borderColor: "#0a8050",
-    backgroundColor: "#E8F7EF",
+    borderColor: colors.primary,
+    backgroundColor: colors.accentSoft,
   },
   quickText: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 13,
-    color: "#31413B",
+    color: colors.text,
   },
   quickTextActive: {
-    color: "#0a8050",
+    color: colors.primary,
   },
   wheelCard: {
     height: ITEM_HEIGHT * VISIBLE_ITEMS,
@@ -522,8 +523,8 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#E0E8E3",
-    backgroundColor: "#FFFFFF",
+    borderColor: colors.divider,
+    backgroundColor: colors.cardBg,
     overflow: "hidden",
   },
   selectionBand: {
@@ -552,21 +553,21 @@ const styles = StyleSheet.create({
   wheelText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
-    color: "#75827D",
+    color: colors.textSoft,
     textAlign: "center",
     includeFontPadding: false,
   },
   wheelTextActive: {
     fontFamily: "PlusJakartaSans-ExtraBold",
     fontSize: 18,
-    color: "#101414",
+    color: colors.text,
   },
   wheelTextDisabled: {
     opacity: 0.24,
   },
   columnDivider: {
     width: StyleSheet.hairlineWidth,
-    backgroundColor: "#E3EAE5",
+    backgroundColor: colors.divider,
   },
   timeSeparator: {
     alignSelf: "center",
@@ -574,7 +575,7 @@ const styles = StyleSheet.create({
     marginTop: -1,
     fontFamily: "PlusJakartaSans-ExtraBold",
     fontSize: 18,
-    color: "#101414",
+    color: colors.text,
     zIndex: 2,
   },
   footer: {
@@ -586,28 +587,28 @@ const styles = StyleSheet.create({
     minHeight: 52,
     flex: 0.85,
     borderRadius: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.cardBg,
     borderWidth: 1,
-    borderColor: "#DCE4DF",
+    borderColor: colors.divider,
     alignItems: "center",
     justifyContent: "center",
   },
   cancelText: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 15,
-    color: "#46534E",
+    color: colors.textMuted,
   },
   confirmButton: {
     minHeight: 52,
     flex: 1.45,
     borderRadius: 16,
-    backgroundColor: "#0a8050",
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   confirmText: {
     fontFamily: "PlusJakartaSans-ExtraBold",
     fontSize: 15,
-    color: "#FFFFFF",
+    color: colors.textInverse,
   },
 });

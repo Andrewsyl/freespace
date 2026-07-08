@@ -89,6 +89,7 @@ export default async function ListingDetailPage({
 
   const images = listing.imageUrls && listing.imageUrls.length ? listing.imageUrls : [fallback];
   const unitPrice = getListingUnitPrice(listing);
+  const description = listing.description?.trim() || null;
   const hasCoords = listing.latitude != null && listing.longitude != null;
   const fromLat = resolvedSearchParams.fromLat ? Number(resolvedSearchParams.fromLat) : null;
   const fromLng = resolvedSearchParams.fromLng ? Number(resolvedSearchParams.fromLng) : null;
@@ -371,6 +372,17 @@ export default async function ListingDetailPage({
                     </a>
                   )}
                 </section>
+
+                {description && (
+                  <section className="border-t border-slate-100 py-8">
+                    <h2 className="text-[26px] font-bold leading-tight tracking-[-0.03em] text-slate-950">
+                      About this space
+                    </h2>
+                    <p className="mt-4 whitespace-pre-line text-[15px] leading-7 text-slate-600">
+                      {description}
+                    </p>
+                  </section>
+                )}
 
                 {/* Included features */}
                 {listing.amenities && listing.amenities.length > 0 && (

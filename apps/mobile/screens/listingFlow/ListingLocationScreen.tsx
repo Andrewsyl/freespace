@@ -9,6 +9,7 @@ import { LIGHT_MAP_STYLE } from "../../components/mapStyles";
 import { useListingFlow } from "./context";
 import { FlowHeader } from "./FlowHeader";
 import { hostFlowColors } from "./hostFlowTheme";
+import { colors } from "../../styles/theme";
 import { TextInput as AppTextInput } from "../../components/ui";
 import { FlowFooter } from "./FlowFooter";
 
@@ -224,7 +225,7 @@ export function ListingLocationScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: hostFlowColors.bg,
     flex: 1,
   },
 
@@ -286,7 +287,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   dragHintText: {
-    color: "#ffffff",
+    color: colors.textInverse,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
     letterSpacing: 0.1,
@@ -302,7 +303,7 @@ const styles = StyleSheet.create({
 
   // Search card: header (kicker+title) + input row
   searchCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
     overflow: "hidden",
     shadowColor: "#000000",
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: hostFlowColors.border,
   },
   searchCardKicker: {
     color: ACCENT,
@@ -357,7 +358,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   suggestions: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     borderRadius: 14,
     marginTop: 8,
     overflow: "hidden",
@@ -381,7 +382,7 @@ const styles = StyleSheet.create({
   },
   suggestionIconCircle: {
     alignItems: "center",
-    backgroundColor: "#e6f9f2",
+    backgroundColor: hostFlowColors.accentSoft,
     borderRadius: 20,
     flexShrink: 0,
     height: 34,

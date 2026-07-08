@@ -52,7 +52,13 @@ export function MobileListingView({
   initialBooking,
   isMonthly = false,
 }: {
-  listing: Listing & { amenities?: string[]; accessCode?: string | null; hostId?: string; pricePerMonth?: number | null };
+  listing: Listing & {
+    amenities?: string[];
+    accessCode?: string | null;
+    hostId?: string;
+    pricePerMonth?: number | null;
+    description?: string | null;
+  };
   listingForMap: Listing;
   areaLabel: string;
   reviews: Review[];
@@ -95,6 +101,7 @@ export function MobileListingView({
   const href = `/checkout/${listing.id}?date=${toDateStr(startAt)}&startTime=${toTimeStr(startAt)}&endDate=${toDateStr(endAt)}&endTime=${toTimeStr(endAt)}`;
   const bookingTotal = useMemo(() => calculateListingTotal(listing, startAt, endAt), [listing, startAt, endAt]);
   const amenities = listing.amenities ?? [];
+  const aboutText = listing.description?.trim() || null;
   const images = useMemo(
     () => listing.imageUrls ?? listing.image_urls ?? [fallbackImage],
     [fallbackImage, listing.imageUrls, listing.image_urls],
@@ -236,6 +243,13 @@ export function MobileListingView({
           <section className="border-b border-slate-200 bg-white px-5 py-6">
             <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">Parking notes</h2>
             <p className="mt-3 text-[14px] leading-6 text-slate-600">{listing.availability}</p>
+          </section>
+        )}
+
+        {aboutText && (
+          <section className="border-b border-slate-200 bg-white px-5 py-6">
+            <h2 className="text-[17px] font-bold tracking-[-0.03em] text-slate-900">About this space</h2>
+            <p className="mt-3 whitespace-pre-line text-[14px] leading-6 text-slate-600">{aboutText}</p>
           </section>
         )}
 

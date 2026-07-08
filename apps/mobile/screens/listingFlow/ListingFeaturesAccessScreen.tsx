@@ -47,7 +47,7 @@ const CARD_SHADOW = {
 } as const;
 
 function featureIcon(name: string, active: boolean) {
-  const color = active ? ACCENT : "#6b7280";
+  const color = active ? ACCENT : hostFlowColors.textMuted;
   const props = { size: 20, color, strokeWidth: 1.8 };
   switch (name) {
     case "CCTV":               return <Cctv {...props} />;
@@ -75,21 +75,21 @@ const ACCESS_CHOICES = [
     label: "Key or security fob",
     description: "You'll share key collection details with drivers",
     optionValue: "Key or security fob" as const,
-    icon: (active: boolean) => <KeyRound size={20} color={active ? ACCENT : "#6b7280"} strokeWidth={1.8} />,
+    icon: (active: boolean) => <KeyRound size={20} color={active ? ACCENT : hostFlowColors.textMuted} strokeWidth={1.8} />,
   },
   {
     id: "pin_code" as const,
     label: "Pin code",
     description: "A code that unlocks the entrance or barrier (pin removed after booking completes)",
     optionValue: "Pin code" as const,
-    icon: (active: boolean) => <Hash size={20} color={active ? ACCENT : "#6b7280"} strokeWidth={1.8} />,
+    icon: (active: boolean) => <Hash size={20} color={active ? ACCENT : hostFlowColors.textMuted} strokeWidth={1.8} />,
   },
   {
     id: "special_instructions" as const,
     label: "Special instructions",
     description: "Custom arrival guidance drivers need to know",
     optionValue: "Special instructions" as const,
-    icon: (active: boolean) => <FileText size={20} color={active ? ACCENT : "#6b7280"} strokeWidth={1.8} />,
+    icon: (active: boolean) => <FileText size={20} color={active ? ACCENT : hostFlowColors.textMuted} strokeWidth={1.8} />,
   },
 ] as const;
 
@@ -264,7 +264,7 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
                   }
                 >
                   <View style={[styles.accessTypeIconWrap, draft.requiresAccessCode === false && styles.accessTypeIconWrapActive]}>
-                    <Unlock size={20} color={draft.requiresAccessCode === false ? ACCENT : "#6b7280"} strokeWidth={1.8} />
+                    <Unlock size={20} color={draft.requiresAccessCode === false ? ACCENT : hostFlowColors.textMuted} strokeWidth={1.8} />
                   </View>
                   <View style={styles.accessTypeText}>
                     <Text style={[styles.accessTypeLabel, draft.requiresAccessCode === false && styles.accessTypeLabelActive]}>Open access</Text>
@@ -286,7 +286,7 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
                   }
                 >
                   <View style={[styles.accessTypeIconWrap, draft.requiresAccessCode === true && styles.accessTypeIconWrapActive]}>
-                    <Lock size={20} color={draft.requiresAccessCode === true ? ACCENT : "#6b7280"} strokeWidth={1.8} />
+                    <Lock size={20} color={draft.requiresAccessCode === true ? ACCENT : hostFlowColors.textMuted} strokeWidth={1.8} />
                   </View>
                   <View style={styles.accessTypeText}>
                     <Text style={[styles.accessTypeLabel, draft.requiresAccessCode === true && styles.accessTypeLabelActive]}>Restricted access</Text>
@@ -393,7 +393,7 @@ export function ListingFeaturesAccessScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: { flex: 1, backgroundColor: hostFlowColors.bg },
 
   content: {
     paddingHorizontal: 16,
@@ -403,15 +403,15 @@ const styles = StyleSheet.create({
 
   // ── Header card (matches location screen style) ──────────────
   headerCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: hostFlowColors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: hostFlowColors.border,
     borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
@@ -445,10 +445,10 @@ const styles = StyleSheet.create({
 
   // ── Cards ────────────────────────────────────────────────────
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: hostFlowColors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: hostFlowColors.border,
   },
   cardBody: {
     padding: 16,
@@ -479,13 +479,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     borderWidth: 1,
-    borderColor: "#E2E8ED",
+    borderColor: hostFlowColors.border,
     borderRadius: 12,
     minHeight: 60,
     paddingHorizontal: 12,
     paddingVertical: 12,
     paddingRight: 28,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: hostFlowColors.bg,
     position: "relative",
   },
   chipActive: {
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EDF7F2",
+    backgroundColor: hostFlowColors.accentSoft,
     flexShrink: 0,
   },
   chipIconWrapActive: {
@@ -528,8 +528,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E2E8ED",
-    backgroundColor: "#F8FAFC",
+    borderColor: hostFlowColors.border,
+    backgroundColor: hostFlowColors.bg,
   },
   showMoreText: {
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -555,11 +555,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     borderWidth: 1,
-    borderColor: "#E2E8ED",
+    borderColor: hostFlowColors.border,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: hostFlowColors.bg,
   },
   accessTypeCardActive: {
     borderColor: ACCENT,
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EDF7F2",
+    backgroundColor: hostFlowColors.accentSoft,
     flexShrink: 0,
   },
   accessTypeIconWrapActive: {
@@ -606,11 +606,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     borderWidth: 1,
-    borderColor: "#E2E8ED",
+    borderColor: hostFlowColors.border,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: hostFlowColors.bg,
   },
   accessCardActive: {
     borderColor: ACCENT,
@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EDF7F2",
+    backgroundColor: hostFlowColors.accentSoft,
     flexShrink: 0,
   },
   accessCardIconActive: {
@@ -650,9 +650,9 @@ const styles = StyleSheet.create({
   },
 
   inlineDetailBox: {
-    backgroundColor: "#F0FDF8",
+    backgroundColor: hostFlowColors.accentSoft,
     borderWidth: 1,
-    borderColor: "#C6F0DC",
+    borderColor: hostFlowColors.accentSoftBorder,
     borderRadius: 12,
     padding: 14,
     marginTop: 8,
@@ -665,8 +665,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   detailInput: {
-    backgroundColor: "#ffffff",
-    borderColor: "#E2E8ED",
+    backgroundColor: hostFlowColors.cardBg,
+    borderColor: hostFlowColors.border,
     borderRadius: 10,
     borderWidth: 1,
     color: FG,
@@ -681,10 +681,10 @@ const styles = StyleSheet.create({
 
   // ── Tips card ────────────────────────────────────────────────
   tipsCard: {
-    backgroundColor: "#F0FDF8",
+    backgroundColor: hostFlowColors.accentSoft,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#C6F0DC",
+    borderColor: hostFlowColors.accentSoftBorder,
     padding: 16,
   },
   tipsRow: {

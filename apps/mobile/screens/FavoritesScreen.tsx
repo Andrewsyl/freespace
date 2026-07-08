@@ -5,22 +5,78 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
 import { colors, spacing } from "../styles/theme";
+import { applyServiceFee } from "../utils/pricing";
 import type { ListingSummary, RootStackParamList } from "../types";
-import { ArrowLeft, CarFront, Heart, MapPin, ShieldCheck, Star } from "lucide-react-native";
-import { FeatureChip } from "../components/MapBottomCard";
+import {
+  Accessibility,
+  ArrowDownUp,
+  ArrowLeft,
+  BatteryCharging,
+  Bike,
+  CarFront,
+  Cctv,
+  Clock,
+  Fence,
+  Heart,
+  IdCard,
+  KeyRound,
+  Lightbulb,
+  Maximize2,
+  Star,
+  Warehouse,
+  type LucideIcon,
+} from "lucide-react-native";
+import { SignInWall } from "../components/SignInWall";
 import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Favorites">;
 
-function formatMoney(value: number | string | null | undefined): string | null {
+// Mirror of the amenity icon mapping in ListingScreen so favourite cards read
+// the same visual language (icons, not words).
+const FEATURE_ICONS: Record<string, LucideIcon> = {
+  cctv: Cctv,
+  ev: BatteryCharging,
+  sheltered: Warehouse,
+  lit: Lightbulb,
+  gated: Fence,
+  low: ArrowDownUp,
+  permit: IdCard,
+  code: KeyRound,
+  disabled: Accessibility,
+  allday: Clock,
+  motorbike: Bike,
+  wide: Maximize2,
+};
+
+const getFeatureIconType = (label: string) => {
+  const n = label.toLowerCase();
+  if (n.includes("low") || n.includes("clearance") || n.includes("height")) return "low";
+  if (n.includes("permit")) return "permit";
+  if (n.includes("ev") || n.includes("charger") || n.includes("charging")) return "ev";
+  if (n.includes("cctv") || n.includes("camera")) return "cctv";
+  if (n.includes("light") || n.includes("lit")) return "lit";
+  if (n.includes("shelter") || n.includes("covered") || n.includes("roof")) return "sheltered";
+  if (n.includes("gate") || n.includes("gated") || n.includes("barrier")) return "gated";
+  if (n.includes("code") || n.includes("keypad") || n.includes("entry")) return "code";
+  if (n.includes("disabled") || (n.includes("access") && n.includes("wheel"))) return "disabled";
+  if (n.includes("24") || n.includes("always") || n.includes("round")) return "allday";
+  if (n.includes("motorbike") || n.includes("motorcycle") || n.includes("scooter") || n.includes("bike")) return "motorbike";
+  if (n.includes("wide")) return "wide";
+  return "sheltered";
+};
+
+function formatMoney(value: number | string | null | undefined, feeInclusive = false): string | null {
   const n = Number(value);
   if (!Number.isFinite(n)) return null;
-  return Number.isInteger(n) ? `${n}` : n.toFixed(2);
+  const gross = feeInclusive ? applyServiceFee(n) : n;
+  return Number.isInteger(gross) ? `${gross}` : gross.toFixed(2);
 }
 
 function priceLabel(item: ListingSummary): { value: string; unit: string } | null {
-  const hour = formatMoney(item.price_per_hour);
-  const day = formatMoney(item.price_per_day);
+  // Hourly/daily rates are quoted fee-inclusive so they match what checkout
+  // charges. Monthly is enquiry-only — no checkout, so the listed rate stands.
+  const hour = formatMoney(item.price_per_hour, true);
+  const day = formatMoney(item.price_per_day, true);
   const month = formatMoney(item.price_per_month);
   if (item.rate_type === "hourly" && hour != null) return { value: `€${hour}`, unit: "/hr" };
   if (day != null) return { value: `€${day}`, unit: "/day" };
@@ -48,59 +104,57 @@ function FavoriteCard({
   ).slice(0, 3);
   const image = item.image_urls?.[0];
 
+  const distanceKm = typeof item.distance_m === "number" ? (item.distance_m / 1000).toFixed(1) : null;
+
   return (
     <Pressable style={styles.card} onPress={onOpen}>
-      <View style={styles.cardImageWrap}>
+      <View style={styles.imageWrap}>
         {image ? (
-          <Image source={{ uri: image }} style={styles.cardImage} resizeMode="cover" />
+          <Image source={{ uri: image }} style={styles.image} resizeMode="cover" />
         ) : (
-          <View style={styles.cardImageFallback}>
-            <CarFront size={30} color="#b0bac4" strokeWidth={1.7} />
+          <View style={styles.imageFallback}>
+            <CarFront size={34} color={colors.border} strokeWidth={1.7} />
           </View>
         )}
-        <Pressable
-          onPress={onUnsave}
-          hitSlop={10}
-          style={styles.heartBtn}
-          accessibilityLabel="Remove from favourites"
-        >
-          <Heart size={18} color="#0a8050" fill="#0a8050" strokeWidth={2} />
-        </Pressable>
-      </View>
-
-      <View style={styles.cardBody}>
-        <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-
         {hasRating ? (
-          <View style={styles.cardRatingRow}>
-            <Star size={13} color="#F4B942" fill="#F4B942" strokeWidth={2} />
-            <Text style={styles.cardRating}>{ratingValue.toFixed(1)}</Text>
-            <Text style={styles.cardRatingCount}>
-              · {ratingCount} {ratingCount === 1 ? "review" : "reviews"}
-            </Text>
+          <View style={styles.ratingPill}>
+            <Star size={13} color={colors.primary} fill={colors.primary} strokeWidth={2} />
+            <Text style={styles.ratingPillText}>{ratingValue.toFixed(1)}</Text>
           </View>
         ) : null}
+      </View>
 
-        <View style={styles.cardAddrRow}>
-          <MapPin size={13} color="#94a3b8" strokeWidth={2} />
-          <Text style={styles.cardAddr} numberOfLines={1}>{item.address}</Text>
+      <View style={styles.body}>
+        <View style={styles.titleRow}>
+          <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+          <Pressable onPress={onUnsave} hitSlop={12} accessibilityLabel="Remove from favourites">
+            <Heart size={22} color={colors.primary} fill={colors.primary} strokeWidth={2} />
+          </Pressable>
         </View>
 
-        <View style={styles.cardFooter}>
-          {price ? (
-            <Text style={styles.cardPrice}>
-              {price.value}
-              <Text style={styles.cardPriceUnit}>{price.unit}</Text>
-            </Text>
-          ) : (
-            <View />
-          )}
+        <Text style={styles.addr} numberOfLines={1}>{item.address}</Text>
+        {distanceKm ? <Text style={styles.meta}>{distanceKm} km away</Text> : null}
+
+        <View style={styles.divider} />
+
+        <View style={styles.priceRow}>
           {amenities.length > 0 ? (
-            <View style={styles.chipRow}>
-              {amenities.map((a) => (
-                <FeatureChip key={a} label={a} />
-              ))}
+            <View style={styles.featureRow}>
+              {amenities.map((amenity) => {
+                const Icon = FEATURE_ICONS[getFeatureIconType(amenity)] ?? FEATURE_ICONS.sheltered;
+                return (
+                  <View key={amenity} style={styles.featureIcon}>
+                    <Icon size={17} color={colors.textMuted} strokeWidth={1.9} />
+                  </View>
+                );
+              })}
             </View>
+          ) : null}
+          {price ? (
+            <Text style={styles.price}>
+              {price.value}
+              <Text style={styles.priceUnit}> {price.unit}</Text>
+            </Text>
           ) : null}
         </View>
       </View>
@@ -122,26 +176,14 @@ export function FavoritesScreen({ navigation }: Props) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <View style={styles.contentWrapper}>
-          <View style={styles.gatedCard}>
-            <View style={styles.gatedIconWrap}>
-              <Heart size={24} color="#0a8050" strokeWidth={2.2} />
-            </View>
-            <Text style={styles.gatedTitle}>Save your favourite spaces</Text>
-            <Text style={styles.subtitle}>Sign in to keep the spaces you trust one tap away.</Text>
-            <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Welcome")}>
-              <Text style={styles.primaryButtonText}>Sign in</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.primaryButton, styles.secondaryButton]}
-              onPress={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
-            >
-              <Text style={[styles.primaryButtonText, styles.secondaryButtonText]}>Browse spaces</Text>
-            </Pressable>
-            <View style={styles.gatedHintRow}>
-              <ShieldCheck size={14} color={colors.textSoft} strokeWidth={2.1} />
-              <Text style={styles.gatedHintText}>Your saved spaces stay attached to your account.</Text>
-            </View>
-          </View>
+          <SignInWall
+            icon={<Heart size={26} color={colors.primary} strokeWidth={2.2} />}
+            title="Save your favourite spaces"
+            body="Sign in to keep the spaces you trust one tap away."
+            onSignIn={() => navigation.navigate("Welcome")}
+            onBrowse={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
+            reassurance="Your saved spaces stay attached to your account."
+          />
         </View>
       </SafeAreaView>
     );
@@ -155,7 +197,7 @@ export function FavoritesScreen({ navigation }: Props) {
           onPress={() => goBackOrFallback(navigation, fallbackRoutes.saved)}
           accessibilityLabel="Go back"
         >
-          <ArrowLeft size={22} color="#111827" />
+          <ArrowLeft size={22} color={colors.text} />
         </Pressable>
         <Text style={styles.navTitle}>Favourites</Text>
         <View style={styles.navSpacer} />
@@ -168,8 +210,8 @@ export function FavoritesScreen({ navigation }: Props) {
             <RefreshControl
               refreshing={loading && favorites.length > 0}
               onRefresh={() => void refresh()}
-              tintColor="#0a8050"
-              colors={["#0a8050"]}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
         >
@@ -186,11 +228,11 @@ export function FavoritesScreen({ navigation }: Props) {
             <View style={styles.list}>
               {[0, 1, 2].map((i) => (
                 <View key={i} style={styles.skeletonCard}>
-                  <SkeletonBlock width="100%" height={160} borderRadius={0} pulse={skeletonPulse} />
+                  <SkeletonBlock height={150} borderRadius={12} pulse={skeletonPulse} style={{ margin: 8, marginBottom: 0 }} />
                   <View style={styles.skeletonBody}>
                     <SkeletonBlock width="72%" height={16} pulse={skeletonPulse} />
-                    <SkeletonBlock width="46%" height={12} pulse={skeletonPulse} style={{ marginTop: 10 }} />
-                    <SkeletonBlock width="34%" height={16} pulse={skeletonPulse} style={{ marginTop: 12 }} />
+                    <SkeletonBlock width="46%" height={12} pulse={skeletonPulse} style={{ marginTop: 8 }} />
+                    <SkeletonBlock width="34%" height={16} pulse={skeletonPulse} style={{ marginTop: 8 }} />
                   </View>
                 </View>
               ))}
@@ -200,7 +242,7 @@ export function FavoritesScreen({ navigation }: Props) {
           {!loading && favorites.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconWrap}>
-                <Heart size={30} color="#0a8050" strokeWidth={2} />
+                <Heart size={30} color={colors.primary} strokeWidth={2} />
               </View>
               <Text style={styles.emptyTitle}>No saved spaces yet</Text>
               <Text style={styles.subtitle}>
@@ -247,11 +289,11 @@ export function FavoritesScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F4F6F8",
+    backgroundColor: colors.cardBg,
   },
   contentWrapper: {
     flex: 1,
-    backgroundColor: "#F4F6F8",
+    backgroundColor: colors.cardBg,
   },
   navBar: {
     flexDirection: "row",
@@ -260,108 +302,89 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    backgroundColor: "#ffffff",
+    borderBottomColor: colors.divider,
+    backgroundColor: colors.cardBg,
   },
   backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
-  navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#111827", letterSpacing: -0.3 },
+  navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: colors.text, letterSpacing: -0.3 },
   navSpacer: { width: 38 },
 
   content: {
-    paddingHorizontal: spacing.screenX,
+    paddingHorizontal: spacing.md,
     paddingTop: 8,
     paddingBottom: 28,
   },
   countLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
-    color: "#64748b",
+    color: colors.textMuted,
     letterSpacing: -0.1,
     marginTop: 6,
     marginBottom: 12,
   },
   list: { gap: 14 },
 
-  // Premium listing card
+  // TGTG-style favourite card — a visible hairline border keeps the card
+  // defined against light backgrounds (iOS renders the shadow alone far too
+  // softly to read as a card edge, especially over the map/list bg).
   card: {
-    backgroundColor: "#ffffff",
-    borderColor: "#E4E9EF",
-    borderWidth: 1,
-    borderRadius: 22,
-    overflow: "hidden",
-    shadowColor: "#111827",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 16,
-    elevation: 3,
-  },
-  cardImageWrap: {
-    width: "100%",
-    height: 160,
-    backgroundColor: "#edf1f4",
-  },
-  cardImage: { width: "100%", height: "100%" },
-  cardImageFallback: { flex: 1, alignItems: "center", justifyContent: "center" },
-  cardBody: {
-    paddingHorizontal: 15,
-    paddingVertical: 13,
-    gap: 5,
-  },
-  cardTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 16,
-    color: "#0f172a",
-    letterSpacing: -0.3,
-    lineHeight: 21,
-  },
-  heartBtn: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    width: 36,
-    height: 36,
+    backgroundColor: colors.cardBg,
     borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.94)",
-    shadowColor: "#111827",
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: "#0B1220",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.14,
+    shadowOpacity: 0.06,
     shadowRadius: 6,
-    elevation: 3,
+    elevation: 2,
   },
-  cardRatingRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  cardRating: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: "#0f172a" },
-  cardRatingCount: { fontFamily: "PlusJakartaSans-Regular", fontSize: 12.5, color: "#8896a5" },
-  cardAddrRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  cardAddr: {
-    flex: 1,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12.5,
-    color: "#64748b",
-    lineHeight: 17,
+  // Image sits inset within the card (not edge-to-edge) so the white card
+  // frame reads clearly all the way around, per the reference card style.
+  imageWrap: {
+    height: 150,
+    borderRadius: 12,
+    margin: 8,
+    marginBottom: 0,
+    overflow: "hidden",
+    backgroundColor: colors.cardBgMuted,
   },
-  cardFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    marginTop: 4,
-    paddingTop: 9,
-    borderTopWidth: 1,
-    borderTopColor: "#eef1f4",
+  image: { width: "100%", height: "100%" },
+  imageFallback: { flex: 1, alignItems: "center", justifyContent: "center" },
+  ratingPill: {
+    position: "absolute", top: 10, right: 10,
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: colors.cardBg, borderRadius: 999,
+    paddingHorizontal: 10, paddingVertical: 5,
+    shadowColor: "#0B1220", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.14, shadowRadius: 5, elevation: 3,
   },
-  cardPrice: { fontFamily: "PlusJakartaSans-Bold", fontSize: 16, color: "#0f172a", letterSpacing: -0.4 },
-  cardPriceUnit: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: "#94a3b8" },
-  chipRow: { flexDirection: "row", gap: 5, flexShrink: 1, justifyContent: "flex-end", overflow: "hidden" },
+  ratingPillText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 13, color: colors.text, letterSpacing: -0.1 },
+  body: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 10 },
+  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  title: { flex: 1, fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 19, color: colors.text, letterSpacing: -0.4 },
+  addr: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: colors.textMuted, lineHeight: 18, marginTop: 2 },
+  meta: { fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: colors.textSoft, marginTop: 1 },
+  featureRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  featureIcon: { alignItems: "center", justifyContent: "center" },
+  divider: {
+    borderTopWidth: 1, borderTopColor: colors.divider,
+    marginTop: 8, marginBottom: 6,
+  },
+  priceRow: { flexDirection: "row", alignItems: "center" },
+  price: { fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 18, color: colors.text, letterSpacing: -0.4, marginLeft: "auto" },
+  priceUnit: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: colors.textMuted },
 
   // Skeleton
   skeletonCard: {
-    backgroundColor: "#ffffff",
-    borderColor: "#E4E9EF",
+    backgroundColor: colors.cardBg,
+    borderRadius: 18,
     borderWidth: 1,
-    borderRadius: 22,
-    overflow: "hidden",
+    borderColor: colors.border,
+    shadowColor: "#0B1220",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   skeletonBody: { paddingHorizontal: 15, paddingVertical: 14 },
 
@@ -376,7 +399,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: "#edf7f2",
+    backgroundColor: colors.accentSoft,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 18,
@@ -384,63 +407,22 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 19,
-    color: "#0f172a",
+    color: colors.text,
     letterSpacing: -0.4,
     marginBottom: 6,
     textAlign: "center",
   },
   subtitle: {
-    color: "#64748b",
+    color: colors.textMuted,
     fontSize: 14,
     lineHeight: 21,
     textAlign: "center",
   },
 
   // Gated (signed-out)
-  gatedCard: {
-    alignItems: "center",
-    backgroundColor: colors.cardBg,
-    borderColor: colors.border,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginHorizontal: spacing.screenX,
-    marginTop: spacing.screenX,
-    paddingHorizontal: 24,
-    paddingVertical: 28,
-  },
-  gatedIconWrap: {
-    alignItems: "center",
-    backgroundColor: "#edf7f2",
-    borderRadius: 30,
-    height: 60,
-    justifyContent: "center",
-    marginBottom: 14,
-    width: 60,
-  },
-  gatedTitle: {
-    color: "#0f172a",
-    fontSize: 19,
-    fontFamily: "PlusJakartaSans-Bold",
-    letterSpacing: -0.4,
-    marginBottom: 6,
-    textAlign: "center",
-  },
-  gatedHintRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 6,
-    marginTop: 14,
-  },
-  gatedHintText: {
-    color: colors.textSoft,
-    fontSize: 12,
-    lineHeight: 16,
-    textAlign: "center",
-  },
-
   // Buttons
   primaryButton: {
-    backgroundColor: "#0a8050",
+    backgroundColor: colors.primary,
     borderRadius: 14,
     paddingHorizontal: 20,
     paddingVertical: 13,
@@ -449,19 +431,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   primaryButtonText: {
-    color: "#ffffff",
+    color: colors.cardBg,
     fontSize: 15,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontWeight: "600",
-  },
-  secondaryButton: {
-    backgroundColor: "#ffffff",
-    borderColor: colors.border,
-    borderWidth: 1,
-    marginTop: 10,
-  },
-  secondaryButtonText: {
-    color: colors.text,
   },
 
   // Error
@@ -472,11 +445,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   error: {
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
+    backgroundColor: colors.status.canceled.background,
+    borderColor: colors.status.canceled.border,
     borderRadius: 14,
     borderWidth: 1,
-    color: "#b42318",
+    color: colors.status.canceled.text,
     fontSize: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -488,10 +461,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#0a8050",
+    borderColor: colors.primary,
   },
   retryText: {
-    color: "#0a8050",
+    color: colors.primary,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
   },

@@ -6,7 +6,7 @@ import { createApp } from "./app.js";
 import { processScheduledNotifications } from "./lib/notifications.js";
 import { sweepStalePendingBookings } from "./lib/bookingSweeper.js";
 import { reportOperationalAlert } from "./lib/opsAlerts.js";
-import { pool } from "./lib/db.js";
+import { markConfirmedBookingsCompleted, pool } from "./lib/db.js";
 import { env } from "./env.js";
 import { logError, logInfo, logWarn } from "./lib/logger.js";
 import { initPostHog, captureException } from "./lib/posthog.js";
@@ -94,9 +94,23 @@ if (env.NOTIFICATION_PROCESSOR_INTERVAL_MS) {
 
 // Cancel abandoned payment-sheet bookings so they stop blocking capacity.
 // Defaults on (every 5 minutes); override with BOOKING_SWEEPER_INTERVAL_MS.
+// Batch size (100) is comfortably above the max sustained creation rate from
+// the unauthenticated portal route (20 per IP+listing per 5 min) so stale
+// pending bookings can't outrun the sweep and squat a listing's capacity.
 setInterval(() => {
-  void sweepStalePendingBookings(25).catch((error) => {
+  void sweepStalePendingBookings(100).catch((error) => {
     logWarn("booking-sweeper.tick_failed", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+  });
+}, env.BOOKING_SWEEPER_INTERVAL_MS ?? 5 * 60 * 1000);
+
+// Transition confirmed bookings to 'completed' once their window has passed.
+// A single bulk UPDATE (see markConfirmedBookingsCompleted), so it can share
+// the same interval as the stale-pending sweep above.
+setInterval(() => {
+  void markConfirmedBookingsCompleted().catch((error) => {
+    logWarn("booking-completion-sweep.tick_failed", {
       message: error instanceof Error ? error.message : String(error),
     });
   });

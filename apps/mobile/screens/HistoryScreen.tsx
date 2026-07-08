@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { SquircleBtn } from "../components/SquircleBtn";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
-import { Animated, BackHandler, Easing, FlatList, Image, InteractionManager, PanResponder, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Animated, BackHandler, Easing, FlatList, Image, InteractionManager, PanResponder, Platform, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import LottieView from "lottie-react-native";
+import Svg, { Path } from "react-native-svg";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { listMyBookings, type BookingSummary } from "../api";
 import { useAuth } from "../auth";
@@ -14,23 +14,36 @@ import { BookingCard } from "../components/BookingCard";
 import type { RootStackParamList } from "../types";
 import { CalendarDays, ChevronDown, Map } from "lucide-react-native";
 import { formatDateLabel, formatTimeLabel } from "../utils/dateFormat";
+import { colors, cardShadow, radius } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "History">;
 
-const ACCENT  = "#0a8050";
-const FG      = "#101414";
-const MUTED   = "#465050";
-const SUBTLE  = "#6B7575";
-const LINE    = "#DDE5EC";
-const BG      = "#F8FAFC";
+// Sourced from styles/theme.ts (see docs/PARKING_DESIGN_BIBLE.md §0) — kept as
+// local aliases so the styles below don't need touching one by one.
+const ACCENT  = colors.primary;
+const FG      = colors.text;
+const MUTED   = colors.textMuted;
+const SUBTLE  = colors.textSoft;
+const LINE    = colors.divider;
+const BG      = colors.pageBg;
 
-const CARD_SHADOW = {
-  shadowColor: "#0f172a",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.09,
-  shadowRadius: 12,
-  elevation: 4,
-} as const;
+const CARD_SHADOW = cardShadow;
+
+// Small hand-drawn "spark" mark for the booking-confirmed moment — a single
+// fixed SVG path, no animation. Scoped to this screen for now.
+function SparkDoodle({ size = 30, color = "#FFFFFF", opacity = 1 }: { size?: number; color?: string; opacity?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 64 64" fill="none" opacity={opacity}>
+      <Path
+        d="M32 4C32 20 30 30 14 32C30 34 32 44 32 60C32 44 34 34 50 32C34 30 32 20 32 4Z"
+        stroke={color}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 
 export function HistoryScreen({ navigation, route }: Props) {
   const { token, user } = useAuth();
@@ -126,10 +139,14 @@ export function HistoryScreen({ navigation, route }: Props) {
   useFocusEffect(
     useCallback(() => {
       StatusBar.setBarStyle("dark-content");
-      StatusBar.setBackgroundColor(BG);
+      if (Platform.OS === "android") {
+        StatusBar.setBackgroundColor(BG);
+      }
       return () => {
         StatusBar.setBarStyle("dark-content");
-        StatusBar.setBackgroundColor(BG);
+        if (Platform.OS === "android") {
+          StatusBar.setBackgroundColor(BG);
+        }
       };
     }, [])
   );
@@ -317,6 +334,17 @@ export function HistoryScreen({ navigation, route }: Props) {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-advance the success panel after a fixed dwell — no animation to key
+  // off now that the checkmark is a static doodle rather than a Lottie clip.
+  useEffect(() => {
+    if (!showSuccess) return;
+    const timer = setTimeout(() => {
+      hideSuccessCallback.current?.();
+      hideSuccessCallback.current = null;
+    }, 1400);
+    return () => clearTimeout(timer);
+  }, [showSuccess]);
 
   useEffect(() => {
     if (!route.params?.showMapCTA) return;
@@ -658,7 +686,11 @@ export function HistoryScreen({ navigation, route }: Props) {
                                 resizeMode="contain"
                               />
                               <Text style={styles.emptyTitle}>
-                                {paneTab === "upcoming" ? "No upcoming bookings" : paneTab === "active" ? "No active bookings" : "No past bookings"}
+                                {paneTab === "upcoming"
+                                  ? "no bookings yet."
+                                  : paneTab === "active"
+                                  ? "nothing active right now."
+                                  : "no history yet."}
                               </Text>
                               <Text style={styles.emptyBody}>
                                 {paneTab === "upcoming"
@@ -695,21 +727,14 @@ export function HistoryScreen({ navigation, route }: Props) {
       {showSuccess ? (
         <Pressable style={styles.successOverlay} onPress={() => setShowSuccess(false)}>
           <View style={styles.successCard}>
-            <LottieView
-              source={require("../assets/successfully.json")}
-              autoPlay
-              loop={false}
-              onAnimationFinish={() => {
-                setTimeout(() => {
-                  hideSuccessCallback.current?.();
-                  hideSuccessCallback.current = null;
-                }, 400);
-              }}
-              style={styles.successAnimation}
-            />
-            <Text style={styles.successTitle}>Booking confirmed!</Text>
+            <View style={styles.successDoodle} pointerEvents="none">
+              <SparkDoodle size={30} color="rgba(255,255,255,0.35)" />
+            </View>
+            <SparkDoodle size={40} color="#FFFFFF" />
+            <Text style={styles.successKicker}>nice one</Text>
+            <Text style={styles.successTitle}>you're parked.</Text>
             <Text style={styles.successBody}>
-              Your reservation is saved in {successTab === "active" ? "Active" : successTab === "past" ? "Past" : "Upcoming"}
+              Saved in {successTab === "active" ? "Active" : successTab === "past" ? "Past" : "Upcoming"}.
             </Text>
           </View>
         </Pressable>
@@ -747,7 +772,7 @@ const styles = StyleSheet.create({
   mapCtaBanner: {
     alignItems: "center",
     backgroundColor: "#ffffff",
-    borderRadius: 14,
+    borderRadius: radius.cardSmall,
     borderWidth: 1,
     borderColor: "#D4DCE4",
     flexDirection: "row",
@@ -817,7 +842,7 @@ const styles = StyleSheet.create({
   tabDot: {
     width: 7,
     height: 7,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     backgroundColor: ACCENT,
   },
   tabIndicator: {
@@ -827,8 +852,8 @@ const styles = StyleSheet.create({
     width: "33.33%",
     height: 2,
     backgroundColor: ACCENT,
-    borderTopLeftRadius: 2,
-    borderTopRightRadius: 2,
+    borderTopLeftRadius: radius.pill,
+    borderTopRightRadius: radius.pill,
   },
 
   // ── Content ──────────────────────────────────────────────────
@@ -850,7 +875,7 @@ const styles = StyleSheet.create({
   skeletonList: { gap: 14 },
   skeletonCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 18,
+    borderRadius: radius.cardSmall,
     borderWidth: 1,
     borderColor: "#D4DCE4",
     overflow: "hidden",
@@ -911,7 +936,7 @@ const styles = StyleSheet.create({
   // ── Sign-in card ─────────────────────────────────────────────
   signInCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 20,
+    borderRadius: radius.card,
     borderWidth: 1,
     borderColor: "#E3E8EE",
     padding: 20,
@@ -921,7 +946,7 @@ const styles = StyleSheet.create({
   signInIconWrap: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: radius.pill,
     backgroundColor: "#F0FDF8",
     alignItems: "center",
     justifyContent: "center",
@@ -968,18 +993,18 @@ const styles = StyleSheet.create({
   // ── Empty state ──────────────────────────────────────────────
   emptyState: {
     alignItems: "center",
-    paddingTop: 56,
+    paddingTop: 40,
     paddingHorizontal: 24,
   },
   emptyImage: {
-    width: 188,
-    height: 188,
-    marginBottom: 8,
+    width: 164,
+    height: 164,
+    marginBottom: 6,
   },
   emptyIconWrap: {
     width: 72,
     height: 72,
-    borderRadius: 36,
+    borderRadius: radius.pill,
     backgroundColor: "#F0FDF8",
     alignItems: "center",
     justifyContent: "center",
@@ -1015,37 +1040,46 @@ const styles = StyleSheet.create({
     top: 0,
   },
   successCard: {
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 22,
+    alignItems: "flex-start",
+    backgroundColor: ACCENT,
+    borderRadius: radius.card,
     paddingHorizontal: 28,
     paddingVertical: 28,
-    width: 280,
+    width: 300,
+    overflow: "hidden",
+    position: "relative",
     shadowColor: "#0f172a",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 24,
     elevation: 8,
   },
-  successAnimation: {
-    height: 140,
-    width: 140,
+  successDoodle: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+  },
+  successKicker: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#F5B73B",
+    marginTop: 10,
+    textTransform: "lowercase",
   },
   successTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 20,
-    lineHeight: 26,
-    color: FG,
-    marginTop: 8,
-    textAlign: "center",
-    letterSpacing: -0.4,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 28,
+    lineHeight: 32,
+    color: "#ffffff",
+    marginTop: 2,
+    letterSpacing: -0.6,
   },
   successBody: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 20,
-    color: MUTED,
-    marginTop: 6,
-    textAlign: "center",
+    color: "rgba(255,255,255,0.8)",
+    marginTop: 8,
   },
 });

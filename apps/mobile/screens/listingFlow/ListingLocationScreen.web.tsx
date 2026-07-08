@@ -121,7 +121,7 @@ export function ListingLocationScreen({ navigation }: Props) {
             value={query}
             onChangeText={setQuery}
             placeholder="Search address"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.textDisabled}
           />
           {query ? (
             <Pressable
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   },
   suggestionIconCircle: {
     alignItems: "center",
-    backgroundColor: "#e6f9f2",
+    backgroundColor: colors.accentSoft,
     borderRadius: 18,
     flexShrink: 0,
     height: 32,
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   primaryButtonDisabled: {
-    backgroundColor: "#cbd5e1",
+    backgroundColor: colors.border,
   },
   primaryButtonText: {
     color: colors.cardBg,

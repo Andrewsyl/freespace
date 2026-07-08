@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, ChevronDown, Star } from "lucide-react-native";
 import { listListingReviews, type ListingReview } from "../api";
+import { colors } from "../styles/theme";
 import type { RootStackParamList } from "../types";
 import { formatReviewDate } from "../utils/dateFormat";
 import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
@@ -65,7 +66,7 @@ export function ListingReviewsScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => goBackOrFallback(navigation, fallbackRoutes.search)}>
-          <ArrowLeft size={20} color="#111827" strokeWidth={2.5} />
+          <ArrowLeft size={20} color={colors.text} strokeWidth={2.5} />
         </Pressable>
         <Text style={styles.headerTitle}>Reviews</Text>
         <View style={{ width: 38 }} />
@@ -75,7 +76,7 @@ export function ListingReviewsScreen({ navigation, route }: Props) {
         <View style={styles.summarySection}>
           <View style={styles.summaryRow}>
             <View style={styles.summaryLeft}>
-              <Star size={20} color="#111827" fill="#111827" strokeWidth={2} />
+              <Star size={20} color={colors.text} fill={colors.text} strokeWidth={2} />
               <View>
                 <Text style={styles.summaryRating}>{ratingValue.toFixed(2)}</Text>
                 <Text style={styles.summaryCount}>{totalReviews} Reviews</Text>
@@ -88,7 +89,7 @@ export function ListingReviewsScreen({ navigation, route }: Props) {
               }
             >
               <Text style={styles.sortText}>{sort}</Text>
-              <ChevronDown size={16} color="#64748B" strokeWidth={2.2} />
+              <ChevronDown size={16} color={colors.textMuted} strokeWidth={2.2} />
             </Pressable>
           </View>
         </View>
@@ -111,8 +112,8 @@ export function ListingReviewsScreen({ navigation, route }: Props) {
                       <Star
                         key={`${review.id}-star-${idx}`}
                         size={12}
-                        color={idx < Math.round(review.rating) ? "#F59E0B" : "#E5E7EB"}
-                        fill={idx < Math.round(review.rating) ? "#F59E0B" : "none"}
+                        color={idx < Math.round(review.rating) ? colors.star.active : colors.star.inactive}
+                        fill={idx < Math.round(review.rating) ? colors.star.active : "none"}
                         strokeWidth={2}
                       />
                     ))}
@@ -141,7 +142,7 @@ export function ListingReviewsScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.cardBgMuted,
   },
   header: {
     flexDirection: "row",
@@ -150,8 +151,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    backgroundColor: "#ffffff",
+    borderBottomColor: colors.divider,
+    backgroundColor: colors.cardBg,
   },
   backButton: {
     width: 38,
@@ -162,7 +163,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 17,
-    color: "#111827",
+    color: colors.text,
     letterSpacing: -0.3,
   },
   content: {
@@ -170,9 +171,9 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   summarySection: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.cardBgMuted,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: colors.divider,
     paddingHorizontal: 0,
     paddingVertical: 12,
   },
@@ -189,12 +190,12 @@ const styles = StyleSheet.create({
   summaryRating: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 17,
-    color: "#111827",
+    color: colors.text,
   },
   summaryCount: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12,
-    color: "#6b7280",
+    color: colors.textMuted,
     marginTop: 2,
   },
   sortButton: {
@@ -205,13 +206,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#ffffff",
+    borderColor: colors.divider,
+    backgroundColor: colors.cardBg,
   },
   sortText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 12,
-    color: "#111827",
+    color: colors.text,
   },
   loader: {
     marginTop: 24,
@@ -222,10 +223,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   reviewRow: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.divider,
     padding: 16,
     gap: 6,
     shadowColor: "#000",
@@ -237,7 +238,7 @@ const styles = StyleSheet.create({
   reviewAuthor: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
-    color: "#111827",
+    color: colors.text,
   },
   reviewStarsRow: {
     flexDirection: "row",
@@ -247,12 +248,12 @@ const styles = StyleSheet.create({
   reviewMeta: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 11,
-    color: "#9ca3af",
+    color: colors.textDisabled,
   },
   reviewBody: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
-    color: "#374151",
+    color: colors.text,
     lineHeight: 21,
     marginTop: 2,
   },
@@ -262,19 +263,19 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontFamily: "PlusJakartaSans-Regular",
-    color: "#9ca3af",
+    color: colors.textDisabled,
     fontSize: 13,
     textAlign: "center",
   },
   emptyButton: {
-    backgroundColor: "#0a8050",
+    backgroundColor: colors.primary,
     borderRadius: 12,
     marginTop: 14,
     paddingHorizontal: 16,
     paddingVertical: 11,
   },
   emptyButtonText: {
-    color: "#ffffff",
+    color: colors.textInverse,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
   },

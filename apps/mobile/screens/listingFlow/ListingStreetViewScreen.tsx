@@ -50,7 +50,7 @@ export function ListingStreetViewScreen({ navigation }: Props) {
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
         <style>
-          html, body, #pano { margin: 0; padding: 0; width: 100%; height: 100%; background: #0f172a; }
+          html, body, #pano { margin: 0; padding: 0; width: 100%; height: 100%; background: ${hostFlowColors.text}; }
         </style>
         <script src="https://maps.googleapis.com/maps/api/js?key=${mapsKey}"></script>
       </head>
@@ -166,22 +166,22 @@ export function ListingStreetViewScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: hostFlowColors.bg,
     flex: 1,
   },
 
   headerCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: hostFlowColors.border,
     marginHorizontal: 16,
     marginTop: 12,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: hostFlowColors.border,
     borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   },
   webFallback: {
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: hostFlowColors.bg,
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: 24,

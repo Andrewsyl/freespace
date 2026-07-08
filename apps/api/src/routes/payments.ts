@@ -5,6 +5,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
 import { enforceBlockedList, getFraudSettings, getUserRiskProfile, shouldEnforceFraud } from "../middleware/fraud.js";
 import { findUserById, findUserByEmail, getBookingByPaymentIntent, insertEventLog } from "../lib/db.js";
+import { getOrCreateStripeCustomer } from "../lib/stripe.js";
 
 const router = express.Router();
 const paymentMethodLimiter = createRateLimiter({
@@ -33,12 +34,9 @@ if (!stripeSecret) {
   console.warn("Stripe secret key not set; payments endpoints will return 500.");
 }
 
-async function getOrCreateCustomer(email: string) {
+async function getOrCreateCustomer(user: { id: string; email: string; stripe_customer_id?: string | null }) {
   if (!stripe) throw new Error("Stripe not configured");
-  const existing = await stripe.customers.list({ email, limit: 1 });
-  if (existing.data.length > 0) return existing.data[0].id;
-  const customer = await stripe.customers.create({ email });
-  return customer.id;
+  return getOrCreateStripeCustomer(stripe, user);
 }
 
 async function requireActiveUser(userId?: string) {
@@ -76,7 +74,7 @@ router.post("/payment-methods", requireAuth, enforceBlockedList, paymentMethodLi
     const userFromId = await findUserById(req.user!.userId);
     const user = userFromId ?? (req.user?.email ? await findUserByEmail(req.user.email) : undefined);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
-    const customerId = await getOrCreateCustomer(user.email);
+    const customerId = await getOrCreateCustomer(user);
     const intent = await stripe.setupIntents.create({
       customer: customerId,
       payment_method_types: ["card"],
@@ -100,7 +98,7 @@ router.get("/payment-methods", requireAuth, enforceBlockedList, paymentMethodLim
     const userFromId = await findUserById(req.user!.userId);
     const user = userFromId ?? (req.user?.email ? await findUserByEmail(req.user.email) : undefined);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
-    const customerId = await getOrCreateCustomer(user.email);
+    const customerId = await getOrCreateCustomer(user);
     const [methods, customer] = await Promise.all([
       stripe.paymentMethods.list({ customer: customerId, type: "card" }),
       stripe.customers.retrieve(customerId),
@@ -130,7 +128,7 @@ router.put("/payment-methods/:id", requireAuth, enforceBlockedList, paymentMetho
     const userFromId = await findUserById(req.user!.userId);
     const user = userFromId ?? (req.user?.email ? await findUserByEmail(req.user.email) : undefined);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
-    const customerId = await getOrCreateCustomer(user.email);
+    const customerId = await getOrCreateCustomer(user);
     const pmId = z.string().trim().min(5).max(200).parse(req.params.id);
     // A method already attached to a different customer is not this user's to
     // claim as their default.
@@ -161,7 +159,7 @@ router.delete("/payment-methods/:id", requireAuth, enforceBlockedList, paymentMe
     const userFromId = await findUserById(req.user!.userId);
     const user = userFromId ?? (req.user?.email ? await findUserByEmail(req.user.email) : undefined);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
-    const customerId = await getOrCreateCustomer(user.email);
+    const customerId = await getOrCreateCustomer(user);
     const paymentMethod = await stripe.paymentMethods.retrieve(pmId);
     if (paymentMethod.customer !== customerId) {
       return res.status(404).json({ message: "Payment method not found" });
@@ -181,7 +179,7 @@ router.get("/payments/history", requireAuth, enforceBlockedList, paymentsLimiter
     const userFromId = await findUserById(req.user!.userId);
     const user = userFromId ?? (req.user?.email ? await findUserByEmail(req.user.email) : undefined);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
-    const customerId = await getOrCreateCustomer(user.email);
+    const customerId = await getOrCreateCustomer(user);
     const paymentIntents = await stripe.paymentIntents.list({
       customer: customerId,
       limit: 20,

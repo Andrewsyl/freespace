@@ -4,18 +4,19 @@ import {
   Alert,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { SquircleBtn } from "../components/SquircleBtn";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, CreditCard, Lock, Plus, ReceiptText, ShieldCheck, X } from "lucide-react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { CreditCard, Lock, Plus, ShieldCheck, X } from "lucide-react-native";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { CardField, useStripe } from "@stripe/stripe-react-native";
-import { colors, radius, spacing, textStyles } from "../styles/theme";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { Button } from "../components/ui";
+import { SignInWall } from "../components/SignInWall";
+import { DetailNavBar, SectionTitle } from "../components/profileUi";
 import {
   createPaymentMethodSetupIntent,
   deletePaymentMethod,
@@ -27,12 +28,14 @@ import {
   type PaymentMethod,
 } from "../api";
 import { useAuth } from "../auth";
+import { colors } from "../styles/theme";
 import { formatReviewDate } from "../utils/dateFormat";
 import type { RootStackParamList } from "../types";
 import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
 
 export function PaymentsScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const insets = useSafeAreaInsets();
   const { token, user } = useAuth();
   const { confirmSetupIntent } = useStripe();
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
@@ -67,11 +70,6 @@ export function PaymentsScreen() {
     void loadData();
   }, [loadData]);
 
-  const handleAddCard = () => {
-    setShowAdd((prev) => !prev);
-    setError(null);
-  };
-
   const handleSaveCard = async () => {
     if (!token) return;
     if (!cardComplete) {
@@ -82,9 +80,7 @@ export function PaymentsScreen() {
     setError(null);
     try {
       const clientSecret = await createPaymentMethodSetupIntent(token);
-      const { error: stripeError, setupIntent } = await confirmSetupIntent(clientSecret, {
-        paymentMethodType: "Card",
-      });
+      const { error: stripeError, setupIntent } = await confirmSetupIntent(clientSecret, { paymentMethodType: "Card" });
       if (stripeError) {
         setError(stripeError.message ?? "Card setup failed");
         return;
@@ -108,12 +104,7 @@ export function PaymentsScreen() {
     setError(null);
     try {
       await setDefaultPaymentMethod(token, id);
-      setMethods((prev) =>
-        prev.map((item) => ({
-          ...item,
-          is_default: item.id === id,
-        }))
-      );
+      setMethods((prev) => prev.map((item) => ({ ...item, is_default: item.id === id })));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to update payment method");
     }
@@ -163,485 +154,183 @@ export function PaymentsScreen() {
   if (!user) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-        <View style={styles.navBar}>
-          <Pressable
-            style={styles.backBtn}
-            onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}
-            accessibilityLabel="Go back"
-          >
-            <ArrowLeft size={22} color="#111827" />
-          </Pressable>
-          <Text style={styles.navTitle}>Payments</Text>
-          <View style={styles.navSpacer} />
-        </View>
-        <View style={styles.emptyState}>
-          <View style={styles.gatedIconWrap}>
-            <CreditCard size={24} color="#0a8050" strokeWidth={2.2} />
-          </View>
-          <Text style={styles.emptyTitle}>Payments</Text>
-          <Text style={styles.emptySubtitle}>Sign in to manage your payment methods and view booking charges.</Text>
-          <SquircleBtn
-            label="Sign in"
-            onPress={() => navigation.navigate("SignIn")}
-            style={{ marginTop: 20 }}
-          />
-          <Button
-            title="Browse spaces"
-            variant="secondary"
-            onPress={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
-            style={{ marginTop: 12 }}
-          />
-          <View style={styles.gatedHintRow}>
-            <ShieldCheck size={14} color="#9ca3af" strokeWidth={2.1} />
-            <Text style={styles.gatedHintText}>Your payment details are encrypted and secure.</Text>
-          </View>
-        </View>
+        <StatusBar barStyle="dark-content" />
+        <DetailNavBar title="Payments" onBack={() => goBackOrFallback(navigation, fallbackRoutes.profile)} />
+        <SignInWall
+          icon={<CreditCard size={26} color={colors.primary} strokeWidth={2.2} />}
+          title="Manage your payments"
+          body="Sign in to add payment methods and see your booking charges."
+          onSignIn={() => navigation.navigate("Welcome")}
+          onBrowse={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
+          reassurance="Your payment details are encrypted and secure."
+        />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.navBar}>
-        <Pressable style={styles.backBtn} onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}>
-          <ArrowLeft size={22} color="#111827" />
-        </Pressable>
-        <Text style={styles.navTitle}>Payments</Text>
-        <View style={styles.navSpacer} />
-      </View>
-      <ScrollView contentContainerStyle={styles.content}>
+      <StatusBar barStyle="dark-content" />
+      <DetailNavBar title="Payments" onBack={() => goBackOrFallback(navigation, fallbackRoutes.profile)} />
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: 32 + Math.max(insets.bottom, 16) }]}
+        showsVerticalScrollIndicator={false}
+      >
         {loading ? (
-          <View style={styles.loadingOverlay} pointerEvents="none">
-            <View style={styles.loadingBadge}>
-              <ActivityIndicator size="small" color="#0a8050" />
-              <Text style={styles.loadingText}>Loading payments…</Text>
-            </View>
+          <View style={styles.loadingRow}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={styles.loadingText}>Loading payments…</Text>
           </View>
         ) : null}
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Payment methods</Text>
+        <SectionTitle style={styles.firstSection}>Payment methods</SectionTitle>
+
+        {methods.map((method) => (
+          <View key={method.id} style={styles.cardRow}>
+            <View style={styles.cardIcon}>
+              <CreditCard size={19} color={colors.text} strokeWidth={1.9} />
+            </View>
+            <View style={styles.cardText}>
+              <Text style={styles.cardTitle}>
+                {method.brand ? method.brand.charAt(0).toUpperCase() + method.brand.slice(1) : "Card"} ···· {method.last4}
+              </Text>
+              <Text style={styles.cardSub}>
+                Expires {method.exp_month}/{String(method.exp_year).slice(-2)}
+              </Text>
+            </View>
+            <View style={styles.cardActions}>
+              {method.is_default ? (
+                <View style={styles.defaultBadge}>
+                  <Text style={styles.defaultBadgeText}>Default</Text>
+                </View>
+              ) : (
+                <Pressable style={styles.actionBtn} onPress={() => handleSetDefault(method.id)}>
+                  <Text style={styles.actionText}>Set default</Text>
+                </Pressable>
+              )}
+              <Pressable style={styles.actionBtn} onPress={() => handleDelete(method.id)}>
+                <Text style={styles.removeText}>Remove</Text>
+              </Pressable>
+            </View>
           </View>
+        ))}
 
-          {/* Saved cards */}
-          {methods.map((method) => (
-            <View key={method.id} style={styles.row}>
-              <View style={styles.cardIconWrap}>
-                <CreditCard size={18} color="#374151" strokeWidth={1.8} />
-              </View>
-              <View style={styles.rowText}>
-                <Text style={styles.rowTitle}>
-                  {method.brand ? method.brand.charAt(0).toUpperCase() + method.brand.slice(1) : "Card"} ···· {method.last4}
-                </Text>
-                <Text style={styles.rowSubtitle}>
-                  Expires {method.exp_month}/{String(method.exp_year).slice(-2)}
-                </Text>
-              </View>
-              <View style={styles.rowActions}>
-                {method.is_default ? (
-                  <View style={styles.defaultBadge}>
-                    <Text style={styles.defaultBadgeText}>Default</Text>
-                  </View>
-                ) : (
-                  <Pressable style={styles.rowActionButton} onPress={() => handleSetDefault(method.id)}>
-                    <Text style={styles.rowActionText}>Set default</Text>
-                  </Pressable>
-                )}
-                <Pressable style={[styles.rowActionButton, styles.rowDelete]} onPress={() => handleDelete(method.id)}>
-                  <Text style={styles.rowDeleteText}>Remove</Text>
-                </Pressable>
-              </View>
+        {methods.length === 0 && !showAdd && !loading ? (
+          <Text style={styles.emptyText}>No cards saved yet.</Text>
+        ) : null}
+
+        {showAdd ? (
+          <View style={styles.addPanel}>
+            <View style={styles.addHeader}>
+              <Lock size={14} color={colors.primary} strokeWidth={2} />
+              <Text style={styles.addTitle}>New card</Text>
+              <Pressable onPress={() => setShowAdd(false)} hitSlop={8}>
+                <X size={16} color={colors.textMuted} strokeWidth={2} />
+              </Pressable>
             </View>
-          ))}
-
-          {/* Add card trigger row */}
-          {!showAdd && (
-            <Pressable style={styles.addCardRow} onPress={handleAddCard}>
-              <View style={styles.addCardRowIcon}>
-                <Plus size={16} color="#0a8050" strokeWidth={2.5} />
-              </View>
-              <Text style={styles.addCardRowText}>Add a card</Text>
-            </Pressable>
-          )}
-
-          {/* Add card form */}
-          {showAdd && (
-            <View style={styles.addCardPanel}>
-              <View style={styles.addCardPanelHeader}>
-                <Lock size={14} color="#0a8050" strokeWidth={2} />
-                <Text style={styles.addCardPanelTitle}>New card</Text>
-                <Pressable onPress={handleAddCard} hitSlop={8} style={styles.addCardClose}>
-                  <X size={16} color="#6b7280" strokeWidth={2} />
-                </Pressable>
-              </View>
-
-              <CardField
-                postalCodeEnabled={false}
-                cardStyle={{ ...styles.cardField, placeholderColor: "#9ca3af", textColor: "#111827" }}
-                style={styles.cardFieldContainer}
-                onCardChange={(details) => setCardComplete(!!details.complete)}
-              />
-
-              <View style={styles.securityNote}>
-                <ShieldCheck size={12} color="#9ca3af" strokeWidth={2} />
-                <Text style={styles.securityNoteText}>Encrypted by Stripe · Your card number is never stored on our servers</Text>
-              </View>
-
-              <Button
-                title={adding ? "Saving…" : "Save card"}
-                onPress={handleSaveCard}
-                disabled={!cardComplete || adding}
-                loading={adding}
-                style={styles.saveCardBtn}
-              />
+            <CardField
+              postalCodeEnabled={false}
+              cardStyle={{ ...styles.cardField, placeholderColor: colors.textDisabled, textColor: colors.text }}
+              style={styles.cardFieldContainer}
+              onCardChange={(details) => setCardComplete(!!details.complete)}
+            />
+            <View style={styles.secureNote}>
+              <ShieldCheck size={12} color={colors.textDisabled} strokeWidth={2} />
+              <Text style={styles.secureText}>Encrypted by Stripe · Your card number is never stored on our servers</Text>
             </View>
-          )}
-
-          {methods.length === 0 && !showAdd && !loading && (
-            <View style={styles.emptyRow}>
-              <Text style={styles.emptyText}>No cards saved yet.</Text>
+            <Button title={adding ? "Saving…" : "Save card"} onPress={handleSaveCard} disabled={!cardComplete || adding} loading={adding} />
+          </View>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [styles.addRow, pressed && styles.rowPressed]}
+            onPress={() => {
+              setShowAdd(true);
+              setError(null);
+            }}
+          >
+            <View style={styles.addIcon}>
+              <Plus size={16} color={colors.primary} strokeWidth={2.6} />
             </View>
-          )}
-        </View>
+            <Text style={styles.addRowText}>Add a card</Text>
+          </Pressable>
+        )}
 
         <Text style={styles.poweredBy}>Powered by Stripe</Text>
 
-        <Text style={styles.sectionHeader}>Payment history</Text>
-        <View style={styles.section}>
-          {formattedHistory.length === 0 ? (
-            <View style={styles.emptyRow}>
-              <Text style={styles.emptyText}>No payments yet.</Text>
-            </View>
-          ) : (
-            formattedHistory.map((item) => (
-              <View key={item.id} style={styles.row}>
-                <ReceiptText size={24} color="#111827" strokeWidth={2} />
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>{item.description}</Text>
-                  <Text style={styles.rowSubtitle}>
-                    {item.amountLabel} • {item.dateLabel}
-                  </Text>
-                  <Text style={styles.rowMeta}>{item.status.toUpperCase()}</Text>
-                </View>
-                {item.status !== "succeeded" ? (
-                  <Pressable
-                    style={[styles.rowActionButton, styles.rowRetry]}
-                    onPress={() => handleRetry(item.id)}
-                  >
-                    <Text style={styles.rowActionText}>Retry</Text>
-                  </Pressable>
-                ) : null}
+        <SectionTitle>Payment history</SectionTitle>
+        {formattedHistory.length === 0 ? (
+          <Text style={styles.emptyText}>No payments yet.</Text>
+        ) : (
+          formattedHistory.map((item) => (
+            <View key={item.id} style={styles.histRow}>
+              <View style={styles.cardText}>
+                <Text style={styles.histTitle}>{item.description}</Text>
+                <Text style={styles.histSub}>
+                  {item.amountLabel} · {item.dateLabel}
+                </Text>
+                <Text style={styles.histStatus}>{item.status.toUpperCase()}</Text>
               </View>
-            ))
-          )}
-        </View>
+              {item.status !== "succeeded" ? (
+                <Pressable style={styles.actionBtn} onPress={() => handleRetry(item.id)}>
+                  <Text style={styles.actionText}>Retry</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F4F6F8",
+  container: { flex: 1, backgroundColor: colors.cardBg },
+  content: { paddingHorizontal: 20, paddingTop: 4 },
+  firstSection: { marginTop: 8 },
+  loadingRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingTop: 12 },
+  loadingText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: colors.textSoft },
+
+  cardRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, borderTopWidth: 1, borderTopColor: colors.divider },
+  cardIcon: {
+    width: 40, height: 40, borderRadius: 11, backgroundColor: colors.cardBgMuted,
+    alignItems: "center", justifyContent: "center",
   },
-  content: {
-    flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-    paddingTop: 14,
-  },
-  navBar: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: "#E5E7EB",
-    backgroundColor: "#ffffff",
-  },
-  backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
-  navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#111827", letterSpacing: -0.3 },
-  navSpacer: { width: 38 },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 20,
-  },
-  loadingBadge: {
-    alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.92)",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  muted: {
-    color: colors.textMuted,
-    fontSize: 12,
-    marginBottom: 12,
-  },
-  loadingText: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-  },
-  section: {
-    backgroundColor: "#ffffff",
-    borderColor: "#E3E8EE",
-    borderRadius: 20,
-    borderWidth: 1,
-    marginBottom: 16,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  sectionHeader: {
-    color: colors.text,
-    fontSize: 17,
-    fontFamily: "PlusJakartaSans-Bold",
-    letterSpacing: -0.3,
-    marginBottom: 10,
-    marginTop: 8,
-  },
-  poweredBy: {
-    color: colors.textSoft,
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  sectionHeaderRow: {
-    alignItems: "center",
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  sectionTitle: {
-    color: "#888888",
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 11,
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
-  cardIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "#f3f4f6",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
+  cardText: { flex: 1 },
+  cardTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15.5, color: colors.text },
+  cardSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: colors.textSoft, marginTop: 2 },
+  cardActions: { alignItems: "flex-end", gap: 6 },
+  actionBtn: { borderWidth: 1, borderColor: colors.divider, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
+  actionText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: colors.text },
+  removeText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: colors.danger },
   defaultBadge: {
-    backgroundColor: "#f0faf5",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#a7f3d0",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent, borderRadius: 999,
+    paddingHorizontal: 10, paddingVertical: 4,
   },
-  defaultBadgeText: {
-    color: "#0a8050",
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
+  defaultBadgeText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11.5, color: colors.primary },
+
+  addRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 15, borderTopWidth: 1, borderTopColor: colors.divider },
+  rowPressed: { opacity: 0.6 },
+  addIcon: {
+    width: 40, height: 40, borderRadius: 11, backgroundColor: colors.accentSoft,
+    borderWidth: 1, borderColor: colors.accent, alignItems: "center", justifyContent: "center",
   },
-  addCardRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  addCardRowIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "#f0faf5",
-    borderWidth: 1,
-    borderColor: "#a7f3d0",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addCardRowText: {
-    color: "#0a8050",
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-  },
-  addCardPanel: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingHorizontal: 16,
-    paddingTop: 18,
-    paddingBottom: 22,
-    gap: 14,
-  },
-  addCardPanelHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  addCardPanelTitle: {
-    flex: 1,
-    color: colors.text,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-  },
-  addCardClose: {
-    padding: 4,
-  },
-  cardFieldContainer: {
-    height: 56,
-  },
-  cardField: {
-    backgroundColor: "#f9fafb",
-    borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    fontSize: 16,
-  },
-  securityNote: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 6,
-    marginTop: -4,
-  },
-  securityNoteText: {
-    flex: 1,
-    color: "#9ca3af",
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  saveCardBtn: {
-    minHeight: 50,
-  },
-  row: {
-    alignItems: "center",
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 17,
-  },
-  rowText: {
-    flex: 1,
-  },
-  rowTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-  },
-  rowSubtitle: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 2,
-  },
-  rowMeta: {
-    color: colors.textSoft,
-    fontSize: 11,
-    marginTop: 4,
-  },
-  rowActions: {
-    alignItems: "flex-end",
-    gap: 6,
-  },
-  rowActionButton: {
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  rowActionText: {
-    color: colors.text,
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-  },
-  rowStatus: {
-    color: "#0a8050",
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-  },
-  rowDelete: {
-    borderColor: "#fecaca",
-  },
-  rowDeleteText: {
-    color: "#b42318",
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontWeight: "600",
-  },
-  rowRetry: {
-    borderColor: "#fcd34d",
-  },
-  emptyRow: {
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 18,
-  },
-  emptyText: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
-    textAlign: "center",
-  },
-  emptyState: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 32,
-  },
-  emptyTitle: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 21,
-    color: "#111827",
-    letterSpacing: -0.4,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 15,
-    color: "#6b7280",
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  gatedIconWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#f0faf5",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  gatedHintRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 16,
-    paddingHorizontal: 8,
-  },
-  gatedHintText: {
-    color: "#9ca3af",
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    flexShrink: 1,
-  },
+  addRowText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15.5, color: colors.primary },
+
+  addPanel: { borderTopWidth: 1, borderTopColor: colors.divider, paddingTop: 16, gap: 14 },
+  addHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
+  addTitle: { flex: 1, fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: colors.text },
+  cardFieldContainer: { height: 52 },
+  cardField: { backgroundColor: colors.cardBgMuted, borderColor: colors.divider, borderRadius: 12, borderWidth: 1, fontSize: 16 },
+  secureNote: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: -4 },
+  secureText: { flex: 1, fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: colors.textDisabled, lineHeight: 18 },
+
+  poweredBy: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: colors.textMuted, textAlign: "center", marginTop: 18 },
+
+  histRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, borderTopWidth: 1, borderTopColor: colors.divider },
+  histTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: colors.text },
+  histSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: colors.textSoft, marginTop: 2 },
+  histStatus: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: colors.textMuted, marginTop: 4, letterSpacing: 0.4 },
+
+  emptyText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: colors.textSoft, paddingVertical: 16 },
 });

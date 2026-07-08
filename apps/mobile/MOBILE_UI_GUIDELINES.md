@@ -5,9 +5,8 @@ This app should use the `ListingScreen` visual language as the reference system.
 ## Core Rules
 
 1. Typography
-- Use `Poppins` for page titles, card titles, section headers, and buttons.
-- Use `Inter` for body copy, metadata, form text, helper text, and list rows.
-- Use `textStyles` from `apps/mobile/styles/theme.ts`.
+- The app uses a single family: `Plus Jakarta Sans` (ExtraBold/Bold for page titles, card titles, section headers, and buttons; Regular for body copy, metadata, form text, helper text, and list rows).
+- Never set `fontFamily` directly in a screen — use `textStyles` from `apps/mobile/styles/theme.ts`, which carries the correct weights.
 
 2. Spacing
 - Use `spacing.screenX` for horizontal page padding.

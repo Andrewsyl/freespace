@@ -36,7 +36,7 @@ export const mobileDesignTokens = {
       card: "#FFFFFF",
       muted: "#EDEFEF",
       subtle: "#FAFBFB",
-      accent: "#edf7f2",
+      accent: "#E9F4EC",
       overlayLight: "rgba(255, 255, 255, 0.95)",
       overlayDark: "rgba(16, 20, 20, 0.58)",
       splash: "#0fa968",
@@ -90,6 +90,10 @@ export const mobileDesignTokens = {
     sm: 8,
     md: 12,
     lg: 16,
+    // Small/medium card band (list rows, map card, review tiles) per
+    // docs/PARKING_DESIGN_BIBLE.md Part E2 — MapBottomCard's existing 18 is
+    // the calibration reference. `xl` (24) is reserved for hero surfaces.
+    cardSmall: 18,
     xl: 24,
     xxl: 32,
     pill: 999,

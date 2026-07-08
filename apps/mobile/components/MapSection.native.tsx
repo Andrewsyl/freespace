@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type Ref } from "react";
-import { Animated, Easing, Image, InteractionManager, Platform, StyleSheet, Vibration, View } from "react-native";
+import { memo, useEffect, useMemo, useRef, useState, type Ref } from "react";
+import { Animated, Image, InteractionManager, Platform, StyleSheet, View } from "react-native";
+import * as Haptics from "expo-haptics";
 import Svg, { Path } from "react-native-svg";
 import MapView, {
   type EdgePadding,
@@ -12,6 +13,7 @@ import MapView, {
 import ViewShot from "react-native-view-shot";
 import { MapPricePin, getPinDimensions } from "./MapPricePin";
 import { formatPriceValue } from "../utils/pricing";
+import { motion } from "../styles/motion";
 import { useMarkerTracksUntilPainted } from "./useMarkerTracksUntilPainted";
 
 type ListingResult = {
@@ -29,7 +31,7 @@ type ListingResult = {
 type ViewShotRef = InstanceType<typeof ViewShot>;
 
 type MapRegion = Region;
-const PIN_STYLE_VERSION = "v28";
+const PIN_STYLE_VERSION = "v30";
 const formatPinPrice = (value: number) => {
   return formatPriceValue(value);
 };
@@ -72,7 +74,7 @@ function SearchOriginMarker({
 // default red annotation, so there's no red-pin flash while the file URI decodes.
 // tracksViewChanges stays true only until the image reports loaded, then flips
 // off to keep the map performant.
-const PIN_REVEAL_MS = 190;
+const PIN_REVEAL_MS = motion.duration.fast;
 
 function ListingPinMarker({
   listingId,
@@ -81,7 +83,6 @@ function ListingPinMarker({
   label,
   price,
   pinImage,
-  resumeNonce,
   entering,
   onPress,
 }: {
@@ -91,11 +92,10 @@ function ListingPinMarker({
   label: string;
   price: number;
   pinImage: string;
-  resumeNonce?: number;
   entering: boolean;
   onPress: (event: MarkerPressEvent) => void;
 }) {
-  const soldOut = label === "Sold out";
+  const soldOut = label === "Full";
   const { viewBoxWidth, viewBoxHeight } = getPinDimensions(label, selected, soldOut);
   const [tracks, setTracks] = useState(true);
   const [imageReady, setImageReady] = useState(false);
@@ -106,6 +106,35 @@ function ListingPinMarker({
   // starts fully shown so it never blinks when tapped.
   const enteringAtMount = useRef(entering).current;
   const revealAnim = useRef(new Animated.Value(enteringAtMount ? 0 : 1)).current;
+  // Selection no longer remounts the marker (that caused a default-red-pin flash
+  // on Android and needless churn); it updates in place. Spring the pin whenever
+  // it becomes selected — on mount if it mounts already-selected, and on the
+  // tap that selects it.
+  const popAtMount = useRef(selected && !entering).current;
+  const popAnim = useRef(new Animated.Value(popAtMount ? 0.85 : 1)).current;
+  const prevSelectedRef = useRef(selected);
+
+  useEffect(() => {
+    if (!popAtMount) return;
+    Animated.spring(popAnim, {
+      toValue: 1,
+      ...motion.springPop,
+      useNativeDriver: true,
+    }).start();
+  }, [popAtMount, popAnim]);
+
+  useEffect(() => {
+    if (selected === prevSelectedRef.current) return;
+    prevSelectedRef.current = selected;
+    if (!selected) return;
+    popAnim.stopAnimation();
+    popAnim.setValue(0.85);
+    Animated.spring(popAnim, {
+      toValue: 1,
+      ...motion.springPop,
+      useNativeDriver: true,
+    }).start();
+  }, [selected, popAnim]);
 
   useEffect(() => {
     cancelledRef.current = false;
@@ -124,7 +153,7 @@ function ListingPinMarker({
     Animated.timing(revealAnim, {
       toValue: 1,
       duration: PIN_REVEAL_MS,
-      easing: Easing.out(Easing.cubic),
+      easing: motion.easing.out,
       useNativeDriver: true,
     }).start();
   }, [enteringAtMount, revealAnim]);
@@ -144,9 +173,19 @@ function ListingPinMarker({
           );
         });
       },
-      enteringAtMount ? PIN_REVEAL_MS + 40 : 0
+      // Freezing rasterizes the marker, so it must outlast whichever entrance
+      // is running: the batch reveal or the selection pop-spring.
+      enteringAtMount ? PIN_REVEAL_MS + 40 : popAtMount ? 380 : 0
     );
   };
+
+  // Returning from another screen bumps resumeNonce, which is folded into the
+  // marker key upstream — so each pin remounts fresh on resume and repaints from
+  // scratch (tracks=true → paint → freeze). In-place re-tracking of a frozen
+  // marker doesn't reliably repaint on Android after the OS blanks its native
+  // view, so a clean remount is the dependable fix; the cost is a small hit to
+  // back-navigation smoothness. Selection still updates in place (it's not in
+  // the key), so tapping a pin never triggers the default-red-pin flash.
 
   const handleLoad = () => {
     setImageReady(true);
@@ -162,11 +201,11 @@ function ListingPinMarker({
 
   return (
     <Marker
-      key={`marker-${listingId}-${selected ? "sel" : "def"}-${PIN_STYLE_VERSION}-${resumeNonce ?? 0}`}
+      key={`marker-${listingId}-${PIN_STYLE_VERSION}`}
       coordinate={coordinate}
       tracksViewChanges={tracks}
-      anchor={{ x: 0.5, y: 0.96 }}
-      centerOffset={{ x: 0, y: selected ? -2 : 0 }}
+      anchor={{ x: 0.5, y: 0.5 }}
+      centerOffset={{ x: 0, y: 0 }}
       onPress={onPress}
       zIndex={selected ? 1000000 : Math.round((90 - coordinate.latitude) * 10000)}
       tappable={true}
@@ -180,7 +219,12 @@ function ListingPinMarker({
           {
             opacity: revealAnim,
             transform: [
-              { scale: revealAnim.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1] }) },
+              {
+                scale: Animated.multiply(
+                  revealAnim.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1] }),
+                  popAnim
+                ),
+              },
             ],
           },
         ]}
@@ -205,7 +249,7 @@ function ListingPinMarker({
   );
 }
 
-export default function MapSection({
+function MapSection({
   region,
   style,
   initialRegion,
@@ -288,7 +332,7 @@ export default function MapSection({
           : Number(listing.price_per_day);
         acc[listing.id] =
           listing.is_available === false
-            ? "Sold out"
+            ? "Full"
             : `€${formatPinPrice(priceValue)}`;
         return acc;
       }, {}),
@@ -470,7 +514,7 @@ export default function MapSection({
           if (!pinImage) return null;
           return (
             <ListingPinMarker
-              key={`marker-${listing.id}-${isSelected ? "sel" : "def"}-${PIN_STYLE_VERSION}-${resumeNonce ?? 0}`}
+              key={`marker-${listing.id}-${PIN_STYLE_VERSION}-${resumeNonce ?? 0}`}
               listingId={listing.id}
               coordinate={{
                 latitude: listing.latitude as number,
@@ -480,12 +524,13 @@ export default function MapSection({
               label={label}
               price={price}
               pinImage={pinImage}
-              resumeNonce={resumeNonce}
               entering={pinsEntering}
               onPress={(e) => {
                 e?.stopPropagation?.();
                 lastMarkerPressRef.current = Date.now();
-                if (Platform.OS === "android") Vibration.vibrate(8);
+                // A soft selection tick on both platforms — the raw 8ms
+                // Vibration buzz read as an error, not an acknowledgement.
+                void Haptics.selectionAsync();
                 onSelect?.(listing.id);
               }}
             />
@@ -496,7 +541,7 @@ export default function MapSection({
         {labelKeys.map((key) => {
           const [label, state] = key.split("|");
           const selected = state === "selected";
-          const isSoldOut = label === "Sold out";
+          const isSoldOut = label === "Full";
           const price = isSoldOut ? 0 : parseFloat(label.replace(/[€,]/g, "")) || 0;
           return (
             <ViewShot
@@ -519,6 +564,13 @@ export default function MapSection({
     </View>
   );
 }
+
+// Memoized: SearchScreen holds dozens of pieces of state (card visibility,
+// pills, filters…), and without this the entire map + marker + ViewShot
+// capture tree re-rendered on every one of them, saturating the JS thread and
+// making taps feel delayed. Now it only re-renders when a prop that actually
+// affects the map changes (results, selection, region, price key…).
+export default memo(MapSection);
 
 const styles = StyleSheet.create({
   capture: {

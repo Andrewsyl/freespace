@@ -488,7 +488,7 @@ export function ListingAvailabilityScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: { flex: 1, backgroundColor: hostFlowColors.bg },
   content: {
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -498,15 +498,15 @@ const styles = StyleSheet.create({
 
   // ── Header card (matches location screen style) ──────────────
   headerCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: hostFlowColors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: hostFlowColors.border,
     borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
@@ -540,10 +540,10 @@ const styles = StyleSheet.create({
 
   // ── Schedule card ────────────────────────────────────────────
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: hostFlowColors.cardBg,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#D0C9C1",
+    borderColor: hostFlowColors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: hostFlowColors.border,
   },
   optionRow: {
     alignItems: "center",
@@ -567,16 +567,16 @@ const styles = StyleSheet.create({
   },
   optionRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: "#E2DAD2",
+    borderBottomColor: hostFlowColors.border,
   },
   optionRowActive: {
-    backgroundColor: "#F8FEFC",
+    backgroundColor: hostFlowColors.accentSoft,
   },
   optionIconBox: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: "#EDF7F2",
+    backgroundColor: hostFlowColors.accentSoft,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -640,10 +640,10 @@ const styles = StyleSheet.create({
 
   // ── Tips card ────────────────────────────────────────────────
   tipsCard: {
-    backgroundColor: "#F0FDF8",
+    backgroundColor: hostFlowColors.accentSoft,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#C6F0DC",
+    borderColor: hostFlowColors.accentSoftBorder,
     padding: 16,
   },
   tipsRow: {

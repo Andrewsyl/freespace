@@ -1,5 +1,6 @@
 import "../loadEnv.js";
 import Stripe from "stripe";
+import { setStripeCustomerIdIfAbsent } from "./db.js";
 
 const secret = process.env.STRIPE_SECRET_KEY;
 const isProduction = process.env.NODE_ENV === "production";
@@ -24,6 +25,34 @@ export type PaymentInput = {
   source?: string;
   idempotencyKey?: string;
 };
+
+// Resolves a user's Stripe customer id, persisting it so future calls are a
+// single indexed DB read instead of a Stripe API round-trip. Previously every
+// caller ran customers.list({email}) on every request; two concurrent
+// requests from a user with no customer yet could each see an empty list and
+// each create one, leaving duplicate Stripe customers (and saved cards that
+// inconsistently appear depending on which customer a later call resolves).
+export async function getOrCreateStripeCustomer(
+  stripeClient: Stripe,
+  user: { id: string; email: string; stripe_customer_id?: string | null }
+): Promise<string> {
+  if (user.stripe_customer_id) return user.stripe_customer_id;
+
+  // Fall back to an email lookup so accounts that already had a Stripe
+  // customer before this column existed don't get a second one minted.
+  const existing = await stripeClient.customers.list({ email: user.email, limit: 1 });
+  const customerId =
+    existing.data.length > 0 ? existing.data[0].id : (await stripeClient.customers.create({ email: user.email })).id;
+
+  const persistedId = await setStripeCustomerIdIfAbsent(user.id, customerId);
+  if (persistedId && persistedId !== customerId) {
+    // Lost a rare concurrent race to another request for the same user —
+    // discard the duplicate customer we just created and use the winner's id.
+    await stripeClient.customers.del(customerId).catch(() => {});
+    return persistedId;
+  }
+  return customerId;
+}
 
 export async function createCheckoutSession(input: PaymentInput) {
   const {

@@ -10,6 +10,8 @@ import {
   InteractionManager,
   Linking,
   Modal,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Platform,
   Pressable,
   ScrollView,
@@ -24,11 +26,10 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useMarkerTracksUntilPainted } from "../components/useMarkerTracksUntilPainted";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import LottieView from "lottie-react-native";
 import { trackEvent } from "../analytics";
 import { addMinutes, roundUpToMinuteInterval } from "../components/ModernTimePickerSheet";
 import { MapTimePickerSheet } from "../components/MapTimePickerSheet";
-import { colors, radius, spacing } from "../styles/theme";
+import { colors, primaryButtonShadow, radius, spacing } from "../styles/theme";
 import { getListing, listListingReviews, type ListingReview } from "../api";
 import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
@@ -45,12 +46,12 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowDownUp,
+  BadgeCheck,
   BatteryCharging,
   Bike,
   CarFront,
   Cctv,
   ChevronDown,
-  ChevronRight,
   CircleCheck,
   Clock,
   Fence,
@@ -67,13 +68,20 @@ import {
   Star,
   Warehouse,
   X,
-  Zap,
 } from "lucide-react-native";
 import { SkeletonBlock, usePulse } from "../components/ui";
 import { SquircleBtn } from "../components/SquircleBtn";
+import { PulseDots } from "../components/PulseDots";
+import { motion } from "../styles/motion";
 import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Listing">;
+
+// The extend-to-end-of-day offer only shows when the top-up costs at most this
+// fraction of the current booking — so it reads as "you're nearly at the day
+// rate, want the rest?" and never as "book hours you didn't ask for". Tune to
+// taste once it's been seen against real listings.
+const EXTEND_MAX_MARGINAL_RATIO = 1 / 3;
 
 // Bundled vector icons keyed by feature type. Previously these loaded from
 // icons8.com at runtime, which blanked offline, depended on a third-party CDN,
@@ -162,11 +170,38 @@ const getAddressWithoutHouseNumber = (address: string) => {
 
 const FeatureIcon = ({ type, size = 22 }: { type: string; size?: number }) => {
   const Icon = FEATURE_ICONS[type] ?? FEATURE_ICONS.sheltered;
-  return <Icon size={size} color="#6b7280" strokeWidth={1.75} />;
+  return <Icon size={size} color={GREEN_DARK} strokeWidth={1.75} />;
 };
 
 const AVATAR_BG = ["#CCE9E6", "#FFE4C8", "#D8E4FF", "#FFD6D6", "#D6F5E3"];
 const avatarBg = (name: string) => AVATAR_BG[(name.charCodeAt(0) || 0) % AVATAR_BG.length];
+
+// Header control that lives in two worlds: dark glass while it floats on the
+// photo, white with ink iconography once the content sheet scrolls beneath
+// it. Both layers stay mounted; scroll position crossfades them.
+function HeaderFadeButton({
+  solidOpacity,
+  onPress,
+  icon,
+  scale,
+}: {
+  solidOpacity: Animated.AnimatedInterpolation<number>;
+  onPress: () => void;
+  icon: (color: string) => React.ReactNode;
+  scale?: Animated.Value;
+}) {
+  return (
+    <Pressable style={styles.glassBtn} onPress={onPress}>
+      <Animated.View style={[StyleSheet.absoluteFill, styles.glassBtnSolid, { opacity: solidOpacity }]} />
+      <Animated.View style={scale ? { transform: [{ scale }] } : undefined}>
+        <View>{icon("#FFFFFF")}</View>
+        <Animated.View style={[StyleSheet.absoluteFill, styles.glassIconTop, { opacity: solidOpacity }]}>
+          {icon(FG)}
+        </Animated.View>
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 export function ListingScreen({ navigation, route }: Props) {
   const { id, from, to, booking } = route.params;
@@ -345,7 +380,16 @@ export function ListingScreen({ navigation, route }: Props) {
   }, [listing, startAt, endAt]);
 
   const showBottomBar = !!priceSummary;
-  const bottomBarSpacer = showBottomBar ? 40 + insets.bottom : 24;
+  // Pad the scroll content by the bar's real height (measured — it varies
+  // with hints/badges and the home-indicator inset) so the last section can
+  // never end up underneath it.
+  const [bottomBarHeight, setBottomBarHeight] = useState(0);
+  // The sheet (20) and last section (20) already pad ~40px below the final
+  // line, so the scroll spacer only needs to cover the rest of the absolutely-
+  // positioned bar's height, plus a small deliberate gap above it.
+  const bottomBarSpacer = showBottomBar
+    ? Math.max(0, (bottomBarHeight || 96 + insets.bottom) - 24)
+    : 24;
 
   const openPicker = (field: "start" | "end") => {
     setPickerField(field);
@@ -419,37 +463,88 @@ export function ListingScreen({ navigation, route }: Props) {
   const hasWeeklyAvailability = availabilityEntries.some(
     (entry) => Array.isArray(entry.repeatWeekdays) && entry.repeatWeekdays.length > 0
   );
-  const formatHour = (value: string) =>
+  const formatHourCompact = (value: string) =>
     new Date(value).toLocaleTimeString("en-IE", {
-      hour: "numeric",
+      hour: "2-digit",
       minute: "2-digit",
-      hour12: true,
+      hour12: false,
       timeZone: "Europe/Dublin",
     });
-  const weekdayOrder = [
-    { label: "Mon", dow: 1 },
-    { label: "Tue", dow: 2 },
-    { label: "Wed", dow: 3 },
-    { label: "Thu", dow: 4 },
-    { label: "Fri", dow: 5 },
-    { label: "Sat", dow: 6 },
-    { label: "Sun", dow: 0 },
-  ];
+  const shortDay: Record<number, string> = { 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat", 0: "Sun" };
+  const weekOrder = [1, 2, 3, 4, 5, 6, 0];
   const todayDow = new Date().getDay();
-  const openingHours = weekdayOrder.map(({ label, dow }) => {
-    if (hasWeeklyAvailability) {
-      const entry = availabilityEntries.find((item) =>
-        Array.isArray(item.repeatWeekdays) && item.repeatWeekdays.includes(dow)
-      );
-      if (entry) return { day: label, hours: `${formatHour(entry.startsAt)} – ${formatHour(entry.endsAt)}`, isToday: dow === todayDow };
-      return { day: label, hours: "Unavailable", isToday: dow === todayDow };
-    }
-    return { day: label, hours: availabilityFallbackText, isToday: dow === todayDow };
-  });
+
+  // Collapse the seven weekdays into ranges of consecutive days that share the
+  // same hours — "Mon – Fri / 07:00 – 19:00" instead of five identical rows.
+  // Handles every-day, weekday/weekend splits, per-day hours and closures, and
+  // the free-text fallback ("24/7") in one shape.
+  const availabilityGroups: { rangeLabel: string; hours: string; open: boolean; isToday: boolean; everyDay: boolean }[] =
+    (() => {
+      if (!hasWeeklyAvailability) {
+        if (!availabilityFallbackText) return [];
+        const is247 = availabilityFallbackText === "24/7";
+        return [{
+          rangeLabel: "Every day",
+          hours: is247 ? "Open 24 hours" : availabilityFallbackText,
+          open: true,
+          isToday: true,
+          everyDay: true,
+        }];
+      }
+      const perDay = weekOrder.map((dow) => {
+        const entry = availabilityEntries.find(
+          (item) => Array.isArray(item.repeatWeekdays) && item.repeatWeekdays.includes(dow)
+        );
+        if (!entry) return { dow, key: "closed", open: false, hours: "Closed" };
+        const s = formatHourCompact(entry.startsAt);
+        const e = formatHourCompact(entry.endsAt);
+        const is24 = s === e || (s === "00:00" && (e === "23:59" || e === "00:00"));
+        return { dow, key: is24 ? "24h" : `${s}-${e}`, open: true, hours: is24 ? "Open 24 hours" : `${s} – ${e}` };
+      });
+      const groups: { key: string; dows: number[]; open: boolean; hours: string }[] = [];
+      for (const d of perDay) {
+        const last = groups[groups.length - 1];
+        if (last && last.key === d.key) last.dows.push(d.dow);
+        else groups.push({ key: d.key, dows: [d.dow], open: d.open, hours: d.hours });
+      }
+      return groups.map((g) => {
+        const allWeek = g.dows.length === 7;
+        return {
+          rangeLabel: allWeek
+            ? "Every day"
+            : g.dows.length === 1
+              ? shortDay[g.dows[0]]
+              : `${shortDay[g.dows[0]]} – ${shortDay[g.dows[g.dows.length - 1]]}`,
+          hours: g.hours,
+          open: g.open,
+          isToday: g.dows.includes(todayDow),
+          everyDay: allWeek,
+        };
+      });
+    })();
   const shouldShowAvailability = hasWeeklyAvailability || Boolean(availabilityFallbackText);
 
   const hasReviews = (listing?.rating_count ?? 0) > 0 && typeof listing?.rating === "number";
   const isAvailable = listing?.is_available !== false;
+
+  // Host trust block (docs/PARKING_DESIGN_BIBLE.md E10.1) — name + real tenure
+  // only. No response-time shown: there's no messaging/inquiry feature in
+  // this app to compute one from, and the bible's own rule is "if it isn't
+  // computed from real data, it doesn't ship."
+  const hostName = listing?.hostName?.trim() || null;
+  const hostSinceYear = listing?.hostSince ? new Date(listing.hostSince).getFullYear() : null;
+  const hostVerified = Boolean(listing?.hostVerified);
+
+  // Honest scarcity signal (E7) — only for multi-space listings where partial
+  // booking is possible; a capacity-1 listing's availability state already
+  // says everything the pill would. Silence at 5+ free spaces is deliberate
+  // (B1): plenty of supply is itself a (non-)signal, never invented urgency.
+  const spacesRemaining = listing?.spacesRemaining ?? null;
+  const showScarcityPill =
+    (listing?.capacity ?? 1) > 1 &&
+    spacesRemaining != null &&
+    spacesRemaining >= 1 &&
+    spacesRemaining < 5;
 
   const spaceTypeLabel = useMemo(() => {
     const rawType =
@@ -492,6 +587,31 @@ export function ListingScreen({ navigation, route }: Props) {
   // iOS's left-edge swipe-back gesture.
   const heroGestureZoneWidth = width - 24;
 
+  // ── Scroll choreography ────────────────────────────────────────────────
+  // One scroll value drives the hero physics and the header crossfade.
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const heroTotal = heroHeight + insets.top;
+  // Pull down: the photo stretches to fill the rubber-band gap (scale keeps
+  // the bottom edge glued to the sheet). Scroll up: the hero recedes at a
+  // third of content speed, so the sheet visibly rides over it.
+  const heroTranslateY = scrollY.interpolate({
+    inputRange: [0, heroTotal],
+    outputRange: [0, -heroTotal * 0.35],
+    extrapolate: "clamp",
+  });
+  const heroStretch = scrollY.interpolate({
+    inputRange: [-heroTotal, 0],
+    outputRange: [3, 1],
+    extrapolate: "clamp",
+  });
+  // Glass header buttons become solid as the white sheet passes beneath them
+  // — dark glass over white content is the one state they must never show.
+  const headerSolidOpacity = scrollY.interpolate({
+    inputRange: [heroHeight - 140, heroHeight - 90],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
+
   const distanceLabel = listing?.distance_m
     ? `${(listing.distance_m / 1000).toFixed(1)} km`
     : null;
@@ -505,21 +625,57 @@ export function ListingScreen({ navigation, route }: Props) {
     streetViewLocation
   )}`;
 
+  // "Extend to end of day for only €X" — the YourParkingSpace upsell. The price
+  // is the REAL total for the extended session (14:00→23:59), computed by the
+  // same engine that charges at checkout — never a fabricated discount. It only
+  // appears when the daily-rate cap makes the extra hours a genuine bargain
+  // (otherwise "for only" would be a lie), so it never nags with odd offers
+  // like "+10h for €16".
   const extendOffer = useMemo(() => {
     if (!listing) return null;
     if (getListingRateType(listing) !== "hourly") return null;
-    const hourlyPrice = listing.price_per_hour != null ? Number(listing.price_per_hour) : null;
-    if (hourlyPrice == null || Number.isNaN(hourlyPrice)) return null;
     const endOfDay = new Date(endAt);
     endOfDay.setHours(23, 59, 0, 0);
     if (endAt >= endOfDay) return null;
-    const ms = Math.max(0, endOfDay.getTime() - endAt.getTime());
-    const hours = Math.max(1, Math.round(ms / (1000 * 60 * 60)));
-    const extra = hourlyPrice * hours;
-    const discounted = extra * 0.75;
-    if (extra - discounted < 1) return null;
-    return { hours, extra: Math.round(discounted).toString(), endOfDay };
-  }, [listing, endAt]);
+    const baseline = calculateListingTotal(listing, startAt, endAt);
+    const extended = calculateListingTotal(listing, startAt, endOfDay);
+    // Only a real deal when the day cap kicks in — i.e. the extra hours would
+    // cost more at the hourly rate than the whole day does.
+    if (!extended.dailyCapApplied) return null;
+    const marginal = extended.grossTotal - baseline.grossTotal;
+    if (marginal <= 0.5) return null;
+    // ...and only when it's a genuine top-up, not a spend-doubler. If the
+    // extension costs more than a third of what they're already paying, it
+    // reads as "book hours you didn't ask for" rather than "you're nearly at
+    // the day rate — want the rest of the day?". Gate on the small marginal.
+    if (marginal > baseline.grossTotal * EXTEND_MAX_MARGINAL_RATIO) return null;
+    // Honest saving: this listing's own hourly rate for the extended hours
+    // (fee-inclusive) minus the day-capped price the user actually pays. Both
+    // are real prices for this space — no invented reference. Same figure the
+    // bottom price bar shows once extended, so they never disagree.
+    const saving = extended.dailyCapSavingGross;
+    return {
+      endOfDay,
+      timeLabel: formatTimeLabel(endOfDay),
+      total: formatPriceValue(extended.grossTotal),
+      saving: saving >= 1 ? formatPriceValue(saving) : null,
+    };
+  }, [listing, startAt, endAt]);
+
+  // Take-rate visibility for the extend upsell — tracked once per distinct
+  // offer (not on every render) so we can see how often it's shown vs tapped.
+  const trackedExtendOfferKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!extendOffer) return;
+    const offerKey = `${extendOffer.endOfDay.getTime()}|${extendOffer.total}`;
+    if (trackedExtendOfferKeyRef.current === offerKey) return;
+    trackedExtendOfferKeyRef.current = offerKey;
+    void trackEvent("mobile_extend_offer_shown", {
+      listingId: id,
+      total: extendOffer.total,
+      saving: extendOffer.saving,
+    });
+  }, [extendOffer, id]);
 
   const handleToggleFavorite = async () => {
     if (!listing) return;
@@ -530,8 +686,7 @@ export function ListingScreen({ navigation, route }: Props) {
       heartScale.setValue(0.6);
       Animated.spring(heartScale, {
         toValue: 1,
-        friction: 4,
-        tension: 140,
+        ...motion.springPop,
         useNativeDriver: true,
       }).start();
     }
@@ -637,7 +792,9 @@ export function ListingScreen({ navigation, route }: Props) {
   return (
     <>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <SafeAreaView style={styles.container} edges={["bottom"]}>
+      {/* No bottom edge here — the sticky price bar handles the home-indicator
+          inset itself; padding both would float the bar above the screen edge. */}
+      <SafeAreaView style={styles.container} edges={[]}>
         {loading ? (
           <View style={styles.skeletonWrap}>
             {/* Hero image placeholder */}
@@ -680,7 +837,7 @@ export function ListingScreen({ navigation, route }: Props) {
             <Text style={styles.errorTitle}>Couldn't load this space</Text>
             <Text style={styles.errorText}>{error}</Text>
             <Pressable style={styles.errorPrimaryBtn} onPress={handleRetryListing}>
-              <RefreshCw size={16} color="#ffffff" strokeWidth={2.2} />
+              <RefreshCw size={16} color={colors.textInverse} strokeWidth={2.2} />
               <Text style={styles.errorPrimaryText}>Try again</Text>
             </Pressable>
             <Pressable style={styles.errorSecondaryBtn} onPress={() => goBackOrFallback(navigation, fallbackRoutes.search)}>
@@ -690,7 +847,15 @@ export function ListingScreen({ navigation, route }: Props) {
         ) : listing ? (
           <>
             {/* Full-bleed hero image */}
-            <View style={[styles.heroFixed, { height: heroHeight + insets.top }]}>
+            <Animated.View
+              style={[
+                styles.heroFixed,
+                {
+                  height: heroHeight + insets.top,
+                  transform: [{ translateY: heroTranslateY }, { scale: heroStretch }],
+                },
+              ]}
+            >
               {imageUrls.length ? (
                 <FlatList
                   ref={heroListRef}
@@ -729,28 +894,42 @@ export function ListingScreen({ navigation, route }: Props) {
                   ))}
                 </View>
               ) : null}
-            </View>
+              {showScarcityPill ? (
+                <View style={styles.scarcityPill} pointerEvents="none">
+                  <Text style={styles.scarcityPillText}>
+                    {spacesRemaining === 1 ? "1 space left" : `${spacesRemaining} spaces left`}
+                  </Text>
+                </View>
+              ) : null}
+            </Animated.View>
 
-            {/* Floating glass controls */}
+            {/* Floating controls — glass over the photo, solid over content */}
             <View style={[styles.headerOverlay, { top: insets.top + 12 }]}>
-              <Pressable style={styles.glassBtn} onPress={() => goBackOrFallback(navigation, fallbackRoutes.search)}>
-                <ArrowLeft size={19} color="#fff" strokeWidth={2.2} />
-              </Pressable>
+              <HeaderFadeButton
+                solidOpacity={headerSolidOpacity}
+                onPress={() => goBackOrFallback(navigation, fallbackRoutes.search)}
+                icon={(color) => <ArrowLeft size={19} color={color} strokeWidth={2.2} />}
+              />
               <View style={styles.headerRightColumn}>
                 <View style={styles.headerRight}>
-                  <Pressable style={styles.glassBtn} onPress={handleShare}>
-                    <Share2 size={18} color="#fff" strokeWidth={2.1} />
-                  </Pressable>
-                  <Pressable style={styles.glassBtn} onPress={handleToggleFavorite}>
-                    <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+                  <HeaderFadeButton
+                    solidOpacity={headerSolidOpacity}
+                    onPress={handleShare}
+                    icon={(color) => <Share2 size={18} color={color} strokeWidth={2.1} />}
+                  />
+                  <HeaderFadeButton
+                    solidOpacity={headerSolidOpacity}
+                    onPress={handleToggleFavorite}
+                    scale={heartScale}
+                    icon={(color) => (
                       <Heart
                         size={18}
-                        color={isFavorite(id) ? "#0a8050" : "#fff"}
-                        fill={isFavorite(id) ? "#0a8050" : "none"}
+                        color={isFavorite(id) ? GREEN : color}
+                        fill={isFavorite(id) ? GREEN : "none"}
                         strokeWidth={2.1}
                       />
-                    </Animated.View>
-                  </Pressable>
+                    )}
+                  />
                 </View>
             </View>
             </View>
@@ -799,18 +978,25 @@ export function ListingScreen({ navigation, route }: Props) {
               </ScrollView>
             ) : null}
 
-            <ScrollView
+            <Animated.ScrollView
               style={styles.scroll}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: bottomBarSpacer }}
               scrollEventThrottle={16}
-              onScroll={(event) => {
-                const nextEnabled = event.nativeEvent.contentOffset.y < Math.max(0, heroTapHeight - 24);
-                if (nextEnabled !== heroTapEnabledRef.current) {
-                  heroTapEnabledRef.current = nextEnabled;
-                  setHeroTapEnabled(nextEnabled);
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                {
+                  useNativeDriver: true,
+                  listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+                    const nextEnabled =
+                      event.nativeEvent.contentOffset.y < Math.max(0, heroTapHeight - 24);
+                    if (nextEnabled !== heroTapEnabledRef.current) {
+                      heroTapEnabledRef.current = nextEnabled;
+                      setHeroTapEnabled(nextEnabled);
+                    }
+                  },
                 }
-              }}
+              )}
             >
               {/* Hero spacer */}
               <View style={{ height: heroHeight + insets.top - 28 }} />
@@ -825,9 +1011,9 @@ export function ListingScreen({ navigation, route }: Props) {
                   <Text style={styles.sheetTitle}>{displayTitle}</Text>
                   <View style={styles.metaRow}>
                     <Star
-                      size={15}
-                      color={hasReviews ? "#F4B942" : FG_SUBTLE}
-                      fill={hasReviews ? "#F4B942" : "none"}
+                      size={14}
+                      color={hasReviews ? FG : FG_SUBTLE}
+                      fill={hasReviews ? FG : "none"}
                       strokeWidth={2}
                     />
                     <Text style={styles.metaStrong}>{hasReviews ? listing.rating?.toFixed(1) : "New"}</Text>
@@ -850,18 +1036,18 @@ export function ListingScreen({ navigation, route }: Props) {
                     <Pressable style={styles.timeField} onPress={() => openPicker("start")}>
                       <View style={styles.timeFieldHeader}>
                         <Text style={styles.timeFieldLabel}>Arriving</Text>
-                        <ChevronDown size={14} color={FG_SUBTLE} strokeWidth={2.2} />
+                        <ChevronDown size={14} color={colors.textMuted} strokeWidth={2.2} />
                       </View>
                       <Text style={styles.timeFieldTime}>{formatTimeLabel(startAt)}</Text>
                       <Text style={styles.timeFieldDate}>{formatDateLabel(startAt)}</Text>
                     </Pressable>
                     <View style={styles.timeArrow}>
-                      <ArrowRight size={14} color={FG_SUBTLE} strokeWidth={2.3} />
+                      <ArrowRight size={14} color={colors.textMuted} strokeWidth={2.3} />
                     </View>
                     <Pressable style={styles.timeField} onPress={() => openPicker("end")}>
                       <View style={styles.timeFieldHeader}>
                         <Text style={styles.timeFieldLabel}>Leaving</Text>
-                        <ChevronDown size={14} color={FG_SUBTLE} strokeWidth={2.2} />
+                        <ChevronDown size={14} color={colors.textMuted} strokeWidth={2.2} />
                       </View>
                       <Text style={styles.timeFieldTime}>{formatTimeLabel(endAt)}</Text>
                       <Text style={styles.timeFieldDate}>{formatDateLabel(endAt)}</Text>
@@ -869,17 +1055,26 @@ export function ListingScreen({ navigation, route }: Props) {
                   </View>
                   {extendOffer ? (
                     <Pressable
-                      style={styles.offerRow}
-                      onPress={() => setEndAt(new Date(extendOffer.endOfDay))}
+                      style={({ pressed }) => [styles.extendBar, pressed && styles.extendBarPressed]}
+                      onPress={() => {
+                        void trackEvent("mobile_extend_offer_accepted", {
+                          listingId: id,
+                          total: extendOffer.total,
+                          saving: extendOffer.saving,
+                        });
+                        setUpdatingTimes(true);
+                        InteractionManager.runAfterInteractions(() =>
+                          setEndAt(extendOffer.endOfDay)
+                        );
+                      }}
                     >
-                      <View style={styles.offerIconWrap}>
-                        <Zap size={14} color={GREEN} strokeWidth={2.3} />
-                      </View>
-                      <Text style={styles.offerText}>
-                        Extend to end of day for only{" "}
-                        <Text style={styles.offerTextBold}>€{extendOffer.extra}</Text>
+                      <Text style={styles.extendBarText}>
+                        Extend to {extendOffer.timeLabel} for only{" "}
+                        <Text style={styles.extendBarPrice}>€{extendOffer.total}</Text>
+                        {extendOffer.saving ? (
+                          <Text style={styles.extendBarSaving}>  ·  save €{extendOffer.saving}</Text>
+                        ) : null}
                       </Text>
-                      <ChevronRight size={13} color={GREEN} strokeWidth={2.3} />
                     </Pressable>
                   ) : null}
                   <View style={styles.reserveNote}>
@@ -887,6 +1082,31 @@ export function ListingScreen({ navigation, route }: Props) {
                     <Text style={styles.reserveNoteText}>Reserved instantly — free cancellation up to 2 hours before.</Text>
                   </View>
                 </View>
+
+                {/* ── Host ─────────────────────────────────── */}
+                {hostName ? (
+                  <>
+                    <View style={styles.sectionDivider} />
+                    <View style={styles.section}>
+                      <View style={styles.hostRow}>
+                        <View style={[styles.hostAvatar, { backgroundColor: avatarBg(hostName) }]}>
+                          <Text style={styles.hostAvatarText}>{hostName.charAt(0).toUpperCase()}</Text>
+                        </View>
+                        <View style={styles.hostInfo}>
+                          <View style={styles.hostNameRow}>
+                            <Text style={styles.hostName} numberOfLines={1}>{hostName}</Text>
+                            {hostVerified ? (
+                              <BadgeCheck size={15} color={GREEN} strokeWidth={2.2} />
+                            ) : null}
+                          </View>
+                          {hostSinceYear ? (
+                            <Text style={styles.hostMeta}>Hosting since {hostSinceYear}</Text>
+                          ) : null}
+                        </View>
+                      </View>
+                    </View>
+                  </>
+                ) : null}
 
                 {/* ── About ────────────────────────────────── */}
                 {aboutText ? (
@@ -925,7 +1145,9 @@ export function ListingScreen({ navigation, route }: Props) {
                           })
                           .map((feature) => (
                             <View key={feature} style={styles.amenityItem}>
-                              <FeatureIcon type={getFeatureIconType(feature)} size={20} />
+                              <View style={styles.amenityIconWrap}>
+                                <FeatureIcon type={getFeatureIconType(feature)} size={18} />
+                              </View>
                               <Text style={styles.amenityLabel} numberOfLines={2}>{feature}</Text>
                             </View>
                           ))}
@@ -975,7 +1197,7 @@ export function ListingScreen({ navigation, route }: Props) {
                         />
                       )}
                       <Pressable style={styles.mapExpandButton} onPress={() => setShowMapViewer(true)}>
-                        <Maximize2 size={17} color="#151b1b" strokeWidth={2} />
+                        <Maximize2 size={17} color={colors.text} strokeWidth={2} />
                       </Pressable>
                       {/* The native map draws on its own surface and ignores the
                           screen-level updating overlay, so grey it out from inside
@@ -993,41 +1215,27 @@ export function ListingScreen({ navigation, route }: Props) {
                     <View style={styles.sectionDivider} />
                     <View style={styles.section}>
                       <Text style={styles.sectionTitle}>Availability</Text>
-                      <View style={styles.availabilityList}>
-                        {openingHours.map((entry, index) => {
-                          const isClosed = entry.hours === "Unavailable";
-                          const isLast = index === openingHours.length - 1;
-                          return (
-                            <View
-                              key={entry.day}
-                              style={[
-                                styles.availabilityRow,
-                                !isLast && !entry.isToday && styles.availabilityRowDivider,
-                                entry.isToday && styles.availabilityRowToday,
-                              ]}
-                            >
-                              <View style={styles.availabilityDayCol}>
-                                {entry.isToday
-                                  ? <View style={styles.availabilityDot} />
-                                  : <View style={styles.availabilityDotPlaceholder} />}
-                                <Text style={[
-                                  styles.availabilityDay,
-                                  entry.isToday && styles.availabilityDayToday,
-                                  isClosed && styles.availabilityDayClosed,
-                                ]}>
-                                  {entry.day}
-                                </Text>
-                              </View>
-                              <Text style={[
-                                styles.availabilityHours,
-                                entry.isToday && styles.availabilityHoursToday,
-                                isClosed && styles.availabilityHoursClosed,
-                              ]}>
-                                {entry.hours}
+                      <View style={styles.availCard}>
+                        {availabilityGroups.map((group, index) => (
+                          <View
+                            key={`${group.rangeLabel}-${index}`}
+                            style={[styles.availGroup, index > 0 && styles.availGroupSpacing]}
+                          >
+                            <View style={styles.availGroupTop}>
+                              <Text style={[styles.availRange, !group.open && styles.availRangeMuted]}>
+                                {group.rangeLabel}
                               </Text>
+                              {group.isToday && group.open && !group.everyDay ? (
+                                <View style={styles.availTodayChip}>
+                                  <Text style={styles.availTodayChipText}>Today</Text>
+                                </View>
+                              ) : null}
                             </View>
-                          );
-                        })}
+                            <Text style={[styles.availHours, !group.open && styles.availHoursClosed]}>
+                              {group.hours}
+                            </Text>
+                          </View>
+                        ))}
                       </View>
                     </View>
                   </>
@@ -1056,7 +1264,9 @@ export function ListingScreen({ navigation, route }: Props) {
                     ) : null}
                   </View>
                   {reviewsLoading ? (
-                    <ActivityIndicator color={GREEN} style={{ marginTop: 12, alignSelf: "flex-start" }} />
+                    <View style={{ marginTop: 16, alignSelf: "flex-start" }}>
+                      <PulseDots />
+                    </View>
                   ) : reviews.length ? (
                     <ScrollView
                       horizontal
@@ -1082,7 +1292,7 @@ export function ListingScreen({ navigation, route }: Props) {
                                 <Text style={styles.reviewDateText}>{reviewDate}</Text>
                               </View>
                               <View style={styles.reviewStarPill}>
-                                <Star size={11} color="#F4B942" fill="#F4B942" strokeWidth={2} />
+                                <Star size={11} color={FG} fill={FG} strokeWidth={2} />
                                 <Text style={styles.reviewStarPillText}>{review.rating.toFixed(1)}</Text>
                               </View>
                             </View>
@@ -1095,28 +1305,47 @@ export function ListingScreen({ navigation, route }: Props) {
                     </ScrollView>
                   ) : (
                     <View style={styles.reviewEmptyWrap}>
-                      <Text style={styles.reviewEmpty}>No reviews yet.</Text>
+                      <View style={styles.reviewEmptyIconWrap}>
+                        <Star size={22} color={GREEN} strokeWidth={1.8} />
+                      </View>
+                      <Text style={styles.reviewEmpty}>No reviews yet</Text>
                       <Text style={styles.reviewEmptyHint}>Be the first to park here and share your experience.</Text>
                     </View>
                   )}
                 </View>
 
               </View>
-            </ScrollView>
+            </Animated.ScrollView>
 
             {/* ── Sticky bottom bar ──────────────────────── */}
             {priceSummary ? (
-              <View style={[styles.bottomBar, { paddingBottom: 16 + insets.bottom }]}>
+              <View
+                style={[styles.bottomBar, { paddingBottom: 16 + insets.bottom }]}
+                onLayout={(e) => {
+                  const h = Math.round(e.nativeEvent.layout.height);
+                  if (h > 0 && h !== bottomBarHeight) setBottomBarHeight(h);
+                }}
+              >
                 <View style={styles.bottomLeft}>
-                  <Text style={styles.bottomLabel}>TOTAL</Text>
-                  <Text style={styles.bottomPrice}>€{priceSummary.total}</Text>
-                  <Text style={styles.bottomDuration}>{priceSummary.durationLabel}</Text>
-                  {listing.is_available === false ? (
-                    <Text style={styles.bottomUnavailableHint}>Try another arrival time</Text>
-                  ) : null}
-                  {priceSummary.dailyCapApplied ? (
-                    <Text style={styles.dailyCapBadge}>Day rate — saves €{formatPriceValue(priceSummary.dailyCapSaving)}</Text>
-                  ) : null}
+                  {updatingTimes ? (
+                    <View style={styles.bottomPriceUpdating}>
+                      <PulseDots />
+                    </View>
+                  ) : (
+                    <>
+                      <Text style={styles.bottomPrice}>
+                        €{formatPriceValue(priceSummary.grossTotal)}
+                        <Text style={styles.bottomPriceSuffix}> total</Text>
+                      </Text>
+                      <Text style={styles.bottomDuration}>{priceSummary.durationLabel}</Text>
+                      {listing.is_available === false ? (
+                        <Text style={styles.bottomUnavailableHint}>Try another arrival time</Text>
+                      ) : null}
+                      {priceSummary.dailyCapApplied ? (
+                        <Text style={styles.dailyCapBadge}>Day rate — saves €{formatPriceValue(priceSummary.dailyCapSavingGross)}</Text>
+                      ) : null}
+                    </>
+                  )}
                 </View>
                 {listing.hostId && user?.id === listing.hostId ? (
                   <View style={styles.ownListingBadge}>
@@ -1131,6 +1360,8 @@ export function ListingScreen({ navigation, route }: Props) {
                     label={listing.is_available === false ? "Choose another time" : "Book Now"}
                     loading={navigatingToBooking}
                     onPress={() => {
+                      // Fresh quote still in flight — never book a stale price.
+                      if (updatingTimes) return;
                       if (listing.is_available === false) {
                         openPicker("start");
                         return;
@@ -1178,18 +1409,6 @@ export function ListingScreen({ navigation, route }: Props) {
         }}
       />
 
-      {updatingTimes ? (
-        <View style={styles.updatingOverlay}>
-          <LottieView
-            source={require("../assets/Insider-loading.json")}
-            autoPlay
-            loop
-            style={styles.updatingLottie}
-          />
-          <Text style={styles.updatingText}>Updating availability…</Text>
-        </View>
-      ) : null}
-
       <Modal transparent animationType="none" visible={authOverlayVisible} onRequestClose={closeAuthOverlay}>
         <View style={styles.authModalRoot} pointerEvents="box-none">
           <Animated.View style={[styles.authModalBackdrop, { opacity: authBackdropOpacity }]}>
@@ -1212,7 +1431,7 @@ export function ListingScreen({ navigation, route }: Props) {
               accessibilityLabel="Close"
               hitSlop={10}
             >
-              <X size={22} color="#9ca3af" strokeWidth={2.2} />
+              <X size={22} color={colors.textDisabled} strokeWidth={2.2} />
             </Pressable>
             <Text style={styles.authModalTitle}>
               <Text style={styles.authModalTitleAccent}>Log in </Text>
@@ -1313,7 +1532,7 @@ export function ListingScreen({ navigation, route }: Props) {
             onPress={closeImageViewer}
             hitSlop={8}
           >
-            <X size={20} color="#fff" strokeWidth={2.2} />
+            <X size={20} color={colors.textInverse} strokeWidth={2.2} />
           </Pressable>
           {imageUrls.length > 1 ? (
             <View style={[styles.viewerCounter, { top: insets.top + 20 }]} pointerEvents="none">
@@ -1364,54 +1583,39 @@ export function ListingScreen({ navigation, route }: Props) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design tokens (spec)
-const GREEN      = "#0a8050";
-const GREEN_SOFT = "#edf7f2";
-const FG         = "#0B0F19";   // primary text — near-black
-const FG_2       = "#2C3644";   // secondary text — darker, still clearly secondary
-const FG_MUTED   = FG_2;        // alias of FG_2 (secondary text)
-const FG_SUBTLE  = "#404A57";   // labels / meta — slightly stronger
-const LINE       = "#B6C0CC";   // card / control borders — more defined, still subtle
-const LINE_2     = LINE;        // alias — was a duplicate of LINE
-const DIVIDER    = "#E2E4E7";   // section + row separators — a touch stronger
-const BG_2       = "#E2E6EA";   // single neutral fill (chips, fields, soft cards) — defined light grey, not washed out
-const FG_BODY    = "#2C3847";   // single body-copy colour — higher contrast
-const GREEN_DARK = "#0a6a40";   // green text on light fills (AA contrast)
-const HANDLE     = "#D9DCE0";   // grab handles (sheets, pickers)
+// Sourced from styles/theme.ts (see docs/PARKING_DESIGN_BIBLE.md §0) — this
+// screen already imported `colors` (line 32) but had drifted onto its own
+// parallel hex set instead of using it. Converged onto the shared tokens.
+const GREEN      = colors.primary;
+const GREEN_SOFT = colors.tileBg;
+const FG         = colors.text;       // primary ink
+const FG_2       = colors.textMuted;  // secondary text
+const FG_MUTED   = FG_2;              // alias of FG_2 (secondary text)
+const FG_SUBTLE  = colors.textSoft;   // labels / meta
+const LINE       = colors.divider;    // control borders (outline buttons)
+const LINE_2     = LINE;              // alias — was a duplicate of LINE
+const DIVIDER    = colors.divider;   // section + row separators — hairline territory
+const BG_2       = colors.cardBgMuted; // single neutral fill (chips, fields, soft cards)
+const FG_BODY    = FG_2;        // single body-copy colour
+const GREEN_DARK = colors.headerTint; // green text on light fills (AA contrast)
+const HANDLE     = colors.border;   // grab handles (sheets, pickers)
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "transparent" },
-  updatingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#E7E9E8",
-    zIndex: 90,
-    elevation: 90,
-  },
   updatingMapCover: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#E7E9E8",
-  },
-  updatingLottie: {
-    width: 120,
-    height: 120,
-  },
-  updatingText: {
-    color: colors.textSoft,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13,
-    marginTop: 4,
+    backgroundColor: colors.cardBgMuted,
   },
   centered: {
     flex: 1, alignItems: "center", justifyContent: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     paddingHorizontal: 24,
   },
   errorIconWrap: {
     width: 56,
     height: 56,
-    borderRadius: 16,
-    backgroundColor: "#FEF2F2",
+    borderRadius: radius.cardSmall,
+    backgroundColor: colors.status.canceled.background,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -1445,7 +1649,7 @@ const styles = StyleSheet.create({
   errorPrimaryText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 15,
-    color: "#ffffff",
+    color: colors.textInverse,
   },
   errorSecondaryBtn: {
     marginTop: 10,
@@ -1459,13 +1663,13 @@ const styles = StyleSheet.create({
   },
 
   // Skeleton
-  skeletonWrap: { flex: 1, backgroundColor: "#ffffff" },
+  skeletonWrap: { flex: 1, backgroundColor: colors.cardBg },
   skeletonBackRow: { position: "absolute", left: 16 },
   skeletonContent: { paddingHorizontal: spacing.screenX, paddingTop: 20 },
   skeletonStatsRow: {
     flexDirection: "row",
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: radius.cardSmall,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: DIVIDER,
     overflow: "hidden",
     marginTop: 18,
@@ -1493,44 +1697,33 @@ const styles = StyleSheet.create({
     flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6,
   },
   photoDot: {
-    width: 6, height: 6, borderRadius: 3,
+    width: 6, height: 6, borderRadius: radius.pill,
     backgroundColor: "rgba(255,255,255,0.5)",
   },
   photoDotActive: {
     width: 16,
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBg,
   },
-
-  // Hero title overlay
-  heroTitleOverlay: {
+  // Honest scarcity signal (docs/PARKING_DESIGN_BIBLE.md E7) — the one warm
+  // accent, reusing the same amber family as `colors.status.pending` so it
+  // doesn't invent a second "warning" language. Fully opaque, not a light
+  // overlay — floating chrome over a photo must hold contrast on its own (A5).
+  scarcityPill: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    paddingBottom: 60,
+    bottom: 44,
+    left: 16,
+    backgroundColor: colors.status.pending.background,
+    borderColor: colors.status.pending.border,
+    borderWidth: 1,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
-  heroSpaceTypeLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11,
-    letterSpacing: 1.4,
-    textTransform: "uppercase",
-    color: "rgba(255,255,255,0.92)",
-    marginBottom: 5,
-    textShadowColor: "rgba(0,0,0,0.25)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
-  },
-  heroTitleText: {
+  scarcityPillText: {
     fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 26,
-    lineHeight: 32,
-    letterSpacing: -0.5,
-    color: "#ffffff",
-    marginBottom: 6,
-    textShadowColor: "rgba(0,0,0,0.35)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 10,
+    fontSize: 11,
+    color: colors.status.pending.text,
+    letterSpacing: 0.1,
   },
 
   // Floating controls
@@ -1541,9 +1734,24 @@ const styles = StyleSheet.create({
   headerRightColumn: { alignItems: "flex-end", gap: 10 },
   headerRight: { flexDirection: "row", gap: 10 },
   glassBtn: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 40, height: 40, borderRadius: radius.pill,
     backgroundColor: "rgba(0,0,0,0.32)",
     alignItems: "center", justifyContent: "center", position: "relative",
+    // No shadow/elevation: on Android, elevation over a translucent background
+    // casts a boxy grey halo (not a clean circle). Contrast comes from the dark
+    // glass over photos and from the solid overlay's border over white content.
+  },
+  // Solid state needs its own definition — a white disc over white content
+  // would otherwise dissolve into the page.
+  glassBtnSolid: {
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.divider,
+  },
+  glassIconTop: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   heroTapZone: { position: "absolute", left: 0, right: 0, zIndex: 1 },
 
@@ -1551,10 +1759,10 @@ const styles = StyleSheet.create({
 
   // Sheet — floating surface, gets the sheet shadow
   sheet: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     position: "relative",
     zIndex: 3,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet,
     paddingHorizontal: spacing.screenX,
     paddingTop: 12, paddingBottom: 20,
     shadowColor: "#111111",
@@ -1564,7 +1772,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   sheetHandle: {
-    width: 40, height: 4, borderRadius: 999,
+    width: 40, height: 4, borderRadius: radius.pill,
     backgroundColor: HANDLE,
     alignSelf: "center", marginBottom: 12,
   },
@@ -1579,35 +1787,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
 
-  // kept for any remaining references
-  factRows: { gap: 8, paddingBottom: 2 },
-  factRow:   { flexDirection: "row", alignItems: "center", gap: 7 },
-  factRowSecondary: { flexDirection: "row", alignItems: "center", gap: 7 },
-  factLine: { flex: 1, minWidth: 0 },
-  factIcon: { width: 17, textAlign: "center" },
-  factText: { flex: 1, fontSize: 13 },
-  factVal:  { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
-  factMuted:{ fontFamily: "PlusJakartaSans-Regular",  fontSize: 13, color: FG_SUBTLE },
-
   // ── Overview — title + meta line (rebuild) ───────────────────────────────────
   overview: { paddingTop: 4, paddingBottom: 20, gap: 10 },
   sheetTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 23, lineHeight: 29, letterSpacing: -0.4, color: FG },
   metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 5 },
-  metaStrong: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13.5, color: FG },
-  metaMuted: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13.5, color: FG_SUBTLE, flexShrink: 1 },
-  metaDot: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13.5, color: FG_SUBTLE, marginHorizontal: 2 },
-  factsCard: {
-    flexDirection: "row", alignItems: "stretch",
-    borderWidth: 1, borderColor: DIVIDER, borderRadius: 16,
-    backgroundColor: "#ffffff", overflow: "hidden",
-  },
-  factCell: { flex: 1, paddingVertical: 14, paddingHorizontal: 12, gap: 4 },
-  factCellDivider: { width: 1, backgroundColor: DIVIDER },
-  factCellLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 10.5, letterSpacing: 0.6, textTransform: "uppercase", color: FG_SUBTLE,
-  },
-  factCellValue: { fontFamily: "PlusJakartaSans-Bold", fontSize: 14, color: FG, letterSpacing: -0.2 },
+  metaStrong: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG },
+  metaMuted: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, flexShrink: 1 },
+  metaDot: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, marginHorizontal: 2 },
 
   // ── Airbnb-style time pickers ──────────────────────────────────────────────
   bookingHeader: {
@@ -1641,12 +1827,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 4,
   },
+  // Same voice as the search card's Arrive/Leave strip — no uppercase
+  // micro-labels, the time is the loudest thing in the field.
   timeFieldLabel: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    // Darker than GREEN so the 10px uppercase label clears WCAG AA (4.5:1) on the
-    // light grey field background.
-    fontSize: 10, color: GREEN_DARK,
-    textTransform: "uppercase", letterSpacing: 1,
+    fontSize: 12, color: colors.textMuted,
+    letterSpacing: -0.1,
   },
   timeFieldTime: {
     fontFamily: "PlusJakartaSans-ExtraBold",
@@ -1664,14 +1850,24 @@ const styles = StyleSheet.create({
     fontSize: 14, color: GREEN, marginTop: 10,
   },
 
-  // ── Reviews: empty state ───────────────────────────────────────────────────
+  // ── Reviews: empty state (icon+title+hint, matches HistoryScreen's pattern
+  // rather than two bare centred lines) ───────────────────────────────────
   reviewEmptyWrap: {
-    paddingVertical: 20,
+    paddingVertical: 24,
     paddingHorizontal: 16,
     backgroundColor: BG_2,
-    borderRadius: 16,
+    borderRadius: radius.cardSmall,
     marginTop: 8,
     alignItems: "center",
+  },
+  reviewEmptyIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.pill,
+    backgroundColor: GREEN_SOFT,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
   },
   reviewEmpty: {
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -1687,67 +1883,70 @@ const styles = StyleSheet.create({
 
   // Booking time-picker buttons (two separate cards, side by side)
 
-  // Extend offer — standalone card below pickers
-  offerRow: {
-    flexDirection: "row", alignItems: "center", gap: 10,
-    backgroundColor: GREEN_SOFT,
-    borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 12,
+  // Extend offer — prominent full-width bar (YourParkingSpace pattern). Ink,
+  // not green, so it reads as a distinct upsell and never competes with the
+  // green "Book now" primary CTA.
+  extendBar: {
+    backgroundColor: colors.text,
+    borderRadius: 16,
+    paddingVertical: 15,
+    paddingHorizontal: 18,
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 14,
   },
-  offerIconWrap: {
-    width: 28, height: 28, borderRadius: 16,
-    backgroundColor: "#ffffff",
-    alignItems: "center", justifyContent: "center", flexShrink: 0,
+  extendBarPressed: { opacity: 0.85 },
+  extendBarText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14, color: colors.textInverse, letterSpacing: -0.2,
   },
-  offerText: { flex: 1, fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG, lineHeight: 19 },
-  offerTextBold: { fontFamily: "PlusJakartaSans-SemiBold", color: GREEN },
+  extendBarPrice: { fontFamily: "PlusJakartaSans-ExtraBold" },
+  // Quiet, factual — a helpful fact, not a flashing badge.
+  extendBarSaving: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    color: colors.mint,
+  },
 
   // Sections
   sectionDivider: {
     height: 1,
-    backgroundColor: DIVIDER,
+    backgroundColor: colors.divider,
     marginHorizontal: 0,
   },
-  availabilityList: { marginTop: 0 },
-  availabilityRow: {
-    flexDirection: "row", alignItems: "center",
-    paddingVertical: 6,
+  // ── Availability — grouped ranges, whitespace not dividers ──
+  availCard: {
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: radius.cardSmall,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
   },
-  availabilityRowDivider: {
-    borderBottomWidth: 1, borderBottomColor: DIVIDER,
+  availGroup: {},
+  availGroupSpacing: { marginTop: 16 },
+  availGroupTop: {
+    flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2,
   },
-  availabilityRowToday: {
-    backgroundColor: GREEN_SOFT, borderRadius: 8,
-    paddingHorizontal: 8, marginHorizontal: -8,
+  availRange: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG, letterSpacing: -0.3,
   },
-  availabilityHoursToday: { color: GREEN, fontFamily: "PlusJakartaSans-SemiBold" },
-  availabilityDayCol: {
-    flexDirection: "row", alignItems: "center",
-    width: 52, gap: 6,
+  availRangeMuted: { color: FG_SUBTLE },
+  availHours: {
+    fontFamily: "PlusJakartaSans-Medium", fontSize: 14, color: FG_2, letterSpacing: -0.1,
   },
-  availabilityDot: {
-    width: 5, height: 5, borderRadius: 3,
-    backgroundColor: GREEN,
+  availHoursClosed: { color: colors.textMuted },
+  availTodayChip: {
+    backgroundColor: GREEN_SOFT, borderRadius: radius.pill,
+    paddingHorizontal: 8, paddingVertical: 2,
   },
-  availabilityDotPlaceholder: { width: 5 },
-  availabilityDay: {
-    fontFamily: "PlusJakartaSans-Medium", fontSize: 13, color: FG_MUTED,
+  availTodayChipText: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 11, color: GREEN_DARK, letterSpacing: 0.2,
   },
-  availabilityDayToday: { color: GREEN, fontFamily: "PlusJakartaSans-Bold" },
-  availabilityDayClosed: { color: FG_SUBTLE },
-  availabilityHours: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 13,
-    color: FG_2, flex: 1, textAlign: "right",
-  },
-  availabilityHoursClosed: { color: FG_SUBTLE },
   section: { paddingVertical: 20 },
   sectionTitle: {
     fontFamily: "PlusJakartaSans-Bold",
     fontSize: 17, lineHeight: 21, color: FG, letterSpacing: -0.3, marginBottom: 8,
   },
-  sectionBody: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 22, color: FG_BODY },
-  gettingThereLine: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 20, color: FG_2, marginBottom: 2 },
+  sectionBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, lineHeight: 22, color: FG_BODY },
+  gettingThereLine: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, lineHeight: 21, color: FG_2, marginBottom: 2 },
 
   // Local area map
   localAreaMap: {
@@ -1758,7 +1957,7 @@ const styles = StyleSheet.create({
   localAreaMapWrap: {
     position: "relative",
     overflow: "hidden",
-    borderRadius: 16,
+    borderRadius: radius.cardSmall,
     backgroundColor: BG_2,
     marginBottom: 0,
     borderWidth: 1,
@@ -1774,7 +1973,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 110,
     height: 110,
-    borderRadius: 55,
+    borderRadius: radius.pill,
     backgroundColor: "rgba(10,128,80,0.14)",
     borderWidth: 1,
     borderColor: "rgba(10,128,80,0.22)",
@@ -1782,8 +1981,8 @@ const styles = StyleSheet.create({
   listingMapMarkerBubble: {
     alignItems: "center",
     backgroundColor: GREEN,
-    borderColor: "#FFFFFF",
-    borderRadius: 19,
+    borderColor: colors.cardBg,
+    borderRadius: radius.pill,
     borderWidth: 3,
     height: 38,
     justifyContent: "center",
@@ -1796,10 +1995,12 @@ const styles = StyleSheet.create({
   },
   mapExpandButton: {
     position: "absolute", top: 10, right: 10,
-    width: 34, height: 34, borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.96)",
-    borderWidth: 1, borderColor: LINE,
+    width: 34, height: 34, borderRadius: radius.pill,
+    backgroundColor: colors.cardBg,
     alignItems: "center", justifyContent: "center",
+    shadowColor: "#0B1220",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12, shadowRadius: 10, elevation: 3,
   },
 
   // Feature chips — pill shape, bg-2 fill, no border (spec .chip pattern)
@@ -1807,7 +2008,7 @@ const styles = StyleSheet.create({
   featureChip: {
     flexDirection: "row", alignItems: "center", gap: 8,
     backgroundColor: BG_2,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     paddingHorizontal: 12, paddingVertical: 10,
   },
   featureChipIconWrap: {
@@ -1820,7 +2021,17 @@ const styles = StyleSheet.create({
   // Amenities — 2-column icon list (rebuild)
   amenityGrid: { flexDirection: "row", flexWrap: "wrap" },
   amenityItem: { width: "50%", flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, paddingRight: 8 },
-  amenityLabel: { flex: 1, fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 18, color: FG_2 },
+  // Categorised content tile treatment (docs/PARKING_DESIGN_BIBLE.md E4) — a
+  // tinted icon wrap + bold label, not a bare icon next to regular text.
+  amenityIconWrap: {
+    alignItems: "center",
+    backgroundColor: GREEN_SOFT,
+    borderRadius: radius.md,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  amenityLabel: { flex: 1, fontFamily: "PlusJakartaSans-Bold", fontSize: 14, lineHeight: 18, color: FG_2 },
 
   // Guarantee strip
 
@@ -1833,18 +2044,18 @@ const styles = StyleSheet.create({
   },
   reviewTiles: { marginTop: 12, marginHorizontal: -24 },
   reviewTilesContent: { paddingHorizontal: 24, gap: 12 },
+  // Soft-fill card, no drawn border — the outline card is the one pattern the
+  // rest of the app never uses.
   reviewTile: {
     width: 260,
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: LINE_2,
+    backgroundColor: colors.cardBgMuted,
+    borderRadius: radius.cardSmall,
     padding: 16,
   },
   reviewCardTop: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   reviewAvatar: {
     width: 36, height: 36, borderRadius: 16,
-    backgroundColor: "#EDF7F2",
+    backgroundColor: colors.tileBg,
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
   reviewAvatarText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG },
@@ -1853,7 +2064,7 @@ const styles = StyleSheet.create({
   reviewDateText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11, color: FG_SUBTLE },
   reviewStarPill: {
     flexDirection: "row", alignItems: "center", gap: 3,
-    backgroundColor: BG_2, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
+    backgroundColor: colors.cardBg, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 6,
   },
   reviewStarPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: FG },
   reviewComment: { fontFamily: "PlusJakartaSans-Medium", fontSize: 14, lineHeight: 21, color: FG_BODY },
@@ -1865,22 +2076,22 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(17, 17, 17, 0.45)",
   },
   authModalSheet: {
-    backgroundColor: "#ffffff",
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: colors.cardBg,
+    borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet,
     paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28,
     shadowColor: "#111111",
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.08, shadowRadius: 20, elevation: 16,
+    shadowOpacity: 0.08, shadowRadius: 16, elevation: 8,
   },
   authModalHandle: {
     alignSelf: "center",
-    width: 40, height: 5, borderRadius: 999,
+    width: 40, height: 5, borderRadius: radius.pill,
     backgroundColor: HANDLE,
     marginBottom: 16,
   },
   authModalClose: {
     position: "absolute", top: 14, right: 14,
-    width: 32, height: 32, borderRadius: 16,
+    width: 32, height: 32, borderRadius: radius.pill,
     alignItems: "center", justifyContent: "center",
   },
   authModalTitle: {
@@ -1895,9 +2106,9 @@ const styles = StyleSheet.create({
     color: FG_MUTED, marginBottom: 20,
   },
   authModalOutlineBtn: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.cardBg,
     borderWidth: 1, borderColor: LINE,
-    height: 50, borderRadius: 12,
+    height: 50, borderRadius: 14,
     flexDirection: "row", alignItems: "center", justifyContent: "center",
     marginBottom: 10, paddingHorizontal: 16,
   },
@@ -1917,12 +2128,12 @@ const styles = StyleSheet.create({
   },
   authModalCreateBtn: {
     backgroundColor: GREEN,
-    height: 50, borderRadius: 12,
+    height: 50, borderRadius: 14,
     alignItems: "center", justifyContent: "center",
     shadowColor: "#0a7a50", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.16, shadowRadius: 10, elevation: 3,
   },
   authModalCreateText: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: "#ffffff", letterSpacing: -0.2,
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 15, color: colors.textInverse, letterSpacing: -0.2,
   },
   authModalLegal: {
     fontFamily: "PlusJakartaSans-Regular",
@@ -1935,26 +2146,31 @@ const styles = StyleSheet.create({
   // Bottom dock — fixed, border-top separator, sheet shadow
   bottomBar: {
     position: "absolute", bottom: 0, left: 0, right: 0,
-    backgroundColor: "#ffffff",
-    borderTopWidth: 1, borderTopColor: LINE,
+    backgroundColor: colors.cardBg,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: DIVIDER,
     paddingHorizontal: 16, paddingTop: 12,
     minHeight: 80,
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     gap: 16,
-    shadowColor: "#111111",
-    shadowOffset: { width: 0, height: -1 },
-    shadowOpacity: 0.05, shadowRadius: 8, elevation: 8,
+    shadowColor: "#0B1220",
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.06, shadowRadius: 16, elevation: 8,
   },
   bottomLeft: { flex: 1, justifyContent: "center" },
-  bottomLabel: {
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 11, color: FG_SUBTLE,
-    letterSpacing: 0.7, marginBottom: 2,
-    textTransform: "uppercase",
-  },
+  // The number is the decision; the word is just context.
   bottomPrice: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 24, color: FG, letterSpacing: -0.5, lineHeight: 29,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 23, color: FG, letterSpacing: -0.5, lineHeight: 28,
+  },
+  bottomPriceSuffix: {
+    fontFamily: "PlusJakartaSans-Medium",
+    fontSize: 13, color: colors.textMuted, letterSpacing: -0.1,
+  },
+  // Matches the resting height of price + duration so the bar never jumps
+  // while a new quote is in flight.
+  bottomPriceUpdating: {
+    height: 47,
+    justifyContent: "center",
   },
   bottomDuration: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_MUTED, marginTop: 1 },
   bottomUnavailableHint: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 11, color: colors.danger, marginTop: 2 },
@@ -1967,9 +2183,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.45)",
   },
   pickerSheet: {
-    backgroundColor: "#ffffff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: colors.cardBg,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
     paddingTop: 12,
     paddingBottom: 36,
     alignItems: "center",
@@ -1981,7 +2197,7 @@ const styles = StyleSheet.create({
   pickerHandle: {
     width: 36,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radius.pill,
     backgroundColor: HANDLE,
     marginBottom: 18,
   },
@@ -2002,44 +2218,40 @@ const styles = StyleSheet.create({
     height: 52,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#0a7a50",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
+    ...primaryButtonShadow,
   },
   pickerDoneBtnText: {
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 16,
-    color: "#ffffff",
+    color: colors.textInverse,
     letterSpacing: -0.3,
   },
 
   // Image / map viewer
-  viewerBackdrop: { flex: 1, backgroundColor: "#000" },
+  viewerBackdrop: { flex: 1, backgroundColor: colors.text },
   viewerGlassClose: {
     position: "absolute", left: 16, zIndex: 2,
-    width: 38, height: 38, borderRadius: 19,
+    width: 38, height: 38, borderRadius: radius.pill,
     backgroundColor: "rgba(255,255,255,0.16)",
     alignItems: "center", justifyContent: "center",
   },
   viewerCounter: {
     position: "absolute", alignSelf: "center", zIndex: 2,
-    backgroundColor: "rgba(255,255,255,0.16)", borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.16)", borderRadius: radius.pill,
     paddingHorizontal: 12, paddingVertical: 5,
   },
   viewerCounterText: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: "#fff",
+    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: colors.textInverse,
     letterSpacing: 0.6, fontVariant: ["tabular-nums"],
   },
-  mapViewerScreen: { flex: 1, backgroundColor: "#fff" },
+  mapViewerScreen: { flex: 1, backgroundColor: colors.cardBg },
   mapViewerClose: { backgroundColor: "rgba(17,17,17,0.74)" },
   viewerClose: {
     position: "absolute", right: 16,
     paddingHorizontal: 14, paddingVertical: 8,
-    backgroundColor: "rgba(255,255,255,0.14)", borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.14)", borderRadius: radius.pill,
   },
-  viewerCloseText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: "#fff" },
+  viewerCloseText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: colors.textInverse },
 
   // Trust notes (below time picker)
   trustNotes: { gap: 7, marginTop: 10 },
@@ -2049,6 +2261,18 @@ const styles = StyleSheet.create({
   // Reserve note — single certainty line (rebuild)
   reserveNote: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 },
   reserveNoteText: { flex: 1, fontFamily: "PlusJakartaSans-Medium", fontSize: 13, lineHeight: 18, color: FG_2 },
+
+  // ── Host trust block (E10.1) — name + real tenure, no fabricated stats ──
+  hostRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  hostAvatar: {
+    width: 44, height: 44, borderRadius: radius.pill,
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  hostAvatarText: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: FG },
+  hostInfo: { flex: 1, minWidth: 0 },
+  hostNameRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  hostName: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: FG, letterSpacing: -0.2, flexShrink: 1 },
+  hostMeta: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: FG_SUBTLE, marginTop: 2 },
 
   // Feature list (replaces pill chips)
 

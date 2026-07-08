@@ -1,14 +1,26 @@
 import { useRef, useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput as RNTextInput, View } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput as RNTextInput,
+  View,
+} from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { ArrowLeft, ChevronRight, LogOut, ShieldCheck } from "lucide-react-native";
+import { ShieldCheck } from "lucide-react-native";
 import { changePassword, deleteAccount, logoutAllSessions, requestPasswordReset } from "../api";
 import { useAuth } from "../auth";
 import type { RootStackParamList } from "../types";
 import { Button, TextInput as AppTextInput } from "../components/ui";
-import { colors, spacing, textStyles } from "../styles/theme";
+import { SignInWall } from "../components/SignInWall";
+import { DetailNavBar, FieldRow, SectionTitle } from "../components/profileUi";
 import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
+import { colors } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "LoginSecurity">;
 
@@ -30,25 +42,21 @@ export function LoginSecurityScreen({ navigation }: Props) {
 
   const handleLogoutAll = () => {
     if (!token) return;
-    Alert.alert(
-      "Log out of all devices",
-      "This will end sessions on all devices. You will need to sign in again.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Log out all",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await logoutAllSessions(token);
-              await logout();
-            } catch (err) {
-              Alert.alert("Could not log out all devices", err instanceof Error ? err.message : "Please try again.");
-            }
-          },
+    Alert.alert("Log out of all devices", "This will end sessions on all devices. You will need to sign in again.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Log out all",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await logoutAllSessions(token);
+            await logout();
+          } catch (err) {
+            Alert.alert("Could not log out all devices", err instanceof Error ? err.message : "Please try again.");
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleSendPasswordSetup = async () => {
@@ -68,25 +76,21 @@ export function LoginSecurityScreen({ navigation }: Props) {
 
   const handleDeleteAccount = () => {
     if (!token) return;
-    Alert.alert(
-      "Delete account",
-      "This will permanently remove your account, listings, and bookings.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete account",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteAccount(token);
-              await logout();
-            } catch (err) {
-              Alert.alert("Could not delete account", err instanceof Error ? err.message : "Please try again.");
-            }
-          },
+    Alert.alert("Delete account", "This will permanently remove your account, listings, and bookings.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete account",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteAccount(token);
+            await logout();
+          } catch (err) {
+            Alert.alert("Could not delete account", err instanceof Error ? err.message : "Please try again.");
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleChangePassword = async () => {
@@ -122,151 +126,120 @@ export function LoginSecurityScreen({ navigation }: Props) {
   if (!token || !user) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-        <View style={styles.navBar}>
-          <Pressable
-            style={styles.backBtn}
-            onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}
-            accessibilityLabel="Go back"
-          >
-            <ArrowLeft size={20} color="#111827" strokeWidth={2.5} />
-          </Pressable>
-          <Text style={styles.navTitle}>Login & security</Text>
-          <View style={styles.navSpacer} />
-        </View>
-        <View style={styles.gatedWrap}>
-          <Text style={styles.gatedTitle}>Sign in to manage security</Text>
-          <Text style={styles.gatedBody}>Password, sessions, and account deletion controls are available after login.</Text>
-          <Button title="Sign in" onPress={() => navigation.navigate("SignIn")} style={styles.gatedPrimaryButton} />
-          <Button
-            title="Browse spaces"
-            variant="secondary"
-            onPress={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
-          />
-        </View>
+        <StatusBar barStyle="dark-content" />
+        <DetailNavBar title="Login & security" onBack={() => goBackOrFallback(navigation, fallbackRoutes.profile)} />
+        <SignInWall
+          icon={<ShieldCheck size={26} color={colors.primary} strokeWidth={2.2} />}
+          title="Sign in to manage security"
+          body="Your password, active sessions and account controls are available once you sign in."
+          onSignIn={() => navigation.navigate("Welcome")}
+          onBrowse={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
+        />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      <StatusBar barStyle="dark-content" />
+      <DetailNavBar title="Login & security" onBack={() => goBackOrFallback(navigation, fallbackRoutes.profile)} />
       <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
-        <View style={styles.navBar}>
-          <Pressable
-            style={styles.backBtn}
-            onPress={() => goBackOrFallback(navigation, fallbackRoutes.profile)}
-            accessibilityLabel="Go back"
-          >
-            <ArrowLeft size={20} color="#111827" strokeWidth={2.5} />
-          </Pressable>
-          <Text style={styles.navTitle}>Login & security</Text>
-          <View style={styles.navSpacer} />
-        </View>
         <ScrollView
           contentContainerStyle={[styles.content, { paddingBottom: 32 + Math.max(insets.bottom, 16) }]}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {user?.status === "suspended" ? (
-            <View style={styles.suspendedBanner}>
+          {user.status === "suspended" ? (
+            <View style={styles.suspended}>
               <Text style={styles.suspendedTitle}>Account suspended</Text>
               <Text style={styles.suspendedBody}>Your access is restricted. Contact support to resolve the issue.</Text>
             </View>
           ) : null}
 
-          <View style={styles.group}>
-            <Text style={styles.groupLabel}>{isPasswordLogin ? "Change password" : "Sign-in method"}</Text>
-            {isPasswordLogin ? (
-              <>
-                <Text style={styles.groupHelp}>Update your password for this account.</Text>
-                <Text style={styles.fieldLabel}>Current password</Text>
-                <AppTextInput
-                  containerStyle={styles.editInputContainer}
-                  style={styles.editInput}
-                  value={currentPassword}
-                  onChangeText={setCurrentPassword}
-                  secureTextEntry
-                  textContentType="password"
-                  autoComplete="current-password"
-                  returnKeyType="next"
-                  blurOnSubmit={false}
-                  onSubmitEditing={() => newPasswordRef.current?.focus()}
-                  placeholder="Enter current password"
-                />
-                <Text style={styles.fieldLabel}>New password</Text>
-                <AppTextInput
-                  containerStyle={styles.editInputContainer}
-                  style={styles.editInput}
-                  ref={newPasswordRef}
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                  secureTextEntry
-                  textContentType="newPassword"
-                  autoComplete="new-password"
-                  returnKeyType="next"
-                  blurOnSubmit={false}
-                  onSubmitEditing={() => confirmPasswordRef.current?.focus()}
-                  placeholder="Enter new password"
-                />
-                <Text style={styles.fieldLabel}>Confirm new password</Text>
-                <AppTextInput
-                  containerStyle={styles.editInputContainer}
-                  style={styles.editInput}
-                  ref={confirmPasswordRef}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry
-                  textContentType="newPassword"
-                  autoComplete="new-password"
-                  returnKeyType="done"
-                  onSubmitEditing={handleChangePassword}
-                  placeholder="Confirm new password"
-                />
-                {error ? <Text style={styles.error}>{error}</Text> : null}
-                {message ? <Text style={styles.notice}>{message}</Text> : null}
-                <Button title="Update password" onPress={handleChangePassword} disabled={saving} loading={saving} />
-              </>
-            ) : (
-              <>
-                <View style={styles.providerRow}>
-                  <View style={styles.providerIconWrap}>
-                    <ShieldCheck size={18} color={colors.text} strokeWidth={2.1} />
-                  </View>
-                  <View style={styles.textWrap}>
-                    <Text style={styles.rowTitle}>Signed in with {authProviderLabel}</Text>
-                    <Text style={styles.rowSubtitle}>
-                      You don’t need an app password when you use {authProviderLabel} sign-in.
-                    </Text>
-                  </View>
+          {isPasswordLogin ? (
+            <>
+              <SectionTitle style={styles.firstSection}>Password</SectionTitle>
+              <Text style={styles.help}>Update your password for this account.</Text>
+              <Text style={styles.fieldLabel}>Current password</Text>
+              <AppTextInput
+                containerStyle={styles.inputWrap}
+                style={styles.input}
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                secureTextEntry
+                textContentType="password"
+                autoComplete="current-password"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => newPasswordRef.current?.focus()}
+                placeholder="Enter current password"
+              />
+              <Text style={styles.fieldLabel}>New password</Text>
+              <AppTextInput
+                containerStyle={styles.inputWrap}
+                style={styles.input}
+                ref={newPasswordRef}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry
+                textContentType="newPassword"
+                autoComplete="new-password"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+                placeholder="Enter new password"
+              />
+              <Text style={styles.fieldLabel}>Confirm new password</Text>
+              <AppTextInput
+                containerStyle={styles.inputWrap}
+                style={styles.input}
+                ref={confirmPasswordRef}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                textContentType="newPassword"
+                autoComplete="new-password"
+                returnKeyType="done"
+                onSubmitEditing={handleChangePassword}
+                placeholder="Confirm new password"
+              />
+              {error ? <Text style={styles.error}>{error}</Text> : null}
+              {message ? <Text style={styles.notice}>{message}</Text> : null}
+              <Button title="Update password" onPress={handleChangePassword} disabled={saving} loading={saving} style={styles.actionBtn} />
+            </>
+          ) : (
+            <>
+              <SectionTitle style={styles.firstSection}>Sign-in method</SectionTitle>
+              <View style={styles.providerRow}>
+                <View style={styles.providerIcon}>
+                  <ShieldCheck size={18} color={colors.text} strokeWidth={2.1} />
                 </View>
-                {error ? <Text style={styles.error}>{error}</Text> : null}
-                {message ? <Text style={styles.notice}>{message}</Text> : null}
-                <Button
-                  title="Send password setup email"
-                  onPress={handleSendPasswordSetup}
-                  disabled={sendingSetupEmail}
-                  loading={sendingSetupEmail}
-                />
-              </>
-            )}
-          </View>
-
-          <View style={styles.group}>
-            <Text style={styles.groupLabel}>Account access</Text>
-            <Pressable style={styles.row} onPress={handleLogoutAll}>
-              <LogOut size={22} color={colors.danger} strokeWidth={2.1} />
-              <View style={styles.textWrap}>
-                <Text style={styles.rowTitle}>Log out of all devices</Text>
-                <Text style={styles.rowSubtitle}>Ends sessions on other phones and browsers</Text>
+                <View style={styles.flex}>
+                  <Text style={styles.providerTitle}>Signed in with {authProviderLabel}</Text>
+                  <Text style={styles.providerSub}>
+                    You don’t need an app password when you use {authProviderLabel} sign-in.
+                  </Text>
+                </View>
               </View>
-              <ChevronRight size={20} color={colors.textSoft} strokeWidth={2.2} />
-            </Pressable>
-          </View>
-          <Pressable style={styles.deleteLink} onPress={handleDeleteAccount}>
-            <Text style={styles.deleteLinkText}>Delete account</Text>
-          </Pressable>
+              {error ? <Text style={styles.error}>{error}</Text> : null}
+              {message ? <Text style={styles.notice}>{message}</Text> : null}
+              <Button
+                title="Send password setup email"
+                onPress={handleSendPasswordSetup}
+                disabled={sendingSetupEmail}
+                loading={sendingSetupEmail}
+                style={styles.actionBtn}
+              />
+            </>
+          )}
+
+          <SectionTitle>Account access</SectionTitle>
+          <FieldRow label="Log out of all devices" onPress={handleLogoutAll} />
+          <FieldRow label="Delete account" danger onPress={handleDeleteAccount} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -274,167 +247,36 @@ export function LoginSecurityScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F4F6F8",
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  navBar: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: "#E5E7EB",
-    backgroundColor: "#ffffff",
-  },
-  group: {
-    backgroundColor: "#ffffff",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 18,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  groupLabel: {
-    color: "#6b7280",
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13,
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
-    marginBottom: 14,
-  },
-  groupHelp: {
-    ...textStyles.meta,
-    color: colors.textMuted,
-    marginBottom: 12,
-  },
+  container: { flex: 1, backgroundColor: colors.cardBg },
+  flex: { flex: 1 },
+  content: { paddingHorizontal: 20, paddingTop: 4 },
+  firstSection: { marginTop: 8 },
+  help: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: colors.textSoft, lineHeight: 20, marginBottom: 14 },
   fieldLabel: {
-    color: "#6b7280",
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
-    marginBottom: 10,
-    marginTop: 4,
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: colors.text,
+    letterSpacing: -0.2, marginBottom: 6, marginTop: 20,
   },
-  editInputContainer: {
-    marginBottom: 14,
+  inputWrap: { marginBottom: 0 },
+  input: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 17, color: colors.text, letterSpacing: -0.2,
+    backgroundColor: "transparent", borderWidth: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider, borderRadius: 0,
+    paddingHorizontal: 0, paddingVertical: 10,
   },
-  editInput: {
-    ...textStyles.body,
-    color: colors.text,
-    paddingHorizontal: 0,
-    paddingVertical: 12,
+  actionBtn: { marginTop: 6 },
+  providerRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8, marginBottom: 8 },
+  providerIcon: {
+    width: 36, height: 36, borderRadius: 11, backgroundColor: colors.cardBgMuted,
+    alignItems: "center", justifyContent: "center",
   },
-  backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
-  navTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 17, color: "#111827", letterSpacing: -0.3 },
-  navSpacer: { width: 38 },
-  gatedWrap: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: spacing.screenX,
-    paddingBottom: 48,
+  providerTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: colors.text },
+  providerSub: { fontFamily: "PlusJakartaSans-Regular", fontSize: 14, color: colors.textSoft, marginTop: 2, lineHeight: 20 },
+  error: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: colors.danger, marginBottom: 10 },
+  notice: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: colors.primary, marginBottom: 10 },
+  suspended: {
+    backgroundColor: colors.status.canceled.background, borderColor: colors.status.canceled.border, borderWidth: 1, borderRadius: 16,
+    padding: 16, marginTop: 12,
   },
-  gatedTitle: {
-    color: colors.text,
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 26,
-    letterSpacing: -0.7,
-    lineHeight: 32,
-    marginBottom: 10,
-  },
-  gatedBody: {
-    color: colors.textMuted,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 20,
-  },
-  gatedPrimaryButton: {
-    marginBottom: 12,
-  },
-  suspendedBanner: {
-    backgroundColor: "#FEF2F2",
-    borderColor: "#FECACA",
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 12,
-    padding: 16,
-  },
-  suspendedTitle: {
-    ...textStyles.sectionTitle,
-    color: colors.danger,
-  },
-  suspendedBody: {
-    ...textStyles.meta,
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  error: {
-    ...textStyles.meta,
-    color: colors.danger,
-    marginBottom: spacing.sm,
-  },
-  notice: {
-    ...textStyles.meta,
-    color: colors.accent,
-    marginBottom: spacing.sm,
-  },
-  providerRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: spacing.md,
-    paddingVertical: 6,
-  },
-  providerIconWrap: {
-    alignItems: "center",
-    backgroundColor: colors.cardBgMuted,
-    borderRadius: 14,
-    height: 36,
-    justifyContent: "center",
-    width: 36,
-  },
-  row: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 12,
-    paddingVertical: 16,
-  },
-  textWrap: {
-    flex: 1,
-  },
-  rowTitle: {
-    ...textStyles.bodyStrong,
-    color: colors.text,
-  },
-  rowDanger: {
-    color: colors.danger,
-  },
-  deleteLink: {
-    alignSelf: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  deleteLinkText: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
-    color: colors.textSoft,
-    textDecorationLine: "underline",
-  },
-  rowSubtitle: {
-    ...textStyles.meta,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
+  suspendedTitle: { fontFamily: "PlusJakartaSans-Bold", fontSize: 15, color: colors.danger },
+  suspendedBody: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: colors.textSoft, marginTop: 4, lineHeight: 19 },
 });

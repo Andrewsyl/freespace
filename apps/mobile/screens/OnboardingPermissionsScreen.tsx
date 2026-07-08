@@ -13,11 +13,14 @@ import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { colors } from "../styles/theme";
 
-const GREEN     = "#0a8050";
-const FG        = "#0f172a";
-const BODY_TEXT = "#475569";
-const MUTED     = "#94a3b8";
+// Sourced from styles/theme.ts (see docs/PARKING_DESIGN_BIBLE.md §0) — kept as
+// local aliases so the styles below don't need touching one by one.
+const GREEN     = colors.primary;
+const FG        = colors.text;
+const BODY_TEXT = colors.textMuted;
+const MUTED     = colors.textDisabled;
 
 const LOGO         = require("../assets/freespace-logo-grid-black.png");
 const IMG_LOCATION = require("../assets/illustrations/city-driver.gif");

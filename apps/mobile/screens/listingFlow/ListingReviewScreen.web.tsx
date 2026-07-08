@@ -257,8 +257,8 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   error: {
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
+    backgroundColor: colors.status.canceled.background,
+    borderColor: colors.status.canceled.border,
     borderRadius: 12,
     borderWidth: 1,
     color: colors.danger,
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   },
   confirmBox: {
     alignItems: "center",
-    borderColor: "#cbd5f5",
+    borderColor: colors.border,
     borderRadius: 8,
     borderWidth: 1,
     height: 22,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   primaryButtonDisabled: {
-    backgroundColor: "#cbd5e1",
+    backgroundColor: colors.border,
   },
   primaryButtonText: {
     color: colors.cardBg,

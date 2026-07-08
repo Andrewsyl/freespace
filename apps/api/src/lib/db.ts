@@ -66,6 +66,7 @@ export type UserRecord = {
   password_hash: string;
   role?: "driver" | "host" | "admin";
   host_stripe_account_id?: string | null;
+  stripe_customer_id?: string | null;
   email_verified?: boolean;
   verification_token?: string | null;
   verification_expires?: Date | null;
@@ -901,7 +902,7 @@ export async function createUser({
 
 export async function findUserByEmail(email: string) {
   const result = await pool.query(
-    `SELECT id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, email_verified, vehicle_make, vehicle_type, vehicle_color, vehicle_plate, status, verification_token,
+    `SELECT id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, stripe_customer_id, email_verified, vehicle_make, vehicle_type, vehicle_color, vehicle_plate, status, verification_token,
       verification_expires, phone_verification_token, phone_verification_expires, refresh_token_hash, refresh_expires, terms_version, terms_accepted_at,
       privacy_version, privacy_accepted_at
      FROM users WHERE email = $1 LIMIT 1`,
@@ -912,13 +913,27 @@ export async function findUserByEmail(email: string) {
 
 export async function findUserById(userId: string) {
   const result = await pool.query(
-    `SELECT id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, email_verified, vehicle_make, vehicle_type, vehicle_color, vehicle_plate, status, verification_token,
+    `SELECT id, email, full_name, phone, phone_verified, password_hash, role, host_stripe_account_id, stripe_customer_id, email_verified, vehicle_make, vehicle_type, vehicle_color, vehicle_plate, status, verification_token,
       verification_expires, phone_verification_token, phone_verification_expires, refresh_token_hash, refresh_expires, terms_version, terms_accepted_at,
       privacy_version, privacy_accepted_at
      FROM users WHERE id = $1 LIMIT 1`,
     [userId]
   );
   return result.rows[0] as UserRecord | undefined;
+}
+
+// Persists the Stripe customer id the first time it's created for a user.
+// Guarded by a unique index (046_stripe_customer_id.sql) — a concurrent
+// insert for the same id (shouldn't happen, ids are Stripe-generated and
+// unique) would violate the constraint rather than silently duplicate.
+// If another request already won the race and set a different id first,
+// this is a no-op (the WHERE clause only fills a currently-null column).
+export async function setStripeCustomerIdIfAbsent(userId: string, stripeCustomerId: string) {
+  const result = await pool.query(
+    `UPDATE users SET stripe_customer_id = $2 WHERE id = $1 AND stripe_customer_id IS NULL RETURNING stripe_customer_id`,
+    [userId, stripeCustomerId]
+  );
+  return (result.rows[0]?.stripe_customer_id as string | undefined) ?? null;
 }
 
 export async function findUserByResetToken(token: string) {
@@ -1531,13 +1546,37 @@ export async function updateListingForHost({
   }
 }
 
+// Host tenure is measured from their earliest listing, not account signup —
+// a user can sign up as a driver years before ever hosting, so account
+// created_at would overstate "hosting since" (docs/PARKING_DESIGN_BIBLE.md A10).
+const HOST_TRUST_SELECT = `
+  u.full_name AS host_name,
+  u.email_verified AS host_email_verified,
+  u.phone_verified AS host_phone_verified,
+  (SELECT MIN(l2.created_at) FROM listings l2 WHERE l2.host_id = listings.host_id) AS host_since
+`;
+const HOST_TRUST_JOIN = `LEFT JOIN users u ON u.id = listings.host_id`;
+
+function mapHostTrust(row: {
+  host_name?: string | null;
+  host_email_verified?: boolean | null;
+  host_phone_verified?: boolean | null;
+  host_since?: string | Date | null;
+}) {
+  return {
+    hostName: row.host_name ?? null,
+    hostVerified: Boolean(row.host_email_verified && row.host_phone_verified),
+    hostSince: row.host_since ? new Date(row.host_since).toISOString() : null,
+  };
+}
+
 export async function getListingById(listingId: string) {
   let result;
   try {
     result = await pool.query(
       `
       SELECT
-        id,
+        listings.id,
         title,
         address,
         price_per_day,
@@ -1556,10 +1595,12 @@ export async function getListingById(listingId: string) {
         capacity,
         description,
         ST_X(geom) AS longitude,
-        ST_Y(geom) AS latitude
+        ST_Y(geom) AS latitude,
+        ${HOST_TRUST_SELECT}
       FROM listings
-      WHERE id = $1
-        AND status <> 'archived'
+      ${HOST_TRUST_JOIN}
+      WHERE listings.id = $1
+        AND listings.status <> 'archived'
       LIMIT 1
       `,
       [listingId]
@@ -1570,7 +1611,7 @@ export async function getListingById(listingId: string) {
     result = await pool.query(
       `
       SELECT
-        id,
+        listings.id,
         title,
         address,
         price_per_day,
@@ -1589,10 +1630,12 @@ export async function getListingById(listingId: string) {
         ${optionalListingSelect(columns, "capacity", "1::integer")},
         ${optionalListingSelect(columns, "description", "NULL::text")},
         ST_X(geom) AS longitude,
-        ST_Y(geom) AS latitude
+        ST_Y(geom) AS latitude,
+        ${HOST_TRUST_SELECT}
       FROM listings
-      WHERE id = $1
-        AND status <> 'archived'
+      ${HOST_TRUST_JOIN}
+      WHERE listings.id = $1
+        AND listings.status <> 'archived'
       LIMIT 1
       `,
       [listingId]
@@ -1619,6 +1662,7 @@ export async function getListingById(listingId: string) {
     description: row.description ?? null,
     latitude: row.latitude,
     longitude: row.longitude,
+    ...mapHostTrust(row),
   };
 }
 
@@ -1627,13 +1671,20 @@ export async function getListingByIdWithAvailability(
   from: string,
   to: string
 ) {
+  // Capacity-aware, matching searchListings' already-correct check — the
+  // previous NOT EXISTS(any overlapping booking) form treated a listing with
+  // capacity > 1 as fully unavailable the moment ANY one of its spaces was
+  // booked, which would have contradicted the honest scarcity pill (E7) this
+  // field now feeds. This is a route-level fast-fail convenience only; the
+  // DB trigger (044_capacity_check_on_update.sql) remains the actual
+  // capacity safety boundary at booking time (AGENTS.md invariant 4).
   const availabilityCheck = `
-    NOT EXISTS (
-      SELECT 1 FROM bookings b
+    (
+      SELECT COUNT(*) FROM bookings b
       WHERE b.listing_id = listings.id
       AND (b.status IS NULL OR b.status <> 'canceled')
       AND tstzrange(b.start_time, b.end_time, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
-    )
+    ) < COALESCE(listings.capacity, 1)
     AND NOT EXISTS (
       SELECT 1 FROM listing_availability a
       WHERE a.listing_id = listings.id
@@ -1674,12 +1725,25 @@ export async function getListingByIdWithAvailability(
       )
     )
   `;
+  // Real overlap count for the requested window — same logic the capacity
+  // trigger (db/migrations/044_capacity_check_on_update.sql) and search
+  // (searchListings) already use. Kept separate from `is_available` above,
+  // which checks the availability *schedule*, not remaining capacity — used
+  // only for the honest scarcity pill (docs/PARKING_DESIGN_BIBLE.md E7), not
+  // for gating the booking button.
+  const bookedCountSql = `
+    (SELECT COUNT(*) FROM bookings b
+     WHERE b.listing_id = listings.id
+     AND (b.status IS NULL OR b.status <> 'canceled')
+     AND tstzrange(b.start_time, b.end_time, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+    )
+  `;
   let result;
   try {
     result = await pool.query(
       `
       SELECT
-        id,
+        listings.id,
         title,
         address,
         price_per_day,
@@ -1698,11 +1762,14 @@ export async function getListingByIdWithAvailability(
         capacity,
         description,
         (${availabilityCheck}) AS is_available,
+        ${bookedCountSql} AS booked_count,
         ST_X(geom) AS longitude,
-        ST_Y(geom) AS latitude
+        ST_Y(geom) AS latitude,
+        ${HOST_TRUST_SELECT}
       FROM listings
-      WHERE id = $1
-        AND status <> 'archived'
+      ${HOST_TRUST_JOIN}
+      WHERE listings.id = $1
+        AND listings.status <> 'archived'
       LIMIT 1
       `,
       [listingId, from, to]
@@ -1713,7 +1780,7 @@ export async function getListingByIdWithAvailability(
     result = await pool.query(
       `
       SELECT
-        id,
+        listings.id,
         title,
         address,
         price_per_day,
@@ -1732,11 +1799,14 @@ export async function getListingByIdWithAvailability(
         ${optionalListingSelect(columns, "capacity", "1::integer")},
         ${optionalListingSelect(columns, "description", "NULL::text")},
         (${availabilityCheck}) AS is_available,
+        ${bookedCountSql} AS booked_count,
         ST_X(geom) AS longitude,
-        ST_Y(geom) AS latitude
+        ST_Y(geom) AS latitude,
+        ${HOST_TRUST_SELECT}
       FROM listings
-      WHERE id = $1
-        AND status <> 'archived'
+      ${HOST_TRUST_JOIN}
+      WHERE listings.id = $1
+        AND listings.status <> 'archived'
       LIMIT 1
       `,
       [listingId, from, to]
@@ -1745,6 +1815,7 @@ export async function getListingByIdWithAvailability(
 
   if (!result.rowCount) return null;
   const row = result.rows[0];
+  const capacity = row.capacity != null ? Number(row.capacity) : 1;
   return {
     id: row.id,
     title: row.title,
@@ -1759,11 +1830,13 @@ export async function getListingByIdWithAvailability(
     hostId: row.host_id,
     rating: row.rating != null ? Number(row.rating) : null,
     ratingCount: Number(row.rating_count ?? 0),
-    capacity: row.capacity != null ? Number(row.capacity) : 1,
+    capacity,
     description: row.description ?? null,
     latitude: row.latitude,
     longitude: row.longitude,
     isAvailable: row.is_available,
+    spacesRemaining: Math.max(0, capacity - Number(row.booked_count ?? 0)),
+    ...mapHostTrust(row),
   };
 }
 
@@ -2522,7 +2595,7 @@ export async function getBookingForRefund({
 }) {
   const res = await pool.query(
     `
-    SELECT id, status, payment_intent_id, payout_status, end_time, refund_status, refund_id
+    SELECT id, status, payment_intent_id, payout_status, start_time, end_time, refund_status, refund_id
     FROM bookings
     WHERE id = $1
       AND driver_id = $2
@@ -2535,6 +2608,7 @@ export async function getBookingForRefund({
         status: string | null;
         payment_intent_id: string | null;
         payout_status: string | null;
+        start_time: Date;
         end_time: Date;
         refund_status: string | null;
         refund_id: string | null;
@@ -2782,6 +2856,24 @@ export async function listStalePendingBookings({
     [String(olderThanMinutes), limit]
   );
   return res.rows as { id: string; payment_intent_id: string }[];
+}
+
+// Confirmed bookings sit at status='confirmed' forever once their window
+// passes — nothing ever marks them done. Transitioning them to 'completed'
+// once end_time has passed is a pure bulk SQL update (no external API calls
+// per row like the Stripe-touching sweepers), so no batching/pagination is
+// needed; the existing bookings_status_idx keeps it cheap.
+export async function markConfirmedBookingsCompleted(): Promise<number> {
+  const res = await pool.query(
+    `
+    UPDATE bookings
+    SET status = 'completed'
+    WHERE status = 'confirmed'
+      AND end_time <= NOW()
+    RETURNING id;
+    `
+  );
+  return res.rowCount ?? 0;
 }
 
 export async function markBookingPaymentRefunded({
@@ -3133,7 +3225,7 @@ export async function getHostEarningsSummary(hostId: string) {
       FROM bookings b
       JOIN listings l ON l.id = b.listing_id
       WHERE l.host_id = $1
-        AND b.status = 'confirmed';
+        AND b.status IN ('confirmed', 'completed');
       `,
       [hostId]
     );
@@ -3156,7 +3248,7 @@ export async function getHostEarningsSummary(hostId: string) {
         FROM bookings b
         JOIN listings l ON l.id = b.listing_id
         WHERE l.host_id = $1
-          AND b.status = 'confirmed';
+          AND b.status IN ('confirmed', 'completed');
         `,
         [hostId]
       );
@@ -3186,7 +3278,7 @@ export async function listDuePayoutsForHost(hostId: string) {
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
     WHERE l.host_id = $1
-      AND b.status = 'confirmed'
+      AND b.status IN ('confirmed', 'completed')
       AND (b.payout_status IS NULL OR b.payout_status = 'pending')
       AND b.payout_available_at IS NOT NULL
       AND b.payout_available_at <= NOW();
@@ -3216,7 +3308,7 @@ export async function listDuePayoutsForAllHosts() {
     FROM bookings b
     JOIN listings l ON l.id = b.listing_id
     JOIN users u ON u.id = l.host_id
-    WHERE b.status = 'confirmed'
+    WHERE b.status IN ('confirmed', 'completed')
       AND (b.payout_status IS NULL OR b.payout_status = 'pending')
       AND b.payout_available_at IS NOT NULL
       AND b.payout_available_at <= NOW()
@@ -3315,7 +3407,7 @@ export async function getAdminDashboardMetrics() {
         SELECT COALESCE(SUM(amount_cents), 0)
         FROM bookings
         WHERE created_at >= NOW() - interval '30 days'
-          AND status = 'confirmed'
+          AND status IN ('confirmed', 'completed')
       ) AS gmv_30d_cents,
       (
         SELECT COUNT(*)
@@ -3340,7 +3432,7 @@ export async function getAdminDashboardMetrics() {
       SELECT
         date_trunc('day', created_at)::date AS day,
         COUNT(*)::int AS count,
-        COALESCE(SUM(amount_cents) FILTER (WHERE status = 'confirmed'), 0)::int AS gmv_cents
+        COALESCE(SUM(amount_cents) FILTER (WHERE status IN ('confirmed', 'completed')), 0)::int AS gmv_cents
       FROM bookings
       WHERE created_at >= current_date - interval '29 days'
       GROUP BY 1

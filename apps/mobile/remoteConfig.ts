@@ -1,6 +1,7 @@
 import { mobileEnv } from "./env";
 
 const FETCH_TIMEOUT_MS = 4000;
+const STRIPE_PLACEHOLDER_KEY_PREFIX = "pk_test_localdummy";
 
 // The publishable key baked into this build (mobileEnv.stripePublishableKey)
 // is only the offline fallback. The server is the real switch: flipping
@@ -14,7 +15,11 @@ export async function resolveStripePublishableKey(): Promise<string> {
       const response = await fetch(`${mobileEnv.apiBase}/api/config`, { signal: controller.signal });
       if (!response.ok) throw new Error(`config fetch failed: ${response.status}`);
       const data = (await response.json()) as { stripePublishableKey?: string | null };
-      if (data.stripePublishableKey && /^pk_(test|live)_/.test(data.stripePublishableKey)) {
+      if (
+        data.stripePublishableKey &&
+        /^pk_(test|live)_/.test(data.stripePublishableKey) &&
+        !data.stripePublishableKey.startsWith(STRIPE_PLACEHOLDER_KEY_PREFIX)
+      ) {
         return data.stripePublishableKey;
       }
     } finally {
