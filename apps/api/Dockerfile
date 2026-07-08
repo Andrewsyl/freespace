@@ -22,5 +22,11 @@ RUN corepack enable && yarn install --frozen-lockfile --production=true
 COPY --from=build /app/apps/api/dist apps/api/dist
 COPY db/migrations db/migrations
 
+# Run as the unprivileged `node` user (uid 1000, ships with the official
+# image) so a container breakout lands as non-root rather than root on the
+# box. Ownership is handed over after the root-only install/copy steps.
+RUN chown -R node:node /app
+USER node
+
 EXPOSE 8080
 CMD ["npm", "--workspace", "apps/api", "run", "start:dist"]

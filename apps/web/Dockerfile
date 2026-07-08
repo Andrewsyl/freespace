@@ -36,9 +36,14 @@ ENV PORT=8080
 ENV HOSTNAME=0.0.0.0
 ENV NEXT_TELEMETRY_DISABLED=1
 
-COPY --from=build /app/apps/web/.next/standalone ./
-COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=build /app/apps/web/public ./apps/web/public
+# Copy build artifacts owned by the unprivileged `node` user (uid 1000, ships
+# with the official image) so the server never runs as root — a container
+# breakout then lands as a non-root user, not root on the box.
+COPY --from=build --chown=node:node /app/apps/web/.next/standalone ./
+COPY --from=build --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=node:node /app/apps/web/public ./apps/web/public
+
+USER node
 
 EXPOSE 8080
 CMD ["node", "apps/web/server.js"]
