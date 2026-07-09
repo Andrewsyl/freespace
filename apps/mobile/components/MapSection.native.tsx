@@ -301,6 +301,7 @@ function MapSection({
   onOverlappingPins,
   priceForListing,
   priceKey,
+  priceSuffix,
   resumeNonce,
   searchPinCoordinate,
   onAllPinsRevealed,
@@ -326,6 +327,9 @@ function MapSection({
   onOverlappingPins?: (pins: ListingResult[]) => void;
   priceForListing?: (listing: ListingResult) => number;
   priceKey?: string;
+  // Appended after the price on each pin (e.g. "/mo" in monthly search). Kept
+  // out of the numeric price so the label→price reconstruction still parses.
+  priceSuffix?: string;
   resumeNonce?: number;
   searchPinCoordinate?: { latitude: number; longitude: number } | null;
   onAllPinsRevealed?: () => void;
@@ -364,10 +368,10 @@ function MapSection({
         acc[listing.id] =
           listing.is_available === false
             ? "Full"
-            : `€${formatPinPrice(priceValue)}`;
+            : `€${formatPinPrice(priceValue)}${priceSuffix ?? ""}`;
         return acc;
       }, {}),
-    [nextResults, priceForListing]
+    [nextResults, priceForListing, priceSuffix]
   );
   const labelKeys = useMemo(() => {
     const labels = Array.from(new Set(Object.values(pinLabelById)));
@@ -538,7 +542,7 @@ function MapSection({
           if (!revealedIds.has(listing.id)) return null;
           const isSelected = selectedId === listing.id;
           const price = priceForListing ? priceForListing(listing) : Number(listing.price_per_day);
-          const label = pinLabelById[listing.id] ?? `€${formatPinPrice(price)}`;
+          const label = pinLabelById[listing.id] ?? `€${formatPinPrice(price)}${priceSuffix ?? ""}`;
           const pinKey = getPinKey(label, isSelected);
           const stableKey = `${label}|${isSelected ? "selected" : "default"}|${PIN_STYLE_VERSION}`;
           const pinImage = pinImages[pinKey] ?? stableImagesRef.current[stableKey];

@@ -223,9 +223,11 @@ export interface DrumRollPickerProps {
   onChange: (date: Date) => void;
   minuteInterval?: number;
   drumRef?: Ref<DrumRollPickerHandle>;
+  /** Show only the date wheel (no hour/minute) — e.g. monthly "arrive from". */
+  dateOnly?: boolean;
 }
 
-export function DrumRollPicker({ date, onChange, minuteInterval = 5, drumRef }: DrumRollPickerProps) {
+export function DrumRollPicker({ date, onChange, minuteInterval = 5, drumRef, dateOnly = false }: DrumRollPickerProps) {
   const dates = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -318,10 +320,14 @@ export function DrumRollPicker({ date, onChange, minuteInterval = 5, drumRef }: 
   return (
     <View style={drum.container}>
       <DrumColumn ref={dateColRef} items={dateLabels} initialIndex={initialDateIndex} onIndexChange={handleDate} flex={2} />
-      <View style={drum.divider} />
-      <DrumColumn ref={hourColRef} items={hourLabels} initialIndex={initialHourIndex} onIndexChange={handleHour} flex={1} loop />
-      <View style={drum.divider} />
-      <DrumColumn ref={minColRef}  items={minuteLabels} initialIndex={initialMinuteIndex} onIndexChange={handleMinute} flex={1} loop />
+      {dateOnly ? null : (
+        <>
+          <View style={drum.divider} />
+          <DrumColumn ref={hourColRef} items={hourLabels} initialIndex={initialHourIndex} onIndexChange={handleHour} flex={1} loop />
+          <View style={drum.divider} />
+          <DrumColumn ref={minColRef}  items={minuteLabels} initialIndex={initialMinuteIndex} onIndexChange={handleMinute} flex={1} loop />
+        </>
+      )}
       <View style={drum.band} pointerEvents="none" />
     </View>
   );

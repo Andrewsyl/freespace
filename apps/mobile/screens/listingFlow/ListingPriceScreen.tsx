@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useListingFlow } from "./context";
+import { applyServiceFee } from "../../utils/pricing";
 import { FlowHeader } from "./FlowHeader";
 import { FlowFooter } from "./FlowFooter";
 import { hostFlowColors } from "./hostFlowTheme";
@@ -195,6 +196,19 @@ export function ListingPriceScreen({ navigation, route }: Props) {
       setter(v);
     };
 
+  // Most hosts think in a daily price, not an hourly one — so until they edit
+  // the hourly field themselves, derive it from the daily rate (default ratio
+  // 12/2 = 6h of parking per day) and say so. Editing hourly stops the derive.
+  const HOURS_PER_DAY_RATIO = DEFAULT_DAILY / DEFAULT_HOURLY;
+  const onDailyChange = (v: string) => {
+    withTouch("daily", setDaily)(v);
+    if (!touched.hourly && !listingId) {
+      const d = parse(v);
+      if (d) setHourly(fmt(round2(d / HOURS_PER_DAY_RATIO)));
+    }
+  };
+  const hourlyAutoDerived = !listingId && !touched.hourly && !!touched.daily;
+
   const hourlyVal = parse(hourly) ?? 0;
   const dailyVal  = parse(daily)  ?? 0;
 
@@ -205,12 +219,25 @@ export function ListingPriceScreen({ navigation, route }: Props) {
 
   const dailyHelper = useMemo(() => {
     if (!dailyRatio) return null;
-    if (dailyRatio > 24) return `${dailyRatio}× hourly — drivers would pay less booking by the hour`;
-    return `≈ ${dailyRatio}× your hourly rate`;
+    if (dailyRatio > 24) return `Your daily rate is ${dailyRatio}× this — drivers would pay less booking by the hour`;
+    return `Your daily rate ≈ ${dailyRatio}× this hourly rate`;
   }, [dailyRatio]);
 
   const showHourlyDaily = pricingMode === "hourly_daily" || pricingMode === "both";
   const showMonthly     = pricingMode === "monthly"      || pricingMode === "both";
+
+  // Driver-facing preview uses the same cent-level fee rounding as the API
+  // (utils/pricing mirrors calculateListingChargeCents), so the numbers shown
+  // here are exactly what drivers will see. Monthly is enquiry-based, so no
+  // driver price is claimed for it.
+  const feeNote = useMemo(() => {
+    if (!showHourlyDaily) return null;
+    const parts: string[] = [];
+    if (hourlyVal > 0) parts.push(`€${fmt(applyServiceFee(hourlyVal))}/hr`);
+    if (dailyVal > 0) parts.push(`€${fmt(applyServiceFee(dailyVal))}/day`);
+    if (!parts.length) return "Drivers pay an 8% service fee on top — you keep everything you set.";
+    return `Drivers will see ${parts.join(" · ")} — an 8% service fee is added on top, so you keep everything you set.`;
+  }, [dailyVal, hourlyVal, showHourlyDaily]);
 
   useEffect(() => {
     setDraft((p) => ({ ...p, pricePerHour: hourly, pricePerDay: daily, pricePerMonth: monthly }));
@@ -240,7 +267,7 @@ export function ListingPriceScreen({ navigation, route }: Props) {
           {/* Header card */}
           <View style={styles.headerCard}>
             <View style={styles.headerCardTop}>
-              <Text style={styles.headerKicker}>Step 7 · Pricing</Text>
+              <Text style={styles.headerKicker}>Step 8 · Pricing</Text>
               <Text style={styles.headerTitle}>Set your rates</Text>
             </View>
             <View style={styles.headerCardBottom}>
@@ -275,20 +302,24 @@ export function ListingPriceScreen({ navigation, route }: Props) {
             {showHourlyDaily ? (
               <>
                 <FieldRow
+                  label="Daily"
+                  value={daily}
+                  onChange={onDailyChange}
+                  suggested={isSuggested("daily", daily, DEFAULT_DAILY)}
+                  isLast={false}
+                />
+                <FieldRow
                   label="Hourly"
                   value={hourly}
                   onChange={withTouch("hourly", setHourly)}
+                  helper={
+                    hourlyAutoDerived
+                      ? "Auto-set from your daily rate — edit to override"
+                      : dailyHelper
+                  }
+                  warning={!hourlyAutoDerived && !!dailyRatio && dailyRatio > 24}
                   suggested={isSuggested("hourly", hourly, DEFAULT_HOURLY)}
-                  isLast={!showHourlyDaily || lastField === "hourly"}
-                />
-                <FieldRow
-                  label="Daily"
-                  value={daily}
-                  onChange={withTouch("daily", setDaily)}
-                  helper={dailyHelper}
-                  warning={!!dailyRatio && dailyRatio > 24}
-                  suggested={isSuggested("daily", daily, DEFAULT_DAILY)}
-                  isLast={lastField === "daily"}
+                  isLast={lastField === "daily" || lastField === "hourly"}
                 />
               </>
             ) : null}
@@ -303,6 +334,8 @@ export function ListingPriceScreen({ navigation, route }: Props) {
               />
             ) : null}
           </View>
+
+          {feeNote ? <Text style={styles.feeNote}>{feeNote}</Text> : null}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -419,6 +452,14 @@ const styles = StyleSheet.create({
   },
   tabTextActive: {
     color: FG,
+  },
+
+  feeNote: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12.5,
+    lineHeight: 18,
+    paddingHorizontal: 4,
   },
 
   // ── Tips card ────────────────────────────────────────────────

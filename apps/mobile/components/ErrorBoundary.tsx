@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { radius } from "../styles/theme";
 import { captureException } from "../sentry";
 import { logError } from "../logger";
 
@@ -81,7 +82,7 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: "#0a8050",
-    borderRadius: 14,
+    borderRadius: radius.pill,
     paddingVertical: 14,
     paddingHorizontal: 32,
   },

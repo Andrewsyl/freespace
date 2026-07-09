@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { radius } from "../styles/theme";
 import DatePicker from "./AdaptiveDatePicker";
 import { DrumRollPicker } from "./DrumRollPicker";
 
@@ -20,6 +21,10 @@ type MapTimePickerSheetProps = {
   startAt?: Date;
   minimumDate?: Date;
   minuteInterval?: 1 | 5 | 10 | 15 | 20 | 30;
+  /** Pick a calendar day only (no hour/minute) — e.g. a monthly start date. */
+  dateOnly?: boolean;
+  /** Override the sheet heading (defaults to Arrival/Departure time). */
+  title?: string;
   onCancel: () => void;
   onConfirm: (date: Date) => void;
 };
@@ -37,6 +42,8 @@ export function MapTimePickerSheet({
   startAt,
   minimumDate,
   minuteInterval = 5,
+  dateOnly = false,
+  title,
   onCancel,
   onConfirm,
 }: MapTimePickerSheetProps) {
@@ -68,7 +75,7 @@ export function MapTimePickerSheet({
         modal
         open={visible}
         date={current}
-        mode="datetime"
+        mode={dateOnly ? "date" : "datetime"}
         minuteInterval={minuteInterval}
         minimumDate={minimumDate}
         onConfirm={(date) => onConfirm(date)}
@@ -90,7 +97,7 @@ export function MapTimePickerSheet({
           <View style={styles.handle} />
 
           <View style={styles.header}>
-            <Text style={styles.title}>{field === "start" ? "Arrival time" : "Departure time"}</Text>
+            <Text style={styles.title}>{title ?? (field === "start" ? "Arrival time" : "Departure time")}</Text>
             {field === "end" && startAt ? (
               <Text style={styles.subtitle}>arriving {formatTimeLabel(startAt)}</Text>
             ) : null}
@@ -99,6 +106,7 @@ export function MapTimePickerSheet({
           <DrumRollPicker
             date={current}
             minuteInterval={minuteInterval}
+            dateOnly={dateOnly}
             onChange={(date) => setDraftDate(date)}
           />
 
@@ -184,7 +192,7 @@ const styles = StyleSheet.create({
   primary: {
     alignItems: "center",
     backgroundColor: "#0a8050",
-    borderRadius: 14,
+    borderRadius: radius.pill,
     flex: 2,
     height: 52,
     justifyContent: "center",

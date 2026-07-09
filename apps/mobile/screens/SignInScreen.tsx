@@ -11,31 +11,37 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { CommonActions } from "@react-navigation/native";
+import { CommonActions, type CompositeScreenProps } from "@react-navigation/native";
 import { ArrowLeft, UserRound } from "lucide-react-native";
 import { useAuth } from "../auth";
 import { requestEmailVerification } from "../api";
-import type { AuthReturnTo, RootStackParamList } from "../types";
+import type { AuthReturnTo, AuthStackParamList, RootStackParamList } from "../types";
 import { Button, TextInput as AppTextInput } from "../components/ui";
 import { colors, spacing, textStyles } from "../styles/theme";
 
-type Props = NativeStackScreenProps<RootStackParamList, "SignIn">;
+type Props = CompositeScreenProps<
+  NativeStackScreenProps<AuthStackParamList, "SignIn">,
+  NativeStackScreenProps<RootStackParamList>
+>;
 const AUTH_GREEN = colors.primary;
 
 export function SignInScreen({ navigation, route }: Props) {
   const { login } = useAuth();
   const returnTo = route.params?.returnTo;
 
+  // Reset the ROOT navigator (owns Tabs + return destination), not the nested
+  // auth modal stack — getParent() is the root stack.
   const navigateAfterAuth = (dest?: AuthReturnTo) => {
+    const root = navigation.getParent() ?? navigation;
     if (dest) {
-      navigation.dispatch(
+      root.dispatch(
         CommonActions.reset({
           index: 1,
           routes: [{ name: "Tabs" }, { name: dest.screen, params: dest.params }],
         })
       );
     } else {
-      navigation.dispatch(
+      root.dispatch(
         CommonActions.reset({ index: 0, routes: [{ name: "Tabs", params: { screen: "Search" } }] })
       );
     }

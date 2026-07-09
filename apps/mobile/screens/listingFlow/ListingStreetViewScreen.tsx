@@ -100,7 +100,7 @@ export function ListingStreetViewScreen({ navigation }: Props) {
         </View>
         <View style={styles.headerCardBottom}>
           <Text style={styles.headerSubtitle}>
-            Drag to find the best angle. If the view isn't clear, you can add your own photos later.
+            Drivers see this first. Drag to find the best angle — if the view isn't clear, you can add your own photos later.
           </Text>
         </View>
       </View>
@@ -177,7 +177,7 @@ export function ListingStreetViewScreen({ navigation }: Props) {
         primaryLabel={canUseView && !panoAvailable ? "Continue without Street View" : "Use this view"}
         onPrimary={() => {
           // No panorama at this address: don't strand the host on a dead button —
-          // clear any cover fields and move on so they add their own photos next.
+          // clear any cover fields and move on so they add their own photos later.
           if (canUseView && !panoAvailable) {
             setDraft((prev) => ({ ...prev, coverHeading: null, coverPitch: null, coverPanoId: null }));
             navigation.navigate("ListingDetails");

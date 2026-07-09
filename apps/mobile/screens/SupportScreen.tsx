@@ -91,7 +91,7 @@ export function SupportScreen({ navigation, route }: Props) {
           icon={<LifeBuoy size={26} color={colors.primary} strokeWidth={2.2} />}
           title="Sign in to contact support"
           body="Sign in so we can attach your message to the right booking and reply to you properly."
-          onSignIn={() => navigation.navigate("Welcome", { returnTo: { screen: "Support", params: route.params } })}
+          onSignIn={() => navigation.navigate("Auth", { screen: "Welcome", params: { returnTo: { screen: "Support", params: route.params } } })}
           onBrowse={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
         />
       </SafeAreaView>

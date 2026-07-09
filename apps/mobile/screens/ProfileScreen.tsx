@@ -132,7 +132,7 @@ export function ProfileScreen({ navigation }: Props) {
         >
           <Pressable
             style={({ pressed }) => [styles.masthead, pressed && styles.mastheadPressed]}
-            onPress={() => navigation.navigate("Welcome")}
+            onPress={() => navigation.navigate("Auth", { screen: "Welcome" })}
           >
             <View style={styles.avatar}>
               <Ionicons name="person-outline" size={30} color={GREEN} />
@@ -149,7 +149,7 @@ export function ProfileScreen({ navigation }: Props) {
 
           <Pressable
             style={({ pressed }) => [styles.host, pressed && styles.hostPressed]}
-            onPress={() => navigation.navigate("Welcome")}
+            onPress={() => navigation.navigate("Auth", { screen: "Welcome" })}
           >
             <View style={styles.hostText}>
               <Text style={styles.hostTitle}>Earn with your space</Text>

@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, ChevronDown, Star } from "lucide-react-native";
 import { listListingReviews, type ListingReview } from "../api";
-import { colors } from "../styles/theme";
+import { colors, radius } from "../styles/theme";
 import type { RootStackParamList } from "../types";
 import { formatReviewDate } from "../utils/dateFormat";
 import { fallbackRoutes, goBackOrFallback, resetToSafeRoute } from "../navigation/safeNavigation";
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   },
   emptyButton: {
     backgroundColor: colors.primary,
-    borderRadius: 12,
+    borderRadius: radius.pill,
     marginTop: 14,
     paddingHorizontal: 16,
     paddingVertical: 11,

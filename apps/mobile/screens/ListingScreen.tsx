@@ -39,7 +39,7 @@ import type { ListingDetail, RootStackParamList } from "../types";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { AppleSignInButton } from "../components/AppleSignInButton";
 import { formatDateLabel, formatDateTimeLabel, formatReviewDate, formatTimeLabel } from "../utils/dateFormat";
-import { calculateListingTotal, formatPriceValue, getListingRateType } from "../utils/pricing";
+import { calculateListingTotal, formatPriceValue, getListingRateType, getMonthlyGrossEuro } from "../utils/pricing";
 import {
   Accessibility,
   AlertCircle,
@@ -70,7 +70,7 @@ import {
   X,
 } from "lucide-react-native";
 import { SkeletonBlock, usePulse } from "../components/ui";
-import { SquircleBtn } from "../components/SquircleBtn";
+import { BookButton } from "../components/BookButton";
 import { PulseDots } from "../components/PulseDots";
 import { motion } from "../styles/motion";
 import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
@@ -204,7 +204,7 @@ function HeaderFadeButton({
 }
 
 export function ListingScreen({ navigation, route }: Props) {
-  const { id, from, to, booking } = route.params;
+  const { id, from, to, booking, mode: routeMode } = route.params;
   const { user, loginWithOAuth } = useAuth();
   const { isFavorite, toggle } = useFavorites();
   const toast = useGlobalToast();
@@ -242,6 +242,31 @@ export function ListingScreen({ navigation, route }: Props) {
   const authBackdropOpacity = useRef(new Animated.Value(0)).current;
   const authSheetTranslateY = useRef(new Animated.Value(320)).current;
   const [pickerField, setPickerField] = useState<"start" | "end">("start");
+
+  // A monthly-only listing carries a monthly price but no hourly rate (the host
+  // price screen leaves price_per_hour null for pricingMode "monthly"). Those
+  // spaces are enquiry-based, not hourly-bookable, so the detail page swaps the
+  // "When do you need it?" hourly booking flow for a monthly start-date + plan
+  // picker and shows the raw monthly rate (no service fee — see FavoritesScreen).
+  // Show the monthly view when the space has a monthly price AND either the
+  // user arrived from the monthly search lane (routeMode) or the listing is
+  // monthly-only (no hourly rate). This way a "both" listing opened from
+  // monthly search still shows monthly, while the same listing opened normally
+  // stays hourly-bookable.
+  const isMonthly =
+    !!listing &&
+    Number(listing.price_per_month) > 0 &&
+    (routeMode === "monthly" || !(Number(listing.price_per_hour) > 0));
+  // Fee-inclusive monthly price — what the buyer actually pays at checkout, so
+  // the listing bar and the booking summary quote the same number (parity with
+  // the hourly path, which is always fee-inclusive buyer-side).
+  const monthlyPrice = getMonthlyGrossEuro(Number(listing?.price_per_month ?? 0));
+  // The monthly term is always a single month: end = start + 1 calendar month.
+  const monthlyEnd = useMemo(() => {
+    const d = new Date(startAt);
+    d.setMonth(d.getMonth() + 1);
+    return d;
+  }, [startAt]);
 
   const streetViewLocation =
     listing?.latitude && listing?.longitude
@@ -679,7 +704,7 @@ export function ListingScreen({ navigation, route }: Props) {
 
   const handleToggleFavorite = async () => {
     if (!listing) return;
-    if (!user) { navigation.navigate("Welcome", { returnTo: { screen: "Listing" as const, params: { id, from: startAt.toISOString(), to: endAt.toISOString() } } }); return; }
+    if (!user) { navigation.navigate("Auth", { screen: "Welcome", params: { returnTo: { screen: "Listing" as const, params: { id, from: startAt.toISOString(), to: endAt.toISOString() } } } }); return; }
     const wasFavorite = isFavorite(id);
     if (!wasFavorite) {
       heartScale.stopAnimation();
@@ -728,7 +753,7 @@ export function ListingScreen({ navigation, route }: Props) {
   const openAuthScreen = (screen: "Welcome" | "SignIn" | "Register") => {
     closeAuthOverlay();
     const returnTo = { screen: "BookingSummary" as const, params: { id, from: startAt.toISOString(), to: endAt.toISOString() } };
-    setTimeout(() => navigation.navigate(screen, { returnTo }), 180);
+    setTimeout(() => navigation.navigate("Auth", { screen, params: { returnTo } }), 180);
   };
 
   const openLegal = () => {
@@ -1030,6 +1055,35 @@ export function ListingScreen({ navigation, route }: Props) {
 
                 {/* ── Booking ──────────────────────────────── */}
                 <View style={styles.sectionDivider} />
+                {isMonthly ? (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Monthly parking</Text>
+                  <View style={styles.timeRow}>
+                    <Pressable style={styles.timeField} onPress={() => openPicker("start")}>
+                      <View style={styles.timeFieldHeader}>
+                        <Text style={styles.timeFieldLabel}>Start date</Text>
+                        <ChevronDown size={14} color={colors.textMuted} strokeWidth={2.2} />
+                      </View>
+                      <Text style={styles.timeFieldTime}>{formatDateLabel(startAt)}</Text>
+                    </Pressable>
+                    <View style={styles.timeArrow}>
+                      <ArrowRight size={14} color={colors.textMuted} strokeWidth={2.3} />
+                    </View>
+                    {/* End date is derived (start + 1 month), so it's shown, not
+                        editable — the term is always a single month. */}
+                    <View style={styles.timeField}>
+                      <View style={styles.timeFieldHeader}>
+                        <Text style={styles.timeFieldLabel}>End date</Text>
+                      </View>
+                      <Text style={styles.timeFieldTime}>{formatDateLabel(monthlyEnd)}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.reserveNote}>
+                    <CircleCheck size={16} color={GREEN} strokeWidth={2.3} />
+                    <Text style={styles.reserveNoteText}>Reserve one month up front — renew each month to keep the space.</Text>
+                  </View>
+                </View>
+                ) : (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>When do you need it?</Text>
                   <View style={styles.timeRow}>
@@ -1082,6 +1136,7 @@ export function ListingScreen({ navigation, route }: Props) {
                     <Text style={styles.reserveNoteText}>Reserved instantly — free cancellation up to 2 hours before.</Text>
                   </View>
                 </View>
+                )}
 
                 {/* ── Host ─────────────────────────────────── */}
                 {hostName ? (
@@ -1327,7 +1382,15 @@ export function ListingScreen({ navigation, route }: Props) {
                 }}
               >
                 <View style={styles.bottomLeft}>
-                  {updatingTimes ? (
+                  {isMonthly ? (
+                    <>
+                      <Text style={styles.bottomPrice}>
+                        €{formatPriceValue(monthlyPrice)}
+                        <Text style={styles.bottomPriceSuffix}> / month</Text>
+                      </Text>
+                      <Text style={styles.bottomDuration}>Monthly space</Text>
+                    </>
+                  ) : updatingTimes ? (
                     <View style={styles.bottomPriceUpdating}>
                       <PulseDots />
                     </View>
@@ -1351,12 +1414,32 @@ export function ListingScreen({ navigation, route }: Props) {
                   <View style={styles.ownListingBadge}>
                     <Text style={styles.ownListingText}>This is your listing</Text>
                   </View>
+                ) : isMonthly ? (
+                  <BookButton
+                    label="Book monthly"
+                    loading={navigatingToBooking}
+                    onPress={() => {
+                      if (!user) { setShowAuthModal(true); return; }
+                      if (navigatingToBooking) return;
+                      setNavigatingToBooking(true);
+                      // One-off single month: hold the space from the chosen
+                      // start date to the same day next month (server derives
+                      // months=1 from this span). No multi-month selection.
+                      navigation.navigate("BookingSummary", {
+                        id,
+                        from: startAt.toISOString(),
+                        to: monthlyEnd.toISOString(),
+                        mode: "monthly",
+                      });
+                      setTimeout(() => setNavigatingToBooking(false), 800);
+                    }}
+                  />
                 ) : showBookingMode ? (
                   <View style={[styles.ownListingBadge, { backgroundColor: GREEN_SOFT }]}>
                     <Text style={[styles.ownListingText, { color: GREEN }]}>Already booked</Text>
                   </View>
                 ) : (
-                  <SquircleBtn
+                  <BookButton
                     label={listing.is_available === false ? "Choose another time" : "Book Now"}
                     loading={navigatingToBooking}
                     onPress={() => {
@@ -1391,6 +1474,8 @@ export function ListingScreen({ navigation, route }: Props) {
         startAt={startAt}
         minimumDate={pickerMinimumDate}
         minuteInterval={5}
+        dateOnly={isMonthly}
+        title={isMonthly ? "Start date" : undefined}
         onCancel={() => setPickerVisible(false)}
         onConfirm={(picked) => {
           setPickerVisible(false);
@@ -1818,6 +1903,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BG_2,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingHorizontal: 12,
     paddingVertical: 14,
   },

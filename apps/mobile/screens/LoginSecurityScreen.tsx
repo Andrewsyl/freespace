@@ -132,7 +132,7 @@ export function LoginSecurityScreen({ navigation }: Props) {
           icon={<ShieldCheck size={26} color={colors.primary} strokeWidth={2.2} />}
           title="Sign in to manage security"
           body="Your password, active sessions and account controls are available once you sign in."
-          onSignIn={() => navigation.navigate("Welcome")}
+          onSignIn={() => navigation.navigate("Auth", { screen: "Welcome" })}
           onBrowse={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
         />
       </SafeAreaView>

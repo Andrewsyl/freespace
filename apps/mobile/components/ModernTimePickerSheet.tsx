@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors } from "../styles/theme";
+import { colors, radius } from "../styles/theme";
 
 type QuickTimeOption = {
   label: string;
@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
   confirmButton: {
     minHeight: 52,
     flex: 1.45,
-    borderRadius: 16,
+    borderRadius: radius.pill,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",

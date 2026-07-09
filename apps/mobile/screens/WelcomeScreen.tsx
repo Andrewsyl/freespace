@@ -4,17 +4,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Mail } from "lucide-react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { CommonActions } from "@react-navigation/native";
+import { CommonActions, type CompositeScreenProps } from "@react-navigation/native";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { useAuth } from "../auth";
 import { AppleSignInButton } from "../components/AppleSignInButton";
-import type { AuthReturnTo, RootStackParamList } from "../types";
+import type { AuthReturnTo, AuthStackParamList, RootStackParamList } from "../types";
 import freeSpaceLogo from "../assets/freespace-logo-grid-black.png";
 import { trackEvent } from "../analytics";
 import { logInfo, logWarn } from "../logger";
-import { colors } from "../styles/theme";
+import { colors, radius } from "../styles/theme";
 
-type Props = NativeStackScreenProps<RootStackParamList, "Welcome">;
+type Props = CompositeScreenProps<
+  NativeStackScreenProps<AuthStackParamList, "Welcome">,
+  NativeStackScreenProps<RootStackParamList>
+>;
 const AUTH_GREEN = colors.primary;
 
 export function WelcomeScreen({ navigation, route }: Props) {
@@ -33,16 +36,22 @@ export function WelcomeScreen({ navigation, route }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // The login screens live in a modal stack, so post-auth navigation must
+  // reset the ROOT navigator (which owns Tabs + the return destination), not
+  // the nested auth stack. getParent() is the root stack.
   const navigateAfterAuth = (dest?: AuthReturnTo) => {
+    const root = navigation.getParent() ?? navigation;
     if (dest) {
-      navigation.dispatch(
+      root.dispatch(
         CommonActions.reset({
           index: 1,
           routes: [{ name: "Tabs" }, { name: dest.screen, params: dest.params }],
         })
       );
     } else {
-      navigation.replace("Tabs", { screen: "Search" });
+      root.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: "Tabs", params: { screen: "Search" } }] })
+      );
     }
   };
 
@@ -104,6 +113,17 @@ export function WelcomeScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Modal card entry point — dismiss the whole login overlay (root owns
+          the "Auth" modal). Swipe-down also works on iOS. */}
+      <Pressable
+        style={styles.closeBtn}
+        onPress={() => (navigation.getParent() ?? navigation).goBack()}
+        hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel="Close"
+      >
+        <Ionicons name="close" size={24} color={colors.textMuted} />
+      </Pressable>
       <View style={styles.content}>
         <View style={styles.logoWrap}>
           <Image
@@ -112,12 +132,6 @@ export function WelcomeScreen({ navigation, route }: Props) {
             resizeMode="contain"
           />
         </View>
-
-        <Image
-          source={require("../assets/car-illustration.png")}
-          style={styles.illustration}
-          resizeMode="contain"
-        />
 
         <View style={styles.authCopyWrap}>
           <Text style={styles.authTitle}>
@@ -205,6 +219,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 20,
   },
+  closeBtn: {
+    position: "absolute",
+    top: 12,
+    right: 16,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   content: {
     width: "100%",
     alignItems: "center",
@@ -212,21 +237,15 @@ const styles = StyleSheet.create({
   },
   logoWrap: {
     width: "100%",
-    height: 92,
+    height: 120,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 4,
-    marginBottom: 4,
-    overflow: "visible",
+    marginTop: 8,
+    marginBottom: 24,
   },
   logo: {
-    width: 200,
-    height: 112,
-  },
-  illustration: {
-    width: 332,
-    height: 196,
-    marginBottom: 16,
+    width: 190,
+    height: 106,
   },
   authCopyWrap: {
     width: "100%",
@@ -254,7 +273,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 360,
     minHeight: 52,
-    borderRadius: 16,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.cardBg,
@@ -299,7 +318,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 360,
     minHeight: 52,
-    borderRadius: 16,
+    borderRadius: radius.md,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",

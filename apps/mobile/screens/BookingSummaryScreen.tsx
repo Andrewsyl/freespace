@@ -21,7 +21,7 @@ import Svg, { Path } from "react-native-svg";
 import { useStripe } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
 import { Ionicons } from "@expo/vector-icons";
-import { SquircleBtn } from "../components/SquircleBtn";
+import { BookButton } from "../components/BookButton";
 import { ModernTimePickerSheet, addMinutes, roundUpToMinuteInterval } from "../components/ModernTimePickerSheet";
 import { ArrowLeft, CircleX, Info, Lock, RefreshCw, ShieldCheck } from "lucide-react-native";
 import {
@@ -43,7 +43,7 @@ import { isMobileE2EActive } from "../e2e/testMode";
 import { trackEvent } from "../analytics";
 import type { ListingDetail, RootStackParamList } from "../types";
 import { formatDateLabel, formatDateTimeLabel, formatTimeLabel } from "../utils/dateFormat";
-import { calculateListingTotal, formatListingPriceLine } from "../utils/pricing";
+import { calculateListingTotal, calculateMonthlyTotal, formatListingPriceLine, formatPriceValue, getMonthlyGrossEuro } from "../utils/pricing";
 import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingSummary">;
@@ -60,7 +60,11 @@ function AppleLogo({ size = 14, color = "#101414" }: { size?: number; color?: st
 }
 
 export function BookingSummaryScreen({ navigation, route }: Props) {
-  const { id, from, to } = route.params;
+  const { id, from, to, mode } = route.params;
+  // A one-off single-month booking (from → from+1 month) priced off the host's
+  // monthly rate. The term is fixed here — the start date is chosen on the
+  // listing screen — so we skip the hourly arrival/departure pickers and promo.
+  const isMonthly = mode === "monthly";
   const { token, user } = useAuth();
   const insets = useSafeAreaInsets();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
@@ -214,8 +218,9 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const end = useMemo(() => endAt, [endAt]);
   const priceSummary = useMemo(() => {
     if (!listing) return null;
+    if (isMonthly) return calculateMonthlyTotal(Number(listing.price_per_month ?? 0));
     return calculateListingTotal(listing, start, end);
-  }, [end, listing, start]);
+  }, [end, listing, start, isMonthly]);
 
   const pricing = useMemo(() => {
     // Same fee-inclusive quote the map, list and listing screens display —
@@ -380,6 +385,12 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const handlePayment = async () => {
     if (!listing || !priceSummary || !token || bookingConfirmed) return;
     if (selectedTimeUnavailable) {
+      if (isMonthly) {
+        // The month term is set on the listing screen — send them back to pick
+        // a different start date rather than opening an hourly time picker.
+        showPaymentRecovery("This space is fully booked for that month. Pick another start date.", "bookings");
+        return;
+      }
       showPaymentRecovery("That time is unavailable. Choose another arrival time.", "time");
       openPicker("start");
       return;
@@ -414,6 +425,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
         from: startAt.toISOString(),
         to: endAt.toISOString(),
         amountCents: pricing.finalCents,
+        mode: isMonthly ? "monthly" : undefined,
         vehiclePlate: vehiclePlate.trim().toUpperCase() || undefined,
         promoCode: appliedPromo?.code ?? undefined,
         token,
@@ -711,8 +723,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             <Text style={styles.centeredTitle}>Sign in to continue</Text>
             <Text style={styles.centeredSubtitle}>Log in or create an account to confirm your booking.</Text>
             <View style={styles.authButtons}>
-              <Button style={styles.authButton} onPress={() => navigation.navigate("SignIn", { returnTo: { screen: "BookingSummary" as const, params: route.params } })} title="Sign in" />
-              <Button variant="secondary" style={styles.authButton} onPress={() => navigation.navigate("Register", { returnTo: { screen: "BookingSummary" as const, params: route.params } })} title="Create account" />
+              <Button style={styles.authButton} onPress={() => navigation.navigate("Auth", { screen: "SignIn", params: { returnTo: { screen: "BookingSummary" as const, params: route.params } } })} title="Sign in" />
+              <Button variant="secondary" style={styles.authButton} onPress={() => navigation.navigate("Auth", { screen: "Register", params: { returnTo: { screen: "BookingSummary" as const, params: route.params } } })} title="Create account" />
             </View>
           </View>
         ) : listing ? (
@@ -730,6 +742,23 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                 <Text style={styles.headerSubtitle}>{listing.address || ""}</Text>
               </View>
               <View style={styles.cardBody}>
+                {isMonthly ? (
+                  <View style={styles.timeRow}>
+                    <View style={styles.timeSlot}>
+                      <Text style={styles.timeSlotLabel}>START</Text>
+                      <Text style={styles.monthlyTermDate}>{formatDateLabel(start)}</Text>
+                    </View>
+                    <View style={styles.timeArrow}>
+                      <View style={styles.timeArrowLine} />
+                      <Text style={styles.timeArrowDuration}>1 MONTH</Text>
+                      <View style={styles.timeArrowLine} />
+                    </View>
+                    <View style={styles.timeSlot}>
+                      <Text style={styles.timeSlotLabel}>UNTIL</Text>
+                      <Text style={styles.monthlyTermDate}>{formatDateLabel(end)}</Text>
+                    </View>
+                  </View>
+                ) : (
                 <View style={styles.timeRow}>
                   <TouchableOpacity style={styles.timeSlot} activeOpacity={0.7} onPress={() => openPicker("start")}>
                     <Text style={styles.timeSlotLabel}>ARRIVING</Text>
@@ -747,12 +776,20 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                     <Text style={styles.timeSlotDate}>{formatDateLabel(end)}</Text>
                   </TouchableOpacity>
                 </View>
+                )}
                 {selectedTimeUnavailable ? (
-                  <Pressable style={styles.timeUnavailableCard} onPress={() => openPicker("start")}>
+                  <Pressable
+                    style={styles.timeUnavailableCard}
+                    onPress={isMonthly ? () => goBackOrFallback(navigation, fallbackRoutes.search) : () => openPicker("start")}
+                  >
                     <CircleX size={16} color={colors.danger} strokeWidth={2.2} />
                     <View style={styles.timeUnavailableCopy}>
-                      <Text style={styles.timeUnavailableTitle}>This time is unavailable</Text>
-                      <Text style={styles.timeUnavailableBody}>Choose another arrival time to continue.</Text>
+                      <Text style={styles.timeUnavailableTitle}>
+                        {isMonthly ? "Fully booked that month" : "This time is unavailable"}
+                      </Text>
+                      <Text style={styles.timeUnavailableBody}>
+                        {isMonthly ? "Pick another start date to continue." : "Choose another arrival time to continue."}
+                      </Text>
                     </View>
                   </Pressable>
                 ) : null}
@@ -765,13 +802,17 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               <View style={styles.priceRows}>
                 <View style={styles.priceRow}>
                   <Text style={styles.priceRowLabel}>Rate</Text>
-                  <Text style={styles.priceRowValue}>{formatListingPriceLine(listing)}</Text>
+                  <Text style={styles.priceRowValue}>
+                    {isMonthly
+                      ? `€${formatPriceValue(getMonthlyGrossEuro(Number(listing.price_per_month ?? 0)))} / month`
+                      : formatListingPriceLine(listing)}
+                  </Text>
                 </View>
                 <View style={[styles.priceRow, styles.priceRowBorder]}>
                   <Text style={styles.priceRowLabel}>Duration</Text>
                   <Text style={styles.priceRowValue}>{priceSummary?.durationLabel ?? ""}</Text>
                 </View>
-                {appliedPromo ? (
+                {!isMonthly && appliedPromo ? (
                   <View style={[styles.priceRow, styles.priceRowBorder]}>
                     <View style={styles.promoAppliedLabelWrap}>
                       <Text style={styles.priceRowLabel}>
@@ -801,7 +842,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                   <Text style={styles.priceTotalLabel}>Total</Text>
                   <Text style={styles.priceTotalValue}>€{pricing.finalPrice.toFixed(2)}</Text>
                 </View>
-                {!appliedPromo ? (
+                {!isMonthly && !appliedPromo ? (
                   <View style={styles.promoInputRow}>
                     <TextInput
                       style={styles.promoInput}
@@ -831,7 +872,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                     </Pressable>
                   </View>
                 ) : null}
-                {promoError ? <Text style={styles.promoErrorText}>{promoError}</Text> : null}
+                {!isMonthly && promoError ? <Text style={styles.promoErrorText}>{promoError}</Text> : null}
                 <View style={styles.priceMetaRow}>
                   <Pressable
                     accessibilityRole="button"
@@ -997,15 +1038,21 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
       {listing && user ? (
         <View style={[styles.footerBar, { paddingBottom: 14 + insets.bottom }]}>
-          <SquircleBtn
+          <BookButton
             label={
               selectedTimeUnavailable
-                ? "Choose another time"
+                ? (isMonthly ? "Choose another date" : "Choose another time")
                 : confirmingBooking
                   ? "Confirming…"
                   : `Pay €${pricing.finalPrice.toFixed(2)}`
             }
-            onPress={selectedTimeUnavailable ? () => openPicker("start") : handlePayment}
+            onPress={
+              selectedTimeUnavailable
+                ? isMonthly
+                  ? () => goBackOrFallback(navigation, fallbackRoutes.search)
+                  : () => openPicker("start")
+                : handlePayment
+            }
             disabled={bookingBusy || bookingConfirmed || (!selectedTimeUnavailable && requiresVehicleDetails)}
             loading={bookingBusy && !confirmingBooking}
             fullWidth
@@ -1232,6 +1279,10 @@ const styles = StyleSheet.create({
     color: FG, letterSpacing: -0.8, lineHeight: 32,
   },
   timeSlotDate: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED, marginTop: 2 },
+  monthlyTermDate: {
+    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 20,
+    color: FG, letterSpacing: -0.4, lineHeight: 26, marginTop: 2, textAlign: "center",
+  },
   timeArrow: { alignItems: "center", justifyContent: "center", gap: 4, paddingHorizontal: 4 },
   timeArrowLine: {
     width: 16, height: 1, backgroundColor: colors.divider,

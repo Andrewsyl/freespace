@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from "@react-navigation/native";
+
 export type RootStackParamList = {
   Tabs:
     | {
@@ -10,6 +12,10 @@ export type RootStackParamList = {
     id: string;
     from: string;
     to: string;
+    // Set to "monthly" when opened from the monthly search lane so the detail
+    // page shows the monthly (start-date + plan) view even for listings that
+    // also carry an hourly rate ("both"), not just monthly-only ones.
+    mode?: "daily" | "monthly";
     booking?: import("./api").BookingSummary;
   };
   ListingReviews: {
@@ -21,6 +27,9 @@ export type RootStackParamList = {
     id: string;
     from: string;
     to: string;
+    // "monthly" = a one-off single-month booking priced off the host's monthly
+    // rate (from → from+1 month). Absent/"daily" = the hourly/daily flow.
+    mode?: "daily" | "monthly";
   };
   VehicleType:
     | {
@@ -28,15 +37,10 @@ export type RootStackParamList = {
         focusField?: "plate";
       }
     | undefined;
-  Welcome: { returnTo?: AuthReturnTo } | undefined;
-  SignIn: { returnTo?: AuthReturnTo } | undefined;
-  Register: { returnTo?: AuthReturnTo } | undefined;
-  ResetPassword:
-    | {
-        token?: string;
-        apiBase?: string;
-      }
-    | undefined;
+  // The four login screens live in their own stack (AuthStackParamList),
+  // presented as a single modal card overlay. Open with
+  // navigation.navigate("Auth", { screen: "SignIn", params: { returnTo } }).
+  Auth: NavigatorScreenParams<AuthStackParamList> | undefined;
   Profile: { hideTabBar?: boolean } | undefined;
   PersonalInfo:
     | {
@@ -78,9 +82,23 @@ export type RootStackParamList = {
   };
 };
 
+// The login flow — presented as one modal card (the "Auth" root route). Screens
+// push horizontally within the card; back/reset targets the root navigator.
+export type AuthStackParamList = {
+  Welcome: { returnTo?: AuthReturnTo } | undefined;
+  SignIn: { returnTo?: AuthReturnTo } | undefined;
+  Register: { returnTo?: AuthReturnTo } | undefined;
+  ResetPassword:
+    | {
+        token?: string;
+        apiBase?: string;
+      }
+    | undefined;
+};
+
 export type AuthReturnTo =
   | { screen: "Listing"; params: { id: string; from: string; to: string } }
-  | { screen: "BookingSummary"; params: { id: string; from: string; to: string } }
+  | { screen: "BookingSummary"; params: { id: string; from: string; to: string; mode?: "daily" | "monthly" } }
   | {
       screen: "Support";
       params?: {
@@ -155,6 +173,10 @@ export type SearchParams = {
   radiusKm: string;
   from: string;
   to: string;
+  // "daily" = the hourly/daily short-term booking search (default). "monthly"
+  // filters to listings that carry a monthly price and price-filters on it —
+  // matches the API's search `mode` param.
+  mode?: "daily" | "monthly";
   includeUnavailable?: boolean;
   spaceType?: string;
   priceMin?: string;

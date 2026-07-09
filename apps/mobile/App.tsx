@@ -48,7 +48,7 @@ import { EditListingScreen } from "./screens/EditListingScreen";
 import { SupportScreen } from "./screens/SupportScreen";
 import { AdminScreen } from "./screens/AdminScreen";
 import { OnboardingPermissions } from "./screens/OnboardingPermissionsScreen";
-import type { RootStackParamList } from "./types";
+import type { AuthStackParamList, RootStackParamList } from "./types";
 import { getBooking, getMe, registerPushToken, verifyEmailToken } from "./api";
 import { BottomTabButton } from "./components/BottomTabButton";
 import { LoadingOverlay } from "./components/LoadingOverlay";
@@ -69,9 +69,26 @@ import { resolveStripePublishableKey } from "./remoteConfig";
 import { installGlobalErrorLogging, logWarn } from "./logger";
 import { initPostHog } from "./posthog";
 import { colors } from "./theme/colors";
+import { colors as uiColors } from "./styles/theme";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const Tab = createBottomTabNavigator();
+
+// The login flow, presented as one modal card (the "Auth" root route). Welcome
+// is the chooser; Sign in / Register / Reset password push horizontally within
+// the same card. Deep entry points open a specific screen via
+// navigation.navigate("Auth", { screen, params }).
+function AuthNavigator() {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Welcome" component={WelcomeScreen} />
+      <AuthStack.Screen name="SignIn" component={SignInScreen} />
+      <AuthStack.Screen name="Register" component={RegisterScreen} />
+      <AuthStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+    </AuthStack.Navigator>
+  );
+}
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 type BookingNotificationData = {
@@ -473,7 +490,8 @@ function AppNavigator() {
           showError("Sign in to view your booking.");
           dispatchWhenReady(
             CommonActions.navigate({
-              name: "Welcome",
+              name: "Auth",
+              params: { screen: "Welcome" },
             })
           );
           return;
@@ -497,18 +515,22 @@ function AppNavigator() {
           showError("Reset link is missing its token.");
           dispatchWhenReady(
             CommonActions.navigate({
-              name: "ResetPassword",
+              name: "Auth",
+              params: { screen: "ResetPassword" },
             })
           );
           return;
         }
         dispatchWhenReady(
           CommonActions.navigate({
-            name: "ResetPassword",
+            name: "Auth",
             params: {
-              token: tokenParam,
-              apiBase: apiBaseParam,
-            } as RootStackParamList["ResetPassword"],
+              screen: "ResetPassword",
+              params: {
+                token: tokenParam,
+                apiBase: apiBaseParam,
+              },
+            } as { screen: "ResetPassword"; params: AuthStackParamList["ResetPassword"] },
           })
         );
         return;
@@ -558,7 +580,11 @@ function AppNavigator() {
     <>
       <NavigationContainer ref={navigationRef} theme={TransparentTheme}>
         <Stack.Navigator
-          screenOptions={{ headerShown: false, freezeOnBlur: true }}
+          // Opaque default background so a presented modal ("Auth") has a solid
+          // card to scale back — that scale-back is what gives the iOS stacked
+          // overlay illusion. The map-backed Listing screen overrides this to
+          // transparent below.
+          screenOptions={{ headerShown: false, freezeOnBlur: true, contentStyle: { backgroundColor: uiColors.appBg } }}
           initialRouteName="Tabs"
         >
           <Stack.Screen name="Tabs" component={MainTabs} />
@@ -570,10 +596,11 @@ function AppNavigator() {
           <Stack.Screen name="Listings" component={ListingsScreen} />
           <Stack.Screen name="BookingSummary" component={BookingSummaryScreen} />
           <Stack.Screen name="VehicleType" component={VehicleTypeScreen} />
-          <Stack.Screen name="Welcome" component={WelcomeScreen} />
-          <Stack.Screen name="SignIn" component={SignInScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          <Stack.Screen
+            name="Auth"
+            component={AuthNavigator}
+            options={{ presentation: "modal" }}
+          />
           <Stack.Screen name="Legal" component={LegalScreen} />
           <Stack.Screen name="History" component={HistoryScreen} />
           <Stack.Screen name="Favorites" component={FavoritesScreen} />

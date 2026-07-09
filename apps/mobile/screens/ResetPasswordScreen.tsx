@@ -11,15 +11,19 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { CompositeScreenProps } from "@react-navigation/native";
 import { ArrowLeft, Lock, Mail } from "lucide-react-native";
 import { requestPasswordReset, resetPassword } from "../api";
 import { useToastOnMessage } from "../components/GlobalToast";
-import type { RootStackParamList } from "../types";
+import type { AuthStackParamList, RootStackParamList } from "../types";
 import { colors, spacing } from "../styles/theme";
 import { Button, TextInput as AppTextInput } from "../components/ui";
 import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 
-type Props = NativeStackScreenProps<RootStackParamList, "ResetPassword">;
+type Props = CompositeScreenProps<
+  NativeStackScreenProps<AuthStackParamList, "ResetPassword">,
+  NativeStackScreenProps<RootStackParamList>
+>;
 const AUTH_GREEN = colors.primary;
 
 export function ResetPasswordScreen({ navigation, route }: Props) {

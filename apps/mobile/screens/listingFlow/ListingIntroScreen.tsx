@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SquircleBtn } from "../../components/SquircleBtn";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { X, MapPin, Camera, CircleDollarSign, MailWarning } from "lucide-react-native";
+import { X, Zap, CircleDollarSign, Landmark, ShieldCheck, MailWarning } from "lucide-react-native";
 import { colors } from "../../styles/theme";
 import { hostFlowColors } from "./hostFlowTheme";
 import { BanknoteSvg } from "../../components/BanknoteSvg";
@@ -18,21 +18,29 @@ type FlowStackParamList = {
 
 type Props = NativeStackScreenProps<FlowStackParamList, "ListingIntro">;
 
+// How hosting works — the deal a first-time host is agreeing to, up front:
+// instant bookings, what they earn, how they're paid, and that they stay in
+// control. Every claim here must stay true to how the product actually works.
 const PHASES = [
   {
-    icon: MapPin,
-    label: "Your space",
-    body: "Location, space type, number of bays, and vehicle size",
-  },
-  {
-    icon: Camera,
-    label: "Photos & features",
-    body: "Upload photos and highlight what makes your space great",
+    icon: Zap,
+    label: "Drivers book instantly",
+    body: "They find your space on the map, book, and pay in the app — no back-and-forth",
   },
   {
     icon: CircleDollarSign,
-    label: "Availability & pricing",
-    body: "Set when the space is available and how much you charge",
+    label: "You keep 100% of your rate",
+    body: "Drivers pay a small service fee on top — your price is yours",
+  },
+  {
+    icon: Landmark,
+    label: "Get paid through Stripe",
+    body: "Connect payouts once and earnings go straight to your bank",
+  },
+  {
+    icon: ShieldCheck,
+    label: "You stay in control",
+    body: "Edit, pause or remove your listing anytime",
   },
 ] as const;
 
@@ -86,7 +94,7 @@ export function ListingIntroScreen({ navigation }: Props) {
         </View>
 
         <Text style={styles.reassure}>
-          It only takes a few minutes, and your progress saves automatically — you can stop and finish anytime.
+          9 quick steps, about 5 minutes. Your progress saves automatically — you can stop and finish anytime.
         </Text>
 
         {user && user.emailVerified === false ? (

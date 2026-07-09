@@ -14,6 +14,7 @@ import { TextInput as AppTextInput } from "../../components/ui";
 import { FlowHeader } from "./FlowHeader";
 import { useListingFlow } from "./context";
 import { hostFlowColors } from "./hostFlowTheme";
+import { colors } from "../../styles/theme";
 import { FlowFooter } from "./FlowFooter";
 
 type FlowStackParamList = {
@@ -89,6 +90,13 @@ export function ListingAccessScreen({ navigation, route }: Props) {
     (draft.requiresAccessCode === false || selectedAccessChoice !== null) &&
     hasAccessDetails;
 
+  // Physical key handover can't realistically serve instant hourly/daily
+  // bookings (drive over, collect a key, return it — for a 1-hour stay). Warn
+  // the host at selection time rather than letting their first booking fail.
+  const hasShortStayPricing =
+    draft.pricingMode === "hourly_daily" || draft.pricingMode === "both";
+  const showFobWarning = hasShortStayPricing && selectedAccessChoice?.id === "key_fob";
+
   const selectAccessChoice = (optionValue: AccessChoiceValue) => {
     setDraft((prev) => {
       const current = ACCESS_CHOICES.find((c) => prev.accessOptions.includes(c.optionValue));
@@ -148,7 +156,7 @@ export function ListingAccessScreen({ navigation, route }: Props) {
             </View>
             <View style={styles.headerCardBottom}>
               <Text style={styles.headerSubtitle}>
-                Any details you add here are only ever shared with confirmed bookings.
+                Tell drivers how to get in once they've booked.
               </Text>
             </View>
           </View>
@@ -240,6 +248,12 @@ export function ListingAccessScreen({ navigation, route }: Props) {
                           ) : null}
                         </Pressable>
 
+                        {active && choice.id === "key_fob" && showFobWarning ? (
+                          <Text style={styles.fobWarning}>
+                            Key collection is hard to make work for short hourly stays — most hosts use a pin code or instructions instead.
+                          </Text>
+                        ) : null}
+
                         {active ? (
                           <View style={styles.inlineDetailBox}>
                             <Text style={styles.detailLabel}>
@@ -273,6 +287,9 @@ export function ListingAccessScreen({ navigation, route }: Props) {
                               textAlignVertical="top"
                               maxLength={240}
                             />
+                            <Text style={styles.detailPrivacy}>
+                              Only shared with confirmed bookings.
+                            </Text>
                           </View>
                         ) : null}
                       </View>
@@ -498,6 +515,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     marginBottom: 10,
+  },
+  fobWarning: {
+    color: colors.status.pending.text,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 8,
+    paddingHorizontal: 2,
+  },
+  detailPrivacy: {
+    color: SOFT,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 8,
   },
   detailInput: {
     backgroundColor: hostFlowColors.cardBg,

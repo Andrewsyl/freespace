@@ -181,6 +181,10 @@ export function ListingLocationScreen({ navigation, route }: Props) {
           </View>
         </View>
 
+        <Text style={styles.privacyNote}>
+          Your address appears on the map so drivers can find your space. Access details are only shared with confirmed bookings.
+        </Text>
+
         {/* Suggestions dropdown — floats below the search card, over the map */}
         {suggestions.length > 0 && (
           <View style={styles.suggestions}>
@@ -284,6 +288,14 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 13,
     flexShrink: 0,
+  },
+  privacyNote: {
+    color: hostFlowColors.textSoft,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 8,
+    paddingHorizontal: 4,
   },
   // Its own section above the map; the suggestions dropdown hangs off its bottom.
   searchSection: {

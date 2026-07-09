@@ -646,7 +646,7 @@ export function HistoryScreen({ navigation, route }: Props) {
   }, [upcoming, active, visiblePast]);
 
   const handleLoadMorePast = useCallback(() => setPastVisibleCount((prev) => prev + 20), []);
-  const handleSignIn = useCallback(() => navigation.navigate("Welcome"), [navigation]);
+  const handleSignIn = useCallback(() => navigation.navigate("Auth", { screen: "Welcome" }), [navigation]);
   const handleFindParking = useCallback(
     () => navigation.navigate("Tabs", { screen: "Search" }),
     [navigation]
@@ -874,12 +874,14 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 12,
   },
+  // Large ink title matching the Favourites header (TGTG-style reference,
+  // user-approved 2026-07-09).
   title: {
     fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 28,
-    lineHeight: 34,
-    color: ACCENT,
-    letterSpacing: -0.6,
+    fontSize: 32,
+    lineHeight: 38,
+    color: FG,
+    letterSpacing: -0.8,
   },
 
   // ── Map CTA banner ───────────────────────────────────────────
@@ -888,7 +890,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: radius.cardSmall,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
+    borderColor: colors.border,
     flexDirection: "row",
     justifyContent: "space-between",
     marginHorizontal: 16,
@@ -991,7 +993,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: radius.cardSmall,
     borderWidth: 1,
-    borderColor: "#D4DCE4",
+    borderColor: colors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -1052,7 +1054,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: "#E3E8EE",
+    borderColor: colors.border,
     padding: 20,
     alignItems: "center",
     ...CARD_SHADOW,
@@ -1093,7 +1095,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#E3E8EE",
+    borderColor: colors.border,
     marginTop: 12,
     paddingVertical: 14,
     ...CARD_SHADOW,

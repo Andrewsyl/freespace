@@ -383,7 +383,7 @@ export function ListingsScreen({ navigation }: Props) {
               </Text>
               <SquircleBtn
                 label="Sign in"
-                onPress={() => navigation.navigate("Welcome")}
+                onPress={() => navigation.navigate("Auth", { screen: "Welcome" })}
                 fullWidth
                 style={{ marginTop: 18 }}
               />

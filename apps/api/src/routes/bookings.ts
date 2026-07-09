@@ -53,6 +53,7 @@ import {
 } from "../middleware/fraud.js";
 import "../loadEnv.js";
 import { generateVerificationToken, hashPassword } from "../lib/auth.js";
+import { evaluateCancellationRefund } from "../lib/cancellationPolicy.js";
 import { env } from "../env.js";
 
 const router = Router();
@@ -132,6 +133,15 @@ function calculateMonthlyChargeCents(input: {
   if (!Number.isFinite(monthly) || monthly <= 0) return 0;
   const months = monthsBetween(input.startTime, input.endTime);
   return Math.max(1, Math.round(monthly * months * 100));
+}
+
+// Buyer-facing monthly gross is rounded to the nearest whole euro (no cents).
+// Mirror of getMonthlyGrossCents in apps/mobile/utils/pricing.ts — the two MUST
+// produce the same number or a monthly booking 400s on the client-vs-server
+// amount check. Daily/hourly keep cent-level gross; only monthly rounds up to a
+// whole euro because monthly rates are quoted as round numbers.
+function monthlyGrossCents(parkingCents: number) {
+  return Math.round((parkingCents * 1.08) / 100) * 100;
 }
 const bookingLimiter = createRateLimiter({
   windowMs: 5 * 60 * 1000,
@@ -504,6 +514,7 @@ const paymentIntentSchema = bookingSchemaBase
     listingId: true,
     from: true,
     to: true,
+    mode: true,
     amountCents: true,
     currency: true,
     platformFeePercent: true,
@@ -821,7 +832,9 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
           startTime: new Date(payload.from),
           endTime: new Date(payload.to),
         });
-    const expectedAmountCents = Math.round(expectedParkingCents * 1.08);
+    const expectedAmountCents = isMonthlyBooking
+      ? monthlyGrossCents(expectedParkingCents)
+      : Math.round(expectedParkingCents * 1.08);
     if (payload.amountCents !== expectedAmountCents) {
       return res.status(400).json({ message: "Booking price is out of date. Please refresh and try again." });
     }
@@ -1025,14 +1038,29 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
     if (listingWithHost.hostId === driverId) {
       return res.status(403).json({ message: "You cannot book your own listing." });
     }
-    const expectedParkingCents = calculateListingChargeCents({
-      rateType: listingWithHost.rateType,
-      pricePerDay: listingWithHost.pricePerDay,
-      pricePerHour: listingWithHost.pricePerHour,
-      startTime: new Date(payload.from),
-      endTime: new Date(payload.to),
-    });
-    const expectedAmountCents = Math.round(expectedParkingCents * 1.08);
+    // Monthly uses the host's flat monthly rate (charge derived from the
+    // from→to span, ~1 month); everything else uses the hourly/daily rate.
+    // Mirrors the `/` create route so the two booking paths price identically.
+    const isMonthlyBooking = payload.mode === "monthly";
+    if (isMonthlyBooking && !(Number(listingWithHost.pricePerMonth) > 0)) {
+      return res.status(400).json({ message: "This space isn't available for monthly booking." });
+    }
+    const expectedParkingCents = isMonthlyBooking
+      ? calculateMonthlyChargeCents({
+          pricePerMonth: listingWithHost.pricePerMonth,
+          startTime: new Date(payload.from),
+          endTime: new Date(payload.to),
+        })
+      : calculateListingChargeCents({
+          rateType: listingWithHost.rateType,
+          pricePerDay: listingWithHost.pricePerDay,
+          pricePerHour: listingWithHost.pricePerHour,
+          startTime: new Date(payload.from),
+          endTime: new Date(payload.to),
+        });
+    const expectedAmountCents = isMonthlyBooking
+      ? monthlyGrossCents(expectedParkingCents)
+      : Math.round(expectedParkingCents * 1.08);
 
     let promoCodeId: string | null = null;
     let promoCode: string | null = null;
@@ -2143,19 +2171,24 @@ router.post("/:id/cancel", requireAuth, enforceBlockedList, bookingLimiter, asyn
     if (now >= new Date(booking.end_time).getTime()) {
       return res.status(400).json({ message: "This booking has already ended and can no longer be canceled." });
     }
-    // Free cancellation only applies before the booking starts. Canceling
-    // after start_time (the driver is mid-stay) still releases the space but
-    // does not refund time already used — otherwise a driver could book a
-    // full day and cancel minutes before it ends for a full refund. A booking
-    // that already has a refund recorded still routes through
-    // refundBookingPayment (regardless of timing) so its idempotent
+    // Refund eligibility is decided by the shared cancellation policy (see
+    // lib/cancellationPolicy.ts): full refund only within the post-booking
+    // grace window, before start, and before check-in — otherwise
+    // non-refundable. This is the authoritative decision; the client mirror is
+    // copy-only. A booking that already has a refund recorded still routes
+    // through refundBookingPayment (regardless of policy) so its idempotent
     // short-circuit can carry the existing refundId forward.
-    const isBeforeStart = now < new Date(booking.start_time).getTime();
+    const refundDecision = evaluateCancellationRefund({
+      nowMs: now,
+      startMs: new Date(booking.start_time).getTime(),
+      createdAtMs: new Date(booking.created_at).getTime(),
+      checkedIn: Boolean(booking.checked_in_at),
+    });
     const hasExistingRefund = booking.refund_status === "succeeded" || Boolean(booking.refund_id);
 
     let refundId: string | null = null;
     let alreadyRefunded = false;
-    if (booking.status === "confirmed" && (isBeforeStart || hasExistingRefund)) {
+    if (booking.status === "confirmed" && (refundDecision.refundEligible || hasExistingRefund)) {
       const refundResult = await refundBookingPayment({
         paymentIntentId: booking.payment_intent_id,
         bookingId,
@@ -2181,6 +2214,7 @@ router.post("/:id/cancel", requireAuth, enforceBlockedList, bookingLimiter, asyn
         driverId: userId,
         refundId,
         alreadyRefunded,
+        refundReason: refundDecision.reason,
       },
     });
     const targets = await getBookingNotificationTargets(bookingId);

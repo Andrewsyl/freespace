@@ -12,7 +12,11 @@ const navigation = {
   navigate: jest.fn(),
   goBack: jest.fn(),
   dispatch: jest.fn(),
+  // Login screens live in a modal stack; post-auth reset targets the ROOT
+  // navigator via getParent(). Return this same mock so dispatch is observable.
+  getParent: jest.fn(),
 };
+navigation.getParent.mockReturnValue(navigation as never);
 
 const route = { key: "Register", name: "Register", params: {} };
 

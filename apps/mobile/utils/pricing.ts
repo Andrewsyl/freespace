@@ -136,6 +136,45 @@ export function calculateListingTotal(listing: ListingWithPricing, start: Date, 
   };
 }
 
+// Buyer-facing monthly price is rounded to the nearest whole euro (no cents) —
+// on every surface (map pins, listing, favourites, booking summary) AND in the
+// API's monthly charge check (`monthlyGrossCents` in
+// apps/api/src/routes/bookings.ts). The two formulas MUST stay identical or a
+// monthly booking 400s on the client-vs-server amount check ("price out of
+// date"). `parkingCents` is what the host earns before the 1.08 fee.
+export function getMonthlyGrossCents(monthlyPrice: number, months = 1) {
+  if (!Number.isFinite(monthlyPrice) || monthlyPrice <= 0) return 0;
+  const parkingCents = Math.round(monthlyPrice * months * 100);
+  return Math.round((parkingCents * 1.08) / 100) * 100;
+}
+
+export function getMonthlyGrossEuro(monthlyPrice: number, months = 1) {
+  return getMonthlyGrossCents(monthlyPrice, months) / 100;
+}
+
+// One-off single-month total. Mirrors the API's calculateMonthlyChargeCents
+// (parking = round(monthlyPrice × 100) for a ~1-month span) plus the whole-euro
+// gross fee, so the mobile quote matches what `/payment-intent` will accept for
+// `mode: "monthly"`. Monthly is a flat rate — no daily proration or day-cap.
+export function calculateMonthlyTotal(monthlyPrice: number) {
+  const totalCents = Math.max(1, Math.round(monthlyPrice * 100));
+  const grossTotalCents = Math.max(100, getMonthlyGrossCents(monthlyPrice));
+  const serviceFeeCents = grossTotalCents - totalCents;
+  return {
+    total: totalCents / 100,
+    totalCents,
+    serviceFee: serviceFeeCents / 100,
+    serviceFeeCents,
+    grossTotal: grossTotalCents / 100,
+    grossTotalCents,
+    durationHours: 0,
+    durationLabel: "1 month",
+    dailyCapApplied: false,
+    dailyCapSaving: 0,
+    dailyCapSavingGross: 0,
+  };
+}
+
 export function formatListingPriceLine(listing: ListingWithPricing) {
   return `€${getListingUnitPrice(listing)} / ${getListingPriceUnitLabel(listing)}`;
 }

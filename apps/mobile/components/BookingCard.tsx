@@ -139,16 +139,19 @@ export function BookingCard({
 }
 
 const styles = StyleSheet.create({
+  // colors.border (not divider) defines the card edge: on iOS the shadow
+  // alone reads too washed-out against a light ground — same lesson as the
+  // Favourites card (re-confirmed 2026-07-09).
   card: {
     backgroundColor: colors.cardBg,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: colors.border,
     overflow: "hidden",
     shadowColor: "#0f172a",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
     elevation: 4,
   },
   cardPressed: { opacity: 0.92 },

@@ -271,6 +271,154 @@ describe("bookings routes", () => {
     );
   });
 
+  it("prices a monthly payment-intent from the host's monthly rate", async () => {
+    db.getFraudSettings.mockResolvedValue({
+      minAccountAgeMinutes: 0,
+      maxBookingsPerDay: 10,
+      maxAmountPerDayCents: 100000,
+    });
+    db.getUserRiskProfile.mockResolvedValue({
+      status: "active",
+      email_verified: true,
+      phone_verified: true,
+      created_at: "2026-03-01T00:00:00.000Z",
+    });
+    db.getRecentBookingStats.mockResolvedValue({ count: 0, total_cents: 0 });
+    db.poolQuery.mockResolvedValue({ rowCount: 0, rows: [] });
+    db.createBooking.mockResolvedValue({ id: "booking-1" });
+    db.findUserById.mockResolvedValue({ id: "user-1", email: "driver@example.com" });
+    // Monthly-only listing: no hourly rate, a €160/mo rate, and (as the host
+    // flow leaves it) a stale default daily rate that must be ignored.
+    db.getListingWithHostAccount.mockResolvedValue({
+      hostStripeAccountId: null,
+      rateType: "daily",
+      pricePerDay: 12,
+      pricePerHour: null,
+      pricePerMonth: 160,
+    });
+
+    stripeMocks.customersList.mockResolvedValue({ data: [] });
+    stripeMocks.customersCreate.mockResolvedValue({ id: "cus_123" });
+    stripeMocks.ephemeralKeysCreate.mockResolvedValue({ secret: "ephkey_123" });
+    stripeMocks.paymentIntentsCreate.mockResolvedValue({
+      id: "pi_m1",
+      client_secret: "pi_m1_secret",
+    });
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    const token = signToken({ userId: "user-pm1", email: "driver@example.com", role: "driver" });
+
+    // 160/mo over a 1-month window = 16000c parking + 8% fee = 17280c, rounded
+    // to the nearest whole euro for the buyer-facing monthly gross = 17300c.
+    const response = await request(app)
+      .post("/api/bookings/payment-intent")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        listingId: "11111111-1111-4111-8111-111111111111",
+        from: "2026-03-01T00:00:00.000Z",
+        to: "2026-04-01T00:00:00.000Z",
+        mode: "monthly",
+        amountCents: 17300,
+        currency: "eur",
+        platformFeePercent: 8 / 108,
+      });
+
+    expect(response.status).toBe(200);
+    expect(stripeMocks.paymentIntentsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 17300 })
+    );
+  });
+
+  it("rejects a monthly payment-intent whose amount omits the service fee", async () => {
+    db.getFraudSettings.mockResolvedValue({
+      minAccountAgeMinutes: 0,
+      maxBookingsPerDay: 10,
+      maxAmountPerDayCents: 100000,
+    });
+    db.getUserRiskProfile.mockResolvedValue({
+      status: "active",
+      email_verified: true,
+      phone_verified: true,
+      created_at: "2026-03-01T00:00:00.000Z",
+    });
+    db.getRecentBookingStats.mockResolvedValue({ count: 0, total_cents: 0 });
+    db.poolQuery.mockResolvedValue({ rowCount: 0, rows: [] });
+    db.getListingWithHostAccount.mockResolvedValue({
+      hostStripeAccountId: null,
+      rateType: "daily",
+      pricePerDay: 12,
+      pricePerHour: null,
+      pricePerMonth: 160,
+    });
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    const token = signToken({ userId: "user-pm2", email: "driver@example.com", role: "driver" });
+
+    const response = await request(app)
+      .post("/api/bookings/payment-intent")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        listingId: "11111111-1111-4111-8111-111111111111",
+        from: "2026-03-01T00:00:00.000Z",
+        to: "2026-04-01T00:00:00.000Z",
+        mode: "monthly",
+        amountCents: 16000, // missing the 8% fee
+        currency: "eur",
+        platformFeePercent: 8 / 108,
+      });
+
+    expect(response.status).toBe(400);
+    expect(stripeMocks.paymentIntentsCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects a monthly payment-intent on a space without a monthly rate", async () => {
+    db.getFraudSettings.mockResolvedValue({
+      minAccountAgeMinutes: 0,
+      maxBookingsPerDay: 10,
+      maxAmountPerDayCents: 100000,
+    });
+    db.getUserRiskProfile.mockResolvedValue({
+      status: "active",
+      email_verified: true,
+      phone_verified: true,
+      created_at: "2026-03-01T00:00:00.000Z",
+    });
+    db.getRecentBookingStats.mockResolvedValue({ count: 0, total_cents: 0 });
+    db.poolQuery.mockResolvedValue({ rowCount: 0, rows: [] });
+    db.getListingWithHostAccount.mockResolvedValue({
+      hostStripeAccountId: null,
+      rateType: "daily",
+      pricePerDay: 12,
+      pricePerHour: null,
+      pricePerMonth: null,
+    });
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    const token = signToken({ userId: "user-pm3", email: "driver@example.com", role: "driver" });
+
+    const response = await request(app)
+      .post("/api/bookings/payment-intent")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        listingId: "11111111-1111-4111-8111-111111111111",
+        from: "2026-03-01T00:00:00.000Z",
+        to: "2026-04-01T00:00:00.000Z",
+        mode: "monthly",
+        amountCents: 17280,
+        currency: "eur",
+        platformFeePercent: 8 / 108,
+      });
+
+    expect(response.status).toBe(400);
+    expect(stripeMocks.paymentIntentsCreate).not.toHaveBeenCalled();
+  });
+
   it("returns bookings for the authenticated user", async () => {
     db.listUserBookings.mockResolvedValue([{ id: "booking-1" }]);
 
@@ -424,7 +572,8 @@ describe("bookings routes", () => {
     const app = createApp();
     const token = signToken({ userId: "user-m1", email: "driver@example.com", role: "driver" });
 
-    // 160/mo over a 1-month window = 16000c parking + 8% fee = 17280c.
+    // 160/mo over a 1-month window = 16000c parking + 8% fee = 17280c, rounded
+    // to the nearest whole euro for the buyer-facing monthly gross = 17300c.
     const response = await request(app)
       .post("/api/bookings")
       .set("Authorization", `Bearer ${token}`)
@@ -433,7 +582,7 @@ describe("bookings routes", () => {
         from: "2026-03-01T00:00:00.000Z",
         to: "2026-04-01T00:00:00.000Z",
         mode: "monthly",
-        amountCents: 17280,
+        amountCents: 17300,
         currency: "eur",
         platformFeePercent: 8 / 108,
       });
@@ -916,6 +1065,76 @@ describe("bookings routes", () => {
     expect(db.cancelBookingByDriver).toHaveBeenCalledWith(
       expect.objectContaining({ bookingId: "11111111-1111-4111-8111-111111111111" })
     );
+  });
+
+  it("cancels within the free-cancellation cutoff without refunding", async () => {
+    db.getBookingForRefund.mockResolvedValue({
+      id: "booking-1",
+      status: "confirmed",
+      payment_intent_id: "pi_123",
+      payout_status: "pending",
+      // Starts in 1h (inside the 4h cutoff), booked 2h ago (grace expired),
+      // not checked in — the reported "cancel minutes before start for a full
+      // refund" gap. Cancel still releases the space, but no refund.
+      start_time: new Date(Date.now() + 60 * 60 * 1000),
+      end_time: new Date(Date.now() + 3 * 60 * 60 * 1000),
+      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      checked_in_at: null,
+      refund_status: null,
+      refund_id: null,
+    });
+    db.cancelBookingByDriver.mockResolvedValue(true);
+    db.getBookingNotificationTargets.mockResolvedValue(null);
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    const token = signToken({ userId: "user-cutoff", email: "driver@example.com", role: "driver" });
+
+    const response = await request(app)
+      .post("/api/bookings/11111111-1111-4111-8111-111111111111/cancel")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, refunded: false });
+    expect(stripeMocks.refundsCreate).not.toHaveBeenCalled();
+    expect(db.cancelBookingWithRefund).not.toHaveBeenCalled();
+    expect(db.cancelBookingByDriver).toHaveBeenCalledWith(
+      expect.objectContaining({ bookingId: "11111111-1111-4111-8111-111111111111" })
+    );
+  });
+
+  it("does not refund a checked-in booking on cancel", async () => {
+    db.getBookingForRefund.mockResolvedValue({
+      id: "booking-1",
+      status: "confirmed",
+      payment_intent_id: "pi_123",
+      payout_status: "pending",
+      // Far-future start (would otherwise refund), but the driver has checked
+      // in — claiming the space forecloses the refund.
+      start_time: new Date("2099-03-20T08:00:00.000Z"),
+      end_time: new Date("2099-03-20T12:00:00.000Z"),
+      created_at: new Date("2099-03-19T00:00:00.000Z"),
+      checked_in_at: new Date(),
+      refund_status: null,
+      refund_id: null,
+    });
+    db.cancelBookingByDriver.mockResolvedValue(true);
+    db.getBookingNotificationTargets.mockResolvedValue(null);
+
+    const { createApp } = await import("../src/app.js");
+    const { signToken } = await import("../src/lib/auth.js");
+    const app = createApp();
+    const token = signToken({ userId: "user-checkedin", email: "driver@example.com", role: "driver" });
+
+    const response = await request(app)
+      .post("/api/bookings/11111111-1111-4111-8111-111111111111/cancel")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, refunded: false });
+    expect(stripeMocks.refundsCreate).not.toHaveBeenCalled();
+    expect(db.cancelBookingWithRefund).not.toHaveBeenCalled();
   });
 
   it("blocks a booking attempt when the daily booking limit is exceeded", async () => {

@@ -8,9 +8,12 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import type { AdaptiveDatePickerProps } from "./AdaptiveDatePicker";
+import { radius } from "../styles/theme";
 
-function pickerModeLabel(mode: "time" | "datetime") {
-  return mode === "time" ? "Select time" : "Select date and time";
+function pickerModeLabel(mode: "time" | "datetime" | "date") {
+  if (mode === "time") return "Select time";
+  if (mode === "date") return "Select date";
+  return "Select date and time";
 }
 
 export default function AdaptiveDatePicker(props: AdaptiveDatePickerProps) {
@@ -134,7 +137,7 @@ const styles = StyleSheet.create({
   actionPrimary: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: radius.pill,
     backgroundColor: "#0a8050",
   },
   actionPrimaryText: {

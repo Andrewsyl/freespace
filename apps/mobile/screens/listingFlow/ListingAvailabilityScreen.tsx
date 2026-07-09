@@ -377,7 +377,7 @@ export function ListingAvailabilityScreen({ navigation, route }: Props) {
         {/* Header card */}
         <View style={styles.headerCard}>
           <View style={styles.headerCardTop}>
-            <Text style={styles.headerKicker}>Step 5 · Availability</Text>
+            <Text style={styles.headerKicker}>Step 6 · Availability</Text>
             <Text style={styles.headerTitle}>Set when your space is available</Text>
           </View>
           <View style={styles.headerCardBottom}>
@@ -452,6 +452,14 @@ export function ListingAvailabilityScreen({ navigation, route }: Props) {
               <Text style={styles.modalSubtitle}>
                 Choose the days and times that you would like to make your space available.
               </Text>
+              {weekdays.some((day) => {
+                const range = dayTimeRanges[day as DayCode];
+                return range && isOvernight(new Date(range.start), new Date(range.end));
+              }) ? (
+                <Text style={styles.overnightNote}>
+                  An end time earlier than the start runs into the next morning (shown as +1).
+                </Text>
+              ) : null}
               <ScrollView contentContainerStyle={styles.dayList}>
                 {allDays.map((day) => {
                   const enabled = weekdays.includes(day);
@@ -747,6 +755,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     lineHeight: 22,
     marginBottom: 6,
+  },
+  overnightNote: {
+    color: colors.textSoft,
+    fontSize: 12,
+    fontFamily: "PlusJakartaSans-Regular",
+    lineHeight: 17,
+    marginBottom: 4,
   },
   dayList: {
     paddingBottom: 10,

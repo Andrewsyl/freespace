@@ -41,6 +41,11 @@ export type ListingDraft = {
   capacity: number;
   // Auto-generated from the fields above, but editable by the host.
   description: string;
+  // Listing title. Defaulted on the review screen from space type + locality
+  // ("Garage near Portobello") so listings don't all publish with identical
+  // "<type> parking" names; editable by the host. Optional so older saved
+  // drafts and e2e fixtures without it stay valid.
+  listingTitle?: string;
 };
 
 export type ListingFlowValue = {

@@ -1,4 +1,10 @@
-import { applyServiceFee, calculateListingTotal } from "../utils/pricing";
+import {
+  applyServiceFee,
+  calculateListingTotal,
+  calculateMonthlyTotal,
+  getMonthlyGrossCents,
+  getMonthlyGrossEuro,
+} from "../utils/pricing";
 
 describe("calculateListingTotal", () => {
   it("caps sub-day bookings at the daily rate when it is cheaper than hourly", () => {
@@ -62,5 +68,32 @@ describe("calculateListingTotal", () => {
   it("applies the service fee to unit rates with API cent rounding", () => {
     expect(applyServiceFee(4)).toBe(4.32);
     expect(applyServiceFee(5.19)).toBe(5.61); // round(519 × 1.08) = 561, not 560
+  });
+});
+
+// Monthly gross is quoted at the nearest whole euro on every buyer-facing
+// surface AND in the API's monthlyGrossCents check — keep this in lockstep or
+// monthly bookings 400 with "price out of date".
+describe("monthly gross rounding", () => {
+  it("rounds the fee-inclusive monthly price to the nearest whole euro", () => {
+    // €160/mo → 16000c + 8% = 17280c → nearest euro = €173.
+    expect(getMonthlyGrossCents(160)).toBe(17300);
+    expect(getMonthlyGrossEuro(160)).toBe(173);
+    // €100/mo → 10800c is already a whole euro, so it stays put.
+    expect(getMonthlyGrossEuro(100)).toBe(108);
+    // Rounds down when under the half-euro: €150/mo → 16200c → €162.
+    expect(getMonthlyGrossEuro(150)).toBe(162);
+  });
+
+  it("makes calculateMonthlyTotal quote the whole-euro gross", () => {
+    const result = calculateMonthlyTotal(160);
+    expect(result.grossTotalCents).toBe(17300);
+    expect(result.grossTotal).toBe(173);
+    expect(result.serviceFeeCents).toBe(1300); // gross − host base (16000c)
+  });
+
+  it("returns 0 for a listing without a monthly rate", () => {
+    expect(getMonthlyGrossCents(0)).toBe(0);
+    expect(getMonthlyGrossEuro(-5)).toBe(0);
   });
 });

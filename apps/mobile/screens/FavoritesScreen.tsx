@@ -1,11 +1,13 @@
+import { useCallback, useEffect, useState } from "react";
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SkeletonBlock, usePulse } from "../components/ui";
+import { useGlobalToast } from "../components/GlobalToast";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuth } from "../auth";
 import { useFavorites } from "../favorites";
-import { colors, spacing } from "../styles/theme";
-import { applyServiceFee } from "../utils/pricing";
+import { colors, radius, spacing } from "../styles/theme";
+import { applyServiceFee, getMonthlyGrossEuro } from "../utils/pricing";
 import type { ListingSummary, RootStackParamList } from "../types";
 import {
   Accessibility,
@@ -72,11 +74,17 @@ function formatMoney(value: number | string | null | undefined, feeInclusive = f
 }
 
 function priceLabel(item: ListingSummary): { value: string; unit: string } | null {
-  // Hourly/daily rates are quoted fee-inclusive so they match what checkout
-  // charges. Monthly is enquiry-only — no checkout, so the listed rate stands.
+  // All buyer-facing rates are quoted fee-inclusive so they match what checkout
+  // charges — including monthly, now that a one-off month is bookable.
   const hour = formatMoney(item.price_per_hour, true);
   const day = formatMoney(item.price_per_day, true);
-  const month = formatMoney(item.price_per_month);
+  // Monthly is quoted at the whole-euro gross (see getMonthlyGrossEuro), not the
+  // cent-level fee applied to hourly/daily.
+  const monthlyValue = Number(item.price_per_month);
+  const month =
+    Number.isFinite(monthlyValue) && monthlyValue > 0
+      ? `${getMonthlyGrossEuro(monthlyValue)}`
+      : null;
   if (item.rate_type === "hourly" && hour != null) return { value: `€${hour}`, unit: "/hr" };
   if (day != null) return { value: `€${day}`, unit: "/day" };
   if (hour != null) return { value: `€${hour}`, unit: "/hr" };
@@ -86,12 +94,14 @@ function priceLabel(item: ListingSummary): { value: string; unit: string } | nul
 
 function FavoriteCard({
   item,
+  saved,
   onOpen,
-  onUnsave,
+  onToggleSave,
 }: {
   item: ListingSummary;
+  saved: boolean;
   onOpen: () => void;
-  onUnsave: () => void;
+  onToggleSave: () => void;
 }) {
   const ratingValue = Number(item.rating);
   const ratingCount = Number(item.rating_count);
@@ -126,15 +136,38 @@ function FavoriteCard({
       <View style={styles.body}>
         <View style={styles.titleRow}>
           <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
-          <Pressable onPress={onUnsave} hitSlop={12} accessibilityLabel="Remove from favourites">
-            <Heart size={22} color={colors.primary} fill={colors.primary} strokeWidth={2} />
+          <Pressable
+            onPress={onToggleSave}
+            hitSlop={12}
+            accessibilityLabel={saved ? "Remove from favourites" : "Save to favourites"}
+          >
+            <Heart
+              size={22}
+              color={colors.primary}
+              fill={saved ? colors.primary : "transparent"}
+              strokeWidth={2}
+            />
           </Pressable>
         </View>
 
         <Text style={styles.addr} numberOfLines={1}>{item.address}</Text>
-        {distanceKm ? <Text style={styles.meta}>{distanceKm} km away</Text> : null}
+        {item.availability_text || distanceKm ? (
+          <View style={styles.metaRow}>
+            {item.availability_text ? (
+              <Text style={[styles.meta, styles.metaShrink]} numberOfLines={1}>
+                {item.availability_text}
+              </Text>
+            ) : null}
+            {item.availability_text && distanceKm ? <View style={styles.metaDivider} /> : null}
+            {distanceKm ? <Text style={styles.meta}>{distanceKm} km</Text> : null}
+          </View>
+        ) : null}
 
-        <View style={styles.divider} />
+        {/* RN can't draw a dashed border on one edge only, so a 2px dashed box
+            is clipped to its top half to read as a dashed hairline. */}
+        <View style={styles.dashedDividerClip}>
+          <View style={styles.dashedDivider} />
+        </View>
 
         <View style={styles.priceRow}>
           {amenities.length > 0 ? (
@@ -163,9 +196,51 @@ function FavoriteCard({
 
 export function FavoritesScreen({ navigation }: Props) {
   const { user } = useAuth();
-  const { favorites, loading, error, refresh, remove } = useFavorites();
+  const { favorites, loading, error, refresh, add, remove } = useFavorites();
+  const toast = useGlobalToast();
   const skeletonPulse = usePulse();
   const insets = useSafeAreaInsets();
+
+  // Unfavourited cards stay in place (heart outlined) so an accidental tap is
+  // one tap to undo. `held` snapshots the list at the first removal; it is
+  // dropped — and the removed cards with it — on pull-to-refresh or when the
+  // user leaves the tab.
+  const [held, setHeld] = useState<ListingSummary[] | null>(null);
+  const [removedIds, setRemovedIds] = useState<Set<string>>(() => new Set());
+
+  const resetHeld = useCallback(() => {
+    setHeld(null);
+    setRemovedIds(new Set());
+  }, []);
+
+  useEffect(() => navigation.addListener("blur", resetHeld), [navigation, resetHeld]);
+
+  const items = held ?? favorites;
+
+  const handleToggleSave = useCallback(
+    (item: ListingSummary) => {
+      if (removedIds.has(item.id)) {
+        setRemovedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(item.id);
+          return next;
+        });
+        void add(item);
+        toast.showSuccess("Saved to favourites");
+      } else {
+        setHeld((prev) => prev ?? favorites);
+        setRemovedIds((prev) => new Set(prev).add(item.id));
+        void remove(item.id);
+        toast.show("Removed from favourites");
+      }
+    },
+    [removedIds, favorites, add, remove, toast]
+  );
+
+  const handleRefresh = useCallback(async () => {
+    await refresh();
+    resetHeld();
+  }, [refresh, resetHeld]);
   // The tab bar floats absolutely over the screen (height 58 + safe-area inset),
   // so the scroll content must reserve that much plus breathing room or the last
   // card sits under the nav.
@@ -179,7 +254,7 @@ export function FavoritesScreen({ navigation }: Props) {
             icon={<Heart size={26} color={colors.primary} strokeWidth={2.2} />}
             title="Save your favourite spaces"
             body="Sign in to keep the spaces you trust one tap away."
-            onSignIn={() => navigation.navigate("Welcome")}
+            onSignIn={() => navigation.navigate("Auth", { screen: "Welcome" })}
             onBrowse={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
             reassurance="Your saved spaces stay attached to your account."
           />
@@ -199,8 +274,8 @@ export function FavoritesScreen({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
-              refreshing={loading && favorites.length > 0}
-              onRefresh={() => void refresh()}
+              refreshing={loading && items.length > 0}
+              onRefresh={() => void handleRefresh()}
               tintColor={colors.primary}
               colors={[colors.primary]}
             />
@@ -215,22 +290,22 @@ export function FavoritesScreen({ navigation }: Props) {
             </View>
           ) : null}
 
-          {loading && favorites.length === 0 ? (
+          {loading && items.length === 0 ? (
             <View style={styles.list}>
               {[0, 1, 2].map((i) => (
                 <View key={i} style={styles.skeletonCard}>
-                  <SkeletonBlock height={150} borderRadius={12} pulse={skeletonPulse} style={{ margin: 8, marginBottom: 0 }} />
+                  <SkeletonBlock height={170} borderRadius={16} pulse={skeletonPulse} />
                   <View style={styles.skeletonBody}>
-                    <SkeletonBlock width="72%" height={16} pulse={skeletonPulse} />
+                    <SkeletonBlock width="72%" height={17} pulse={skeletonPulse} />
                     <SkeletonBlock width="46%" height={12} pulse={skeletonPulse} style={{ marginTop: 8 }} />
-                    <SkeletonBlock width="34%" height={16} pulse={skeletonPulse} style={{ marginTop: 8 }} />
+                    <SkeletonBlock width="34%" height={18} pulse={skeletonPulse} style={{ marginTop: 10 }} />
                   </View>
                 </View>
               ))}
             </View>
           ) : null}
 
-          {!loading && favorites.length === 0 ? (
+          {!loading && items.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconWrap}>
                 <Heart size={30} color={colors.primary} strokeWidth={2} />
@@ -248,16 +323,17 @@ export function FavoritesScreen({ navigation }: Props) {
             </View>
           ) : null}
 
-          {favorites.length > 0 ? (
+          {items.length > 0 ? (
             <>
               <Text style={styles.countLabel}>
                 {favorites.length} saved {favorites.length === 1 ? "space" : "spaces"}
               </Text>
               <View style={styles.list}>
-                {favorites.map((item) => (
+                {items.map((item) => (
                   <FavoriteCard
                     key={item.id}
                     item={item}
+                    saved={!removedIds.has(item.id)}
                     onOpen={() =>
                       navigation.navigate("Listing", {
                         id: item.id,
@@ -265,7 +341,7 @@ export function FavoritesScreen({ navigation }: Props) {
                         to: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
                       })
                     }
-                    onUnsave={() => void remove(item.id)}
+                    onToggleSave={() => handleToggleSave(item)}
                   />
                 ))}
               </View>
@@ -286,17 +362,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.cardBg,
   },
+  // Large borderless title header, TGTG-style (user-approved reference,
+  // 2026-07-09): dark ink title, no hairline under the nav.
   navBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
+    paddingHorizontal: spacing.md,
+    paddingTop: 10,
+    paddingBottom: 6,
     backgroundColor: colors.cardBg,
   },
-  navTitle: { fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 28, lineHeight: 34, color: colors.primary, letterSpacing: -0.6 },
+  navTitle: { fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 32, lineHeight: 38, color: colors.text, letterSpacing: -0.8 },
 
   content: {
     paddingHorizontal: spacing.md,
@@ -313,27 +390,27 @@ const styles = StyleSheet.create({
   },
   list: { gap: 14 },
 
-  // Favourite card edge matches the map search bar: colors.border keeps the
-  // card defined against light backgrounds, where on iOS the shadow alone
-  // reads too softly to register as a card edge.
+  // TGTG-style card (user-approved reference, 2026-07-09) with a tall
+  // edge-to-edge image. A colors.border hairline defines the card edge: on
+  // iOS the shadow alone reads too washed-out against the white ground
+  // (re-confirmed 2026-07-09 after trying borderless). The shadow lives on
+  // the card while only the image clips, because iOS masksToBounds on the
+  // shadowed view would clip the shadow itself.
   card: {
     backgroundColor: colors.cardBg,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: colors.border,
     shadowColor: "#0f172a",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
     elevation: 4,
   },
-  // Image sits inset within the card (not edge-to-edge) so the white card
-  // frame reads clearly all the way around, per the reference card style.
   imageWrap: {
-    height: 120,
-    borderRadius: 14,
-    margin: 8,
-    marginBottom: 0,
+    height: 170,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
     overflow: "hidden",
     backgroundColor: colors.cardBgMuted,
   },
@@ -348,34 +425,35 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.14, shadowRadius: 5, elevation: 3,
   },
   ratingPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: colors.text, letterSpacing: -0.1 },
-  body: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12, gap: 6 },
+  body: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, gap: 5 },
   titleRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
-  title: { flex: 1, fontSize: 16, fontFamily: "PlusJakartaSans-Bold", color: colors.text, letterSpacing: -0.3 },
-  addr: { fontSize: 12.5, fontFamily: "PlusJakartaSans-Regular", color: colors.textMuted },
-  meta: { fontSize: 12.5, fontFamily: "PlusJakartaSans-Regular", color: colors.textMuted },
+  title: { flex: 1, fontSize: 17, fontFamily: "PlusJakartaSans-Bold", color: colors.text, letterSpacing: -0.3 },
+  addr: { fontSize: 13, fontFamily: "PlusJakartaSans-Regular", color: colors.textMuted },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  meta: { fontSize: 13, fontFamily: "PlusJakartaSans-Regular", color: colors.textMuted },
+  metaShrink: { flexShrink: 1 },
+  metaDivider: { width: 1, height: 13, backgroundColor: colors.divider },
   featureRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   featureIcon: { alignItems: "center", justifyContent: "center" },
-  divider: {
-    borderTopWidth: 1, borderTopColor: colors.divider,
-    marginTop: 8, marginBottom: 6,
-  },
+  dashedDividerClip: { height: 1, overflow: "hidden", marginTop: 10, marginBottom: 8 },
+  dashedDivider: { height: 2, borderWidth: 1, borderColor: colors.divider, borderStyle: "dashed" },
   priceRow: { flexDirection: "row", alignItems: "center" },
-  price: { fontFamily: "PlusJakartaSans-Bold", fontSize: 18, color: colors.primary, letterSpacing: -0.3, marginLeft: "auto" },
+  price: { fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 20, color: colors.text, letterSpacing: -0.4, marginLeft: "auto" },
   priceUnit: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: colors.textMuted },
 
   // Skeleton
   skeletonCard: {
     backgroundColor: colors.cardBg,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: colors.border,
     shadowColor: "#0B1220",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
   },
-  skeletonBody: { paddingHorizontal: 15, paddingVertical: 14 },
+  skeletonBody: { paddingHorizontal: 16, paddingVertical: 14 },
 
   // Empty state
   emptyState: {
@@ -412,7 +490,7 @@ const styles = StyleSheet.create({
   // Buttons
   primaryButton: {
     backgroundColor: colors.primary,
-    borderRadius: 14,
+    borderRadius: radius.pill,
     paddingHorizontal: 20,
     paddingVertical: 13,
     marginTop: 16,

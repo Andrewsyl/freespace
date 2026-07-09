@@ -65,7 +65,7 @@ export function PersonalInfoScreen({ navigation, route }: Props) {
           icon={<UserRound size={26} color={colors.primary} strokeWidth={2.2} />}
           title="Sign in to edit your profile"
           body="Your name, email and phone number are available once you sign in."
-          onSignIn={() => navigation.navigate("Welcome")}
+          onSignIn={() => navigation.navigate("Auth", { screen: "Welcome" })}
           onBrowse={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
         />
       </SafeAreaView>

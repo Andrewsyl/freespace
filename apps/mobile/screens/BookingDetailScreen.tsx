@@ -1,7 +1,6 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
-  Alert,
   Linking,
   Platform,
   Pressable,
@@ -12,12 +11,13 @@ import {
   View,
 } from "react-native";
 import { SquircleBtn } from "../components/SquircleBtn";
+import { AppDialog, type DialogAction, type DialogTone } from "../components/AppDialog";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DatePicker from "../components/AdaptiveDatePicker";
 import { useStripe } from "@stripe/stripe-react-native";
-import { cancelBooking, checkInBooking, confirmBookingExtension, createBookingExtensionIntent } from "../api";
+import { cancelBooking, checkInBooking, confirmBookingExtension, createBookingExtensionIntent, getBooking } from "../api";
 import { useAuth } from "../auth";
 import { googlePayConfig } from "../utils/googlePay";
 import {
@@ -35,11 +35,13 @@ import {
   Navigation,
   RefreshCw,
   Star,
+  Undo2,
   type LucideIcon,
 } from "lucide-react-native";
 import { StatusBar } from "expo-status-bar";
 import { formatTimeLabel } from "../utils/dateFormat";
 import { formatBookingReference } from "../utils/bookingFormat";
+import { evaluateCancellationRefund } from "../utils/cancellationPolicy";
 import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 import { colors, cardShadow } from "../styles/theme";
 
@@ -48,6 +50,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "BookingDetail">;
 export function BookingDetailScreen({ navigation, route }: Props) {
   const { booking } = route.params;
   const { token } = useAuth();
+  const insets = useSafeAreaInsets();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [localStatus, setLocalStatus] = useState(booking.status);
   const [localRefundStatus, setLocalRefundStatus] = useState(booking.refundStatus ?? null);
@@ -61,7 +64,17 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   const [extendOpen, setExtendOpen] = useState(false);
   const [extendBusy, setExtendBusy] = useState(false);
   const [extendError, setExtendError] = useState<string | null>(null);
-  const scrollRef = useRef<ScrollView>(null);
+  const [dialog, setDialog] = useState<{
+    tone: DialogTone;
+    title: string;
+    message?: string;
+    actions: DialogAction[];
+  } | null>(null);
+  // The booking arrives as a navigation-param snapshot from the list fetch.
+  // Access code and arrival instructions are live reads (invariant: hosts can
+  // update them after booking), and status/refunds can change server-side, so
+  // a silent focus refetch below replaces this with fresh truth.
+  const [live, setLive] = useState(booking);
   const start = new Date(booking.startTime);
   const end = localEndTime;
   // Ticks every 30s so status flags (in progress / completed / check-in window)
@@ -75,6 +88,29 @@ export function BookingDetailScreen({ navigation, route }: Props) {
       const interval = setInterval(() => setNow(Date.now()), 30_000);
       return () => clearInterval(interval);
     }, [])
+  );
+
+  // Best-effort refresh on focus; failures keep the snapshot on screen.
+  useFocusEffect(
+    useCallback(() => {
+      if (!token) return;
+      let activeFetch = true;
+      void getBooking(token, booking.id)
+        .then((fresh) => {
+          if (!activeFetch) return;
+          setLive(fresh);
+          setLocalStatus(fresh.status);
+          setLocalRefundStatus(fresh.refundStatus ?? null);
+          setLocalRefundedAt(fresh.refundedAt ?? null);
+          setLocalEndTime(new Date(fresh.endTime));
+          setLocalAmountCents(fresh.amountCents);
+          setCheckedInAt(fresh.checkedInAt ? new Date(fresh.checkedInAt) : null);
+        })
+        .catch(() => {});
+      return () => {
+        activeFetch = false;
+      };
+    }, [token, booking.id])
   );
   const isUpcoming = end.getTime() > now && start.getTime() > now;
   const isInProgress = start.getTime() <= now && end.getTime() > now && localStatus === "confirmed";
@@ -138,7 +174,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     }, [booking.id])
   );
 
-  const receiptUrl = booking.receiptUrl ?? null;
+  const receiptUrl = live.receiptUrl ?? null;
   const destination =
     typeof booking.latitude === "number" && typeof booking.longitude === "number"
       ? `${booking.latitude},${booking.longitude}`
@@ -154,32 +190,26 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     now <= end.getTime();
   const isCompleted = !isUpcoming && !isInProgress && !isCanceled;
   const canBookAgain = isCanceled || (!isUpcoming && !isInProgress);
+  // Copy-only mirror of the server cancellation policy — the /cancel route
+  // re-decides authoritatively. Missing createdAt defaults to non-refundable
+  // copy (createdAtMs 0), which the server would correct on submit.
+  const cancelRefundEligible = evaluateCancellationRefund({
+    nowMs: now,
+    startMs: start.getTime(),
+    createdAtMs: live.createdAt ? new Date(live.createdAt).getTime() : 0,
+    checkedIn: Boolean(checkedInAt),
+  }).refundEligible;
   const statusConfig = (() => {
-    if (isCanceled) return {
-      label: "Booking canceled",
-      icon: CircleX,
-      cardGradient: ["#C0392B", "#000000"] as const,
-    };
-    if (isInProgress) return {
-      label: "In progress",
-      icon: CirclePlay,
-      cardGradient: [ACCENT, "#000000"] as const,
-    };
-    if (isUpcoming) return {
-      label: "Confirmed",
-      icon: CircleCheck,
-      cardGradient: ["#1E6E47", "#000000"] as const,
-    };
-    return {
-      label: "Completed",
-      icon: CircleCheck,
-      cardGradient: ["#3D4D63", "#000000"] as const,
-    };
+    if (isCanceled && isRefunded) return { label: "Refunded", icon: Undo2 };
+    if (isCanceled) return { label: "Booking canceled", icon: CircleX };
+    if (isInProgress) return { label: "In progress", icon: CirclePlay };
+    if (isUpcoming) return { label: "Confirmed", icon: CircleCheck };
+    return { label: "Completed", icon: CircleCheck };
   })();
   const StatusIcon = statusConfig.icon as LucideIcon;
   const showArrivalInfo =
     (isUpcoming || isInProgress || canReview) &&
-    (Boolean(booking.arrivalInstructions?.trim()) || Boolean(booking.accessCode?.trim()));
+    (Boolean(live.arrivalInstructions?.trim()) || Boolean(live.accessCode?.trim()));
   const cancellationSource = booking.cancellationSource ?? null;
   const bookingDateLabel = `${start.toLocaleDateString("en-IE", {
     weekday: "short",
@@ -193,6 +223,11 @@ export function BookingDetailScreen({ navigation, route }: Props) {
   const endDateLabel = end.toLocaleDateString("en-IE", {
     weekday: "short", day: "2-digit", month: "short", timeZone: "Europe/Dublin",
   });
+  const refundedDateLabel = localRefundedAt
+    ? new Date(localRefundedAt).toLocaleDateString("en-IE", {
+        weekday: "short", day: "2-digit", month: "short", timeZone: "Europe/Dublin",
+      })
+    : null;
   const durationMs    = end.getTime() - start.getTime();
   const durH          = Math.floor(durationMs / 3_600_000);
   const durM          = Math.floor((durationMs % 3_600_000) / 60_000);
@@ -222,16 +257,28 @@ export function BookingDetailScreen({ navigation, route }: Props) {
       // duplicate local one here.
     } catch (err) {
       setCanceling(false);
-      Alert.alert("Cancellation failed", err instanceof Error ? err.message : "Could not cancel booking. Please try again.");
+      setDialog({
+        tone: "error",
+        title: "Cancellation failed",
+        message: err instanceof Error ? err.message : "Could not cancel booking. Please try again.",
+        actions: [{ label: "OK" }],
+      });
     }
   };
 
   const handleCancel = () => {
     if (!token || canceling || localStatus === "canceled") return;
-    Alert.alert("Cancel booking", "Cancel this reservation and release the space? Eligible refunds are returned to the original payment method.", [
-      { text: "Keep", style: "cancel" },
-      { text: "Cancel booking", style: "destructive", onPress: performCancel },
-    ]);
+    setDialog({
+      tone: "confirm",
+      title: "Cancel booking",
+      message: cancelRefundEligible
+        ? "Cancel this reservation and release the space? Your payment will be refunded to your original payment method."
+        : "Cancel this reservation and release the space? This booking is non-refundable, so you won't get a refund.",
+      actions: [
+        { label: "Keep", variant: "neutral" },
+        { label: "Cancel booking", variant: "danger", onPress: performCancel },
+      ],
+    });
   };
 
   const handleExtend = async (nextEnd: Date) => {
@@ -251,7 +298,12 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         ]);
         setLocalEndTime(new Date(result.newEndTime));
         setLocalAmountCents(result.newTotalCents);
-        Alert.alert("Booking updated", "Your end time has been extended.");
+        setDialog({
+          tone: "success",
+          title: "Booking updated",
+          message: "Your end time has been extended.",
+          actions: [{ label: "Done" }],
+        });
         return;
       }
 
@@ -297,7 +349,12 @@ export function BookingDetailScreen({ navigation, route }: Props) {
       ]);
       setLocalEndTime(new Date(confirm.newEndTime));
       setLocalAmountCents(confirm.newTotalCents);
-      Alert.alert("Booking extended", "Your end time has been updated.");
+      setDialog({
+        tone: "success",
+        title: "Booking extended",
+        message: "Your end time has been updated.",
+        actions: [{ label: "Done" }],
+      });
     } catch (err) {
       setExtendError(err instanceof Error ? err.message : "Could not extend booking");
     } finally {
@@ -310,13 +367,25 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     try {
       const result = await checkInBooking({ token, bookingId: booking.id });
       setCheckedInAt(new Date(result.checkedInAt));
-      Alert.alert("Checked in", "Thanks! Enjoy your booking.");
+      setDialog({
+        tone: "success",
+        title: "Checked in",
+        message: "Thanks! Enjoy your booking.",
+        actions: [{ label: "Done" }],
+      });
     } catch (err) {
-      Alert.alert("Check-in failed", err instanceof Error ? err.message : "Try again.");
+      setDialog({
+        tone: "error",
+        title: "Check-in failed",
+        message: err instanceof Error ? err.message : "Try again.",
+        actions: [{ label: "OK" }],
+      });
     }
   };
 
-  const handleBookAgain = () => {
+  // Opens the listing with a fresh now/+2h window — used by both the header
+  // card tap ("view the space") and the Book again button.
+  const handleOpenListing = () => {
     const startTime = new Date();
     const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
     navigation.navigate("Listing", {
@@ -364,7 +433,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         <View style={{ width: 32 }} />
       </View>
 
-      <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* ── Review CTA — full bleed ── */}
         {canReview && !reviewed ? (
@@ -379,8 +448,8 @@ export function BookingDetailScreen({ navigation, route }: Props) {
                     style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })} hitSlop={12}>
                     <Star
                       size={36}
-                      color={filled ? "#F59E0B" : "rgba(255,255,255,0.45)"}
-                      fill={filled ? "#F59E0B" : "none"}
+                      color={filled ? colors.star.review : "rgba(255,255,255,0.45)"}
+                      fill={filled ? colors.star.review : "none"}
                       strokeWidth={2}
                     />
                   </Pressable>
@@ -396,8 +465,8 @@ export function BookingDetailScreen({ navigation, route }: Props) {
                 <Star
                   key={i}
                   size={22}
-                  color={reviewedRating != null && i < Math.round(reviewedRating) ? "#F59E0B" : "#E5E7EB"}
-                  fill={reviewedRating != null && i < Math.round(reviewedRating) ? "#F59E0B" : "none"}
+                  color={reviewedRating != null && i < Math.round(reviewedRating) ? colors.star.review : colors.star.inactive}
+                  fill={reviewedRating != null && i < Math.round(reviewedRating) ? colors.star.review : "none"}
                   strokeWidth={2}
                 />
               ))}
@@ -408,22 +477,24 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         {/* ── Cards ── */}
         <View style={styles.cards}>
 
-          {/* Combined header + time card */}
+          {/* Combined header + time card; the title area opens the listing */}
           <View style={styles.headerCard}>
-            <View style={styles.headerCardTop}>
-              <View style={[styles.statusPill, isCanceled && styles.statusPillCanceled, (isInProgress || isCompleted) && styles.statusPillActive]}>
-                <StatusIcon
-                  size={11}
-                  color={isCanceled ? colors.danger : (isInProgress || isCompleted) ? ACCENT : colors.text}
-                  strokeWidth={2.4}
-                />
-                <Text style={[styles.statusPillText, isCanceled && styles.statusPillTextCanceled, (isInProgress || isCompleted) && styles.statusPillTextActive]}>
-                  {statusConfig.label}
-                </Text>
+            <Pressable onPress={handleOpenListing} style={({ pressed }) => pressed && { opacity: 0.9 }}>
+              <View style={styles.headerCardTop}>
+                <View style={[styles.statusPill, isCanceled && !isRefunded && styles.statusPillCanceled, isRefunded && styles.statusPillRefunded, (isInProgress || isCompleted) && styles.statusPillActive]}>
+                  <StatusIcon
+                    size={11}
+                    color={isRefunded ? colors.status.refunded.text : isCanceled ? colors.danger : (isInProgress || isCompleted) ? ACCENT : colors.text}
+                    strokeWidth={2.4}
+                  />
+                  <Text style={[styles.statusPillText, isCanceled && !isRefunded && styles.statusPillTextCanceled, isRefunded && styles.statusPillTextRefunded, (isInProgress || isCompleted) && styles.statusPillTextActive]}>
+                    {statusConfig.label}
+                  </Text>
+                </View>
+                <Text style={styles.headerTitle} numberOfLines={2}>{booking.title}</Text>
+                <Text style={styles.headerSubtitle}>{booking.address}</Text>
               </View>
-              <Text style={styles.headerTitle} numberOfLines={2}>{booking.title}</Text>
-              <Text style={styles.headerSubtitle}>{booking.address}</Text>
-            </View>
+            </Pressable>
             <View style={styles.cardBody}>
               <View style={styles.timeRow}>
                 <View style={styles.timeSlot}>
@@ -449,7 +520,9 @@ export function BookingDetailScreen({ navigation, route }: Props) {
                   </View>
                 </View>
               ) : null}
-              {(isUpcoming || isInProgress) && !isCanceled ? (
+              {/* Gated on confirmed: handleExtend no-ops for pending bookings,
+                  so showing the row there would be a dead control. */}
+              {(isUpcoming || isInProgress) && localStatus === "confirmed" ? (
                 <Pressable
                   style={({ pressed }) => [styles.extendRow, pressed && { opacity: 0.6 }]}
                   onPress={() => setExtendOpen(true)}
@@ -463,8 +536,31 @@ export function BookingDetailScreen({ navigation, route }: Props) {
             </View>
           </View>
 
-          {/* Directions card */}
-          {(isUpcoming || isInProgress) && !isCanceled && !canCheckIn ? (
+          {/* Arrival info outranks reference details while a booking is live:
+              on the day, the entry code and directions are what the driver
+              came for — Details (price/reference) reads last. */}
+
+          {/* Getting in card */}
+          {showArrivalInfo ? (
+            <View style={styles.card}>
+              <Text style={styles.cardSectionHeader}>Getting in</Text>
+              <View style={styles.cardBody}>
+                {live.arrivalInstructions?.trim() ? (
+                  <Text style={styles.instructionsText}>{live.arrivalInstructions.trim()}</Text>
+                ) : null}
+                {live.accessCode?.trim() ? (
+                  <View style={[styles.codeBox, live.arrivalInstructions?.trim() ? { marginTop: 12 } : null]}>
+                    <Text style={styles.codeLabel}>Entry code</Text>
+                    <Text style={styles.codeValue} selectable>{live.accessCode.trim()}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          ) : null}
+
+          {/* Directions card — stays visible through the check-in window;
+              arrival is exactly when directions are needed. */}
+          {(isUpcoming || isInProgress) && !isCanceled ? (
             <TouchableOpacity style={styles.card} onPress={handleOpenMaps} activeOpacity={0.8}>
               <Text style={styles.cardSectionHeader}>Location</Text>
               <View style={[styles.detailRow]}>
@@ -484,14 +580,20 @@ export function BookingDetailScreen({ navigation, route }: Props) {
               <Text style={styles.detailLabel}>Total paid</Text>
               <Text style={styles.detailValue}>€{(localAmountCents / 100).toFixed(2)}</Text>
             </View>
+            {isRefunded && refundedDateLabel ? (
+              <View style={[styles.detailRow, styles.detailRowBorder]}>
+                <Text style={styles.detailLabel}>Refunded</Text>
+                <Text style={styles.detailValue}>{refundedDateLabel}</Text>
+              </View>
+            ) : null}
             <View style={[styles.detailRow, styles.detailRowBorder]}>
               <Text style={styles.detailLabel}>Reference</Text>
               <Text style={[styles.detailValue, styles.detailRef]} selectable>{formatBookingReference(booking.id)}</Text>
             </View>
-            {booking.vehiclePlate ? (
+            {live.vehiclePlate ? (
               <View style={[styles.detailRow, styles.detailRowBorder]}>
                 <Text style={styles.detailLabel}>Vehicle</Text>
-                <Text style={styles.detailValue}>{booking.vehiclePlate}</Text>
+                <Text style={styles.detailValue}>{live.vehiclePlate}</Text>
               </View>
             ) : null}
             {checkedInAt ? (
@@ -501,24 +603,6 @@ export function BookingDetailScreen({ navigation, route }: Props) {
               </View>
             ) : null}
           </View>
-
-          {/* Getting in card */}
-          {showArrivalInfo ? (
-            <View style={styles.card}>
-              <Text style={styles.cardSectionHeader}>Getting in</Text>
-              <View style={styles.cardBody}>
-                {booking.arrivalInstructions?.trim() ? (
-                  <Text style={styles.instructionsText}>{booking.arrivalInstructions.trim()}</Text>
-                ) : null}
-                {booking.accessCode?.trim() ? (
-                  <View style={[styles.codeBox, booking.arrivalInstructions?.trim() ? { marginTop: 12 } : null]}>
-                    <Text style={styles.codeLabel}>Entry code</Text>
-                    <Text style={styles.codeValue} selectable>{booking.accessCode.trim()}</Text>
-                  </View>
-                ) : null}
-              </View>
-            </View>
-          ) : null}
 
           {/* Cancellation note */}
           {isCanceled ? (
@@ -536,16 +620,8 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 
         {/* Actions */}
         <View style={styles.actionsSection}>
-          {canCheckIn ? (
-            <SquircleBtn
-              label="Check in"
-              onPress={handleCheckIn}
-              icon={<CircleCheck size={18} color={colors.cardBg} strokeWidth={2.2} />}
-            />
-          ) : null}
-
           {canBookAgain ? (
-            <TouchableOpacity style={styles.secondaryBtn} onPress={handleBookAgain}>
+            <TouchableOpacity style={styles.secondaryBtn} onPress={handleOpenListing}>
               <RefreshCw size={16} color={FG} strokeWidth={2.2} />
               <Text style={styles.secondaryBtnText}>Book again</Text>
             </TouchableOpacity>
@@ -556,6 +632,9 @@ export function BookingDetailScreen({ navigation, route }: Props) {
           {isUpcoming && !isCanceled ? (
             <Pressable style={styles.cancelRow} onPress={handleCancel} disabled={canceling}>
               <Text style={styles.cancelText}>{canceling ? "Canceling…" : "Cancel booking"}</Text>
+              {!canceling && !cancelRefundEligible ? (
+                <Text style={styles.cancelSubtext}>Non-refundable</Text>
+              ) : null}
             </Pressable>
           ) : null}
 
@@ -573,6 +652,20 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 
       </ScrollView>
 
+      {/* Check-in lives in a pinned footer, not the scroll flow: during the
+          arrival window it must be visible without scrolling past the
+          Getting in / Location / Details stack. */}
+      {canCheckIn ? (
+        <View style={[styles.checkInBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <SquircleBtn
+            label="Check in"
+            onPress={handleCheckIn}
+            icon={<CircleCheck size={18} color={colors.cardBg} strokeWidth={2.2} />}
+            fullWidth
+          />
+        </View>
+      ) : null}
+
       <DatePicker
         modal
         open={extendOpen}
@@ -582,6 +675,15 @@ export function BookingDetailScreen({ navigation, route }: Props) {
         minuteInterval={30}
         onConfirm={(date) => { setExtendOpen(false); handleExtend(date); }}
         onCancel={() => setExtendOpen(false)}
+      />
+
+      <AppDialog
+        visible={dialog !== null}
+        tone={dialog?.tone}
+        title={dialog?.title ?? ""}
+        message={dialog?.message}
+        actions={dialog?.actions ?? []}
+        onRequestClose={() => setDialog(null)}
       />
     </SafeAreaView>
   );
@@ -613,6 +715,15 @@ const styles = StyleSheet.create({
   // ── Scroll content ───────────────────────────────────────────
   content: { paddingBottom: 48 },
 
+  // ── Pinned check-in bar ──────────────────────────────────────
+  checkInBar: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    backgroundColor: colors.cardBg,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
+
   // ── Full-bleed banners ───────────────────────────────────────
   reviewSection: {
     backgroundColor: ACCENT,
@@ -639,11 +750,14 @@ const styles = StyleSheet.create({
   },
 
   // ── Header card (status + title + time) ──────────────────────
+  // colors.border (not divider) for card edges: divider-weight hairlines wash
+  // out against light grounds on iOS — same lesson as BookingCard/Favourites
+  // (2026-07-09).
   headerCard: {
     backgroundColor: colors.cardBg,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: colors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -679,9 +793,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 5,
   },
   statusPillCanceled: { backgroundColor: colors.status.canceled.background },
+  statusPillRefunded: { backgroundColor: colors.status.refunded.background },
   statusPillActive: { backgroundColor: colors.accentSoft },
   statusPillText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12, color: colors.text },
   statusPillTextCanceled: { color: colors.danger },
+  statusPillTextRefunded: { color: colors.status.refunded.text },
   statusPillTextActive: { color: ACCENT },
 
   // ── Card (generic) ───────────────────────────────────────────
@@ -689,7 +805,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBg,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: colors.border,
     overflow: "hidden",
     ...CARD_SHADOW,
   },
@@ -771,6 +887,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14, alignItems: "center",
   },
   cancelText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: colors.danger },
+  cancelSubtext: { fontFamily: "PlusJakartaSans-Regular", fontSize: 11.5, color: colors.danger, marginTop: 2, opacity: 0.8 },
   linkRow: { flexDirection: "row", justifyContent: "center", gap: 24, paddingVertical: 4 },
   linkText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: MUTED },
   linkTextDanger: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: colors.danger },

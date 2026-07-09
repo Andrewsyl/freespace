@@ -160,7 +160,7 @@ export function PaymentsScreen() {
           icon={<CreditCard size={26} color={colors.primary} strokeWidth={2.2} />}
           title="Manage your payments"
           body="Sign in to add payment methods and see your booking charges."
-          onSignIn={() => navigation.navigate("Welcome")}
+          onSignIn={() => navigation.navigate("Auth", { screen: "Welcome" })}
           onBrowse={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
           reassurance="Your payment details are encrypted and secure."
         />

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
+  Building2,
   CircleCheck,
   CircleParking,
   House,
@@ -36,7 +37,7 @@ const CARD_SHADOW = {
   elevation: 4,
 } as const;
 
-const spaceTypes = ["Private Driveway", "Garage", "Car park", "Private road"];
+const spaceTypes = ["Private Driveway", "Garage", "Apartment / underground", "Car park", "Private road"];
 const vehicleSizeOptions = [
   { value: "small",  label: "Hatchback",  example: "Small & city cars",            image: "https://img.icons8.com/color/96/hatchback.png" },
   { value: "medium", label: "Saloon",     example: "Saloons & family cars",        image: "https://img.icons8.com/color/96/sedan.png" },
@@ -60,10 +61,11 @@ function SpaceTypeIcon({ type, active }: { type: string; active: boolean }) {
   const size = 20;
   const strokeWidth = 1.8;
   switch (type) {
-    case "Private Driveway": return <House size={size} color={color} strokeWidth={strokeWidth} />;
-    case "Garage":           return <Warehouse size={size} color={color} strokeWidth={strokeWidth} />;
-    case "Car park":         return <CircleParking size={size} color={color} strokeWidth={strokeWidth} />;
-    default:                 return <Signpost size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Private Driveway":        return <House size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Garage":                  return <Warehouse size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Apartment / underground": return <Building2 size={size} color={color} strokeWidth={strokeWidth} />;
+    case "Car park":                return <CircleParking size={size} color={color} strokeWidth={strokeWidth} />;
+    default:                        return <Signpost size={size} color={color} strokeWidth={strokeWidth} />;
   }
 }
 
@@ -168,6 +170,11 @@ export function ListingDetailsScreen({ navigation, route }: Props) {
                     );
                   })}
                 </View>
+                {draft.spaceType === "Private road" ? (
+                  <Text style={styles.typeNote}>
+                    Only list a private road you own or have the owner's permission to rent.
+                  </Text>
+                ) : null}
               </>
             )}
 
@@ -222,7 +229,7 @@ export function ListingDetailsScreen({ navigation, route }: Props) {
           <View style={styles.card}>
             <Text style={styles.cardHeader}>Vehicle fit</Text>
             <View style={styles.cardBody}>
-              <Text style={styles.cardPrompt}>What size vehicles fit comfortably in your space?</Text>
+              <Text style={styles.cardPrompt}>What's the largest vehicle that fits comfortably?</Text>
               <View style={styles.vehicleList}>
                 {vehicleSizeOptions.map((option) => {
                   const active = draft.vehicleSize === option.value;
@@ -401,6 +408,13 @@ const styles = StyleSheet.create({
   },
   typeLabelActive: {
     color: ACCENT,
+  },
+  typeNote: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 10,
   },
 
   // ── Selected type row ────────────────────────────────────────

@@ -222,7 +222,7 @@ export function VehicleTypeScreen({ navigation, route }: Props) {
           icon={<Car size={26} color={GREEN} strokeWidth={2.2} />}
           title="Sign in to save your vehicle"
           body="Your vehicle details are stored securely on your account for faster checkout."
-          onSignIn={() => navigation.navigate("Welcome")}
+          onSignIn={() => navigation.navigate("Auth", { screen: "Welcome" })}
           onBrowse={() => resetToSafeRoute(navigation, fallbackRoutes.search)}
         />
       </SafeAreaView>

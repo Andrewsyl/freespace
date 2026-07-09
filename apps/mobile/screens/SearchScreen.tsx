@@ -31,9 +31,10 @@ import { useFavorites } from "../favorites";
 import { useGlobalToast } from "../components/GlobalToast";
 import MapSection from "../components/MapSection";
 import { MapBottomCard } from "../components/MapBottomCard";
+import { RollingSwap } from "../components/RollingSwap";
 import { PulseDots } from "../components/PulseDots";
 import { LIGHT_MAP_STYLE } from "../components/mapStyles";
-import { applyServiceFee, calculateListingTotal, formatPriceValue } from "../utils/pricing";
+import { applyServiceFee, calculateListingTotal, formatPriceValue, getMonthlyGrossEuro } from "../utils/pricing";
 import { useGlobalLoading } from "../components/GlobalLoading";
 import { getListing, searchListings } from "../api";
 import { trackEvent } from "../analytics";
@@ -44,7 +45,6 @@ import {
   ArrowRight,
   BatteryCharging,
   Cctv,
-  Check,
   ChevronRight,
   CircleX,
   Clock,
@@ -543,11 +543,6 @@ export function SearchScreen({ navigation }: Props) {
   const [isStaggerPending, setIsStaggerPending] = useState(false);
   const [searchGeneration, setSearchGeneration] = useState(0);
   const pillOpacity = useRef(new Animated.Value(0)).current;
-  // "Finding spaces" resolves into a brief "12 spaces here" beat — the one
-  // moment the app gets to say the search paid off — before fading out.
-  const [resultsFlash, setResultsFlash] = useState<string | null>(null);
-  const prevPillBusyRef = useRef(false);
-  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Search card breathes: full two-row card while composing a search, a
   // single-row pill once attention moves to the map. 1 = expanded.
   const [cardCollapsed, setCardCollapsed] = useState(false);
@@ -571,6 +566,13 @@ export function SearchScreen({ navigation }: Props) {
   const [selectedCardAmenities, setSelectedCardAmenities] = useState<string[] | null>(null);
   const [startAt, setStartAt] = useState(new Date(today.from));
   const [endAt, setEndAt] = useState(new Date(today.to));
+  // Monthly term end shown alongside the start date (start + 1 calendar month),
+  // matching the listing page. Display-only — a single month is always the term.
+  const monthlyEndDate = useMemo(() => {
+    const d = new Date(startAt);
+    d.setMonth(d.getMonth() + 1);
+    return d;
+  }, [startAt]);
   const [pickerField, setPickerField] = useState<"start" | "end">("start");
   const [pickerVisible, setPickerVisible] = useState(false);
   const [draftDate, setDraftDate] = useState<Date | null>(null);
@@ -590,46 +592,14 @@ export function SearchScreen({ navigation }: Props) {
   }, [pickerVisible, pickerSheetAnim]);
   useEffect(() => {
     const busy = loading || isStaggerPending;
-    if (busy) {
-      if (flashTimerRef.current) {
-        clearTimeout(flashTimerRef.current);
-        flashTimerRef.current = null;
-      }
-      setResultsFlash(null);
-      Animated.timing(pillOpacity, {
-        toValue: 1,
-        duration: motion.duration.standard,
-        useNativeDriver: true,
-      }).start();
-    } else if (prevPillBusyRef.current && !error && resultsRef.current.length > 0) {
-      // Search just finished and the pins are down — land the payoff, hold a
-      // beat, get out of the way.
-      const count = resultsRef.current.length;
-      setResultsFlash(`${count} ${count === 1 ? "space" : "spaces"} here`);
-      flashTimerRef.current = setTimeout(() => {
-        flashTimerRef.current = null;
-        Animated.timing(pillOpacity, {
-          toValue: 0,
-          duration: motion.duration.standard,
-          useNativeDriver: true,
-        }).start(({ finished }) => {
-          if (finished) setResultsFlash(null);
-        });
-      }, 1600);
-    } else {
-      Animated.timing(pillOpacity, {
-        toValue: 0,
-        duration: motion.duration.fast,
-        useNativeDriver: true,
-      }).start();
-    }
-    prevPillBusyRef.current = busy;
-  }, [loading, isStaggerPending, error, pillOpacity]);
-  useEffect(() => {
-    return () => {
-      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    };
-  }, []);
+    // Show the "Finding spaces" pill only while a search is in flight; once it
+    // resolves the pill just fades out (no results-count payoff beat).
+    Animated.timing(pillOpacity, {
+      toValue: busy ? 1 : 0,
+      duration: busy ? motion.duration.standard : motion.duration.fast,
+      useNativeDriver: true,
+    }).start();
+  }, [loading, isStaggerPending, pillOpacity]);
 
   const setCardCollapsedAnimated = useCallback(
     (_next: boolean) => {
@@ -696,6 +666,11 @@ export function SearchScreen({ navigation }: Props) {
   const [coveredParking, setCoveredParking] = useState(false);
   const [evCharging, setEvCharging] = useState(false);
   const [instantBook, setInstantBook] = useState(false);
+  // Hourly (short-term booking) vs Monthly (enquiry-based) search. Monthly maps
+  // to the API's `mode=monthly`, which filters to listings that carry a monthly
+  // price. The map is the only monthly surface for now — see monthly roadmap.
+  const [searchMode, setSearchMode] = useState<"hourly" | "monthly">("hourly");
+  const [modePickerVisible, setModePickerVisible] = useState(false);
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [searchSheetVisible, setSearchSheetVisible] = useState(false);
   const [searchSheetOpen, setSearchSheetOpen] = useState(false);
@@ -1005,6 +980,7 @@ export function SearchScreen({ navigation }: Props) {
         from,
         to,
         includeUnavailable: true,
+        mode: searchMode === "monthly" ? "monthly" : "daily",
       };
       if (priceMin.trim()) next.priceMin = priceMin.trim();
       if (priceMax.trim()) next.priceMax = priceMax.trim();
@@ -1023,6 +999,7 @@ export function SearchScreen({ navigation }: Props) {
       from,
       to,
       radiusKmForRegion,
+      searchMode,
       priceMin,
       priceMax,
       securityLevel,
@@ -1225,6 +1202,21 @@ export function SearchScreen({ navigation }: Props) {
     timeSearchPendingRef.current = false;
     void runSearch({ lat, lng, radiusKm });
   }, [endAt, lat, lng, radiusKm, runSearch]);
+
+  // Re-run the search whenever the Hourly/Monthly mode flips so pins swap to the
+  // right listing set + pricing. Skip the very first render (initial search is
+  // driven by the map-ready path).
+  const modeSearchReadyRef = useRef(false);
+  useEffect(() => {
+    if (!modeSearchReadyRef.current) {
+      modeSearchReadyRef.current = true;
+      return;
+    }
+    setSelectedId(null);
+    setShowSelectedCard(false);
+    void runSearch(undefined, { showGlobal: false });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchMode]);
 
   useEffect(() => {
     if (typeof navigation.addListener !== "function") {
@@ -1937,9 +1929,16 @@ export function SearchScreen({ navigation }: Props) {
 
   const priceForListing = useCallback(
     (listing: ListingSummary) => {
+      if (searchMode === "monthly") {
+        // Monthly is now bookable (one-off single month), so the buyer-facing
+        // price must be fee-inclusive like the hourly path — the number on the
+        // map is the number at checkout. Host still earns the raw monthly rate.
+        const monthly = Number(listing.price_per_month);
+        return Number.isFinite(monthly) && monthly > 0 ? getMonthlyGrossEuro(monthly) : 0;
+      }
       return calculateListingTotal(listing, startAt, endAt).grossTotal;
     },
-    [endAt, startAt]
+    [endAt, startAt, searchMode]
   );
   const filterPriceValues = useMemo(
     () =>
@@ -1949,8 +1948,11 @@ export function SearchScreen({ navigation }: Props) {
     [priceForListing, results]
   );
   const priceKey = useMemo(
-    () => `${startAt.getTime()}-${endAt.getTime()}`,
-    [startAt, endAt]
+    () =>
+      searchMode === "monthly"
+        ? "monthly"
+        : `${startAt.getTime()}-${endAt.getTime()}`,
+    [startAt, endAt, searchMode]
   );
 
   const clearFilters = () => {
@@ -2024,6 +2026,7 @@ export function SearchScreen({ navigation }: Props) {
             onOverlappingPins={setOverlappingPins}
             priceForListing={priceForListing}
             priceKey={priceKey}
+            priceSuffix={searchMode === "monthly" ? "/mo" : ""}
             resumeNonce={mapResumeNonce}
             searchGeneration={searchGeneration}
             onAllPinsRevealed={onAllPinsRevealed}
@@ -2084,6 +2087,26 @@ export function SearchScreen({ navigation }: Props) {
                   </Pressable>
                 ) : null}
               </Pressable>
+              {/* Inline mode dropdown (Hourly / Monthly), blended into the
+                  search field — YourParkingSpace pattern. */}
+              <Pressable
+                style={({ pressed }) => [styles.modeChip, pressed && styles.modeChipPressed]}
+                onPress={() => setModePickerVisible(true)}
+                accessibilityRole="button"
+                accessibilityLabel={`Search mode: ${searchMode === "monthly" ? "Monthly" : "Hourly"}`}
+              >
+                <RollingSwap swapKey={searchMode}>
+                  <Text style={styles.modeChipText}>
+                    {searchMode === "monthly" ? "Monthly" : "Hourly"}
+                  </Text>
+                </RollingSwap>
+                <ChevronRight
+                  size={15}
+                  color={colors.primary}
+                  strokeWidth={2.4}
+                  style={{ transform: [{ rotate: "90deg" }] }}
+                />
+              </Pressable>
               <View style={styles.searchCardVDivider} />
               <Pressable
                 style={({ pressed }) => [styles.filterBtn, pressed && styles.searchCardRowPressed]}
@@ -2121,35 +2144,63 @@ export function SearchScreen({ navigation }: Props) {
               >
             <View style={styles.searchCardDivider} />
 
-            <View style={styles.timeStrip}>
-              <Pressable
-                style={({ pressed }) => [styles.timeStripBtn, pressed && styles.timeStripBtnPressed]}
-                onPress={() => openPicker("start")}
-                android_ripple={null}
-              >
-                <Text style={styles.timeStripLabel}>Arrive</Text>
-                <View style={styles.timeStripInner}>
-                  <Text style={styles.timeStripTime}>{formatTimeLabel(startAt)}</Text>
-                  <Text style={styles.timeStripSep}>·</Text>
-                  <Text style={styles.timeStripDate}>{formatDateLabel(startAt)}</Text>
+            <RollingSwap swapKey={searchMode}>
+            {searchMode === "monthly" ? (
+              <View style={styles.timeStrip}>
+                <Pressable
+                  style={({ pressed }) => [styles.timeStripBtn, pressed && styles.timeStripBtnPressed]}
+                  onPress={() => openPicker("start")}
+                  android_ripple={null}
+                >
+                  <Text style={styles.timeStripLabel}>Start date</Text>
+                  <View style={styles.timeStripInner}>
+                    <Text style={styles.timeStripTime}>{formatDateLabel(startAt)}</Text>
+                  </View>
+                </Pressable>
+                <View style={styles.timeStripArrow}>
+                  <ArrowRight size={13} color={colors.primary} strokeWidth={2.4} />
                 </View>
-              </Pressable>
-              <View style={styles.timeStripArrow}>
-                <ArrowRight size={13} color={colors.primary} strokeWidth={2.4} />
+                {/* End date is derived (start + 1 month), so it's shown, not
+                    tappable — the term is always a single month. */}
+                <View style={styles.timeStripBtn}>
+                  <Text style={styles.timeStripLabel}>End date</Text>
+                  <View style={styles.timeStripInner}>
+                    <Text style={styles.timeStripTime}>{formatDateLabel(monthlyEndDate)}</Text>
+                  </View>
+                </View>
               </View>
-              <Pressable
-                style={({ pressed }) => [styles.timeStripBtn, pressed && styles.timeStripBtnPressed]}
-                onPress={() => openPicker("end")}
-                android_ripple={null}
-              >
-                <Text style={styles.timeStripLabel}>Leave</Text>
-                <View style={styles.timeStripInner}>
-                  <Text style={styles.timeStripTime}>{formatTimeLabel(endAt)}</Text>
-                  <Text style={styles.timeStripSep}>·</Text>
-                  <Text style={styles.timeStripDate}>{formatDateLabel(endAt)}</Text>
+            ) : (
+              <View style={styles.timeStrip}>
+                <Pressable
+                  style={({ pressed }) => [styles.timeStripBtn, pressed && styles.timeStripBtnPressed]}
+                  onPress={() => openPicker("start")}
+                  android_ripple={null}
+                >
+                  <Text style={styles.timeStripLabel}>Arrive</Text>
+                  <View style={styles.timeStripInner}>
+                    <Text style={styles.timeStripTime}>{formatTimeLabel(startAt)}</Text>
+                    <Text style={styles.timeStripSep}>·</Text>
+                    <Text style={styles.timeStripDate}>{formatDateLabel(startAt)}</Text>
+                  </View>
+                </Pressable>
+                <View style={styles.timeStripArrow}>
+                  <ArrowRight size={13} color={colors.primary} strokeWidth={2.4} />
                 </View>
-              </Pressable>
-            </View>
+                <Pressable
+                  style={({ pressed }) => [styles.timeStripBtn, pressed && styles.timeStripBtnPressed]}
+                  onPress={() => openPicker("end")}
+                  android_ripple={null}
+                >
+                  <Text style={styles.timeStripLabel}>Leave</Text>
+                  <View style={styles.timeStripInner}>
+                    <Text style={styles.timeStripTime}>{formatTimeLabel(endAt)}</Text>
+                    <Text style={styles.timeStripSep}>·</Text>
+                    <Text style={styles.timeStripDate}>{formatDateLabel(endAt)}</Text>
+                  </View>
+                </Pressable>
+              </View>
+            )}
+            </RollingSwap>
               </View>
             </Animated.View>
           </View>
@@ -2168,21 +2219,10 @@ export function SearchScreen({ navigation }: Props) {
             pointerEvents="none"
             style={[styles.findingPill, { opacity: pillOpacity }]}
           >
-            {resultsFlash ? (
-              <>
-                <View style={styles.findingSpinner}>
-                  <Check size={13} color={colors.primary} strokeWidth={3} />
-                </View>
-                <Text style={styles.findingText}>{resultsFlash}</Text>
-              </>
-            ) : (
-              <>
-                <View style={styles.findingSpinner}>
-                  <PulseDots />
-                </View>
-                <Text style={styles.findingText}>Finding spaces</Text>
-              </>
-            )}
+            <View style={styles.findingSpinner}>
+              <PulseDots />
+            </View>
+            <Text style={styles.findingText}>Finding spaces</Text>
           </Animated.View>
         </View>
 
@@ -2246,7 +2286,11 @@ export function SearchScreen({ navigation }: Props) {
             imageUrl={selectedListingImage ?? undefined}
             rating={visibleSelectedListing.rating ?? 0}
             reviewCount={visibleSelectedListing.rating_count ?? 0}
-            price={`€${formatPriceValue(priceForListing(visibleSelectedListing))} total`}
+            price={
+              searchMode === "monthly"
+                ? `€${formatPriceValue(priceForListing(visibleSelectedListing))}/mo`
+                : `€${formatPriceValue(priceForListing(visibleSelectedListing))} total`
+            }
             amenities={selectedCardAmenities ?? visibleSelectedListing.amenities ?? null}
             isAvailable={visibleSelectedListing.is_available !== false}
             isFavorite={isFavorite(visibleSelectedListing.id)}
@@ -2254,7 +2298,12 @@ export function SearchScreen({ navigation }: Props) {
             onPress={() => {
               // Leave the pin selected — clearing it remounts the marker
               // mid-transition and it visibly flickers behind the push.
-              navigation.navigate("Listing", { id: visibleSelectedListing.id, from, to });
+              navigation.navigate("Listing", {
+                id: visibleSelectedListing.id,
+                from,
+                to,
+                mode: searchMode === "monthly" ? "monthly" : undefined,
+              });
             }}
             bottomOffset={82 + insets.bottom}
             horizontalInset={16}
@@ -2601,9 +2650,13 @@ export function SearchScreen({ navigation }: Props) {
 
                   <View style={styles.pickerHeader}>
                     <Text style={styles.pickerTitle}>
-                      {pickerField === "start" ? "Arrival time" : "Departure time"}
+                      {searchMode === "monthly"
+                        ? "Arrive from"
+                        : pickerField === "start"
+                          ? "Arrival time"
+                          : "Departure time"}
                     </Text>
-                    {pickerField === "end" ? (
+                    {searchMode !== "monthly" && pickerField === "end" ? (
                       <Text style={styles.pickerSubtitle}>arriving {formatTimeLabel(startAt)}</Text>
                     ) : null}
                   </View>
@@ -2635,6 +2688,7 @@ export function SearchScreen({ navigation }: Props) {
                   <DrumRollPicker
                     date={draftDate ?? (pickerField === "start" ? startAt : endAt)}
                     minuteInterval={5}
+                    dateOnly={searchMode === "monthly"}
                     onChange={(date) => setDraftDate(date)}
                     drumRef={drumPickerRef}
                   />
@@ -2644,7 +2698,7 @@ export function SearchScreen({ navigation }: Props) {
                     <Pressable
                       style={styles.pickerBackBtn}
                       onPress={() => {
-                        if (pickerField === "end") {
+                        if (pickerField === "end" && searchMode !== "monthly") {
                           setPickerField("start");
                           setDraftDate(startAt);
                         } else {
@@ -2653,13 +2707,19 @@ export function SearchScreen({ navigation }: Props) {
                       }}
                     >
                       <Text style={styles.pickerBackBtnText}>
-                        {pickerField === "end" ? "Back" : "Cancel"}
+                        {pickerField === "end" && searchMode !== "monthly" ? "Back" : "Cancel"}
                       </Text>
                     </Pressable>
                     <Pressable
                       style={({ pressed }) => [styles.pickerFooterPrimary, pressed && { opacity: 0.88 }]}
                       onPress={() => {
                         const next = draftDate ?? (pickerField === "start" ? startAt : endAt);
+                        // Monthly picks a single "arrive from" date — no Leave step.
+                        if (searchMode === "monthly") {
+                          applyPickedDate(next);
+                          closePicker();
+                          return;
+                        }
                         if (pickerField === "start") {
                           applyPickedDate(next);
                           const suggestedEnd = new Date(next);
@@ -2674,7 +2734,7 @@ export function SearchScreen({ navigation }: Props) {
                       }}
                     >
                       <Text style={styles.pickerFooterPrimaryText}>
-                        {pickerField === "start" ? "Next" : "Done"}
+                        {searchMode === "monthly" || pickerField === "end" ? "Done" : "Next"}
                       </Text>
                     </Pressable>
                   </View>
@@ -2687,10 +2747,17 @@ export function SearchScreen({ navigation }: Props) {
               modal
               open={pickerVisible}
               date={draftDate ?? (pickerField === "start" ? startAt : endAt)}
-              mode="datetime"
+              mode={searchMode === "monthly" ? "date" : "datetime"}
               minuteInterval={5}
               onConfirm={(date) => {
                 setDraftDate(date);
+                // Monthly picks a single "arrive from" date — no Leave step.
+                if (searchMode === "monthly") {
+                  applyPickedDate(date);
+                  setPickerVisible(false);
+                  setDraftDate(null);
+                  return;
+                }
                 if (pickerField === "start") {
                   applyPickedDate(date);
                   const suggestedEnd = new Date(date);
@@ -2742,6 +2809,7 @@ export function SearchScreen({ navigation }: Props) {
                     </View>
                     <Text style={styles.overlappingItemPrice}>
                       €{formatPriceValue(priceForListing(listing))}
+                      {searchMode === "monthly" ? "/mo" : ""}
                     </Text>
                   </Pressable>
                 ))}
@@ -2750,6 +2818,39 @@ export function SearchScreen({ navigation }: Props) {
           </Pressable>
         </Modal>
       )}
+
+      {modePickerVisible && (
+        <Modal transparent animationType="fade" visible onRequestClose={() => setModePickerVisible(false)}>
+          <Pressable style={styles.modeDropdownBackdrop} onPress={() => setModePickerVisible(false)}>
+            <View style={[styles.modeDropdown, { top: insets.top + 66 }]}>
+              {(["hourly", "monthly"] as const).map((m) => {
+                const active = searchMode === m;
+                return (
+                  <Pressable
+                    key={m}
+                    style={({ pressed }) => [
+                      styles.modeDropdownItem,
+                      pressed && styles.searchCardRowPressed,
+                    ]}
+                    onPress={() => {
+                      setModePickerVisible(false);
+                      setSearchMode(m);
+                    }}
+                  >
+                    <Text style={[styles.modeDropdownText, active && styles.modeDropdownTextActive]}>
+                      {m === "hourly" ? "Hourly" : "Monthly"}
+                    </Text>
+                    {active ? (
+                      <ChevronRight size={16} color={colors.primary} strokeWidth={2.6} />
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Pressable>
+        </Modal>
+      )}
+
     </SafeAreaView>
   );
 }
@@ -2931,6 +3032,63 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSoft,
     letterSpacing: -0.1,
+  },
+  // ── Inline mode dropdown chip (Hourly / Monthly) — blended into the field
+  modeChip: {
+    alignItems: "center",
+    alignSelf: "center",
+    borderColor: colors.primary,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    flexDirection: "row",
+    gap: 3,
+    marginRight: 10,
+    paddingLeft: 12,
+    paddingRight: 8,
+    paddingVertical: 7,
+  },
+  modeChipPressed: {
+    backgroundColor: colors.accentSoft,
+  },
+  modeChipText: {
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 13,
+    color: colors.primary,
+    letterSpacing: -0.1,
+  },
+  modeDropdownBackdrop: {
+    flex: 1,
+  },
+  modeDropdown: {
+    position: "absolute",
+    right: spacing.screenX + 4,
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 4,
+    minWidth: 150,
+    shadowColor: "#0B1220",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  modeDropdownItem: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  modeDropdownText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: colors.textSoft,
+    letterSpacing: -0.1,
+  },
+  modeDropdownTextActive: {
+    color: colors.text,
   },
   findingPill: {
     alignItems: "center",
@@ -3226,7 +3384,7 @@ const styles = StyleSheet.create({
   applyButton: {
     alignItems: "center",
     backgroundColor: colors.primary,
-    borderRadius: 14,
+    borderRadius: radius.pill,
     minHeight: 52,
     paddingVertical: 13,
   },
@@ -3587,7 +3745,7 @@ const styles = StyleSheet.create({
   pickerFooterPrimary: {
     alignItems: "center",
     backgroundColor: colors.primary,
-    borderRadius: 14,
+    borderRadius: radius.pill,
     flex: 2,
     height: 52,
     justifyContent: "center",

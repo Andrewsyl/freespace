@@ -6,7 +6,7 @@ export type AdaptiveDatePickerProps =
   | {
       modal?: false;
       date: Date;
-      mode: "time" | "datetime";
+      mode: "time" | "datetime" | "date";
       minuteInterval?: 1 | 5 | 10 | 15 | 20 | 30;
       minimumDate?: Date;
       onDateChange: (date: Date) => void;
@@ -15,7 +15,7 @@ export type AdaptiveDatePickerProps =
       modal: true;
       open: boolean;
       date: Date;
-      mode: "time" | "datetime";
+      mode: "time" | "datetime" | "date";
       minuteInterval?: 1 | 5 | 10 | 15 | 20 | 30;
       minimumDate?: Date;
       onConfirm: (date: Date) => void;

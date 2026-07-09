@@ -2610,7 +2610,7 @@ export async function getBookingForRefund({
 }) {
   const res = await pool.query(
     `
-    SELECT id, status, payment_intent_id, payout_status, start_time, end_time, refund_status, refund_id
+    SELECT id, status, payment_intent_id, payout_status, start_time, end_time, created_at, checked_in_at, refund_status, refund_id
     FROM bookings
     WHERE id = $1
       AND driver_id = $2
@@ -2625,6 +2625,8 @@ export async function getBookingForRefund({
         payout_status: string | null;
         start_time: Date;
         end_time: Date;
+        created_at: Date;
+        checked_in_at: Date | null;
         refund_status: string | null;
         refund_id: string | null;
       }
@@ -3009,6 +3011,7 @@ export async function listUserBookings(userId: string) {
       b.listing_id,
       b.start_time,
       b.end_time,
+      b.created_at,
       b.status,
       b.refund_status,
       b.refunded_at,
@@ -3045,6 +3048,7 @@ export async function listUserBookings(userId: string) {
       b.listing_id,
       b.start_time,
       b.end_time,
+      b.created_at,
       b.status,
       b.refund_status,
       b.refunded_at,
@@ -3082,6 +3086,7 @@ export async function listUserBookings(userId: string) {
     listingId: row.listing_id,
     startTime: row.start_time,
     endTime: row.end_time,
+    createdAt: row.created_at ?? null,
     status: row.status ?? "pending",
     refundStatus: row.refund_status ?? null,
     refundedAt: row.refunded_at ?? null,
@@ -3161,6 +3166,7 @@ export async function getBookingById(userId: string, bookingId: string) {
       b.listing_id,
       b.start_time,
       b.end_time,
+      b.created_at,
       b.status,
       b.refund_status,
       b.refunded_at,
@@ -3204,6 +3210,7 @@ export async function getBookingById(userId: string, bookingId: string) {
     listingId: row.listing_id,
     startTime: row.start_time,
     endTime: row.end_time,
+    createdAt: row.created_at ?? null,
     status: row.status ?? "pending",
     refundStatus: row.refund_status ?? null,
     refundedAt: row.refunded_at ?? null,

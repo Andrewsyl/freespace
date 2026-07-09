@@ -96,6 +96,7 @@ export async function searchListings(params: SearchParams) {
   query.set("from", params.from);
   query.set("to", params.to);
   if (params.includeUnavailable) query.set("includeUnavailable", "true");
+  if (params.mode === "monthly") query.set("mode", "monthly");
   if (params.spaceType) query.set("spaceType", params.spaceType);
   if (params.priceMin) query.set("priceMin", params.priceMin);
   if (params.priceMax) query.set("priceMax", params.priceMax);
@@ -827,6 +828,7 @@ export async function createBookingPaymentIntent(payload: {
   from: string;
   to: string;
   amountCents: number;
+  mode?: "daily" | "monthly";
   vehiclePlate?: string | null;
   promoCode?: string | null;
   token: string;
@@ -851,6 +853,7 @@ export async function createBookingPaymentIntent(payload: {
       from: payload.from,
       to: payload.to,
       amountCents: payload.amountCents,
+      mode: payload.mode ?? undefined,
       vehiclePlate: payload.vehiclePlate ?? undefined,
       promoCode: payload.promoCode ?? undefined,
     }),
@@ -986,6 +989,7 @@ export type BookingSummary = {
   listingId: string;
   startTime: string;
   endTime: string;
+  createdAt?: string | null;
   status: string;
   refundStatus?: string | null;
   refundedAt?: string | null;

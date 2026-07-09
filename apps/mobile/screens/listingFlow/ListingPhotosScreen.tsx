@@ -282,7 +282,7 @@ export function ListingPhotosScreen({ navigation, route }: Props) {
         {/* Header card */}
         <View style={styles.headerCard}>
           <View style={styles.headerCardTop}>
-            <Text style={styles.headerKicker}>Step 6 · Photos</Text>
+            <Text style={styles.headerKicker}>Step 7 · Photos</Text>
             <Text style={styles.headerTitle}>Show off your space</Text>
           </View>
           <View style={styles.headerCardBottom}>
@@ -392,6 +392,12 @@ export function ListingPhotosScreen({ navigation, route }: Props) {
                 </Pressable>
               </>
             )}
+
+            {!hasPhoto ? (
+              <Text style={styles.noPhotoNote}>
+                Listings without a photo are easy for drivers to scroll past.
+              </Text>
+            ) : null}
           </View>
         </View>
       </ScrollView>
@@ -621,6 +627,14 @@ const styles = StyleSheet.create({
     color: ACCENT,
     fontFamily: "PlusJakartaSans-SemiBold",
     fontSize: 14,
+  },
+  noPhotoNote: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 10,
+    textAlign: "center",
   },
 
   // ── Tips card ────────────────────────────────────────────────

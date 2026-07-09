@@ -48,6 +48,9 @@ export const colors = {
   star: {
     active: color.text.strong,
     inactive: color.rating.inactive,
+    // Amber fill for interactive review stars (rate-your-stay moments); the
+    // ink `active` is for static rating displays.
+    review: color.rating.active,
   },
 };
 

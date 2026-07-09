@@ -19,6 +19,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { requireOptionalNativeModule } from "expo-modules-core";
 import * as Haptics from "expo-haptics";
+import { radius } from "../styles/theme";
 
 // The frosted backdrop needs expo-blur's native view. On a dev client that
 // hasn't been rebuilt with the module yet, mounting it renders a broken native
@@ -676,7 +677,7 @@ const styles = StyleSheet.create({
     height: 56,
     marginTop: 22,
     marginHorizontal: 2,
-    borderRadius: 20,
+    borderRadius: radius.pill,
     backgroundColor: GREEN,
     alignItems: "center",
     justifyContent: "center",

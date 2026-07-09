@@ -47,7 +47,9 @@ const defaultDraft: ListingDraft = {
   coverPanoId: null,
   spaceType: "",
   spaceCount: "",
-  vehicleSize: "",
+  // Pre-selected safe-majority answer ("largest vehicle that fits"); hosts can
+  // change it on the Details step, but shouldn't be forced into a cold guess.
+  vehicleSize: "large",
   accessOptions: [],
   requiresAccessCode: null,
   accessCode: "",
@@ -72,6 +74,7 @@ const defaultDraft: ListingDraft = {
   photos: [],
   capacity: 1,
   description: "",
+  listingTitle: "",
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, "CreateListingFlow">;
@@ -217,6 +220,7 @@ export function ListingFlowScreen({ route }: Props) {
           photos: listing.image_urls ?? prev.photos,
           capacity: (listing as { capacity?: number | null }).capacity ?? 1,
           description: listing.description?.trim() ?? "",
+          listingTitle: listing.title ?? "",
         }));
         if (token) {
           try {

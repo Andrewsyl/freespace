@@ -263,15 +263,34 @@ export function ListingReviewScreen({ navigation }: Props) {
     return unsubscribe;
   }, [navigation, published]);
 
-  // Pre-fill the description box with an auto-generated one the first time the
-  // host reaches this screen (only if they haven't written/edited their own).
+  // Pre-fill the title and description the first time the host reaches this
+  // screen (only if they haven't written/edited their own). The title default
+  // uses the address locality so every listing in a city doesn't publish as an
+  // identical "<type> parking".
   useEffect(() => {
-    if (!draft.description?.trim()) {
-      setDraft((prev) => ({ ...prev, description: generateListingDescription(prev) }));
-    }
+    setDraft((prev) => {
+      const next = { ...prev };
+      if (!prev.description?.trim()) {
+        next.description = generateListingDescription(prev);
+      }
+      if (!prev.listingTitle?.trim()) {
+        const spaceType = prev.spaceType || "Parking space";
+        const parts = prev.location.address.split(",").map((p) => p.trim()).filter(Boolean);
+        const locality = parts.length > 1 ? parts[1] : "";
+        next.listingTitle =
+          locality && locality.length <= 30 ? `${spaceType} near ${locality}` : `${spaceType} parking`;
+      }
+      return next;
+    });
     // Run once on mount; the host can freely edit afterwards.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // What actually publishes — the host's (possibly edited) title, with the old
+  // generic fallback only if they blanked it.
+  const publishTitle =
+    (draft.listingTitle ?? "").trim() ||
+    (draft.spaceType ? `${draft.spaceType} parking` : "Parking space");
 
   const handlePublish = async () => {
     if (!token) {
@@ -340,10 +359,10 @@ export function ListingReviewScreen({ navigation }: Props) {
         : null;
       const effectiveListingId = listingId ?? createdListingIdRef.current;
       if (effectiveListingId) {
-        await updateListing({ token, listingId: effectiveListingId, title: draft.spaceType ? `${draft.spaceType} parking` : "Parking space", address: draft.location.address || "Dublin", rateType: inferredRateType, pricePerDay: parsedDaily, pricePerHour: requiresShortStay ? parsedHourly : null, pricePerMonth: requiresMonthly ? parsedMonthly : null, availabilityText: draft.availability.detail, imageUrls, amenities: draft.accessOptions, accessCode: publishAccessCode, arrivalInstructions: publishArrivalInstructions, permissionDeclared: draft.permissionDeclared, capacity: draft.capacity, description: (draft.description ?? "").trim() || null, vehicleSizeSuitability: draft.vehicleSize.trim() || null });
+        await updateListing({ token, listingId: effectiveListingId, title: publishTitle, address: draft.location.address || "Dublin", rateType: inferredRateType, pricePerDay: parsedDaily, pricePerHour: requiresShortStay ? parsedHourly : null, pricePerMonth: requiresMonthly ? parsedMonthly : null, availabilityText: draft.availability.detail, imageUrls, amenities: draft.accessOptions, accessCode: publishAccessCode, arrivalInstructions: publishArrivalInstructions, permissionDeclared: draft.permissionDeclared, capacity: draft.capacity, description: (draft.description ?? "").trim() || null, vehicleSizeSuitability: draft.vehicleSize.trim() || null });
         await syncAvailability(effectiveListingId);
       } else {
-        const newListingId = await createListing({ token, title: draft.spaceType ? `${draft.spaceType} parking` : "Parking space", address: draft.location.address || "Dublin", rateType: inferredRateType, pricePerDay: parsedDaily, pricePerHour: requiresShortStay ? parsedHourly : null, pricePerMonth: requiresMonthly ? parsedMonthly : null, availabilityText: draft.availability.detail, latitude: draft.location.latitude, longitude: draft.location.longitude, imageUrls, amenities: draft.accessOptions, accessCode: publishAccessCode, arrivalInstructions: publishArrivalInstructions, permissionDeclared: draft.permissionDeclared, capacity: draft.capacity, description: (draft.description ?? "").trim() || null, vehicleSizeSuitability: draft.vehicleSize.trim() || null });
+        const newListingId = await createListing({ token, title: publishTitle, address: draft.location.address || "Dublin", rateType: inferredRateType, pricePerDay: parsedDaily, pricePerHour: requiresShortStay ? parsedHourly : null, pricePerMonth: requiresMonthly ? parsedMonthly : null, availabilityText: draft.availability.detail, latitude: draft.location.latitude, longitude: draft.location.longitude, imageUrls, amenities: draft.accessOptions, accessCode: publishAccessCode, arrivalInstructions: publishArrivalInstructions, permissionDeclared: draft.permissionDeclared, capacity: draft.capacity, description: (draft.description ?? "").trim() || null, vehicleSizeSuitability: draft.vehicleSize.trim() || null });
         createdListingIdRef.current = newListingId;
         await syncAvailability(newListingId);
       }
@@ -447,7 +466,7 @@ export function ListingReviewScreen({ navigation }: Props) {
           </View>
           <View style={styles.heroMeta}>
             <Text style={styles.heroTitle} numberOfLines={1}>
-              {draft.spaceType ? `${draft.spaceType} parking` : "Parking space"}
+              {publishTitle}
             </Text>
             <View style={styles.heroAddressRow}>
               <MapPin size={12} color={SOFT} strokeWidth={2} />
@@ -461,27 +480,40 @@ export function ListingReviewScreen({ navigation }: Props) {
         {/* ── Description (reviewable text, lightweight edit) ── */}
         <View style={styles.descCard}>
           <View style={styles.descHeaderRow}>
-            <Text style={styles.cardHeader}>Description</Text>
+            <Text style={styles.cardHeader}>Title &amp; description</Text>
             <Pressable onPress={() => setEditingDescription((v) => !v)} hitSlop={10}>
               <Text style={styles.editLink}>{editingDescription ? "Done" : "Edit"}</Text>
             </Pressable>
           </View>
           {editingDescription ? (
-            <TextInput
-              style={styles.descriptionInput}
-              value={draft.description ?? ""}
-              onChangeText={(text) => setDraft((prev) => ({ ...prev, description: text }))}
-              multiline
-              autoFocus
-              textAlignVertical="top"
-              placeholder="Describe your space…"
-              placeholderTextColor={MUTED}
-            />
+            <>
+              <TextInput
+                style={styles.titleInput}
+                value={draft.listingTitle ?? ""}
+                onChangeText={(text) => setDraft((prev) => ({ ...prev, listingTitle: text }))}
+                autoFocus
+                placeholder="Listing title…"
+                placeholderTextColor={MUTED}
+                maxLength={80}
+              />
+              <TextInput
+                style={styles.descriptionInput}
+                value={draft.description ?? ""}
+                onChangeText={(text) => setDraft((prev) => ({ ...prev, description: text }))}
+                multiline
+                textAlignVertical="top"
+                placeholder="Describe your space…"
+                placeholderTextColor={MUTED}
+              />
+            </>
           ) : (
             <Text style={styles.descriptionText}>
               {draft.description?.trim() || "Add a short description to help drivers choose your space."}
             </Text>
           )}
+          <Text style={styles.generatedNote}>
+            Written from your details — tap Edit to make it yours.
+          </Text>
         </View>
 
         {/* ── Review & edit (only what isn't already shown above) ── */}
@@ -586,7 +618,11 @@ export function ListingReviewScreen({ navigation }: Props) {
           loading={submitting}
           fullWidth
         />
-        {!listingId ? (
+        {/* Only offered when the host genuinely can't publish yet (missing fields
+            or unverified email) — for a completable listing it was a standing
+            invitation to defer at the moment of commitment. The header X still
+            offers save-and-leave at any time. */}
+        {!listingId && (!canPublish || user?.emailVerified === false) ? (
           <Pressable
             style={styles.saveLaterBtn}
             onPress={async () => {
@@ -851,6 +887,17 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     color: MUTED,
   },
+  titleInput: {
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15,
+    color: FG,
+    marginBottom: 8,
+  },
   descriptionInput: {
     minHeight: 96,
     borderWidth: 1,
@@ -858,9 +905,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
+    fontFamily: "PlusJakartaSans-Regular",
     fontSize: 14,
     lineHeight: 20,
     color: FG,
+  },
+  generatedNote: {
+    color: SOFT,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 8,
   },
 
   // ── Review list header ───────────────────────────────────────
