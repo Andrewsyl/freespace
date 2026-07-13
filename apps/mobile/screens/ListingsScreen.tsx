@@ -109,7 +109,7 @@ function driverShortName(booking: BookingSummary): string | null {
   return `${parts[0]} ${parts[parts.length - 1][0]}.`;
 }
 
-export function ListingsScreen({ navigation }: Props) {
+export function ListingsScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { token, user } = useAuth();
   const platformFeePercent = 0;
@@ -118,7 +118,9 @@ export function ListingsScreen({ navigation }: Props) {
   const [hostBookings, setHostBookings] = useState<BookingSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"bookings" | "spaces">("bookings");
+  const [activeTab, setActiveTab] = useState<"bookings" | "spaces">(
+    route.params?.initialTab ?? "bookings"
+  );
   const [showPast, setShowPast] = useState(false);
   const skeletonPulse = usePulse();
   const [deletingId, setDeletingId] = useState<string | null>(null);

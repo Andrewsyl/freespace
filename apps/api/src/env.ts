@@ -33,6 +33,22 @@ const makeIntervalSchema = (name: string) =>
 
 const intervalSchema = makeIntervalSchema("NOTIFICATION_PROCESSOR_INTERVAL_MS");
 
+// Integer env var with a default and an inclusive sanity range; `null` default
+// means "unset" (used for the optional fee cap).
+function makeFeeIntSchema<D extends number | null>(name: string, def: D, min: number, max: number) {
+  return z
+    .string()
+    .optional()
+    .transform((value): number | D => {
+      if (!value) return def;
+      const parsed = Number(value);
+      if (!Number.isInteger(parsed) || parsed < min || parsed > max) {
+        throw new Error(`${name} must be an integer between ${min} and ${max}`);
+      }
+      return parsed;
+    });
+}
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).optional().default("development"),
@@ -78,8 +94,28 @@ const envSchema = z
     PORT: portSchema,
     NOTIFICATION_PROCESSOR_INTERVAL_MS: intervalSchema,
     BOOKING_SWEEPER_INTERVAL_MS: makeIntervalSchema("BOOKING_SWEEPER_INTERVAL_MS"),
+    // Platform fee schedule (docs/PRICING_STRATEGY.md). Served to clients via
+    // GET /api/config; changing these changes booking prices for every client
+    // that has fetched the new config. Old app builds that haven't refetched
+    // will 400 with "price out of date" (server verification always wins), so
+    // flip these only alongside an app-adoption check. Defaults reproduce the
+    // legacy hard-coded ×1.08 exactly (8% fee, no floor, no cap).
+    PLATFORM_FEE_BPS: makeFeeIntSchema("PLATFORM_FEE_BPS", 800, 0, 3000),
+    PLATFORM_MIN_FEE_CENTS: makeFeeIntSchema("PLATFORM_MIN_FEE_CENTS", 0, 0, 500),
+    PLATFORM_MAX_FEE_CENTS: makeFeeIntSchema("PLATFORM_MAX_FEE_CENTS", null, 1, 100000),
   })
   .superRefine((value, ctx) => {
+    if (
+      value.PLATFORM_MAX_FEE_CENTS != null &&
+      value.PLATFORM_MAX_FEE_CENTS < value.PLATFORM_MIN_FEE_CENTS
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["PLATFORM_MAX_FEE_CENTS"],
+        message: "PLATFORM_MAX_FEE_CENTS must be >= PLATFORM_MIN_FEE_CENTS",
+      });
+    }
+
     const stripeMode = value.STRIPE_SECRET_KEY?.startsWith("sk_live_")
       ? "live"
       : value.STRIPE_SECRET_KEY?.startsWith("sk_test_")

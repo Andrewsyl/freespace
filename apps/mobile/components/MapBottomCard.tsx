@@ -207,7 +207,12 @@ export function MapBottomCard({
         {/* ── Image ─────────────────────────────────────────── */}
         <View style={styles.imageWrap}>
           {imageUrl ? (
-            <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
+            // The card is one persistent instance whose props swap as the driver
+            // taps different pins. Without a key the <Image> element is reused
+            // and RN keeps the previous photo on screen until the new URI loads,
+            // so a stale image lingers for a beat. Keying by URI remounts it,
+            // showing the muted placeholder while the new one loads instead.
+            <Image key={imageUrl} source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
           ) : (
             <View style={styles.imageFallback}>
               <CarFront size={22} color="#b0bac4" strokeWidth={1.9} />

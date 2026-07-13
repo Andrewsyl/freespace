@@ -51,7 +51,9 @@ export type RootStackParamList = {
   LoginSecurity: undefined;
   Legal: undefined;
   History: { showSuccess?: boolean; refreshToken?: number; showMapCTA?: boolean; initialTab?: "upcoming" | "active" | "past" } | undefined;
-  Listings: undefined;
+  // initialTab lets flows land on a specific segment — publish opens Spaces so
+  // the host sees the listing they just created.
+  Listings: { initialTab?: "bookings" | "spaces" } | undefined;
   Payments: undefined;
   Favorites: {} | undefined;
   Support:

@@ -49,6 +49,25 @@ async function handleResponse<T>(res: Response): Promise<{ data: T | null; error
   return { data: body as T, error: null };
 }
 
+// The server's live platform fee schedule (apps/api/src/lib/pricing.ts). The
+// checkout page applies it via setPlatformFeeSchedule so quoted totals match
+// what the API will verify. Returns null on failure — callers keep the baked-in
+// defaults from lib/pricing.ts.
+export async function fetchPlatformFeeSchedule(): Promise<{
+  feeBps: number;
+  minFeeCents: number;
+  maxFeeCents: number | null;
+} | null> {
+  try {
+    const res = await fetchWithTimeout(`${API_BASE}/api/config`, { cache: "no-store" }, 5000);
+    if (!res.ok) return null;
+    const body = (await res.json().catch(() => null)) as { pricing?: unknown } | null;
+    return (body?.pricing as { feeBps: number; minFeeCents: number; maxFeeCents: number | null }) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function searchSpaces(filters: SearchFilters): Promise<Listing[]> {
   const radiusKm = Math.min(50, Math.max(0.1, Number(filters.radiusKm) || 5));
   const fromValue = new Date(`${filters.date}T${filters.startTime}:00`);

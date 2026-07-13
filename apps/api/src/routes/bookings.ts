@@ -54,14 +54,20 @@ import {
 import "../loadEnv.js";
 import { generateVerificationToken, hashPassword } from "../lib/auth.js";
 import { evaluateCancellationRefund } from "../lib/cancellationPolicy.js";
+import { grossFromParkingCents, monthlyGrossFromParkingCents } from "../lib/pricing.js";
 import { env } from "../env.js";
 
 const router = Router();
 const DEFAULT_DAILY_HOURS = 8;
-// The platform's cut is a server-owned constant, never taken from the client.
-// A caller could otherwise send platformFeePercent: 0 and keep the driver's
-// price identical while silently zeroing the fee (host payout = charge - fee).
-const PLATFORM_FEE_PERCENT = 8 / 108;
+// The platform's cut is server-owned (lib/pricing.ts fee schedule), never taken
+// from the client. A caller could otherwise send platformFeePercent: 0 and keep
+// the driver's price identical while silently zeroing the fee (host payout =
+// charge - fee).
+// PORTAL_FEE_PERCENT is the walk-up QR portal's separate economics: the driver
+// pays the host's listed price with no markup and the platform's cut comes out
+// of that amount (host absorbs it). It is not part of the configurable fee
+// schedule — see docs/PRICING_STRATEGY.md.
+const PORTAL_FEE_PERCENT = 8 / 108;
 
 // A booking INSERT can fail because the slot filled up between our pre-check and
 // the write. Two Postgres error codes signal this:
@@ -141,7 +147,7 @@ function calculateMonthlyChargeCents(input: {
 // amount check. Daily/hourly keep cent-level gross; only monthly rounds up to a
 // whole euro because monthly rates are quoted as round numbers.
 function monthlyGrossCents(parkingCents: number) {
-  return Math.round((parkingCents * 1.08) / 100) * 100;
+  return monthlyGrossFromParkingCents(parkingCents);
 }
 const bookingLimiter = createRateLimiter({
   windowMs: 5 * 60 * 1000,
@@ -834,7 +840,7 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
         });
     const expectedAmountCents = isMonthlyBooking
       ? monthlyGrossCents(expectedParkingCents)
-      : Math.round(expectedParkingCents * 1.08);
+      : grossFromParkingCents(expectedParkingCents);
     if (payload.amountCents !== expectedAmountCents) {
       return res.status(400).json({ message: "Booking price is out of date. Please refresh and try again." });
     }
@@ -873,13 +879,16 @@ router.post("/", requireAuth, enforceBlockedList, bookingLimiter, async (req, re
       new Date(payload.from).getTime() + 24 * 60 * 60 * 1000
     );
 
-    const platformFeeCents = Math.round(expectedAmountCents * PLATFORM_FEE_PERCENT);
+    // Fee = gross − parking exactly, so the host's payout is always exactly
+    // their set price (deriving it as a % of gross drifted by a cent on
+    // hourly bookings and up to ~50c on whole-euro-rounded monthly grosses).
+    const platformFeeCents = expectedAmountCents - expectedParkingCents;
     const session = await createCheckoutSession({
       amount: expectedAmountCents,
       currency: payload.currency,
       listingId: payload.listingId,
       hostStripeAccountId: listingWithHost?.hostStripeAccountId ?? null,
-      platformFeePercent: PLATFORM_FEE_PERCENT,
+      platformFeeCents,
       successUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
       // Dismissing Stripe Checkout isn't an error — send the user straight back
       // to the booking page instead of an alarming "cancelled" screen.
@@ -970,7 +979,7 @@ router.post("/promo/validate", requireAuth, bookingReadLimiter, async (req, res,
       startTime: new Date(payload.from),
       endTime: new Date(payload.to),
     });
-    const amountCents = Math.round(parkingCents * 1.08);
+    const amountCents = grossFromParkingCents(parkingCents);
     const result = await validatePromoForBooking({
       code: payload.code,
       userId: driverId,
@@ -1060,7 +1069,7 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
         });
     const expectedAmountCents = isMonthlyBooking
       ? monthlyGrossCents(expectedParkingCents)
-      : Math.round(expectedParkingCents * 1.08);
+      : grossFromParkingCents(expectedParkingCents);
 
     let promoCodeId: string | null = null;
     let promoCode: string | null = null;
@@ -1127,8 +1136,9 @@ router.post("/payment-intent", requireAuth, enforceBlockedList, bookingLimiter, 
 
     // The platform funds the promo: the fee shrinks by the discount so the
     // host's payout (charge minus fee) stays based on the undiscounted price.
+    // Base fee = gross − parking exactly (see the checkout-session path).
     const platformFeeCents =
-      Math.round(expectedAmountCents * PLATFORM_FEE_PERCENT) - discountCents;
+      (expectedAmountCents - expectedParkingCents) - discountCents;
     const intentParams: any = {
       amount: chargeAmountCents,
       currency: payload.currency,
@@ -1281,7 +1291,7 @@ router.post("/portal", enforceBlockedList, portalBookingLimiter, async (req, res
       startTime: startAt,
       endTime: endAt,
     });
-    const platformFeeCents = Math.round(amountCents * PLATFORM_FEE_PERCENT);
+    const platformFeeCents = Math.round(amountCents * PORTAL_FEE_PERCENT);
     const payoutAvailableAt = new Date(startAt.getTime() + 24 * 60 * 60 * 1000);
 
     const driverId = await getOrCreatePortalGuestUserId();
@@ -1291,7 +1301,7 @@ router.post("/portal", enforceBlockedList, portalBookingLimiter, async (req, res
       currency: "eur",
       listingId: payload.listingId,
       hostStripeAccountId: listingWithHost.hostStripeAccountId ?? null,
-      platformFeePercent: PLATFORM_FEE_PERCENT,
+      platformFeeCents,
       successUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${process.env.WEB_BASE_URL ?? "http://localhost:3000"}/booking/cancel?session_id={CHECKOUT_SESSION_ID}`,
       driverId,

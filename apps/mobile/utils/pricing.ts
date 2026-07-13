@@ -4,13 +4,57 @@ type ListingWithPricing = Pick<ListingSummary, "price_per_day" | "price_per_hour
 
 const DEFAULT_DAILY_HOURS = 8;
 
-// FreeSpace service fee. The API charges round(parkingCents * 1.08) at
-// booking (apps/api/src/routes/bookings.ts), so every buyer-facing price must
-// be quoted fee-inclusive — the number on the map IS the number at checkout.
+// FreeSpace service fee. The API charges parking + fee at booking, where the
+// fee comes from the server-owned schedule (apps/api/src/lib/pricing.ts):
+//   fee = clamp(round(parking × bps/10000), minFee, maxFee)
+// Every buyer-facing price must be quoted fee-inclusive — the number on the
+// map IS the number at checkout — so this module MUST mirror the API formula
+// against the schedule served by GET /api/config (fetched at app boot in
+// remoteConfig.ts). The baked-in defaults below match the server's env
+// defaults, so an offline start still prices correctly until the server's
+// schedule diverges from its own defaults.
+export type PlatformFeeSchedule = {
+  feeBps: number;
+  minFeeCents: number;
+  maxFeeCents: number | null;
+};
+
+export const DEFAULT_FEE_SCHEDULE: PlatformFeeSchedule = {
+  feeBps: 800,
+  minFeeCents: 0,
+  maxFeeCents: null,
+};
+
+let feeSchedule: PlatformFeeSchedule = DEFAULT_FEE_SCHEDULE;
+
+export function setPlatformFeeSchedule(next: Partial<PlatformFeeSchedule> | null | undefined) {
+  if (!next) return;
+  const feeBps = Number(next.feeBps);
+  const minFeeCents = Number(next.minFeeCents);
+  // Reject junk wholesale — a partially-applied schedule would price
+  // differently from the server and 400 every booking.
+  if (!Number.isInteger(feeBps) || feeBps < 0 || feeBps > 3000) return;
+  if (!Number.isInteger(minFeeCents) || minFeeCents < 0 || minFeeCents > 500) return;
+  const maxFeeCents =
+    next.maxFeeCents == null
+      ? null
+      : Number.isInteger(Number(next.maxFeeCents)) && Number(next.maxFeeCents) > 0
+        ? Number(next.maxFeeCents)
+        : undefined;
+  if (maxFeeCents === undefined) return;
+  feeSchedule = { feeBps, minFeeCents, maxFeeCents };
+}
+
+// Legacy export — the display rate for copy like "8% service fee". Derived
+// from the active schedule's percentage component only.
 export const SERVICE_FEE_RATE = 0.08;
 
 export function getServiceFeeCents(parkingCents: number) {
-  return Math.round(parkingCents * SERVICE_FEE_RATE);
+  if (!Number.isFinite(parkingCents) || parkingCents <= 0) return 0;
+  let fee = Math.round((parkingCents * feeSchedule.feeBps) / 10000);
+  fee = Math.max(fee, feeSchedule.minFeeCents);
+  if (feeSchedule.maxFeeCents != null) fee = Math.min(fee, feeSchedule.maxFeeCents);
+  return fee;
 }
 
 // Fee-inclusive price in euro for a base euro amount, matching the API's
@@ -141,11 +185,11 @@ export function calculateListingTotal(listing: ListingWithPricing, start: Date, 
 // API's monthly charge check (`monthlyGrossCents` in
 // apps/api/src/routes/bookings.ts). The two formulas MUST stay identical or a
 // monthly booking 400s on the client-vs-server amount check ("price out of
-// date"). `parkingCents` is what the host earns before the 1.08 fee.
+// date"). `parkingCents` is what the host earns before the platform fee.
 export function getMonthlyGrossCents(monthlyPrice: number, months = 1) {
   if (!Number.isFinite(monthlyPrice) || monthlyPrice <= 0) return 0;
   const parkingCents = Math.round(monthlyPrice * months * 100);
-  return Math.round((parkingCents * 1.08) / 100) * 100;
+  return Math.round((parkingCents + getServiceFeeCents(parkingCents)) / 100) * 100;
 }
 
 export function getMonthlyGrossEuro(monthlyPrice: number, months = 1) {

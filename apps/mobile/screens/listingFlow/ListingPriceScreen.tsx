@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -11,8 +11,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { BadgeCheck } from "lucide-react-native";
 import { useListingFlow } from "./context";
 import { applyServiceFee } from "../../utils/pricing";
+import { suggestPrices } from "../../utils/priceSuggestions";
 import { FlowHeader } from "./FlowHeader";
 import { FlowFooter } from "./FlowFooter";
 import { hostFlowColors } from "./hostFlowTheme";
@@ -36,14 +38,26 @@ const CARD_SHADOW = {
   elevation: 4,
 } as const;
 
-const DEFAULT_HOURLY  = 2;
-const DEFAULT_DAILY   = 12;
-const DEFAULT_MONTHLY = 100;
+// Daily rate ≈ 6 hours of parking — used to auto-derive an hourly rate from
+// the host's daily rate until they edit hourly themselves.
+const HOURS_PER_DAY_RATIO = 6;
 
 const PRICING_MODES = [
-  { key: "hourly_daily", label: "Hourly / Daily" },
-  { key: "monthly",      label: "Monthly" },
-  { key: "both",         label: "All rates" },
+  {
+    key: "hourly_daily",
+    label: "Hourly & daily",
+    sub: "Short stays — drivers book your space by the hour or day.",
+  },
+  {
+    key: "monthly",
+    label: "Monthly",
+    sub: "Long-term parking — drivers enquire to arrange a monthly space.",
+  },
+  {
+    key: "both",
+    label: "Both",
+    sub: "Offer short stays and monthly parking from the one listing.",
+  },
 ] as const;
 
 function round2(v: number) { return Math.round(v * 100) / 100; }
@@ -69,6 +83,8 @@ type FieldRowProps = {
 };
 
 function FieldRow({ label, value, onChange, helper, warning, suggested, isLast }: FieldRowProps) {
+  const inputRef = useRef<TextInput>(null);
+  const [focused, setFocused] = useState(false);
   return (
     <View style={[fieldStyles.wrap, !isLast && fieldStyles.border]}>
       <View style={fieldStyles.inputGroup}>
@@ -80,13 +96,21 @@ function FieldRow({ label, value, onChange, helper, warning, suggested, isLast }
             </View>
           ) : null}
         </View>
-        <View style={fieldStyles.inputRow}>
+        {/* Boxed chip so the rate reads as an editable field, not static text;
+            the whole chip focuses the input. */}
+        <Pressable
+          style={[fieldStyles.inputChip, focused && fieldStyles.inputChipFocused]}
+          onPress={() => inputRef.current?.focus()}
+        >
           <Text style={fieldStyles.euro}>€</Text>
           <TextInput
+            ref={inputRef}
             style={fieldStyles.input}
             value={value}
             onChangeText={(v) => onChange(sanitize(v))}
+            onFocus={() => setFocused(true)}
             onBlur={() => {
+              setFocused(false);
               const v = parse(value);
               if (v) onChange(fmt(v));
             }}
@@ -95,7 +119,7 @@ function FieldRow({ label, value, onChange, helper, warning, suggested, isLast }
             placeholderTextColor={colors.textDisabled}
             selectTextOnFocus
           />
-        </View>
+        </Pressable>
       </View>
       {helper ? (
         <Text style={[fieldStyles.helper, warning && fieldStyles.helperWarn]}>{helper}</Text>
@@ -142,10 +166,20 @@ const fieldStyles = StyleSheet.create({
     color: hostFlowColors.accent,
     letterSpacing: 0.3,
   },
-  inputRow: {
+  inputChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
+    backgroundColor: hostFlowColors.cardBgMuted,
+    borderWidth: 1.5,
+    borderColor: hostFlowColors.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  inputChipFocused: {
+    borderColor: hostFlowColors.accent,
+    backgroundColor: hostFlowColors.cardBg,
   },
   euro: {
     fontFamily: "PlusJakartaSans-SemiBold",
@@ -157,7 +191,7 @@ const fieldStyles = StyleSheet.create({
     fontSize: 18,
     color: FG,
     textAlign: "right",
-    minWidth: 72,
+    minWidth: 64,
     padding: 0,
     includeFontPadding: false,
   },
@@ -178,11 +212,28 @@ export function ListingPriceScreen({ navigation, route }: Props) {
   const { draft, setDraft, listingId } = useListingFlow();
   const fromReview = route.params?.fromReview ?? false;
   const insets = useSafeAreaInsets();
-  const pricingMode = draft.pricingMode ?? "both";
+  // May be undefined for a new listing until the host picks — that's what makes
+  // the screen ask rather than default them into a mode.
+  const pricingMode = draft.pricingMode;
 
-  const [hourly,  setHourly]  = useState(fmt(parse(draft.pricePerHour)  ?? DEFAULT_HOURLY));
-  const [daily,   setDaily]   = useState(fmt(parse(draft.pricePerDay)   ?? DEFAULT_DAILY));
-  const [monthly, setMonthly] = useState(fmt(parse(draft.pricePerMonth) ?? DEFAULT_MONTHLY));
+  // Location-aware starting rates from the zone table (fetched at boot via
+  // remoteConfig, baked-in fallback offline). Location and features are set on
+  // earlier steps, so they can't change while this screen is mounted — compute
+  // once. A saved draft's / existing listing's own prices always win below.
+  const suggestion = useMemo(
+    () =>
+      suggestPrices({
+        latitude: draft.location.latitude,
+        longitude: draft.location.longitude,
+        features: draft.accessOptions,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const [hourly,  setHourly]  = useState(fmt(parse(draft.pricePerHour)  ?? suggestion.hourly));
+  const [daily,   setDaily]   = useState(fmt(parse(draft.pricePerDay)   ?? suggestion.daily));
+  const [monthly, setMonthly] = useState(fmt(parse(draft.pricePerMonth) ?? suggestion.monthly));
 
   // Mark a rate as only a starting suggestion until the host edits it — a nudge
   // that they can (and should) set their own price, without adding a hard gate.
@@ -197,9 +248,8 @@ export function ListingPriceScreen({ navigation, route }: Props) {
     };
 
   // Most hosts think in a daily price, not an hourly one — so until they edit
-  // the hourly field themselves, derive it from the daily rate (default ratio
-  // 12/2 = 6h of parking per day) and say so. Editing hourly stops the derive.
-  const HOURS_PER_DAY_RATIO = DEFAULT_DAILY / DEFAULT_HOURLY;
+  // the hourly field themselves, derive it from the daily rate (6h of parking
+  // per day) and say so. Editing hourly stops the derive.
   const onDailyChange = (v: string) => {
     withTouch("daily", setDaily)(v);
     if (!touched.hourly && !listingId) {
@@ -230,13 +280,12 @@ export function ListingPriceScreen({ navigation, route }: Props) {
   // (utils/pricing mirrors calculateListingChargeCents), so the numbers shown
   // here are exactly what drivers will see. Monthly is enquiry-based, so no
   // driver price is claimed for it.
-  const feeNote = useMemo(() => {
+  const driverPreview = useMemo(() => {
     if (!showHourlyDaily) return null;
     const parts: string[] = [];
     if (hourlyVal > 0) parts.push(`€${fmt(applyServiceFee(hourlyVal))}/hr`);
     if (dailyVal > 0) parts.push(`€${fmt(applyServiceFee(dailyVal))}/day`);
-    if (!parts.length) return "Drivers pay an 8% service fee on top — you keep everything you set.";
-    return `Drivers will see ${parts.join(" · ")} — an 8% service fee is added on top, so you keep everything you set.`;
+    return parts.length ? parts.join(" · ") : null;
   }, [dailyVal, hourlyVal, showHourlyDaily]);
 
   useEffect(() => {
@@ -268,44 +317,64 @@ export function ListingPriceScreen({ navigation, route }: Props) {
           <View style={styles.headerCard}>
             <View style={styles.headerCardTop}>
               <Text style={styles.headerKicker}>Step 8 · Pricing</Text>
-              <Text style={styles.headerTitle}>Set your rates</Text>
-            </View>
-            <View style={styles.headerCardBottom}>
-              <Text style={styles.headerSubtitle}>You can update these at any time from your host dashboard.</Text>
+              <Text style={styles.headerTitle}>
+                {pricingMode ? "Set your rates" : "How do you want to rent your space?"}
+              </Text>
             </View>
           </View>
 
-          {/* Pricing type card */}
+          {/* Pricing type card — the host explicitly chooses before any rate
+              fields appear, rather than being dropped into a default mode. */}
           <View style={styles.card}>
-            <Text style={styles.cardHeader}>Pricing type</Text>
-            <View style={styles.tabsWrap}>
-              {PRICING_MODES.map((mode) => {
+            <Text style={styles.cardHeader}>Rental type</Text>
+            <View style={styles.optionsWrap}>
+              {PRICING_MODES.map((mode, i) => {
                 const active = pricingMode === mode.key;
                 return (
                   <Pressable
                     key={mode.key}
-                    style={[styles.tab, active && styles.tabActive]}
+                    style={[
+                      styles.option,
+                      i > 0 && styles.optionBorder,
+                      active && styles.optionActive,
+                    ]}
                     onPress={() => setDraft((p) => ({ ...p, pricingMode: mode.key }))}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: active }}
                   >
-                    <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                      {mode.label}
-                    </Text>
+                    <View style={[styles.radio, active && styles.radioActive]}>
+                      {active ? <View style={styles.radioDot} /> : null}
+                    </View>
+                    <View style={styles.optionTextWrap}>
+                      <Text style={[styles.optionTitle, active && styles.optionTitleActive]}>
+                        {mode.label}
+                      </Text>
+                      <Text style={styles.optionSub}>{mode.sub}</Text>
+                    </View>
                   </Pressable>
                 );
               })}
             </View>
           </View>
 
-          {/* Rates card */}
+          {/* Rates card — only once a rental type is chosen */}
+          {pricingMode ? (
           <View style={styles.card}>
-            <Text style={styles.cardHeader}>Rates</Text>
+            <View style={styles.cardHeaderWrap}>
+              <Text style={styles.cardHeaderTitle}>Rates</Text>
+              {!listingId ? (
+                <Text style={styles.suggestNote}>
+                  Prefilled with typical rates for your area — change them anytime.
+                </Text>
+              ) : null}
+            </View>
             {showHourlyDaily ? (
               <>
                 <FieldRow
                   label="Daily"
                   value={daily}
                   onChange={onDailyChange}
-                  suggested={isSuggested("daily", daily, DEFAULT_DAILY)}
+                  suggested={isSuggested("daily", daily, suggestion.daily)}
                   isLast={false}
                 />
                 <FieldRow
@@ -318,7 +387,7 @@ export function ListingPriceScreen({ navigation, route }: Props) {
                       : dailyHelper
                   }
                   warning={!hourlyAutoDerived && !!dailyRatio && dailyRatio > 24}
-                  suggested={isSuggested("hourly", hourly, DEFAULT_HOURLY)}
+                  suggested={isSuggested("hourly", hourly, suggestion.hourly)}
                   isLast={lastField === "daily" || lastField === "hourly"}
                 />
               </>
@@ -328,20 +397,35 @@ export function ListingPriceScreen({ navigation, route }: Props) {
                 label="Monthly"
                 value={monthly}
                 onChange={withTouch("monthly", setMonthly)}
-                helper="Monthly requests arrive as enquiries — you confirm the arrangement with the driver."
-                suggested={isSuggested("monthly", monthly, DEFAULT_MONTHLY)}
+                suggested={isSuggested("monthly", monthly, suggestion.monthly)}
                 isLast
               />
             ) : null}
           </View>
+          ) : null}
 
-          {feeNote ? <Text style={styles.feeNote}>{feeNote}</Text> : null}
+          {showHourlyDaily ? (
+            <View style={styles.keepCard}>
+              <View style={styles.keepRow}>
+                <BadgeCheck size={17} color={ACCENT} strokeWidth={2.2} />
+                <Text style={styles.keepTitle}>You keep everything you set</Text>
+              </View>
+              <Text style={styles.keepBody}>
+                The 8% service fee is added on top for the driver — it never comes
+                out of your rate.
+                {driverPreview ? (
+                  <Text style={styles.keepBody}> Drivers will see {driverPreview}.</Text>
+                ) : null}
+              </Text>
+            </View>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
 
       <FlowFooter
         onBack={() => (fromReview ? navigation.navigate("ListingReview") : navigation.goBack())}
         primaryLabel={fromReview ? "Save changes" : "Continue"}
+        primaryDisabled={!pricingMode}
         onPrimary={() => navigation.navigate("ListingReview")}
       />
     </SafeAreaView>
@@ -367,11 +451,9 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: hostFlowColors.border,
-    borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 10,
+    paddingBottom: 14,
   },
   headerKicker: {
     color: ACCENT,
@@ -387,16 +469,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     letterSpacing: -0.5,
     lineHeight: 24,
-  },
-  headerCardBottom: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  headerSubtitle: {
-    color: MUTED,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    lineHeight: 19,
   },
 
   // ── Cards ────────────────────────────────────────────────────
@@ -419,77 +491,114 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: hostFlowColors.border,
   },
-
-  // ── Pricing type tabs ────────────────────────────────────────
-  tabsWrap: {
-    flexDirection: "row",
-    gap: 6,
-    backgroundColor: hostFlowColors.cardBgMuted,
-    margin: 14,
-    borderRadius: 12,
-    padding: 4,
+  // Rates header variant: title + suggestion note share the bordered block.
+  cardHeaderWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    gap: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: hostFlowColors.border,
   },
-  tab: {
-    flex: 1,
+  cardHeaderTitle: {
+    color: FG,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontSize: 15,
+    letterSpacing: -0.3,
+  },
+  suggestNote: {
+    color: hostFlowColors.textSoft,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontSize: 12,
+    lineHeight: 17,
+  },
+
+  // ── Rental-type option rows ──────────────────────────────────
+  optionsWrap: {
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+  },
+  option: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  optionBorder: {
+    borderTopWidth: 1,
+    borderTopColor: hostFlowColors.border,
+  },
+  optionActive: {
+    backgroundColor: hostFlowColors.accentSoft,
+    // The soft-fill highlight replaces the divider so selected rows read as a
+    // single contiguous block.
+    borderTopColor: "transparent",
+  },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: hostFlowColors.border,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    paddingVertical: 9,
+    flexShrink: 0,
   },
-  tabActive: {
-    backgroundColor: hostFlowColors.cardBg,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.07,
-    shadowRadius: 3,
-    elevation: 2,
+  radioActive: {
+    borderColor: ACCENT,
   },
-  tabText: {
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: ACCENT,
+  },
+  optionTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  optionTitle: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13,
-    color: hostFlowColors.textMuted,
-    textAlign: "center",
-  },
-  tabTextActive: {
+    fontSize: 15,
     color: FG,
   },
-
-  feeNote: {
-    color: MUTED,
+  optionTitleActive: {
+    color: ACCENT,
+  },
+  optionSub: {
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 12.5,
-    lineHeight: 18,
-    paddingHorizontal: 4,
+    lineHeight: 17,
+    color: hostFlowColors.textSoft,
   },
 
-  // ── Tips card ────────────────────────────────────────────────
-  tipsCard: {
+  // ── "You keep everything you set" advantage card ─────────────
+  keepCard: {
     backgroundColor: hostFlowColors.accentSoft,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: hostFlowColors.accentSoftBorder,
     padding: 16,
   },
-  tipsRow: {
+  keepRow: {
     alignItems: "center",
     flexDirection: "row",
     gap: 8,
     marginBottom: 6,
   },
-  tipsTitle: {
+  keepTitle: {
     color: ACCENT,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 13,
-    letterSpacing: -0.1,
+    fontFamily: "PlusJakartaSans-Bold",
+    fontSize: 14,
+    letterSpacing: -0.2,
+    flexShrink: 1,
   },
-  tipsBody: {
+  keepBody: {
     color: MUTED,
     fontFamily: "PlusJakartaSans-Regular",
     fontSize: 13,
     lineHeight: 19,
-  },
-  tipsBold: {
-    fontFamily: "PlusJakartaSans-Bold",
-    color: ACCENT,
   },
 });

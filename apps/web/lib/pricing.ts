@@ -7,6 +7,66 @@ type ListingWithPricing = {
 
 const DEFAULT_DAILY_HOURS = 8;
 
+// Platform fee schedule — MUST mirror apps/api/src/lib/pricing.ts (the server
+// verifies every client-sent amount against its own schedule and 400s on
+// mismatch). The server serves its live schedule at GET /api/config; the
+// defaults here match the server's env defaults for when that fetch fails.
+// Mobile's mirror lives in apps/mobile/utils/pricing.ts — keep all three in sync.
+export type PlatformFeeSchedule = {
+  feeBps: number;
+  minFeeCents: number;
+  maxFeeCents: number | null;
+};
+
+export const DEFAULT_FEE_SCHEDULE: PlatformFeeSchedule = {
+  feeBps: 800,
+  minFeeCents: 0,
+  maxFeeCents: null,
+};
+
+let feeSchedule: PlatformFeeSchedule = DEFAULT_FEE_SCHEDULE;
+
+export function setPlatformFeeSchedule(next: Partial<PlatformFeeSchedule> | null | undefined) {
+  if (!next) return;
+  const feeBps = Number(next.feeBps);
+  const minFeeCents = Number(next.minFeeCents);
+  // Reject junk wholesale — a partially-applied schedule would price
+  // differently from the server and 400 every booking.
+  if (!Number.isInteger(feeBps) || feeBps < 0 || feeBps > 3000) return;
+  if (!Number.isInteger(minFeeCents) || minFeeCents < 0 || minFeeCents > 500) return;
+  const maxFeeCents =
+    next.maxFeeCents == null
+      ? null
+      : Number.isInteger(Number(next.maxFeeCents)) && Number(next.maxFeeCents) > 0
+        ? Number(next.maxFeeCents)
+        : undefined;
+  if (maxFeeCents === undefined) return;
+  feeSchedule = { feeBps, minFeeCents, maxFeeCents };
+}
+
+export function getServiceFeeCents(parkingCents: number) {
+  if (!Number.isFinite(parkingCents) || parkingCents <= 0) return 0;
+  let fee = Math.round((parkingCents * feeSchedule.feeBps) / 10000);
+  fee = Math.max(fee, feeSchedule.minFeeCents);
+  if (feeSchedule.maxFeeCents != null) fee = Math.min(fee, feeSchedule.maxFeeCents);
+  return fee;
+}
+
+// Buyer-facing gross in cents for an hourly/daily parking total in euro,
+// matching the API's cent-level math exactly.
+export function getGrossTotalCents(parkingEuro: number) {
+  const parkingCents = Math.round(parkingEuro * 100);
+  return parkingCents + getServiceFeeCents(parkingCents);
+}
+
+// Monthly gross rounds to the nearest whole euro — mirror of the API's
+// monthlyGrossCents and mobile's getMonthlyGrossCents.
+export function getMonthlyGrossCents(monthlyPrice: number, months = 1) {
+  if (!Number.isFinite(monthlyPrice) || monthlyPrice <= 0) return 0;
+  const parkingCents = Math.round(monthlyPrice * months * 100);
+  return Math.round((parkingCents + getServiceFeeCents(parkingCents)) / 100) * 100;
+}
+
 function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
 }

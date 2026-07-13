@@ -2,8 +2,11 @@ import {
   applyServiceFee,
   calculateListingTotal,
   calculateMonthlyTotal,
+  DEFAULT_FEE_SCHEDULE,
   getMonthlyGrossCents,
   getMonthlyGrossEuro,
+  getServiceFeeCents,
+  setPlatformFeeSchedule,
 } from "../utils/pricing";
 
 describe("calculateListingTotal", () => {
@@ -95,5 +98,40 @@ describe("monthly gross rounding", () => {
   it("returns 0 for a listing without a monthly rate", () => {
     expect(getMonthlyGrossCents(0)).toBe(0);
     expect(getMonthlyGrossEuro(-5)).toBe(0);
+  });
+});
+
+// The fee schedule is served by GET /api/config (remoteConfig.ts applies it at
+// boot) and MUST produce the same numbers as apps/api/src/lib/pricing.ts for
+// the same schedule, or bookings 400 with "price out of date".
+describe("platform fee schedule", () => {
+  afterEach(() => setPlatformFeeSchedule(DEFAULT_FEE_SCHEDULE));
+
+  it("applies a minimum fee floor to small bookings only", () => {
+    setPlatformFeeSchedule({ feeBps: 800, minFeeCents: 49, maxFeeCents: null });
+    expect(getServiceFeeCents(200)).toBe(49); // 8% = 16c → floored
+    expect(getServiceFeeCents(1000)).toBe(80); // floor doesn't bind
+    expect(applyServiceFee(2)).toBe(2.49);
+  });
+
+  it("applies a maximum fee cap to large bookings only", () => {
+    setPlatformFeeSchedule({ feeBps: 800, minFeeCents: 0, maxFeeCents: 999 });
+    expect(getServiceFeeCents(50000)).toBe(999); // 8% = €40 → capped
+    expect(getServiceFeeCents(10000)).toBe(800);
+  });
+
+  it("flows the schedule through monthly whole-euro rounding", () => {
+    setPlatformFeeSchedule({ feeBps: 1000, minFeeCents: 0, maxFeeCents: null });
+    // €160/mo → 16000c + 10% = 17600c → €176 even.
+    expect(getMonthlyGrossEuro(160)).toBe(176);
+  });
+
+  it("rejects junk schedules wholesale and keeps the previous one", () => {
+    setPlatformFeeSchedule({ feeBps: 999999, minFeeCents: 0, maxFeeCents: null });
+    expect(getServiceFeeCents(1000)).toBe(80); // defaults still active
+    setPlatformFeeSchedule(null);
+    expect(getServiceFeeCents(1000)).toBe(80);
+    setPlatformFeeSchedule({ feeBps: 800, minFeeCents: -3, maxFeeCents: null });
+    expect(getServiceFeeCents(1000)).toBe(80);
   });
 });

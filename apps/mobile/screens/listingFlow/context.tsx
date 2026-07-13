@@ -32,7 +32,9 @@ export type ListingDraft = {
     weekdays: string[];
     dayTimeRanges?: Record<string, { start: string; end: string }>;
   };
-  pricingMode: "hourly_daily" | "monthly" | "both";
+  // Undefined until the host explicitly picks on the pricing screen — a new
+  // listing must *ask* how the space is rented rather than pre-selecting a mode.
+  pricingMode?: "hourly_daily" | "monthly" | "both";
   rateType: "hourly" | "daily";
   pricePerDay: string;
   pricePerHour: string;

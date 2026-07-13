@@ -29,6 +29,7 @@ export function ListingReviewScreen({ navigation }: Props) {
     draft.pricingMode === "hourly_daily" || draft.pricingMode === "both";
   const requiresMonthly = draft.pricingMode === "monthly" || draft.pricingMode === "both";
   const canPublish =
+    draft.pricingMode != null &&
     draft.spaceType.trim().length > 0 &&
     (!requiresShortStay || (draft.pricePerHour.trim().length > 0 && draft.pricePerDay.trim().length > 0)) &&
     (!requiresMonthly || draft.pricePerMonth.trim().length > 0) &&
@@ -128,9 +129,11 @@ export function ListingReviewScreen({ navigation }: Props) {
       setTimeout(() => {
         (rootNavigation as { dispatch: (action: ReturnType<typeof CommonActions.reset>) => void })
           ?.dispatch(
+            // Land on the Spaces segment so the host sees the listing they
+            // just published, not the (likely empty) host-bookings tab.
             CommonActions.reset({
               index: 0,
-              routes: [{ name: "Listings" as keyof RootStackParamList }],
+              routes: [{ name: "Listings" as keyof RootStackParamList, params: { initialTab: "spaces" } }],
             })
           );
       }, 1600);

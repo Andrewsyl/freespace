@@ -47,9 +47,9 @@ const defaultDraft: ListingDraft = {
   coverPanoId: null,
   spaceType: "",
   spaceCount: "",
-  // Pre-selected safe-majority answer ("largest vehicle that fits"); hosts can
-  // change it on the Details step, but shouldn't be forced into a cold guess.
-  vehicleSize: "large",
+  // No default — the host actively picks the largest vehicle that fits rather
+  // than starting on a pre-selected guess.
+  vehicleSize: "",
   accessOptions: [],
   requiresAccessCode: null,
   accessCode: "",
@@ -66,11 +66,16 @@ const defaultDraft: ListingDraft = {
     weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     dayTimeRanges: {},
   },
-  pricingMode: "hourly_daily",
+  // Deliberately unset: the pricing screen asks the host to choose hourly/daily,
+  // monthly, or both before revealing any rate fields.
+  pricingMode: undefined,
   rateType: "daily",
-  pricePerDay: "12.00",
-  pricePerHour: "2.00",
-  pricePerMonth: "100.00",
+  // Empty so the pricing screen prefills location-aware suggestions
+  // (utils/priceSuggestions.ts) instead of one-size-fits-all numbers; the
+  // screen writes its values back into the draft on mount.
+  pricePerDay: "",
+  pricePerHour: "",
+  pricePerMonth: "",
   photos: [],
   capacity: 1,
   description: "",

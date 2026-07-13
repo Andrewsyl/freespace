@@ -89,6 +89,7 @@ export function ListingReviewScreen({ navigation }: Props) {
     draft.pricingMode === "hourly_daily" || draft.pricingMode === "both";
   const requiresMonthly = draft.pricingMode === "monthly" || draft.pricingMode === "both";
   const canPublish =
+    draft.pricingMode != null &&
     draft.spaceType.trim().length > 0 &&
     (!requiresShortStay || (draft.pricePerHour.trim().length > 0 && draft.pricePerDay.trim().length > 0)) &&
     (!requiresMonthly || draft.pricePerMonth.trim().length > 0) &&
@@ -159,20 +160,27 @@ export function ListingReviewScreen({ navigation }: Props) {
   })();
 
   const accessSummary = (() => {
+    if (draft.requiresAccessCode === false) return "Open access";
+    // Restricted can now carry a code method (Key XOR Pin) and/or Special
+    // instructions, so surface every selected method, not just the first.
+    const parts: string[] = [];
     if (draft.accessOptions.includes("Pin code")) {
-      return draft.accessCode.trim() ? `Pin code · ${draft.accessCode.trim()}` : "Pin code";
-    }
-    if (draft.accessOptions.includes("Key or security fob")) {
-      return draft.accessCode.trim()
-        ? `Key collection · ${draft.accessCode.trim()}`
-        : "Key or security fob";
+      parts.push(draft.accessCode.trim() ? `Pin code · ${draft.accessCode.trim()}` : "Pin code");
+    } else if (draft.accessOptions.includes("Key or security fob")) {
+      parts.push(
+        draft.accessCode.trim()
+          ? `Key collection · ${draft.accessCode.trim()}`
+          : "Key or security fob"
+      );
     }
     if (draft.accessOptions.includes("Special instructions")) {
-      return draft.arrivalInstructions.trim()
-        ? `Arrival instructions · ${draft.arrivalInstructions.trim()}`
-        : "Special instructions";
+      parts.push(
+        draft.arrivalInstructions.trim()
+          ? `Arrival instructions · ${draft.arrivalInstructions.trim()}`
+          : "Special instructions"
+      );
     }
-    return "Open access";
+    return parts.length ? parts.join("  •  ") : "Open access";
   })();
 
   const ACCESS_OPTION_VALUES = ["Key or security fob", "Pin code", "Special instructions"];
@@ -372,7 +380,12 @@ export function ListingReviewScreen({ navigation }: Props) {
       void trackEvent("mobile_host_publish_succeeded", { pricingMode: draft.pricingMode, listingId: listingId ?? "new" });
       setTimeout(() => {
         (rootNavigation as { dispatch: (action: ReturnType<typeof CommonActions.reset>) => void })?.dispatch(
-          CommonActions.reset({ index: 0, routes: [{ name: "Listings" as keyof RootStackParamList }] })
+          // Land on the Spaces segment so the host sees the listing they just
+          // published, not the (likely empty) host-bookings tab.
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: "Listings" as keyof RootStackParamList, params: { initialTab: "spaces" } }],
+          })
         );
       }, 1800);
     } catch (err) {
@@ -431,11 +444,6 @@ export function ListingReviewScreen({ navigation }: Props) {
         <View style={styles.pageHeader}>
           <Text style={styles.kicker}>{listingId ? "Review & update" : "Final step"}</Text>
           <Text style={styles.title}>{listingId ? "Review your changes" : "Here's your listing"}</Text>
-          <Text style={styles.subtitle}>
-            {listingId
-              ? "Confirm everything looks right before saving."
-              : "Take a quick look. You can edit anything now — or anytime after you publish."}
-          </Text>
         </View>
 
         {/* ── Hero: exactly what drivers will see (tap to edit photos) ── */}
@@ -761,12 +769,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.8,
     lineHeight: 32,
     marginBottom: 6,
-  },
-  subtitle: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 14,
-    color: MUTED,
-    lineHeight: 21,
   },
 
   // ── Hero (the listing as drivers see it) ─────────────────────

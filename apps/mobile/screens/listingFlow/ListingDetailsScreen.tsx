@@ -78,8 +78,10 @@ export function ListingDetailsScreen({ navigation, route }: Props) {
     if (!draft.spaceCount) return "count";
     return "vehicle";
   });
+  // Starts at 0 (unselected) so the host actively picks a count instead of
+  // silently accepting a defaulted 1.
   const [spaceCountInput, setSpaceCountInput] = useState<number>(
-    () => parseSpaceCount(draft.spaceCount) ?? MIN_SPACE_COUNT
+    () => parseSpaceCount(draft.spaceCount) ?? 0
   );
   const canContinue = Boolean(draft.spaceType) && Boolean(draft.spaceCount) && Boolean(draft.vehicleSize);
   const confirmedSpaceCount = parseSpaceCount(draft.spaceCount);
@@ -95,12 +97,12 @@ export function ListingDetailsScreen({ navigation, route }: Props) {
     if (confirmedSpaceCount !== null && confirmedSpaceCount > 0) {
       setSpaceCountInput(confirmedSpaceCount);
     } else if (!draft.spaceType) {
-      setSpaceCountInput(MIN_SPACE_COUNT);
+      setSpaceCountInput(0);
     }
   }, [confirmedSpaceCount, draft.spaceType]);
 
   const adjustSpaceCount = (delta: number) => {
-    const next = Math.min(MAX_SPACE_COUNT, Math.max(MIN_SPACE_COUNT, spaceCountInput + delta));
+    const next = Math.min(MAX_SPACE_COUNT, Math.max(0, spaceCountInput + delta));
     setSpaceCountInput(next);
     setDraft((current) => ({ ...current, spaceCount: next > 0 ? String(next) : "", capacity: next > 0 ? next : 1 }));
     setOpenStep(next > 0 ? "vehicle" : "count");
@@ -129,9 +131,6 @@ export function ListingDetailsScreen({ navigation, route }: Props) {
             <Text style={styles.headerKicker}>Step 3 · Space details</Text>
             <Text style={styles.headerTitle}>Tell us about your space</Text>
           </View>
-          <View style={styles.headerCardBottom}>
-            <Text style={styles.headerSubtitle}>This helps drivers know if your space is the right fit for them.</Text>
-          </View>
         </View>
 
         {/* ── Space type card ── */}
@@ -152,7 +151,6 @@ export function ListingDetailsScreen({ navigation, route }: Props) {
                           setDraft((prev) => ({
                             ...prev,
                             spaceType: type,
-                            ...(prev.spaceCount ? {} : { spaceCount: "1", capacity: 1 }),
                           }));
                           setOpenStep("count");
                         }}
@@ -203,9 +201,9 @@ export function ListingDetailsScreen({ navigation, route }: Props) {
               </Text>
               <View style={styles.counterRow}>
                 <Pressable
-                  style={[styles.counterButton, spaceCountInput <= MIN_SPACE_COUNT && styles.counterButtonDisabled]}
+                  style={[styles.counterButton, spaceCountInput <= 0 && styles.counterButtonDisabled]}
                   onPress={() => adjustSpaceCount(-1)}
-                  disabled={spaceCountInput <= MIN_SPACE_COUNT}
+                  disabled={spaceCountInput <= 0}
                 >
                   <Minus size={20} color={FG} strokeWidth={2.5} />
                 </Pressable>
@@ -299,11 +297,9 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: hostFlowColors.border,
-    borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 10,
+    paddingBottom: 14,
   },
   headerKicker: {
     color: ACCENT,
@@ -319,16 +315,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     letterSpacing: -0.5,
     lineHeight: 24,
-  },
-  headerCardBottom: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  headerSubtitle: {
-    color: MUTED,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    lineHeight: 19,
   },
 
   // ── Cards ────────────────────────────────────────────────────

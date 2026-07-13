@@ -103,11 +103,6 @@ export function ListingFeaturesScreen({ navigation, route }: Props) {
             <Text style={styles.headerKicker}>Step 4 · Features</Text>
             <Text style={styles.headerTitle}>What features does your space have?</Text>
           </View>
-          <View style={styles.headerCardBottom}>
-            <Text style={styles.headerSubtitle}>
-              Optional — highlight anything that helps drivers choose your space. You can add these later too.
-            </Text>
-          </View>
         </View>
 
         {/* ── Features card ── */}
@@ -177,11 +172,9 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: hostFlowColors.border,
-    borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 10,
+    paddingBottom: 14,
   },
   headerKicker: {
     color: ACCENT,
@@ -197,16 +190,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     letterSpacing: -0.5,
     lineHeight: 24,
-  },
-  headerCardBottom: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  headerSubtitle: {
-    color: MUTED,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    lineHeight: 19,
   },
 
   // ── Card ─────────────────────────────────────────────────────

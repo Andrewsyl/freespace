@@ -119,7 +119,10 @@ export function ListingAvailabilityScreen({ navigation, route }: Props) {
     return out;
   });
   const [customVisible, setCustomVisible] = useState(false);
-  const [preset, setPreset] = useState<AvailabilityPreset>(() => {
+  const [preset, setPreset] = useState<AvailabilityPreset | null>(() => {
+    // Fresh listing: no saved days means the host hasn't picked a schedule yet,
+    // so start with nothing selected rather than silently defaulting a preset.
+    if (!weekdays.length) return null;
     const startHour = timeStart.getHours();
     const startMinute = timeStart.getMinutes();
     const endHour = timeEnd.getHours();
@@ -197,7 +200,7 @@ export function ListingAvailabilityScreen({ navigation, route }: Props) {
     }));
   }, [availabilitySummary, dayTimeRanges, preset, setDraft, timeEnd, timeStart, weekdays]);
 
-  const canContinue = preset !== "custom" || weekdays.length > 0;
+  const canContinue = preset !== null && (preset !== "custom" || weekdays.length > 0);
   const canSave = canContinue && timeWindowValid && customWindowsValid;
 
   const openPicker = (field: PickerField, day: DayCode | null = null) => {
@@ -380,9 +383,6 @@ export function ListingAvailabilityScreen({ navigation, route }: Props) {
             <Text style={styles.headerKicker}>Step 6 · Availability</Text>
             <Text style={styles.headerTitle}>Set when your space is available</Text>
           </View>
-          <View style={styles.headerCardBottom}>
-            <Text style={styles.headerSubtitle}>You can change this at any time from your dashboard.</Text>
-          </View>
         </View>
 
         {/* Schedule card */}
@@ -554,11 +554,9 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: hostFlowColors.border,
-    borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 10,
+    paddingBottom: 14,
   },
   headerKicker: {
     color: ACCENT,
@@ -574,16 +572,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     letterSpacing: -0.5,
     lineHeight: 24,
-  },
-  headerCardBottom: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  headerSubtitle: {
-    color: MUTED,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    lineHeight: 19,
   },
 
   // ── Schedule card ────────────────────────────────────────────

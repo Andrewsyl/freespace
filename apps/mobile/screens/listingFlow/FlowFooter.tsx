@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft } from "lucide-react-native";
 import { hostFlowColors } from "./hostFlowTheme";
-import { colors, spacing } from "../../styles/theme";
+import { colors, radius, spacing } from "../../styles/theme";
 
 type Props = {
   onBack: () => void;
@@ -61,22 +61,31 @@ const styles = StyleSheet.create({
     borderColor: hostFlowColors.border,
     flexShrink: 0,
   },
+  // Matches the map's date-picker "Done" button (MapTimePickerSheet): a green
+  // pill lifted off the surface with a coloured shadow.
   primaryButton: {
     flex: 1,
-    height: 50,
+    height: 52,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
+    borderRadius: radius.pill,
     backgroundColor: hostFlowColors.accent,
+    shadowColor: hostFlowColors.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 5,
   },
   primaryButtonDisabled: {
     backgroundColor: hostFlowColors.border,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   primaryButtonText: {
     fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
+    fontSize: 16,
     color: colors.textInverse,
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
   skipButton: {
     alignItems: "center",

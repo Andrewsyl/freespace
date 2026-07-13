@@ -98,11 +98,6 @@ export function ListingStreetViewScreen({ navigation }: Props) {
           <Text style={styles.headerKicker}>Step 2 · Street view</Text>
           <Text style={styles.headerTitle}>Choose your cover image</Text>
         </View>
-        <View style={styles.headerCardBottom}>
-          <Text style={styles.headerSubtitle}>
-            Drivers see this first. Drag to find the best angle — if the view isn't clear, you can add your own photos later.
-          </Text>
-        </View>
       </View>
       <Pressable
         style={styles.skipButton}
@@ -214,11 +209,9 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: hostFlowColors.border,
-    borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 10,
+    paddingBottom: 14,
   },
   headerKicker: {
     color: ACCENT,
@@ -234,16 +227,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     letterSpacing: -0.5,
     lineHeight: 24,
-  },
-  headerCardBottom: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  headerSubtitle: {
-    color: MUTED,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    lineHeight: 19,
   },
   skipButton: {
     marginTop: 6,

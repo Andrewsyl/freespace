@@ -16,7 +16,10 @@ export type PaymentInput = {
   currency: string;
   listingId: string;
   hostStripeAccountId?: string | null;
-  platformFeePercent: number;
+  // Exact fee in cents, computed by the caller (gross − parking). Passing
+  // cents instead of a percent keeps min-fee/cap schedules exact — a percent
+  // re-derivation here would drift from the verified booking amounts.
+  platformFeeCents: number;
   successUrl: string;
   cancelUrl: string;
   driverId?: string | null;
@@ -60,7 +63,7 @@ export async function createCheckoutSession(input: PaymentInput) {
     currency,
     listingId,
     hostStripeAccountId,
-    platformFeePercent,
+    platformFeeCents,
     successUrl,
     cancelUrl,
     driverId,
@@ -70,7 +73,7 @@ export async function createCheckoutSession(input: PaymentInput) {
     idempotencyKey,
   } = input;
   const normalizedCurrency = currency.toLowerCase();
-  const feeAmount = Math.round(amount * platformFeePercent);
+  const feeAmount = platformFeeCents;
 
   const mockResponse = () => {
     const fakeId = `cs_test_mock_${Date.now()}`;

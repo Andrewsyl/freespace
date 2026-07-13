@@ -10,6 +10,7 @@ import {
   InteractionManager,
   Linking,
   Modal,
+  PanResponder,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Platform,
@@ -210,7 +211,7 @@ export function ListingScreen({ navigation, route }: Props) {
   const toast = useGlobalToast();
   const heartScale = useRef(new Animated.Value(1)).current;
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
 
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -465,6 +466,62 @@ export function ListingScreen({ navigation, route }: Props) {
     heroListRef.current?.scrollToOffset({ offset: viewerIndex * width, animated: false });
     heroSwipeRef.current?.scrollTo({ x: viewerIndex * heroGestureZoneWidth, animated: false });
   };
+
+  // ── Swipe-down-to-dismiss for the fullscreen viewer ──────────────────────────
+  // The horizontal FlatList owns left/right paging, so the pan responder only
+  // claims a gesture once it's clearly vertical+downward — otherwise page swipes
+  // would be hijacked. `closeImageViewer` reads `viewerIndex`, which changes as
+  // the user pages, so a ref keeps the release handler pointed at the latest one.
+  const viewerDragY = useRef(new Animated.Value(0)).current;
+  const closeImageViewerRef = useRef(closeImageViewer);
+  closeImageViewerRef.current = closeImageViewer;
+  const viewerBackdropOpacity = viewerDragY.interpolate({
+    inputRange: [0, height * 0.6],
+    outputRange: [1, 0.1],
+    extrapolate: "clamp",
+  });
+  const settleViewerDrag = (g: { dy: number; vy: number }) => {
+    if (g.dy > 120 || g.vy > 0.6) {
+      Animated.timing(viewerDragY, {
+        toValue: height,
+        duration: 180,
+        useNativeDriver: true,
+      }).start(() => {
+        viewerDragY.setValue(0);
+        closeImageViewerRef.current();
+      });
+    } else {
+      Animated.spring(viewerDragY, {
+        toValue: 0,
+        useNativeDriver: true,
+        bounciness: 2,
+      }).start();
+    }
+  };
+  const viewerPan = useRef(
+    PanResponder.create({
+      // Taps (open image, close button) must pass straight through.
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => false,
+      // The horizontal FlatList is a ScrollView and claims the touch first, so we
+      // intercept in the top-down *capture* phase — but only once a drag is clearly
+      // vertical, so horizontal page swipes still reach the list. Grab early (small
+      // dy) or the ScrollView wins the gesture and never lets go.
+      onMoveShouldSetPanResponder: (_e, g) =>
+        Math.abs(g.dy) > 4 && Math.abs(g.dy) > Math.abs(g.dx),
+      onMoveShouldSetPanResponderCapture: (_e, g) =>
+        Math.abs(g.dy) > 4 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderMove: (_e, g) => {
+        viewerDragY.setValue(Math.max(0, g.dy));
+      },
+      // Once we own the drag, don't hand it back to the scroll view, and block the
+      // native responder so the list can't reclaim mid-swipe.
+      onPanResponderTerminationRequest: () => false,
+      onShouldBlockNativeResponder: () => true,
+      onPanResponderRelease: (_e, g) => settleViewerDrag(g),
+      onPanResponderTerminate: (_e, g) => settleViewerDrag(g),
+    }),
+  ).current;
 
   const amenities = listing?.amenities ?? [];
   const featureLabels = useMemo(
@@ -1593,25 +1650,34 @@ export function ListingScreen({ navigation, route }: Props) {
         animationType="fade"
         onRequestClose={closeImageViewer}
       >
-        <View style={styles.viewerBackdrop}>
-          <FlatList
-            data={imageUrls}
-            horizontal
-            pagingEnabled
-            bounces={false}
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(url, index) => `${url}-${index}`}
-            initialScrollIndex={viewerIndex}
-            getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
-            onMomentumScrollEnd={(event) => {
-              setViewerIndex(Math.round(event.nativeEvent.contentOffset.x / width));
-            }}
-            renderItem={({ item }) => (
-              <View style={{ width, flex: 1 }}>
-                <Image source={{ uri: item }} style={StyleSheet.absoluteFill} resizeMode="contain" />
-              </View>
-            )}
+        <View style={styles.viewerRoot}>
+          <Animated.View
+            style={[StyleSheet.absoluteFill, styles.viewerBackdrop, { opacity: viewerBackdropOpacity }]}
+            pointerEvents="none"
           />
+          <Animated.View
+            style={[styles.viewerDragLayer, { transform: [{ translateY: viewerDragY }] }]}
+            {...viewerPan.panHandlers}
+          >
+            <FlatList
+              data={imageUrls}
+              horizontal
+              pagingEnabled
+              bounces={false}
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(url, index) => `${url}-${index}`}
+              initialScrollIndex={viewerIndex}
+              getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+              onMomentumScrollEnd={(event) => {
+                setViewerIndex(Math.round(event.nativeEvent.contentOffset.x / width));
+              }}
+              renderItem={({ item }) => (
+                <View style={{ width, flex: 1 }}>
+                  <Image source={{ uri: item }} style={StyleSheet.absoluteFill} resizeMode="contain" />
+                </View>
+              )}
+            />
+          </Animated.View>
           <Pressable
             style={[styles.viewerGlassClose, { top: insets.top + 12 }]}
             onPress={closeImageViewer}
@@ -2315,7 +2381,9 @@ const styles = StyleSheet.create({
   },
 
   // Image / map viewer
-  viewerBackdrop: { flex: 1, backgroundColor: colors.text },
+  viewerRoot: { flex: 1 },
+  viewerBackdrop: { backgroundColor: colors.text },
+  viewerDragLayer: { flex: 1 },
   viewerGlassClose: {
     position: "absolute", left: 16, zIndex: 2,
     width: 38, height: 38, borderRadius: radius.pill,

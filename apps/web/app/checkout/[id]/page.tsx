@@ -4,7 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createBooking, getListing, type ListingDetail } from "../../../lib/api";
-import { calculateListingTotal, formatListingPriceLine } from "../../../lib/pricing";
+import {
+  calculateListingTotal,
+  formatListingPriceLine,
+  getGrossTotalCents,
+  getMonthlyGrossCents,
+  setPlatformFeeSchedule,
+} from "../../../lib/pricing";
+import { fetchPlatformFeeSchedule } from "../../../lib/api";
 import { useAuth } from "../../../components/AuthProvider";
 import { SlimNav } from "../../../components/SlimNav";
 import { SearchDateTimePicker } from "../../../components/SearchForm";
@@ -80,8 +87,34 @@ export default function CheckoutPage() {
   const monthlyCount = Math.max(1, Math.min(12, Math.round(Number(searchParams?.get("months")) || 1)));
   const monthlyAvailable = isMonthly && typeof listing?.pricePerMonth === "number" && (listing.pricePerMonth ?? 0) > 0;
   const totalPrice = monthlyAvailable ? (listing!.pricePerMonth as number) * monthlyCount : (pricing?.total ?? 0);
-  const serviceFee = Math.round(totalPrice * 0.08 * 100) / 100;
-  const grossTotal = totalPrice + serviceFee;
+  // Fee schedule fetched from /api/config (effect below); recompute when it
+  // lands so the quoted number always matches what the server will verify.
+  // Monthly uses the whole-euro rounding the API enforces — the previous
+  // cent-level math here quoted €172.80 where the server expected €173.00 and
+  // the booking 400'd.
+  const [feeScheduleVersion, setFeeScheduleVersion] = useState(0);
+  const grossTotalCents = useMemo(
+    () =>
+      monthlyAvailable
+        ? getMonthlyGrossCents(listing!.pricePerMonth as number, monthlyCount)
+        : getGrossTotalCents(totalPrice),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [monthlyAvailable, listing, monthlyCount, totalPrice, feeScheduleVersion]
+  );
+  const grossTotal = grossTotalCents / 100;
+  const serviceFee = Math.round(grossTotalCents - totalPrice * 100) / 100;
+
+  useEffect(() => {
+    let active = true;
+    fetchPlatformFeeSchedule().then((schedule) => {
+      if (!active || !schedule) return;
+      setPlatformFeeSchedule(schedule);
+      setFeeScheduleVersion((v) => v + 1);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
   const pad2 = (n: number) => String(n).padStart(2, "0");
   const toDateStr = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
   const toTimeStr = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
@@ -117,7 +150,7 @@ export default function CheckoutPage() {
     try {
       const from = `${toDateStr(startAt)}T${toTimeStr(startAt)}:00Z`;
       const to = `${toDateStr(endAt)}T${toTimeStr(endAt)}:00Z`;
-      const amountCents = Math.max(1, Math.round(grossTotal * 100));
+      const amountCents = Math.max(1, grossTotalCents);
       const res = await createBooking(
         { listingId: listing.id, from, to, mode: monthlyAvailable ? "monthly" : undefined, amountCents, currency: "eur", platformFeePercent: 8 / 108, vehiclePlate: vehiclePlate.trim() || undefined },
         token

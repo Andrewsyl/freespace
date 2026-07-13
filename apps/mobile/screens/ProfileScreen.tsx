@@ -122,7 +122,10 @@ export function ProfileScreen({ navigation }: Props) {
     || "U";
 
   // ── Logged out ────────────────────────────────────────────────
+  // Same layout as signed-in (Option A): account rows are present but gate to
+  // the Auth modal on tap, so the screen never feels like a stripped shell.
   if (!user) {
+    const goToAuth = () => navigation.navigate("Auth", { screen: "Welcome" });
     return (
       <SafeAreaView style={styles.container} edges={[]}>
         <StatusBar barStyle="dark-content" />
@@ -130,26 +133,24 @@ export function ProfileScreen({ navigation }: Props) {
           contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 24, paddingBottom: Math.max(insets.bottom + 96, 120) }]}
           showsVerticalScrollIndicator={false}
         >
+          {/* ── Masthead: title + subtitle (mirrors signed-in weight) ── */}
+          <Text style={styles.signedOutTitle}>Profile</Text>
+          <Text style={styles.signedOutSub}>Log in to book parking and manage your spaces.</Text>
+
+          {/* ── Log in / sign up CTA ── */}
           <Pressable
-            style={({ pressed }) => [styles.masthead, pressed && styles.mastheadPressed]}
-            onPress={() => navigation.navigate("Auth", { screen: "Welcome" })}
+            style={({ pressed }) => [styles.authCta, pressed && styles.authCtaPressed]}
+            onPress={goToAuth}
           >
-            <View style={styles.avatar}>
-              <Ionicons name="person-outline" size={30} color={GREEN} />
-            </View>
-            <Text style={styles.name}>Sign in to FreeSpace</Text>
-            <Text style={styles.mastheadSub} numberOfLines={2}>
-              Access your bookings, vehicle and payments
-            </Text>
-            <View style={styles.signInChip}>
-              <Text style={styles.signInChipText}>Sign in or create account</Text>
-              <ArrowRight size={15} color={GREEN} strokeWidth={2.2} />
-            </View>
+            <Text style={styles.authCtaText}>Log in or sign up</Text>
           </Pressable>
 
+          <View style={styles.divider} />
+
+          {/* ── Host strip (single colour moment) ── */}
           <Pressable
             style={({ pressed }) => [styles.host, pressed && styles.hostPressed]}
-            onPress={() => navigation.navigate("Auth", { screen: "Welcome" })}
+            onPress={goToAuth}
           >
             <View style={styles.hostText}>
               <Text style={styles.hostTitle}>Earn with your space</Text>
@@ -158,6 +159,19 @@ export function ProfileScreen({ navigation }: Props) {
             <ArrowRight size={19} color={GREEN} strokeWidth={2.1} />
           </Pressable>
 
+          {/* ── Account (mirrors signed-in; rows gate to Auth) ── */}
+          <Text style={styles.secLabel}>Your account</Text>
+          <View>
+            <Row icon="card-outline" label="Payment methods" onPress={goToAuth} />
+            <Row icon="car-outline" label="Vehicle" onPress={goToAuth} />
+            <Row icon="notifications-outline" label="Notifications" onPress={goToAuth} />
+            <Row icon="lock-closed-outline" label="Login & security" onPress={goToAuth} />
+            <Row icon="heart-outline" label="Favourites" onPress={goToAuth} />
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* ── Support (works without an account) ── */}
           <Text style={styles.secLabel}>Support</Text>
           <View>
             <Row icon="headset-outline" label="Contact support" onPress={() => navigation.navigate("Support")} />
@@ -316,24 +330,43 @@ const styles = StyleSheet.create({
   metaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.textMuted },
   verifiedRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   verifiedText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: GREEN },
-  mastheadSub: {
-    fontFamily: "PlusJakartaSans-Regular", fontSize: 14.5,
-    color: colors.textSoft, marginTop: 8, lineHeight: 20,
-    textAlign: "center",
-  },
   verifyChip: {
     alignSelf: "center", marginTop: 12,
     backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent,
     borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5,
   },
   verifyChipText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 12.5, color: GREEN },
-  signInChip: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    alignSelf: "center", marginTop: 16,
-    backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent,
-    borderRadius: 999, paddingHorizontal: 15, paddingVertical: 9,
+
+  // ── Signed-out masthead (title + subtitle) ───────────────────
+  signedOutTitle: {
+    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 34,
+    color: colors.text, letterSpacing: -1, lineHeight: 38,
   },
-  signInChipText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 14, color: GREEN },
+  signedOutSub: {
+    fontFamily: "PlusJakartaSans-Regular", fontSize: 15.5,
+    color: colors.textSoft, letterSpacing: -0.1, lineHeight: 22,
+    marginTop: 8, marginBottom: 22,
+  },
+
+  // ── Log in / sign up CTA (full-width) ─────────────────────────
+  authCta: {
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: colors.primary,
+    borderRadius: 16, paddingVertical: 17, paddingHorizontal: 20,
+    shadowColor: colors.primary, shadowOpacity: 0.28, shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 }, elevation: 3,
+  },
+  authCtaPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
+  authCtaText: {
+    fontFamily: "PlusJakartaSans-Bold", fontSize: 16.5,
+    color: colors.textInverse, letterSpacing: -0.3,
+  },
+
+  // ── Hairline divider between blocks ──────────────────────────
+  divider: {
+    height: StyleSheet.hairlineWidth, backgroundColor: colors.divider,
+    marginTop: 24, marginBottom: 4,
+  },
 
   // ── Host strip (single colour moment) ────────────────────────
   host: {

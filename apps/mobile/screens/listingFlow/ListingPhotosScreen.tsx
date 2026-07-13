@@ -285,11 +285,6 @@ export function ListingPhotosScreen({ navigation, route }: Props) {
             <Text style={styles.headerKicker}>Step 7 · Photos</Text>
             <Text style={styles.headerTitle}>Show off your space</Text>
           </View>
-          <View style={styles.headerCardBottom}>
-            <Text style={styles.headerSubtitle}>
-              Photos are optional but strongly recommended. If you chose a Street View image, it's already your cover.
-            </Text>
-          </View>
         </View>
 
         {/* Photos card */}
@@ -430,11 +425,9 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: hostFlowColors.border,
-    borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 10,
+    paddingBottom: 14,
   },
   headerKicker: {
     color: ACCENT,
@@ -450,16 +443,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     letterSpacing: -0.5,
     lineHeight: 24,
-  },
-  headerCardBottom: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  headerSubtitle: {
-    color: MUTED,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    lineHeight: 19,
   },
 
   // ── Photos card ──────────────────────────────────────────────

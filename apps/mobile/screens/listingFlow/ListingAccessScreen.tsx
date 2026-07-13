@@ -6,7 +6,6 @@ import {
   CircleCheck,
   FileText,
   Hash,
-  KeyRound,
   Lock,
   Unlock,
 } from "lucide-react-native";
@@ -14,7 +13,6 @@ import { TextInput as AppTextInput } from "../../components/ui";
 import { FlowHeader } from "./FlowHeader";
 import { useListingFlow } from "./context";
 import { hostFlowColors } from "./hostFlowTheme";
-import { colors } from "../../styles/theme";
 import { FlowFooter } from "./FlowFooter";
 
 type FlowStackParamList = {
@@ -39,13 +37,6 @@ const CARD_SHADOW = {
 
 const ACCESS_CHOICES = [
   {
-    id: "key_fob" as const,
-    label: "Key or security fob",
-    description: "You'll share key collection details with drivers",
-    optionValue: "Key or security fob" as const,
-    icon: (active: boolean) => <KeyRound size={20} color={active ? ACCENT : hostFlowColors.textMuted} strokeWidth={1.8} />,
-  },
-  {
     id: "pin_code" as const,
     label: "Pin code",
     description: "A code that unlocks the entrance or barrier — only shared with confirmed bookings",
@@ -61,13 +52,14 @@ const ACCESS_CHOICES = [
   },
 ] as const;
 
-type AccessChoiceValue = typeof ACCESS_CHOICES[number]["optionValue"];
-
 export function ListingAccessScreen({ navigation, route }: Props) {
   const { draft, setDraft } = useListingFlow();
   const fromReview = route.params?.fromReview ?? false;
   const insets = useSafeAreaInsets();
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  // Progressive disclosure: the resolved access type collapses to a compact
+  // summary row so only the step you're on is expanded (mirrors Step 3 Details).
+  const [editingAccessType, setEditingAccessType] = useState(draft.requiresAccessCode === null);
 
   useEffect(() => {
     const show = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -75,58 +67,57 @@ export function ListingAccessScreen({ navigation, route }: Props) {
     return () => { show.remove(); hide.remove(); };
   }, []);
 
-  const selectedAccessChoice = ACCESS_CHOICES.find(
-    (c) => draft.accessOptions.includes(c.optionValue)
-  ) ?? null;
-  const needsAccessDetail = selectedAccessChoice !== null;
-  const isSpecialInstructions = selectedAccessChoice?.id === "special_instructions";
-  const hasAccessDetails = !needsAccessDetail || (
-    isSpecialInstructions
-      ? draft.arrivalInstructions.trim().length > 0
-      : draft.accessCode.trim().length > 0
-  );
+  // Restricted spaces carry a Pin code (its own access-code field) and/or
+  // Special instructions (its own field); the two are independent toggles.
+  const hasPinCode = draft.accessOptions.includes("Pin code");
+  const hasSpecialInstructions = draft.accessOptions.includes("Special instructions");
+  const anyMethodSelected = hasPinCode || hasSpecialInstructions;
+  const codeFilled = !hasPinCode || draft.accessCode.trim().length > 0;
+  const specialFilled = !hasSpecialInstructions || draft.arrivalInstructions.trim().length > 0;
   const canContinue =
     draft.requiresAccessCode !== null &&
-    (draft.requiresAccessCode === false || selectedAccessChoice !== null) &&
-    hasAccessDetails;
+    (draft.requiresAccessCode === false ||
+      (anyMethodSelected && codeFilled && specialFilled));
 
-  // Physical key handover can't realistically serve instant hourly/daily
-  // bookings (drive over, collect a key, return it — for a 1-hour stay). Warn
-  // the host at selection time rather than letting their first booking fail.
-  const hasShortStayPricing =
-    draft.pricingMode === "hourly_daily" || draft.pricingMode === "both";
-  const showFobWarning = hasShortStayPricing && selectedAccessChoice?.id === "key_fob";
-
-  const selectAccessChoice = (optionValue: AccessChoiceValue) => {
+  const toggleMethod = (choice: typeof ACCESS_CHOICES[number]) => {
     setDraft((prev) => {
-      const current = ACCESS_CHOICES.find((c) => prev.accessOptions.includes(c.optionValue));
-      // Deselect: drop the access option but KEEP whatever the host typed. The
-      // code/instructions inputs are only shown for the active choice, so hiding
-      // them is enough — toggling a choice off and back on must never lose text.
-      // (Publish reads the buffers through the selected option, so an orphaned
-      // value can't leak into the live listing — see doPublish in the review screen.)
-      if (current?.optionValue === optionValue) {
-        return {
-          ...prev,
-          accessOptions: prev.accessOptions.filter(
-            (item) => !ACCESS_CHOICES.some((c) => c.optionValue === item)
-          ),
-          requiresArrivalInstructions: false,
-        };
-      }
-      const withoutAccess = prev.accessOptions.filter(
-        (item) => !ACCESS_CHOICES.some((c) => c.optionValue === item)
-      );
-      const next = ACCESS_CHOICES.find((c) => c.optionValue === optionValue)!;
-      const isSpec = next.id === "special_instructions";
-      // Switching choices only changes which buffer is shown/published — both the
-      // code and the instructions text are preserved so comparing options is safe.
+      const has = prev.accessOptions.includes(choice.optionValue);
+      // Deselecting KEEPS whatever the host typed — the input is only shown for a
+      // selected method, so hiding it is enough, and toggling off/on must never
+      // lose text. (Publish reads the buffers through the selected options, so an
+      // orphaned value can't leak — see doPublish.)
+      const nextOptions = has
+        ? prev.accessOptions.filter((o) => o !== choice.optionValue)
+        : [...prev.accessOptions, choice.optionValue];
       return {
         ...prev,
-        accessOptions: [...withoutAccess, next.optionValue],
-        requiresArrivalInstructions: isSpec,
+        accessOptions: nextOptions,
+        requiresArrivalInstructions: nextOptions.includes("Special instructions"),
       };
     });
+  };
+
+  const chooseAccessType = (restricted: boolean) => {
+    setDraft((prev) =>
+      restricted
+        ? {
+            ...prev,
+            requiresAccessCode: true,
+            requiresArrivalInstructions: prev.requiresArrivalInstructions ?? false,
+          }
+        : {
+            ...prev,
+            requiresAccessCode: false,
+            // Keep any typed code/instructions in case the host flips back to
+            // Restricted; publish only sends them when an access option is
+            // actually selected, so "Open access" stays code-free.
+            accessOptions: prev.accessOptions.filter(
+              (item) => !ACCESS_CHOICES.some((c) => c.optionValue === item)
+            ),
+            requiresArrivalInstructions: false,
+          }
+    );
+    setEditingAccessType(false);
   };
 
   const exitFlow = () => {
@@ -154,11 +145,6 @@ export function ListingAccessScreen({ navigation, route }: Props) {
               <Text style={styles.headerKicker}>Step 5 · Access</Text>
               <Text style={styles.headerTitle}>How do drivers get in?</Text>
             </View>
-            <View style={styles.headerCardBottom}>
-              <Text style={styles.headerSubtitle}>
-                Tell drivers how to get in once they've booked.
-              </Text>
-            </View>
           </View>
 
           {/* ── Access card ── */}
@@ -169,132 +155,126 @@ export function ListingAccessScreen({ navigation, route }: Props) {
                 Does getting in require a key, code, or instructions?
               </Text>
 
-              {/* Open / Restricted toggle */}
-              <View style={styles.accessTypeStack}>
-                <Pressable
-                  style={[styles.accessTypeCard, draft.requiresAccessCode === false && styles.accessTypeCardActive]}
-                  onPress={() =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      requiresAccessCode: false,
-                      // Keep any typed code/instructions in case the host flips back
-                      // to Restricted; publish only sends them when an access option
-                      // is actually selected, so "Open access" stays code-free.
-                      accessOptions: prev.accessOptions.filter(
-                        (item) => !ACCESS_CHOICES.some((c) => c.optionValue === item)
-                      ),
-                      requiresArrivalInstructions: false,
-                    }))
-                  }
-                >
-                  <View style={[styles.accessTypeIconWrap, draft.requiresAccessCode === false && styles.accessTypeIconWrapActive]}>
-                    <Unlock size={20} color={draft.requiresAccessCode === false ? ACCENT : hostFlowColors.textMuted} strokeWidth={1.8} />
-                  </View>
-                  <View style={styles.accessTypeText}>
-                    <Text style={[styles.accessTypeLabel, draft.requiresAccessCode === false && styles.accessTypeLabelActive]}>Open access</Text>
-                    <Text style={styles.accessTypeDesc}>No key, code or instructions needed</Text>
-                  </View>
-                  {draft.requiresAccessCode === false ? (
-                    <CircleCheck size={20} color={ACCENT} strokeWidth={2.2} />
-                  ) : null}
-                </Pressable>
+              {/* Open / Restricted — full cards while choosing, a compact
+                  summary row once chosen (tap "Change" to re-pick). */}
+              {draft.requiresAccessCode === null || editingAccessType ? (
+                <View style={styles.accessTypeStack}>
+                  <Pressable
+                    style={[styles.accessTypeCard, draft.requiresAccessCode === false && styles.accessTypeCardActive]}
+                    onPress={() => chooseAccessType(false)}
+                  >
+                    <View style={[styles.accessTypeIconWrap, draft.requiresAccessCode === false && styles.accessTypeIconWrapActive]}>
+                      <Unlock size={20} color={draft.requiresAccessCode === false ? ACCENT : hostFlowColors.textMuted} strokeWidth={1.8} />
+                    </View>
+                    <View style={styles.accessTypeText}>
+                      <Text style={[styles.accessTypeLabel, draft.requiresAccessCode === false && styles.accessTypeLabelActive]}>Open access</Text>
+                      <Text style={styles.accessTypeDesc}>No key, code or instructions needed</Text>
+                    </View>
+                    {draft.requiresAccessCode === false ? (
+                      <CircleCheck size={20} color={ACCENT} strokeWidth={2.2} />
+                    ) : null}
+                  </Pressable>
 
-                <Pressable
-                  style={[styles.accessTypeCard, draft.requiresAccessCode === true && styles.accessTypeCardActive]}
-                  onPress={() =>
-                    setDraft((prev) => ({
-                      ...prev,
-                      requiresAccessCode: true,
-                      requiresArrivalInstructions: prev.requiresArrivalInstructions ?? false,
-                    }))
-                  }
-                >
-                  <View style={[styles.accessTypeIconWrap, draft.requiresAccessCode === true && styles.accessTypeIconWrapActive]}>
-                    <Lock size={20} color={draft.requiresAccessCode === true ? ACCENT : hostFlowColors.textMuted} strokeWidth={1.8} />
+                  <Pressable
+                    style={[styles.accessTypeCard, draft.requiresAccessCode === true && styles.accessTypeCardActive]}
+                    onPress={() => chooseAccessType(true)}
+                  >
+                    <View style={[styles.accessTypeIconWrap, draft.requiresAccessCode === true && styles.accessTypeIconWrapActive]}>
+                      <Lock size={20} color={draft.requiresAccessCode === true ? ACCENT : hostFlowColors.textMuted} strokeWidth={1.8} />
+                    </View>
+                    <View style={styles.accessTypeText}>
+                      <Text style={[styles.accessTypeLabel, draft.requiresAccessCode === true && styles.accessTypeLabelActive]}>Restricted access</Text>
+                      <Text style={styles.accessTypeDesc}>Drivers need a key, code or instructions</Text>
+                    </View>
+                    {draft.requiresAccessCode === true ? (
+                      <CircleCheck size={20} color={ACCENT} strokeWidth={2.2} />
+                    ) : null}
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable style={styles.summaryRow} onPress={() => setEditingAccessType(true)}>
+                  <View style={[styles.accessTypeIconWrap, styles.accessTypeIconWrapActive]}>
+                    {draft.requiresAccessCode
+                      ? <Lock size={20} color={ACCENT} strokeWidth={1.8} />
+                      : <Unlock size={20} color={ACCENT} strokeWidth={1.8} />}
                   </View>
-                  <View style={styles.accessTypeText}>
-                    <Text style={[styles.accessTypeLabel, draft.requiresAccessCode === true && styles.accessTypeLabelActive]}>Restricted access</Text>
-                    <Text style={styles.accessTypeDesc}>Drivers need a key, code or instructions</Text>
-                  </View>
-                  {draft.requiresAccessCode === true ? (
-                    <CircleCheck size={20} color={ACCENT} strokeWidth={2.2} />
-                  ) : null}
+                  <Text style={styles.summaryLabel}>
+                    {draft.requiresAccessCode ? "Restricted access" : "Open access"}
+                  </Text>
+                  <Text style={styles.changeText}>Change</Text>
                 </Pressable>
-              </View>
+              )}
 
-              {/* Access choice cards */}
-              {draft.requiresAccessCode ? (
-                <View style={styles.accessChoiceStack}>
-                  {ACCESS_CHOICES.map((choice) => {
-                    const active = selectedAccessChoice?.id === choice.id;
-                    const isSpec = choice.id === "special_instructions";
-                    return (
-                      <View key={choice.id}>
-                        <Pressable
-                          style={[styles.accessCard, active && styles.accessCardActive]}
-                          onPress={() => selectAccessChoice(choice.optionValue)}
-                        >
-                          <View style={[styles.accessCardIcon, active && styles.accessCardIconActive]}>
-                            {choice.icon(active)}
-                          </View>
-                          <View style={styles.accessCardText}>
-                            <Text style={[styles.accessCardLabel, active && styles.accessCardLabelActive]}>
-                              {choice.label}
-                            </Text>
-                            <Text style={styles.accessCardDesc}>{choice.description}</Text>
-                          </View>
+              {/* Access methods — Restricted only, once the type is locked in.
+                  Multi-select: one code method (Key or Pin) and/or Special
+                  instructions, each revealing its own inline input. */}
+              {draft.requiresAccessCode && !editingAccessType ? (
+                <View style={styles.methodBlock}>
+                  <Text style={styles.chooseLabel}>Select all that apply</Text>
+                  <View style={styles.accessChoiceStack}>
+                    {ACCESS_CHOICES.map((choice) => {
+                      const active = draft.accessOptions.includes(choice.optionValue);
+                      const isSpec = choice.id === "special_instructions";
+                      return (
+                        <View key={choice.id}>
+                          <Pressable
+                            style={[styles.accessCard, active && styles.accessCardActive]}
+                            onPress={() => toggleMethod(choice)}
+                          >
+                            <View style={[styles.accessCardIcon, active && styles.accessCardIconActive]}>
+                              {choice.icon(active)}
+                            </View>
+                            <View style={styles.accessCardText}>
+                              <Text style={[styles.accessCardLabel, active && styles.accessCardLabelActive]}>
+                                {choice.label}
+                              </Text>
+                              <Text style={styles.accessCardDesc}>{choice.description}</Text>
+                            </View>
+                            {active ? (
+                              <CircleCheck size={20} color={ACCENT} strokeWidth={2.2} />
+                            ) : (
+                              <View style={styles.checkboxEmpty} />
+                            )}
+                          </Pressable>
+
                           {active ? (
-                            <CircleCheck size={20} color={ACCENT} strokeWidth={2.2} />
+                            <View style={styles.inlineDetailBox}>
+                              <Text style={styles.detailLabel}>
+                                {isSpec
+                                  ? "What should drivers do when they arrive?"
+                                  : "Enter the code drivers will use"}
+                              </Text>
+                              <AppTextInput
+                                containerStyle={{ marginBottom: 0 }}
+                                style={styles.detailInput}
+                                placeholder={
+                                  isSpec
+                                    ? "E.g. Ring unit 4, wait for the shutter, then use bay 2 on the right."
+                                    : "E.g. 4471#"
+                                }
+                                value={isSpec ? draft.arrivalInstructions : draft.accessCode}
+                                onChangeText={(value) =>
+                                  setDraft((prev) => ({
+                                    ...prev,
+                                    ...(isSpec
+                                      ? { arrivalInstructions: value }
+                                      : { accessCode: value }),
+                                  }))
+                                }
+                                multiline
+                                numberOfLines={isSpec ? 4 : 2}
+                                textAlignVertical="top"
+                                maxLength={240}
+                              />
+                              <Text style={styles.detailPrivacy}>
+                                Only shared with confirmed bookings.
+                              </Text>
+                            </View>
                           ) : null}
-                        </Pressable>
-
-                        {active && choice.id === "key_fob" && showFobWarning ? (
-                          <Text style={styles.fobWarning}>
-                            Key collection is hard to make work for short hourly stays — most hosts use a pin code or instructions instead.
-                          </Text>
-                        ) : null}
-
-                        {active ? (
-                          <View style={styles.inlineDetailBox}>
-                            <Text style={styles.detailLabel}>
-                              {isSpec
-                                ? "What should drivers do when they arrive?"
-                                : choice.id === "pin_code"
-                                ? "Enter the code drivers will use"
-                                : "How do drivers collect the key or fob?"}
-                            </Text>
-                            <AppTextInput
-                              containerStyle={{ marginBottom: 0 }}
-                              style={styles.detailInput}
-                              placeholder={
-                                isSpec
-                                  ? "E.g. Ring unit 4, wait for the shutter, then use bay 2 on the right."
-                                  : choice.id === "pin_code"
-                                  ? "E.g. 4471#"
-                                  : "E.g. Collect from the property owner on arrival."
-                              }
-                              value={isSpec ? draft.arrivalInstructions : draft.accessCode}
-                              onChangeText={(value) =>
-                                setDraft((prev) => ({
-                                  ...prev,
-                                  ...(isSpec
-                                    ? { arrivalInstructions: value }
-                                    : { accessCode: value }),
-                                }))
-                              }
-                              multiline
-                              numberOfLines={isSpec ? 4 : 2}
-                              textAlignVertical="top"
-                              maxLength={240}
-                            />
-                            <Text style={styles.detailPrivacy}>
-                              Only shared with confirmed bookings.
-                            </Text>
-                          </View>
-                        ) : null}
-                      </View>
-                    );
-                  })}
+                        </View>
+                      );
+                    })}
+                  </View>
                 </View>
               ) : null}
             </View>
@@ -333,11 +313,9 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   headerCardTop: {
-    borderBottomColor: hostFlowColors.border,
-    borderBottomWidth: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 10,
+    paddingBottom: 14,
   },
   headerKicker: {
     color: ACCENT,
@@ -353,16 +331,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     letterSpacing: -0.5,
     lineHeight: 24,
-  },
-  headerCardBottom: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  headerSubtitle: {
-    color: MUTED,
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    lineHeight: 19,
   },
 
   // ── Card ─────────────────────────────────────────────────────
@@ -450,6 +418,48 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  // Compact confirmed-choice row (Open/Restricted or the picked method).
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1,
+    borderColor: ACCENT,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: hostFlowColors.accentSoft,
+  },
+  summaryLabel: {
+    flex: 1,
+    color: FG,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 15,
+    letterSpacing: -0.2,
+  },
+  changeText: {
+    color: ACCENT,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+  },
+  // Empty circle = unchecked multi-select affordance (Key/Pin/instructions).
+  checkboxEmpty: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: hostFlowColors.borderStrong,
+  },
+  methodBlock: {
+    marginTop: 14,
+  },
+  chooseLabel: {
+    color: MUTED,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 13,
+    letterSpacing: -0.1,
+    marginBottom: 10,
+  },
   accessChoiceStack: {
     gap: 10,
   },
@@ -515,14 +525,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     marginBottom: 10,
-  },
-  fobWarning: {
-    color: colors.status.pending.text,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 8,
-    paddingHorizontal: 2,
   },
   detailPrivacy: {
     color: SOFT,
