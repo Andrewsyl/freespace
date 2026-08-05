@@ -116,12 +116,31 @@ Mobile builds: `cd apps/mobile && npm run eas:qa` / `eas:prod` / `eas:prod:ios` 
 `env.ts` hard-fails on mismatch. Known launch blocker: the production profile still ships a
 **test** Stripe publishable key.
 
-## Known landmines (verify current state in handbook §18 before assuming fixed)
+## Known landmines (audited against the code 2026-08-05 — re-verify before relying)
 
-`'completed'` missing from the `booking_status` enum (sweeps/earnings queries break) · prod EAS
-ships `pk_test` · moderated/paused listings still searchable · web tokens in localStorage ·
-account deletion hard-deletes financial records · change-email verification compares raw token
-against stored hash · no payout cron · duplicate migration number `026`.
+Open:
+
+- **Prod EAS ships a `pk_test` publishable key** (`eas.json`). Less severe than it reads: the
+  server serves the live key via `GET /api/config`, so the baked value is a fallback — but a
+  prod build that can't reach config falls back to *test* Stripe. Launch blocker.
+- **Web auth tokens live in `localStorage`** (`apps/web/components/AuthProvider.tsx`), readable
+  by any XSS.
+- **Account deletion hard-deletes bookings** (`deleteUserAccount` in `db.ts`), destroying the
+  counterparty's financial history along with the user's. Needs an anonymise-and-retain policy
+  rather than `DELETE`.
+- **No payout cron.** `payout_available_at` is set on the row, but nothing sweeps it — payouts
+  are reconciled by hand.
+- **Duplicate migration number `026`** (`026_event_log.sql`, `026_scheduled_notifications.sql`).
+  Harmless — files apply in filename order — but `check:migrations` doesn't catch it.
+
+Closed since this list was last written:
+
+- `'completed'` was added to `booking_status` by migration `047`. The lesson stands (invariant
+  6); the bug doesn't.
+- Paused listings appearing in search: `findAvailableSpaces` now filters `is_active`.
+- "Change-email compares a raw token against a stored hash" — no change-email flow exists.
+  Changing email through the profile update sets `email_verified = false` and clears the
+  verification token, which is the correct behaviour.
 
 ## Working style
 
