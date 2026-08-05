@@ -29,6 +29,8 @@
 			<array>
 				<string>carparking-dev</string>
 				<string>carparking</string>
+				<string>freespace-dev</string>
+				<string>freespace</string>
 				<string>com.googleusercontent.apps.742052774291-32p3r3jcea4oge0uec8aqqe9chi2f79l</string>
 				<string>com.googleusercontent.apps.742052774291-7ebm33putsqqjjb8h5kebok0214hp38h</string>
 				<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>

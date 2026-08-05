@@ -2,12 +2,12 @@ version: "3.9"
 services:
   db:
     image: postgis/postgis:15-3.4
-    container_name: carparking-db
+    container_name: freespace-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: carparking
+      POSTGRES_DB: freespace
     ports:
       - "5432:5432"
     volumes:

@@ -23,6 +23,10 @@ const isDevLike = appEnv === "dev" || appEnv === "local";
 const androidPackage = isDevLike ? "ie.freespace.app.dev" : "ie.freespace.app";
 const iosBundleId = isDevLike ? "com.andrewsyl.carparking.dev" : "com.andrewsyl.carparking";
 const appScheme = isDevLike ? "carparking-dev" : "carparking";
+// Brand scheme, registered *alongside* the legacy one rather than replacing it:
+// verification/reset links already sitting in users' inboxes and any older
+// install still speak carparking://, so dropping it would strand them.
+const brandScheme = isDevLike ? "freespace-dev" : "freespace";
 
 const withCoreKtxFix = (config) =>
   withProjectBuildGradle(config, (configMod) => {
@@ -289,8 +293,11 @@ module.exports = ({ config }) => {
                   extra,
                   scheme: [
                     appScheme,
+                    brandScheme,
                     ...(Array.isArray(base.scheme)
-                      ? base.scheme.filter((scheme) => scheme !== "carparking")
+                      ? base.scheme.filter(
+                          (scheme) => scheme !== "carparking" && scheme !== "freespace"
+                        )
                       : []),
                   ],
                   android: {

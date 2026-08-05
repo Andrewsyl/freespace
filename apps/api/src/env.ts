@@ -55,6 +55,14 @@ const envSchema = z
     DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
     JWT_SECRET: z.string().min(16, "JWT_SECRET must be at least 16 characters"),
     WEB_BASE_URL: z.string().url("WEB_BASE_URL must be a valid URL").optional(),
+    // Scheme used for verify-email / reset-password deep links. Stays on the
+    // legacy `carparking` until a build registering `freespace://` is live in
+    // both stores — flipping it early sends links that installed apps can't
+    // open. Server-side switch on purpose: no app rebuild to change it back.
+    APP_DEEP_LINK_SCHEME: z
+      .enum(["carparking", "carparking-dev", "freespace", "freespace-dev"])
+      .optional()
+      .default("carparking"),
     STRIPE_SECRET_KEY: z
       .string()
       .optional()

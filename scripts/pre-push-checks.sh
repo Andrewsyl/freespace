@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-export DATABASE_URL="${DATABASE_URL:-postgres://test:test@localhost:5432/carparking_test}"
+export DATABASE_URL="${DATABASE_URL:-postgres://test:test@localhost:5432/freespace_test}"
 export JWT_SECRET="${JWT_SECRET:-test-jwt-secret-123456}"
 export WEB_BASE_URL="${WEB_BASE_URL:-http://localhost:3000}"
 export NEXT_PUBLIC_API_BASE="${NEXT_PUBLIC_API_BASE:-http://localhost:4000}"

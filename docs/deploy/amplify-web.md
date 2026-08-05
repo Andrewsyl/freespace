@@ -13,7 +13,7 @@ This repo is ready for `apps/web` to move from Elastic Beanstalk to AWS Amplify 
 - App type: `Next.js`
 - Platform: `WEB_COMPUTE`
 - Repository:
-  - `https://github.com/Andrewsyl/carpark`
+  - `https://github.com/Andrewsyl/freespace`
 - Branch:
   - `main`
 

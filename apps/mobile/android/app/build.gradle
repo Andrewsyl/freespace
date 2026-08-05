@@ -126,6 +126,7 @@ android {
         versionName (findProperty('appVersionName') ?: "1.0.0")
         manifestPlaceholders = [
             appScheme    : "carparking",
+            brandScheme  : "freespace",
             expoDevScheme: "exp+carparking",
         ]
 
@@ -153,6 +154,7 @@ android {
             applicationIdSuffix ".dev"
             manifestPlaceholders = [
                 appScheme    : "carparking-dev",
+                brandScheme  : "freespace-dev",
                 expoDevScheme: "exp+carparking-dev",
             ]
         }
@@ -163,6 +165,7 @@ android {
             signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
             manifestPlaceholders = [
                 appScheme    : "carparking",
+                brandScheme  : "freespace",
                 expoDevScheme: "exp+carparking",
             ]
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'

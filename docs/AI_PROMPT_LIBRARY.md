@@ -1643,7 +1643,7 @@ Paste this (or reference the files it names) at the start of any AI conversation
 If the tool auto-loads `CLAUDE.md`/`AGENTS.md`/`GEMINI.md`, you can skip it — they carry the same content.
 
 ```text
-You are working on FreeSpace (repo "carpark") — a peer-to-peer parking marketplace for Ireland.
+You are working on FreeSpace (repo "freespace") — a peer-to-peer parking marketplace for Ireland.
 Before doing ANYTHING, read docs/ENGINEERING_HANDBOOK.md §20 (AI Context) and §21 (Quick
 Reference). If you can't read files, tell me and I'll paste them.
 

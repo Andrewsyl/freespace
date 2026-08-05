@@ -1,6 +1,6 @@
 # FreeSpace — Instructions for AI coding agents
 
-FreeSpace (repo `carpark`, domain freespace.ie) is a peer-to-peer parking marketplace for
+FreeSpace (repo `freespace`, domain freespace.ie) is a peer-to-peer parking marketplace for
 Ireland. Hosts list private spaces; drivers search a map, book, and pay via Stripe; the platform
 takes ~8% baked into the displayed price. Status: pre-public-launch hardening.
 

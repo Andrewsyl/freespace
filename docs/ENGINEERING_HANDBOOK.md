@@ -8,7 +8,7 @@
 
 # 1. Executive Summary
 
-**What it does.** FreeSpace (repo name `carpark`, brand domain `freespace.ie`) is a peer-to-peer parking marketplace for Ireland (Dublin-centric). Hosts list private parking spaces (driveways, gated spots, garages); drivers search by location/time on a map, book, and pay through Stripe. The platform takes an ~8% cut baked into the displayed price.
+**What it does.** FreeSpace (repo name `freespace`, brand domain `freespace.ie`) is a peer-to-peer parking marketplace for Ireland (Dublin-centric). Hosts list private parking spaces (driveways, gated spots, garages); drivers search by location/time on a map, book, and pay through Stripe. The platform takes an ~8% cut baked into the displayed price.
 
 **Target users.**
 - **Drivers** — need short-term (hourly/daily) parking near stadiums, hospitals, transit, city centre. Primary surface: the Expo/React Native mobile app.
@@ -94,7 +94,7 @@ flowchart TB
 - Expo SDK 54 / React Native 0.81 / React 19, TypeScript. Entry `index.js` → `App.tsx`.
 - Navigation: React Navigation — one native stack (`RootStackParamList` in `types.ts`) wrapping a 4-tab bottom navigator (Discover/Search, Bookings/History, Saved/Favorites, Profile). `enableFreeze(true)` + `freezeOnBlur` stop off-screen trees (map under listing page) from re-rendering.
 - Providers (outermost→in): `ErrorBoundary` → `SafeAreaProvider` → `StripeProvider` (publishable key resolved from `GET /api/config` with baked-in fallback, `remoteConfig.ts`) → `AuthProvider` → `FavoritesProvider` → `GlobalLoading` → `GlobalToast`.
-- Deep links (`carparking://` prod, `carparking-dev://` dev): `verify-email`, `reset-password`, `bookings/<id>`, `e2e` (Maestro test-mode scenarios). Notification taps deep-link to booking detail / review form, with an "Extend +" action category (`booking_ending`).
+- Deep links — two schemes are registered: legacy `carparking://` / `carparking-dev://` and brand `freespace://` / `freespace-dev://`. The app parses links scheme-agnostically (path-based), so both work identically; the legacy pair stays registered indefinitely for links already sitting in inboxes and older installs. Which one the *API emits* is the `APP_DEEP_LINK_SCHEME` env var (default `carparking`) — only flip it to `freespace` once a build registering it is live in both stores. Paths: `verify-email`, `reset-password`, `bookings/<id>`, `e2e` (Maestro test-mode scenarios). Notification taps deep-link to booking detail / review form, with an "Extend +" action category (`booking_ending`).
 - Design system: `theme/` (colors/spacing/typography/shadows), `designTokens.ts`, Plus Jakarta Sans fonts, shared `components/ui/*` kit, `components/profileUi.tsx` (Too Good To Go-style profile), `MOBILE_UI_GUIDELINES.md`.
 - Per-env config lanes via `app.config.js` (`APP_ENV` → `.env.<env>`): separate Android package (`ie.freespace.app` vs `.dev`), iOS bundle (`com.andrewsyl.carparking` vs `.dev`), and URL scheme. `env.ts` hard-fails builds on invalid combinations (live key outside prod, localhost API in prod, etc.).
 
@@ -142,7 +142,7 @@ Web `/admin/*` pages + mobile `AdminScreen`, all backed by `/api/admin/*` (JWT +
 # 3. Repository Structure
 
 ```
-carpark/
+freespace/
 ├── apps/
 │   ├── api/          Express API (TypeScript, ESM)
 │   ├── web/          Next.js 15 App Router site

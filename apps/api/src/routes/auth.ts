@@ -35,6 +35,7 @@ import {
   verifyUserPhone,
   insertEventLog,
 } from "../lib/db.js";
+import { env } from "../env.js";
 import { isMailerConfigured, sendMail } from "../lib/mailer.js";
 import { getAuthEmailFrom, getSenderAddress } from "../lib/emailSenders.js";
 import { buildVerificationEmail, buildPasswordResetEmail } from "../lib/emailTemplates.js";
@@ -185,7 +186,7 @@ function buildVerificationAppUrl(token: string, apiBase = process.env.PUBLIC_API
   if (apiBase) {
     query.set("apiBase", apiBase);
   }
-  return `carparking://verify-email?${query.toString()}`;
+  return `${env.APP_DEEP_LINK_SCHEME}://verify-email?${query.toString()}`;
 }
 
 function buildVerificationPreviewUrl(token: string) {
@@ -210,7 +211,7 @@ function buildPasswordResetAppUrl(token: string, apiBase = process.env.PUBLIC_AP
   if (apiBase) {
     query.set("apiBase", apiBase);
   }
-  return `carparking://reset-password?${query.toString()}`;
+  return `${env.APP_DEEP_LINK_SCHEME}://reset-password?${query.toString()}`;
 }
 
 function buildPasswordResetPreviewUrl(token: string) {
