@@ -201,6 +201,11 @@ export async function findAvailableSpaces(input: SpaceSearchInput) {
       $3
     )
     AND status <> 'archived'
+    -- Pausing a listing (is_active = false) has to remove it from search, not
+    -- just from the host's own view: without this a host who paused a space
+    -- still received bookings for it. Mirrors the filter the listing-detail
+    -- query already applied.
+    AND is_active = TRUE
     AND ($6::text IS NULL OR lower(title) LIKE $6 OR lower(availability_text) LIKE $6 OR EXISTS (SELECT 1 FROM unnest(COALESCE(amenities, '{}')) amenity WHERE lower(amenity) LIKE $6))
     AND ($7::numeric IS NULL OR (${priceFilterValue}) >= $7)
     AND ($8::numeric IS NULL OR (${priceFilterValue}) <= $8)
