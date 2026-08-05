@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "../components/AuthProvider";
 import { CookieBanner } from "../components/CookieBanner";
@@ -10,9 +10,15 @@ import { ToastProvider } from "../components/Toaster";
 import Script from "next/script";
 import { webEnv } from "../lib/env";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+// Self-hosted rather than next/font/google: fetching from fonts.gstatic.com at
+// build time makes every build depend on reaching Google, which fails outright
+// behind a TLS-inspecting proxy and silently pins builds to network weather
+// otherwise. This is the same variable file Google serves for the latin subset
+// (v12, weights 200-800), so rendering is unchanged — it just ships from us.
+const plusJakartaSans = localFont({
+  src: "./fonts/PlusJakartaSans-latin.woff2",
+  weight: "200 800",
+  style: "normal",
   variable: "--font-plus-jakarta-sans",
   display: "swap",
 });
