@@ -34,11 +34,24 @@ export const colors = {
   textSoft: color.text.soft,
   border: color.border.default,
   borderStrong: color.border.strong,
-  // Tile edges on the booking funnel — see designTokens' border.hairline.
-  borderHairline: color.border.hairline,
-  // Hairline dividers/card borders that should read as barely-there — not the
-  // stronger `border`/`borderStrong` pair used for control outlines.
+  // ── The system's three rules, lightest first ──────────────────────────────
+  // `hairline` (#EDF0F0) separates rows inside a tile.
+  // `divider`  (#DDE2E2) is the tile edge and the masthead's closing rule.
+  // `border`   (#C7CFCF) is a control outline — inputs, not surfaces.
+  hairline: color.border.hairline,
   divider: color.border.subtle,
+  // Deprecated alias: `divider` is now the tile edge, so these are the same
+  // colour. Kept so unconverted screens keep compiling; remove per wave.
+  borderHairline: color.border.subtle,
+  // Icon glyphs in a fact row's gutter.
+  iconGrey: "#8A9292",
+  heroDark: color.surface.heroDark,
+  skeletonBg: color.surface.skeleton,
+  // Every shadow in the app casts from the same near-black.
+  shadow: color.text.primary,
+  // Reviewer avatar fills, picked by initial. Decorative by design — the only
+  // place the system allows colour that isn't the one green.
+  avatarFills: ["#CCE9E6", "#FFE4C8", "#D8E4FF", "#FFD6D6", "#D6F5E3"],
   accent: color.brand[500],
   accentSoft: color.brand[50],
   // Soft-green tile ground (amenity/category tiles, chip fills) — a notch
@@ -49,9 +62,12 @@ export const colors = {
   // (brand[600], #0a8050) — distinct from `accent` (brand[500]), which is a
   // lighter tone used for secondary-button outlines/spinners.
   primary: color.brand[600],
-  // Tinted page background (screens sat on ad hoc near-white hex like
-  // #F8FAFC); `appBg` stays pure white for cards/sheets.
-  pageBg: color.surface.page,
+  // The ground everything below a masthead sits on. Same value as `ground`;
+  // both names are kept because screens reach for one or the other, and the
+  // system has only one page tint.
+  pageBg: "#F2F5F4",
+  // Sub-lines under a section header, and meta beneath a fact.
+  textTertiary: color.text.tertiary,
   // The listing/checkout "ground" — one step darker than `pageBg` so white
   // tiles read as lifted off it rather than dissolving into it. Also the
   // in-tile hairline colour, which is why it is its own token and not an
@@ -140,6 +156,57 @@ export const primaryButtonShadow = {
 };
 
 export const textStyles = {
+  // ── The system's six steps ────────────────────────────────────────────────
+  // Everything on a converted screen uses one of these. If a screen needs a
+  // size that isn't here, the size goes here first — that is the rule that
+  // keeps the set from growing back into per-screen values.
+  dsTitle: {
+    color: colors.text,
+    fontSize: 30,
+    lineHeight: 33,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontWeight: "800" as const,
+    letterSpacing: -1.2,
+  },
+  dsSection: {
+    color: colors.text,
+    fontSize: 22,
+    lineHeight: 27,
+    fontFamily: "PlusJakartaSans-ExtraBold",
+    fontWeight: "800" as const,
+    letterSpacing: -0.8,
+  },
+  // The single line in a fact row.
+  dsFact: {
+    color: colors.text,
+    fontSize: 17,
+    lineHeight: 22,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontWeight: "400" as const,
+  },
+  // Inline green actions — "Change", "View", "See all".
+  dsAction: {
+    color: colors.primary,
+    fontSize: 15,
+    lineHeight: 20,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontWeight: "600" as const,
+  },
+  dsBody: {
+    color: colors.text,
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontWeight: "400" as const,
+  },
+  dsMeta: {
+    color: colors.textTertiary,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: "PlusJakartaSans-Regular",
+    fontWeight: "400" as const,
+  },
+
   displayHero: {
     color: colors.brandDark,
     fontSize: 46,

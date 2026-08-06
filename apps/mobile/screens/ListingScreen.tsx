@@ -79,7 +79,7 @@ import {
   Warehouse,
   X,
 } from "lucide-react-native";
-import { SkeletonBlock, usePulse } from "../components/ui";
+import { Section, SkeletonBlock, Tile, usePulse } from "../components/ui";
 import { BookButton } from "../components/BookButton";
 import { PulseDots } from "../components/PulseDots";
 import { motion } from "../styles/motion";
@@ -179,7 +179,7 @@ const ratingWord = (rating: number) => {
 // the flag is the only thing standing between it and the hero — flip to re-enable.
 const SCARCITY_PILL_ENABLED = false;
 
-const AVATAR_BG = ["#CCE9E6", "#FFE4C8", "#D8E4FF", "#FFD6D6", "#D6F5E3"];
+const AVATAR_BG = colors.avatarFills;
 const avatarBg = (name: string) => AVATAR_BG[(name.charCodeAt(0) || 0) % AVATAR_BG.length];
 
 // Header control that lives in two worlds: dark glass while it floats on the
@@ -1271,8 +1271,7 @@ export function ListingScreen({ navigation, route }: Props) {
                 {/* ── What's included ── */}
                 {featureLabels.length > 0 ? (
                   <>
-                    <Text style={styles.groundHeaderTight}>What&apos;s included</Text>
-                    <Text style={styles.groundSubheader}>Everything this space comes with</Text>
+                    <Section title="What's included" subtitle="Everything this space comes with" />
                     {/* Two-up grid: these are scannable facts, not a checklist,
                         so they read side by side with the icon leading rather
                         than as one long ticked column. */}
@@ -1299,8 +1298,8 @@ export function ListingScreen({ navigation, route }: Props) {
                     design has no other home for it. ── */}
                 {aboutText ? (
                   <>
-                    <Text style={styles.groundHeader}>About this space</Text>
-                    <View style={styles.tile}>
+                    <Section title="About this space" />
+                    <Tile>
                       <Text style={styles.aboutText} numberOfLines={showFullAbout ? undefined : 4}>
                         {aboutText}
                       </Text>
@@ -1311,14 +1310,14 @@ export function ListingScreen({ navigation, route }: Props) {
                           </Text>
                         </Pressable>
                       ) : null}
-                    </View>
+                    </Tile>
                   </>
                 ) : null}
 
                 {/* ── Getting there ── */}
                 {hasCoordinates ? (
                   <>
-                    <Text style={styles.groundHeader}>Getting there</Text>
+                    <Section title="Getting there" />
                     <Pressable style={styles.mapTile} onPress={() => setShowMapViewer(true)}>
                       <MapView
                         style={styles.mapTileMap}
@@ -1365,8 +1364,8 @@ export function ListingScreen({ navigation, route }: Props) {
                 {/* ── Availability ── */}
                 {shouldShowAvailability ? (
                   <>
-                    <Text style={styles.groundHeader}>Availability</Text>
-                    <View style={styles.tileTight}>
+                    <Section title="Availability" />
+                    <Tile rows>
                       {availabilityGroups.map((group, index) => (
                         <View key={`${group.rangeLabel}-${index}`}>
                           {index > 0 ? <View style={styles.tileHairline} /> : null}
@@ -1385,29 +1384,27 @@ export function ListingScreen({ navigation, route }: Props) {
                           </View>
                         </View>
                       ))}
-                    </View>
+                    </Tile>
                   </>
                 ) : null}
 
                 {/* ── What drivers say ── */}
-                <View style={styles.groundHeaderRow}>
-                  <Text style={styles.groundHeaderInline}>What drivers say</Text>
-                  {hasReviews ? (
-                    <Pressable
-                      onPress={() =>
-                        navigation.navigate("ListingReviews", {
-                          id,
-                          rating: listing.rating,
-                          ratingCount: listing.rating_count,
-                        })
-                      }
-                    >
-                      <Text style={styles.groundHeaderLink}>
-                        {`See all ${listing.rating_count ?? reviews.length}`}
-                      </Text>
-                    </Pressable>
-                  ) : null}
-                </View>
+                <Section
+                  title="What drivers say"
+                  actionLabel={
+                    hasReviews ? `See all ${listing.rating_count ?? reviews.length}` : undefined
+                  }
+                  onAction={
+                    hasReviews
+                      ? () =>
+                          navigation.navigate("ListingReviews", {
+                            id,
+                            rating: listing.rating,
+                            ratingCount: listing.rating_count,
+                          })
+                      : undefined
+                  }
+                />
                 {hasReviews ? (
                   <View style={styles.reviewSummary}>
                     <Star size={14} color={GREEN} fill={GREEN} strokeWidth={0} />
@@ -1754,7 +1751,7 @@ export function ListingScreen({ navigation, route }: Props) {
             provider={PROVIDER_GOOGLE}
             cacheEnabled={Platform.OS !== "android"}
             loadingEnabled
-            loadingBackgroundColor="#F9FAFB"
+            loadingBackgroundColor={colors.ground}
             initialRegion={{
               latitude: latitude ?? 53.3498,
               longitude: longitude ?? -6.2603,
@@ -1841,7 +1838,9 @@ const styles = StyleSheet.create({
   skeletonContent: { paddingHorizontal: 16, paddingTop: 18 },
   skeletonStatsRow: {
     flexDirection: "row",
-    borderRadius: 4,
+    // Matches the tile it stands in for — at radius 4 the shape changed under
+    // the user when content arrived.
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: EDGE,
     overflow: "hidden",
@@ -1858,7 +1857,7 @@ const styles = StyleSheet.create({
   // Hero — deliberately unchanged: the tall photo, its gradient and the curved
   // sheet riding over it are the part of this screen that already worked.
   heroFixed: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 0, overflow: "hidden" },
-  heroPlaceholder: { alignItems: "center", justifyContent: "center", backgroundColor: "#1B3A32" },
+  heroPlaceholder: { alignItems: "center", justifyContent: "center", backgroundColor: colors.heroDark },
   heroGradient: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
   heroPhotoCount: {
     position: "absolute", bottom: 52, right: 16,
@@ -2037,53 +2036,14 @@ const styles = StyleSheet.create({
   },
 
   // Section headers sit on the ground, never inside their tile.
-  groundHeader: {
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 22, letterSpacing: -0.8, color: FG,
-    paddingHorizontal: 16, paddingTop: 8, paddingBottom: 10,
-  },
   // Same header with its bottom padding handed to the subtitle beneath it.
-  groundHeaderTight: {
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 22, letterSpacing: -0.8, color: FG,
-    paddingHorizontal: 16, paddingTop: 8, paddingBottom: 2,
-  },
   // 2a: 15px #6E7676, 2 under the header, block closes at 10.
-  groundSubheader: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 15, color: FG_SUBTLE, marginTop: 2,
-    paddingHorizontal: 16, paddingBottom: 10,
-  },
-  groundHeaderRow: {
-    flexDirection: "row", alignItems: "center", gap: 12,
-    paddingHorizontal: 16, paddingTop: 8, paddingBottom: 2,
-  },
   // flex/shrink rather than marginLeft:auto — the title is long enough to run
   // straight into the link on a narrow screen, which rendered as
   // "What drivers saySee all 31".
-  groundHeaderInline: {
-    flex: 1, minWidth: 0,
-    fontFamily: "PlusJakartaSans-ExtraBold", fontSize: 22, letterSpacing: -0.8, color: FG,
-  },
-  groundHeaderLink: {
-    flexShrink: 0,
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: GREEN,
-  },
 
   // ── Tiles ──────────────────────────────────────────────────────────────────
-  tile: {
-    backgroundColor: colors.appBg,
-    borderWidth: 1, borderColor: EDGE, borderRadius: 12,
-    marginHorizontal: 16, marginBottom: 12,
-    padding: 14,
-  },
   // Same tile, tighter padding — rows supply their own vertical rhythm.
-  tileTight: {
-    backgroundColor: colors.appBg,
-    borderWidth: 1, borderColor: EDGE, borderRadius: 12,
-    marginHorizontal: 16, marginBottom: 12,
-    paddingHorizontal: 14, paddingVertical: 6,
-  },
   tileHairline: { height: 1, backgroundColor: GROUND },
 
   // ── What's included ────────────────────────────────────────────────────────
@@ -2145,7 +2105,9 @@ const styles = StyleSheet.create({
   },
 
   // ── Availability ───────────────────────────────────────────────────────────
-  availRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 9 },
+  // 6 matches the row rhythm used inside every other tile, so the tile's own
+  // 10 plus this lands the first row on the system's 16 edge.
+  availRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6 },
   availRange: { fontFamily: "PlusJakartaSans-Bold", fontSize: 13, color: FG },
   availHours: {
     marginLeft: "auto",
@@ -2221,7 +2183,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBg,
     borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet,
     paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28,
-    shadowColor: "#111111",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.08, shadowRadius: 16, elevation: 8,
   },
@@ -2289,7 +2251,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingTop: 10,
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     gap: 16,
-    shadowColor: "#101414",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.06, shadowRadius: 18, elevation: 8,
   },

@@ -37,6 +37,10 @@ export const mobileDesignTokens = {
       muted: "#EDEFEF",
       subtle: "#FAFBFB",
       accent: "#E9F4EC",
+      // Behind a listing hero that has no photo yet.
+      heroDark: "#1B3A32",
+      // Skeleton fill — a shade the eye reads as "not content".
+      skeleton: "#E9EEEE",
       overlayLight: "rgba(255, 255, 255, 0.95)",
       overlayDark: "rgba(16, 20, 20, 0.58)",
       splash: "#0fa968",
@@ -44,19 +48,22 @@ export const mobileDesignTokens = {
     text: {
       primary: "#101414",
       strong: "#101414",
-      secondary: "#333B3B",
+      // Body copy that isn't the primary line.
+      secondary: "#3F4747",
       muted: "#535B5B",
       soft: "#6F7878",
-      tertiary: "#7C8383",
+      // Sub-lines under a section header, and meta beneath a fact.
+      tertiary: "#6E7676",
       inverse: "#FFFFFF",
       disabled: "#B7BDBD",
     },
     border: {
-      subtle: "#E7EBEB",
-      // Tile edges and the masthead's closing rule on the booking funnel.
-      // Sits between `subtle` and `default`: light enough to describe an edge
-      // without drawing one, which is what the funnel design calls for.
-      hairline: "#DDE2E2",
+      // The faintest rule in the system — inside a tile, between rows that
+      // still need separating. Lighter than `subtle`, which is the tile edge.
+      hairline: "#EDF0F0",
+      // Tile edges, and the masthead's closing rule. Light enough to describe
+      // an edge without drawing one. This is the system's default border.
+      subtle: "#DDE2E2",
       default: "#C7CFCF",
       strong: "#BEC8C8",
       field: "#C2CCCC",

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Animated, ViewStyle } from "react-native";
+import { colors } from "../../styles/theme";
 
 interface Props {
   width?: number | `${number}%`;
@@ -13,7 +14,7 @@ export function SkeletonBlock({ width, height, borderRadius = 6, style, pulse }:
   return (
     <Animated.View
       style={[
-        { width, height, borderRadius, backgroundColor: "#e5e7eb", opacity: pulse },
+        { width, height, borderRadius, backgroundColor: colors.skeletonBg, opacity: pulse },
         style,
       ]}
     />

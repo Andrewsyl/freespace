@@ -1,5 +1,11 @@
 node_modules
 .next
+# Hand-made backups of an env file carry the same live keys as the original.
+# The named .env entries below don't cover ".env.dev.bak-preclaude" and the
+# like, so one nearly got committed in the clear.
+*.bak
+*.bak-*
+.env.*.bak*
 apps/api/.env
 .env.local
 .env.development

@@ -21,7 +21,6 @@ import { useStripe } from "@stripe/stripe-react-native";
 import * as Notifications from "expo-notifications";
 import { ModernTimePickerSheet, addMinutes, roundUpToMinuteInterval } from "../components/ModernTimePickerSheet";
 import {
-  ArrowLeft,
   CarFront,
   ChevronDown,
   ChevronRight,
@@ -46,8 +45,8 @@ import { useGlobalLoading } from "../components/GlobalLoading";
 import { useToastOnMessage } from "../components/GlobalToast";
 import { PaymentBrandMark, platformWallet } from "../components/PaymentBrandMark";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
-import { Button, SkeletonBlock, usePulse } from "../components/ui";
-import { colors, displayScale, radius, scaleDisplay } from "../styles/theme";
+import { Button, Masthead, Section, SkeletonBlock, Tile, usePulse } from "../components/ui";
+import { colors, radius } from "../styles/theme";
 import { isMobileE2EActive } from "../e2e/testMode";
 import { trackEvent } from "../analytics";
 import type { ListingDetail, RootStackParamList } from "../types";
@@ -774,30 +773,23 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* ── White masthead sheet ── */}
-            <View style={styles.masthead}>
-              <Pressable
-                style={styles.backButton}
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-                onPress={() => goBackOrFallback(navigation, fallbackRoutes.search)}
-              >
-                <ArrowLeft size={18} color={FG} strokeWidth={2.3} />
-              </Pressable>
-
-              <View style={styles.mastheadCopy}>
-                <Text style={styles.pageTitle}>Your booking</Text>
-              </View>
-            </View>
+            <Masthead
+              variant="step"
+              title="Your booking"
+              onBack={() => goBackOrFallback(navigation, fallbackRoutes.search)}
+            />
 
             {/* Where you're parking sits directly under the title — it's the
-                thing being booked, so it reads before the details of it. */}
+                thing being booked, so it reads before the details of it.
+                Deliberately not a <FactRow>: this block carries three lines
+                (name, street, and what's withheld until booking) because the
+                header doesn't hold the address. A fact row is one line. */}
             <View style={styles.sheetBlock}>
-              <View style={styles.factRow}>
-                <View style={styles.factIcon}>
+              <View style={styles.subjectRow}>
+                <View style={styles.subjectIcon}>
                   <MapPin size={18} color={MUTED} strokeWidth={1.9} />
                 </View>
-                <View style={styles.factBody}>
+                <View style={styles.subjectCopy}>
                   <Text style={styles.spaceName}>{listing.title || "Parking space"}</Text>
                   {addressLine ? (
                     <Text style={styles.spaceAddress}>{addressLine}</Text>
@@ -809,7 +801,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
             {/* ── Ground: titled sections from here down ── */}
             <View style={styles.ground}>
-              <Text style={styles.groundHeader}>When</Text>
+              <Section title="When" />
 
               {/* Arriving / leaving read as two editable fields side by side —
                   the pair is what people re-check before paying, so each gets
@@ -818,7 +810,7 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               {isMonthly ? (
                 <View style={styles.monthlyCard}>
                   <Clock size={18} color={MUTED} strokeWidth={1.9} />
-                  <View style={styles.factBody}>
+                  <View style={styles.subjectCopy}>
                     <Text style={styles.factTitle}>{whenLine}</Text>
                     <Text style={styles.factMeta}>1 month · reserved instantly</Text>
                   </View>
@@ -863,14 +855,11 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
 
               {/* Section title carries the action, so the card below holds only
                   the vehicle itself. */}
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.groundHeaderFlush}>Vehicle</Text>
-                <Pressable
-                  onPress={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary" })}
-                >
-                  <Text style={styles.factAction}>{vehicleMake ? "Change" : "Add"}</Text>
-                </Pressable>
-              </View>
+              <Section
+                title="Vehicle"
+                actionLabel={vehicleMake ? "Change" : "Add"}
+                onAction={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary" })}
+              />
 
               <View style={styles.vehicleCard}>
                 {/* One line: the car is a single fact, so make, body style and
@@ -970,8 +959,8 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
               ) : null}
 
               {/* ── Payment details ── */}
-              <Text style={styles.groundHeader}>Payment details</Text>
-              <View style={styles.tile}>
+              <Section title="Payment details" />
+              <Tile rows>
                 <View style={styles.priceRow}>
                   <Text style={styles.priceLabel}>
                     {`Parking · ${isMonthly ? "1 month" : priceSummary?.durationLabel ?? ""}`}
@@ -1076,10 +1065,10 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
                       and reads as a discount. */}
                   <Text style={styles.totalValue}>€{pricing.finalPrice.toFixed(2)}</Text>
                 </View>
-              </View>
+              </Tile>
 
               {/* ── Pay with ── */}
-              <Text style={styles.groundHeader}>Pay with</Text>
+              <Section title="Pay with" />
               {/* Stripe's Payment Sheet owns method entry and the saved-card
                   list, so there is nothing to list here yet — one row that opens
                   it, rather than a fake selected-card state. */}
@@ -1215,44 +1204,22 @@ const styles = StyleSheet.create({
   // ── White masthead sheet ─────────────────────────────────────
   // Back button sits inline with the title rather than stacked above it, so the
   // header costs one row instead of three.
-  masthead: {
-    flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: colors.appBg,
-    paddingHorizontal: 16,
-    paddingTop: 8, paddingBottom: 14,
-    // 2a rules the title off from the location row below it (#C9D0D0 there;
-    // colors.border is #C7CFCF, the same line to the eye).
-    borderBottomWidth: 1, borderBottomColor: colors.border,
-  },
-  mastheadCopy: { flex: 1, minWidth: 0 },
   // White panel; the ground below does the separating.
   sheetBlock: { backgroundColor: colors.appBg, paddingHorizontal: 16 },
-  backButton: {
-    width: 40, height: 40, borderRadius: radius.pill,
-    backgroundColor: GROUND,
-    alignItems: "center", justifyContent: "center",
-    flexShrink: 0,
-  },
-  pageTitle: {
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: scaleDisplay(22), lineHeight: scaleDisplay(27),
-    letterSpacing: -0.6 * displayScale, color: FG,
-  },
 
   // ── Fact stack ───────────────────────────────────────────────
   // 2a: gap 12, 15 vertical padding, icon nudged 1 to sit on the first line.
   // flex-start rather than centre because this row stacks a name, an address
   // and a note — the icon aligns to the first line, not to the block.
-  factRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 15 },
-  factIcon: { flexShrink: 0, alignItems: "center", paddingTop: 1 },
-  factBody: { flex: 1, minWidth: 0 },
+  subjectRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 15 },
+  subjectIcon: { flexShrink: 0, alignItems: "center", paddingTop: 1 },
+  subjectCopy: { flex: 1, minWidth: 0 },
   // The booking window is the fact people re-read most on this screen, so it
   // gets a step of its own above the rest of the stack.
   factTitle: {
     fontFamily: "PlusJakartaSans-ExtraBold",
     fontSize: 18, lineHeight: 23, letterSpacing: -0.4, color: FG,
   },
-  factText: { fontFamily: "PlusJakartaSans-Regular", fontSize: 15, color: FG },
   // The space's own name leads; the street sits under it in grey, the way the
   // confirm screen presents it.
   spaceName: {
@@ -1266,10 +1233,6 @@ const styles = StyleSheet.create({
   // 2a: 12px #7C8383, 2 under the line it qualifies.
   factMeta: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 12, color: SUBTLE, marginTop: 2,
-  },
-  factAction: {
-    fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: GREEN,
-    flexShrink: 0, paddingTop: 4,
   },
 
   // ── When: arriving / leaving ─────────────────────────────────
@@ -1322,14 +1285,6 @@ const styles = StyleSheet.create({
   whenInstant: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: SUBTLE },
 
   // ── Vehicle ──────────────────────────────────────────────────
-  sectionHeaderRow: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingBottom: 10,
-  },
-  groundHeaderFlush: {
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 20, letterSpacing: -0.6, color: FG,
-  },
   // 2a gives the vehicle tile radius 8 — a notch tighter than the 12 used by
   // the section cards, so the plate inside it doesn't read as a card-in-a-card.
   vehicleCard: {
@@ -1412,11 +1367,6 @@ const styles = StyleSheet.create({
     backgroundColor: GROUND, paddingTop: 16,
     borderTopWidth: 1, borderTopColor: EDGE,
   },
-  groundHeader: {
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 20, letterSpacing: -0.6, color: FG,
-    paddingHorizontal: 16, paddingBottom: 10,
-  },
   regHint: {
     fontFamily: "PlusJakartaSans-Regular", fontSize: 13, lineHeight: 19,
     color: colors.warning,
@@ -1425,12 +1375,6 @@ const styles = StyleSheet.create({
 
   // Tiles — sharper than the mock's 8: a 4px corner over a 1px `border` grey
   // reads crisp on the tint instead of soft.
-  tile: {
-    backgroundColor: colors.appBg,
-    borderWidth: 1, borderColor: EDGE, borderRadius: 12,
-    marginHorizontal: 16, marginBottom: 20,
-    paddingHorizontal: 14, paddingVertical: 8,
-  },
   tileFlush: {
     backgroundColor: colors.appBg,
     borderWidth: 1, borderColor: EDGE, borderRadius: 12,
@@ -1464,14 +1408,14 @@ const styles = StyleSheet.create({
   promoInputRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6 },
   promoInput: {
     flex: 1,
-    borderRadius: 4,
+    borderRadius: 8,
     borderWidth: 1, borderColor: EDGE,
     backgroundColor: GROUND,
     paddingHorizontal: 12, paddingVertical: 10,
     fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: FG,
   },
   promoApplyBtn: {
-    borderRadius: 4, backgroundColor: FG,
+    borderRadius: 8, backgroundColor: FG,
     minWidth: 68, alignItems: "center",
     paddingHorizontal: 14, paddingVertical: 10,
   },
@@ -1563,7 +1507,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.appBg,
     borderTopWidth: 1, borderTopColor: colors.divider,
     paddingHorizontal: 16, paddingTop: 10,
-    shadowColor: "#101414", shadowOffset: { width: 0, height: -6 },
+    shadowColor: colors.shadow, shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.06, shadowRadius: 18, elevation: 12,
   },
   ctaBar: {
