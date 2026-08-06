@@ -1,7 +1,25 @@
+import { Dimensions } from "react-native";
 import { mobileDesignTokens as designTokens } from "../designTokens";
 
 const color = designTokens.color;
 const type = designTokens.typography;
+
+// The listing/checkout design was drawn on a 390pt frame (iPhone 14–17 Pro).
+// Display-sized type — page titles, prices, totals, the time-control numerals —
+// is derived from the real screen width so a narrower device gets the same
+// *proportions* the mock shows rather than the same absolute points. On a 360dp
+// Android phone the 30pt title lands at 28, which is the difference between a
+// two-line and a three-line title block.
+//
+// Deliberately capped at 1: this shrinks to fit small screens, it never inflates
+// type on large ones. Body, label and row steps are NOT scaled — they are already
+// at the readable floor, and shrinking them would cost legibility for no layout
+// gain. Safe to read once at module load because the app is portrait-locked
+// (app.json `orientation: "portrait"`); if that ever changes this must move into
+// a hook backed by useWindowDimensions.
+const DESIGN_FRAME_WIDTH = 390;
+export const displayScale = Math.min(1, Dimensions.get("window").width / DESIGN_FRAME_WIDTH);
+export const scaleDisplay = (size: number) => Math.round(size * displayScale);
 
 export const colors = {
   appBg: color.surface.app,
@@ -16,6 +34,8 @@ export const colors = {
   textSoft: color.text.soft,
   border: color.border.default,
   borderStrong: color.border.strong,
+  // Tile edges on the booking funnel — see designTokens' border.hairline.
+  borderHairline: color.border.hairline,
   // Hairline dividers/card borders that should read as barely-there — not the
   // stronger `border`/`borderStrong` pair used for control outlines.
   divider: color.border.subtle,
@@ -32,6 +52,17 @@ export const colors = {
   // Tinted page background (screens sat on ad hoc near-white hex like
   // #F8FAFC); `appBg` stays pure white for cards/sheets.
   pageBg: color.surface.page,
+  // The listing/checkout "ground" — one step darker than `pageBg` so white
+  // tiles read as lifted off it rather than dissolving into it. Also the
+  // in-tile hairline colour, which is why it is its own token and not an
+  // alias of `pageBg`.
+  // #F2F5F4 per the funnel design — a touch cooler and darker than
+  // neutral[100], so white tiles sitting on it read as raised.
+  ground: "#F2F5F4",
+  // #F5F7F7 — the lighter tint used *inside* a tile (e.g. the duration strip
+  // under the arrival/departure fields), so it separates from the card's white
+  // without matching the page ground behind it.
+  groundSoft: color.neutral[100],
   brandDark: color.brand[900],
   mint: color.mint[500],
   mintSoft: color.mint[100],

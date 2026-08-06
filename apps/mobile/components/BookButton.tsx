@@ -1,5 +1,5 @@
 import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
 import * as Haptics from "expo-haptics";
 import { colors, radius } from "../styles/theme";
 
@@ -15,6 +15,7 @@ export function BookButton({
   fullWidth = false,
   icon,
   style,
+  labelStyle,
 }: {
   label: string;
   onPress: () => void;
@@ -23,6 +24,9 @@ export function BookButton({
   fullWidth?: boolean;
   icon?: React.ReactNode;
   style?: ViewStyle;
+  // Only for CTAs that own their screen's type scale (the checkout dock sets
+  // its label a step above the shared 16). Everything else takes the default.
+  labelStyle?: TextStyle;
 }) {
   const inactive = disabled || loading;
   return (
@@ -48,7 +52,7 @@ export function BookButton({
       ) : (
         <>
           {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
-          <Text style={[styles.label, disabled && styles.labelDisabled]}>{label}</Text>
+          <Text style={[styles.label, labelStyle, disabled && styles.labelDisabled]}>{label}</Text>
         </>
       )}
     </Pressable>

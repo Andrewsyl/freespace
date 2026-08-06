@@ -78,17 +78,16 @@ Yarn-workspaces monorepo:
 
 - Compose new UI from `apps/mobile/components/ui/*` (Screen, Card, SectionHeader, TextInput,
   Button, SkeletonBlock) and tokens from `styles/theme.ts`, following `MOBILE_UI_GUIDELINES.md`.
-  For discovery/card/detail/booking-flow design decisions specifically, see
-  `docs/PARKING_DESIGN_BIBLE.md` — principles translated from TGTG/Airbnb/Apple Maps/Uber for
-  this parking marketplace, plus the current token-consistency debt to close over time.
-  **Active brand revamp (approved 2026-07-07): `docs/FREESPACE_BRAND_REVAMP.md`** — cream
-  ground, deep-green register, brand-moment screens, voice. Where it conflicts with the
-  bible or this file, the revamp spec wins.
   Font is Plus Jakarta Sans via the theme's `textStyles`. No new imports of UI Kitten or Paper;
   no hardcoded colors, font sizes, radii, or shadows.
+- **No design spec currently governs new work** (set 2026-08-05).
+  `docs/FREESPACE_BRAND_REVAMP.md` and `docs/PARKING_DESIGN_BIBLE.md` are kept for reference
+  only — neither is authoritative, and neither should be applied or resumed unless the
+  maintainer says so. The revamp in particular was built and rolled back on 2026-07-08; its
+  cream ground never landed in `theme.ts`, so treating it as active means rebuilding rejected
+  work. Ask before starting from either document.
 - Profile-section screens use the `components/profileUi.tsx` kit: no boxed cards, icon list
-  rows (Too Good To Go style). Background is the app-wide cream ground per
-  `docs/FREESPACE_BRAND_REVAMP.md` (superseded the earlier white-background rule 2026-07-07).
+  rows (Too Good To Go style), on `colors.cardBg` as the code currently does.
 - Map guardrails: normal basemap (`mapStyles.ts`), green v30 tailless price pins, no hearts on
   pins, **no auto-search on map move**, no artificial/delayed loaders anywhere. Custom markers
   use the `useMarkerTracksUntilPainted` pattern — never leave `tracksViewChanges` on.

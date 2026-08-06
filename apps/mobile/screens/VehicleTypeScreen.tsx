@@ -17,6 +17,7 @@ import { Car, Check, Search, X } from "lucide-react-native";
 import { updateMe } from "../api";
 import { useAuth } from "../auth";
 import { VehicleBrandLogo } from "../components/VehicleBrandLogo";
+import { VEHICLE_COLOURS } from "../utils/vehicleColours";
 import { SignInWall } from "../components/SignInWall";
 import { DetailNavBar, FieldRow, SectionTitle } from "../components/profileUi";
 import type { RootStackParamList } from "../types";
@@ -84,20 +85,7 @@ const VEHICLE_MODELS_BY_MAKE: Record<string, string[]> = {
   Other: ["Other"],
 };
 
-const COLOURS = [
-  { name: "Black",  hex: "#1F2937" },
-  { name: "White",  hex: "#FFFFFF" },
-  { name: "Silver", hex: "#C0C7D1" },
-  { name: "Grey",   hex: "#8B95A7" },
-  { name: "Blue",   hex: "#2563EB" },
-  { name: "Red",    hex: "#DC2626" },
-  { name: "Green",  hex: "#16A34A" },
-  { name: "Orange", hex: "#EA580C" },
-  { name: "Yellow", hex: "#CA8A04" },
-  { name: "Brown",  hex: "#78350F" },
-  { name: "Beige",  hex: "#D4B896" },
-  { name: "Other",  hex: "#CBD5E1" },
-];
+const COLOURS = VEHICLE_COLOURS;
 
 function formatIrishPlate(raw: string) {
   const upper = raw.toUpperCase();

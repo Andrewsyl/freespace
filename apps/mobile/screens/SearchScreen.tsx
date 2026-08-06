@@ -42,9 +42,9 @@ import { colors, primaryButtonShadow, radius, spacing, textStyles } from "../sty
 import { motion } from "../styles/motion";
 import {
   ArrowLeft,
-  ArrowRight,
   BatteryCharging,
   Cctv,
+  ChevronDown,
   ChevronRight,
   CircleX,
   Clock,
@@ -1981,6 +1981,33 @@ export function SearchScreen({ navigation }: Props) {
     });
   };
 
+  // Labels for the chip row — same set the badge counts, worded for display.
+  const activeFilterChips = useMemo(() => {
+    const chips: string[] = [];
+    if (spaceType) chips.push(spaceType);
+    if (coveredParking) chips.push("Covered");
+    if (evCharging) chips.push("EV charging");
+    if (instantBook) chips.push("Instant book");
+    if (securityLevel === "cctv") chips.push("CCTV");
+    if (securityLevel === "gated") chips.push("Gated");
+    if (vehicleSize) chips.push(vehicleSize);
+    if (priceMin.trim() || priceMax.trim()) {
+      const min = priceMin.trim();
+      const max = priceMax.trim();
+      chips.push(min && max ? `€${min}–€${max}` : min ? `From €${min}` : `Up to €${max}`);
+    }
+    return chips;
+  }, [
+    spaceType,
+    coveredParking,
+    evCharging,
+    instantBook,
+    securityLevel,
+    vehicleSize,
+    priceMin,
+    priceMax,
+  ]);
+
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (priceMin.trim()) count += 1;
@@ -2046,13 +2073,17 @@ export function SearchScreen({ navigation }: Props) {
         ) : null}
         <View style={[styles.overlay, { top: insets.top + 12 }]}>
 
-          {/* ── Search card — destination + filters + times, one surface ── */}
-          <View style={styles.searchCard}>
-            <View style={styles.searchCardTopRow}>
+          {/* ── Search pill + filter button, then a chip row of what's set ──
+              Two surfaces rather than one card: the destination is the primary
+              action and reads as its own field, while everything that narrows
+              the search sits beneath it as chips that can grow with more
+              filters. ── */}
+          <View>
+            <View style={styles.searchBarRow}>
               <Pressable
-                style={({ pressed }) => [styles.searchCardLocation, pressed && styles.searchCardRowPressed]}
+                style={({ pressed }) => [styles.searchPill, pressed && styles.searchCardRowPressed]}
                 onPress={() => {
-                  // Collapsed pill: first tap restores the full card; editing
+                  // Collapsed pill: first tap restores the chip row; editing
                   // comes on the next tap.
                   if (cardCollapsed) {
                     setCardCollapsedAnimated(false);
@@ -2062,8 +2093,8 @@ export function SearchScreen({ navigation }: Props) {
                 }}
                 testID="search-bar"
               >
-                <MapPinIcon size={17} color={colors.primary} strokeWidth={2.2} />
-                <Text style={[styles.searchCardLocationText, !addressQuery && styles.searchCardPlaceholder]} numberOfLines={1}>
+                <Search size={19} color={colors.primary} strokeWidth={2.4} />
+                <Text style={[styles.searchPillText, !addressQuery && styles.searchCardPlaceholder]} numberOfLines={1}>
                   {addressQuery || "Where to?"}
                 </Text>
                 {cardCollapsed ? (
@@ -2087,33 +2118,12 @@ export function SearchScreen({ navigation }: Props) {
                   </Pressable>
                 ) : null}
               </Pressable>
-              {/* Inline mode dropdown (Hourly / Monthly), blended into the
-                  search field — YourParkingSpace pattern. */}
               <Pressable
-                style={({ pressed }) => [styles.modeChip, pressed && styles.modeChipPressed]}
-                onPress={() => setModePickerVisible(true)}
-                accessibilityRole="button"
-                accessibilityLabel={`Search mode: ${searchMode === "monthly" ? "Monthly" : "Hourly"}`}
-              >
-                <RollingSwap swapKey={searchMode}>
-                  <Text style={styles.modeChipText}>
-                    {searchMode === "monthly" ? "Monthly" : "Hourly"}
-                  </Text>
-                </RollingSwap>
-                <ChevronRight
-                  size={15}
-                  color={colors.primary}
-                  strokeWidth={2.4}
-                  style={{ transform: [{ rotate: "90deg" }] }}
-                />
-              </Pressable>
-              <View style={styles.searchCardVDivider} />
-              <Pressable
-                style={({ pressed }) => [styles.filterBtn, pressed && styles.searchCardRowPressed]}
+                style={({ pressed }) => [styles.filterCircle, pressed && styles.searchCardRowPressed]}
                 onPress={() => setShowFilters((prev) => !prev)}
                 accessibilityLabel="Filters"
               >
-                <SlidersHorizontal size={17} color={colors.primary} strokeWidth={2.1} />
+                <SlidersHorizontal size={19} color={colors.text} strokeWidth={2.1} />
                 {activeFilterCount > 0 ? (
                   <View style={styles.filterBtnBadge}>
                     <Text style={styles.filterBtnBadgeText}>{activeFilterCount}</Text>
@@ -2142,65 +2152,59 @@ export function SearchScreen({ navigation }: Props) {
                   if (h > 0 && Math.abs(h - timeStripHeight) > 1) setTimeStripHeight(h);
                 }}
               >
-            <View style={styles.searchCardDivider} />
+            {/* Horizontal so the row can keep growing as filters are added
+                without wrapping into a second line over the map. */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.chipRowContent}
+              style={styles.chipRow}
+            >
+              <Pressable
+                style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
+                onPress={() => openPicker("start")}
+                accessibilityRole="button"
+                accessibilityLabel="Change times"
+              >
+                <Clock size={15} color={colors.primary} strokeWidth={2.3} />
+                <Text style={styles.chipText}>
+                  {searchMode === "monthly"
+                    ? `${formatDateLabel(startAt)} – ${formatDateLabel(monthlyEndDate)}`
+                    : `${formatTimeLabel(startAt)} – ${formatTimeLabel(endAt)}`}
+                </Text>
+                <ChevronDown size={15} color={colors.textMuted} strokeWidth={2.4} />
+              </Pressable>
 
-            <RollingSwap swapKey={searchMode}>
-            {searchMode === "monthly" ? (
-              <View style={styles.timeStrip}>
+              <Pressable
+                style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
+                onPress={() => setModePickerVisible(true)}
+                accessibilityRole="button"
+                accessibilityLabel={`Search mode: ${searchMode === "monthly" ? "Monthly" : "Hourly"}`}
+              >
+                <RollingSwap swapKey={searchMode}>
+                  <Text style={styles.chipText}>
+                    {searchMode === "monthly" ? "Monthly" : "Hourly"}
+                  </Text>
+                </RollingSwap>
+                <ChevronDown size={15} color={colors.textMuted} strokeWidth={2.4} />
+              </Pressable>
+
+              {/* Only filters actually applied get a chip — the row states what
+                  is narrowing the results, so an empty filter set adds nothing
+                  to scan past. */}
+              {activeFilterChips.map((label) => (
                 <Pressable
-                  style={({ pressed }) => [styles.timeStripBtn, pressed && styles.timeStripBtnPressed]}
-                  onPress={() => openPicker("start")}
-                  android_ripple={null}
+                  key={label}
+                  style={({ pressed }) => [styles.chip, styles.chipActive, pressed && styles.chipPressed]}
+                  onPress={() => setShowFilters(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Filter: ${label}`}
                 >
-                  <Text style={styles.timeStripLabel}>Start date</Text>
-                  <View style={styles.timeStripInner}>
-                    <Text style={styles.timeStripTime}>{formatDateLabel(startAt)}</Text>
-                  </View>
+                  <Text style={styles.chipText}>{label}</Text>
                 </Pressable>
-                <View style={styles.timeStripArrow}>
-                  <ArrowRight size={13} color={colors.primary} strokeWidth={2.4} />
-                </View>
-                {/* End date is derived (start + 1 month), so it's shown, not
-                    tappable — the term is always a single month. */}
-                <View style={styles.timeStripBtn}>
-                  <Text style={styles.timeStripLabel}>End date</Text>
-                  <View style={styles.timeStripInner}>
-                    <Text style={styles.timeStripTime}>{formatDateLabel(monthlyEndDate)}</Text>
-                  </View>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.timeStrip}>
-                <Pressable
-                  style={({ pressed }) => [styles.timeStripBtn, pressed && styles.timeStripBtnPressed]}
-                  onPress={() => openPicker("start")}
-                  android_ripple={null}
-                >
-                  <Text style={styles.timeStripLabel}>Arrive</Text>
-                  <View style={styles.timeStripInner}>
-                    <Text style={styles.timeStripTime}>{formatTimeLabel(startAt)}</Text>
-                    <Text style={styles.timeStripSep}>·</Text>
-                    <Text style={styles.timeStripDate}>{formatDateLabel(startAt)}</Text>
-                  </View>
-                </Pressable>
-                <View style={styles.timeStripArrow}>
-                  <ArrowRight size={13} color={colors.primary} strokeWidth={2.4} />
-                </View>
-                <Pressable
-                  style={({ pressed }) => [styles.timeStripBtn, pressed && styles.timeStripBtnPressed]}
-                  onPress={() => openPicker("end")}
-                  android_ripple={null}
-                >
-                  <Text style={styles.timeStripLabel}>Leave</Text>
-                  <View style={styles.timeStripInner}>
-                    <Text style={styles.timeStripTime}>{formatTimeLabel(endAt)}</Text>
-                    <Text style={styles.timeStripSep}>·</Text>
-                    <Text style={styles.timeStripDate}>{formatDateLabel(endAt)}</Text>
-                  </View>
-                </Pressable>
-              </View>
-            )}
-            </RollingSwap>
+              ))}
+            </ScrollView>
               </View>
             </Animated.View>
           </View>
@@ -2894,42 +2898,74 @@ const styles = StyleSheet.create({
   // ── Search card — one floating surface for destination + times.
   // A single hero shadow instead of two stacked cards competing: the eye
   // lands here first, then falls to the map.
-  searchCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: radius.cardSmall,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: "hidden",
-    shadowColor: "#0B1220",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.09,
-    shadowRadius: 28,
-    elevation: 9,
-  },
-  searchCardTopRow: {
-    alignItems: "stretch",
-    flexDirection: "row",
-  },
-  searchCardLocation: {
-    alignItems: "center",
+
+  // ── Search pill + round filter button ──────────────────────────────────────
+  searchBarRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  searchPill: {
     flex: 1,
     flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     paddingHorizontal: 18,
-    paddingVertical: 16,
+    paddingVertical: 15,
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.pill,
+    shadowColor: "#0B1220",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+    elevation: 7,
+  },
+  searchPillText: {
+    flex: 1,
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 16,
+    color: colors.text,
+    letterSpacing: -0.2,
+  },
+  filterCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.cardBg,
+    shadowColor: "#0B1220",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+    elevation: 7,
+  },
+
+  // ── Chip row ───────────────────────────────────────────────────────────────
+  // Negative margins let the chips scroll edge to edge while the overlay keeps
+  // its 16pt gutter, so the first and last chip aren't clipped mid-shadow.
+  chipRow: { marginHorizontal: -16, marginTop: 10 },
+  chipRowContent: { paddingHorizontal: 16, gap: 8, paddingVertical: 2 },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: colors.cardBg,
+    borderRadius: radius.pill,
+    shadowColor: "#0B1220",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  chipActive: { borderWidth: 1.5, borderColor: colors.primary },
+  chipPressed: { opacity: 0.7 },
+  chipText: {
+    fontFamily: "PlusJakartaSans-SemiBold",
+    fontSize: 14,
+    color: colors.text,
+    letterSpacing: -0.2,
   },
   // Filters live inside the search surface (Airbnb pattern) — one floating
   // object instead of a card plus a trailing chip row.
-  searchCardVDivider: {
-    backgroundColor: colors.divider,
-    marginVertical: 12,
-    width: StyleSheet.hairlineWidth,
-  },
-  filterBtn: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 17,
-  },
   filterBtnBadge: {
     alignItems: "center",
     backgroundColor: colors.primary,
@@ -2950,24 +2986,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 12,
   },
-  searchCardLocationText: {
-    flex: 1,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 15,
-    color: colors.text,
-    letterSpacing: -0.2,
-  },
   searchCardPlaceholder: {
     color: colors.textMuted,
     fontFamily: "PlusJakartaSans-Regular",
   },
   // Divider insets to the text edge (18 pad + 17 icon + 12 gap), iOS-style —
   // a full-bleed rule would cut the card in half; this one connects the rows.
-  searchCardDivider: {
-    backgroundColor: colors.divider,
-    height: StyleSheet.hairlineWidth,
-    marginLeft: 47,
-  },
   searchCardRowPressed: {
     backgroundColor: colors.cardBgMuted,
   },
@@ -2982,80 +3006,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   // ── Time row (lives inside the search card)
-  timeStrip: {
-    alignItems: "center",
-    flexDirection: "row",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  timeStripBtn: {
-    borderRadius: 14,
-    flex: 1,
-    gap: 3,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-  },
-  timeStripBtnPressed: {
-    backgroundColor: colors.cardBgMuted,
-  },
-  timeStripArrow: {
-    alignItems: "center",
-    justifyContent: "center",
-    // Optically centre the arrow on the time line, not the label+time block
-    marginTop: 7,
-    paddingHorizontal: 6,
-  },
-  timeStripLabel: {
-    color: colors.textMuted,
-    fontFamily: "PlusJakartaSans-SemiBold",
-    fontSize: 12,
-    letterSpacing: -0.1,
-  },
-  timeStripInner: {
-    alignItems: "center",
-    flexDirection: "row",
-  },
-  timeStripTime: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 14,
-    color: colors.text,
-    letterSpacing: -0.2,
-  },
-  timeStripSep: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 12,
-    color: colors.textDisabled,
-    paddingHorizontal: 4,
-  },
-  timeStripDate: {
-    fontFamily: "PlusJakartaSans-Regular",
-    fontSize: 13,
-    color: colors.textSoft,
-    letterSpacing: -0.1,
-  },
   // ── Inline mode dropdown chip (Hourly / Monthly) — blended into the field
-  modeChip: {
-    alignItems: "center",
-    alignSelf: "center",
-    borderColor: colors.primary,
-    borderRadius: radius.pill,
-    borderWidth: 1.5,
-    flexDirection: "row",
-    gap: 3,
-    marginRight: 10,
-    paddingLeft: 12,
-    paddingRight: 8,
-    paddingVertical: 7,
-  },
-  modeChipPressed: {
-    backgroundColor: colors.accentSoft,
-  },
-  modeChipText: {
-    fontFamily: "PlusJakartaSans-Bold",
-    fontSize: 13,
-    color: colors.primary,
-    letterSpacing: -0.1,
-  },
   modeDropdownBackdrop: {
     flex: 1,
   },

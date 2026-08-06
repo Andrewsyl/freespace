@@ -53,6 +53,10 @@ export const mobileDesignTokens = {
     },
     border: {
       subtle: "#E7EBEB",
+      // Tile edges and the masthead's closing rule on the booking funnel.
+      // Sits between `subtle` and `default`: light enough to describe an edge
+      // without drawing one, which is what the funnel design calls for.
+      hairline: "#DDE2E2",
       default: "#C7CFCF",
       strong: "#BEC8C8",
       field: "#C2CCCC",
