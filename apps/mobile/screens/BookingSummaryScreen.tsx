@@ -39,6 +39,7 @@ import {
   type PromoValidation,
 } from "../api";
 import { useAuth } from "../auth";
+import { BookingReviewBody } from "./BookingReviewBody";
 import { googlePayConfig } from "../utils/googlePay";
 import { logError, logInfo, logWarn } from "../logger";
 import { useGlobalLoading } from "../components/GlobalLoading";
@@ -728,6 +729,51 @@ export function BookingSummaryScreen({ navigation, route }: Props) {
   const ctaDisabled =
     bookingBusy || bookingConfirmed || (!selectedTimeUnavailable && requiresVehicleDetails);
 
+  /**
+   * `autoPay` means the caller already showed a review step and the driver
+   * already tapped pay, so we open the Stripe sheet on arrival rather than
+   * asking them to confirm the same booking a second time.
+   *
+   * Guarded by a ref so it can fire exactly once — this starts a charge, and
+   * an effect that re-ran would create a second payment intent. If the CTA is
+   * disabled (missing vehicle, slot gone, signed out) nothing fires and the
+   * driver simply lands on this screen, which is the safe fallback.
+   */
+  // PROTOTYPE (12a): the review layout, rendered by this screen so Pay is the
+  // same button it always was — `handlePayment`, unchanged. Nothing about the
+  // charge moves; only what sits above it.
+  if (route.params?.review && listing) {
+    return (
+      <BookingReviewBody
+        onClose={() => goBackOrFallback(navigation, fallbackRoutes.search)}
+        onContinue={handlePayment}
+        onChangeTimes={() => openPicker("start")}
+        onChangeVehicle={() => navigation.navigate("VehicleType", { returnTo: "BookingSummary" })}
+        title={listing.title || "Parking space"}
+        locationLabel={addressLine ?? ""}
+        address={listing.address ?? ""}
+        imageUri={listing.image_urls?.[0]}
+        rating={listing.rating ?? null}
+        ratingCount={listing.rating_count ?? 0}
+        startAt={startAt}
+        endAt={endAt}
+        priceSummary={priceSummary}
+        vehicleMake={vehicleMake}
+        vehicleLine={vehicleLine}
+        vehiclePlate={vehiclePlate}
+        payBlockedReason={
+          requiresVehicleDetails
+            ? "Add your vehicle to continue"
+            : selectedTimeUnavailable
+              ? "This space is no longer free"
+              : bookingBusy
+                ? "Starting payment…"
+                : undefined
+        }
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar barStyle="dark-content" />
@@ -1240,14 +1286,14 @@ const styles = StyleSheet.create({
   // shares one border treatment.
   whenCard: {
     backgroundColor: colors.appBg,
-    borderWidth: 1, borderColor: EDGE, borderRadius: 12,
+    borderWidth: 1, borderColor: EDGE, borderRadius: 8,
     overflow: "hidden",
     marginHorizontal: 16, marginBottom: 20,
   },
   monthlyCard: {
     flexDirection: "row", alignItems: "flex-start", gap: 12,
     backgroundColor: colors.appBg,
-    borderWidth: 1, borderColor: EDGE, borderRadius: 12,
+    borderWidth: 1, borderColor: EDGE, borderRadius: 8,
     marginHorizontal: 16, marginBottom: 20,
     padding: 14,
   },
@@ -1377,7 +1423,7 @@ const styles = StyleSheet.create({
   // reads crisp on the tint instead of soft.
   tileFlush: {
     backgroundColor: colors.appBg,
-    borderWidth: 1, borderColor: EDGE, borderRadius: 12,
+    borderWidth: 1, borderColor: EDGE, borderRadius: 8,
     marginHorizontal: 16, marginBottom: 16,
     overflow: "hidden",
   },
@@ -1446,7 +1492,7 @@ const styles = StyleSheet.create({
   noticeCard: {
     flexDirection: "row", alignItems: "flex-start", gap: 10,
     marginHorizontal: 16, marginBottom: 16,
-    borderRadius: 12, borderWidth: 1,
+    borderRadius: 8, borderWidth: 1,
     borderColor: colors.status.canceled.border,
     backgroundColor: colors.status.canceled.background,
     padding: 12,
@@ -1462,7 +1508,7 @@ const styles = StyleSheet.create({
   recoveryCard: {
     flexDirection: "row", alignItems: "flex-start", gap: 12,
     marginHorizontal: 16, marginBottom: 16,
-    borderRadius: 12, borderWidth: 1,
+    borderRadius: 8, borderWidth: 1,
     borderColor: colors.accent,
     backgroundColor: colors.accentSoft,
     padding: 14,

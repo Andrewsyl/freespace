@@ -26,7 +26,6 @@ import {
 } from "../notifications";
 import type { RootStackParamList } from "../types";
 import {
-  ArrowLeft,
   ChevronRight,
   CircleCheck,
   CirclePlay,
@@ -44,6 +43,7 @@ import { formatBookingReference } from "../utils/bookingFormat";
 import { evaluateCancellationRefund } from "../utils/cancellationPolicy";
 import { fallbackRoutes, goBackOrFallback } from "../navigation/safeNavigation";
 import { colors, cardShadow } from "../styles/theme";
+import { Masthead, Section, Tile } from "../components/ui";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingDetail">;
 
@@ -424,14 +424,13 @@ export function BookingDetailScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar style="dark" translucent={false} backgroundColor={colors.pageBg} />
 
-      {/* Nav header */}
-      <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => goBackOrFallback(navigation, fallbackRoutes.bookings)}>
-          <ArrowLeft size={20} color={FG} strokeWidth={2.2} />
-        </Pressable>
-        <Text style={styles.navTitle}>Booking details</Text>
-        <View style={{ width: 32 }} />
-      </View>
+      {/* Same masthead as the checkout the driver just came from — a centred
+          nav bar here made the two screens read as different apps. */}
+      <Masthead
+        variant="step"
+        title="Booking details"
+        onBack={() => goBackOrFallback(navigation, fallbackRoutes.bookings)}
+      />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
@@ -495,7 +494,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
                 <Text style={styles.headerSubtitle}>{booking.address}</Text>
               </View>
             </Pressable>
-            <View style={styles.cardBody}>
+            <View style={styles.heroBody}>
               <View style={styles.timeRow}>
                 <View style={styles.timeSlot}>
                   <Text style={styles.timeSlotLabel}>ARRIVING</Text>
@@ -542,9 +541,9 @@ export function BookingDetailScreen({ navigation, route }: Props) {
 
           {/* Getting in card */}
           {showArrivalInfo ? (
-            <View style={styles.card}>
-              <Text style={styles.cardSectionHeader}>Getting in</Text>
-              <View style={styles.cardBody}>
+            <>
+              <Section title="Getting in" />
+              <Tile>
                 {live.arrivalInstructions?.trim() ? (
                   <Text style={styles.instructionsText}>{live.arrivalInstructions.trim()}</Text>
                 ) : null}
@@ -554,28 +553,34 @@ export function BookingDetailScreen({ navigation, route }: Props) {
                     <Text style={styles.codeValue} selectable>{live.accessCode.trim()}</Text>
                   </View>
                 ) : null}
-              </View>
-            </View>
+              </Tile>
+            </>
           ) : null}
 
           {/* Directions card — stays visible through the check-in window;
               arrival is exactly when directions are needed. */}
           {(isUpcoming || isInProgress) && !isCanceled ? (
-            <TouchableOpacity style={styles.card} onPress={handleOpenMaps} activeOpacity={0.8}>
-              <Text style={styles.cardSectionHeader}>Location</Text>
-              <View style={[styles.detailRow]}>
-                <View style={styles.directionsIconWrap}>
-                  <Navigation size={16} color={ACCENT} strokeWidth={2.2} />
-                </View>
-                <Text style={styles.directionsAddress} numberOfLines={2}>{booking.address}</Text>
-                <ChevronRight size={16} color={MUTED} strokeWidth={2.2} />
-              </View>
-            </TouchableOpacity>
+            <>
+              <Section title="Location" />
+              {/* Pressable wraps the tile rather than styling it, so the tile
+                  keeps one geometry whether or not it happens to be tappable. */}
+              <TouchableOpacity onPress={handleOpenMaps} activeOpacity={0.8}>
+                <Tile rows>
+                  <View style={styles.detailRow}>
+                    <View style={styles.directionsIconWrap}>
+                      <Navigation size={16} color={ACCENT} strokeWidth={2.2} />
+                    </View>
+                    <Text style={styles.directionsAddress} numberOfLines={2}>{booking.address}</Text>
+                    <ChevronRight size={16} color={MUTED} strokeWidth={2.2} />
+                  </View>
+                </Tile>
+              </TouchableOpacity>
+            </>
           ) : null}
 
           {/* Details card */}
-          <View style={styles.card}>
-            <Text style={styles.cardSectionHeader}>Details</Text>
+          <Section title="Details" />
+          <Tile rows>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Total paid</Text>
               <Text style={styles.detailValue}>€{(localAmountCents / 100).toFixed(2)}</Text>
@@ -602,7 +607,7 @@ export function BookingDetailScreen({ navigation, route }: Props) {
                 <Text style={[styles.detailValue, { color: ACCENT }]}>{formatTimeLabel(checkedInAt)}</Text>
               </View>
             ) : null}
-          </View>
+          </Tile>
 
           {/* Cancellation note */}
           {isCanceled ? (
@@ -703,14 +708,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.pageBg },
 
   // ── Nav header ──────────────────────────────────────────────
-  header: {
-    alignItems: "center", justifyContent: "center",
-    paddingHorizontal: 20, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: colors.divider,
-    backgroundColor: colors.cardBg,
-  },
-  backButton: { padding: 6, position: "absolute", left: 14 },
-  navTitle: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 16, color: FG, textAlign: "center" },
 
   // ── Scroll content ───────────────────────────────────────────
   content: { paddingBottom: 48 },
@@ -801,28 +798,10 @@ const styles = StyleSheet.create({
   statusPillTextActive: { color: ACCENT },
 
   // ── Card (generic) ───────────────────────────────────────────
-  card: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: "hidden",
-    ...CARD_SHADOW,
-  },
-  cardSectionHeader: {
-    color: FG,
-    fontFamily: "PlusJakartaSans-ExtraBold",
-    fontSize: 16,
-    letterSpacing: -0.3,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: LINE,
-  },
-  cardBody: { padding: 16 },
 
   // ── Time row ─────────────────────────────────────────────────
+  // The status hero is its own surface, not a tile, so it carries its own 16.
+  heroBody: { padding: 16 },
   timeRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   timeSlot: { flex: 1, alignItems: "center", paddingVertical: 8 },
   timeSlotLabel: {
@@ -852,9 +831,11 @@ const styles = StyleSheet.create({
   extendText: { fontFamily: "PlusJakartaSans-SemiBold", fontSize: 13, color: ACCENT },
 
   // ── Detail rows (inside Details card) ────────────────────────
+  // The tile supplies the 16 inset and the 6px row rhythm used across the
+  // system; the row only spaces itself from its neighbours.
   detailRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    paddingHorizontal: 16, paddingVertical: 14,
+    paddingVertical: 6,
   },
   detailRowBorder: { borderTopWidth: 1, borderTopColor: LINE },
   detailLabel: { fontFamily: "PlusJakartaSans-Regular", fontSize: 13, color: MUTED },

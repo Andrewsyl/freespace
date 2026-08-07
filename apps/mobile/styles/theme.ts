@@ -75,6 +75,20 @@ export const colors = {
   // #F2F5F4 per the funnel design — a touch cooler and darker than
   // neutral[100], so white tiles sitting on it read as raised.
   ground: "#F2F5F4",
+
+  // ── Page surface (listing + booking review) ─────────────────────────────
+  // A colder, higher-contrast set than the tokens above, introduced with the
+  // listing rebuild. The two coexist while the rest of the app migrates —
+  // don't mix them within one screen.
+  pageInk: "#111111",
+  pageMuted: "#6A6A6A",
+  pageRule: "#E3E3E1",
+  pagePill: "#F2F2F0",
+  pageAccentSoft: "#E9F4EC",
+  pageAccentDark: "#0E5538",
+  pageMapGround: "#EBEDEB",
+  // True black behind a fullscreen photo — not the page ink, which is lighter.
+  viewerBackdrop: "#000000",
   // #F5F7F7 — the lighter tint used *inside* a tile (e.g. the duration strip
   // under the arrival/departure fields), so it separates from the card's white
   // without matching the page ground behind it.
