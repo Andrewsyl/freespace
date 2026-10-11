@@ -2,6 +2,7 @@ import type { Listing } from "../components/ListingCard";
 import type { SearchFilters } from "../components/SearchForm";
 import type { PaymentMethod, PaymentHistoryItem } from "../types/payments";
 import { webEnv } from "./env";
+import { demoResponse } from "./demo";
 
 // In the browser, use a relative base so requests go through Next.js rewrites
 // (works from any device/IP). On the server, call the API directly.
@@ -19,6 +20,8 @@ async function fetchWithTimeout(
   init?: RequestInit,
   timeoutMs = REQUEST_TIMEOUT_MS
 ): Promise<Response> {
+  const demo = demoResponse(input, init);
+  if (demo) return demo;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {

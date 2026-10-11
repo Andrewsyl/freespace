@@ -47,6 +47,8 @@ const nextConfig = {
     ];
   },
   async rewrites() {
+    // Demo mode answers API calls in-process (lib/demo.ts); there is no API to proxy to.
+    if (process.env.NEXT_PUBLIC_DEMO_MODE === "1") return [];
     const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:4000";
     return [
       {

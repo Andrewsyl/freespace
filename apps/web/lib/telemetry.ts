@@ -39,6 +39,8 @@ export async function trackEvent(eventType: string, properties?: Record<string, 
     }
   }
 
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === "1") return;
+
   const payload = JSON.stringify({
     eventType,
     source: "web",

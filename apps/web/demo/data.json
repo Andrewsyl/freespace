@@ -1,0 +1,715 @@
+{
+ "listings": [
+  {
+   "id": "60a70ded-dcab-459f-89da-c4383a503dbc",
+   "title": "Garage parking parking",
+   "address": "27, North Lotts, County Dublin",
+   "pricePerDay": 22,
+   "pricePerHour": null,
+   "pricePerMonth": null,
+   "rateType": "daily",
+   "availability": "Monday - Sunday (24 hours)",
+   "amenities": [
+    "Gated"
+   ],
+   "imageUrls": [
+    "https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=53.34775021289953,-6.260415483266115&heading=0&pitch=0&fov=80"
+   ],
+   "rating": 4.5,
+   "ratingCount": 2,
+   "latitude": 53.34775021289953,
+   "longitude": -6.260415483266115,
+   "description": null,
+   "hasAccessCode": false,
+   "hasArrivalInstructions": false,
+   "permissionDeclared": true,
+   "availabilitySchedule": [
+    {
+     "id": "da412692-369c-431e-aaf3-b173fb93f39f",
+     "kind": "open",
+     "startsAt": "2026-03-16T00:00:00.000Z",
+     "endsAt": "2026-03-16T23:59:00.000Z",
+     "repeatWeekdays": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "repeatUntil": null,
+     "createdAt": "2026-03-16T13:59:58.064Z"
+    }
+   ],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-03-14T13:48:42.005Z",
+   "hostName": "FreeSpace host"
+  },
+  {
+   "id": "872449c1-5182-4e40-8375-7b9c57526fce",
+   "title": "IFSC Underground Parking Bay",
+   "address": "Mayor Street Lower, IFSC, Dublin 1",
+   "pricePerDay": 18,
+   "pricePerHour": 3.1,
+   "pricePerMonth": 205,
+   "rateType": "hourly",
+   "availability": "Available 24/7",
+   "amenities": [
+    "covered",
+    "cctv",
+    "lighting"
+   ],
+   "imageUrls": [],
+   "rating": null,
+   "ratingCount": 0,
+   "latitude": 53.34968,
+   "longitude": -6.24426,
+   "description": "Covered parking in the IFSC, useful for offices, the Docklands, Connolly, and Luas access. The space is in an underground area with lighting and CCTV nearby, giving drivers a predictable place to park before arriving in the city centre.",
+   "hasAccessCode": true,
+   "hasArrivalInstructions": true,
+   "permissionDeclared": true,
+   "availabilitySchedule": [],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-06-24T13:21:07.981Z",
+   "hostName": "FreeSpace host"
+  },
+  {
+   "id": "d383aa03-8cda-4ed3-9fdb-4ee8d17826fe",
+   "title": "Smithfield Gated Courtyard",
+   "address": "Queen Street, Smithfield, Dublin 7",
+   "pricePerDay": 16,
+   "pricePerHour": 2.75,
+   "pricePerMonth": 180,
+   "rateType": "hourly",
+   "availability": "Available 24/7",
+   "amenities": [
+    "gated",
+    "cctv",
+    "lighting"
+   ],
+   "imageUrls": [],
+   "rating": null,
+   "ratingCount": 0,
+   "latitude": 53.34785,
+   "longitude": -6.27888,
+   "description": "Gated courtyard parking in Smithfield with quick access to the Four Courts, Luas, city centre, and Dublin 7 offices. The space is lit and easy to identify once arrival details are unlocked after booking.",
+   "hasAccessCode": true,
+   "hasArrivalInstructions": true,
+   "permissionDeclared": true,
+   "availabilitySchedule": [],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-06-24T13:21:07.981Z",
+   "hostName": "FreeSpace host"
+  },
+  {
+   "id": "d7ff3dae-2336-4969-b558-046dfaca0c72",
+   "title": "Drumcondra Croke Park Space",
+   "address": "Clonliffe Road, Drumcondra, Dublin 3",
+   "pricePerDay": 17,
+   "pricePerHour": 2.9,
+   "pricePerMonth": 190,
+   "rateType": "hourly",
+   "availability": "Available 24/7",
+   "amenities": [
+    "private_driveway",
+    "lighting"
+   ],
+   "imageUrls": [],
+   "rating": null,
+   "ratingCount": 0,
+   "latitude": 53.36044,
+   "longitude": -6.25154,
+   "description": "Private parking in Drumcondra within reach of Croke Park, local schools, shops, and transport links. Useful for event days and regular visits where on-street parking can be limited.",
+   "hasAccessCode": true,
+   "hasArrivalInstructions": true,
+   "permissionDeclared": true,
+   "availabilitySchedule": [],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-06-24T13:21:07.981Z",
+   "hostName": "FreeSpace host"
+  },
+  {
+   "id": "0bf7cd51-e16b-431d-a715-8d0252260727",
+   "title": "Merrion Square Secure Bay",
+   "address": "Merrion Square South, Dublin 2",
+   "pricePerDay": 19,
+   "pricePerHour": 3.2,
+   "pricePerMonth": 210,
+   "rateType": "hourly",
+   "availability": "Available 24/7",
+   "amenities": [
+    "cctv",
+    "lighting",
+    "gated"
+   ],
+   "imageUrls": [],
+   "rating": null,
+   "ratingCount": 0,
+   "latitude": 53.33908,
+   "longitude": -6.25096,
+   "description": "Secure central Dublin parking beside Merrion Square, ideal for city centre meetings, offices, galleries, and short stays. The space is off-street with gated access, lighting, and CCTV nearby. Access details are shared after booking so drivers can arrive without needing to contact the host.",
+   "hasAccessCode": true,
+   "hasArrivalInstructions": true,
+   "permissionDeclared": true,
+   "availabilitySchedule": [],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-06-24T13:21:07.981Z",
+   "hostName": "FreeSpace host"
+  },
+  {
+   "id": "21556742-8c60-43d3-b861-59ff68673ce8",
+   "title": "Grand Canal Dock EV Space",
+   "address": "Hanover Quay, Dublin 2",
+   "pricePerDay": 21,
+   "pricePerHour": 3.5,
+   "pricePerMonth": 240,
+   "rateType": "hourly",
+   "availability": "Available 24/7",
+   "amenities": [
+    "ev_charging",
+    "cctv",
+    "covered"
+   ],
+   "imageUrls": [],
+   "rating": null,
+   "ratingCount": 0,
+   "latitude": 53.34428,
+   "longitude": -6.23867,
+   "description": "Covered EV-friendly parking in Grand Canal Dock, close to offices, the Bord Gais Energy Theatre, and the Docklands. The space has CCTV nearby and is a strong option for drivers who want central parking with EV charging access.",
+   "hasAccessCode": true,
+   "hasArrivalInstructions": true,
+   "permissionDeclared": true,
+   "availabilitySchedule": [],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-06-24T13:21:07.981Z",
+   "hostName": "FreeSpace host"
+  },
+  {
+   "id": "02301ec6-69b3-4424-850b-0762959548ad",
+   "title": "Private Driveway parking",
+   "address": "10 Somerset St, Dublin 4, Ireland",
+   "pricePerDay": 22,
+   "pricePerHour": null,
+   "pricePerMonth": null,
+   "rateType": "daily",
+   "availability": "Monday - Sunday (24 hours)",
+   "amenities": [
+    "EV charging",
+    "Covered"
+   ],
+   "imageUrls": [
+    "https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=53.33983809999999,-6.2332095&heading=280&pitch=-11&fov=80"
+   ],
+   "rating": null,
+   "ratingCount": 0,
+   "latitude": 53.33983809999999,
+   "longitude": -6.2332095,
+   "description": null,
+   "hasAccessCode": false,
+   "hasArrivalInstructions": false,
+   "permissionDeclared": true,
+   "availabilitySchedule": [
+    {
+     "id": "befb0b71-8567-49da-b2ab-33ed4cf019b4",
+     "kind": "open",
+     "startsAt": "2026-03-14T00:00:00.000Z",
+     "endsAt": "2026-03-14T23:59:00.000Z",
+     "repeatWeekdays": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "repeatUntil": null,
+     "createdAt": "2026-03-14T13:48:42.145Z"
+    }
+   ],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-03-14T13:48:42.005Z",
+   "hostName": "FreeSpace host"
+  },
+  {
+   "id": "061ced00-1b5d-4f8f-93d7-fb32ccc17952",
+   "title": "Portobello Driveway Space",
+   "address": "Portobello Road, Dublin 8",
+   "pricePerDay": 15,
+   "pricePerHour": 2.5,
+   "pricePerMonth": 165,
+   "rateType": "hourly",
+   "availability": "Available 24/7",
+   "amenities": [
+    "lighting",
+    "private_driveway"
+   ],
+   "imageUrls": [],
+   "rating": null,
+   "ratingCount": 0,
+   "latitude": 53.33186,
+   "longitude": -6.27172,
+   "description": "Private driveway parking in Portobello, useful for Camden Street, Rathmines, the canal, and nearby offices. The space is easy to access from the road and works well for both short city visits and longer daytime parking.",
+   "hasAccessCode": true,
+   "hasArrivalInstructions": true,
+   "permissionDeclared": true,
+   "availabilitySchedule": [],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-06-24T13:21:07.981Z",
+   "hostName": "FreeSpace host"
+  },
+  {
+   "id": "7b826a3c-db1b-44af-84b3-514165789911",
+   "title": "Ranelagh Village Private Drive",
+   "address": "Ranelagh, Dublin 6",
+   "pricePerDay": 14,
+   "pricePerHour": 2.25,
+   "pricePerMonth": 155,
+   "rateType": "hourly",
+   "availability": "Available 24/7",
+   "amenities": [
+    "lighting",
+    "gated"
+   ],
+   "imageUrls": [],
+   "rating": null,
+   "ratingCount": 0,
+   "latitude": 53.32631,
+   "longitude": -6.25436,
+   "description": "Convenient private parking near Ranelagh village, restaurants, Luas access, and local offices. The bay is tucked away from the main road and suited to drivers who want a predictable space before arriving.",
+   "hasAccessCode": true,
+   "hasArrivalInstructions": true,
+   "permissionDeclared": true,
+   "availabilitySchedule": [],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-06-24T13:21:07.981Z",
+   "hostName": "FreeSpace host"
+  },
+  {
+   "id": "fd9311c4-04a6-4118-a19d-c4479de0958d",
+   "title": "Ballsbridge Match Day Driveway",
+   "address": "Lansdowne Road, Ballsbridge, Dublin 4",
+   "pricePerDay": 24,
+   "pricePerHour": 3.8,
+   "pricePerMonth": 260,
+   "rateType": "hourly",
+   "availability": "Available 24/7",
+   "amenities": [
+    "private_driveway",
+    "lighting",
+    "security"
+   ],
+   "imageUrls": [],
+   "rating": null,
+   "ratingCount": 0,
+   "latitude": 53.33383,
+   "longitude": -6.22851,
+   "description": "Private driveway parking in Ballsbridge close to Aviva Stadium, offices, hotels, and local restaurants. A strong option for match days, events, and commuter parking where arriving without a confirmed space can be stressful.",
+   "hasAccessCode": true,
+   "hasArrivalInstructions": true,
+   "permissionDeclared": true,
+   "availabilitySchedule": [],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-06-24T13:21:07.981Z",
+   "hostName": "FreeSpace host"
+  },
+  {
+   "id": "f966a29f-3f75-46ac-a68c-44deb8ce7372",
+   "title": "Kilmainham Secure Resident Space",
+   "address": "South Circular Road, Kilmainham, Dublin 8",
+   "pricePerDay": 13,
+   "pricePerHour": 2.2,
+   "pricePerMonth": 145,
+   "rateType": "hourly",
+   "availability": "Available 24/7",
+   "amenities": [
+    "gated",
+    "lighting"
+   ],
+   "imageUrls": [],
+   "rating": null,
+   "ratingCount": 0,
+   "latitude": 53.34119,
+   "longitude": -6.30338,
+   "description": "Secure residential parking near Kilmainham, St James\u2019s Hospital, IMMA, and Dublin 8. The gated bay is suited to drivers who need reliable parking outside the busiest city centre streets but still within easy reach of central Dublin.",
+   "hasAccessCode": true,
+   "hasArrivalInstructions": true,
+   "permissionDeclared": true,
+   "availabilitySchedule": [],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-06-24T13:21:07.981Z",
+   "hostName": "FreeSpace host"
+  },
+  {
+   "id": "ba2b0812-c1fb-4d22-88be-e75022a9247e",
+   "title": "Private Driveway parking",
+   "address": "11 Somerton, D\u00fan Laoghaire, Dublin, Ireland",
+   "pricePerDay": 10,
+   "pricePerHour": 1.5,
+   "pricePerMonth": 80,
+   "rateType": "hourly",
+   "availability": "Monday - Friday (06:00 - 19:00)",
+   "amenities": [
+    "Well lit"
+   ],
+   "imageUrls": [
+    "https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=53.332180322668975,-6.220624577254057&heading=108&pitch=-17&fov=80"
+   ],
+   "rating": null,
+   "ratingCount": 0,
+   "latitude": 53.332180322668975,
+   "longitude": -6.220624577254057,
+   "description": null,
+   "hasAccessCode": false,
+   "hasArrivalInstructions": false,
+   "permissionDeclared": true,
+   "availabilitySchedule": [
+    {
+     "id": "2e627241-1f11-43c6-94cd-751695925b00",
+     "kind": "open",
+     "startsAt": "2026-06-15T05:00:00.000Z",
+     "endsAt": "2026-06-15T18:00:00.000Z",
+     "repeatWeekdays": [
+      4
+     ],
+     "repeatUntil": null,
+     "createdAt": "2026-06-15T16:12:29.961Z"
+    },
+    {
+     "id": "c6175951-7c08-44ed-bb9f-013a2d206428",
+     "kind": "open",
+     "startsAt": "2026-06-15T05:00:00.000Z",
+     "endsAt": "2026-06-15T18:00:00.000Z",
+     "repeatWeekdays": [
+      3
+     ],
+     "repeatUntil": null,
+     "createdAt": "2026-06-15T16:12:30.032Z"
+    },
+    {
+     "id": "ed015f1f-19b3-4a55-bfc9-c8de815d84b8",
+     "kind": "open",
+     "startsAt": "2026-06-15T05:00:00.000Z",
+     "endsAt": "2026-06-15T18:00:00.000Z",
+     "repeatWeekdays": [
+      1
+     ],
+     "repeatUntil": null,
+     "createdAt": "2026-06-15T16:12:30.079Z"
+    },
+    {
+     "id": "c682e1e7-717b-4a03-aa4e-a0c42e2ff57c",
+     "kind": "open",
+     "startsAt": "2026-06-15T05:00:00.000Z",
+     "endsAt": "2026-06-15T18:00:00.000Z",
+     "repeatWeekdays": [
+      5
+     ],
+     "repeatUntil": null,
+     "createdAt": "2026-06-15T16:12:30.082Z"
+    },
+    {
+     "id": "ca255386-253b-4d40-a9d8-acb30b89ce36",
+     "kind": "open",
+     "startsAt": "2026-06-15T05:00:00.000Z",
+     "endsAt": "2026-06-15T18:00:00.000Z",
+     "repeatWeekdays": [
+      2
+     ],
+     "repeatUntil": null,
+     "createdAt": "2026-06-15T16:12:30.083Z"
+    }
+   ],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-06-15T16:12:29.799Z",
+   "hostName": "FreeSpace host"
+  },
+  {
+   "id": "19e70505-34ba-4831-a12b-bad05b688b0c",
+   "title": "Private Driveway parking",
+   "address": "32, Cremore Road, County Dublin",
+   "pricePerDay": 22,
+   "pricePerHour": null,
+   "pricePerMonth": null,
+   "rateType": "daily",
+   "availability": "Monday - Sunday (24 hours)",
+   "amenities": [
+    "CCTV",
+    "EV charging"
+   ],
+   "imageUrls": [
+    "https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=53.37822571077923,-6.27485616132617&heading=6&pitch=-7&fov=80"
+   ],
+   "rating": 5,
+   "ratingCount": 1,
+   "latitude": 53.37822571077923,
+   "longitude": -6.27485616132617,
+   "description": null,
+   "hasAccessCode": false,
+   "hasArrivalInstructions": false,
+   "permissionDeclared": true,
+   "availabilitySchedule": [
+    {
+     "id": "704a172d-1b04-4d7c-9f3a-636812f2b1d7",
+     "kind": "open",
+     "startsAt": "2026-03-14T00:00:00.000Z",
+     "endsAt": "2026-03-14T23:59:00.000Z",
+     "repeatWeekdays": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "repeatUntil": null,
+     "createdAt": "2026-03-14T14:46:37.413Z"
+    }
+   ],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-03-14T13:48:42.005Z",
+   "hostName": "FreeSpace host"
+  },
+  {
+   "id": "5f9e8c85-6964-4ece-a388-e21f575b97d9",
+   "title": "Harold\u2019s Cross Courtyard Bay",
+   "address": "Harold\u2019s Cross Road, Dublin 6W",
+   "pricePerDay": 13,
+   "pricePerHour": 2.15,
+   "pricePerMonth": 150,
+   "rateType": "hourly",
+   "availability": "Available 24/7",
+   "amenities": [
+    "gated",
+    "cctv",
+    "height_restricted"
+   ],
+   "imageUrls": [],
+   "rating": null,
+   "ratingCount": 0,
+   "latitude": 53.32295,
+   "longitude": -6.28505,
+   "description": "Gated courtyard parking in Harold\u2019s Cross with good access to Rathmines, Terenure, Portobello, and Dublin 6W. The space is practical for cars and short city visits, with access details provided after booking.",
+   "hasAccessCode": true,
+   "hasArrivalInstructions": true,
+   "permissionDeclared": true,
+   "availabilitySchedule": [],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-06-24T13:21:07.981Z",
+   "hostName": "FreeSpace host"
+  },
+  {
+   "id": "a83e6133-a5f2-4885-b42c-a28b2d747713",
+   "title": "Private road parking",
+   "address": "636 River Forest, Confey, Leixlip, Co. Kildare, Ireland",
+   "pricePerDay": 22,
+   "pricePerHour": null,
+   "pricePerMonth": null,
+   "rateType": "daily",
+   "availability": "Monday - Sunday (24 hours)",
+   "amenities": [
+    "Permit required",
+    "CCTV"
+   ],
+   "imageUrls": [
+    "https://maps.googleapis.com/maps/api/streetview?size=1280x720&location=53.3747519346667,-6.496745925396681&heading=0&pitch=0&fov=80",
+    "https://freespace-uploads-530726524685-eu-west-1.s3.eu-west-1.amazonaws.com/listing-images/e5ba20f7-554f-43bf-a202-a61174c94424/ff6c9b46-9a72-40f3-a585-3c4b352535c2.jpg"
+   ],
+   "rating": 5,
+   "ratingCount": 1,
+   "latitude": 53.3747519346667,
+   "longitude": -6.496745925396681,
+   "description": null,
+   "hasAccessCode": false,
+   "hasArrivalInstructions": false,
+   "permissionDeclared": true,
+   "availabilitySchedule": [
+    {
+     "id": "d1fe0cba-a440-41c2-bfee-96bca51e568a",
+     "kind": "open",
+     "startsAt": "2026-03-17T00:00:00.000Z",
+     "endsAt": "2026-03-17T23:59:00.000Z",
+     "repeatWeekdays": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "repeatUntil": null,
+     "createdAt": "2026-03-17T14:54:42.211Z"
+    }
+   ],
+   "hostId": "demo-host",
+   "capacity": 1,
+   "vehicleSizeSuitability": null,
+   "hostVerified": false,
+   "hostSince": "2026-03-17T14:54:41.905Z",
+   "hostName": "FreeSpace host"
+  }
+ ],
+ "reviews": {
+  "60a70ded-dcab-459f-89da-c4383a503dbc": [
+   {
+    "id": "1697e714-4433-486a-90f1-4ede162447b5",
+    "rating": 5,
+    "comment": "Good space",
+    "createdAt": "2026-06-19T18:59:12.164Z",
+    "authorName": "FreeSpace driver"
+   },
+   {
+    "id": "ae73b90f-92ca-4ec1-9815-79d31af39f85",
+    "rating": 4,
+    "comment": "",
+    "createdAt": "2026-06-06T17:07:12.098Z",
+    "authorName": "FreeSpace driver"
+   }
+  ],
+  "872449c1-5182-4e40-8375-7b9c57526fce": [],
+  "d383aa03-8cda-4ed3-9fdb-4ee8d17826fe": [],
+  "d7ff3dae-2336-4969-b558-046dfaca0c72": [],
+  "0bf7cd51-e16b-431d-a715-8d0252260727": [],
+  "21556742-8c60-43d3-b861-59ff68673ce8": [],
+  "02301ec6-69b3-4424-850b-0762959548ad": [],
+  "061ced00-1b5d-4f8f-93d7-fb32ccc17952": [],
+  "7b826a3c-db1b-44af-84b3-514165789911": [],
+  "fd9311c4-04a6-4118-a19d-c4479de0958d": [],
+  "f966a29f-3f75-46ac-a68c-44deb8ce7372": [],
+  "ba2b0812-c1fb-4d22-88be-e75022a9247e": [],
+  "19e70505-34ba-4831-a12b-bad05b688b0c": [
+   {
+    "id": "39d06da3-d4fb-4b48-835e-f0be5ed794b0",
+    "rating": 5,
+    "comment": "",
+    "createdAt": "2026-06-05T15:49:09.978Z",
+    "authorName": "FreeSpace driver"
+   }
+  ],
+  "5f9e8c85-6964-4ece-a388-e21f575b97d9": [],
+  "a83e6133-a5f2-4885-b42c-a28b2d747713": [
+   {
+    "id": "253a5856-9f5a-4a25-86a8-fe2cd632697c",
+    "rating": 5,
+    "comment": "Class space",
+    "createdAt": "2026-06-10T07:18:39.057Z",
+    "authorName": "FreeSpace driver"
+   }
+  ]
+ },
+ "config": {
+  "pricing": {
+   "feeBps": 800,
+   "minFeeCents": 0,
+   "maxFeeCents": null
+  },
+  "priceSuggestions": {
+   "zones": [
+    {
+     "name": "dublin-core",
+     "lat": 53.3475,
+     "lng": -6.26,
+     "radiusKm": 1.8,
+     "hourly": 2.5,
+     "daily": 14,
+     "monthly": 180
+    },
+    {
+     "name": "dublin-inner",
+     "lat": 53.3475,
+     "lng": -6.26,
+     "radiusKm": 4.5,
+     "hourly": 2,
+     "daily": 11,
+     "monthly": 140
+    },
+    {
+     "name": "dublin-county",
+     "lat": 53.3475,
+     "lng": -6.26,
+     "radiusKm": 18,
+     "hourly": 1.5,
+     "daily": 8,
+     "monthly": 100
+    },
+    {
+     "name": "cork-city",
+     "lat": 51.8985,
+     "lng": -8.4756,
+     "radiusKm": 3,
+     "hourly": 1.5,
+     "daily": 8,
+     "monthly": 110
+    },
+    {
+     "name": "galway-city",
+     "lat": 53.2745,
+     "lng": -9.0514,
+     "radiusKm": 3,
+     "hourly": 1.5,
+     "daily": 8,
+     "monthly": 100
+    },
+    {
+     "name": "limerick-city",
+     "lat": 52.6653,
+     "lng": -8.6238,
+     "radiusKm": 3,
+     "hourly": 1.2,
+     "daily": 7,
+     "monthly": 90
+    }
+   ],
+   "fallback": {
+    "hourly": 1,
+    "daily": 6,
+    "monthly": 70
+   }
+  }
+ }
+}

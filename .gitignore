@@ -51,3 +51,5 @@ docs/plans/
 # ios/ contains Pods/build products (~1GB) and is generated on demand
 /ios/
 /.expo/
+# Next.js per-environment overrides (e.g. the demo-mode flags) stay local.
+.env*.local
