@@ -53,3 +53,8 @@ docs/plans/
 /.expo/
 # Next.js per-environment overrides (e.g. the demo-mode flags) stay local.
 .env*.local
+
+# SST / OpenNext build state (demo hosting)
+.sst/
+.open-next/
+sst-env.d.ts
